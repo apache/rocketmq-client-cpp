@@ -1,0 +1,2 @@
+/usr/bin/ar cr ../../../libs/signature/lib/libSignature.a  CMakeFiles/Signature.dir/src/sha512.c.o CMakeFiles/Signature.dir/src/hmac.c.o CMakeFiles/Signature.dir/src/sha1.c.o CMakeFiles/Signature.dir/src/sha256.c.o CMakeFiles/Signature.dir/src/spas_client.c.o CMakeFiles/Signature.dir/src/param_list.c.o CMakeFiles/Signature.dir/src/base64.c.o
+/usr/bin/ranlib ../../../libs/signature/lib/libSignature.a
