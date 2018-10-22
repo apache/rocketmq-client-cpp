@@ -44,7 +44,8 @@
     - header files: /usr/local/include
     - lib: /usr/local/lib
 * Make and install using cmake
-    - cmake will auto find_package, if failes, change BOOST_INCLUDEDIR/LIBEVENT_INCLUDE_DIR/JSONCPP_INCLUDE_DIR in CMakeList.txt, according to its real install path
+    - cmake .
+    cmakewill auto find_package, if failes, change BOOST_INCLUDEDIR/LIBEVENT_INCLUDE_DIR/JSONCPP_INCLUDE_DIR in CMakeList.txt, according to its real install path
     - make
     - make install
 	
