@@ -22,6 +22,7 @@
 #include <map>
 
 using namespace rocketmq;
+using namespace std;
 
 class MessageListenerInner : public MessageListenerConcurrently {
 public:
