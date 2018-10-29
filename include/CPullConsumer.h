@@ -36,7 +36,13 @@ int ShutdownPullConsumer(CPullConsumer *consumer);
 int SetPullConsumerGroupID(CPullConsumer *consumer, const char *groupId);
 const char *GetPullConsumerGroupID(CPullConsumer *consumer);
 int SetPullConsumerNameServerAddress(CPullConsumer *consumer, const char *namesrv);
-int fetchSubscribeMessageQueues(CPullConsumer *consumer, const char *topic, vector<CMessageQueue> &mqs);
+int SetPullConsumeSessionCredentials(CPullConsumer *consumer, const char *accessKey, const char *secretKey,
+                                     const char *channel);
+int SetPullConsumeLogPath(CPullConsumer *consumer, const char *logPath);
+int SetPullConsumeLogFileNumAndSize(CPullConsumer *consumer, int fileNum, long fileSize);
+int SetPullConsumeLogLevel(CPullConsumer *consumer, CLogLevel level);
+
+int fetchSubscribeMessageQueues(CPullConsumer *consumer, const char *topic, CMessageQueue *mqs , int size);
 CPullResult pull(const CMessageQueue *mq, const char *subExpression, long long offset, int maxNums);
 
 #ifdef __cplusplus

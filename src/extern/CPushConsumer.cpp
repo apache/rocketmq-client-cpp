@@ -22,7 +22,7 @@
 #include <map>
 
 using namespace rocketmq;
-using namespace std;
+
 class MessageListenerInner : public MessageListenerConcurrently {
 public:
     MessageListenerInner() {}
@@ -155,6 +155,49 @@ int SetPushConsumeMessageBatchMaxSize(CPushConsumer *consumer, int batchSize) {
     ((DefaultMQPushConsumer *) consumer)->setConsumeMessageBatchMaxSize(batchSize);
     return OK;
 }
+
+int SetPushConsumeInstanceName(CPushConsumer *consumer, const char *instanceName) {
+    if (consumer == NULL) {
+        return NULL_POINTER;
+    }
+    ((DefaultMQPushConsumer *) consumer)->setInstanceName(instanceName);
+    return OK;
+}
+
+int SetPushConsumeSessionCredentials(CPushConsumer *consumer, const char *accessKey, const char *secretKey,
+                                     const char *channel) {
+    if (consumer == NULL) {
+        return NULL_POINTER;
+    }
+    ((DefaultMQPushConsumer *) consumer)->setSessionCredentials(accessKey, secretKey, channel);
+    return OK;
+}
+
+int SetPushConsumeLogPath(CPushConsumer *consumer, const char *logPath) {
+    if (consumer == NULL) {
+        return NULL_POINTER;
+    }
+    //Todo, This api should be implemented by core api.
+    //((DefaultMQPushConsumer *) consumer)->setInstanceName(instanceName);
+    return OK;
+}
+
+int SetPushConsumeLogFileNumAndSize(CPushConsumer *consumer, int fileNum, long fileSize) {
+    if (consumer == NULL) {
+        return NULL_POINTER;
+    }
+    ((DefaultMQPushConsumer *) consumer)->setLogFileSizeAndNum(fileNum,fileSize);
+    return OK;
+}
+
+int SetPushConsumeLogLevel(CPushConsumer *consumer, CLogLevel level) {
+    if (consumer == NULL) {
+        return NULL_POINTER;
+    }
+    ((DefaultMQPushConsumer *) consumer)->setLogLevel((elogLevel)level);
+    return OK;
+}
+
 #ifdef __cplusplus
 };
 #endif
