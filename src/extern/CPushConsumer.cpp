@@ -142,14 +142,14 @@ int UnregisterMessageCallback(CPushConsumer *consumer) {
     }
     return OK;
 }
-int SetPushConsumeThreadCount(CPushConsumer *consumer, int threadCount) {
+int SetPushConsumerThreadCount(CPushConsumer *consumer, int threadCount) {
     if (consumer == NULL || threadCount == 0) {
         return NULL_POINTER;
     }
     ((DefaultMQPushConsumer *) consumer)->setConsumeThreadCount(threadCount);
     return OK;
 }
-int SetPushConsumeMessageBatchMaxSize(CPushConsumer *consumer, int batchSize) {
+int SetPushConsumerMessageBatchMaxSize(CPushConsumer *consumer, int batchSize) {
     if (consumer == NULL || batchSize == 0) {
         return NULL_POINTER;
     }
@@ -157,7 +157,7 @@ int SetPushConsumeMessageBatchMaxSize(CPushConsumer *consumer, int batchSize) {
     return OK;
 }
 
-int SetPushConsumeInstanceName(CPushConsumer *consumer, const char *instanceName) {
+int SetPushConsumerInstanceName(CPushConsumer *consumer, const char *instanceName) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }
@@ -165,7 +165,7 @@ int SetPushConsumeInstanceName(CPushConsumer *consumer, const char *instanceName
     return OK;
 }
 
-int SetPushConsumeSessionCredentials(CPushConsumer *consumer, const char *accessKey, const char *secretKey,
+int SetPushConsumerSessionCredentials(CPushConsumer *consumer, const char *accessKey, const char *secretKey,
                                      const char *channel) {
     if (consumer == NULL) {
         return NULL_POINTER;
@@ -174,7 +174,7 @@ int SetPushConsumeSessionCredentials(CPushConsumer *consumer, const char *access
     return OK;
 }
 
-int SetPushConsumeLogPath(CPushConsumer *consumer, const char *logPath) {
+int SetPushConsumerLogPath(CPushConsumer *consumer, const char *logPath) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }
@@ -183,7 +183,7 @@ int SetPushConsumeLogPath(CPushConsumer *consumer, const char *logPath) {
     return OK;
 }
 
-int SetPushConsumeLogFileNumAndSize(CPushConsumer *consumer, int fileNum, long fileSize) {
+int SetPushConsumerLogFileNumAndSize(CPushConsumer *consumer, int fileNum, long fileSize) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }
@@ -191,7 +191,7 @@ int SetPushConsumeLogFileNumAndSize(CPushConsumer *consumer, int fileNum, long f
     return OK;
 }
 
-int SetPushConsumeLogLevel(CPushConsumer *consumer, CLogLevel level) {
+int SetPushConsumerLogLevel(CPushConsumer *consumer, CLogLevel level) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }

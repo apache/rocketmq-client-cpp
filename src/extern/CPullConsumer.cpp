@@ -75,7 +75,7 @@ int SetPullConsumerNameServerAddress(CPullConsumer *consumer, const char *namesr
     ((DefaultMQPullConsumer *) consumer)->setNamesrvAddr(namesrv);
     return OK;
 }
-int SetPullConsumeSessionCredentials(CPullConsumer *consumer, const char *accessKey, const char *secretKey,
+int SetPullConsumerSessionCredentials(CPullConsumer *consumer, const char *accessKey, const char *secretKey,
                                      const char *channel) {
     if (consumer == NULL) {
         return NULL_POINTER;
@@ -84,7 +84,7 @@ int SetPullConsumeSessionCredentials(CPullConsumer *consumer, const char *access
     return OK;
 }
 
-int SetPullConsumeLogPath(CPullConsumer *consumer, const char *logPath) {
+int SetPullConsumerLogPath(CPullConsumer *consumer, const char *logPath) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }
@@ -93,7 +93,7 @@ int SetPullConsumeLogPath(CPullConsumer *consumer, const char *logPath) {
     return OK;
 }
 
-int SetPullConsumeLogFileNumAndSize(CPullConsumer *consumer, int fileNum, long fileSize) {
+int SetPullConsumerLogFileNumAndSize(CPullConsumer *consumer, int fileNum, long fileSize) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }
@@ -101,7 +101,7 @@ int SetPullConsumeLogFileNumAndSize(CPullConsumer *consumer, int fileNum, long f
     return OK;
 }
 
-int SetPullConsumeLogLevel(CPullConsumer *consumer, CLogLevel level) {
+int SetPullConsumerLogLevel(CPullConsumer *consumer, CLogLevel level) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }

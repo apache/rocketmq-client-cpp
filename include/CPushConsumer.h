@@ -45,14 +45,14 @@ const char *GetPushConsumerGroupID(CPushConsumer *consumer);
 int SetPushConsumerNameServerAddress(CPushConsumer *consumer, const char *namesrv);
 int Subscribe(CPushConsumer *consumer, const char *topic, const char *expression);
 int RegisterMessageCallback(CPushConsumer *consumer, MessageCallBack pCallback);
-int SetPushConsumeThreadCount(CPushConsumer *consumer, int threadCount);
-int SetPushConsumeMessageBatchMaxSize(CPushConsumer *consumer, int batchSize);
-int SetPushConsumeInstanceName(CPushConsumer *consumer, const char *instanceName);
-int SetPushConsumeSessionCredentials(CPushConsumer *consumer, const char *accessKey, const char *secretKey,
+int SetPushConsumerThreadCount(CPushConsumer *consumer, int threadCount);
+int SetPushConsumerMessageBatchMaxSize(CPushConsumer *consumer, int batchSize);
+int SetPushConsumerInstanceName(CPushConsumer *consumer, const char *instanceName);
+int SetPushConsumerSessionCredentials(CPushConsumer *consumer, const char *accessKey, const char *secretKey,
                                   const char *channel);
-int SetPushConsumeLogPath(CPushConsumer *consumer, const char *logPath);
-int SetPushConsumeLogFileNumAndSize(CPushConsumer *consumer, int fileNum, long fileSize);
-int SetPushConsumeLogLevel(CPushConsumer *consumer, CLogLevel level);
+int SetPushConsumerLogPath(CPushConsumer *consumer, const char *logPath);
+int SetPushConsumerLogFileNumAndSize(CPushConsumer *consumer, int fileNum, long fileSize);
+int SetPushConsumerLogLevel(CPushConsumer *consumer, CLogLevel level);
 #ifdef __cplusplus
 };
 #endif
