@@ -23,6 +23,7 @@
 
 using namespace rocketmq;
 using namespace std;
+
 class MessageListenerInner : public MessageListenerConcurrently {
 public:
     MessageListenerInner() {}
@@ -141,20 +142,63 @@ int UnregisterMessageCallback(CPushConsumer *consumer) {
     }
     return OK;
 }
-int SetPushConsumeThreadCount(CPushConsumer *consumer, int threadCount) {
+int SetPushConsumerThreadCount(CPushConsumer *consumer, int threadCount) {
     if (consumer == NULL || threadCount == 0) {
         return NULL_POINTER;
     }
     ((DefaultMQPushConsumer *) consumer)->setConsumeThreadCount(threadCount);
     return OK;
 }
-int SetPushConsumeMessageBatchMaxSize(CPushConsumer *consumer, int batchSize) {
+int SetPushConsumerMessageBatchMaxSize(CPushConsumer *consumer, int batchSize) {
     if (consumer == NULL || batchSize == 0) {
         return NULL_POINTER;
     }
     ((DefaultMQPushConsumer *) consumer)->setConsumeMessageBatchMaxSize(batchSize);
     return OK;
 }
+
+int SetPushConsumerInstanceName(CPushConsumer *consumer, const char *instanceName) {
+    if (consumer == NULL) {
+        return NULL_POINTER;
+    }
+    ((DefaultMQPushConsumer *) consumer)->setInstanceName(instanceName);
+    return OK;
+}
+
+int SetPushConsumerSessionCredentials(CPushConsumer *consumer, const char *accessKey, const char *secretKey,
+                                     const char *channel) {
+    if (consumer == NULL) {
+        return NULL_POINTER;
+    }
+    ((DefaultMQPushConsumer *) consumer)->setSessionCredentials(accessKey, secretKey, channel);
+    return OK;
+}
+
+int SetPushConsumerLogPath(CPushConsumer *consumer, const char *logPath) {
+    if (consumer == NULL) {
+        return NULL_POINTER;
+    }
+    //Todo, This api should be implemented by core api.
+    //((DefaultMQPushConsumer *) consumer)->setInstanceName(instanceName);
+    return OK;
+}
+
+int SetPushConsumerLogFileNumAndSize(CPushConsumer *consumer, int fileNum, long fileSize) {
+    if (consumer == NULL) {
+        return NULL_POINTER;
+    }
+    ((DefaultMQPushConsumer *) consumer)->setLogFileSizeAndNum(fileNum,fileSize);
+    return OK;
+}
+
+int SetPushConsumerLogLevel(CPushConsumer *consumer, CLogLevel level) {
+    if (consumer == NULL) {
+        return NULL_POINTER;
+    }
+    ((DefaultMQPushConsumer *) consumer)->setLogLevel((elogLevel)level);
+    return OK;
+}
+
 #ifdef __cplusplus
 };
 #endif

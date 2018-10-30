@@ -17,6 +17,7 @@
 
 #include "MQMessageExt.h"
 #include "CMessageExt.h"
+#include "CCommon.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,6 +58,69 @@ const char *GetMessageId(CMessageExt *msg) {
         return NULL;
     }
     return ((MQMessageExt *) msg)->getMsgId().c_str();
+}
+
+int GetMessageDelayTimeLevel(CMessageExt *msg){
+    if (msg == NULL) {
+        return NULL_POINTER;
+    }
+    return ((MQMessageExt *) msg)->getDelayTimeLevel();
+}
+
+int GetMessageQueueId(CMessageExt *msg){
+    if (msg == NULL) {
+        return NULL_POINTER;
+    }
+    return ((MQMessageExt *) msg)->getQueueId();
+}
+
+int GetMessageReconsumeTimes(CMessageExt *msg){
+    if (msg == NULL) {
+        return NULL_POINTER;
+    }
+    return ((MQMessageExt *) msg)->getReconsumeTimes();
+}
+
+int GetMessageStoreSize(CMessageExt *msg){
+    if (msg == NULL) {
+        return NULL_POINTER;
+    }
+    return ((MQMessageExt *) msg)->getStoreSize();
+}
+
+long long GetMessageBornTimestamp(CMessageExt *msg) {
+    if (msg == NULL) {
+        return NULL_POINTER;
+    }
+    return ((MQMessageExt *) msg)->getBornTimestamp();
+}
+
+long long GetMessageStoreTimestamp(CMessageExt *msg){
+    if (msg == NULL) {
+        return NULL_POINTER;
+    }
+    return ((MQMessageExt *) msg)->getBornTimestamp();
+}
+
+long long GetMessageQueueOffset(CMessageExt *msg){
+    if (msg == NULL) {
+        return NULL_POINTER;
+    }
+    return ((MQMessageExt *) msg)->getQueueOffset();
+}
+
+long long GetMessageCommitLogOffset(CMessageExt *msg){
+    if (msg == NULL) {
+        return NULL_POINTER;
+    }
+    return ((MQMessageExt *) msg)->getCommitLogOffset();
+}
+
+long long GetMessagePreparedTransactionOffset(CMessageExt *msg){
+    if (msg == NULL) {
+        return NULL_POINTER;
+    }
+    return ((MQMessageExt *) msg)->getPreparedTransactionOffset();
 }
 #ifdef __cplusplus
 };

@@ -82,6 +82,13 @@ int SetMessageProperty(CMessage *msg, const char *key, const char *value) {
     ((MQMessage *)msg)->setProperty(key,value);
     return OK;
 }
+int SetDelayTimeLevel(CMessage *msg, int level){
+    if (msg == NULL) {
+        return NULL_POINTER;
+    }
+    ((MQMessage *)msg)->setDelayTimeLevel(level);
+    return OK;
+}
 
 #ifdef __cplusplus
 };

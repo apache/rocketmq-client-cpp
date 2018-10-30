@@ -19,7 +19,6 @@
 #include "CMessageExt.h"
 #include "CPullConsumer.h"
 #include "CCommon.h"
-#include <map>
 
 using namespace rocketmq;
 
@@ -75,6 +74,53 @@ int SetPullConsumerNameServerAddress(CPullConsumer *consumer, const char *namesr
     }
     ((DefaultMQPullConsumer *) consumer)->setNamesrvAddr(namesrv);
     return OK;
+}
+int SetPullConsumerSessionCredentials(CPullConsumer *consumer, const char *accessKey, const char *secretKey,
+                                     const char *channel) {
+    if (consumer == NULL) {
+        return NULL_POINTER;
+    }
+    ((DefaultMQPullConsumer *) consumer)->setSessionCredentials(accessKey, secretKey, channel);
+    return OK;
+}
+
+int SetPullConsumerLogPath(CPullConsumer *consumer, const char *logPath) {
+    if (consumer == NULL) {
+        return NULL_POINTER;
+    }
+    //Todo, This api should be implemented by core api.
+    //((DefaultMQPullConsumer *) consumer)->setInstanceName(instanceName);
+    return OK;
+}
+
+int SetPullConsumerLogFileNumAndSize(CPullConsumer *consumer, int fileNum, long fileSize) {
+    if (consumer == NULL) {
+        return NULL_POINTER;
+    }
+    ((DefaultMQPullConsumer *) consumer)->setLogFileSizeAndNum(fileNum,fileSize);
+    return OK;
+}
+
+int SetPullConsumerLogLevel(CPullConsumer *consumer, CLogLevel level) {
+    if (consumer == NULL) {
+        return NULL_POINTER;
+    }
+    ((DefaultMQPullConsumer *) consumer)->setLogLevel((elogLevel)level);
+    return OK;
+}
+
+int fetchSubscribeMessageQueues(CPullConsumer *consumer, const char *topic, CMessageQueue *mqs , int size){
+    if (consumer == NULL) {
+        return NULL_POINTER;
+    }
+    //ToDo, Add implement
+    return OK;
+}
+CPullResult pull(const CMessageQueue *mq, const char *subExpression, long long offset, int maxNums){
+    CPullResult pullResult ;
+    memset(&pullResult,0, sizeof(CPullResult));
+    //ToDo, Add implement
+    return pullResult;
 }
 
 #ifdef __cplusplus
