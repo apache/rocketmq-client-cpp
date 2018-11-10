@@ -37,7 +37,7 @@ void startSendMessage(CProducer* producer)
         printf("send one message : %d",i);
         snprintf(DestMsg,255,"New message body: index %d",i);
         SetMessageBody(msg,DestMsg);
-        SendMessageSync(Gproducer, msg, &result);
+        SendMessageSync(producer, msg, &result);
         printf("Msg Send ID:%s\n",result.msgId);
 #ifndef WIN32
         sleep(1);
@@ -48,7 +48,6 @@ void startSendMessage(CProducer* producer)
 
 int main(int argc,char * argv [ ])
 {
-    int i =0;
     printf("Producer Demo Enter Main.\n");
 
     CProducer* producer = CreateProducer("Group_producer");
