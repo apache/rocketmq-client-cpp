@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 //typedef struct _CMessage_ CMessage;
-struct CMessage;
+typedef struct CMessage CMessage;
 
 
 CMessage *CreateMessage(const char *topic);

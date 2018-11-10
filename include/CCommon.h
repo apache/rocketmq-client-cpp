@@ -25,13 +25,13 @@ extern "C" {
 #define  MAX_MESSAGE_ID_LENGTH 256
 #define  MAX_TOPIC_LENGTH 512
 #define  MAX_BROKER_NAME_ID_LENGTH 256
-typedef enum {
+typedef enum _CStatus_{
     // Success
     OK = 0,
     // Failed, null pointer value
     NULL_POINTER = 1,
 } CStatus;
-typedef enum {
+typedef enum _CLogLevel_{
     E_LOG_LEVEL_FATAL = 1,
     E_LOG_LEVEL_ERROR = 2,
     E_LOG_LEVEL_WARN = 3,

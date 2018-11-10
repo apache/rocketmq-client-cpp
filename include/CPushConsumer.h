@@ -26,9 +26,9 @@ extern "C" {
 #endif
 
 //typedef struct _CConsumer_ _CConsumer;
-struct CPushConsumer;
+typedef struct CPushConsumer CPushConsumer;
 
-typedef enum {
+typedef enum E_CConsumeStatus{
     E_CONSUME_SUCCESS = 0,
     E_RECONSUME_LATER = 1
 } CConsumeStatus;

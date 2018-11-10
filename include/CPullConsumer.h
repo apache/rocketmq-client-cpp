@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-struct CPullConsumer;
+typedef struct CPullConsumer CPullConsumer;
 
 
 CPullConsumer *CreatePullConsumer(const char *groupId);

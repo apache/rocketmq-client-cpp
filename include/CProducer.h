@@ -26,7 +26,7 @@ extern "C" {
 #endif
 
 //typedef struct _CProducer_ _CProducer;
-struct CProducer;
+typedef struct CProducer CProducer;
 
 
 CProducer *CreateProducer(const char *groupId);
