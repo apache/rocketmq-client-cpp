@@ -34,7 +34,8 @@ void startSendMessage(CProducer* producer)
     CSendResult result;
     for( i=0; i<10; i++)
     {
-        printf("send one message : %d",i);
+        printf("send one message : %d\n",i);
+	memset(DestMsg,0,sizeof(DestMsg));
         snprintf(DestMsg,255,"New message body: index %d",i);
         SetMessageBody(msg,DestMsg);
         SendMessageSync(producer, msg, &result);
@@ -48,17 +49,17 @@ void startSendMessage(CProducer* producer)
 
 int main(int argc,char * argv [ ])
 {
-    printf("Producer Demo Enter Main.\n");
+    printf("Producer Initializing.....\n");
 
     CProducer* producer = CreateProducer("Group_producer");
-    SetProducerNameServerAddress(producer,"172.17.0.5:9876");
+    SetProducerNameServerAddress(producer,"172.17.0.2:9876");
     StartProducer(producer);
-
+    printf("Producer start.....\n");
     startSendMessage(producer);
 
     ShutdownProducer(producer);
-	DestroyProducer(producer);
-    printf("Producer Demo Done !\n");
+    DestroyProducer(producer);
+    printf("Producer Shutdown!\n");
     return 0;
 }
 

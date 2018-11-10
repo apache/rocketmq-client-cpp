@@ -28,7 +28,7 @@
 
 int doConsumeMessage(struct CPushConsumer * consumer, CMessageExt * msgExt)
 {
-    printf("Hoho,Enter in Callback!\n");
+    printf("Hello,doConsumeMessage by Application!\n");
     printf("Msg Topic:%s\n",GetMessageTopic(msgExt));
     printf("Msg Tags:%s\n",GetMessageTags(msgExt));
     printf("Msg Keys:%s\n",GetMessageKeys(msgExt));
@@ -40,18 +40,20 @@ int doConsumeMessage(struct CPushConsumer * consumer, CMessageExt * msgExt)
 int main(int argc,char * argv [])
 {
     int i = 0;
+    printf("PushConsumer Initializing....\n");
     CPushConsumer* consumer = CreatePushConsumer("Group_Consumer_Test");
-    SetPushConsumerNameServerAddress(consumer,"172.17.0.5:9876");
+    SetPushConsumerNameServerAddress(consumer,"172.17.0.2:9876");
     Subscribe(consumer,"T_TestTopic","*");
     RegisterMessageCallback(consumer,doConsumeMessage);
     StartPushConsumer(consumer);
+    printf("Push Consumer Start...\n");
     for( i=0; i<10; i++)
     {
-        printf("Sleep : %d S",i*10);
+        printf("Now Running : %d S\n",i*10);
         sleep(10);
     }
-    ShutdownPullConsumer(consumer);
+    ShutdownPushConsumer(consumer);
     DestroyPushConsumer(consumer);
-    printf("PushConsumer Demo Done !\n");
+    printf("PushConsumer Shutdown!\n");
     return 0;
 }
