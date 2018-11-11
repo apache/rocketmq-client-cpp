@@ -26,7 +26,7 @@ doc/rocketmq-cpp_manaual_zh.docx
 
 ## Build and Install ##
 
-### - Linux platform ###
+### Linux platform ###
 
 **note**: *make sure the following compile tools or libraries has been installed before install dependency libraries*
 
@@ -54,7 +54,7 @@ make install
 1. install [boost 1.56.0](http://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.gz "boost 1.56.0")
 ```shell
 ./bootstrap.sh
-./b2 link=shared runtime-link=shared cxxflags="-fPIC"
+./b2 link=shared runtime-link=shared cxxflags=" -fPIC"
 ./b2 install
 ```
 #### 2. Make and Install ####
