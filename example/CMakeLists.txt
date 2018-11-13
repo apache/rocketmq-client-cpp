@@ -25,7 +25,7 @@ link_directories(${LIBEVENT_LIBRARY})
 link_directories(${JSONCPP_LIBRARY})
 
 
-file(GLOB files "*.cpp")
+file(GLOB files "*.c*")
 foreach(file ${files})
     get_filename_component(basename ${file} NAME_WE)
     add_executable(${basename} ${file})

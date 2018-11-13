@@ -24,7 +24,7 @@ extern "C" {
 #endif
 
 //typedef struct _CMessageExt_ _CMessageExt;
-struct CMessageExt;
+typedef struct CMessageExt CMessageExt;
 
 const char *GetMessageTopic(CMessageExt *msgExt);
 const char *GetMessageTags(CMessageExt *msgExt);

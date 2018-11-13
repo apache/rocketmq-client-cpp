@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-typedef enum {
+typedef enum E_CSendStatus_{
     E_SEND_OK = 0,
     E_SEND_FLUSH_DISK_TIMEOUT = 1,
     E_SEND_FLUSH_SLAVE_TIMEOUT = 2,

@@ -284,7 +284,7 @@ void DefaultMQPushConsumer::persistConsumerOffsetByResetOffset() {
 void DefaultMQPushConsumer::start() {
 #ifndef WIN32
   /* Ignore the SIGPIPE */
-  struct sigaction sa;
+  struct sigaction sa ={0};
   sa.sa_handler = SIG_IGN;
   sa.sa_flags = 0;
   sigaction(SIGPIPE, &sa, 0);
