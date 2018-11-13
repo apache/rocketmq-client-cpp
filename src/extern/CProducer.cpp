@@ -93,6 +93,16 @@ int SendMessageSync(CProducer *producer, CMessage *msg, CSendResult *result) {
     return OK;
 }
 
+int SendMessageOneway(CProducer *producer,CMessage *msg) {
+    if (producer == NULL || msg == NULL) {
+        return NULL_POINTER;
+    }
+    DefaultMQProducer *defaultMQProducer = (DefaultMQProducer *) producer;
+    MQMessage *message = (MQMessage *) msg;
+    defaultMQProducer->sendOneway(*message);
+    return OK;
+}
+
 int SetProducerGroupName(CProducer *producer, const char *groupName) {
     if (producer == NULL) {
         return NULL_POINTER;

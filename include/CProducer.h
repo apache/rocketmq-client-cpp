@@ -47,7 +47,7 @@ int SetProducerCompressLevel(CProducer *producer, int level);
 int SetProducerMaxMessageSize(CProducer *producer, int size);
 
 int SendMessageSync(CProducer *producer, CMessage *msg, CSendResult *result);
-
+int SendMessageOneway(CProducer *producer,CMessage *msg);
 #ifdef __cplusplus
 };
 #endif
