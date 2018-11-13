@@ -134,10 +134,10 @@ set(JSONCPP_LIBRARIES          [Your Local Path]/jsoncpp-0.10.6/lib/lib_json.lib
 ##### 3. download [CMake Tool](https://cmake.org/files/v3.13/cmake-3.13.0-rc3-win64-x64.zip "cmake-3.13.0-rc3")
 Extract cmake to LocalPath.
 Run cmake-gui.exe, choose your source code dir and build dir, then click generate which will let you choose [Virtual Studio 12 2013 Win64] version.
-Open the Project at [rocketmq-client-cpp] use Visual Studio and then build the project.
 
-if generate project solution fails, change BOOST_INCLUDEDIR/LIBEVENT_INCLUDE_DIR/JSONCPP_INCLUDE_DIR in CMakeList.txt, according to its real install path
-open&build&run project by VirtualStudio
+##### 4. build 
+Use Visual Studio open the Project at [rocketmq-client-cpp] and then build the project.
+
 
 ## Quick Start ##
 ### tools and commands ###
