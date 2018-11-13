@@ -73,13 +73,13 @@ make install
 ### Windows platform ###
 #### Dependency Installation
 1. install [libevent 2.0.22](https://github.com/libevent/libevent/archive/release-2.0.22-stable.zip "libevent 2.0.22")
-extract libevent to C:/libevent
-open Virtual Studio command line tools, go to dir: C:/libevent
+extract libevent to [LocalPath]/libevent
+open Virtual Studio command line tools(x64), go to dir: [LocalPath]/libevent
 execute cmd: nmake /f Makefile.nmake
-cp libevent.lib, libevent_extras.lib and libevent_core.lib to C:/libevent/lib
+cp libevent.lib, libevent_extras.lib and libevent_core.lib to [LocalPath]/libevent/lib
 
 1. install [jsoncpp 0.10.6](https://github.com/open-source-parsers/jsoncpp/archive/0.10.6.zip "jsoncpp 0.10.6")
-extract jsoncpp to C:/jsoncpp
+extract jsoncpp to [LocalPath]/jsoncpp
 download [cmake windows tool](https://cmake.org/files/v3.9/cmake-3.9.3-win64-x64.zip "cmake windows tool") and extract
 run cmake-gui.exe, choose your source code dir and build dir, then click generate which will let you choose Virtual Studio version
 open project by VirtualStudio, and build jsoncpp, and jsoncpp.lib will be got
@@ -88,8 +88,8 @@ open project by VirtualStudio, and build jsoncpp, and jsoncpp.lib will be got
 according to following discription: http://www.boost.org/doc/libs/1_56_0/more/getting_started/windows.html
 following build options are needed to be set when run bjam.exe: msvc architecture=x86 address-model=64 link=static runtime-link=static stage
 all lib will be generated except boost_zlib:
-download [zlib source](http://gnuwin32.sourceforge.net/downlinks/zlib-src-zip.php "zlib source") and extract to directory C:/zlib
-run cmd:bjam.exe msvc architecture=x86 address-model=64 link=static runtime-link=static --with-iostreams -s ZLIB_SOURCE=C:\zlib\src\zlib\1.2.3\zlib-1.2.3 stage
+download [zlib source](http://gnuwin32.sourceforge.net/downlinks/zlib-src-zip.php "zlib source") and extract to directory [LocalPath]/zlib
+run cmd:bjam.exe msvc architecture=x86 address-model=64 link=static runtime-link=static --with-iostreams -s ZLIB_SOURCE=[LocalPath]/zlib\src\zlib\1.2.3\zlib-1.2.3 stage
 
 #### Make and Install
 run cmake-gui.exe, choose your source code dir and build dir, then click generate which will let you choose VirtualStudio version
