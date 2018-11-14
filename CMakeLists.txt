@@ -44,9 +44,9 @@ option(BUILD_ROCKETMQ_SHARED "build rocketmq-client shared library" ON)
 #Find dependency 
 set(BOOST_INCLUDEDIR /usr/local/include/)
 #set(BOOST_INCLUDEDIR C:/boost_1_56_0/)
-set(Boost_USE_STATIC_LIBS        ON) # only find static libs
-set(Boost_USE_MULTITHREADED      ON)
-set(Boost_USE_STATIC_RUNTIME    ON)
+option(Boost_USE_STATIC_LIBS       OFF) # only find static libs
+option(Boost_USE_MULTITHREADED     OFF)
+option(Boost_USE_STATIC_RUNTIME    OFF)
 if(WIN32)
     find_package(Boost 1.56 REQUIRED COMPONENTS atomic thread system chrono date_time
         log log_setup regex serialization filesystem locale iostreams zlib)
@@ -62,7 +62,7 @@ if(Boost_FOUND)
 endif()
 
 #set(LIBEVENT_INCLUDE_DIR /usr/local/include/)
-set(Libevent_USE_STATIC_LIBS    OFF) # only find static libs
+option(Libevent_USE_STATIC_LIBS    OFF) # only find static libs
 #set(Libevent_DIR    /usr/local/lib/) # only find static libs
 find_package(Libevent 2.0.22 REQUIRED COMPONENTS) 
 
@@ -73,7 +73,7 @@ if(LIBEVENT_FOUND)
 endif()
 
 #set(JSONCPP_INCLUDE_DIRS C:/jsoncpp-0.10.6/include)
-set(JSONCPP_USE_STATIC_LIBS    OFF) # only find static libs
+option(JSONCPP_USE_STATIC_LIBS    OFF) # only find static libs
 find_package(Jsoncpp 0.10.6)
 if(JSONCPP_FOUND)
    include_directories(${JSONCPP_INCLUDE_DIRS})
