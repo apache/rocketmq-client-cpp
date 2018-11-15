@@ -99,14 +99,15 @@ IF (WIN32)
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 ELSE()
 set(C_FLAGS
-  -g
+  #-g
   -Wall
   -Wno-deprecated
   -fPIC
   -fno-strict-aliasing 
 )
 set(CXX_FLAGS
- -g
+ #-g
+ -O2
  -Wall
  -Wno-deprecated
  -fPIC
