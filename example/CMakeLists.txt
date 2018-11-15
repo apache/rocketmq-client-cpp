@@ -24,6 +24,9 @@ link_directories(${Boost_LIBRARY_DIRS})
 link_directories(${LIBEVENT_LIBRARY})
 link_directories(${JSONCPP_LIBRARY})
 
+if (BUILD_ROCKETMQ_SHARED)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_ALL_DYN_LINK -shared ")
+endif()
 
 file(GLOB files "*.cpp")
 foreach(file ${files})
