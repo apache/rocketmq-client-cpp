@@ -45,7 +45,7 @@ option(BUILD_ROCKETMQ_SHARED "build rocketmq-client shared library" ON)
 set(BOOST_INCLUDEDIR /usr/local/include/)
 #set(BOOST_INCLUDEDIR C:/boost_1_56_0/)
 option(Boost_USE_STATIC_LIBS       OFF) # only find static libs
-option(Boost_USE_MULTITHREADED     OFF)
+option(Boost_USE_MULTITHREADED     ON)
 option(Boost_USE_STATIC_RUNTIME    OFF)
 if(WIN32)
     find_package(Boost 1.56 REQUIRED COMPONENTS atomic thread system chrono date_time
