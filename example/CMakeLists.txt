@@ -39,12 +39,21 @@ foreach(file ${files})
             set_target_properties( ${basename} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMTD" )
         endif()
     endif()
-    if (BUILD_ROCKETMQ_SHARED)
-        target_link_libraries (${basename}  rocketmq_shared ${deplibs}
-        ${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES})
+
+    if (MSVC) 
+    	if (BUILD_ROCKETMQ_SHARED)
+        	target_link_libraries (${basename}  rocketmq_shared ${deplibs}
+        	${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES})
+    	else()
+        	target_link_libraries (${basename}  rocketmq_static ${deplibs}
+        	${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES})
+        endif()
     else()
-        target_link_libraries (${basename}  rocketmq_static ${deplibs}
-        ${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES})
+        #if (BUILD_ROCKETMQ_SHARED)
+    	    target_link_libraries (${basename} rocketmq_shared ${deplibs})
+        #else()
+    	#    target_link_libraries (${basename} rocketmq_static ${deplibs})
+        #endif()
     endif()
     
 endforeach()
