@@ -73,9 +73,13 @@ make install
 ### Windows platform ###
 **note**: *make sure the following compile tools or libraries has been installed before install dependency libraries*
 
-- compile tools:  **CMake**、**Visusal Studio 2013**
+- compile tools:  **CMake**、**Visusal Studio 2015**
 
-- libraries:   **zlib**
+## Dependency ##
+- libevent 2.0.22
+- jsoncpp 0.10.6
+- boost 1.58.0
+- Zlib for Windows 1.2.3**
 #### Dependency Installation
 ##### 1. install [libevent 2.0.22](https://github.com/libevent/libevent/archive/release-2.0.22-stable.zip "libevent 2.0.22")
 Extract libevent to LocalPath
@@ -102,14 +106,14 @@ Extract jsoncpp to LocalPath
 4.copy [jsoncpp-0.10.6\makefiles\msvc2010\x64\Release\lib_json.lib]
   to [jsoncpp-0.10.6\lib\lib_json.lib]
 ```
-##### 3. install [boost 1.56.0](http://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.zip "boost 1.56.0") and [zlib 1.2.3](http://gnuwin32.sourceforge.net/downlinks/zlib-src-zip.php "zlib 1.2.3")
-Extract [boost 1.56.0] and [zlib] to LocalPath
+##### 3. install [boost 1.58.0](http://sourceforge.net/projects/boost/files/boost/1.58.0/boost_1_58_0.zip "boost 1.58.0") and [Zlib for Windows 1.2.3](http://gnuwin32.sourceforge.net/downlinks/zlib-src-zip.php "zlib 1.2.3")
+Extract [boost_1_58_0.zip] and [zlib-1.2.3-src.zip] to LocalPath
 modify "#if 1" to "#if HAVE_UNISTD_H" at [zlib-1.2.3-src\src\zlib\1.2.3\zlib-1.2.3\zconf.h]
 Open Visual Studio command line tools(x64)
 ```shell
-cd boost_1_56_0
+cd boost_1_58_0
 booststrap.bat
-bjam.exe --toolset=msvc-12.0 architecture=x86 address-model=64 link=static runtime-link=static stage --stagedir="[Your Loacl Path]\boost_1_56_0\lib" threading=multi variant=release --build-type=complete --with-iostreams -s ZLIB_SOURCE=[Your Loacl Path]\zlib-1.2.3-src\src\zlib\1.2.3\zlib-1.2.3
+bjam.exe --toolset=msvc-14.0 architecture=x86 address-model=64 link=static runtime-link=static stage --stagedir="[Your Loacl Path]\boost_1_58_0\lib" threading=multi variant=release --build-type=complete --with-iostreams -s ZLIB_SOURCE=[Your Loacl Path]\zlib-1.2.3-src\src\zlib\1.2.3\zlib-1.2.3
 ```
 [Your Loacl Path] is the directory that you extract the zip file. 
 
@@ -121,7 +125,7 @@ git clone https://github.com/apache/rocketmq-client-cpp.git
 ##### 2. configure path
 open the CMakeLists.txt at [rocketmq-client-cpp] and modify the config.
 ```shell
-set(BOOST_INCLUDEDIR           [Your Local Path]/boost_1_56_0/)
+set(BOOST_INCLUDEDIR           [Your Local Path]/boost_1_58_0/)
 
 set(LIBEVENT_INCLUDE_DIR       [Your Local Path]/libevent-2.0.22-stable/include/)
 set(LIBEVENT_CORE_LIBRARY      [Your Local Path]/libevent-2.0.22-stable/lib/libevent_core.lib)
