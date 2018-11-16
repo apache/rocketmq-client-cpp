@@ -1,0 +1,22 @@
+create librocketmq.a
+addlib /usr/local/lib/libboost_chrono.a
+addlib /usr/local/lib/libboost_date_time.a
+addlib /usr/local/lib/libboost_filesystem.a
+addlib /usr/local/lib/libboost_iostreams.a
+addlib /usr/local/lib/libboost_locale.a
+addlib /usr/local/lib/libboost_log.a
+addlib /usr/local/lib/libboost_log_setup.a
+addlib /usr/local/lib/libboost_regex.a
+addlib /usr/local/lib/libboost_serialization.a
+addlib /usr/local/lib/libboost_system.a
+addlib /usr/local/lib/libboost_thread.a
+addlib /usr/local/lib/libboost_wserialization.a
+addlib /usr/local/lib/libevent.a
+addlib /usr/local/lib/libevent_core.a
+addlib /usr/local/lib/libevent_extra.a
+addlib /usr/local/lib/libevent_pthreads.a
+addlib /usr/local/lib/libjsoncpp.a
+addlib /usr/local/lib/librocketmq.a
+addlib /usr/local/lib/libSignature.a
+save
+end
