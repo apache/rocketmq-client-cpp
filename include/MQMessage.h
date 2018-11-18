@@ -92,22 +92,8 @@ class ROCKETMQCLIENT_API MQMessage {
   static const std::string PROPERTY_PRODUCER_GROUP;
   static const std::string PROPERTY_MIN_OFFSET;
   static const std::string PROPERTY_MAX_OFFSET;
-  static const std::String PROPERTY_BUYER_ID;
-  static const std::String PROPERTY_ORIGIN_MESSAGE_ID;
-  static const std::String PROPERTY_TRANSFER_FLAG;
-  static const std::String PROPERTY_CORRECTION_FLAG;
-  static const std::String PROPERTY_MQ2_FLAG;
-  static const std::String PROPERTY_RECONSUME_TIME;
-  static const std::String PROPERTY_MSG_REGION;
-  static const std::String PROPERTY_TRACE_SWITCH;
-  static const std::String PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX;
-  static const std::String PROPERTY_MAX_RECONSUME_TIMES;
-  static const std::String PROPERTY_CONSUME_START_TIMESTAMP;
-  static const std::String PROPERTY_TRANSACTION_PREPARED_QUEUE_OFFSET;
-  static const std::String PROPERTY_TRANSACTION_CHECK_TIMES;
-  static const std::String PROPERTY_CHECK_IMMUNITY_TIME_IN_SECONDS;
-
   static const std::string KEY_SEPARATOR;
+
  private:
   std::string m_topic;
   int m_flag;
