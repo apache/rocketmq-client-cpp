@@ -29,6 +29,7 @@
 #include "MessageSysFlag.h"
 #include "TopicPublishInfo.h"
 #include "Validators.h"
+#include "StringIdMaker.h"
 
 namespace rocketmq {
 
@@ -333,8 +334,12 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
 
   if (!brokerAddr.empty()) {
     try {
-      LOG_DEBUG("produce before:%s to %s", msg.toString().c_str(),
-                mq.toString().c_str());
+	  //msgId is produced by client, offsetMsgId produced by broker. (same with java sdk)
+	  string unique_id = StringIdMaker::get_mutable_instance().get_unique_id();
+	  msg.setProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX, unique_id);
+
+      LOG_DEBUG("produce before:%s to %s", msg.toString().c_str(), mq.toString().c_str());
+	  
       int sysFlag = 0;
       if (tryToCompressMessage(msg)) {
         sysFlag |= MessageSysFlag::CompressedFlag;

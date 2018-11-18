@@ -31,6 +31,21 @@ const string MQMessage::PROPERTY_TRANSACTION_PREPARED = "TRAN_MSG";
 const string MQMessage::PROPERTY_PRODUCER_GROUP = "PGROUP";
 const string MQMessage::PROPERTY_MIN_OFFSET = "MIN_OFFSET";
 const string MQMessage::PROPERTY_MAX_OFFSET = "MAX_OFFSET";
+const string MQMessage::PROPERTY_BUYER_ID = "BUYER_ID";
+const string MQMessage::PROPERTY_ORIGIN_MESSAGE_ID = "ORIGIN_MESSAGE_ID";
+const string MQMessage::PROPERTY_TRANSFER_FLAG = "TRANSFER_FLAG";
+const string MQMessage::PROPERTY_CORRECTION_FLAG = "CORRECTION_FLAG";
+const string MQMessage::PROPERTY_MQ2_FLAG = "MQ2_FLAG";
+const string MQMessage::PROPERTY_RECONSUME_TIME = "RECONSUME_TIME";
+const string MQMessage::PROPERTY_MSG_REGION = "MSG_REGION";
+const string MQMessage::PROPERTY_TRACE_SWITCH = "TRACE_ON";
+const string MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX = "UNIQ_KEY";
+const string MQMessage::PROPERTY_MAX_RECONSUME_TIMES = "MAX_RECONSUME_TIMES";
+const string MQMessage::PROPERTY_CONSUME_START_TIMESTAMP = "CONSUME_START_TIME";
+const string MQMessage::PROPERTY_TRANSACTION_PREPARED_QUEUE_OFFSET = "TRAN_PREPARED_QUEUE_OFFSET";
+const string MQMessage::PROPERTY_TRANSACTION_CHECK_TIMES = "TRANSACTION_CHECK_TIMES";
+const string MQMessage::PROPERTY_CHECK_IMMUNITY_TIME_IN_SECONDS = "CHECK_IMMUNITY_TIME_IN_SECONDS";
+
 const string MQMessage::KEY_SEPARATOR = " ";
 //<!************************************************************************
 MQMessage::MQMessage() { Init("", "", "", 0, "", true); }
