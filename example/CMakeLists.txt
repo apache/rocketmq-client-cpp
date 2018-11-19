@@ -28,7 +28,7 @@ if (BUILD_ROCKETMQ_SHARED)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_ALL_DYN_LINK -shared ")
 endif()
 
-file(GLOB files "*.cpp")
+file(GLOB files "*.c*")
 foreach(file ${files})
     get_filename_component(basename ${file} NAME_WE)
     add_executable(${basename} ${file})

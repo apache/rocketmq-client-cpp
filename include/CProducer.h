@@ -26,7 +26,7 @@ extern "C" {
 #endif
 
 //typedef struct _CProducer_ _CProducer;
-struct CProducer;
+typedef struct CProducer CProducer;
 
 
 CProducer *CreateProducer(const char *groupId);
@@ -47,7 +47,7 @@ int SetProducerCompressLevel(CProducer *producer, int level);
 int SetProducerMaxMessageSize(CProducer *producer, int size);
 
 int SendMessageSync(CProducer *producer, CMessage *msg, CSendResult *result);
-
+int SendMessageOneway(CProducer *producer,CMessage *msg);
 #ifdef __cplusplus
 };
 #endif

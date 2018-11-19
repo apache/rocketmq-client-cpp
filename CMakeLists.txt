@@ -64,7 +64,7 @@ endif()
 #set(LIBEVENT_INCLUDE_DIR /usr/local/include/)
 option(Libevent_USE_STATIC_LIBS "only find libevent static libs"   ON) # only find static libs
 #set(Libevent_DIR    /usr/local/lib/) # only find static libs
-find_package(Libevent 2.0.22 REQUIRED COMPONENTS) 
+find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
 
 if(LIBEVENT_FOUND)
     include_directories(${LIBEVENT_INCLUDE_DIRS})

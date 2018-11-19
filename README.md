@@ -21,6 +21,7 @@ RocketMQ-Client-CPP is the C/C++ client of Apache RocketMQ which is a distribute
 - reliability, based on nameServer snapshot and network disaster recovery strategy, no real-time impact on publish and subscribe when anyone of broker or nameSrv was broken.
 
 ## Dependency ##
+
 - [libevent 2.0.22](https://github.com/libevent/libevent/archive/release-2.0.22-stable.zip "libevent 2.0.22")
 
 - [jsoncpp 0.10.6](https://github.com/open-source-parsers/jsoncpp/archive/0.10.6.zip  "jsoncpp 0.10.6")
@@ -56,6 +57,7 @@ then there are librocketmq.a and librocketmq.so in /usr/local/lib. for use them 
     g++ -o consumer_example consumer_example.cpp -L. -lrocketmq -lpthread -lz -ldl -lrt
 
 ### Windows platform: ###
+
 #### Dependency Installation
 1. install [libevent 2.0.22](https://github.com/libevent/libevent/archive/release-2.0.22-stable.zip "libevent 2.0.22")
 extract libevent to C:/libevent
