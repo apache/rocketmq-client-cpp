@@ -23,3 +23,7 @@ aux_source_directory(src/  DIR_LIB_SRCS)
 add_library(Signature STATIC ${DIR_LIB_SRCS})
 target_link_libraries(Signature ${deplibs})
 set_target_properties(Signature PROPERTIES OUTPUT_NAME "Signature")
+
+# install
+install (TARGETS   Signature             DESTINATION lib)
+#install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION include/rocketmq)

@@ -21,11 +21,12 @@ RocketMQ-Client-CPP is the C/C++ client of Apache RocketMQ which is a distribute
 - reliability, based on nameServer snapshot and network disaster recovery strategy, no real-time impact on publish and subscribe when anyone of broker or nameSrv was broken.
 
 ## Dependency ##
-- libevent 2.0.22
 
-- jsoncpp 0.10.6
+- [libevent 2.0.22](https://github.com/libevent/libevent/archive/release-2.0.22-stable.zip "libevent 2.0.22")
 
-- boost 1.56.0
+- [jsoncpp 0.10.6](https://github.com/open-source-parsers/jsoncpp/archive/0.10.6.zip  "jsoncpp 0.10.6")
+
+- [boost 1.56.0](http://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.gz "boost 1.56.0")
 
 ## Documentation ##
 doc/rocketmq-cpp_manaual_zh.docx
@@ -34,43 +35,29 @@ doc/rocketmq-cpp_manaual_zh.docx
 
 ### Linux platform ###
 
-**note**: *make sure the following compile tools or libraries has been installed before install dependency libraries*
+**note**: *make sure the following compile tools or libraries with them minimum version number have been installed before run the build script build.sh*
 
-- compile tools:  **gcc-c++**、**cmake**、**automake**、**libtool**
+- compile tools:
+	- gcc-c++ 4.8.2: jsoncpp,boost rocket-client require it, need support C++11
+	- cmake 2.8.0: jsoncpp,rocketmq-client require it
+	- automake 1.11.1: libevent require it
+	- libtool 2.2.6: libevent require it
 
-- libraries:   **openssl-devel**、**bzip2-devel**
+- libraries:   
+	- bzip2-devel 1.0.6: boost dependcy it
 
-#### Dependency Installation ####
+one key build script will automatic build the dependency libraries include libevent json and boost, then it will build rocketmq-client static and shared library.
 
-1. install [libevent 2.0.22](https://github.com/libevent/libevent/archive/release-2.0.22-stable.zip "libevent 2.0.22")
-```shell
-./autogen.sh
-./configure
-make
-make install
-```
+if can't get internet to download three library source files by build script, you can copy three library source files (release-2.0.22-stable.zip  0.10.6.zip and boost_1_56_0.tar.gz) to rocketmq-client root dir, then build.sh will auto use these library files to build rocketmq-client.
 
-1. install [JsonCPP 0.10.6](https://github.com/open-source-parsers/jsoncpp/archive/0.10.6.zip  "jsoncpp 0.10.6")
-```shell
-cmake .
-make
-make install
-```
+    sudo sh build.sh
 
-1. install [boost 1.56.0](http://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.gz "boost 1.56.0")
-```shell
-./bootstrap.sh
-./b2 link=shared runtime-link=shared cxxflags=" -fPIC"
-./b2 install
-```
-#### 2. Make and Install ####
-```shell
-cmake .
-make
-make install
-```
+then there are librocketmq.a and librocketmq.so in /usr/local/lib. for use them to build application you should link with following libraries: -lrocketmq -lpthread -lz -ldl -lrt.
 
-### Windows platform ###
+    g++ -o consumer_example consumer_example.cpp -L. -lrocketmq -lpthread -lz -ldl -lrt
+
+### Windows platform: ###
+
 #### Dependency Installation
 1. install [libevent 2.0.22](https://github.com/libevent/libevent/archive/release-2.0.22-stable.zip "libevent 2.0.22")
 extract libevent to C:/libevent
