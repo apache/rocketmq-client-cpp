@@ -35,6 +35,7 @@ class SelectMessageQueue : public MessageQueueSelector {
     MQMessageQueue select(const std::vector<MQMessageQueue> &mqs,
                         const MQMessage &msg, void *arg) {
         CMessage * message = (CMessage *) &msg;
+        //Get the index of sending MQMessageQueue through callback function.
         int index = m_pCallback(mqs.size(),message,arg);
         return mqs[index];
     }
@@ -127,8 +128,10 @@ int SendMessageOrderly(CProducer *producer, CMessage *msg, QueueSelectorCallback
     }
     DefaultMQProducer *defaultMQProducer = (DefaultMQProducer *) producer;
     MQMessage *message = (MQMessage *) msg;
+    //Constructing SelectMessageQueue objects through function pointer callback
     SelectMessageQueue selectMessageQueue(callback);
     SendResult sendResult = defaultMQProducer->send(*message,&selectMessageQueue,arg,autoRetryTimes);
+    //Convert SendStatus to CSendStatus
     result->sendStatus = CSendStatus((int)sendResult.getSendStatus());
     result->offset = sendResult.getQueueOffset();
     strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
