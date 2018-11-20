@@ -38,7 +38,7 @@ typedef struct _CPullResult_ {
     long long  nextBeginOffset;
     long long  minOffset;
     long long  maxOffset;
-    CMessageExt* msgFoundList;
+    CMessageExt** msgFoundList;
     int size;
 } CPullResult;
 
