@@ -7,13 +7,13 @@ sys_lib_dir="/usr/local/lib"
 bin_dir="${basepath}/bin"
 fname_libevent="release-2.0.22-stable.zip"
 fname_jsoncpp="0.10.6.zip"
-fname_boost="boost_1_56_0.tar.gz"
+fname_boost="boost_1_58_0.tar.gz"
 
 function Help()
 {
     echo "=========================================one key build help============================================"
-    echo "./onekeybuild.sh [build libevent:0/1 default:1] [build json:0/1 default:1] [build boost:0/1 default:1]"
-    echo "usage: ./onekeybuild.sh 1 1 1"
+    echo "sh build.sh [build libevent:0/1 default:1] [build json:0/1 default:1] [build boost:0/1 default:1]"
+    echo "usage: sh build.sh 1 1 1"
     echo "[[build libevent]: 1: need build libevent lib, 0: no need build libevent lib; default:1]"
     echo "[[build json]: 1: need build json lib, 0: no need build json lib; default:1]"
     echo "[[build boost]: 1: need build boost lib, 0: no need build boost lib; default:1]"
@@ -175,10 +175,10 @@ function BuildBoost()
     then
         echo "${fname_boost} is exist"
     else
-        wget http://sourceforge.net/projects/boost/files/boost/1.56.0/${fname_boost}
+        wget http://sourceforge.net/projects/boost/files/boost/1.58.0/${fname_boost}
     fi
     tar -zxvf ${fname_boost}
-    cd boost_1_56_0
+    cd boost_1_58_0
     ./bootstrap.sh
     echo "build boost static #####################"
     sudo ./b2 cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static runtime-link=static release install
