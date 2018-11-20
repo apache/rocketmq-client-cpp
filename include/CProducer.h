@@ -20,14 +20,13 @@
 
 #include "CMessage.h"
 #include "CSendResult.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//typedef struct _CProducer_ _CProducer;
-typedef struct CProducer CProducer;
 
+typedef struct CProducer CProducer;
+typedef int(*QueueSelectorCallback)(int size, CMessage *msg, void *arg);
 
 CProducer *CreateProducer(const char *groupId);
 int DestroyProducer(CProducer *producer);
@@ -48,6 +47,7 @@ int SetProducerMaxMessageSize(CProducer *producer, int size);
 
 int SendMessageSync(CProducer *producer, CMessage *msg, CSendResult *result);
 int SendMessageOneway(CProducer *producer,CMessage *msg);
+int SendMessageOrderly(CProducer *producer, CMessage *msg, QueueSelectorCallback callback, void *arg, int autoRetryTimes, CSendResult *result);
 #ifdef __cplusplus
 };
 #endif

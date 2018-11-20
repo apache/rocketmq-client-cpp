@@ -19,12 +19,31 @@
 #include "CProducer.h"
 #include "CCommon.h"
 #include <string.h>
-
+#include "CMessage.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 using namespace rocketmq;
+
+class SelectMessageQueue : public MessageQueueSelector {
+ public:
+    SelectMessageQueue(QueueSelectorCallback callback){
+        m_pCallback = callback;
+    }
+
+    MQMessageQueue select(const std::vector<MQMessageQueue> &mqs,
+                        const MQMessage &msg, void *arg) {
+        CMessage * message = (CMessage *) &msg;
+        //Get the index of sending MQMessageQueue through callback function.
+        int index = m_pCallback(mqs.size(),message,arg);
+        return mqs[index];
+    }
+  private:
+    QueueSelectorCallback m_pCallback;
+};
+
+
 CProducer *CreateProducer(const char *groupId) {
     if (groupId == NULL) {
         return NULL;
@@ -100,6 +119,23 @@ int SendMessageOneway(CProducer *producer,CMessage *msg) {
     DefaultMQProducer *defaultMQProducer = (DefaultMQProducer *) producer;
     MQMessage *message = (MQMessage *) msg;
     defaultMQProducer->sendOneway(*message);
+    return OK;
+}
+
+int SendMessageOrderly(CProducer *producer, CMessage *msg, QueueSelectorCallback callback, void *arg, int autoRetryTimes, CSendResult *result) {
+    if(producer == NULL || msg == NULL || callback == NULL || arg == NULL || result == NULL){
+        return NULL_POINTER;
+    }
+    DefaultMQProducer *defaultMQProducer = (DefaultMQProducer *) producer;
+    MQMessage *message = (MQMessage *) msg;
+    //Constructing SelectMessageQueue objects through function pointer callback
+    SelectMessageQueue selectMessageQueue(callback);
+    SendResult sendResult = defaultMQProducer->send(*message,&selectMessageQueue,arg,autoRetryTimes);
+    //Convert SendStatus to CSendStatus
+    result->sendStatus = CSendStatus((int)sendResult.getSendStatus());
+    result->offset = sendResult.getQueueOffset();
+    strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+    result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
     return OK;
 }
 
