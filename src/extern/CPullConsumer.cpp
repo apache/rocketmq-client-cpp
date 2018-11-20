@@ -109,17 +109,18 @@ int SetPullConsumerLogLevel(CPullConsumer *consumer, CLogLevel level) {
     ((DefaultMQPullConsumer *) consumer)->setLogLevel((elogLevel) level);
     return OK;
 }
-//CMessageQueueList FetchSubscribeMessageQueueList(CPullConsumer *consumer, const char *topic) {}
-int FetchSubscribeMessageQueues(CPullConsumer *consumer, const char *topic, CMessageQueue **mqs, int *size) {
+
+int FetchSubscriptionMessageQueues(CPullConsumer *consumer, const char *topic, CMessageQueue **mqs, int *size) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }
-    //ToDo, Add implement
-    int index = 0;
+    unsigned int index = 0;
     std::vector<MQMessageQueue> fullMQ;
     try {
         ((DefaultMQPullConsumer *) consumer)->fetchSubscribeMessageQueues(topic, fullMQ);
         *size = fullMQ.size();
+        //Alloc memory to save the pointer to CPP MessageQueue, and the MessageQueues may be changed.
+        //Thus, this memory should be released by users using @ReleaseSubscribeMessageQueue every time.
         *mqs = (CMessageQueue *) malloc(*size * sizeof(CMessageQueue));
         if (*mqs == NULL) {
             *size = 0;
@@ -128,7 +129,6 @@ int FetchSubscribeMessageQueues(CPullConsumer *consumer, const char *topic, CMes
         }
         auto iter = fullMQ.begin();
         for (index = 0; iter != fullMQ.end() && index <= fullMQ.size(); ++iter, index++) {
-            //Copy Data
             strncpy(mqs[index]->topic, iter->getTopic().c_str(), MAX_TOPIC_LENGTH - 1);
             strncpy(mqs[index]->brokerName, iter->getBrokerName().c_str(), MAX_BROKER_NAME_ID_LENGTH - 1);
             mqs[index]->queueId = iter->getQueueId();
@@ -139,21 +139,21 @@ int FetchSubscribeMessageQueues(CPullConsumer *consumer, const char *topic, CMes
     }
     return OK;
 }
-int ReleaseSubscribeMessageQueue(CMessageQueue *mqs) {
+int ReleaseSubscriptionMessageQueue(CMessageQueue *mqs) {
     if (mqs == NULL) {
         return NULL_POINTER;
     }
     free((void *) mqs);
     mqs = NULL;
+    return OK;
 }
 CPullResult Pull(CPullConsumer *consumer, const CMessageQueue *mq, const char *subExpression, long long offset, int maxNums) {
     CPullResult pullResult;
     memset(&pullResult, 0, sizeof(CPullResult));
-    //ToDo, Add implement
     MQMessageQueue messageQueue(mq->topic, mq->brokerName, mq->queueId);
     PullResult cppPullResult;
     cppPullResult = ((DefaultMQPullConsumer *) consumer)->pull(messageQueue, subExpression, offset, maxNums);
-    //pullResult.pullStatus = cppPullResult.pullStatus;
+
     switch (cppPullResult.pullStatus) {
         case FOUND: {
             pullResult.pullStatus = E_FOUND;
@@ -161,7 +161,9 @@ CPullResult Pull(CPullConsumer *consumer, const CMessageQueue *mq, const char *s
             pullResult.minOffset = cppPullResult.minOffset;
             pullResult.nextBeginOffset = cppPullResult.nextBeginOffset;
             pullResult.size = cppPullResult.msgFoundList.size();
-            pullResult.msgFoundList = (CMessageExt *) malloc(pullResult.size * sizeof(CMessageExt));
+            //Alloc memory to save the pointer to CPP MQMessageExt, which will be release by the CPP SDK core.
+            //Thus, this memory should be released by users using @ReleasePullResult
+            pullResult.msgFoundList = (CMessageExt **) malloc(pullResult.size * sizeof(CMessageExt *));
             for (size_t i = 0; i < cppPullResult.msgFoundList.size(); i++) {
                 MQMessageExt *msg = const_cast<MQMessageExt *>(&cppPullResult.msgFoundList[i]);
                 pullResult.msgFoundList[i] = (CMessageExt *) (msg);
@@ -191,12 +193,13 @@ CPullResult Pull(CPullConsumer *consumer, const CMessageQueue *mq, const char *s
     }
     return pullResult;
 }
-int ReleasePullResult(CPullResult &pullResult) {
+int ReleasePullResult(CPullResult pullResult) {
     if (pullResult.size == 0 || pullResult.msgFoundList == NULL) {
         return NULL_POINTER;
     }
     free((void *) pullResult.msgFoundList);
     pullResult.msgFoundList = NULL;
+    return OK;
 }
 
 #ifdef __cplusplus
