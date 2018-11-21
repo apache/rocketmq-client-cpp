@@ -38,21 +38,21 @@ doc/rocketmq-cpp_manaual_zh.docx
 **note**: *make sure the following compile tools or libraries with them minimum version number have been installed before run the build script build.sh*
 
 - compile tools:
-	- gcc-c++ 4.8.2: jsoncpp,boost rocket-client require it, need support C++11
-	- cmake 2.8.0: jsoncpp,rocketmq-client require it
-	- automake 1.11.1: libevent require it
-	- libtool 2.2.6: libevent require it
+	- gcc-c++ 4.8.2: c++ compiler while need support C++11
+	- cmake 2.8.0: build jsoncpp require it
+	- automake 1.11.1: build libevent require it
+	- libtool 2.2.6: build libevent require it
 
 - libraries:   
-	- bzip2-devel 1.0.6: boost dependcy it
+	- bzip2-devel 1.0.6: boost depend it
 
-one key build script will automatic build the dependency libraries include libevent json and boost, then it will build rocketmq-client static and shared library.
+build.sh script will automatic build the dependency libraries include libevent json and boost, then it will build rocketmq-client static and shared library.
 
-if can't get internet to download three library source files by build script, you can copy three library source files (release-2.0.22-stable.zip  0.10.6.zip and boost_1_56_0.tar.gz) to rocketmq-client root dir, then build.sh will auto use these library files to build rocketmq-client.
+if you can't get to internet to download three library source files by build.sh script, you can copy three library source files (release-2.0.22-stable.zip  0.10.6.zip and boost_1_58_0.tar.gz) to rocketmq-client-cpp root dir, then build.sh will auto use these three library source files to build rocketmq-client-cpp.
 
     sudo sh build.sh
 
-then there are librocketmq.a and librocketmq.so in /usr/local/lib. for use them to build application you should link with following libraries: -lrocketmq -lpthread -lz -ldl -lrt.
+then there are both librocketmq.a and librocketmq.so in /usr/local/lib. when use them to build application or library you should link with following libraries: -lrocketmq -lpthread -lz -ldl -lrt.
 
     g++ -o consumer_example consumer_example.cpp -L. -lrocketmq -lpthread -lz -ldl -lrt
 
