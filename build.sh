@@ -181,7 +181,7 @@ function BuildBoost()
     then
         echo "${fname_boost} is exist"
     else
-        wget http://sourceforge.net/projects/boost/files/boost/1.58.0/${fname_boost_down}
+        wget http://sourceforge.net/projects/boost/files/boost/${fname_boost_down}
     fi
     tar -zxvf ${fname_boost}
     boost_dir=`ls | grep boost | grep .*[^gz]$`
