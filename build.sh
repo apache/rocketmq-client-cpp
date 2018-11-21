@@ -5,9 +5,12 @@ build_dir="${basepath}/tmp_build_dir"
 packet_dir="${basepath}/tmp_packet_dir"
 sys_lib_dir="/usr/local/lib"
 bin_dir="${basepath}/bin"
-fname_libevent="release-2.0.22-stable.zip"
-fname_jsoncpp="0.10.6.zip"
-fname_boost="boost_1_58_0.tar.gz"
+fname_libevent="libevent*.zip"
+fname_jsoncpp="jsoncpp*.zip"
+fname_boost="boost*.tar.gz"
+fname_libevent_down="release-2.0.22-stable.zip"
+fname_jsoncpp_down="0.10.6.zip"
+fname_boost_down="1.58.0/boost_1_58_0.tar.gz"
 
 function Help()
 {
@@ -125,10 +128,12 @@ function BuildLibevent()
     then
         echo "${fname_libevent} is exist"
     else
-        wget https://github.com/libevent/libevent/archive/${fname_libevent}
+        wget https://github.com/libevent/libevent/archive/${fname_libevent_down} -O libevent-${fname_libevent_down}
     fi
-    unzip ${fname_libevent}
-    cd libevent-release-2.0.22-stable
+    unzip -o ${fname_libevent}
+    libevent_dir=`ls | grep libevent | grep .*[^zip]$`
+    echo ${libevent_dir}
+    cd ${libevent_dir}
     ./autogen.sh
 
     echo "build libevent static #####################"
@@ -151,10 +156,11 @@ function BuildJsonCPP()
     then
         echo "${fname_jsoncpp} is exist"
     else
-        wget https://github.com/open-source-parsers/jsoncpp/archive/${fname_jsoncpp}
+        wget https://github.com/open-source-parsers/jsoncpp/archive/${fname_jsoncpp_down} -O jsoncpp-${fname_jsoncpp_down}
     fi
-    unzip ${fname_jsoncpp}
-    cd jsoncpp-0.10.6
+    unzip -o ${fname_jsoncpp}
+    jsoncpp_dir=`ls | grep ^jsoncpp | grep .*[^zip]$`
+    cd ${jsoncpp_dir}
 
     mkdir build; cd build
 	echo "build jsoncpp static #####################"
@@ -175,10 +181,11 @@ function BuildBoost()
     then
         echo "${fname_boost} is exist"
     else
-        wget http://sourceforge.net/projects/boost/files/boost/1.58.0/${fname_boost}
+        wget http://sourceforge.net/projects/boost/files/boost/1.58.0/${fname_boost_down}
     fi
     tar -zxvf ${fname_boost}
-    cd boost_1_58_0
+    boost_dir=`ls | grep boost | grep .*[^gz]$`
+    cd {boost_dir}
     ./bootstrap.sh
     echo "build boost static #####################"
     sudo ./b2 cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static runtime-link=static release install
