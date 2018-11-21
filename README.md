@@ -26,7 +26,7 @@ RocketMQ-Client-CPP is the C/C++ client of Apache RocketMQ which is a distribute
 
 - [jsoncpp 0.10.6](https://github.com/open-source-parsers/jsoncpp/archive/0.10.6.zip  "jsoncpp 0.10.6")
 
-- [boost 1.56.0](http://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.gz "boost 1.56.0")
+- [boost 1.58.0](http://sourceforge.net/projects/boost/files/boost/1.58.0/boost_1_58_0.tar.gz "boost 1.58.0")
 
 ## Documentation ##
 doc/rocketmq-cpp_manaual_zh.docx
@@ -71,7 +71,7 @@ download [cmake windows tool](https://cmake.org/files/v3.9/cmake-3.9.3-win64-x64
 run cmake-gui.exe, choose your source code dir and build dir, then click generate which will let you choose Virtual Studio version
 open project by VirtualStudio, and build jsoncpp, and jsoncpp.lib will be got
 
-1. install [boost 1.56.0](http://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.gz "boost 1.56.0")
+1. install [boost 1.58.0](http://sourceforge.net/projects/boost/files/boost/1.58.0/boost_1_58_0.tar.gz "boost 1.58.0")
 according to following discription: http://www.boost.org/doc/libs/1_56_0/more/getting_started/windows.html
 following build options are needed to be set when run bjam.exe: msvc architecture=x86 address-model=64 link=static runtime-link=static stage
 all lib will be generated except boost_zlib:
