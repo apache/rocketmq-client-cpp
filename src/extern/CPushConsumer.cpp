@@ -54,8 +54,31 @@ private:
     CPushConsumer *m_pconsumer;
 };
 
-map<CPushConsumer *, MessageListenerInner *> g_ListenerMap;
+class MessageListenerOrderlyInner:public MessageListenerOrderly {
+public:
+    MessageListenerOrderlyInner(CPushConsumer *consumer, MessageCallBack pCallback){
+        m_pconsumer = consumer;
+        m_pMsgReceiveCallback = pCallback;
+    }
+    ConsumeStatus consumeMessage(const std::vector<MQMessageExt> &msgs) {
+        if (m_pMsgReceiveCallback == NULL) {
+            return RECONSUME_LATER;
+        }
+        for (size_t i = 0; i < msgs.size(); ++i) {
+            MQMessageExt *msg = const_cast<MQMessageExt *>(&msgs[i]);
+            CMessageExt *message = (CMessageExt *) (msg);
+            if (m_pMsgReceiveCallback(m_pconsumer, message) != E_CONSUME_SUCCESS)
+                return RECONSUME_LATER;
+        }
+        return CONSUME_SUCCESS;
+    }
+private:
+    MessageCallBack m_pMsgReceiveCallback;
+    CPushConsumer *m_pconsumer;
+};
 
+map<CPushConsumer *, MessageListenerInner *> g_ListenerMap;
+map<CPushConsumer *, MessageListenerOrderlyInner *> g_OrderListenerMap;
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -117,6 +140,7 @@ int Subscribe(CPushConsumer *consumer, const char *topic, const char *expression
     ((DefaultMQPushConsumer *) consumer)->subscribe(topic, expression);
     return OK;
 }
+
 int RegisterMessageCallback(CPushConsumer *consumer, MessageCallBack pCallback) {
     if (consumer == NULL || pCallback == NULL) {
         return NULL_POINTER;
@@ -126,6 +150,33 @@ int RegisterMessageCallback(CPushConsumer *consumer, MessageCallBack pCallback) 
     g_ListenerMap[consumer] = listenerInner;
     return OK;
 }
+
+int RegisterMessageCallbackOrderly(CPushConsumer *consumer, MessageCallBack pCallback) {
+    if(consumer == NULL || pCallback == NULL){
+        return NULL_POINTER;
+    }
+    MessageListenerOrderlyInner *messageListenerOrderlyInner = new MessageListenerOrderlyInner(consumer,pCallback);
+    ((DefaultMQPushConsumer *) consumer)->registerMessageListener(messageListenerOrderlyInner);
+    g_OrderListenerMap[consumer] = messageListenerOrderlyInner;
+}
+
+
+int UnregisterMessageCallbackOrderly(CPushConsumer *consumer) {
+    if (consumer == NULL) {
+            return NULL_POINTER;
+    }
+    map<CPushConsumer *,MessageListenerOrderlyInner *>::iterator iter;
+    iter = g_OrderListenerMap.find(consumer);
+    if(iter != g_OrderListenerMap.end()){
+        MessageListenerOrderlyInner *listenerInner = iter->second;
+        if(listenerInner != NULL){
+            delete listenerInner;
+        }
+        g_OrderListenerMap.erase(iter);
+    }
+    return OK;
+}
+
 int UnregisterMessageCallback(CPushConsumer *consumer) {
     if (consumer == NULL) {
         return NULL_POINTER;

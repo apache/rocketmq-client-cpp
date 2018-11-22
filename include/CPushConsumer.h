@@ -35,7 +35,6 @@ typedef enum E_CConsumeStatus{
 
 typedef int(*MessageCallBack)(CPushConsumer *, CMessageExt *);
 
-
 CPushConsumer *CreatePushConsumer(const char *groupId);
 int DestroyPushConsumer(CPushConsumer *consumer);
 int StartPushConsumer(CPushConsumer *consumer);
@@ -45,6 +44,9 @@ const char *GetPushConsumerGroupID(CPushConsumer *consumer);
 int SetPushConsumerNameServerAddress(CPushConsumer *consumer, const char *namesrv);
 int Subscribe(CPushConsumer *consumer, const char *topic, const char *expression);
 int RegisterMessageCallback(CPushConsumer *consumer, MessageCallBack pCallback);
+int RegisterMessageCallbackOrderly(CPushConsumer *consumer, MessageCallBack pCallback);
+int UnregisterMessageCallbackOrderly(CPushConsumer *consumer);
+int UnregisterMessageCallback(CPushConsumer *consumer);
 int SetPushConsumerThreadCount(CPushConsumer *consumer, int threadCount);
 int SetPushConsumerMessageBatchMaxSize(CPushConsumer *consumer, int batchSize);
 int SetPushConsumerInstanceName(CPushConsumer *consumer, const char *instanceName);
