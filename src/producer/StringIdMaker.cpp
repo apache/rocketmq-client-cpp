@@ -1,8 +1,29 @@
 #include "StringIdMaker.h"
-#include <unistd.h>
 #include <boost/asio.hpp>
 
 namespace rocketmq {
+
+#ifdef WIN32
+int gettimeofdayWin(struct timeval *tp, void *tzp)
+{
+  time_t clock;
+  struct tm tm;
+  SYSTEMTIME wtm;
+  GetLocalTime(&wtm);
+  tm.tm_year   = wtm.wYear - 1900;
+  tm.tm_mon   = wtm.wMonth - 1;
+  tm.tm_mday   = wtm.wDay;
+  tm.tm_hour   = wtm.wHour;
+  tm.tm_min   = wtm.wMinute;
+  tm.tm_sec   = wtm.wSecond;
+  tm. tm_isdst  = -1;
+  clock = mktime(&tm);
+  tp->tv_sec = clock;
+  tp->tv_usec = wtm.wMilliseconds * 1000;
+  return (0);
+}
+#endif
+
 StringIdMaker::StringIdMaker() {
   memset(_buff, 0, sizeof(_buff));
   memset(_0x_buff, 0, sizeof(_0x_buff));
@@ -75,6 +96,7 @@ uint32_t StringIdMaker::get_ip() {
 
 uint64_t StringIdMaker::get_curr_ms() {
   struct timeval time_now;
+  //windows and linux use the same function name, windows's defination as begining this file
   gettimeofday(&time_now, NULL);
   uint64_t ms_time = time_now.tv_sec * 1000 + time_now.tv_usec / 1000;
   return ms_time;
@@ -112,7 +134,11 @@ void StringIdMaker::set_start_and_next_tm() {
 }
 
 int StringIdMaker::atomic_incr(int id) {
-  __sync_add_and_fetch(&id, 1);
+  #ifdef WIN32
+    InterlockedIncrement(&id)
+  #else
+    __sync_add_and_fetch(&id, 1);
+  #endif
   return id;
 }
 std::string StringIdMaker::get_unique_id() {
