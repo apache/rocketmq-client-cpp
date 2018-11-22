@@ -1,0 +1,257 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{DFF2BED1-4A9E-4B0B-B1EC-F01D70457E13}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(WindowsSdk_71A_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)..\thirdparty\boost_1_58_0;$(SolutionDir)..\include;$(SolutionDir)..\thirdparty\libevent-release-2.0.22\include;$(SolutionDir)..\thirdparty\libevent-release-2.0.22\WIN32-Code\;$(SolutionDir)..\src\common;$(SolutionDir)..\src\consumer;$(SolutionDir)..\src\log;$(SolutionDir)..\src\message;$(SolutionDir)..\src\producer;$(SolutionDir)..\src\protocol;$(SolutionDir)..\src\thread;$(SolutionDir)..\src\transport;$(SolutionDir)..\thirdparty\jsoncpp-0.10.6\;$(SolutionDir)..\src;$(SolutionDir)..\libs\signature\include;$(VC_IncludePath)</IncludePath>
+    <LibraryPath>$(WindowsSdk_71A_LibraryPath_x86);$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;$(SolutionDir)thirdparty..\boost_1_58_0\stage\lib</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(WindowsSdk_71A_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)..\thirdparty\boost_1_58_0;$(SolutionDir)..\include;$(SolutionDir)..\thirdparty\libevent-release-2.0.22\include;$(SolutionDir)..\thirdparty\libevent-release-2.0.22\WIN32-Code\;$(SolutionDir)..\src\common;$(SolutionDir)..\src\consumer;$(SolutionDir)..\src\log;$(SolutionDir)..\src\message;$(SolutionDir)..\src\producer;$(SolutionDir)..\src\protocol;$(SolutionDir)..\src\thread;$(SolutionDir)..\src\transport;$(SolutionDir)..\thirdparty\jsoncpp-0.10.6\;$(SolutionDir)..\src;$(SolutionDir)..\libs\signature\include;$(VC_IncludePath)</IncludePath>
+    <LibraryPath>$(WindowsSdk_71A_LibraryPath_x86);$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;$(SolutionDir)..\thirdparty\boost_1_58_0\stage\lib</LibraryPath>
+    <IntDir>$(Configuration)\$(ProjectName)</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;_DEBUG;ROCKETMQCLIENT_EXPORTS;_WIN32_WINNT=0x501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;$(SolutionDir)..\thirdparty\libevent-release-2.0.22\$(Configuration)\libevent.lib;$(SolutionDir)..\thirdparty\jsoncpp-0.10.6\$(Configuration)\jsoncpp_lib_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/NODEFAULTLIB:library %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;ROCKETMQCLIENT_EXPORTS;_WIN32_WINNT=0x501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;$(SolutionDir)..\thirdparty\libevent-release-2.0.22\$(Configuration)\libevent.lib;$(SolutionDir)..\thirdparty\jsoncpp-0.10.6\$(Configuration)\jsoncpp_lib_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\libs\signature\src\base64.c" />
+    <ClCompile Include="..\libs\signature\src\hmac.c" />
+    <ClCompile Include="..\libs\signature\src\param_list.c" />
+    <ClCompile Include="..\libs\signature\src\sha1.c" />
+    <ClCompile Include="..\libs\signature\src\sha256.c" />
+    <ClCompile Include="..\libs\signature\src\sha512.c" />
+    <ClCompile Include="..\libs\signature\src\spas_client.c" />
+    <ClCompile Include="..\src\common\Arg_helper.cpp" />
+    <ClCompile Include="..\src\common\AsyncCallbackWrap.cpp" />
+    <ClCompile Include="..\src\common\big_endian.cpp" />
+    <ClCompile Include="..\src\common\ClientRPCHook.cpp" />
+    <ClCompile Include="..\src\common\dataBlock.cpp" />
+    <ClCompile Include="..\src\common\InputStream.cpp" />
+    <ClCompile Include="..\src\common\MemoryInputStream.cpp" />
+    <ClCompile Include="..\src\common\MemoryOutputStream.cpp" />
+    <ClCompile Include="..\src\common\MessageSysFlag.cpp" />
+    <ClCompile Include="..\src\common\MQClient.cpp" />
+    <ClCompile Include="..\src\common\MQVersion.cpp" />
+    <ClCompile Include="..\src\common\OutputStream.cpp" />
+    <ClCompile Include="..\src\common\PermName.cpp" />
+    <ClCompile Include="..\src\common\PullSysFlag.cpp" />
+    <ClCompile Include="..\src\common\sync_http_client.cpp" />
+    <ClCompile Include="..\src\common\TopAddressing.cpp" />
+    <ClCompile Include="..\src\common\TopicConfig.cpp" />
+    <ClCompile Include="..\src\common\url.cpp" />
+    <ClCompile Include="..\src\common\UtilAll.cpp" />
+    <ClCompile Include="..\src\common\Validators.cpp" />
+    <ClCompile Include="..\src\common\VirtualEnvUtil.cpp" />
+    <ClCompile Include="..\src\consumer\ConsumeMessageConcurrentlyService.cpp" />
+    <ClCompile Include="..\src\consumer\ConsumeMessageOrderlyService.cpp" />
+    <ClCompile Include="..\src\consumer\DefaultMQPullConsumer.cpp" />
+    <ClCompile Include="..\src\consumer\DefaultMQPushConsumer.cpp" />
+    <ClCompile Include="..\src\consumer\OffsetStore.cpp" />
+    <ClCompile Include="..\src\consumer\PullAPIWrapper.cpp" />
+    <ClCompile Include="..\src\consumer\PullRequest.cpp" />
+    <ClCompile Include="..\src\consumer\PullResult.cpp" />
+    <ClCompile Include="..\src\consumer\Rebalance.cpp" />
+    <ClCompile Include="..\src\consumer\SubscriptionData.cpp" />
+    <ClCompile Include="..\src\dllmain.cpp" />
+    <ClCompile Include="..\src\extern\CMessage.cpp" />
+    <ClCompile Include="..\src\extern\CMessageExt.cpp" />
+    <ClCompile Include="..\src\extern\CProducer.cpp" />
+    <ClCompile Include="..\src\extern\CPullConsumer.cpp" />
+    <ClCompile Include="..\src\extern\CPushConsumer.cpp" />
+    <ClCompile Include="..\src\extern\CSendResult.cpp" />
+    <ClCompile Include="..\src\log\Logging.cpp" />
+    <ClCompile Include="..\src\message\MQDecoder.cpp" />
+    <ClCompile Include="..\src\message\MQMessage.cpp" />
+    <ClCompile Include="..\src\message\MQMessageExt.cpp" />
+    <ClCompile Include="..\src\message\MQMessageQueue.cpp" />
+    <ClCompile Include="..\src\MQClientAPIImpl.cpp" />
+    <ClCompile Include="..\src\MQClientFactory.cpp" />
+    <ClCompile Include="..\src\MQClientManager.cpp" />
+    <ClCompile Include="..\src\producer\DefaultMQProducer.cpp" />
+    <ClCompile Include="..\src\producer\SendResult.cpp" />
+    <ClCompile Include="..\src\producer\StringIdMaker.cpp" />
+    <ClCompile Include="..\src\protocol\CommandHeader.cpp" />
+    <ClCompile Include="..\src\protocol\ConsumerRunningInfo.cpp" />
+    <ClCompile Include="..\src\protocol\LockBatchBody.cpp" />
+    <ClCompile Include="..\src\protocol\MessageQueue.cpp" />
+    <ClCompile Include="..\src\protocol\RemotingCommand.cpp" />
+    <ClCompile Include="..\src\thread\task_queue.cpp" />
+    <ClCompile Include="..\src\transport\ClientRemotingProcessor.cpp" />
+    <ClCompile Include="..\src\transport\ResponseFuture.cpp" />
+    <ClCompile Include="..\src\transport\SocketUtil.cpp" />
+    <ClCompile Include="..\src\transport\TcpRemotingClient.cpp" />
+    <ClCompile Include="..\src\transport\TcpTransport.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\common\AsyncArg.h" />
+    <ClInclude Include="..\src\common\AsyncCallbackWrap.h" />
+    <ClInclude Include="..\src\common\big_endian.h" />
+    <ClInclude Include="..\src\common\ByteOrder.h" />
+    <ClInclude Include="..\src\common\ClientRPCHook.h" />
+    <ClInclude Include="..\src\common\CommunicationMode.h" />
+    <ClInclude Include="..\src\common\dataBlock.h" />
+    <ClInclude Include="..\src\common\FilterAPI.h" />
+    <ClInclude Include="..\src\common\InputStream.h" />
+    <ClInclude Include="..\src\common\MemoryInputStream.h" />
+    <ClInclude Include="..\src\common\MemoryOutputStream.h" />
+    <ClInclude Include="..\src\common\MessageSysFlag.h" />
+    <ClInclude Include="..\src\common\MQVersion.h" />
+    <ClInclude Include="..\src\common\NamesrvConfig.h" />
+    <ClInclude Include="..\src\common\OutputStream.h" />
+    <ClInclude Include="..\src\common\PermName.h" />
+    <ClInclude Include="..\src\common\PullSysFlag.h" />
+    <ClInclude Include="..\src\common\ServiceState.h" />
+    <ClInclude Include="..\src\common\SubscriptionGroupConfig.h" />
+    <ClInclude Include="..\src\common\sync_http_client.h" />
+    <ClInclude Include="..\src\common\TopAddressing.h" />
+    <ClInclude Include="..\src\common\TopicConfig.h" />
+    <ClInclude Include="..\src\common\TopicFilterType.h" />
+    <ClInclude Include="..\src\common\url.h" />
+    <ClInclude Include="..\src\common\UtilAll.h" />
+    <ClInclude Include="..\src\common\Validators.h" />
+    <ClInclude Include="..\src\common\VirtualEnvUtil.h" />
+    <ClInclude Include="..\src\consumer\AllocateMQStrategy.h" />
+    <ClInclude Include="..\src\consumer\ConsumeMsgService.h" />
+    <ClInclude Include="..\src\consumer\FindBrokerResult.h" />
+    <ClInclude Include="..\src\consumer\OffsetStore.h" />
+    <ClInclude Include="..\src\consumer\PullAPIWrapper.h" />
+    <ClInclude Include="..\src\consumer\PullRequest.h" />
+    <ClInclude Include="..\src\consumer\PullResultExt.h" />
+    <ClInclude Include="..\src\consumer\Rebalance.h" />
+    <ClInclude Include="..\src\consumer\SubscriptionData.h" />
+    <ClInclude Include="..\src\log\Logging.h" />
+    <ClInclude Include="..\src\message\MQDecoder.h" />
+    <ClInclude Include="..\src\message\MQMessageId.h" />
+    <ClInclude Include="..\src\MQClientAPIImpl.h" />
+    <ClInclude Include="..\src\MQClientFactory.h" />
+    <ClInclude Include="..\src\MQClientManager.h" />
+    <ClInclude Include="..\src\producer\TopicPublishInfo.h" />
+    <ClInclude Include="..\src\protocol\CommandHeader.h" />
+    <ClInclude Include="..\src\protocol\ConsumerRunningInfo.h" />
+    <ClInclude Include="..\src\protocol\HeartbeatData.h" />
+    <ClInclude Include="..\src\protocol\KVTable.h" />
+    <ClInclude Include="..\src\protocol\LockBatchBody.h" />
+    <ClInclude Include="..\src\protocol\MessageQueue.h" />
+    <ClInclude Include="..\src\protocol\MQProtos.h" />
+    <ClInclude Include="..\src\protocol\ProcessQueueInfo.h" />
+    <ClInclude Include="..\src\protocol\RemotingCommand.h" />
+    <ClInclude Include="..\src\protocol\RemotingSerializable.h" />
+    <ClInclude Include="..\src\protocol\TopicList.h" />
+    <ClInclude Include="..\src\protocol\TopicRouteData.h" />
+    <ClInclude Include="..\src\thread\disruptorLFQ.h" />
+    <ClInclude Include="..\src\thread\disruptor\batch_descriptor.h" />
+    <ClInclude Include="..\src\thread\disruptor\claim_strategy.h" />
+    <ClInclude Include="..\src\thread\disruptor\event_processor.h" />
+    <ClInclude Include="..\src\thread\disruptor\event_publisher.h" />
+    <ClInclude Include="..\src\thread\disruptor\exceptions.h" />
+    <ClInclude Include="..\src\thread\disruptor\exception_handler.h" />
+    <ClInclude Include="..\src\thread\disruptor\interface.h" />
+    <ClInclude Include="..\src\thread\disruptor\ring_buffer.h" />
+    <ClInclude Include="..\src\thread\disruptor\sequence.h" />
+    <ClInclude Include="..\src\thread\disruptor\sequencer.h" />
+    <ClInclude Include="..\src\thread\disruptor\sequence_barrier.h" />
+    <ClInclude Include="..\src\thread\disruptor\utils.h" />
+    <ClInclude Include="..\src\thread\disruptor\wait_strategy.h" />
+    <ClInclude Include="..\src\thread\task_queue.h" />
+    <ClInclude Include="..\src\transport\ClientRemotingProcessor.h" />
+    <ClInclude Include="..\src\transport\ResponseFuture.h" />
+    <ClInclude Include="..\src\transport\SocketUtil.h" />
+    <ClInclude Include="..\src\transport\TcpRemotingClient.h" />
+    <ClInclude Include="..\src\transport\TcpTransport.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

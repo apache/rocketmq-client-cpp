@@ -1,5 +1,5 @@
 #include "StringIdMaker.h"
-#include <unistd.h>
+//#include <unistd.h>
 #include <boost/asio.hpp>
 
 namespace rocketmq {
@@ -75,7 +75,7 @@ uint32_t StringIdMaker::get_ip() {
 
 uint64_t StringIdMaker::get_curr_ms() {
   struct timeval time_now;
-  gettimeofday(&time_now, NULL);
+  //gettimeofday(&time_now, NULL);
   uint64_t ms_time = time_now.tv_sec * 1000 + time_now.tv_usec / 1000;
   return ms_time;
 }
@@ -112,7 +112,7 @@ void StringIdMaker::set_start_and_next_tm() {
 }
 
 int StringIdMaker::atomic_incr(int id) {
-  __sync_add_and_fetch(&id, 1);
+ // __sync_add_and_fetch(&id, 1);
   return id;
 }
 std::string StringIdMaker::get_unique_id() {

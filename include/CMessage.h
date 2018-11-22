@@ -17,6 +17,7 @@
 
 #ifndef __C_MESSAGE_H__
 #define __C_MESSAGE_H__
+#include "RocketMQClient.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,15 +27,15 @@ extern "C" {
 typedef struct CMessage CMessage;
 
 
-CMessage *CreateMessage(const char *topic);
-int DestroyMessage(CMessage *msg);
-int SetMessageTopic(CMessage *msg, const char *topic);
-int SetMessageTags(CMessage *msg, const char *tags);
-int SetMessageKeys(CMessage *msg, const char *keys);
-int SetMessageBody(CMessage *msg, const char *body);
-int SetByteMessageBody(CMessage *msg, const char *body, int len);
-int SetMessageProperty(CMessage *msg, const char *key, const char *value);
-int SetDelayTimeLevel(CMessage *msg, int level);
+ROCKETMQCLIENT_API CMessage *  CreateMessage(const char *topic);
+ROCKETMQCLIENT_API int DestroyMessage(CMessage *msg);
+ROCKETMQCLIENT_API int SetMessageTopic(CMessage *msg, const char *topic);
+ROCKETMQCLIENT_API int SetMessageTags(CMessage *msg, const char *tags);
+ROCKETMQCLIENT_API int SetMessageKeys(CMessage *msg, const char *keys);
+ROCKETMQCLIENT_API int SetMessageBody(CMessage *msg, const char *body);
+ROCKETMQCLIENT_API int SetByteMessageBody(CMessage *msg, const char *body, int len);
+ROCKETMQCLIENT_API int SetMessageProperty(CMessage *msg, const char *key, const char *value);
+ROCKETMQCLIENT_API int SetDelayTimeLevel(CMessage *msg, int level);
 
 #ifdef __cplusplus
 };

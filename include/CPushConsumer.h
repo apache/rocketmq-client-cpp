@@ -36,23 +36,23 @@ typedef enum E_CConsumeStatus{
 typedef int(*MessageCallBack)(CPushConsumer *, CMessageExt *);
 
 
-CPushConsumer *CreatePushConsumer(const char *groupId);
-int DestroyPushConsumer(CPushConsumer *consumer);
-int StartPushConsumer(CPushConsumer *consumer);
-int ShutdownPushConsumer(CPushConsumer *consumer);
-int SetPushConsumerGroupID(CPushConsumer *consumer, const char *groupId);
-const char *GetPushConsumerGroupID(CPushConsumer *consumer);
-int SetPushConsumerNameServerAddress(CPushConsumer *consumer, const char *namesrv);
-int Subscribe(CPushConsumer *consumer, const char *topic, const char *expression);
-int RegisterMessageCallback(CPushConsumer *consumer, MessageCallBack pCallback);
-int SetPushConsumerThreadCount(CPushConsumer *consumer, int threadCount);
-int SetPushConsumerMessageBatchMaxSize(CPushConsumer *consumer, int batchSize);
-int SetPushConsumerInstanceName(CPushConsumer *consumer, const char *instanceName);
-int SetPushConsumerSessionCredentials(CPushConsumer *consumer, const char *accessKey, const char *secretKey,
+ROCKETMQCLIENT_API CPushConsumer *CreatePushConsumer(const char *groupId);
+ROCKETMQCLIENT_API int DestroyPushConsumer(CPushConsumer *consumer);
+ROCKETMQCLIENT_API int StartPushConsumer(CPushConsumer *consumer);
+ROCKETMQCLIENT_API int ShutdownPushConsumer(CPushConsumer *consumer);
+ROCKETMQCLIENT_API int SetPushConsumerGroupID(CPushConsumer *consumer, const char *groupId);
+ROCKETMQCLIENT_API const char *GetPushConsumerGroupID(CPushConsumer *consumer);
+ROCKETMQCLIENT_API int SetPushConsumerNameServerAddress(CPushConsumer *consumer, const char *namesrv);
+ROCKETMQCLIENT_API int Subscribe(CPushConsumer *consumer, const char *topic, const char *expression);
+ROCKETMQCLIENT_API int RegisterMessageCallback(CPushConsumer *consumer, MessageCallBack pCallback);
+ROCKETMQCLIENT_API int SetPushConsumerThreadCount(CPushConsumer *consumer, int threadCount);
+ROCKETMQCLIENT_API int SetPushConsumerMessageBatchMaxSize(CPushConsumer *consumer, int batchSize);
+ROCKETMQCLIENT_API int SetPushConsumerInstanceName(CPushConsumer *consumer, const char *instanceName);
+ROCKETMQCLIENT_API int SetPushConsumerSessionCredentials(CPushConsumer *consumer, const char *accessKey, const char *secretKey,
                                   const char *channel);
-int SetPushConsumerLogPath(CPushConsumer *consumer, const char *logPath);
-int SetPushConsumerLogFileNumAndSize(CPushConsumer *consumer, int fileNum, long fileSize);
-int SetPushConsumerLogLevel(CPushConsumer *consumer, CLogLevel level);
+ROCKETMQCLIENT_API int SetPushConsumerLogPath(CPushConsumer *consumer, const char *logPath);
+ROCKETMQCLIENT_API int SetPushConsumerLogFileNumAndSize(CPushConsumer *consumer, int fileNum, long fileSize);
+ROCKETMQCLIENT_API int SetPushConsumerLogLevel(CPushConsumer *consumer, CLogLevel level);
 #ifdef __cplusplus
 };
 #endif
