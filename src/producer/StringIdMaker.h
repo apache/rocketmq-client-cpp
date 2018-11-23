@@ -23,6 +23,13 @@
 #include <sys/time.h>
 #endif
 
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#include <sys/time.h>
+#endif
+
 namespace rocketmq {
 class StringIdMaker : public boost::serialization::singleton<StringIdMaker> {
  public:

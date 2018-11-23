@@ -1,6 +1,5 @@
 #include "StringIdMaker.h"
 
-
 namespace rocketmq {
 
 #ifdef WIN32
@@ -140,7 +139,7 @@ void StringIdMaker::set_start_and_next_tm() {
 
 int StringIdMaker::atomic_incr(int id) {
   #ifdef WIN32
-	InterlockedIncrement((LONG*)&id);
+	  InterlockedIncrement((LONG*)&id);
   #else
     __sync_add_and_fetch(&id, 1);
   #endif
