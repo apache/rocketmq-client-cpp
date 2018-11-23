@@ -16,6 +16,11 @@
 */
 #ifndef WIN32
 #include <unistd.h>
+#else
+#include <windows.h>
+void sleep(int interval) {
+	Sleep(interval * 10);
+}
 #endif
 #include <stdio.h>
 

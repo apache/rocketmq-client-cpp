@@ -65,12 +65,20 @@ class TpsReportService {
  public:
   TpsReportService() : tps_interval_(1), quit_flag_(false), tps_count_(0) {}
   void start() {
+	  if (tps_thread_ == NULL) {
+		  std::cout << "tps_thread_ is null" << std::endl;
+		  return;
+	  }
     tps_thread_.reset(
         new boost::thread(boost::bind(&TpsReportService::TpsReport, this)));
   }
 
   ~TpsReportService() {
     quit_flag_.store(true);
+	if (tps_thread_ == NULL) {
+		std::cout << "tps_thread_ is null" << std::endl;
+		return;
+	}
     if (tps_thread_->joinable()) tps_thread_->join();
   }
 

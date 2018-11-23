@@ -57,7 +57,34 @@ then there are both librocketmq.a and librocketmq.so in /usr/local/lib. when use
     g++ -o consumer_example consumer_example.cpp -L. -lrocketmq -lpthread -lz -ldl -lrt
 
 ### Windows platform: ###
+**note**: *make sure the following compile tools or libraries with them minimum version number have been installed before run the build script win32_build.bat*
+- compile tools:
+	- vs2015: libevent,jsoncpp,zlib,boost rocket-client require it
+	- git: download source code 
+	
+one key build script will automatic download dependency libraries include libevent json and boost,  execute follow command,then it will build shared library.
 
+    win32_build.bat
+
+	
+if can't get internet to download four library source files by build script, you can copy four library source files 
+
+[zlib-1.2.3-src](https://codeload.github.com/jsj020122/zlib-1.2.3-src/zip/master "zlib-1.2.3-src") Extract to $(rocketmq-client root dir)/thirdparty/zlib-1.2.3-src 
+
+[libevent-release-2.0.22](https://codeload.github.com/jsj020122/libevent-release-2.0.22/zip/master "libevent-release-2.0.22") Extract to $(rocketmq-client root dir)/thirdparty/libevent-release-2.0.22
+
+[boost_1_58_0](https://codeload.github.com/jsj020122/boost_1_58_0/zip/master "boost_1_58_0") Extract to  $(rocketmq-client root dir)/thirdparty/boost_1_58_0
+
+[jsoncpp-0.10.6](https://codeload.github.com/jsj020122/jsoncpp-0.10.6/zip/master "jsoncpp-0.10.6") Extract to  $(rocketmq-client root dir)/thirdparty/jsoncpp-0.10.6 
+
+then execute follow command will auto use these library files to build rocketmq-client.
+
+    win32_build.bat build
+
+	
+
+
+=======
 #### Dependency Installation
 1. install [libevent 2.0.22](https://github.com/libevent/libevent/archive/release-2.0.22-stable.zip "libevent 2.0.22")
 extract libevent to C:/libevent

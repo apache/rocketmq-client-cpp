@@ -14,6 +14,14 @@
 #include <time.h>
 #include <boost/serialization/singleton.hpp>
 #include <string>
+#include <boost/asio.hpp>
+
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#include <sys/time.h>
+#endif
 
 #ifdef WIN32
 #include <windows.h>

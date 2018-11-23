@@ -20,34 +20,35 @@
 
 #include "CMessage.h"
 #include "CSendResult.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
+//typedef struct _CProducer_ _CProducer;
 typedef struct CProducer CProducer;
 typedef int(*QueueSelectorCallback)(int size, CMessage *msg, void *arg);
 
-CProducer *CreateProducer(const char *groupId);
-int DestroyProducer(CProducer *producer);
-int StartProducer(CProducer *producer);
-int ShutdownProducer(CProducer *producer);
+ROCKETMQCLIENT_API CProducer *CreateProducer(const char *groupId);
+ROCKETMQCLIENT_API int DestroyProducer(CProducer *producer);
+ROCKETMQCLIENT_API int StartProducer(CProducer *producer);
+ROCKETMQCLIENT_API int ShutdownProducer(CProducer *producer);
 
-int SetProducerNameServerAddress(CProducer *producer, const char *namesrv);
-int SetProducerGroupName(CProducer *producer, const char *groupName);
-int SetProducerInstanceName(CProducer *producer, const char *instanceName);
-int SetProducerSessionCredentials(CProducer *producer, const char *accessKey, const char *secretKey,
+ROCKETMQCLIENT_API int SetProducerNameServerAddress(CProducer *producer, const char *namesrv);
+ROCKETMQCLIENT_API int SetProducerGroupName(CProducer *producer, const char *groupName);
+ROCKETMQCLIENT_API int SetProducerInstanceName(CProducer *producer, const char *instanceName);
+ROCKETMQCLIENT_API int SetProducerSessionCredentials(CProducer *producer, const char *accessKey, const char *secretKey,
                                   const char *onsChannel);
-int SetProducerLogPath(CProducer *producer, const char *logPath);
-int SetProducerLogFileNumAndSize(CProducer *producer, int fileNum, long fileSize);
-int SetProducerLogLevel(CProducer *producer, CLogLevel level);
-int SetProducerSendMsgTimeout(CProducer *producer, int timeout);
-int SetProducerCompressLevel(CProducer *producer, int level);
-int SetProducerMaxMessageSize(CProducer *producer, int size);
+ROCKETMQCLIENT_API int SetProducerLogPath(CProducer *producer, const char *logPath);
+ROCKETMQCLIENT_API int SetProducerLogFileNumAndSize(CProducer *producer, int fileNum, long fileSize);
+ROCKETMQCLIENT_API int SetProducerLogLevel(CProducer *producer, CLogLevel level);
+ROCKETMQCLIENT_API int SetProducerSendMsgTimeout(CProducer *producer, int timeout);
+ROCKETMQCLIENT_API int SetProducerCompressLevel(CProducer *producer, int level);
+ROCKETMQCLIENT_API int SetProducerMaxMessageSize(CProducer *producer, int size);
 
-int SendMessageSync(CProducer *producer, CMessage *msg, CSendResult *result);
-int SendMessageOneway(CProducer *producer,CMessage *msg);
-int SendMessageOrderly(CProducer *producer, CMessage *msg, QueueSelectorCallback callback, void *arg, int autoRetryTimes, CSendResult *result);
+ROCKETMQCLIENT_API int SendMessageSync(CProducer *producer, CMessage *msg, CSendResult *result);
+ROCKETMQCLIENT_API int SendMessageOneway(CProducer *producer,CMessage *msg);
+ROCKETMQCLIENT_API int SendMessageOrderly(CProducer *producer, CMessage *msg, QueueSelectorCallback callback, void *arg, int autoRetryTimes, CSendResult *result);
 #ifdef __cplusplus
 };
 #endif
