@@ -11,11 +11,17 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-//#include <sys/time.h>
 #include <time.h>
-//#include <unistd.h>
 #include <boost/serialization/singleton.hpp>
 #include <string>
+#include <boost/asio.hpp>
+
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#include <sys/time.h>
+#endif
 
 namespace rocketmq {
 class StringIdMaker : public boost::serialization::singleton<StringIdMaker> {
