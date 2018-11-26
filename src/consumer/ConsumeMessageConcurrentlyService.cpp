@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__APPLE__)
 #include <sys/prctl.h>
 #endif
 #include "ConsumeMsgService.h"
@@ -29,7 +29,7 @@ ConsumeMessageConcurrentlyService::ConsumeMessageConcurrentlyService(
     : m_pConsumer(consumer),
       m_pMessageListener(msgListener),
       m_ioServiceWork(m_ioService) {
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__APPLE__)
   string taskName = UtilAll::getProcessName();
   prctl(PR_SET_NAME, "ConsumeTP", 0, 0, 0);
 #endif
@@ -37,7 +37,7 @@ ConsumeMessageConcurrentlyService::ConsumeMessageConcurrentlyService(
     m_threadpool.create_thread(
         boost::bind(&boost::asio::io_service::run, &m_ioService));
   }
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__APPLE__)
   prctl(PR_SET_NAME, taskName.c_str(), 0, 0, 0);
 #endif
 }

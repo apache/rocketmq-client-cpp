@@ -16,7 +16,7 @@
  */
 #include "TcpRemotingClient.h"
 #include <stddef.h>
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__APPLE__)
 #include <sys/prctl.h>
 #endif
 #include "Logging.h"
@@ -35,7 +35,7 @@ TcpRemotingClient::TcpRemotingClient(int pullThreadNum,
       m_tcpTransportTryLockTimeout(tcpTransportTryLockTimeout),
       m_namesrvIndex(0),
       m_ioServiceWork(m_ioService) {
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__APPLE__)  
   string taskName = UtilAll::getProcessName();
   prctl(PR_SET_NAME, "networkTP", 0, 0, 0);
 #endif
@@ -43,7 +43,7 @@ TcpRemotingClient::TcpRemotingClient(int pullThreadNum,
     m_threadpool.create_thread(
         boost::bind(&boost::asio::io_service::run, &m_ioService));
   }
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__APPLE__)
   prctl(PR_SET_NAME, taskName.c_str(), 0, 0, 0);
 #endif
   LOG_INFO(

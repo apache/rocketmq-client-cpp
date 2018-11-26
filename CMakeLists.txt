@@ -159,7 +159,9 @@ set(deplibs)
 # need to do a more detailed check and also include some extra deplibs.
 list(APPEND deplibs dl)
 list(APPEND deplibs pthread)
-list(APPEND deplibs rt)
+if(NOT APPLE)
+  list(APPEND deplibs rt)
+endif()
 list(APPEND deplibs z)
 
 # add include dir for bsd (posix uses /usr/include/)
