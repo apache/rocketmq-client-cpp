@@ -81,34 +81,6 @@ then execute follow command will auto use these library files to build rocketmq-
 
     win32_build.bat build
 
-	
-
-
-=======
-#### Dependency Installation
-1. install [libevent 2.0.22](https://github.com/libevent/libevent/archive/release-2.0.22-stable.zip "libevent 2.0.22")
-extract libevent to C:/libevent
-open Virtual Studio command line tools, go to dir: C:/libevent
-execute cmd: nmake /f Makefile.nmake
-cp libevent.lib, libevent_extras.lib and libevent_core.lib to C:/libevent/lib
-
-1. install [jsoncpp 0.10.6](https://github.com/open-source-parsers/jsoncpp/archive/0.10.6.zip "jsoncpp 0.10.6")
-extract jsoncpp to C:/jsoncpp
-download [cmake windows tool](https://cmake.org/files/v3.9/cmake-3.9.3-win64-x64.zip "cmake windows tool") and extract
-run cmake-gui.exe, choose your source code dir and build dir, then click generate which will let you choose Virtual Studio version
-open project by VirtualStudio, and build jsoncpp, and jsoncpp.lib will be got
-
-1. install [boost 1.58.0](http://sourceforge.net/projects/boost/files/boost/1.58.0/boost_1_58_0.tar.gz "boost 1.58.0")
-according to following discription: http://www.boost.org/doc/libs/1_56_0/more/getting_started/windows.html
-following build options are needed to be set when run bjam.exe: msvc architecture=x86 address-model=64 link=static runtime-link=static stage
-all lib will be generated except boost_zlib:
-download [zlib source](http://gnuwin32.sourceforge.net/downlinks/zlib-src-zip.php "zlib source") and extract to directory C:/zlib
-run cmd:bjam.exe msvc architecture=x86 address-model=64 link=static runtime-link=static --with-iostreams -s ZLIB_SOURCE=C:\zlib\src\zlib\1.2.3\zlib-1.2.3 stage
-
-#### Make and Install
-run cmake-gui.exe, choose your source code dir and build dir, then click generate which will let you choose VirtualStudio version
-if generate project solution fails, change BOOST_INCLUDEDIR/LIBEVENT_INCLUDE_DIR/JSONCPP_INCLUDE_DIR in CMakeList.txt, according to its real install path
-open&build&run project by VirtualStudio
 
 ## Quick Start ##
 ### tools and commands ###
