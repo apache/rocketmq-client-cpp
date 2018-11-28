@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 #include "task_queue.h"
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__APPLE__)
 #include <sys/prctl.h>
 #endif
 #include "UtilAll.h"
@@ -29,7 +29,7 @@ Task* taskEventFactory::NewInstance(const int& size) const {
 
 taskBatchHandler::taskBatchHandler(int pullMsgThreadPoolNum)
     : m_ioServiceWork(m_ioService) {
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__APPLE__)
   string taskName = UtilAll::getProcessName();
   prctl(PR_SET_NAME, "PullMsgTP", 0, 0, 0);
 #endif
@@ -37,7 +37,7 @@ taskBatchHandler::taskBatchHandler(int pullMsgThreadPoolNum)
     m_threadpool.create_thread(
         boost::bind(&boost::asio::io_service::run, &m_ioService));
   }
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__APPLE__)
   prctl(PR_SET_NAME, taskName.c_str(), 0, 0, 0);
 #endif
 }
