@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include <algorithm>
 #include <boost/detail/endian.hpp>
-#include "RocketMQClient.h"
+#include "CPPCommon.h"
 #include "UtilAll.h"
 //==============================================================================
 /** Contains static methods for converting the byte order between different

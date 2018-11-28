@@ -23,7 +23,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "RocketMQClient.h"
+#include "CPPCommon.h"
 
 namespace rocketmq {
 

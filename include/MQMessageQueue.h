@@ -20,7 +20,7 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
-#include "RocketMQClient.h"
+#include "CPPCommon.h"
 
 namespace rocketmq {
 //<!************************************************************************/

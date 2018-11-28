@@ -16,23 +16,6 @@
  */
 #ifndef __ROCKETMQCLIENT_H__
 #define __ROCKETMQCLIENT_H__
-#ifdef WIN32
-#ifdef ROCKETMQCLIENT_EXPORTS
-#ifdef _WINDLL
-#define ROCKETMQCLIENT_API __declspec(dllexport)
-#else
-#define ROCKETMQCLIENT_API
-#endif
-#else
-#ifdef ROCKETMQCLIENT_IMPORT
-#define ROCKETMQCLIENT_API __declspec(dllimport)
-#else
-#define ROCKETMQCLIENT_API
-#endif
-#endif
-#else
-#define ROCKETMQCLIENT_API
-#endif
 
 /** A platform-independent 8-bit signed integer type. */
 typedef signed char int8;

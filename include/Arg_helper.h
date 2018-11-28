@@ -20,7 +20,7 @@
 
 #include <string>
 #include <vector>
-#include "RocketMQClient.h"
+#include "CPPCommon.h"
 
 namespace rocketmq {
 //<!***************************************************************************

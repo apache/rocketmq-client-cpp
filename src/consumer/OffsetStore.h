@@ -22,7 +22,6 @@
 #include <boost/thread/thread.hpp>
 #include <map>
 #include "MQMessageQueue.h"
-#include "RocketMQClient.h"
 #include "SessionCredentials.h"
 
 namespace rocketmq {
