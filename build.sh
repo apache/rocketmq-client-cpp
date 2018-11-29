@@ -3,8 +3,7 @@ basepath=$(cd `dirname $0`; pwd)
 down_dir="${basepath}/tmp_down_dir"
 build_dir="${basepath}/tmp_build_dir"
 packet_dir="${basepath}/tmp_packet_dir"
-sys_lib_dir="/usr/local/lib"
-bin_dir="${basepath}/bin"
+install_lib_dir="${basepath}/bin"
 fname_libevent="libevent*.zip"
 fname_jsoncpp="jsoncpp*.zip"
 fname_boost="boost*.tar.gz"
@@ -77,8 +76,8 @@ function Prepare()
     if [ -e ${down_dir} ]
     then
         echo "${down_dir} is exist"
-        cd ${down_dir}
-        ls |grep -v ${fname_libevent} |grep -v ${fname_jsoncpp} | grep -v ${fname_boost} |xargs sudo rm -rf
+        #cd ${down_dir}
+        #ls |grep -v ${fname_libevent} |grep -v ${fname_jsoncpp} | grep -v ${fname_boost} |xargs rm -rf
     else
         mkdir -p ${down_dir}
     fi
@@ -102,7 +101,7 @@ function Prepare()
     if [ -e ${build_dir} ]
     then
         echo "${build_dir} is exist"
-        sudo rm -rf ${build_dir}/*
+        #rm -rf ${build_dir}/*
     else
         mkdir -p ${build_dir}
     fi
@@ -110,9 +109,16 @@ function Prepare()
     if [ -e ${packet_dir} ]
     then
         echo "${packet_dir} is exist"
-        sudo rm -rf ${packet_dir}/*
+        #rm -rf ${packet_dir}/*
     else
         mkdir -p ${packet_dir}
+    fi
+
+    if [ -e ${install_lib_dir} ]
+    then
+        echo "${install_lib_dir} is exist"
+    else
+        mkdir -p ${install_lib_dir}
     fi
 }
 
@@ -136,7 +142,6 @@ function BuildLibevent()
     fi
 
     libevent_dir=`ls | grep libevent | grep .*[^zip]$`
-    echo ${libevent_dir}
     cd ${libevent_dir}
     if [ $? -ne 0 ];then
         exit 1
@@ -145,8 +150,8 @@ function BuildLibevent()
     if [ $? -ne 0 ];then
         exit 1
     fi
-    echo "build libevent static #####################"
-    ./configure --disable-openssl --enable-static=yes --enable-shared=no CFLAGS=-fPIC CPPFLAGS=-fPIC
+    echo "build libevent static #####################"    
+    ./configure --disable-openssl --enable-static=yes --enable-shared=no CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir}
     if [ $? -ne 0 ];then
         exit 1
     fi    
@@ -154,7 +159,7 @@ function BuildLibevent()
     if [ $? -ne 0 ];then
         exit 1
     fi
-    sudo make install
+    make install
 }
 
 
@@ -183,8 +188,8 @@ function BuildJsonCPP()
         exit 1
     fi
     mkdir build; cd build
-	echo "build jsoncpp static #####################"
-	cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF
+    echo "build jsoncpp static #####################"
+    cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${install_lib_dir}
     if [ $? -ne 0 ];then
         exit 1
     fi    
@@ -192,7 +197,7 @@ function BuildJsonCPP()
     if [ $? -ne 0 ];then
         exit 1
     fi
-    sudo make install
+    make install
 }
 
 function BuildBoost()
@@ -220,7 +225,7 @@ function BuildBoost()
         exit 1
     fi    
     echo "build boost static #####################"
-    sudo ./b2 cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static runtime-link=static release install
+    ./b2 cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static runtime-link=static release install --prefix=${install_lib_dir}
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -234,19 +239,16 @@ function BuildRocketMQClient()
     if [ $? -ne 0 ];then
         exit 1
     fi        
-    sudo make install
-	
+    #sudo make install
     PackageRocketMQStatic
 }
 
 function PackageRocketMQStatic()
 {
     #packet libevent,jsoncpp,boost,rocketmq,Signature to one librocketmq.a
+    cp -f ${basepath}/libs/signature/lib/libSignature.a ${install_lib_dir}/lib
     ar -M < ${basepath}/package_rocketmq.mri
-    sudo rm -rf ${sys_lib_dir}/librocketmq.a
-    sudo rm -rf ${sys_lib_dir}/libSignature.a
-    cp -f librocketmq.a ${bin_dir}
-    sudo cp -f librocketmq.a ${sys_lib_dir}/
+    cp -f librocketmq.a ${install_lib_dir}
 }
 
 PrintParams
