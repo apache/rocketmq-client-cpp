@@ -193,6 +193,14 @@ int UnregisterMessageCallback(CPushConsumer *consumer) {
     }
     return OK;
 }
+
+int setMessageModel(CPushConsumer *consumer, CMessageModel messageModel){
+    if(conusmer == NULL){
+        return NULL_POINTER;
+    }
+    ((DefaultMQPushConsumer *) consumer)->setMessageModel(MessageModel((int)messageModel));
+    return OK;
+}
 int SetPushConsumerThreadCount(CPushConsumer *consumer, int threadCount) {
     if (consumer == NULL || threadCount == 0) {
         return NULL_POINTER;
