@@ -194,7 +194,7 @@ int UnregisterMessageCallback(CPushConsumer *consumer) {
     return OK;
 }
 
-int setMessageModel(CPushConsumer *consumer, CMessageModel messageModel){
+int SetPushConsumerMessageModel(CPushConsumer *consumer, CMessageModel messageModel){
     if(conusmer == NULL){
         return NULL_POINTER;
     }

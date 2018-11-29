@@ -54,7 +54,7 @@ ROCKETMQCLIENT_API int SetPushConsumerSessionCredentials(CPushConsumer *consumer
 ROCKETMQCLIENT_API int SetPushConsumerLogPath(CPushConsumer *consumer, const char *logPath);
 ROCKETMQCLIENT_API int SetPushConsumerLogFileNumAndSize(CPushConsumer *consumer, int fileNum, long fileSize);
 ROCKETMQCLIENT_API int SetPushConsumerLogLevel(CPushConsumer *consumer, CLogLevel level);
-ROCKETMQCLIENT_API int setMessageModel(CPushConsumer *consumer, CMessageModel messageModel);
+ROCKETMQCLIENT_API int SetPushConsumerMessageModel(CPushConsumer *consumer, CMessageModel messageModel);
   
 #ifdef __cplusplus
 };
