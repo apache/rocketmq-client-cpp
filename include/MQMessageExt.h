@@ -61,6 +61,9 @@ class ROCKETMQCLIENT_API MQMessageExt : public MQMessage {
   const std::string& getMsgId() const;
   void setMsgId(const std::string& msgId);
 
+  const std::string& getOffsetMsgId() const;
+  void setOffsetMsgId(const std::string& offsetMsgId);
+
   int getSysFlag() const;
   void setSysFlag(int sysFlag);
 
@@ -111,6 +114,7 @@ class ROCKETMQCLIENT_API MQMessageExt : public MQMessage {
   sockaddr m_bornHost;
   sockaddr m_storeHost;
   std::string m_msgId;
+  std::string m_offsetMsgId;
 };
 //<!***************************************************************************
 }  //<!end namespace;
