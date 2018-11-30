@@ -17,7 +17,6 @@
 
 #ifndef __C_COMMON_H__
 #define __C_COMMON_H__
-#include "RocketMQClient.h"
 
 #ifdef __cplusplus
 extern "C" {
