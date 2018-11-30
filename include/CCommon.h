@@ -61,6 +61,11 @@ typedef enum _CLogLevel_{
 #define ROCKETMQCLIENT_API
 #endif
 
+typedef enum _CMessageModel_{
+    BROADCASTING,
+    CLUSTERING
+} CMessageModel;
+
 #ifdef __cplusplus
 };
 #endif

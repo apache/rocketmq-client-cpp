@@ -43,7 +43,10 @@ ROCKETMQCLIENT_API int SetPushConsumerGroupID(CPushConsumer *consumer, const cha
 ROCKETMQCLIENT_API const char *GetPushConsumerGroupID(CPushConsumer *consumer);
 ROCKETMQCLIENT_API int SetPushConsumerNameServerAddress(CPushConsumer *consumer, const char *namesrv);
 ROCKETMQCLIENT_API int Subscribe(CPushConsumer *consumer, const char *topic, const char *expression);
+ROCKETMQCLIENT_API int RegisterMessageCallbackOrderly(CPushConsumer *consumer, MessageCallBack pCallback);
 ROCKETMQCLIENT_API int RegisterMessageCallback(CPushConsumer *consumer, MessageCallBack pCallback);
+ROCKETMQCLIENT_API int UnregisterMessageCallbackOrderly(CPushConsumer *consumer);
+ROCKETMQCLIENT_API int UnregisterMessageCallback(CPushConsumer *consumer);
 ROCKETMQCLIENT_API int SetPushConsumerThreadCount(CPushConsumer *consumer, int threadCount);
 ROCKETMQCLIENT_API int SetPushConsumerMessageBatchMaxSize(CPushConsumer *consumer, int batchSize);
 ROCKETMQCLIENT_API int SetPushConsumerInstanceName(CPushConsumer *consumer, const char *instanceName);
@@ -51,6 +54,7 @@ ROCKETMQCLIENT_API int SetPushConsumerSessionCredentials(CPushConsumer *consumer
 ROCKETMQCLIENT_API int SetPushConsumerLogPath(CPushConsumer *consumer, const char *logPath);
 ROCKETMQCLIENT_API int SetPushConsumerLogFileNumAndSize(CPushConsumer *consumer, int fileNum, long fileSize);
 ROCKETMQCLIENT_API int SetPushConsumerLogLevel(CPushConsumer *consumer, CLogLevel level);
+ROCKETMQCLIENT_API int SetPushConsumerMessageModel(CPushConsumer *consumer, CMessageModel messageModel);
   
 #ifdef __cplusplus
 };
