@@ -23,6 +23,7 @@
 #include <vector>
 #include "RocketMQClient.h"
 
+
 namespace rocketmq {
 //<!***************************************************************************
 class ROCKETMQCLIENT_API MQMessage {

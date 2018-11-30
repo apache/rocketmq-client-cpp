@@ -18,6 +18,7 @@
 #ifndef __C_PULL_CONSUMER_H__
 #define __C_PULL_CONSUMER_H__
 
+#include "CCommon.h"
 #include "CMessageExt.h"
 #include "CMessageQueue.h"
 #include "CPullResult.h"

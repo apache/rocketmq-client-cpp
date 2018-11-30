@@ -40,10 +40,31 @@ typedef enum _CLogLevel_{
     E_LOG_LEVEL_TRACE = 6,
     E_LOG_LEVEL_LEVEL_NUM = 7
 } CLogLevel;
+
+
+#ifdef WIN32
+#ifdef ROCKETMQCLIENT_EXPORTS
+#ifdef _WINDLL
+#define ROCKETMQCLIENT_API __declspec(dllexport)
+#else
+#define ROCKETMQCLIENT_API
+#endif
+#else
+#ifdef ROCKETMQCLIENT_IMPORT
+#define ROCKETMQCLIENT_API __declspec(dllimport)
+#else
+#define ROCKETMQCLIENT_API
+#endif
+#endif
+#else
+#define ROCKETMQCLIENT_API
+#endif
+
 typedef enum _CMessageModel_{
     BROADCASTING,
     CLUSTERING
 } CMessageModel;
+
 #ifdef __cplusplus
 };
 #endif

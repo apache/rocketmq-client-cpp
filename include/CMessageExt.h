@@ -18,7 +18,7 @@
 #ifndef __C_MESSAGE_EXT_H__
 #define __C_MESSAGE_EXT_H__
 
-#include "RocketMQClient.h"
+#include "CCommon.h"
 
 #ifdef __cplusplus
 extern "C" {

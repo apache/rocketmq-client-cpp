@@ -19,7 +19,6 @@
 #define __CLIENTRPCHOOK_H__
 
 #include "RemotingCommand.h"
-#include "RocketMQClient.h"
 #include "SessionCredentials.h"
 namespace rocketmq {
 class RPCHook {

@@ -23,6 +23,7 @@
 #include <string>
 #include "RocketMQClient.h"
 
+
 namespace rocketmq {
 //<!***************************************************************************
 class ROCKETMQCLIENT_API MQException : public std::exception {
