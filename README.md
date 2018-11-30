@@ -51,7 +51,7 @@ build.sh script will automatic download and build the dependency libraries inclu
 
 if you can't get to internet to download three library source files by build.sh script, you can copy three library source files (release-2.0.22-stable.zip  0.10.6.zip and boost_1_58_0.tar.gz) to rocketmq-client-cpp root dir, then build.sh will auto use these three library source files to build rocketmq-client-cpp.
 
-    sudo sh build.sh
+    sh build.sh
 
 Finally, both librocketmq.a and librocketmq.so are saved in rocketmq-client-cpp/bin. when use them to build application or library, besides rocketmq you also should link with following libraries -lpthread -lz -ldl -lrt.
 
