@@ -40,6 +40,10 @@ typedef enum _CLogLevel_{
     E_LOG_LEVEL_TRACE = 6,
     E_LOG_LEVEL_LEVEL_NUM = 7
 } CLogLevel;
+typedef enum _CMessageModel_{
+    BROADCASTING,
+    CLUSTERING
+} CMessageModel;
 #ifdef __cplusplus
 };
 #endif
