@@ -42,42 +42,66 @@ option(BUILD_ROCKETMQ_STATIC "build rocketmq-client static library" ON)
 option(BUILD_ROCKETMQ_SHARED "build rocketmq-client shared library" ON)
 
 #Find dependency 
-set(BOOST_INCLUDEDIR /usr/local/include/)
-#set(BOOST_INCLUDEDIR C:/boost_1_56_0/)
 option(Boost_USE_STATIC_LIBS    "only find boost static libs"     ON) # only find static libs
 set(Boost_USE_MULTITHREADED          ON)
 set(Boost_USE_STATIC_RUNTIME         ON)
 if(WIN32)
     find_package(Boost 1.56 REQUIRED COMPONENTS atomic thread system chrono date_time
         log log_setup regex serialization filesystem locale iostreams zlib)
+    if(Boost_FOUND)
+        message(status "** Boost Include dir: ${Boost_INCLUDE_DIR}")
+        message(status "** Boost Libraries dir: ${Boost_LIBRARY_DIRS}")
+        message(status "** Boost Libraries: ${Boost_LIBRARIES}")
+        include_directories(${Boost_INCLUDE_DIRS})
+    endif()    
 else()
-    find_package(Boost 1.56 REQUIRED COMPONENTS atomic thread system chrono date_time log log_setup regex serialization filesystem locale iostreams) 
-endif()
-
-if(Boost_FOUND)
-    message(status "** Boost Include dir: ${Boost_INCLUDE_DIR}")
-    message(status "** Boost Libraries dir: ${Boost_LIBRARY_DIRS}")
-    message(status "** Boost Libraries: ${Boost_LIBRARIES}")
+    #find_package(Boost 1.56 REQUIRED COMPONENTS atomic thread system chrono date_time log log_setup regex serialization filesystem locale iostreams) 
+    set(Boost_INCLUDE_DIR    ${PROJECT_SOURCE_DIR}/bin/include)
+    set(Boost_LIBRARY_DIRS    ${PROJECT_SOURCE_DIR}/bin/lib)
+    set(Boost_LIBRARIES      ${Boost_LIBRARY_DIRS}/libboost_atomic.a;${Boost_LIBRARY_DIRS}/libboost_thread.a;${Boost_LIBRARY_DIRS}/libboost_system.a;${Boost_LIBRARY_DIRS}/libboost_chrono.a;
+        ${Boost_LIBRARY_DIRS}/libboost_date_time.a;${Boost_LIBRARY_DIRS}/libboost_log.a;${Boost_LIBRARY_DIRS}/libboost_log_setup.a;
+        ${Boost_LIBRARY_DIRS}/libboost_regex.a;${Boost_LIBRARY_DIRS}/libboost_serialization.a;${Boost_LIBRARY_DIRS}/libboost_filesystem.a;
+        ${Boost_LIBRARY_DIRS}/libboost_locale.a;${Boost_LIBRARY_DIRS}/libboost_iostreams.a)
     include_directories(${Boost_INCLUDE_DIRS})
 endif()
 
-#set(LIBEVENT_INCLUDE_DIR /usr/local/include/)
+message(status "** Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
+message(status "** Boost_LIBRARIES: ${Boost_LIBRARIES}")
+
 option(Libevent_USE_STATIC_LIBS "only find libevent static libs"   ON) # only find static libs
-#set(Libevent_DIR    /usr/local/lib/) # only find static libs
-find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
-
-if(LIBEVENT_FOUND)
+if(WIN32)
+    find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
+    if(LIBEVENT_FOUND)
+        include_directories(${LIBEVENT_INCLUDE_DIRS})
+        message(status "** libevent Include dir: ${LIBEVENT_INCLUDE_DIR}")
+        message(status "** libevent Libraries: ${LIBEVENT_LIBRARIES}")
+    endif()
+else()
+    #find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
+    set(LIBEVENT_INCLUDE_DIRS  ${PROJECT_SOURCE_DIR}/bin/include)
+    set(LIBEVENT_LIBRARIES_DIR ${PROJECT_SOURCE_DIR}/bin/lib)
+    set(LIBEVENT_LIBRARIES     ${LIBEVENT_LIBRARIES_DIR}/libevent.a;${LIBEVENT_LIBRARIES_DIR}/libevent_core.a;${LIBEVENT_LIBRARIES_DIR}/libevent_extra.a;${LIBEVENT_LIBRARIES_DIR}/libevent_pthreads.a)
     include_directories(${LIBEVENT_INCLUDE_DIRS})
-    message(status "** libevent Include dir: ${LIBEVENT_INCLUDE_DIR}")
-    message(status "** libevent Libraries: ${LIBEVENT_LIBRARIES}")
 endif()
 
-#set(JSONCPP_INCLUDE_DIRS C:/jsoncpp-0.10.6/include)
+message(status "** LIBEVENT_INCLUDE_DIR: ${LIBEVENT_INCLUDE_DIR}")
+message(status "** LIBEVENT_LIBRARIES: ${LIBEVENT_LIBRARIES}")
+
 option(JSONCPP_USE_STATIC_LIBS  "only find jsoncpp static libs"  ON) # only find static libs
-find_package(Jsoncpp 0.10.6)
-if(JSONCPP_FOUND)
-   include_directories(${JSONCPP_INCLUDE_DIRS})
+if(WIN32)
+    find_package(Jsoncpp 0.10.6)
+    if(JSONCPP_FOUND)
+        include_directories(${JSONCPP_INCLUDE_DIRS})
+    endif()
+else()
+    set(JSONCPP_INCLUDE_DIRS   ${PROJECT_SOURCE_DIR}/bin/include/jsoncpp)
+    set(JSONCPP_LIBRARIES_DIR  ${PROJECT_SOURCE_DIR}/bin/lib)
+    set(JSONCPP_LIBRARIES      ${JSONCPP_LIBRARIES_DIR}/libjsoncpp.a)
+    include_directories(${JSONCPP_INCLUDE_DIRS})
 endif()
+
+message(status "** JSONCPP_INCLUDE_DIRS: ${JSONCPP_INCLUDE_DIRS}")
+message(status "** JSONCPP_LIBRARIES: ${JSONCPP_LIBRARIES}")
 
 # put binaries in a different dir to make them easier to find.
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
@@ -107,7 +131,6 @@ set(C_FLAGS
 )
 set(CXX_FLAGS
  #-g
- -O2
  -Wall
  -Wno-deprecated
  -fPIC

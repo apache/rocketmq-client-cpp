@@ -62,7 +62,7 @@ find_path(LIBEVENT_INCLUDE_DIR
     WIN32-Code/event2/event-config.h
     event2/event-config.h
     event-config.h
-  PATHS /usr/include /usr/local/include C:/libevent/include ${CMAKE_SOURCE_DIR}/win32-deps/include
+  PATHS ${CMAKE_SOURCE_DIR}/bin/include C:/libevent/include ${CMAKE_SOURCE_DIR}/win32-deps/include
   HINTS
     ${PC_LIBEVENT_INCLUDE_DIRS}
 )
@@ -114,7 +114,7 @@ foreach(COMPONENT ${Libevent_FIND_COMPONENTS})
   message(status "** ${_LIBEVENT_LIBNAME}")
   find_library(LIBEVENT_${COMPONENT_UPPER}_LIBRARY
     NAMES ${_LIBEVENT_LIBNAME}
-    PATHS C:/libevent-2.0.22-stable C:/libevent-2.0.22-stable/lib C:/libevent/lib ${CMAKE_SOURCE_DIR}/win32-deps/lib /usr/lib /usr/local/lib
+    PATHS ${CMAKE_SOURCE_DIR}/bin/lib C:/libevent-2.0.22-stable C:/libevent-2.0.22-stable/lib C:/libevent/lib ${CMAKE_SOURCE_DIR}/win32-deps/lib
     HINTS ${PC_LIBEVENT_LIBRARY_DIRS}
   )
   if(LIBEVENT_${COMPONENT_UPPER}_LIBRARY)
