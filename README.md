@@ -4,7 +4,7 @@ RocketMQ-Client-CPP is the C/C++ client of Apache RocketMQ which is a distribute
 
 ## Features ##
 
-- produce message, include sync and asynce produce message, timed and delay message. 
+- produce message, include sync and async produce message, timed and delay message. 
 
 - consume message, include concurrency and orderly consume message, broadcast and cluster consume model.
 
