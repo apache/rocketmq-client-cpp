@@ -158,6 +158,7 @@ int RegisterMessageCallbackOrderly(CPushConsumer *consumer, MessageCallBack pCal
     MessageListenerOrderlyInner *messageListenerOrderlyInner = new MessageListenerOrderlyInner(consumer,pCallback);
     ((DefaultMQPushConsumer *) consumer)->registerMessageListener(messageListenerOrderlyInner);
     g_OrderListenerMap[consumer] = messageListenerOrderlyInner;
+    return OK;
 }
 
 
@@ -195,7 +196,7 @@ int UnregisterMessageCallback(CPushConsumer *consumer) {
 }
 
 int SetPushConsumerMessageModel(CPushConsumer *consumer, CMessageModel messageModel){
-    if(conusmer == NULL){
+    if(consumer == NULL){
         return NULL_POINTER;
     }
     ((DefaultMQPushConsumer *) consumer)->setMessageModel(MessageModel((int)messageModel));
