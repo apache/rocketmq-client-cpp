@@ -15,6 +15,9 @@
  
 cmake_minimum_required(VERSION 2.8)
 
+if (APPLE)
+    set(CMAKE_MACOSX_RPATH 1)
+endif (APPLE)
 
 # CMake complains if we don't have this.
 if (COMMAND cmake_policy)
