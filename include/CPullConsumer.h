@@ -18,6 +18,7 @@
 #ifndef __C_PULL_CONSUMER_H__
 #define __C_PULL_CONSUMER_H__
 
+#include "CCommon.h"
 #include "CMessageExt.h"
 #include "CMessageQueue.h"
 #include "CPullResult.h"
@@ -25,6 +26,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 typedef struct CPullConsumer CPullConsumer;
 
@@ -42,9 +44,11 @@ int SetPullConsumerLogPath(CPullConsumer *consumer, const char *logPath);
 int SetPullConsumerLogFileNumAndSize(CPullConsumer *consumer, int fileNum, long fileSize);
 int SetPullConsumerLogLevel(CPullConsumer *consumer, CLogLevel level);
 
-int fetchSubscribeMessageQueues(CPullConsumer *consumer, const char *topic, CMessageQueue *mqs , int size);
-CPullResult pull(const CMessageQueue *mq, const char *subExpression, long long offset, int maxNums);
+int FetchSubscriptionMessageQueues(CPullConsumer *consumer, const char *topic, CMessageQueue **mqs , int* size);
+int ReleaseSubscriptionMessageQueue(CMessageQueue *mqs);
 
+CPullResult Pull(CPullConsumer *consumer,const CMessageQueue *mq, const char *subExpression, long long offset, int maxNums);
+int ReleasePullResult(CPullResult pullResult);
 #ifdef __cplusplus
 };
 #endif

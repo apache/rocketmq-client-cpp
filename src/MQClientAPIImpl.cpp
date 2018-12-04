@@ -514,7 +514,8 @@ SendResult MQClientAPIImpl::processSendResponse(const string& brokerName,
         (SendMessageResponseHeader*)pResponse->getCommandHeader();
     MQMessageQueue messageQueue(msg.getTopic(), brokerName,
                                 responseHeader->queueId);
-    return SendResult(sendStatus, responseHeader->msgId, messageQueue,
+	string unique_msgId = msg.getProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);
+    return SendResult(sendStatus, unique_msgId, responseHeader->msgId, messageQueue,
                       responseHeader->queueOffset);
   }
   LOG_ERROR("processSendResponse error remark:%s, error code:%d",

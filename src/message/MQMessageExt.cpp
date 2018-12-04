@@ -97,6 +97,10 @@ const string& MQMessageExt::getMsgId() const { return m_msgId; }
 
 void MQMessageExt::setMsgId(const string& msgId) { m_msgId = msgId; }
 
+const string& MQMessageExt::getOffsetMsgId() const { return m_offsetMsgId; }
+
+void MQMessageExt::setOffsetMsgId(const string& offsetMsgId) { m_offsetMsgId = offsetMsgId; }
+
 int MQMessageExt::getSysFlag() const { return m_sysFlag; }
 
 void MQMessageExt::setSysFlag(int sysFlag) { m_sysFlag = sysFlag; }

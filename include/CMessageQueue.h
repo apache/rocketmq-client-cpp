@@ -29,6 +29,7 @@ typedef struct _CMessageQueue_ {
     char      brokerName[MAX_BROKER_NAME_ID_LENGTH];
     int       queueId;
 } CMessageQueue;
+
 #ifdef __cplusplus
 };
 #endif
