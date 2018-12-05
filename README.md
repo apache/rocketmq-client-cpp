@@ -14,10 +14,6 @@ RocketMQ-Client-CPP is the C/C++ client of Apache RocketMQ which is a distribute
 
 - across platform, all features are supported on both windows and linux system.
 
-- low latency, publish latency < 2ms, subscribe latency < 10ms
-
-- high tps, rocketmq topic with 16 message queues, stand-alone cpp client can reach publish TPS > 3w and subsricbe TPS > 15w.
-
 - reliability, based on nameServer snapshot and network disaster recovery strategy, no real-time impact on publish and subscribe when anyone of broker or nameSrv was broken.
 
 ## Dependency ##
