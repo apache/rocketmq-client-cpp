@@ -12,7 +12,7 @@ RocketMQ-Client-CPP is the C/C++ client of Apache RocketMQ which is a distribute
 
 - C and C++ API, include both C style and C++ style apis.
 
-- across platform, all features are supported on Windows Mac and Linux platform.
+- across platform, all features are supported on Windows, Mac and Linux platform.
 
 - low latency, publish latency < 2ms, subscribe latency < 10ms
 
