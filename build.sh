@@ -11,7 +11,7 @@ fname_libevent_down="release-2.0.22-stable.zip"
 fname_jsoncpp_down="0.10.6.zip"
 fname_boost_down="1.58.0/boost_1_58_0.tar.gz"
 
-function Help()
+Help()
 {
     echo "=========================================one key build help============================================"
     echo "sh build.sh [build libevent:0/1 default:1] [build json:0/1 default:1] [build boost:0/1 default:1]"
@@ -63,7 +63,7 @@ else
     need_build_boost=1
 fi
 
-function PrintParams()
+PrintParams()
 {
     echo "###########################################################################"
     echo "need_build_libevent: ${need_build_libevent}, need_build_jsoncpp:${need_build_jsoncpp}, need_build_boost:${need_build_boost}"
@@ -71,7 +71,7 @@ function PrintParams()
     echo ""
 }
 
-function Prepare()
+Prepare()
 {
     if [ -e ${down_dir} ]
     then
@@ -122,7 +122,7 @@ function Prepare()
     fi
 }
 
-function BuildLibevent()
+BuildLibevent()
 {
     if [ "${need_build_libevent}" == "0" ];then
         echo "no need build libevent lib"
@@ -162,8 +162,7 @@ function BuildLibevent()
     make install
 }
 
-
-function BuildJsonCPP()
+BuildJsonCPP()
 {
     if [ "${need_build_jsoncpp}" == "0" ];then
         echo "no need build jsoncpp lib"
@@ -200,7 +199,7 @@ function BuildJsonCPP()
     make install
 }
 
-function BuildBoost()
+BuildBoost()
 {
     if [ "${need_build_boost}" == "0" ];then
         echo "no need build boost lib"
@@ -231,7 +230,7 @@ function BuildBoost()
     fi
 }
 
-function BuildRocketMQClient()
+BuildRocketMQClient()
 {
     cd ${build_dir}
     cmake ..
@@ -243,7 +242,7 @@ function BuildRocketMQClient()
     PackageRocketMQStatic
 }
 
-function PackageRocketMQStatic()
+PackageRocketMQStatic()
 {
     #packet libevent,jsoncpp,boost,rocketmq,Signature to one librocketmq.a
     cp -f ${basepath}/libs/signature/lib/libSignature.a ${install_lib_dir}/lib
