@@ -12,7 +12,7 @@ RocketMQ-Client-CPP is the C/C++ client of Apache RocketMQ which is a distribute
 
 - C and C++ API, include both C style and C++ style apis.
 
-- across platform, all features are supported on Windows, Mac and Linux platform.
+- across platform, all features are supported on Windows, Linux and Mac OS.
 
 - low latency, publish latency < 2ms, subscribe latency < 10ms
 
@@ -33,7 +33,7 @@ doc/rocketmq-cpp_manaual_zh.docx
 
 ## Build and Install ##
 
-### Linux and Mac platform ###
+### Linux and Mac OS ###
 
 **note**: *make sure the following compile tools or libraries with them minimum version number have been installed before run the build script build.sh*
 
@@ -57,7 +57,7 @@ Finally, both librocketmq.a and librocketmq.so are saved in rocketmq-client-cpp/
 
     g++ -o consumer_example consumer_example.cpp -lrocketmq -lpthread -lz -ldl -lrt
 
-### Windows platform ###
+### Windows ###
 **note**: *make sure the following compile tools or libraries with them minimum version number have been installed before run the build script win32_build.bat*
 - compile tools:
 	- vs2015: libevent,jsoncpp,zlib,boost rocket-client require it
