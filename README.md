@@ -14,7 +14,7 @@ RocketMQ-Client-CPP is the C/C++ client of Apache RocketMQ which is a distribute
 
 - across platform, all features are supported on Windows, Linux and Mac OS.
 
-- reliability, based on nameServer snapshot and network disaster recovery strategy, no real-time impact on publish and subscribe when anyone of broker or nameSrv was broken.
+- reliability, based on nameserver snapshot and network disaster recovery strategy, no real-time impact on publish and subscribe when anyone of broker or nameserver was broken.
 
 ## Dependency ##
 
@@ -23,9 +23,6 @@ RocketMQ-Client-CPP is the C/C++ client of Apache RocketMQ which is a distribute
 - [jsoncpp 0.10.6](https://github.com/open-source-parsers/jsoncpp/archive/0.10.6.zip  "jsoncpp 0.10.6")
 
 - [boost 1.58.0](http://sourceforge.net/projects/boost/files/boost/1.58.0/boost_1_58_0.tar.gz "boost 1.58.0")
-
-## Documentation ##
-doc/rocketmq-cpp_manaual_zh.docx
 
 ## Build and Install ##
 
