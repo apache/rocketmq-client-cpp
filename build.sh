@@ -11,7 +11,7 @@ fname_libevent_down="release-2.0.22-stable.zip"
 fname_jsoncpp_down="0.10.6.zip"
 fname_boost_down="1.58.0/boost_1_58_0.tar.gz"
 
-function Help()
+PrintParams()
 {
     echo "=========================================one key build help============================================"
     echo "sh build.sh [build libevent:0/1 default:1] [build json:0/1 default:1] [build boost:0/1 default:1]"
@@ -63,7 +63,7 @@ else
     need_build_boost=1
 fi
 
-function PrintParams()
+PrintParams()
 {
     echo "###########################################################################"
     echo "need_build_libevent: ${need_build_libevent}, need_build_jsoncpp:${need_build_jsoncpp}, need_build_boost:${need_build_boost}"
@@ -71,7 +71,7 @@ function PrintParams()
     echo ""
 }
 
-function Prepare()
+Prepare()
 {
     if [ -e ${down_dir} ]
     then
@@ -122,7 +122,7 @@ function Prepare()
     fi
 }
 
-function BuildLibevent()
+BuildLibevent()
 {
     if [ "${need_build_libevent}" == "0" ];then
         echo "no need build libevent lib"
@@ -163,7 +163,7 @@ function BuildLibevent()
 }
 
 
-function BuildJsonCPP()
+BuildJsonCPP()
 {
     if [ "${need_build_jsoncpp}" == "0" ];then
         echo "no need build jsoncpp lib"
@@ -200,7 +200,7 @@ function BuildJsonCPP()
     make install
 }
 
-function BuildBoost()
+BuildBoost()
 {
     if [ "${need_build_boost}" == "0" ];then
         echo "no need build boost lib"
@@ -231,11 +231,11 @@ function BuildBoost()
     fi
 }
 
-function BuildRocketMQClient()
+BuildRocketMQClient()
 {
     cd ${build_dir}
     cmake ..
-    make
+    make -j8
     if [ $? -ne 0 ];then
         exit 1
     fi        
@@ -243,7 +243,36 @@ function BuildRocketMQClient()
     PackageRocketMQStatic
 }
 
-function PackageRocketMQStatic()
+BuildGoogleTest()
+{
+    if [ "${need_build_boost}" == "0" ];then
+        echo "no need google test lib"
+        return 0
+    fi
+
+    cd ${down_dir}
+    if [ -e release-1.8.1.tar.gz ]
+    then
+        echo "${fname_boost} is exist"
+    else
+        wget https://github.com/abseil/googletest/archive/release-1.8.1.tar.gz
+    fi
+    tar -zxvf release-1.8.1.tar.gz
+    cd googletest-release-1.8.1
+    mkdir build; cd build
+    echo "build googletest static #####################"
+    cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${install_lib_dir}
+    if [ $? -ne 0 ];then
+        exit 1
+    fi    
+    make
+    if [ $? -ne 0 ];then
+        exit 1
+    fi
+    make install
+}
+
+PackageRocketMQStatic()
 {
     #packet libevent,jsoncpp,boost,rocketmq,Signature to one librocketmq.a
     cp -f ${basepath}/libs/signature/lib/libSignature.a ${install_lib_dir}/lib
@@ -253,7 +282,8 @@ function PackageRocketMQStatic()
 
 PrintParams
 Prepare
-BuildLibevent
-BuildJsonCPP
-BuildBoost
+#BuildLibevent
+#BuildJsonCPP
+#BuildBoost
+#BuildGoogleTest
 BuildRocketMQClient
