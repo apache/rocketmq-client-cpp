@@ -1,4 +1,6 @@
 .idea
 cmake-build-debug/
+bin 
+libs
 
 tmp_*
