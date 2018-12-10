@@ -253,7 +253,7 @@ BuildRocketMQClient()
 {
     cd ${build_dir}
     cmake ..
-    make -j8
+    make
     if [ $? -ne 0 ];then
         exit 1
     fi        
@@ -307,13 +307,22 @@ ExecutionTesting()
     echo "############################################"
     echo "##################  test  start  ###########"
     cd ${basepath}/test/bin
+    mkdir ./log
     for files in `ls -F`
     do
-        echo "********* execution $files start **************"
-        ./$files
-        echo "********* execution $files end   **************"
+        #./$files 2>&1 > "log/$files.txt"
+
+        erron=`grep "FAILED TEST" log/$files.txt`
+
+        if [ -n "$erron" ]; then
+            echo "##################  find erron ###########"
+            cat log/$files.txt
+
+            echo "##################  end ExecutionTesting ###########"
+            return
+        fi
     done
-     echo "##################  test  end  ###########"
+    echo "##################  test  end  ###########"
     echo "############################################"
 }
 
@@ -325,8 +334,6 @@ PackageRocketMQStatic()
     ar -M < ${basepath}/package_rocketmq.mri
     cp -f librocketmq.a ${install_lib_dir}
 }
-
-
 
 
 PrintParams
