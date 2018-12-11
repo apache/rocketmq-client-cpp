@@ -43,7 +43,7 @@ DefaultMQPullConsumer::DefaultMQPullConsumer(const string& groupname)
   string gname = groupname.empty() ? DEFAULT_CONSUMER_GROUP : groupname;
   setGroupName(gname);
 
-  setMessageModel(BROADCASTING);
+  setMessageModel(CLUSTERING);
 }
 
 DefaultMQPullConsumer::~DefaultMQPullConsumer() {

@@ -14,12 +14,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-#ifndef WIN32
-#include <unistd.h>
-#endif
+
 #include <stdio.h>
-
-
 
 #include "CPullConsumer.h"
 #include "CCommon.h"
@@ -27,6 +23,22 @@
 #include "CPullResult.h"
 #include "CMessageQueue.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+
+#include <unistd.h>
+#include <memory.h>
+
+#endif
+
+void thread_sleep(unsigned milliseconds) {
+#ifdef _WIN32
+    Sleep(milliseconds);
+#else
+    usleep(milliseconds * 1000);  // takes microseconds
+#endif
+}
 
 int main(int argc,char * argv [])
 {
@@ -39,7 +51,7 @@ int main(int argc,char * argv [])
     for( i=0; i<10; i++)
     {
         printf("Now Running : %d S\n",i*10);
-        sleep(10);
+        thread_sleep(10000);
     }
     ShutdownPullConsumer(consumer);
     DestroyPullConsumer(consumer);

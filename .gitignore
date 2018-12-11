@@ -1,6 +1,6 @@
 .idea
 cmake-build-debug/
-bin 
-libs
-
+bin
+build
+libs/signature/lib
 tmp_*
