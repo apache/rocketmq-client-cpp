@@ -39,16 +39,18 @@ int SetPullConsumerGroupID(CPullConsumer *consumer, const char *groupId);
 const char *GetPullConsumerGroupID(CPullConsumer *consumer);
 int SetPullConsumerNameServerAddress(CPullConsumer *consumer, const char *namesrv);
 int SetPullConsumerSessionCredentials(CPullConsumer *consumer, const char *accessKey, const char *secretKey,
-                                     const char *channel);
+                                      const char *channel);
 int SetPullConsumerLogPath(CPullConsumer *consumer, const char *logPath);
 int SetPullConsumerLogFileNumAndSize(CPullConsumer *consumer, int fileNum, long fileSize);
 int SetPullConsumerLogLevel(CPullConsumer *consumer, CLogLevel level);
 
-int FetchSubscriptionMessageQueues(CPullConsumer *consumer, const char *topic, CMessageQueue **mqs , int* size);
+int FetchSubscriptionMessageQueues(CPullConsumer *consumer, const char *topic, CMessageQueue **mqs, int *size);
 int ReleaseSubscriptionMessageQueue(CMessageQueue *mqs);
 
-CPullResult Pull(CPullConsumer *consumer,const CMessageQueue *mq, const char *subExpression, long long offset, int maxNums);
+CPullResult
+Pull(CPullConsumer *consumer, const CMessageQueue *mq, const char *subExpression, long long offset, int maxNums);
 int ReleasePullResult(CPullResult pullResult);
+
 #ifdef __cplusplus
 };
 #endif

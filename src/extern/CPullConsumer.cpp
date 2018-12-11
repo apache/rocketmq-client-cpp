@@ -46,7 +46,11 @@ int StartPullConsumer(CPullConsumer *consumer) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }
-    ((DefaultMQPullConsumer *) consumer)->start();
+    try {
+        ((DefaultMQPullConsumer *) consumer)->start();
+    } catch (exception &e) {
+        return PULLCONSUMER_START_FAILED;
+    }
     return OK;
 }
 int ShutdownPullConsumer(CPullConsumer *consumer) {
@@ -125,7 +129,7 @@ int FetchSubscriptionMessageQueues(CPullConsumer *consumer, const char *topic, C
         if (*mqs == NULL) {
             *size = 0;
             *mqs = NULL;
-            return NULL_POINTER;
+            return MALLOC_FAILED;
         }
         auto iter = fullMQ.begin();
         for (index = 0; iter != fullMQ.end() && index <= fullMQ.size(); ++iter, index++) {
@@ -136,6 +140,7 @@ int FetchSubscriptionMessageQueues(CPullConsumer *consumer, const char *topic, C
     } catch (MQException &e) {
         *size = 0;
         *mqs = NULL;
+        return PULLCONSUMER_FETCH_MQ_FAILED;
     }
     return OK;
 }
@@ -147,12 +152,17 @@ int ReleaseSubscriptionMessageQueue(CMessageQueue *mqs) {
     mqs = NULL;
     return OK;
 }
-CPullResult Pull(CPullConsumer *consumer, const CMessageQueue *mq, const char *subExpression, long long offset, int maxNums) {
+CPullResult
+Pull(CPullConsumer *consumer, const CMessageQueue *mq, const char *subExpression, long long offset, int maxNums) {
     CPullResult pullResult;
     memset(&pullResult, 0, sizeof(CPullResult));
     MQMessageQueue messageQueue(mq->topic, mq->brokerName, mq->queueId);
     PullResult cppPullResult;
-    cppPullResult = ((DefaultMQPullConsumer *) consumer)->pull(messageQueue, subExpression, offset, maxNums);
+    try {
+        cppPullResult = ((DefaultMQPullConsumer *) consumer)->pull(messageQueue, subExpression, offset, maxNums);
+    }catch (exception &e){
+        cppPullResult.pullStatus = BROKER_TIMEOUT;
+    }
 
     switch (cppPullResult.pullStatus) {
         case FOUND: {

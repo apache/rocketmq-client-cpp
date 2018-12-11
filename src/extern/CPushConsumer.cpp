@@ -54,12 +54,13 @@ private:
     CPushConsumer *m_pconsumer;
 };
 
-class MessageListenerOrderlyInner:public MessageListenerOrderly {
+class MessageListenerOrderlyInner : public MessageListenerOrderly {
 public:
-    MessageListenerOrderlyInner(CPushConsumer *consumer, MessageCallBack pCallback){
+    MessageListenerOrderlyInner(CPushConsumer *consumer, MessageCallBack pCallback) {
         m_pconsumer = consumer;
         m_pMsgReceiveCallback = pCallback;
     }
+
     ConsumeStatus consumeMessage(const std::vector<MQMessageExt> &msgs) {
         if (m_pMsgReceiveCallback == NULL) {
             return RECONSUME_LATER;
@@ -72,6 +73,7 @@ public:
         }
         return CONSUME_SUCCESS;
     }
+
 private:
     MessageCallBack m_pMsgReceiveCallback;
     CPushConsumer *m_pconsumer;
@@ -103,7 +105,11 @@ int StartPushConsumer(CPushConsumer *consumer) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }
-    ((DefaultMQPushConsumer *) consumer)->start();
+    try {
+        ((DefaultMQPushConsumer *) consumer)->start();
+    } catch (exception &e) {
+        return PUSHCONSUMER_START_FAILED;
+    }
     return OK;
 }
 int ShutdownPushConsumer(CPushConsumer *consumer) {
@@ -152,10 +158,10 @@ int RegisterMessageCallback(CPushConsumer *consumer, MessageCallBack pCallback) 
 }
 
 int RegisterMessageCallbackOrderly(CPushConsumer *consumer, MessageCallBack pCallback) {
-    if(consumer == NULL || pCallback == NULL){
+    if (consumer == NULL || pCallback == NULL) {
         return NULL_POINTER;
     }
-    MessageListenerOrderlyInner *messageListenerOrderlyInner = new MessageListenerOrderlyInner(consumer,pCallback);
+    MessageListenerOrderlyInner *messageListenerOrderlyInner = new MessageListenerOrderlyInner(consumer, pCallback);
     ((DefaultMQPushConsumer *) consumer)->registerMessageListener(messageListenerOrderlyInner);
     g_OrderListenerMap[consumer] = messageListenerOrderlyInner;
     return OK;
@@ -164,13 +170,13 @@ int RegisterMessageCallbackOrderly(CPushConsumer *consumer, MessageCallBack pCal
 
 int UnregisterMessageCallbackOrderly(CPushConsumer *consumer) {
     if (consumer == NULL) {
-            return NULL_POINTER;
+        return NULL_POINTER;
     }
-    map<CPushConsumer *,MessageListenerOrderlyInner *>::iterator iter;
+    map<CPushConsumer *, MessageListenerOrderlyInner *>::iterator iter;
     iter = g_OrderListenerMap.find(consumer);
-    if(iter != g_OrderListenerMap.end()){
+    if (iter != g_OrderListenerMap.end()) {
         MessageListenerOrderlyInner *listenerInner = iter->second;
-        if(listenerInner != NULL){
+        if (listenerInner != NULL) {
             delete listenerInner;
         }
         g_OrderListenerMap.erase(iter);
@@ -195,11 +201,11 @@ int UnregisterMessageCallback(CPushConsumer *consumer) {
     return OK;
 }
 
-int SetPushConsumerMessageModel(CPushConsumer *consumer, CMessageModel messageModel){
-    if(consumer == NULL){
+int SetPushConsumerMessageModel(CPushConsumer *consumer, CMessageModel messageModel) {
+    if (consumer == NULL) {
         return NULL_POINTER;
     }
-    ((DefaultMQPushConsumer *) consumer)->setMessageModel(MessageModel((int)messageModel));
+    ((DefaultMQPushConsumer *) consumer)->setMessageModel(MessageModel((int) messageModel));
     return OK;
 }
 int SetPushConsumerThreadCount(CPushConsumer *consumer, int threadCount) {
@@ -226,7 +232,7 @@ int SetPushConsumerInstanceName(CPushConsumer *consumer, const char *instanceNam
 }
 
 int SetPushConsumerSessionCredentials(CPushConsumer *consumer, const char *accessKey, const char *secretKey,
-                                     const char *channel) {
+                                      const char *channel) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }
@@ -247,7 +253,7 @@ int SetPushConsumerLogFileNumAndSize(CPushConsumer *consumer, int fileNum, long 
     if (consumer == NULL) {
         return NULL_POINTER;
     }
-    ((DefaultMQPushConsumer *) consumer)->setLogFileSizeAndNum(fileNum,fileSize);
+    ((DefaultMQPushConsumer *) consumer)->setLogFileSizeAndNum(fileNum, fileSize);
     return OK;
 }
 
@@ -255,7 +261,7 @@ int SetPushConsumerLogLevel(CPushConsumer *consumer, CLogLevel level) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }
-    ((DefaultMQPushConsumer *) consumer)->setLogLevel((elogLevel)level);
+    ((DefaultMQPushConsumer *) consumer)->setLogLevel((elogLevel) level);
     return OK;
 }
 
