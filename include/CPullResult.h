@@ -24,8 +24,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-typedef enum E_CPullStatus
-{
+typedef enum E_CPullStatus {
     E_FOUND,
     E_NO_NEW_MSG,
     E_NO_MATCHED_MSG,
@@ -35,11 +34,12 @@ typedef enum E_CPullStatus
 
 typedef struct _CPullResult_ {
     CPullStatus pullStatus;
-    long long  nextBeginOffset;
-    long long  minOffset;
-    long long  maxOffset;
-    CMessageExt** msgFoundList;
+    long long nextBeginOffset;
+    long long minOffset;
+    long long maxOffset;
+    CMessageExt **msgFoundList;
     int size;
+    void *pData;
 } CPullResult;
 
 #ifdef __cplusplus

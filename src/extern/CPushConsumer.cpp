@@ -139,6 +139,13 @@ int SetPushConsumerNameServerAddress(CPushConsumer *consumer, const char *namesr
     ((DefaultMQPushConsumer *) consumer)->setNamesrvAddr(namesrv);
     return OK;
 }
+int SetPushConsumerNameServerDomain(CPushConsumer *consumer, const char *domain) {
+    if (consumer == NULL) {
+        return NULL_POINTER;
+    }
+    ((DefaultMQPushConsumer *) consumer)->setNamesrvDomain(domain);
+    return OK;
+}
 int Subscribe(CPushConsumer *consumer, const char *topic, const char *expression) {
     if (consumer == NULL) {
         return NULL_POINTER;

@@ -85,7 +85,13 @@ int SetProducerNameServerAddress(CProducer *producer, const char *namesrv) {
     ((DefaultMQProducer *) producer)->setNamesrvAddr(namesrv);
     return OK;
 }
-
+int SetProducerNameServerDomain(CProducer *producer, const char *domain) {
+    if (producer == NULL) {
+        return NULL_POINTER;
+    }
+    ((DefaultMQProducer *) producer)->setNamesrvDomain(domain);
+    return OK;
+}
 int SendMessageSync(CProducer *producer, CMessage *msg, CSendResult *result) {
     //CSendResult sendResult;
     if (producer == NULL || msg == NULL || result == NULL) {
