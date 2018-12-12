@@ -25,21 +25,23 @@
 extern "C" {
 #endif
 using namespace rocketmq;
+using namespace std;
 
 class SelectMessageQueue : public MessageQueueSelector {
- public:
-    SelectMessageQueue(QueueSelectorCallback callback){
+public:
+    SelectMessageQueue(QueueSelectorCallback callback) {
         m_pCallback = callback;
     }
 
     MQMessageQueue select(const std::vector<MQMessageQueue> &mqs,
-                        const MQMessage &msg, void *arg) {
-        CMessage * message = (CMessage *) &msg;
+                          const MQMessage &msg, void *arg) {
+        CMessage *message = (CMessage *) &msg;
         //Get the index of sending MQMessageQueue through callback function.
-        int index = m_pCallback(mqs.size(),message,arg);
+        int index = m_pCallback(mqs.size(), message, arg);
         return mqs[index];
     }
-  private:
+
+private:
     QueueSelectorCallback m_pCallback;
 };
 
@@ -62,7 +64,11 @@ int StartProducer(CProducer *producer) {
     if (producer == NULL) {
         return NULL_POINTER;
     }
-    ((DefaultMQProducer *) producer)->start();
+    try {
+        ((DefaultMQProducer *) producer)->start();
+    } catch (exception &e) {
+        return PRODUCER_START_FAILED;
+    }
     return OK;
 }
 int ShutdownProducer(CProducer *producer) {
@@ -85,57 +91,70 @@ int SendMessageSync(CProducer *producer, CMessage *msg, CSendResult *result) {
     if (producer == NULL || msg == NULL || result == NULL) {
         return NULL_POINTER;
     }
-    DefaultMQProducer *defaultMQProducer = (DefaultMQProducer *) producer;
-    MQMessage *message = (MQMessage *) msg;
-    SendResult sendResult = defaultMQProducer->send(*message);
-    switch (sendResult.getSendStatus()) {
-        case SEND_OK:
-            result->sendStatus = E_SEND_OK;
-            break;
-        case SEND_FLUSH_DISK_TIMEOUT:
-            result->sendStatus = E_SEND_FLUSH_DISK_TIMEOUT;
-            break;
-        case SEND_FLUSH_SLAVE_TIMEOUT:
-            result->sendStatus = E_SEND_FLUSH_SLAVE_TIMEOUT;
-            break;
-        case SEND_SLAVE_NOT_AVAILABLE:
-            result->sendStatus = E_SEND_SLAVE_NOT_AVAILABLE;
-            break;
-        default:
-            result->sendStatus = E_SEND_OK;
-            break;
+    try {
+        DefaultMQProducer *defaultMQProducer = (DefaultMQProducer *) producer;
+        MQMessage *message = (MQMessage *) msg;
+        SendResult sendResult = defaultMQProducer->send(*message);
+        switch (sendResult.getSendStatus()) {
+            case SEND_OK:
+                result->sendStatus = E_SEND_OK;
+                break;
+            case SEND_FLUSH_DISK_TIMEOUT:
+                result->sendStatus = E_SEND_FLUSH_DISK_TIMEOUT;
+                break;
+            case SEND_FLUSH_SLAVE_TIMEOUT:
+                result->sendStatus = E_SEND_FLUSH_SLAVE_TIMEOUT;
+                break;
+            case SEND_SLAVE_NOT_AVAILABLE:
+                result->sendStatus = E_SEND_SLAVE_NOT_AVAILABLE;
+                break;
+            default:
+                result->sendStatus = E_SEND_OK;
+                break;
+        }
+        result->offset = sendResult.getQueueOffset();
+        strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+        result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
+    } catch (exception &e) {
+        return PRODUCER_SEND_SYNC_FAILED;
     }
-    result->offset = sendResult.getQueueOffset();
-    //strcpy(result->msgId, sendResult.getMsgId().c_str());
-    strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
-    result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
     return OK;
 }
 
-int SendMessageOneway(CProducer *producer,CMessage *msg) {
+int SendMessageOneway(CProducer *producer, CMessage *msg) {
     if (producer == NULL || msg == NULL) {
         return NULL_POINTER;
     }
     DefaultMQProducer *defaultMQProducer = (DefaultMQProducer *) producer;
     MQMessage *message = (MQMessage *) msg;
-    defaultMQProducer->sendOneway(*message);
+    try {
+        defaultMQProducer->sendOneway(*message);
+    } catch (exception &e) {
+        return PRODUCER_SEND_ONEWAY_FAILED;
+    }
     return OK;
 }
 
-int SendMessageOrderly(CProducer *producer, CMessage *msg, QueueSelectorCallback callback, void *arg, int autoRetryTimes, CSendResult *result) {
-    if(producer == NULL || msg == NULL || callback == NULL || arg == NULL || result == NULL){
+int
+SendMessageOrderly(CProducer *producer, CMessage *msg, QueueSelectorCallback callback, void *arg, int autoRetryTimes,
+                   CSendResult *result) {
+    if (producer == NULL || msg == NULL || callback == NULL || arg == NULL || result == NULL) {
         return NULL_POINTER;
     }
     DefaultMQProducer *defaultMQProducer = (DefaultMQProducer *) producer;
     MQMessage *message = (MQMessage *) msg;
-    //Constructing SelectMessageQueue objects through function pointer callback
-    SelectMessageQueue selectMessageQueue(callback);
-    SendResult sendResult = defaultMQProducer->send(*message,&selectMessageQueue,arg,autoRetryTimes);
-    //Convert SendStatus to CSendStatus
-    result->sendStatus = CSendStatus((int)sendResult.getSendStatus());
-    result->offset = sendResult.getQueueOffset();
-    strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
-    result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
+    try {
+        //Constructing SelectMessageQueue objects through function pointer callback
+        SelectMessageQueue selectMessageQueue(callback);
+        SendResult sendResult = defaultMQProducer->send(*message, &selectMessageQueue, arg, autoRetryTimes);
+        //Convert SendStatus to CSendStatus
+        result->sendStatus = CSendStatus((int) sendResult.getSendStatus());
+        result->offset = sendResult.getQueueOffset();
+        strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+        result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
+    } catch (exception &e) {
+        return PRODUCER_SEND_ORDERLY_FAILED;
+    }
     return OK;
 }
 
