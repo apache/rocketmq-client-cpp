@@ -42,6 +42,7 @@ ROCKETMQCLIENT_API int ShutdownPushConsumer(CPushConsumer *consumer);
 ROCKETMQCLIENT_API int SetPushConsumerGroupID(CPushConsumer *consumer, const char *groupId);
 ROCKETMQCLIENT_API const char *GetPushConsumerGroupID(CPushConsumer *consumer);
 ROCKETMQCLIENT_API int SetPushConsumerNameServerAddress(CPushConsumer *consumer, const char *namesrv);
+ROCKETMQCLIENT_API int SetPushConsumerNameServerDomain(CPushConsumer *consumer, const char *domain);
 ROCKETMQCLIENT_API int Subscribe(CPushConsumer *consumer, const char *topic, const char *expression);
 ROCKETMQCLIENT_API int RegisterMessageCallbackOrderly(CPushConsumer *consumer, MessageCallBack pCallback);
 ROCKETMQCLIENT_API int RegisterMessageCallback(CPushConsumer *consumer, MessageCallBack pCallback);

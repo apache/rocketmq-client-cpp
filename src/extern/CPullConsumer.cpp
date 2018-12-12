@@ -80,6 +80,13 @@ int SetPullConsumerNameServerAddress(CPullConsumer *consumer, const char *namesr
     ((DefaultMQPullConsumer *) consumer)->setNamesrvAddr(namesrv);
     return OK;
 }
+int SetPullConsumerNameServerDomain(CPullConsumer *consumer, const char *domain) {
+    if (consumer == NULL) {
+        return NULL_POINTER;
+    }
+    ((DefaultMQPullConsumer *) consumer)->setNamesrvDomain(domain);
+    return OK;
+}
 int SetPullConsumerSessionCredentials(CPullConsumer *consumer, const char *accessKey, const char *secretKey,
                                       const char *channel) {
     if (consumer == NULL) {
@@ -119,24 +126,26 @@ int FetchSubscriptionMessageQueues(CPullConsumer *consumer, const char *topic, C
         return NULL_POINTER;
     }
     unsigned int index = 0;
+    CMessageQueue *temMQ = NULL;
     std::vector<MQMessageQueue> fullMQ;
     try {
         ((DefaultMQPullConsumer *) consumer)->fetchSubscribeMessageQueues(topic, fullMQ);
         *size = fullMQ.size();
         //Alloc memory to save the pointer to CPP MessageQueue, and the MessageQueues may be changed.
         //Thus, this memory should be released by users using @ReleaseSubscribeMessageQueue every time.
-        *mqs = (CMessageQueue *) malloc(*size * sizeof(CMessageQueue));
-        if (*mqs == NULL) {
+        temMQ = (CMessageQueue *) malloc(*size * sizeof(CMessageQueue));
+        if (temMQ == NULL) {
             *size = 0;
             *mqs = NULL;
             return MALLOC_FAILED;
         }
         auto iter = fullMQ.begin();
         for (index = 0; iter != fullMQ.end() && index <= fullMQ.size(); ++iter, index++) {
-            strncpy(mqs[index]->topic, iter->getTopic().c_str(), MAX_TOPIC_LENGTH - 1);
-            strncpy(mqs[index]->brokerName, iter->getBrokerName().c_str(), MAX_BROKER_NAME_ID_LENGTH - 1);
-            mqs[index]->queueId = iter->getQueueId();
+            strncpy(temMQ[index].topic, iter->getTopic().c_str(), MAX_TOPIC_LENGTH - 1);
+            strncpy(temMQ[index].brokerName, iter->getBrokerName().c_str(), MAX_BROKER_NAME_ID_LENGTH - 1);
+            temMQ[index].queueId = iter->getQueueId();
         }
+        *mqs = temMQ;
     } catch (MQException &e) {
         *size = 0;
         *mqs = NULL;
@@ -160,7 +169,7 @@ Pull(CPullConsumer *consumer, const CMessageQueue *mq, const char *subExpression
     PullResult cppPullResult;
     try {
         cppPullResult = ((DefaultMQPullConsumer *) consumer)->pull(messageQueue, subExpression, offset, maxNums);
-    }catch (exception &e){
+    } catch (exception &e) {
         cppPullResult.pullStatus = BROKER_TIMEOUT;
     }
 
@@ -171,11 +180,13 @@ Pull(CPullConsumer *consumer, const CMessageQueue *mq, const char *subExpression
             pullResult.minOffset = cppPullResult.minOffset;
             pullResult.nextBeginOffset = cppPullResult.nextBeginOffset;
             pullResult.size = cppPullResult.msgFoundList.size();
+            PullResult *tmpPullResult = new PullResult(cppPullResult);
+            pullResult.pData = tmpPullResult;
             //Alloc memory to save the pointer to CPP MQMessageExt, which will be release by the CPP SDK core.
             //Thus, this memory should be released by users using @ReleasePullResult
             pullResult.msgFoundList = (CMessageExt **) malloc(pullResult.size * sizeof(CMessageExt *));
             for (size_t i = 0; i < cppPullResult.msgFoundList.size(); i++) {
-                MQMessageExt *msg = const_cast<MQMessageExt *>(&cppPullResult.msgFoundList[i]);
+                MQMessageExt *msg = const_cast<MQMessageExt *>(&tmpPullResult->msgFoundList[i]);
                 pullResult.msgFoundList[i] = (CMessageExt *) (msg);
             }
             break;
@@ -204,8 +215,15 @@ Pull(CPullConsumer *consumer, const CMessageQueue *mq, const char *subExpression
     return pullResult;
 }
 int ReleasePullResult(CPullResult pullResult) {
-    if (pullResult.size == 0 || pullResult.msgFoundList == NULL) {
+    if (pullResult.size == 0 || pullResult.msgFoundList == NULL || pullResult.pData == NULL) {
         return NULL_POINTER;
+    }
+    if (pullResult.pData != NULL) {
+        try {
+            delete ((PullResult *) pullResult.pData);
+        } catch (exception &e) {
+            return NULL_POINTER;
+        }
     }
     free((void *) pullResult.msgFoundList);
     pullResult.msgFoundList = NULL;
