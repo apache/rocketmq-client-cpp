@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
                     case E_FOUND:
                         printf("Get Message Size:%d\n", pullResult.size);
                         for (k = 0; k < pullResult.size; ++k) {
-                            printf("Got Message ID:%s,Body:%s", GetMessageId(pullResult.msgFoundList[k]),GetMessageBody(pullResult.msgFoundList[k]));
+                            printf("Got Message ID:%s,Body:%s\n", GetMessageId(pullResult.msgFoundList[k]),GetMessageBody(pullResult.msgFoundList[k]));
                         }
                         break;
                     case E_NO_MATCHED_MSG:
@@ -82,7 +82,8 @@ int main(int argc, char *argv[]) {
                     default:
                         noNewMsg = 0;
                 }
-
+                ReleasePullResult(pullResult);
+                thread_sleep(100);
             } while (noNewMsg == 0);
             thread_sleep(1000);
         }
