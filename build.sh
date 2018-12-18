@@ -23,7 +23,7 @@ PrintParams()
 need_build_jsoncpp=1
 need_build_libevent=1
 need_build_boost=1
-need_build_test=0
+test=0
 
 pasres_arguments(){
     for var in "$@"
@@ -39,7 +39,7 @@ pasres_arguments(){
                         need_build_boost=0
                         ;;
                 test)
-                       need_build_test=1
+                       test=1
         esac
     done
 
@@ -202,6 +202,14 @@ BuildJsonCPP()
         exit 1
     fi
     make install
+
+    if [ ! -f ${install_lib_dir}/lib/libjsoncpp.a ]
+    then
+        echo " ./bin/lib directory is not libjsoncpp.a"
+        cp ${install_lib_dir}/lib/x86_64-linux-gnu/libjsoncpp.a ${install_lib_dir}/lib/
+    fi
+
+
 }
 
 BuildBoost()
@@ -279,9 +287,10 @@ BuildGoogleTest()
     fi
     make install
 
-    if [ ! -f ./bin/lib/libgtest.a ]
+    if [ ! -f ${install_lib_dir}/lib/libgtest.a ]
     then
-        cp ./bin/lib64/lib* ./bin/lib
+	    echo " ./bin/lib directory is not libgtest.a"
+        cp ${install_lib_dir}/lib64/lib* ${install_lib_dir}/lib
     fi
 
     
@@ -292,26 +301,33 @@ ExecutionTesting()
     if [ $test -eq 0 ];then
         return 0
     fi
-    echo "############################################"
     echo "##################  test  start  ###########"
     cd ${basepath}/test/bin
-    mkdir ./log
+    if [ ! -d ../log ]; then
+       mkdir ../log
+    fi
     for files in `ls -F`
     do
-        ./$files 2>&1 > "log/$files.txt"
+        ./$files 2>&1 > "../log/$files.txt"
 
-        erron=`grep "FAILED TEST" log/$files.txt`
-
+	if [ $? -ne 0 ]; then
+	    echo "$files erren"
+	    cat ../log/$files.txt
+	    return 0
+        fi
+        erron=`grep "FAILED TEST" ../log/$files.txt`
+	
         if [ -n "$erron" ]; then
             echo "##################  find erron ###########"
-            cat log/$files.txt
+            cat ../log/$files.txt
 
             echo "##################  end ExecutionTesting ###########"
             return
-        fi
+        else
+	    echo "$files success"
+	fi
     done
     echo "##################  test  end  ###########"
-    echo "############################################"
 }
 
 
