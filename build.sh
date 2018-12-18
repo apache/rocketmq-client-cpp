@@ -14,9 +14,8 @@ fname_boost_down="1.58.0/boost_1_58_0.tar.gz"
 PrintParams()
 {
     echo "=========================================one key build help============================================"
-    echo "sh build.sh [no build libevent:noEvent] [no build json:noJson] [no build boost:noBoost] [ execution test :test]"
+    echo "sh build.sh [no build libevent:noEvent] [no build json:noJson] [no build boost:noBoost] [ execution test:test]"
     echo "usage: sh build.sh noJson noEvent noBoost test"
-    echo "usage: sh build.sh onlytest == sh build.sh noJson noEvent noBoost test"
     echo "=========================================one key build help============================================"
     echo ""
 }
@@ -41,12 +40,6 @@ pasres_arguments(){
                         ;;
                 test)
                        need_build_test=1
-                       ;;
-                onlytest)
-                       need_build_test=1
-                       need_build_boost=0
-                       need_build_libevent=0
-                       need_build_jsoncpp=0
         esac
     done
 
@@ -75,13 +68,6 @@ PrintParams()
         echo "no need build boost lib"
     else
         echo "need build boost lib"
-    fi
-
-    if [ $need_build_test -eq 0 ]
-    then
-        echo "no need build googletest lib"
-    else
-        echo "need build googletest lib"
     fi
 
     echo "###########################################################################"
@@ -263,12 +249,8 @@ BuildRocketMQClient()
 
 BuildGoogleTest()
 {
-    if [ $need_build_test -eq 0 ];then
-        echo "no need google test lib"
-        return 0
-    fi
 
-    if [ -e ./bin/lib/libgtest.a ]
+    if [ -f ./bin/lib/libgtest.a ]
     then
         echo "libgteest already exist no need build test"
         return 0
@@ -284,6 +266,7 @@ BuildGoogleTest()
     if [ ! -d "googletest-release-1.8.1" ];then
         tar -zxvf release-1.8.1.tar.gz
     fi
+    cd googletest-release-1.8.1
     mkdir build; cd build
     echo "build googletest static #####################"
     cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${install_lib_dir}
@@ -296,12 +279,17 @@ BuildGoogleTest()
     fi
     make install
 
+    if [ ! -f ./bin/lib/libgtest.a ]
+    then
+        cp ./bin/lib64/lib* ./bin/lib
+    fi
+
     
 }
 
 ExecutionTesting()
 {
-    if [ $need_build_test -eq 0 ];then
+    if [ $test -eq 0 ];then
         return 0
     fi
     echo "############################################"
@@ -310,7 +298,7 @@ ExecutionTesting()
     mkdir ./log
     for files in `ls -F`
     do
-        #./$files 2>&1 > "log/$files.txt"
+        ./$files 2>&1 > "log/$files.txt"
 
         erron=`grep "FAILED TEST" log/$files.txt`
 
@@ -344,4 +332,3 @@ BuildBoost
 BuildGoogleTest
 BuildRocketMQClient
 ExecutionTesting
-
