@@ -192,7 +192,7 @@ BuildJsonCPP()
         exit 1
     fi
     mkdir build; cd build
-    echo "build jsoncpp static #####################"
+    echo "build jsoncpp static ######################"
     cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${install_lib_dir}
     if [ $? -ne 0 ];then
         exit 1
