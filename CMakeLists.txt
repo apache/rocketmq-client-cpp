@@ -41,7 +41,7 @@ set(CMAKE_CONFIGURATION_TYPES "Release")
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
 set(CMAKE_VERBOSE_MAKEFILE 1)
-option(BUILD_ROCKETMQ_STATIC "build rocketmq-client static library" OFF)
+option(BUILD_ROCKETMQ_STATIC "build rocketmq-client static library" ON)
 option(BUILD_ROCKETMQ_SHARED "build rocketmq-client shared library" ON)
 
 #Find dependency 
@@ -133,7 +133,7 @@ set(C_FLAGS
   -fno-strict-aliasing 
 )
 set(CXX_FLAGS
- -g
+ #-g
  -Wall
  -Wno-deprecated
  -fPIC
