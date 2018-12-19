@@ -1,5 +1,13 @@
-.idea
+# clion
+.idea/
+
+# visual studio code
+.vscode/
+
+# cmake
 cmake-build-debug/
+
+# project
 bin
 build
 libs/signature/lib

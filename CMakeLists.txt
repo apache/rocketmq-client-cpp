@@ -41,14 +41,15 @@ set(CMAKE_CONFIGURATION_TYPES "Release")
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
 set(CMAKE_VERBOSE_MAKEFILE 1)
+
 option(BUILD_ROCKETMQ_STATIC "build rocketmq-client static library" ON)
 option(BUILD_ROCKETMQ_SHARED "build rocketmq-client shared library" ON)
 
-#Find dependency 
-option(Boost_USE_STATIC_LIBS    "only find boost static libs"     ON) # only find static libs
-set(Boost_USE_MULTITHREADED          ON)
-set(Boost_USE_STATIC_RUNTIME         ON)
-if(WIN32)
+# Find dependency
+option(Boost_USE_STATIC_LIBS "only find boost static libs" ON) # only find static libs
+option(Boost_USE_STATIC_RUNTIME "use boost static runtime" ON)
+set(Boost_USE_MULTITHREADED ON)
+if (WIN32)
     find_package(Boost 1.56 REQUIRED COMPONENTS atomic thread system chrono date_time
         log log_setup regex serialization filesystem locale iostreams zlib)
     if(Boost_FOUND)
@@ -58,50 +59,53 @@ if(WIN32)
         include_directories(${Boost_INCLUDE_DIRS})
     endif()
 else()
-    #find_package(Boost 1.56 REQUIRED COMPONENTS atomic thread system chrono date_time log log_setup regex serialization filesystem locale iostreams) 
-    set(Boost_INCLUDE_DIR    ${PROJECT_SOURCE_DIR}/bin/include)
-    set(Boost_LIBRARY_DIRS    ${PROJECT_SOURCE_DIR}/bin/lib)
-    set(Boost_LIBRARIES      ${Boost_LIBRARY_DIRS}/libboost_atomic.a;${Boost_LIBRARY_DIRS}/libboost_thread.a;${Boost_LIBRARY_DIRS}/libboost_system.a;${Boost_LIBRARY_DIRS}/libboost_chrono.a;
-        ${Boost_LIBRARY_DIRS}/libboost_date_time.a;${Boost_LIBRARY_DIRS}/libboost_log.a;${Boost_LIBRARY_DIRS}/libboost_log_setup.a;
-        ${Boost_LIBRARY_DIRS}/libboost_regex.a;${Boost_LIBRARY_DIRS}/libboost_serialization.a;${Boost_LIBRARY_DIRS}/libboost_filesystem.a;
-        ${Boost_LIBRARY_DIRS}/libboost_locale.a;${Boost_LIBRARY_DIRS}/libboost_iostreams.a)
+#    set(BOOST_ROOT ${PROJECT_SOURCE_DIR}/bin)
+    find_package(Boost 1.58 REQUIRED COMPONENTS atomic system thread chrono date_time
+            regex filesystem log log_setup locale serialization iostreams)
+#    set(Boost_INCLUDE_DIR  ${PROJECT_SOURCE_DIR}/bin/include)
+#    set(Boost_LIBRARY_DIRS ${PROJECT_SOURCE_DIR}/bin/lib)
+#    set(Boost_LIBRARIES    ${Boost_LIBRARY_DIRS}/libboost_atomic.a;${Boost_LIBRARY_DIRS}/libboost_thread.a;${Boost_LIBRARY_DIRS}/libboost_system.a;${Boost_LIBRARY_DIRS}/libboost_chrono.a;
+#            ${Boost_LIBRARY_DIRS}/libboost_date_time.a;${Boost_LIBRARY_DIRS}/libboost_log.a;${Boost_LIBRARY_DIRS}/libboost_log_setup.a;
+#            ${Boost_LIBRARY_DIRS}/libboost_regex.a;${Boost_LIBRARY_DIRS}/libboost_serialization.a;${Boost_LIBRARY_DIRS}/libboost_filesystem.a;
+#            ${Boost_LIBRARY_DIRS}/libboost_locale.a;${Boost_LIBRARY_DIRS}/libboost_iostreams.a)
     include_directories(${Boost_INCLUDE_DIRS})
-endif()
+endif ()
 
 message(STATUS "** Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 message(STATUS "** Boost_LIBRARIES: ${Boost_LIBRARIES}")
 
-option(Libevent_USE_STATIC_LIBS "only find libevent static libs"   ON) # only find static libs
-if(WIN32)
+option(Libevent_USE_STATIC_LIBS "only find libevent static libs" ON) # only find static libs
+if (WIN32)
     find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
-    if(LIBEVENT_FOUND)
+    if (LIBEVENT_FOUND)
         include_directories(${LIBEVENT_INCLUDE_DIRS})
         message(STATUS "** libevent Include dir: ${LIBEVENT_INCLUDE_DIR}")
         message(STATUS "** libevent Libraries: ${LIBEVENT_LIBRARIES}")
     endif()
 else()
-    #find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
-    set(LIBEVENT_INCLUDE_DIRS  ${PROJECT_SOURCE_DIR}/bin/include)
-    set(LIBEVENT_LIBRARIES_DIR ${PROJECT_SOURCE_DIR}/bin/lib)
-    set(LIBEVENT_LIBRARIES     ${LIBEVENT_LIBRARIES_DIR}/libevent.a;${LIBEVENT_LIBRARIES_DIR}/libevent_core.a;${LIBEVENT_LIBRARIES_DIR}/libevent_extra.a;${LIBEVENT_LIBRARIES_DIR}/libevent_pthreads.a)
+    find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
+#    set(LIBEVENT_INCLUDE_DIRS  ${PROJECT_SOURCE_DIR}/bin/include)
+#    set(LIBEVENT_LIBRARIES_DIR ${PROJECT_SOURCE_DIR}/bin/lib)
+#    set(LIBEVENT_LIBRARIES     ${LIBEVENT_LIBRARIES_DIR}/libevent.a;${LIBEVENT_LIBRARIES_DIR}/libevent_core.a;${LIBEVENT_LIBRARIES_DIR}/libevent_extra.a;${LIBEVENT_LIBRARIES_DIR}/libevent_pthreads.a)
     include_directories(${LIBEVENT_INCLUDE_DIRS})
-endif()
+endif ()
 
 message(STATUS "** LIBEVENT_INCLUDE_DIR: ${LIBEVENT_INCLUDE_DIR}")
 message(STATUS "** LIBEVENT_LIBRARIES: ${LIBEVENT_LIBRARIES}")
 
-option(JSONCPP_USE_STATIC_LIBS  "only find jsoncpp static libs"  ON) # only find static libs
-if(WIN32)
+option(JSONCPP_USE_STATIC_LIBS "only find jsoncpp static libs" ON) # only find static libs
+if (WIN32)
     find_package(Jsoncpp 0.10.6)
-    if(JSONCPP_FOUND)
+    if (JSONCPP_FOUND)
         include_directories(${JSONCPP_INCLUDE_DIRS})
-    endif()
-else()
-    set(JSONCPP_INCLUDE_DIRS   ${PROJECT_SOURCE_DIR}/bin/include/jsoncpp)
-    set(JSONCPP_LIBRARIES_DIR  ${PROJECT_SOURCE_DIR}/bin/lib)
-    set(JSONCPP_LIBRARIES      ${JSONCPP_LIBRARIES_DIR}/libjsoncpp.a)
+    endif ()
+else ()
+    find_package(Jsoncpp 0.10.6 REQUIRED COMPONENTS)
+#    set(JSONCPP_INCLUDE_DIRS   ${PROJECT_SOURCE_DIR}/bin/include/jsoncpp)
+#    set(JSONCPP_LIBRARIES_DIR  ${PROJECT_SOURCE_DIR}/bin/lib)
+#    set(JSONCPP_LIBRARIES      ${JSONCPP_LIBRARIES_DIR}/libjsoncpp.a)
     include_directories(${JSONCPP_INCLUDE_DIRS})
-endif()
+endif ()
 
 message(STATUS "** JSONCPP_INCLUDE_DIRS: ${JSONCPP_INCLUDE_DIRS}")
 message(STATUS "** JSONCPP_LIBRARIES: ${JSONCPP_LIBRARIES}")
@@ -120,81 +124,81 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 # endif()
 
 IF (WIN32)
-  add_definitions(-DWIN32 -DROCKETMQCLIENT_EXPORTS)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
-  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
-ELSE()
-set(C_FLAGS
-  #-g
-  -Wall
-  -Wno-deprecated
-  -fPIC
-  -fno-strict-aliasing 
-)
-set(CXX_FLAGS
- #-g
- -Wall
- -Wno-deprecated
- -fPIC
- -fno-strict-aliasing
- -std=c++11
- -Wno-unused-local-typedef
- -Wno-expansion-to-defined
- # -finline-limit=1000
- # -Wextra
- # -pedantic
- # -pedantic-errors
- # -D_FILE_OFFSET_BITS=64
- # -DVALGRIND
- # -DCHECK_PTHREAD_RETURN_VALUE
- # -Werror
- # -Wconversion
- # -Wno-unused-parameter
- # -Wunused-but-set-variable
- # -Wold-style-cast
- # -Woverloaded-virtual
- # -Wpointer-arith
- # -Wshadow
- # -Wwrite-strings
- # -Wdeprecated-declarations
- # -march=native
- # -MMD
- # -std=c++0x
- # -rdynamic
- )
+    add_definitions(-DWIN32 -DROCKETMQCLIENT_EXPORTS)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+ELSE ()
+    set(C_FLAGS
+            #-g
+            -Wall
+            -Wno-deprecated
+            -fPIC
+            -fno-strict-aliasing
+            )
+    set(CXX_FLAGS
+            #-g
+            -Wall
+            -Wno-deprecated
+            -fPIC
+            -fno-strict-aliasing
+            -std=c++11
+            -Wno-unused-local-typedef
+            -Wno-expansion-to-defined
+            # -finline-limit=1000
+            # -Wextra
+            # -pedantic
+            # -pedantic-errors
+            # -D_FILE_OFFSET_BITS=64
+            # -DVALGRIND
+            # -DCHECK_PTHREAD_RETURN_VALUE
+            # -Werror
+            # -Wconversion
+            # -Wno-unused-parameter
+            # -Wunused-but-set-variable
+            # -Wold-style-cast
+            # -Woverloaded-virtual
+            # -Wpointer-arith
+            # -Wshadow
+            # -Wwrite-strings
+            # -Wdeprecated-declarations
+            # -march=native
+            # -MMD
+            # -std=c++0x
+            # -rdynamic
+            )
 
-if(CMAKE_BUILD_BITS EQUAL 32)
-  list(APPEND CXX_FLAGS "-m32")
-else() #not-condition
-  list(APPEND CXX_FLAGS "-m64")
-endif()
+    if (CMAKE_BUILD_BITS EQUAL 32)
+        list(APPEND CXX_FLAGS "-m32")
+    else () #not-condition
+        list(APPEND CXX_FLAGS "-m64")
+    endif ()
 
-string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
-string(REPLACE ";" " " CMAKE_C_FLAGS "${C_FLAGS}")
+    string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
+    string(REPLACE ";" " " CMAKE_C_FLAGS "${C_FLAGS}")
 
-set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -DDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -DDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 
 
-# Declare deplibs, so we can use list in linker later. There's probably
-# a more elegant way of doing this; with SCons, when you check for the
-# lib, it is automatically passed to the linker.
-set(deplibs)
+    # Declare deplibs, so we can use list in linker later. There's probably
+    # a more elegant way of doing this; with SCons, when you check for the
+    # lib, it is automatically passed to the linker.
+    set(deplibs)
 
-# For some reason, the check_function_exists macro doesn't detect
-# the inet_aton on some pure Unix platforms (e.g. sunos5). So we
-# need to do a more detailed check and also include some extra deplibs.
-list(APPEND deplibs dl)
-list(APPEND deplibs pthread)
-if(NOT APPLE)
-  list(APPEND deplibs rt)
-endif()
-list(APPEND deplibs z)
+    # For some reason, the check_function_exists macro doesn't detect
+    # the inet_aton on some pure Unix platforms (e.g. sunos5). So we
+    # need to do a more detailed check and also include some extra deplibs.
+    list(APPEND deplibs dl)
+    list(APPEND deplibs pthread)
+    if (NOT APPLE)
+        list(APPEND deplibs rt)
+    endif ()
+    list(APPEND deplibs z)
 
-# add include dir for bsd (posix uses /usr/include/)
-set(CMAKE_INCLUDE_PATH "${CMAKE_INCLUDE_PATH}:/usr/local/include")
-ENDIF()
+    # add include dir for bsd (posix uses /usr/include/)
+    set(CMAKE_INCLUDE_PATH "${CMAKE_INCLUDE_PATH}:/usr/local/include")
+ENDIF ()
 
 # For config.h, set some static values; it may be a good idea to make
 # these values dynamic for non-standard UNIX compilers.
