@@ -341,10 +341,10 @@ ExecutionTesting()
             cat ../log/$files.txt
             return 0
         fi
-        erron=`grep "FAILED TEST" ../log/$files.txt`
+        erren=`grep "FAILED TEST" ../log/$files.txt`
         
-        if [ -n "$erron" ]; then
-            echo "##################  find erron ###########"
+        if [ -n "$erren" ]; then
+            echo "##################  find erren ###########"
             cat ../log/$files.txt
 
             echo "##################  end ExecutionTesting ###########"
