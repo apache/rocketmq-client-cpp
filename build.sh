@@ -100,7 +100,7 @@ Prepare()
     else
         mkdir -p ${down_dir}
     fi
-    
+
     cd ${basepath}
     if [ -e ${fname_libevent} ]
     then
@@ -116,7 +116,7 @@ Prepare()
     then
         mv -f ${basepath}/${fname_boost} ${down_dir}
     fi
-    
+
     if [ -e ${build_dir} ]
     then
         echo "${build_dir} is exist"
@@ -124,7 +124,7 @@ Prepare()
     else
         mkdir -p ${build_dir}
     fi
-    
+
     if [ -e ${packet_dir} ]
     then
         echo "${packet_dir} is exist"
@@ -277,7 +277,6 @@ BuildRocketMQClient()
 
 BuildGoogleTest()
 {
-
     if [ $test -eq 0 ];then
         echo "no need build google test lib"
         return 0
@@ -317,8 +316,6 @@ BuildGoogleTest()
         echo " ./bin/lib directory is not libgtest.a"
         cp ${install_lib_dir}/lib64/lib* ${install_lib_dir}/lib
     fi
-
-    
 }
 
 ExecutionTesting()
