@@ -218,4 +218,11 @@ set(HAVE_SOCKLEN_T 1)
 add_subdirectory(libs)
 add_subdirectory(project)
 add_subdirectory(example)
-add_subdirectory(test)
+
+
+option(RUN_UNIT_TEST "RUN_UNIT_TEST" OFF)
+
+if(RUN_UNIT_TEST)
+  message(status "** RUN_UNIT_TEST: ${RUN_UNIT_TEST} Do execution testing")
+  add_subdirectory(test)
+endif()

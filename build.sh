@@ -262,7 +262,11 @@ BuildBoost()
 BuildRocketMQClient()
 {
     cd ${build_dir}
-    cmake ..
+    if [ $test -eq 0 ];then
+        cmake ..
+    else
+        cmake .. -DRUN_UNIT_TEST=ON
+    fi
     make
     if [ $? -ne 0 ];then
         exit 1
@@ -273,6 +277,11 @@ BuildRocketMQClient()
 
 BuildGoogleTest()
 {
+
+    if [ $test -eq 0 ];then
+        echo "no need build google test lib"
+        return 0
+    fi
 
     if [ -f ./bin/lib/libgtest.a ]
     then
@@ -315,6 +324,7 @@ BuildGoogleTest()
 ExecutionTesting()
 {
     if [ $test -eq 0 ];then
+        echo "Do not execution test"
         return 0
     fi
     echo "##################  test  start  ###########"
@@ -324,15 +334,15 @@ ExecutionTesting()
     fi
     for files in `ls -F`
     do
-        ./$files 2>&1 > "../log/$files.txt"
+        ./$files > "../log/$files.txt" 2>&1
 
-    if [ $? -ne 0 ]; then
-        echo "$files erren"
-        cat ../log/$files.txt
-        return 0
+        if [ $? -ne 0 ]; then
+            echo "$files erren"
+            cat ../log/$files.txt
+            return 0
         fi
         erron=`grep "FAILED TEST" ../log/$files.txt`
-    
+        
         if [ -n "$erron" ]; then
             echo "##################  find erron ###########"
             cat ../log/$files.txt
@@ -340,8 +350,8 @@ ExecutionTesting()
             echo "##################  end ExecutionTesting ###########"
             return
         else
-        echo "$files success"
-    fi
+            echo "$files success"
+        fi
     done
     echo "##################  test  end  ###########"
 }
