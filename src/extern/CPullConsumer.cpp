@@ -173,12 +173,15 @@ Pull(CPullConsumer *consumer, const CMessageQueue *mq, const char *subExpression
         cppPullResult.pullStatus = BROKER_TIMEOUT;
     }
 
+    if(cppPullResult.pullStatus != BROKER_TIMEOUT){
+        pullResult.maxOffset = cppPullResult.maxOffset;
+        pullResult.minOffset = cppPullResult.minOffset;
+        pullResult.nextBeginOffset = cppPullResult.nextBeginOffset;
+    }
+
     switch (cppPullResult.pullStatus) {
         case FOUND: {
             pullResult.pullStatus = E_FOUND;
-            pullResult.maxOffset = cppPullResult.maxOffset;
-            pullResult.minOffset = cppPullResult.minOffset;
-            pullResult.nextBeginOffset = cppPullResult.nextBeginOffset;
             pullResult.size = cppPullResult.msgFoundList.size();
             PullResult *tmpPullResult = new PullResult(cppPullResult);
             pullResult.pData = tmpPullResult;
