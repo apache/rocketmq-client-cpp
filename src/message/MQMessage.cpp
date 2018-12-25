@@ -107,13 +107,16 @@ void MQMessage::setPropertyInternal(const string& name, const string& value) {
   m_properties[name] = value;
 }
 
-string MQMessage::getProperty(const string& name) const {
+const string & MQMessage::getProperty(const string& name) const {
   map<string, string>::const_iterator it = m_properties.find(name);
-
-  return (it == m_properties.end()) ? "" : (*it).second;
+  if(it == m_properties.end()){
+    return "";
+  }else{
+    return it->second;
+  }
 }
 
-string MQMessage::getTopic() const { return m_topic; }
+const string& MQMessage::getTopic() const { return m_topic; }
 
 void MQMessage::setTopic(const string& topic) { m_topic = topic; }
 
@@ -122,13 +125,13 @@ void MQMessage::setTopic(const char* body, int len) {
   m_topic.append(body, len);
 }
 
-string MQMessage::getTags() const { return getProperty(PROPERTY_TAGS); }
+const string& MQMessage::getTags() const { return getProperty(PROPERTY_TAGS); }
 
 void MQMessage::setTags(const string& tags) {
   setPropertyInternal(PROPERTY_TAGS, tags);
 }
 
-string MQMessage::getKeys() const { return getProperty(PROPERTY_KEYS); }
+const string& MQMessage::getKeys() const { return getProperty(PROPERTY_KEYS); }
 
 void MQMessage::setKeys(const string& keys) {
   setPropertyInternal(PROPERTY_KEYS, keys);
@@ -192,7 +195,7 @@ int MQMessage::getSysFlag() const { return m_sysFlag; }
 
 void MQMessage::setSysFlag(int sysFlag) { m_sysFlag = sysFlag; }
 
-string MQMessage::getBody() const { return m_body; }
+const string& MQMessage::getBody() const { return m_body; }
 
 void MQMessage::setBody(const char* body, int len) {
   m_body.clear();
