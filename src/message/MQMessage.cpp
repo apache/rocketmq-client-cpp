@@ -95,8 +95,11 @@ void MQMessage::setProperty(const string& name, const string& value) {
 
 const string & MQMessage::getProperty(const string& name) const {
   map<string, string>::const_iterator it = m_properties.find(name);
-  const string &property =  it->second;
-  return property;
+  if(it == m_properties.end()){
+    return "";
+  }else{
+    return it->second;
+  }
 }
 
 const string& MQMessage::getTopic() const { return m_topic; }

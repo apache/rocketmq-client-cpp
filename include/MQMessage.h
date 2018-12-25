@@ -40,7 +40,7 @@ class ROCKETMQCLIENT_API MQMessage {
   MQMessage(const MQMessage& other);
   MQMessage& operator=(const MQMessage& other);
 
-  void setProperty(const std::string& name, const std::string& value);
+  void setProperty(const std::string& name, const std::string& value) ;
   const std::string & getProperty(const std::string& name) const;
 
   const std::string &getTopic() const;
