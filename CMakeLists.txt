@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
- 
+
 cmake_minimum_required(VERSION 2.8)
 
 if (APPLE)
@@ -52,11 +52,11 @@ if(WIN32)
     find_package(Boost 1.56 REQUIRED COMPONENTS atomic thread system chrono date_time
         log log_setup regex serialization filesystem locale iostreams zlib)
     if(Boost_FOUND)
-        message(status "** Boost Include dir: ${Boost_INCLUDE_DIR}")
-        message(status "** Boost Libraries dir: ${Boost_LIBRARY_DIRS}")
-        message(status "** Boost Libraries: ${Boost_LIBRARIES}")
+        message(STATUS "** Boost Include dir: ${Boost_INCLUDE_DIR}")
+        message(STATUS "** Boost Libraries dir: ${Boost_LIBRARY_DIRS}")
+        message(STATUS "** Boost Libraries: ${Boost_LIBRARIES}")
         include_directories(${Boost_INCLUDE_DIRS})
-    endif()    
+    endif()
 else()
     #find_package(Boost 1.56 REQUIRED COMPONENTS atomic thread system chrono date_time log log_setup regex serialization filesystem locale iostreams) 
     set(Boost_INCLUDE_DIR    ${PROJECT_SOURCE_DIR}/bin/include)
@@ -68,16 +68,16 @@ else()
     include_directories(${Boost_INCLUDE_DIRS})
 endif()
 
-message(status "** Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
-message(status "** Boost_LIBRARIES: ${Boost_LIBRARIES}")
+message(STATUS "** Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
+message(STATUS "** Boost_LIBRARIES: ${Boost_LIBRARIES}")
 
 option(Libevent_USE_STATIC_LIBS "only find libevent static libs"   ON) # only find static libs
 if(WIN32)
     find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
     if(LIBEVENT_FOUND)
         include_directories(${LIBEVENT_INCLUDE_DIRS})
-        message(status "** libevent Include dir: ${LIBEVENT_INCLUDE_DIR}")
-        message(status "** libevent Libraries: ${LIBEVENT_LIBRARIES}")
+        message(STATUS "** libevent Include dir: ${LIBEVENT_INCLUDE_DIR}")
+        message(STATUS "** libevent Libraries: ${LIBEVENT_LIBRARIES}")
     endif()
 else()
     #find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
@@ -87,8 +87,8 @@ else()
     include_directories(${LIBEVENT_INCLUDE_DIRS})
 endif()
 
-message(status "** LIBEVENT_INCLUDE_DIR: ${LIBEVENT_INCLUDE_DIR}")
-message(status "** LIBEVENT_LIBRARIES: ${LIBEVENT_LIBRARIES}")
+message(STATUS "** LIBEVENT_INCLUDE_DIR: ${LIBEVENT_INCLUDE_DIR}")
+message(STATUS "** LIBEVENT_LIBRARIES: ${LIBEVENT_LIBRARIES}")
 
 option(JSONCPP_USE_STATIC_LIBS  "only find jsoncpp static libs"  ON) # only find static libs
 if(WIN32)
@@ -103,8 +103,8 @@ else()
     include_directories(${JSONCPP_INCLUDE_DIRS})
 endif()
 
-message(status "** JSONCPP_INCLUDE_DIRS: ${JSONCPP_INCLUDE_DIRS}")
-message(status "** JSONCPP_LIBRARIES: ${JSONCPP_LIBRARIES}")
+message(STATUS "** JSONCPP_INCLUDE_DIRS: ${JSONCPP_INCLUDE_DIRS}")
+message(STATUS "** JSONCPP_LIBRARIES: ${JSONCPP_LIBRARIES}")
 
 # put binaries in a different dir to make them easier to find.
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
@@ -170,7 +170,7 @@ endif()
 
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
 string(REPLACE ";" " " CMAKE_C_FLAGS "${C_FLAGS}")
- 
+
 set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -DDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
@@ -223,6 +223,7 @@ add_subdirectory(example)
 option(RUN_UNIT_TEST "RUN_UNIT_TEST" OFF)
 
 if(RUN_UNIT_TEST)
-  message(status "** RUN_UNIT_TEST: ${RUN_UNIT_TEST} Do execution testing")
+  message(STATUS "** RUN_UNIT_TEST: ${RUN_UNIT_TEST} Do execution testing")
   add_subdirectory(test)
 endif()
+
