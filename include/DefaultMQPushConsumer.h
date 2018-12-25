@@ -138,7 +138,7 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
   OffsetStore* m_pOffsetStore;
   Rebalance* m_pRebalance;
   PullAPIWrapper* m_pPullAPIWrapper;
-  ConsumeMsgService* m_consumerServeice;
+  ConsumeMsgService* m_consumerService;
   MQMessageListener* m_pMessageListener;
   int m_consumeMessageBatchMaxSize;
   int m_maxMsgCacheSize;

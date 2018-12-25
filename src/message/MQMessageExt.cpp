@@ -29,7 +29,6 @@ MQMessageExt::MQMessageExt()
       m_preparedTransactionOffset(0),
       m_queueId(0),
       m_storeSize(0),
-      m_sysFlag(0),
       m_bodyCRC(0),
       m_reconsumeTimes(3),
       m_msgId("") {}
@@ -44,7 +43,6 @@ MQMessageExt::MQMessageExt(int queueId, int64 bornTimestamp, sockaddr bornHost,
       m_preparedTransactionOffset(0),
       m_queueId(queueId),
       m_storeSize(0),
-      m_sysFlag(0),
       m_bodyCRC(0),
       m_reconsumeTimes(3),
       m_bornHost(bornHost),
@@ -100,10 +98,6 @@ void MQMessageExt::setMsgId(const string& msgId) { m_msgId = msgId; }
 const string& MQMessageExt::getOffsetMsgId() const { return m_offsetMsgId; }
 
 void MQMessageExt::setOffsetMsgId(const string& offsetMsgId) { m_offsetMsgId = offsetMsgId; }
-
-int MQMessageExt::getSysFlag() const { return m_sysFlag; }
-
-void MQMessageExt::setSysFlag(int sysFlag) { m_sysFlag = sysFlag; }
 
 int MQMessageExt::getBodyCRC() const { return m_bodyCRC; }
 

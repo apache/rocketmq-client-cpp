@@ -230,7 +230,7 @@ DefaultMQPushConsumer::~DefaultMQPushConsumer() {
   deleteAndZero(m_pRebalance);
   deleteAndZero(m_pOffsetStore);
   deleteAndZero(m_pPullAPIWrapper);
-  deleteAndZero(m_consumerServeice);
+  deleteAndZero(m_consumerService);
   PullMAP::iterator it = m_PullCallback.begin();
   for (; it != m_PullCallback.end(); ++it) {
     deleteAndZero(it->second);
@@ -308,14 +308,14 @@ void DefaultMQPushConsumer::start() {
         if (m_pMessageListener->getMessageListenerType() ==
             messageListenerOrderly) {
           LOG_INFO("start orderly consume service:%s", getGroupName().c_str());
-          m_consumerServeice = new ConsumeMessageOrderlyService(
+          m_consumerService = new ConsumeMessageOrderlyService(
               this, m_consumeThreadCount, m_pMessageListener);
         } else  // for backward compatible, defaultly and concurrently listeners
                 // are allocating ConsumeMessageConcurrentlyService
         {
           LOG_INFO("start concurrently consume service:%s",
                    getGroupName().c_str());
-          m_consumerServeice = new ConsumeMessageConcurrentlyService(
+          m_consumerService = new ConsumeMessageConcurrentlyService(
               this, m_consumeThreadCount, m_pMessageListener);
         }
       }
@@ -354,7 +354,7 @@ void DefaultMQPushConsumer::start() {
         bStartFailed = true;
         errorMsg = std::string(e.what());
       }
-      m_consumerServeice->start();
+      m_consumerService->start();
 
       getFactory()->start();
 
@@ -389,7 +389,7 @@ void DefaultMQPushConsumer::shutdown() {
       m_pullmsgQueue->close();
       m_pullmsgThread->interrupt();
       m_pullmsgThread->join();
-      m_consumerServeice->shutdown();
+      m_consumerService->shutdown();
       persistConsumerOffset();
       shutdownAsyncPullCallBack();  // delete aync pullMsg resources
       getFactory()->unregisterConsumer(this);
@@ -420,7 +420,7 @@ MessageListenerType DefaultMQPushConsumer::getMessageListenerType() {
 }
 
 ConsumeMsgService* DefaultMQPushConsumer::getConsumerMsgService() const {
-  return m_consumerServeice;
+  return m_consumerService;
 }
 
 OffsetStore* DefaultMQPushConsumer::getOffsetStore() const {
@@ -572,7 +572,7 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
   }
 
   MQMessageQueue& messageQueue = request->m_messageQueue;
-  if (m_consumerServeice->getConsumeMsgSerivceListenerType() ==
+  if (m_consumerService->getConsumeMsgSerivceListenerType() ==
       messageListenerOrderly) {
     if (!request->isLocked() || request->isLockExpired()) {
       if (!m_pRebalance->lock(messageQueue)) {
@@ -646,8 +646,8 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
           request->setNextOffset(pullResult.nextBeginOffset);
           request->putMessage(pullResult.msgFoundList);
 
-          m_consumerServeice->submitConsumeRequest(request,
-                                                   pullResult.msgFoundList);
+          m_consumerService->submitConsumeRequest(request,
+                                                  pullResult.msgFoundList);
           producePullMsgTask(request);
 
           LOG_DEBUG("FOUND:%s with size:" SIZET_FMT ",nextBeginOffset:%lld",
@@ -760,7 +760,7 @@ void DefaultMQPushConsumer::pullMessageAsync(PullRequest* request) {
   }
 
   MQMessageQueue& messageQueue = request->m_messageQueue;
-  if (m_consumerServeice->getConsumeMsgSerivceListenerType() ==
+  if (m_consumerService->getConsumeMsgSerivceListenerType() ==
       messageListenerOrderly) {
     if (!request->isLocked() || request->isLockExpired()) {
       if (!m_pRebalance->lock(messageQueue)) {
@@ -888,7 +888,7 @@ int DefaultMQPushConsumer::getMaxCacheMsgSizePerQueue() const {
 ConsumerRunningInfo* DefaultMQPushConsumer::getConsumerRunningInfo() {
   ConsumerRunningInfo* info = new ConsumerRunningInfo();
   if (info) {
-    if (m_consumerServeice->getConsumeMsgSerivceListenerType() ==
+    if (m_consumerService->getConsumeMsgSerivceListenerType() ==
         messageListenerOrderly)
       info->setProperty(ConsumerRunningInfo::PROP_CONSUME_ORDERLY, "true");
     else
