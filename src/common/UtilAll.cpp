@@ -20,6 +20,7 @@ namespace rocketmq {
 //<!************************************************************************
 std::string UtilAll::s_localHostName;
 std::string UtilAll::s_localIpAddress;
+boost::posix_time::ptime epoch(boost::gregorian::date(1970, boost::gregorian::Jan, 1));
 
 bool UtilAll::startsWith_retry(const string &topic) {
   return topic.find(RETRY_GROUP_TOPIC_PREFIX) == 0;
@@ -280,15 +281,13 @@ string UtilAll::getProcessName() {
 }
 
 uint64_t UtilAll::currentTimeMillis() {
-  boost::posix_time::ptime current_date_microseconds =
-      boost::posix_time::microsec_clock::local_time();
-  return current_date_microseconds.time_of_day().total_milliseconds();
+  boost::posix_time::time_duration time_from_epoch = boost::posix_time::microsec_clock::universal_time() - epoch;
+  return time_from_epoch.total_milliseconds();
 }
 
 uint64_t UtilAll::currentTimeSeconds() {
-  boost::posix_time::ptime current_date_microseconds =
-      boost::posix_time::microsec_clock::local_time();
-  return current_date_microseconds.time_of_day().total_seconds();
+  boost::posix_time::time_duration time_from_epoch = boost::posix_time::microsec_clock::universal_time() - epoch;
+  return time_from_epoch.total_seconds();
 }
 
 bool UtilAll::deflate(std::string &input, std::string &out, int level) {
