@@ -175,7 +175,7 @@ int SetProducerInstanceName(CProducer *producer, const char *instanceName) {
     if (producer == NULL) {
         return NULL_POINTER;
     }
-    ((DefaultMQProducer *) producer)->setGroupName(instanceName);
+    ((DefaultMQProducer *) producer)->setInstanceName(instanceName);
     return OK;
 }
 int SetProducerSessionCredentials(CProducer *producer, const char *accessKey, const char *secretKey,
