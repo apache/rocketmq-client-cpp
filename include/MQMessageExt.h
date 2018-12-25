@@ -64,9 +64,6 @@ class ROCKETMQCLIENT_API MQMessageExt : public MQMessage {
   const std::string& getOffsetMsgId() const;
   void setOffsetMsgId(const std::string& offsetMsgId);
 
-  int getSysFlag() const;
-  void setSysFlag(int sysFlag);
-
   int getBodyCRC() const;
   void setBodyCRC(int bodyCRC);
 
@@ -108,7 +105,6 @@ class ROCKETMQCLIENT_API MQMessageExt : public MQMessage {
   int64 m_preparedTransactionOffset;
   int m_queueId;
   int m_storeSize;
-  int m_sysFlag;
   int m_bodyCRC;
   int m_reconsumeTimes;
   sockaddr m_bornHost;

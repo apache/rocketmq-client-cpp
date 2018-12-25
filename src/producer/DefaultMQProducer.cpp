@@ -26,7 +26,6 @@
 #include "MQClientManager.h"
 #include "MQDecoder.h"
 #include "MQProtos.h"
-#include "MessageSysFlag.h"
 #include "TopicPublishInfo.h"
 #include "Validators.h"
 #include "StringIdMaker.h"
@@ -339,17 +338,8 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
 	  msg.setProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX, unique_id);
 
       LOG_DEBUG("produce before:%s to %s", msg.toString().c_str(), mq.toString().c_str());
-	  
-      int sysFlag = 0;
-      if (tryToCompressMessage(msg)) {
-        sysFlag |= MessageSysFlag::CompressedFlag;
-      }
 
-      string tranMsg =
-          msg.getProperty(MQMessage::PROPERTY_TRANSACTION_PREPARED);
-      if (!tranMsg.empty() && tranMsg == "true") {
-        sysFlag |= MessageSysFlag::TransactionPreparedType;
-      }
+      tryToCompressMessage(msg);
 
       SendMessageRequestHeader* requestHeader = new SendMessageRequestHeader();
       requestHeader->producerGroup = getGroupName();
@@ -357,7 +347,7 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
       requestHeader->defaultTopic = DEFAULT_TOPIC;
       requestHeader->defaultTopicQueueNums = 4;
       requestHeader->queueId = (mq.getQueueId());
-      requestHeader->sysFlag = (sysFlag);
+      requestHeader->sysFlag = (msg.getSysFlag());
       requestHeader->bornTimestamp = UtilAll::currentTimeMillis();
       requestHeader->flag = (msg.getFlag());
       requestHeader->properties =
@@ -471,11 +461,17 @@ SendResult DefaultMQProducer::sendAutoRetrySelectImpl(
 }
 
 bool DefaultMQProducer::tryToCompressMessage(MQMessage& msg) {
+  int sysFlag = msg.getSysFlag();
+  if ((sysFlag & MessageSysFlag::CompressedFlag) == MessageSysFlag::CompressedFlag) {
+    return true;
+  }
+
   string body = msg.getBody();
   if ((int)body.length() >= getCompressMsgBodyOverHowmuch()) {
     string outBody;
     if (UtilAll::deflate(body, outBody, getCompressLevel())) {
       msg.setBody(outBody);
+      msg.setSysFlag(sysFlag | MessageSysFlag::CompressedFlag);
       return true;
     }
   }
