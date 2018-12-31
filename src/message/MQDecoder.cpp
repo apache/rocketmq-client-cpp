@@ -191,7 +191,7 @@ MQMessageExt* MQDecoder::decode(MemoryInputStream& byteBuffer, bool readBody) {
 
     map<string, string> propertiesMap;
     string2messageProperties(propertiesString, propertiesMap);
-    msgExt->setProperties(propertiesMap);
+    msgExt->setPropertiesInternal(propertiesMap);
     propertiesMap.clear();
   }
 
