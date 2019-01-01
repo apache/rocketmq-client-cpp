@@ -244,7 +244,7 @@ void DefaultMQProducer::setMaxMessageSize(int maxMessageSize) {
 int DefaultMQProducer::getCompressLevel() const { return m_compressLevel; }
 
 void DefaultMQProducer::setCompressLevel(int compressLevel) {
-  assert(compressLevel >= 0 && compressLevel <= 9 || compressLevel == -1);
+  assert((compressLevel >= 0 && compressLevel <= 9) || compressLevel == -1);
 
   m_compressLevel = compressLevel;
 }
