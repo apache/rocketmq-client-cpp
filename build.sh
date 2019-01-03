@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -156,7 +156,7 @@ BuildLibevent()
     else
         wget https://github.com/libevent/libevent/archive/${fname_libevent_down} -O libevent-${fname_libevent_down}
     fi
-    unzip -o ${fname_libevent}
+    unzip -o ${fname_libevent} > libevent.txt 2>&1
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -198,7 +198,7 @@ BuildJsonCPP()
     else
         wget https://github.com/open-source-parsers/jsoncpp/archive/${fname_jsoncpp_down} -O jsoncpp-${fname_jsoncpp_down}
     fi
-    unzip -o ${fname_jsoncpp}
+    unzip -o ${fname_jsoncpp} > json.txt 2>&1
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -242,7 +242,7 @@ BuildBoost()
     else
         wget http://sourceforge.net/projects/boost/files/boost/${fname_boost_down}
     fi
-    tar -zxvf ${fname_boost}
+    tar -zxvf ${fname_boost} > boost.txt 2>&1
     boost_dir=`ls | grep boost | grep .*[^gz]$`
     cd ${boost_dir}
     if [ $? -ne 0 ];then
@@ -253,7 +253,8 @@ BuildBoost()
         exit 1
     fi    
     echo "build boost static #####################"
-    ./b2 cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static runtime-link=static release install --prefix=${install_lib_dir}
+    pwd
+    ./b2 cflags=-fPIC cxxflags=-fPIC   --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static  release install --prefix=${install_lib_dir} 1>boostMakeLog.txt
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -296,7 +297,7 @@ BuildGoogleTest()
         wget https://github.com/abseil/googletest/archive/release-1.8.1.tar.gz
     fi
     if [ ! -d "googletest-release-1.8.1" ];then
-        tar -zxvf release-1.8.1.tar.gz
+        tar -zxvf release-1.8.1.tar.gz > googletest.txt 2>&1
     fi
     cd googletest-release-1.8.1
     mkdir build; cd build
