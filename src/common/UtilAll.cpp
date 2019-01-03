@@ -16,6 +16,8 @@
  */
 #include "UtilAll.h"
 
+#include <chrono>
+
 namespace rocketmq {
 //<!************************************************************************
 std::string UtilAll::s_localHostName;
@@ -280,15 +282,17 @@ string UtilAll::getProcessName() {
 }
 
 uint64_t UtilAll::currentTimeMillis() {
-  boost::posix_time::ptime current_date_microseconds =
-      boost::posix_time::microsec_clock::local_time();
-  return current_date_microseconds.time_of_day().total_milliseconds();
+  auto since_epoch =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::system_clock::now().time_since_epoch());
+  return static_cast<uint64_t>(since_epoch.count());
 }
 
 uint64_t UtilAll::currentTimeSeconds() {
-  boost::posix_time::ptime current_date_microseconds =
-      boost::posix_time::microsec_clock::local_time();
-  return current_date_microseconds.time_of_day().total_seconds();
+  auto since_epoch =
+      std::chrono::duration_cast<std::chrono::seconds>(
+          std::chrono::system_clock::now().time_since_epoch());
+  return static_cast<uint64_t>(since_epoch.count());
 }
 
 bool UtilAll::deflate(std::string &input, std::string &out, int level) {

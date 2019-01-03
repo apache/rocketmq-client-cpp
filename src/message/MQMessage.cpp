@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "MQMessage.h"
+#include "MessageSysFlag.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
@@ -76,6 +77,7 @@ MQMessage::MQMessage(const MQMessage& other) {
   m_body = other.m_body;
   m_topic = other.m_topic;
   m_flag = other.m_flag;
+  m_sysFlag = other.m_sysFlag;
   m_properties = other.m_properties;
 }
 
@@ -84,22 +86,37 @@ MQMessage& MQMessage::operator=(const MQMessage& other) {
     m_body = other.m_body;
     m_topic = other.m_topic;
     m_flag = other.m_flag;
+    m_sysFlag = other.m_sysFlag;
     m_properties = other.m_properties;
   }
   return *this;
 }
 
 void MQMessage::setProperty(const string& name, const string& value) {
+  if (PROPERTY_TRANSACTION_PREPARED == name) {
+    if (!value.empty() && value == "true") {
+      m_sysFlag |= MessageSysFlag::TransactionPreparedType;
+    } else {
+      m_sysFlag &= ~MessageSysFlag::TransactionPreparedType;
+    }
+  }
   m_properties[name] = value;
 }
 
-string MQMessage::getProperty(const string& name) const {
-  map<string, string>::const_iterator it = m_properties.find(name);
-
-  return (it == m_properties.end()) ? "" : (*it).second;
+void MQMessage::setPropertyInternal(const string& name, const string& value) {
+  m_properties[name] = value;
 }
 
-string MQMessage::getTopic() const { return m_topic; }
+const string & MQMessage::getProperty(const string& name) const {
+  map<string, string>::const_iterator it = m_properties.find(name);
+  if(it == m_properties.end()){
+    return "";
+  }else{
+    return it->second;
+  }
+}
+
+const string& MQMessage::getTopic() const { return m_topic; }
 
 void MQMessage::setTopic(const string& topic) { m_topic = topic; }
 
@@ -108,16 +125,16 @@ void MQMessage::setTopic(const char* body, int len) {
   m_topic.append(body, len);
 }
 
-string MQMessage::getTags() const { return getProperty(PROPERTY_TAGS); }
+const string& MQMessage::getTags() const { return getProperty(PROPERTY_TAGS); }
 
 void MQMessage::setTags(const string& tags) {
-  setProperty(PROPERTY_TAGS, tags);
+  setPropertyInternal(PROPERTY_TAGS, tags);
 }
 
-string MQMessage::getKeys() const { return getProperty(PROPERTY_KEYS); }
+const string& MQMessage::getKeys() const { return getProperty(PROPERTY_KEYS); }
 
 void MQMessage::setKeys(const string& keys) {
-  setProperty(PROPERTY_KEYS, keys);
+  setPropertyInternal(PROPERTY_KEYS, keys);
 }
 
 void MQMessage::setKeys(const vector<string>& keys) {
@@ -150,7 +167,7 @@ void MQMessage::setDelayTimeLevel(int level) {
   char tmp[16];
   sprintf(tmp, "%d", level);
 
-  setProperty(PROPERTY_DELAY_TIME_LEVEL, tmp);
+  setPropertyInternal(PROPERTY_DELAY_TIME_LEVEL, tmp);
 }
 
 bool MQMessage::isWaitStoreMsgOK() {
@@ -164,9 +181,9 @@ bool MQMessage::isWaitStoreMsgOK() {
 
 void MQMessage::setWaitStoreMsgOK(bool waitStoreMsgOK) {
   if (waitStoreMsgOK) {
-    setProperty(PROPERTY_WAIT_STORE_MSG_OK, "true");
+    setPropertyInternal(PROPERTY_WAIT_STORE_MSG_OK, "true");
   } else {
-    setProperty(PROPERTY_WAIT_STORE_MSG_OK, "false");
+    setPropertyInternal(PROPERTY_WAIT_STORE_MSG_OK, "false");
   }
 }
 
@@ -174,7 +191,11 @@ int MQMessage::getFlag() const { return m_flag; }
 
 void MQMessage::setFlag(int flag) { m_flag = flag; }
 
-string MQMessage::getBody() const { return m_body; }
+int MQMessage::getSysFlag() const { return m_sysFlag; }
+
+void MQMessage::setSysFlag(int sysFlag) { m_sysFlag = sysFlag; }
+
+const string& MQMessage::getBody() const { return m_body; }
 
 void MQMessage::setBody(const char* body, int len) {
   m_body.clear();
@@ -190,6 +211,20 @@ map<string, string> MQMessage::getProperties() const { return m_properties; }
 
 void MQMessage::setProperties(map<string, string>& properties) {
   m_properties = properties;
+
+  map<string, string>::const_iterator it = m_properties.find(PROPERTY_TRANSACTION_PREPARED);
+  if (it != m_properties.end()) {
+    string tranMsg = it->second;
+    if (!tranMsg.empty() && tranMsg == "true") {
+      m_sysFlag |= MessageSysFlag::TransactionPreparedType;
+    } else {
+      m_sysFlag &= ~MessageSysFlag::TransactionPreparedType;
+    }
+  }
+}
+
+void MQMessage::setPropertiesInternal(map<string, string>& properties) {
+  m_properties = properties;
 }
 
 void MQMessage::Init(const string& topic, const string& tags,
@@ -197,6 +232,7 @@ void MQMessage::Init(const string& topic, const string& tags,
                      bool waitStoreMsgOK) {
   m_topic = topic;
   m_flag = flag;
+  m_sysFlag = 0;
   m_body = body;
 
   if (tags.length() > 0) {

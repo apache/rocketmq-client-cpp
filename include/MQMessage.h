@@ -40,17 +40,17 @@ class ROCKETMQCLIENT_API MQMessage {
   MQMessage(const MQMessage& other);
   MQMessage& operator=(const MQMessage& other);
 
-  void setProperty(const std::string& name, const std::string& value);
-  std::string getProperty(const std::string& name) const;
+  void setProperty(const std::string& name, const std::string& value) ;
+  const std::string & getProperty(const std::string& name) const;
 
-  std::string getTopic() const;
+  const std::string &getTopic() const;
   void setTopic(const std::string& topic);
   void setTopic(const char* body, int len);
 
-  std::string getTags() const;
+  const std::string &getTags() const;
   void setTags(const std::string& tags);
 
-  std::string getKeys() const;
+  const std::string &getKeys() const;
   void setKeys(const std::string& keys);
   void setKeys(const std::vector<std::string>& keys);
 
@@ -63,7 +63,11 @@ class ROCKETMQCLIENT_API MQMessage {
   int getFlag() const;
   void setFlag(int flag);
 
-  std::string getBody() const;
+  int getSysFlag() const;
+  void setSysFlag(int sysFlag);
+
+  const std::string &getBody() const;
+
   void setBody(const char* body, int len);
   void setBody(const std::string& body);
 
@@ -78,6 +82,10 @@ class ROCKETMQCLIENT_API MQMessage {
   }
 
  protected:
+  friend class MQDecoder;
+  void setPropertyInternal(const std::string& name, const std::string& value);
+  void setPropertiesInternal(std::map<std::string, std::string>& properties);
+
   void Init(const std::string& topic, const std::string& tags, const std::string& keys,
             const int flag, const std::string& body, bool waitStoreMsgOK);
 
@@ -110,6 +118,10 @@ class ROCKETMQCLIENT_API MQMessage {
   static const std::string PROPERTY_CHECK_IMMUNITY_TIME_IN_SECONDS;
 
   static const std::string KEY_SEPARATOR;
+
+ protected:
+  int m_sysFlag;
+
  private:
   std::string m_topic;
   int m_flag;
