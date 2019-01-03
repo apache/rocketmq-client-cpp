@@ -46,11 +46,10 @@ class TcpRemotingClient {
 
   bool invokeHeartBeat(const string& addr, RemotingCommand& request);
 
-  bool invokeAsync(const string& addr, RemotingCommand& request,
-                   AsyncCallbackWrap* cbw, int64 timeoutMilliseconds);
-
+  bool invokeAsync(const string& addr, RemotingCommand& request, AsyncCallbackWrap* cbw, 
+                   int64 timeoutMilliseconds, int maxRetrySendTimes=1, int retrySendTimes=1);
   void invokeOneway(const string& addr, RemotingCommand& request);
-
+  
   void ProcessData(const MemoryBlock& mem, const string& addr);
 
   void registerProcessor(MQRequestCode requestCode,

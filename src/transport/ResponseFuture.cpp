@@ -31,6 +31,9 @@ ResponseFuture::ResponseFuture(int requestCode, int opaque,
   m_pCallbackWrap = pcall;
   m_pResponseCommand = NULL;
   m_sendRequestOK = false;
+  m_maxRetrySendTimes = 1;
+  m_retrySendTimes = 1;
+  m_brokerAddr = "";
   m_beginTimestamp = UtilAll::currentTimeMillis();
   m_asyncCallbackStatus = asyncCallBackStatus_init;
   if (getASyncFlag()) {
@@ -148,6 +151,10 @@ void ResponseFuture::executeInvokeCallbackException() {
     return;
   } else {
     if (m_asyncCallbackStatus == asyncCallBackStatus_timeout) {
+
+	//here no need retrySendTimes process because of it have timeout
+	LOG_ERROR("send msg, callback timeout, opaque:%d, sendTimes:%d, maxRetryTimes:%d", getOpaque(), getRetrySendTimes(), getMaxRetrySendTimes());
+
       m_pCallbackWrap->onException();
     } else {
       LOG_WARN(
@@ -162,6 +169,39 @@ bool ResponseFuture::isTimeOut() const {
   int64 diff = UtilAll::currentTimeMillis() - m_beginTimestamp;
   //<!only async;
   return m_bAsync.load() == 1 && diff > m_timeout;
+}
+
+int ResponseFuture::getMaxRetrySendTimes() const {
+	return m_maxRetrySendTimes;
+} 
+int ResponseFuture::getRetrySendTimes() const {
+	return m_retrySendTimes;
+}
+
+void ResponseFuture::setMaxRetrySendTimes(int maxRetryTimes) {
+	m_maxRetrySendTimes = maxRetryTimes;
+}
+void ResponseFuture::setRetrySendTimes(int retryTimes) {
+	m_retrySendTimes = retryTimes;
+}
+
+void ResponseFuture::setBrokerAddr(const std::string& brokerAddr) {
+	m_brokerAddr = brokerAddr;
+}
+void ResponseFuture::setRequestCommand(const RemotingCommand& requestCommand) {
+	m_requestCommand = requestCommand;
+}
+
+const RemotingCommand& ResponseFuture::getRequestCommand() {
+	return m_requestCommand;
+}
+std::string ResponseFuture::getBrokerAddr() const {
+	return m_brokerAddr;
+}
+
+int64 ResponseFuture::leftTime() const {
+	int64 diff = UtilAll::currentTimeMillis() - m_beginTimestamp;
+	return m_timeout - diff;
 }
 
 RemotingCommand* ResponseFuture::getCommand() const {

@@ -31,9 +31,13 @@ const int RPC_ONEWAY = 1;  // 0, RPC // 1, Oneway;
 //<!***************************************************************************
 class RemotingCommand {
  public:
+  RemotingCommand() : m_code(0) {};
   RemotingCommand(int code, CommandHeader* pCustomHeader = NULL);
   RemotingCommand(int code, string language, int version, int opaque, int flag,
                   string remark, CommandHeader* pCustomHeader);
+  RemotingCommand(const RemotingCommand& command);
+  RemotingCommand& operator=(const RemotingCommand& command);
+
   virtual ~RemotingCommand();
 
   const MemoryBlock* GetHead() const;
@@ -65,6 +69,8 @@ class RemotingCommand {
  public:
   void Encode();
   static RemotingCommand* Decode(const MemoryBlock& mem);
+
+  std::string ToString();
 
  private:
   int m_code;

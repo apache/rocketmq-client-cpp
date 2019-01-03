@@ -207,7 +207,9 @@ RemotingCommand* TcpRemotingClient::invokeSync(const string& addr,
 bool TcpRemotingClient::invokeAsync(const string& addr,
                                     RemotingCommand& request,
                                     AsyncCallbackWrap* cbw,
-                                    int64 timeoutMilliseconds) {
+                                    int64 timeoutMilliseconds,
+                                    int maxRetrySendTimes,
+                                    int retrySendTimes) {
   boost::shared_ptr<TcpTransport> pTcp = GetTransport(addr, true);
   if (pTcp != NULL) {
     //<!not delete, for callback to delete;
@@ -215,6 +217,10 @@ bool TcpRemotingClient::invokeAsync(const string& addr,
     int opaque = request.getOpaque();
     boost::shared_ptr<ResponseFuture> responseFuture(
         new ResponseFuture(code, opaque, this, timeoutMilliseconds, true, cbw));
+	responseFuture->setMaxRetrySendTimes(maxRetrySendTimes);
+	responseFuture->setRetrySendTimes(retrySendTimes);
+	responseFuture->setBrokerAddr(addr);
+	responseFuture->setRequestCommand(request);	
     addAsyncResponseFuture(opaque, responseFuture);
     if (cbw) {
       boost::asio::deadline_timer* t = new boost::asio::deadline_timer(
@@ -577,7 +583,7 @@ void TcpRemotingClient::processResponseCommand(
     RemotingCommand* pCmd, boost::shared_ptr<ResponseFuture> pfuture) {
   int code = pfuture->getRequestCode();
   int opaque = pCmd->getOpaque();
-  LOG_DEBUG("processResponseCommand, code:%d,opaque:%d", code, opaque);
+  LOG_DEBUG("processResponseCommand, code:%d,opaque:%d, maxRetryTimes:%d, retrySendTimes:%d", code, opaque, pfuture->getMaxRetrySendTimes(), pfuture->getRetrySendTimes());
   pCmd->SetExtHeader(code);  // set head , for response use
 
   pfuture->setResponse(pCmd);
@@ -586,8 +592,8 @@ void TcpRemotingClient::processResponseCommand(
     if (!pfuture->getAsyncResponseFlag()) {
       pfuture->setAsyncResponseFlag();
       pfuture->setAsyncCallBackStatus(asyncCallBackStatus_response);
-      pfuture->executeInvokeCallback();
-      cancelTimerCallback(opaque);
+	  cancelTimerCallback(opaque);
+      pfuture->executeInvokeCallback();	  
     }
   }
 }
@@ -636,9 +642,11 @@ TcpRemotingClient::findAndDeleteResponseFuture(int opaque) {
 void TcpRemotingClient::handleAsyncPullForResponseTimeout(
     const boost::system::error_code& e, int opaque) {
   if (e == boost::asio::error::operation_aborted) {
+    LOG_INFO("handleAsyncPullForResponseTimeout aborted opaque:%d, e_code:%d, msg:%s", opaque, e.value(), e.message().data());
     return;
   }
 
+  LOG_DEBUG("handleAsyncPullForResponseTimeout opaque:%d, e_code:%d, msg:%s", opaque, e.value(), e.message().data());
   boost::shared_ptr<ResponseFuture> pFuture(
       findAndDeleteAsyncResponseFuture(opaque));
   if (pFuture && pFuture->getASyncFlag() && (pFuture->getAsyncCallbackWrap())) {
@@ -686,7 +694,7 @@ void TcpRemotingClient::addTimerCallback(boost::asio::deadline_timer* t,
                                          int opaque) {
   boost::lock_guard<boost::mutex> lock(m_timerMapMutex);
   if (m_async_timer_map.find(opaque) != m_async_timer_map.end()) {
-    // AGENT_INFO("addTimerCallback:erase timerCallback opaque:%lld", opaque);
+    LOG_DEBUG("addTimerCallback:erase timerCallback opaque:%lld", opaque);
     boost::asio::deadline_timer* old_t = m_async_timer_map[opaque];
     old_t->cancel();
     delete old_t;
@@ -699,6 +707,7 @@ void TcpRemotingClient::addTimerCallback(boost::asio::deadline_timer* t,
 void TcpRemotingClient::eraseTimerCallback(int opaque) {
   boost::lock_guard<boost::mutex> lock(m_timerMapMutex);
   if (m_async_timer_map.find(opaque) != m_async_timer_map.end()) {
+  	LOG_DEBUG("eraseTimerCallback: opaque:%lld", opaque);
     boost::asio::deadline_timer* t = m_async_timer_map[opaque];
     delete t;
     t = NULL;
@@ -709,7 +718,7 @@ void TcpRemotingClient::eraseTimerCallback(int opaque) {
 void TcpRemotingClient::cancelTimerCallback(int opaque) {
   boost::lock_guard<boost::mutex> lock(m_timerMapMutex);
   if (m_async_timer_map.find(opaque) != m_async_timer_map.end()) {
-    // AGENT_INFO("cancel timerCallback opaque:%lld", opaque);
+  	LOG_DEBUG("cancelTimerCallback: opaque:%lld", opaque);    
     boost::asio::deadline_timer* t = m_async_timer_map[opaque];
     t->cancel();
     delete t;
