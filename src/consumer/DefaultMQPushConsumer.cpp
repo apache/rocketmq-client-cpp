@@ -226,11 +226,21 @@ void DefaultMQPushConsumer::boost_asio_work() {
 
 DefaultMQPushConsumer::~DefaultMQPushConsumer() {
   m_pMessageListener = NULL;
-  deleteAndZero(m_pullmsgQueue);
-  deleteAndZero(m_pRebalance);
-  deleteAndZero(m_pOffsetStore);
-  deleteAndZero(m_pPullAPIWrapper);
-  deleteAndZero(m_consumerService);
+  if (m_pullmsgQueue != NULL) {
+    deleteAndZero(m_pullmsgQueue);
+  }
+  if (m_pRebalance != NULL) {
+    deleteAndZero(m_pRebalance);
+  }
+  if (m_pOffsetStore != NULL) {
+    deleteAndZero(m_pOffsetStore);
+  }
+  if (m_pPullAPIWrapper != NULL) {
+    deleteAndZero(m_pPullAPIWrapper);
+  }
+  if (m_consumerService != NULL) {
+    deleteAndZero(m_consumerService);
+  }
   PullMAP::iterator it = m_PullCallback.begin();
   for (; it != m_PullCallback.end(); ++it) {
     deleteAndZero(it->second);
