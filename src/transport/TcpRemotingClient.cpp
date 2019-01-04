@@ -718,7 +718,7 @@ void TcpRemotingClient::eraseTimerCallback(int opaque) {
 void TcpRemotingClient::cancelTimerCallback(int opaque) {
   boost::lock_guard<boost::mutex> lock(m_timerMapMutex);
   if (m_async_timer_map.find(opaque) != m_async_timer_map.end()) {
-  	LOG_DEBUG("cancelTimerCallback: opaque:%lld", opaque);    
+    LOG_DEBUG("cancelTimerCallback: opaque:%lld", opaque);    
     boost::asio::deadline_timer* t = m_async_timer_map[opaque];
     t->cancel();
     delete t;
