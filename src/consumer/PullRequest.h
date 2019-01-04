@@ -85,7 +85,7 @@ class PullRequest {
   map<int64, MQMessageExt> m_msgTreeMapTemp;
   boost::mutex m_pullRequestLock;
   uint64 m_lastLockTimestamp;  // ms
-  uint64 m_tryUnlockTimes;
+  //uint64 m_tryUnlockTimes;
   uint64 m_lastPullTimestamp;
   uint64 m_lastConsumeTimestamp;
   boost::timed_mutex m_consumeLock;

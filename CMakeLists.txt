@@ -139,6 +139,8 @@ set(CXX_FLAGS
  -fPIC
  -fno-strict-aliasing
  -std=c++11
+ -Wno-unused-local-typedef
+ -Wno-expansion-to-defined
  # -finline-limit=1000
  # -Wextra
  # -pedantic

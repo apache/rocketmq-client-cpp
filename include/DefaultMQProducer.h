@@ -97,7 +97,7 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer {
   int m_sendMsgTimeout;
   int m_compressMsgBodyOverHowmuch;
   int m_maxMessageSize;  //<! default:128K;
-  bool m_retryAnotherBrokerWhenNotStoreOK;
+  //bool m_retryAnotherBrokerWhenNotStoreOK;
   int m_compressLevel;
   int m_retryTimes;
 };

@@ -30,12 +30,12 @@ namespace rocketmq {
 TcpTransport::TcpTransport(TcpRemotingClient *pTcpRemointClient,
                            READ_CALLBACK handle /* = NULL */)
     : m_tcpConnectStatus(e_connectInit),
-      m_ReadDatathread(NULL),
-      m_readcallback(handle),
-      m_tcpRemotingClient(pTcpRemointClient),
       m_event_base_status(false),
       m_event_base_mtx(),
-      m_event_base_cv() {
+      m_event_base_cv(),
+      m_ReadDatathread(NULL),
+      m_readcallback(handle),
+      m_tcpRemotingClient(pTcpRemointClient){
   m_startTime = UtilAll::currentTimeMillis();
 #ifdef WIN32
   evthread_use_windows_threads();
