@@ -16,10 +16,14 @@
  */
 
 #include "DefaultMQProducer.h"
+#include "AsyncCallback.h"
+
 #include "CProducer.h"
 #include "CCommon.h"
-#include <string.h>
+#include "CSendResult.h"
 #include "CMessage.h"
+
+#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -43,6 +47,27 @@ public:
 
 private:
     QueueSelectorCallback m_pCallback;
+};
+
+class CSendCallback : public SendCallback{
+public:
+	CSendCallback(CSendSuccessCallback cSendSuccessCallback ,CSendExceptionCallback cSendExceptionCallback){
+		m_cSendSuccessCallback = cSendSuccessCallback;
+		m_cSendExceptionCallback= cSendExceptionCallback;
+	}
+
+	virtual void onSuccess(SendResult& sendResult) {
+		CSendResult *result;
+		result->sendStatus = CSendStatus((int) sendResult.getSendStatus());
+		result->offset = sendResult.getQueueOffset();
+		strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+		result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
+		m_cSendSuccessCallback( result);
+	}
+	  virtual void onException(MQException& e) { cout << "send Exception\n"; }
+private:
+	  CSendSuccessCallback m_cSendSuccessCallback;
+	  CSendExceptionCallback m_cSendExceptionCallback;
 };
 
 
@@ -125,6 +150,21 @@ int SendMessageSync(CProducer *producer, CMessage *msg, CSendResult *result) {
         return PRODUCER_SEND_SYNC_FAILED;
     }
     return OK;
+}
+
+int SendMessageAsync(CProducer *producer, CMessage *msg, CSendSuccessCallback cSendSuccessCallback,CSendExceptionCallback cSendExceptionCallback){
+	if (producer == NULL || msg == NULL || cSendSuccessCallback ==NULL || cSendExceptionCallback==NULL) {
+		return NULL_POINTER;
+	}
+	DefaultMQProducer *defaultMQProducer = (DefaultMQProducer *) producer;
+	MQMessage *message = (MQMessage *) msg;
+	CSendCallback cSendCallback(cSendSuccessCallback, cSendExceptionCallback);
+	try {
+		defaultMQProducer->send(*message ,&cSendCallback,true);
+	} catch (exception &e) {
+		return PRODUCER_SEND_ONEWAY_FAILED;
+	}
+	return OK;
 }
 
 int SendMessageOneway(CProducer *producer, CMessage *msg) {
