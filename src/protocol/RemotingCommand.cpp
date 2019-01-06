@@ -281,7 +281,7 @@ void RemotingCommand::addExtField(const string& key, const string& value) {
   m_extFields[key] = value;
 }
 
-std::string RemotingCommand::ToString() {
+std::string RemotingCommand::ToString() const {
 	 std::stringstream ss;
 	 ss << "code:" << m_code
 	  <<",opaque:"<< m_opaque
