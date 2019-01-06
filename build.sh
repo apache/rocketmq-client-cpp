@@ -24,7 +24,7 @@ fname_libevent="libevent*.zip"
 fname_jsoncpp="jsoncpp*.zip"
 fname_boost="boost*.tar.gz"
 fname_libevent_down="release-2.0.22-stable.zip"
-fname_jsoncpp_down="0.10.6.zip"
+fname_jsoncpp_down="0.10.7.zip"
 fname_boost_down="1.58.0/boost_1_58_0.tar.gz"
 
 PrintParams()
