@@ -202,10 +202,13 @@ namespace rocketmq {
     DefaultMQPushConsumer::DefaultMQPushConsumer(const string &groupname)
             : m_consumeFromWhere(CONSUME_FROM_LAST_OFFSET),
               m_pOffsetStore(NULL),
+              m_pRebalance(NULL),
               m_pPullAPIWrapper(NULL),
+              m_consumerService(NULL),
               m_pMessageListener(NULL),
               m_consumeMessageBatchMaxSize(1),
-              m_maxMsgCacheSize(1000) {
+              m_maxMsgCacheSize(1000),
+              m_pullmsgQueue(NULL) {
         //<!set default group name;
         string gname = groupname.empty() ? DEFAULT_CONSUMER_GROUP : groupname;
         setGroupName(gname);
