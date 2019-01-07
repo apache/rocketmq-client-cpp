@@ -29,7 +29,7 @@ extern "C" {
 //typedef struct _CProducer_ _CProducer;
 typedef struct CProducer CProducer;
 typedef int(*QueueSelectorCallback)(int size, CMessage *msg, void *arg);
-typedef void(*CSendSuccessCallback)(CSendResult *result);
+typedef void(*CSendSuccessCallback)(CSendResult result);
 typedef void(*CSendExceptionCallback)(char *exceptionInfo);
 
 ROCKETMQCLIENT_API CProducer *CreateProducer(const char *groupId);

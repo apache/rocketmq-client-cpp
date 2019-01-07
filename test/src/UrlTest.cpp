@@ -20,6 +20,14 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
+#include <stdio.h>
+
+#include "CProducer.h"
+#include "CCommon.h"
+#include "CMessage.h"
+#include "CSendResult.h"
+#include <unistd.h>
+
 using namespace std;
 using ::testing::InitGoogleTest;
 using ::testing::InitGoogleMock;
@@ -53,9 +61,43 @@ TEST(Url, Url) {
 
 }
 
+
+void sendSuccessCallback(CSendResult result){
+	printf("Msg Send ID:%d\n", result.offset);
+}
+
+void sendExceptionCallback(char *exceptionInfo){
+
+}
+
+TEST(Producer, asynSend){
+	CProducer *producer = CreateProducer("testGroup");
+	SetProducerNameServerAddress(producer, "172.17.0.1:9876");
+	StartProducer(producer);
+	printf("Producer start.....\n");
+
+	int i = 0;
+	char DestMsg[256];
+	CMessage *msg = CreateMessage("test");
+	SetMessageTags(msg, "Test_Tag");
+	SetMessageKeys(msg, "Test_Keys");
+	printf("send one message : %d\n", i);
+	memset(DestMsg, 0, sizeof(DestMsg));
+	snprintf(DestMsg, 255, "New message body: index %d", 1);
+	SetMessageBody(msg, DestMsg);
+	SendMessageAsync(producer, msg, sendSuccessCallback , sendExceptionCallback);
+	usleep(100 * 1000);
+	ShutdownProducer(producer);
+	DestroyProducer(producer);
+	printf("Producer Shutdown!\n");
+}
+
+
 int main(int argc, char* argv[]) {
 	InitGoogleMock(&argc, argv);
 
-	testing::GTEST_FLAG(filter) = "Url.Url";
-	return RUN_ALL_TESTS();
+	testing::GTEST_FLAG(filter) = "Producer.asynSend";
+	int itestts = RUN_ALL_TESTS();
+	printf("i %d" , itestts);
+	return itestts;
 }

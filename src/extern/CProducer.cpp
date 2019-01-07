@@ -51,21 +51,21 @@ private:
 
 class CSendCallback : public SendCallback{
 public:
-	CSendCallback(CSendSuccessCallback cSendSuccessCallback ,CSendExceptionCallback cSendExceptionCallback){
-		m_cSendSuccessCallback = cSendSuccessCallback;
-		m_cSendExceptionCallback= cSendExceptionCallback;
-	}
 
 	virtual void onSuccess(SendResult& sendResult) {
-		CSendResult *result;
-		result->sendStatus = CSendStatus((int) sendResult.getSendStatus());
-		result->offset = sendResult.getQueueOffset();
-		strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
-		result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
-		m_cSendSuccessCallback( result);
+		cout << "send onSuccess\n";
+		CSendResult result;
+		result.sendStatus = CSendStatus((int) sendResult.getSendStatus());
+		result.offset = sendResult.getQueueOffset();
+		strncpy(result.msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+		result.msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
+		m_cSendSuccessCallback(result);
+
 	}
-	  virtual void onException(MQException& e) { cout << "send Exception\n"; }
-private:
+	  virtual void onException(MQException& e) {
+		  cout << "send Exception\n";
+	  }
+public:
 	  CSendSuccessCallback m_cSendSuccessCallback;
 	  CSendExceptionCallback m_cSendExceptionCallback;
 };
@@ -158,7 +158,9 @@ int SendMessageAsync(CProducer *producer, CMessage *msg, CSendSuccessCallback cS
 	}
 	DefaultMQProducer *defaultMQProducer = (DefaultMQProducer *) producer;
 	MQMessage *message = (MQMessage *) msg;
-	CSendCallback cSendCallback(cSendSuccessCallback, cSendExceptionCallback);
+	CSendCallback cSendCallback;
+	cSendCallback.m_cSendSuccessCallback = cSendSuccessCallback;
+	cSendCallback.m_cSendExceptionCallback = cSendExceptionCallback;
 	try {
 		defaultMQProducer->send(*message ,&cSendCallback,true);
 	} catch (exception &e) {

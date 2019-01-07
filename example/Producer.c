@@ -57,29 +57,6 @@ void startSendMessage(CProducer *producer) {
     }
 }
 
-void sendSuccessCallback(CSendResult *result){
-	printf("Msg Send ID:%s\n", result->msgId);
-}
-
-void sendExceptionCallback(char *exceptionInfo){
-
-}
-
-void startSendMessageAsync(CProducer *producer){
-	int i = 0;
-	char DestMsg[256];
-	CMessage *msg = CreateMessage("T_TestTopic");
-	SetMessageTags(msg, "Test_Tag");
-	SetMessageKeys(msg, "Test_Keys");
-	for (i = 0; i < 10; i++) {
-		printf("send one message : %d\n", i);
-		memset(DestMsg, 0, sizeof(DestMsg));
-		snprintf(DestMsg, 255, "New message body: index %d", i);
-		SetMessageBody(msg, DestMsg);
-		SendMessageAsync(producer, msg, sendSuccessCallback , sendExceptionCallback);
-		thread_sleep(1000);
-	}
-}
 
 int main(int argc, char *argv[]) {
     printf("Producer Initializing.....\n");
@@ -88,8 +65,7 @@ int main(int argc, char *argv[]) {
     SetProducerNameServerAddress(producer, "127.0.0.1:9876");
     StartProducer(producer);
     printf("Producer start.....\n");
-    //startSendMessage(producer);
-    startSendMessageAsync(producer);
+    startSendMessage(producer);
     ShutdownProducer(producer);
     DestroyProducer(producer);
     printf("Producer Shutdown!\n");
