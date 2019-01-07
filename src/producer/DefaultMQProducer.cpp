@@ -37,7 +37,7 @@ DefaultMQProducer::DefaultMQProducer(const string& groupname)
     : m_sendMsgTimeout(3000),
       m_compressMsgBodyOverHowmuch(4 * 1024),
       m_maxMessageSize(1024 * 128),
-      m_retryAnotherBrokerWhenNotStoreOK(false),
+      //m_retryAnotherBrokerWhenNotStoreOK(false),
       m_compressLevel(5),
       m_retryTimes(5),
       m_retryTimes4Async(1) {
@@ -51,7 +51,8 @@ DefaultMQProducer::~DefaultMQProducer() {}
 void DefaultMQProducer::start() {
 #ifndef WIN32
   /* Ignore the SIGPIPE */
-  struct sigaction sa = {0};
+  struct sigaction sa;
+  memset(&sa,0, sizeof(struct sigaction));
   sa.sa_handler = SIG_IGN;
   sa.sa_flags = 0;
   sigaction(SIGPIPE, &sa, 0);
