@@ -156,7 +156,7 @@ BuildLibevent()
     else
         wget https://github.com/libevent/libevent/archive/${fname_libevent_down} -O libevent-${fname_libevent_down}
     fi
-    unzip -o ${fname_libevent} > libevent.txt 2>&1
+    unzip -o ${fname_libevent}
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -198,7 +198,7 @@ BuildJsonCPP()
     else
         wget https://github.com/open-source-parsers/jsoncpp/archive/${fname_jsoncpp_down} -O jsoncpp-${fname_jsoncpp_down}
     fi
-    unzip -o ${fname_jsoncpp} > json.txt 2>&1
+    unzip -o ${fname_jsoncpp}
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -242,7 +242,7 @@ BuildBoost()
     else
         wget http://sourceforge.net/projects/boost/files/boost/${fname_boost_down}
     fi
-    tar -zxvf ${fname_boost} > boost.txt 2>&1
+    tar -zxvf ${fname_boost}
     boost_dir=`ls | grep boost | grep .*[^gz]$`
     cd ${boost_dir}
     if [ $? -ne 0 ];then
@@ -254,7 +254,7 @@ BuildBoost()
     fi    
     echo "build boost static #####################"
     pwd
-    ./b2 cflags=-fPIC cxxflags=-fPIC   --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static  release install --prefix=${install_lib_dir} 1>boostMakeLog.txt
+    ./b2 cflags=-fPIC cxxflags=-fPIC   --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static  release install --prefix=${install_lib_dir}
     if [ $? -ne 0 ];then
         exit 1
     fi
