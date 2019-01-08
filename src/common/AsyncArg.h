@@ -21,7 +21,7 @@
 #include "MQMessageQueue.h"
 #include "PullAPIWrapper.h"
 #include "SubscriptionData.h"
-
+#include "../consumer/PullRequest.h"
 namespace rocketmq {
 //<!***************************************************************************
 
@@ -29,6 +29,7 @@ struct AsyncArg {
   MQMessageQueue mq;
   SubscriptionData subData;
   PullAPIWrapper* pPullWrapper;
+  PullRequest* pPullRequest;
 };
 
 //<!***************************************************************************

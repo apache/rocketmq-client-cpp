@@ -592,7 +592,7 @@ void TcpRemotingClient::processResponseCommand(
     if (!pfuture->getAsyncResponseFlag()) {
       pfuture->setAsyncResponseFlag();
       pfuture->setAsyncCallBackStatus(asyncCallBackStatus_response);
-	  cancelTimerCallback(opaque);
+      cancelTimerCallback(opaque);
       pfuture->executeInvokeCallback();	  
     }
   }
@@ -707,7 +707,7 @@ void TcpRemotingClient::addTimerCallback(boost::asio::deadline_timer* t,
 void TcpRemotingClient::eraseTimerCallback(int opaque) {
   boost::lock_guard<boost::mutex> lock(m_timerMapMutex);
   if (m_async_timer_map.find(opaque) != m_async_timer_map.end()) {
-  	LOG_DEBUG("eraseTimerCallback: opaque:%lld", opaque);
+    LOG_DEBUG("eraseTimerCallback: opaque:%lld", opaque);
     boost::asio::deadline_timer* t = m_async_timer_map[opaque];
     delete t;
     t = NULL;
@@ -737,6 +737,21 @@ void TcpRemotingClient::removeAllTimerCallback() {
     t = NULL;
   }
   m_async_timer_map.clear();
+}
+
+void TcpRemotingClient::deleteOpaqueForDropPullRequest(const MQMessageQueue& mq, int opaque) {
+  //delete the map record of opaque<->ResponseFuture, so the answer for the pull request will discard when receive it later
+  boost::shared_ptr<ResponseFuture> pFuture(findAndDeleteAsyncResponseFuture(opaque));
+  if (!pFuture) {
+    pFuture = findAndDeleteResponseFuture(opaque);
+    if (pFuture) {
+      LOG_DEBUG("succ deleted the sync pullrequest for opaque:%d, mq:%s", opaque, mq.toString().data());
+    }
+  } else {
+    LOG_DEBUG("succ deleted the async pullrequest for opaque:%d, mq:%s", opaque, mq.toString().data()); 
+  }
+  //delete the timeout timer for opaque for pullrequest
+  cancelTimerCallback(opaque);
 }
 
 //<!************************************************************************

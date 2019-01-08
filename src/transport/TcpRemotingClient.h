@@ -58,6 +58,7 @@ class TcpRemotingClient {
   void boost_asio_work();
   void handleAsyncPullForResponseTimeout(const boost::system::error_code& e,
                                          int opaque);
+  void deleteOpaqueForDropPullRequest(const MQMessageQueue& mq, int opaque);
 
  private:
   static void static_messageReceived(void* context, const MemoryBlock& mem,

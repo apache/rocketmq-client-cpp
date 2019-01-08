@@ -263,6 +263,7 @@ void DefaultMQPullConsumer::pullAsyncImpl(const MQMessageQueue& mq,
   arg.mq = mq;
   arg.subData = *pSData;
   arg.pPullWrapper = m_pPullAPIWrapper;
+  arg.pPullRequest = NULL;
 
   try {
     unique_ptr<PullResult> pullResult(m_pPullAPIWrapper->pullKernelImpl(
