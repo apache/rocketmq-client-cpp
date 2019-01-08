@@ -69,6 +69,8 @@ class PullRequest {
   boost::timed_mutex& getPullRequestCriticalSection();
   void removePullMsgEvent();
   bool addPullMsgEvent();
+  int getLatestPullRequestOpaque() const;
+  void setLatestPullRequestOpaque(int opaque);
 
  public:
   MQMessageQueue m_messageQueue;
@@ -88,6 +90,7 @@ class PullRequest {
   //uint64 m_tryUnlockTimes;
   uint64 m_lastPullTimestamp;
   uint64 m_lastConsumeTimestamp;
+  int    m_latestPullRequestOpaque;
   boost::timed_mutex m_consumeLock;
   boost::atomic<bool> m_bPullMsgEventInprogress;
 };
