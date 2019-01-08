@@ -35,7 +35,7 @@ TcpTransport::TcpTransport(TcpRemotingClient *pTcpRemointClient,
       m_event_base_cv(),
       m_ReadDatathread(NULL),
       m_readcallback(handle),
-      m_tcpRemotingClient(pTcpRemointClient){
+      m_tcpRemotingClient(pTcpRemointClient) {
   m_startTime = UtilAll::currentTimeMillis();
 #ifdef WIN32
   evthread_use_windows_threads();
@@ -87,12 +87,14 @@ tcpConnectStatus TcpTransport::connect(const string &strServerURL,
     LOG_INFO("try to connect to fd:%d, addr:%s", fd, (hostName.c_str()));
 
     evthread_make_base_notifiable(m_eventBase);
-    
-    m_ReadDatathread = new boost::thread(boost::bind(&TcpTransport::runThread, this));
-    
-    while(!m_event_base_status) {
+
+    m_ReadDatathread =
+        new boost::thread(boost::bind(&TcpTransport::runThread, this));
+
+    while (!m_event_base_status) {
       LOG_INFO("Wait till event base is looping");
-      boost::system_time const timeout=boost::get_system_time()+ boost::posix_time::milliseconds(1000);
+      boost::system_time const timeout =
+          boost::get_system_time() + boost::posix_time::milliseconds(1000);
       boost::unique_lock<boost::mutex> lock(m_event_base_mtx);
       m_event_base_cv.timed_wait(lock, timeout);
     }
@@ -182,7 +184,6 @@ void TcpTransport::exitBaseDispatch() {
 void TcpTransport::runThread() {
   while (m_ReadDatathread) {
     if (m_eventBase != NULL) {
-      
       if (!m_event_base_status) {
         boost::mutex::scoped_lock lock(m_event_base_mtx);
         m_event_base_status.store(true);
@@ -349,4 +350,4 @@ const string TcpTransport::getPeerAddrAndPort() {
 
 const uint64_t TcpTransport::getStartTime() const { return m_startTime; }
 
-}  //<!end namespace;
+}  // namespace rocketmq
