@@ -182,22 +182,20 @@ void TcpTransport::exitBaseDispatch() {
 }
 
 void TcpTransport::runThread() {
-  while (m_ReadDatathread) {
-    if (m_eventBase != NULL) {
-      if (!m_event_base_status) {
-        boost::mutex::scoped_lock lock(m_event_base_mtx);
-        m_event_base_status.store(true);
-        m_event_base_cv.notify_all();
-        LOG_INFO("Notify on event_base_dispatch");
-      }
-      event_base_dispatch(m_eventBase);
-      // event_base_loop(m_eventBase, EVLOOP_ONCE);//EVLOOP_NONBLOCK should not
-      // be used, as could not callback event immediatly
+  if (m_eventBase != NULL) {
+    if (!m_event_base_status) {
+      boost::mutex::scoped_lock lock(m_event_base_mtx);
+      m_event_base_status.store(true);
+      m_event_base_cv.notify_all();
+      LOG_INFO("Notify on event_base_dispatch");
     }
-    LOG_INFO("event_base_dispatch exit once");
-    boost::this_thread::sleep(boost::posix_time::milliseconds(1));
-    if (getTcpConnectStatus() != e_connectSuccess) return;
+    event_base_dispatch(m_eventBase);
+    // event_base_loop(m_eventBase, EVLOOP_ONCE);//EVLOOP_NONBLOCK should not
+    // be used, as could not callback event immediatly
   }
+  LOG_INFO("event_base_dispatch exit once");
+  boost::this_thread::sleep(boost::posix_time::milliseconds(1));
+  if (getTcpConnectStatus() != e_connectSuccess) return;
 }
 
 void TcpTransport::timeoutcb(evutil_socket_t fd, short what, void *arg) {
