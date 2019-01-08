@@ -16,19 +16,21 @@
  */
 #ifndef __RESPONSEFUTURE_H__
 #define __RESPONSEFUTURE_H__
+
 #include <boost/atomic.hpp>
 #include <boost/thread/condition_variable.hpp>
+
 #include "AsyncCallbackWrap.h"
 #include "RemotingCommand.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
 
-typedef enum asyncCallBackStatus {
-  asyncCallBackStatus_init = 0,
-  asyncCallBackStatus_response = 1,
-  asyncCallBackStatus_timeout = 2
-} asyncCallBackStatus;
+typedef enum AsyncCallbackStatus {
+  ASYNC_CALLBACK_STATUS_INIT = 0,
+  ASYNC_CALLBACK_STATUS_RESPONSE = 1,
+  ASYNC_CALLBACK_STATUS_TIMEOUT = 2
+} AsyncCallbAackStatus;
 
 class TcpRemotingClient;
 //<!***************************************************************************
@@ -39,32 +41,30 @@ class ResponseFuture {
                  TcpRemotingClient* powner,
                  int64 timeoutMilliseconds,
                  bool bAsync = false,
-                 AsyncCallbackWrap* pcall = NULL);
+                 AsyncCallbackWrap* pCallback = nullptr);
   virtual ~ResponseFuture();
+
   void releaseThreadCondition();
-  RemotingCommand* waitResponse(int timeoutMillis);
+  RemotingCommand* waitResponse(int timeoutMillis = 0);
   RemotingCommand* getCommand() const;
 
-  void setResponse(RemotingCommand* pResponseCommand);
-  bool isSendRequestOK();
+  bool setResponse(RemotingCommand* pResponseCommand);
+
+  bool isSendRequestOK() const;
   void setSendRequestOK(bool sendRequestOK);
   int getRequestCode() const;
   int getOpaque() const;
 
   //<!callback;
-  void executeInvokeCallback();
-  void executeInvokeCallbackException();
+  void invokeCompleteCallback();
+  void invokeExceptionCallback();
   bool isTimeOut() const;
   int getMaxRetrySendTimes() const;
   int getRetrySendTimes() const;
   int64 leftTime() const;
-  // bool    isTimeOutMoreThan30s() const;
-  const bool getASyncFlag();
-  void setAsyncResponseFlag();
-  const bool getAsyncResponseFlag();
-  const bool getSyncResponseFlag();
+  const bool getAsyncFlag();
   AsyncCallbackWrap* getAsyncCallbackWrap();
-  void setAsyncCallBackStatus(asyncCallBackStatus asyncCallbackStatus);
+
   void setMaxRetrySendTimes(int maxRetryTimes);
   void setRetrySendTimes(int retryTimes);
   void setBrokerAddr(const std::string& brokerAddr);
@@ -75,26 +75,30 @@ class ResponseFuture {
  private:
   int m_requestCode;
   int m_opaque;
-  bool m_sendRequestOK;
+  int64 m_timeout;  // ms
+
+  const bool m_bAsync;
+  AsyncCallbackWrap* m_pCallbackWrap;
+
+  AsyncCallbackStatus m_asyncCallbackStatus;
+  boost::mutex m_asyncCallbackLock;
+
+  bool m_haveResponse;
   boost::mutex m_defaultEventLock;
   boost::condition_variable_any m_defaultEvent;
+
   int64 m_beginTimestamp;
-  int64 m_timeout;  // ms
-  boost::atomic<bool> m_bAsync;
+  bool m_sendRequestOK;
   RemotingCommand* m_pResponseCommand;  //<!delete outside;
-  AsyncCallbackWrap* m_pCallbackWrap;
-  boost::mutex m_asyncCallbackLock;
-  asyncCallBackStatus m_asyncCallbackStatus;
-  boost::atomic<bool> m_asyncResponse;
-  boost::atomic<bool> m_syncResponse;
 
   int m_maxRetrySendTimes;
   int m_retrySendTimes;
+
   std::string m_brokerAddr;
   RemotingCommand m_requestCommand;
-  // TcpRemotingClient*    m_tcpRemoteClient;
 };
+
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif

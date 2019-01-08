@@ -19,42 +19,35 @@
 #include "TcpRemotingClient.h"
 
 namespace rocketmq {
+
 //<!************************************************************************
 ResponseFuture::ResponseFuture(int requestCode,
                                int opaque,
                                TcpRemotingClient* powner,
                                int64 timeout,
-                               bool bAsync /* = false */,
-                               AsyncCallbackWrap* pcall /* = NULL */) {
-  m_bAsync.store(bAsync);
-  m_requestCode = requestCode;
-  m_opaque = opaque;
-  m_timeout = timeout;
-  m_pCallbackWrap = pcall;
-  m_pResponseCommand = NULL;
-  m_sendRequestOK = false;
-  m_maxRetrySendTimes = 1;
-  m_retrySendTimes = 1;
+                               bool bAsync,
+                               AsyncCallbackWrap* pCallback)
+    : m_requestCode(requestCode),
+      m_opaque(opaque),
+      m_timeout(timeout),
+      m_bAsync(bAsync),
+      m_pCallbackWrap(pCallback),
+      m_asyncCallbackStatus(ASYNC_CALLBACK_STATUS_INIT),
+      m_haveResponse(false),
+      m_sendRequestOK(false),
+      m_pResponseCommand(nullptr),
+      m_maxRetrySendTimes(1),
+      m_retrySendTimes(1) {
   m_brokerAddr = "";
   m_beginTimestamp = UtilAll::currentTimeMillis();
-  m_asyncCallbackStatus = asyncCallBackStatus_init;
-  if (getASyncFlag()) {
-    m_asyncResponse.store(false);
-    m_syncResponse.store(true);
-  } else {
-    m_asyncResponse.store(true);
-    m_syncResponse.store(false);
-  }
 }
 
 ResponseFuture::~ResponseFuture() {
   deleteAndZero(m_pCallbackWrap);
   /*
-    do not set m_pResponseCommand to NULL when destruct, as m_pResponseCommand
-    is used by MQClientAPIImpl concurrently, and will be released by producer or
-    consumer;
-    m_pResponseCommand = NULL;
-  */
+    do not delete m_pResponseCommand when destruct, as m_pResponseCommand
+    is used by MQClientAPIImpl concurrently, and will be released by producer or consumer;
+   */
 }
 
 void ResponseFuture::releaseThreadCondition() {
@@ -62,55 +55,41 @@ void ResponseFuture::releaseThreadCondition() {
 }
 
 RemotingCommand* ResponseFuture::waitResponse(int timeoutMillis) {
-  boost::unique_lock<boost::mutex> lk(m_defaultEventLock);
-  if (!m_defaultEvent.timed_wait(lk, boost::posix_time::milliseconds(timeoutMillis))) {
-    LOG_WARN("waitResponse of code:%d with opaque:%d timeout", m_requestCode, m_opaque);
-    m_syncResponse.store(true);
+  boost::unique_lock<boost::mutex> eventLock(m_defaultEventLock);
+  if (!m_haveResponse) {
+    if (timeoutMillis <= 0) {
+      timeoutMillis = m_timeout;
+    }
+    if (!m_defaultEvent.timed_wait(eventLock, boost::posix_time::milliseconds(timeoutMillis))) {
+      LOG_WARN("waitResponse of code:%d with opaque:%d timeout", m_requestCode, m_opaque);
+      m_haveResponse = true;
+    }
   }
   return m_pResponseCommand;
 }
 
-void ResponseFuture::setResponse(RemotingCommand* pResponseCommand) {
-  // LOG_DEBUG("setResponse of opaque:%d",m_opaque);
+bool ResponseFuture::setResponse(RemotingCommand* pResponseCommand) {
+  boost::unique_lock<boost::mutex> eventLock(m_defaultEventLock);
+
+  if (m_haveResponse) {
+    return false;
+  }
+
   m_pResponseCommand = pResponseCommand;
+  m_haveResponse = true;
 
-  if (!getASyncFlag()) {
-    if (m_syncResponse.load() == false) {
-      m_defaultEvent.notify_all();
-      m_syncResponse.store(true);
-    }
-  }
-}
-
-const bool ResponseFuture::getSyncResponseFlag() {
-  if (m_syncResponse.load() == true) {
-    return true;
-  }
-  return false;
-}
-
-const bool ResponseFuture::getAsyncResponseFlag() {
-  if (m_asyncResponse.load() == true) {
-    // LOG_DEBUG("ASYNC flag is TRUE,opaque is:%d",getOpaque() );
-    return true;
+  if (!getAsyncFlag()) {
+    m_defaultEvent.notify_all();
   }
 
-  return false;
+  return true;
 }
 
-void ResponseFuture::setAsyncResponseFlag() {
-  m_asyncResponse.store(true);
+const bool ResponseFuture::getAsyncFlag() {
+  return m_bAsync;
 }
 
-const bool ResponseFuture::getASyncFlag() {
-  if (m_bAsync.load() == true) {
-    // LOG_DEBUG("ASYNC flag is TRUE,opaque is:%d",getOpaque() );
-    return true;
-  }
-  return false;
-}
-
-bool ResponseFuture::isSendRequestOK() {
+bool ResponseFuture::isSendRequestOK() const {
   return m_sendRequestOK;
 }
 
@@ -126,58 +105,32 @@ int ResponseFuture::getRequestCode() const {
   return m_requestCode;
 }
 
-void ResponseFuture::setAsyncCallBackStatus(asyncCallBackStatus asyncCallbackStatus) {
-  boost::lock_guard<boost::mutex> lock(m_asyncCallbackLock);
-  if (m_asyncCallbackStatus == asyncCallBackStatus_init) {
-    m_asyncCallbackStatus = asyncCallbackStatus;
-  }
-}
-
-void ResponseFuture::executeInvokeCallback() {
-  if (m_pCallbackWrap == NULL) {
+void ResponseFuture::invokeCompleteCallback() {
+  if (m_pCallbackWrap == nullptr) {
     deleteAndZero(m_pResponseCommand);
     return;
   } else {
-    if (m_asyncCallbackStatus == asyncCallBackStatus_response) {
-      m_pCallbackWrap->operationComplete(this, true);
-    } else {
-      if (m_pResponseCommand)
-        deleteAndZero(m_pResponseCommand);  // the responseCommand from
-                                            // RemotingCommand::Decode(mem) will
-                                            // only deleted by operationComplete
-                                            // automatically
-      LOG_WARN(
-          "timeout and response incoming concurrently of opaque:%d, and "
-          "executeInvokeCallbackException was called earlier",
-          m_opaque);
-    }
+    m_pCallbackWrap->operationComplete(this, true);
   }
 }
 
-void ResponseFuture::executeInvokeCallbackException() {
-  if (m_pCallbackWrap == NULL) {
+void ResponseFuture::invokeExceptionCallback() {
+  if (m_pCallbackWrap == nullptr) {
     LOG_ERROR("m_pCallbackWrap is NULL, critical error");
     return;
   } else {
-    if (m_asyncCallbackStatus == asyncCallBackStatus_timeout) {
-      // here no need retrySendTimes process because of it have timeout
-      LOG_ERROR("send msg, callback timeout, opaque:%d, sendTimes:%d, maxRetryTimes:%d", getOpaque(),
-                getRetrySendTimes(), getMaxRetrySendTimes());
+    // here no need retrySendTimes process because of it have timeout
+    LOG_ERROR("send msg, callback timeout, opaque:%d, sendTimes:%d, maxRetryTimes:%d", getOpaque(), getRetrySendTimes(),
+              getMaxRetrySendTimes());
 
-      m_pCallbackWrap->onException();
-    } else {
-      LOG_WARN(
-          "timeout and response incoming concurrently of opaque:%d, and "
-          "executeInvokeCallback was called earlier",
-          m_opaque);
-    }
+    m_pCallbackWrap->onException();
   }
 }
 
 bool ResponseFuture::isTimeOut() const {
   int64 diff = UtilAll::currentTimeMillis() - m_beginTimestamp;
   //<!only async;
-  return m_bAsync.load() == 1 && diff > m_timeout;
+  return m_bAsync && diff > m_timeout;
 }
 
 int ResponseFuture::getMaxRetrySendTimes() const {
@@ -197,15 +150,16 @@ void ResponseFuture::setRetrySendTimes(int retryTimes) {
 void ResponseFuture::setBrokerAddr(const std::string& brokerAddr) {
   m_brokerAddr = brokerAddr;
 }
+
+std::string ResponseFuture::getBrokerAddr() const {
+  return m_brokerAddr;
+}
+
 void ResponseFuture::setRequestCommand(const RemotingCommand& requestCommand) {
   m_requestCommand = requestCommand;
 }
-
 const RemotingCommand& ResponseFuture::getRequestCommand() {
   return m_requestCommand;
-}
-std::string ResponseFuture::getBrokerAddr() const {
-  return m_brokerAddr;
 }
 
 int64 ResponseFuture::leftTime() const {
@@ -222,4 +176,4 @@ AsyncCallbackWrap* ResponseFuture::getAsyncCallbackWrap() {
 }
 
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
