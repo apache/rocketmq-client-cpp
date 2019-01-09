@@ -30,8 +30,8 @@ cp -rf ${CWD_DIR}/bin/*.a    ${DEPLOY_BUILD_HOME}/lib/
 cp -rf ${CWD_DIR}/bin/*.so   ${DEPLOY_BUILD_HOME}/lib/
 cp -rf ${CWD_DIR}/include    ${DEPLOY_BUILD_HOME}/
 cp -rf ${CWD_DIR}/example    ${DEPLOY_BUILD_HOME}/
-cp -rf ${CWD_DIR}/doc 	     ${DEPLOY_BUILD_HOME}/
-cp -rf ${CWD_DIR}/changelog  ${DEPLOY_BUILD_HOME}/
+#cp -rf ${CWD_DIR}/doc 	     ${DEPLOY_BUILD_HOME}/
+#cp -rf ${CWD_DIR}/changelog  ${DEPLOY_BUILD_HOME}/
 cp -rf ${CWD_DIR}/README.md  ${DEPLOY_BUILD_HOME}/
 
 cd ${CWD_DIR} && tar -cvzf ./${VERSION}.tar.gz ./${VERSION}  >/dev/null 2>&1
