@@ -263,10 +263,12 @@ bool PullRequest::addPullMsgEvent() {
 }
 
 int PullRequest::getLatestPullRequestOpaque() const {
+    boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
     return m_latestPullRequestOpaque;
 }
 
 void PullRequest::setLatestPullRequestOpaque(int opaque) {
+    boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
     m_latestPullRequestOpaque = opaque;
 }
 
