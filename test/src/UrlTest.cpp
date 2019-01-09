@@ -63,16 +63,17 @@ TEST(Url, Url) {
 
 
 void sendSuccessCallback(CSendResult result){
-	printf("Msg Send ID:%d\n", result.offset);
+	printf("Msg Send ID:%s\n", result.msgId);
 }
 
-void sendExceptionCallback(char *exceptionInfo){
-
+void sendExceptionCallback(const char*  exceptionInfo){
+	printf("asyn send exception info : %s\n" , exceptionInfo);
 }
 
 TEST(Producer, asynSend){
 	CProducer *producer = CreateProducer("testGroup");
-	SetProducerNameServerAddress(producer, "172.17.0.1:9876");
+	SetProducerNameServerAddress(producer, "127.0.0.1:9876");
+	SetProducerSendMsgTimeout(producer , 3);
 	StartProducer(producer);
 	printf("Producer start.....\n");
 

@@ -49,9 +49,13 @@ private:
     QueueSelectorCallback m_pCallback;
 };
 
-class CSendCallback : public SendCallback{
+class CSendCallback : public AutoDeleteSendCallBack{
 public:
-
+	CSendCallback(CSendSuccessCallback cSendSuccessCallback,CSendExceptionCallback cSendExceptionCallback){
+		m_cSendSuccessCallback = cSendSuccessCallback;
+		m_cSendExceptionCallback = cSendExceptionCallback;
+	}
+	virtual ~CSendCallback(){}
 	virtual void onSuccess(SendResult& sendResult) {
 		cout << "send onSuccess\n";
 		CSendResult result;
@@ -62,10 +66,11 @@ public:
 		m_cSendSuccessCallback(result);
 
 	}
-	  virtual void onException(MQException& e) {
-		  cout << "send Exception\n";
-	  }
-public:
+    virtual void onException(MQException& e) {
+    	m_cSendExceptionCallback( e.what() );
+
+    }
+private:
 	  CSendSuccessCallback m_cSendSuccessCallback;
 	  CSendExceptionCallback m_cSendExceptionCallback;
 };
@@ -153,16 +158,15 @@ int SendMessageSync(CProducer *producer, CMessage *msg, CSendResult *result) {
 }
 
 int SendMessageAsync(CProducer *producer, CMessage *msg, CSendSuccessCallback cSendSuccessCallback,CSendExceptionCallback cSendExceptionCallback){
-	if (producer == NULL || msg == NULL || cSendSuccessCallback ==NULL || cSendExceptionCallback==NULL) {
+	if (producer == NULL || msg == NULL || cSendSuccessCallback == NULL || cSendExceptionCallback == NULL) {
 		return NULL_POINTER;
 	}
 	DefaultMQProducer *defaultMQProducer = (DefaultMQProducer *) producer;
 	MQMessage *message = (MQMessage *) msg;
-	CSendCallback cSendCallback;
-	cSendCallback.m_cSendSuccessCallback = cSendSuccessCallback;
-	cSendCallback.m_cSendExceptionCallback = cSendExceptionCallback;
+	CSendCallback* cSendCallback = new CSendCallback(cSendSuccessCallback , cSendExceptionCallback);
+
 	try {
-		defaultMQProducer->send(*message ,&cSendCallback,true);
+		defaultMQProducer->send(*message ,cSendCallback);
 	} catch (exception &e) {
 		return PRODUCER_SEND_ONEWAY_FAILED;
 	}
