@@ -21,12 +21,17 @@
 #include <ostream>
 #include <sstream>
 #include <string>
+
+#include <string.h>
 #include "RocketMQClient.h"
+#include "CCommon.h"
+
 
 
 namespace rocketmq {
 //<!***************************************************************************
 class ROCKETMQCLIENT_API MQException : public std::exception {
+
  public:
   MQException(const std::string& msg, int error, const char* file,
               int line) throw()
@@ -60,6 +65,10 @@ class ROCKETMQCLIENT_API MQException : public std::exception {
 
   virtual const char* GetType() const throw() { return m_type.c_str(); }
 
+  int GetLine() const throw(){ return m_line;}
+
+  const char* GetFile() const throw() { return m_file.c_str(); }
+
  protected:
   int m_error;
   int m_line;
@@ -67,6 +76,7 @@ class ROCKETMQCLIENT_API MQException : public std::exception {
   std::string m_file;
   std::string m_type;
 };
+
 
 inline std::ostream& operator<<(std::ostream& os, const MQException& e) {
   os << "Type: " << e.GetType() << " , " << e.what();

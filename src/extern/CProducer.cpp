@@ -22,6 +22,7 @@
 #include "CCommon.h"
 #include "CSendResult.h"
 #include "CMessage.h"
+#include "CMQException.h"
 
 #include <string.h>
 
@@ -67,8 +68,12 @@ public:
 
 	}
     virtual void onException(MQException& e) {
-    	m_cSendExceptionCallback( e.what() );
-
+    	CMQException exception;
+		exception.error = e.GetError();
+		exception.line  = e.GetLine();
+		strncpy(exception.msg, e.what(), MAX_MESSAGE_ID_LENGTH - 1);
+		strncpy(exception.file, e.GetFile(), MAX_MESSAGE_ID_LENGTH - 1);
+    	m_cSendExceptionCallback( exception );
     }
 private:
 	  CSendSuccessCallback m_cSendSuccessCallback;

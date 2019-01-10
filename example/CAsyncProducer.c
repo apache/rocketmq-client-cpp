@@ -43,8 +43,11 @@ void sendSuccessCallback(CSendResult result){
 	printf("Msg Send ID:%s\n", result.msgId);
 }
 
-void sendExceptionCallback(const char*  exceptionInfo){
-	printf("asyn send exception info : %s\n" , exceptionInfo);
+void sendExceptionCallback(CMQException e){
+	printf("asyn send exception error : %d\n" , e.error);
+	printf("asyn send exception msg : %s\n" , e.msg);
+	printf("asyn send exception file : %s\n" , e.file);
+	printf("asyn send exception line : %d\n" , e.line);
 }
 
 void startSendMessage(CProducer *producer) {

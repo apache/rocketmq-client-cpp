@@ -26,6 +26,7 @@
 #include "CCommon.h"
 #include "CMessage.h"
 #include "CSendResult.h"
+#include "CMQException.h"
 #include <unistd.h>
 
 using namespace std;
@@ -62,42 +63,11 @@ TEST(Url, Url) {
 }
 
 
-void sendSuccessCallback(CSendResult result){
-	printf("Msg Send ID:%s\n", result.msgId);
-}
-
-void sendExceptionCallback(const char*  exceptionInfo){
-	printf("asyn send exception info : %s\n" , exceptionInfo);
-}
-
-TEST(Producer, asynSend){
-	CProducer *producer = CreateProducer("testGroup");
-	SetProducerNameServerAddress(producer, "127.0.0.1:9876");
-	SetProducerSendMsgTimeout(producer , 3);
-	StartProducer(producer);
-	printf("Producer start.....\n");
-
-	int i = 0;
-	char DestMsg[256];
-	CMessage *msg = CreateMessage("test");
-	SetMessageTags(msg, "Test_Tag");
-	SetMessageKeys(msg, "Test_Keys");
-	printf("send one message : %d\n", i);
-	memset(DestMsg, 0, sizeof(DestMsg));
-	snprintf(DestMsg, 255, "New message body: index %d", 1);
-	SetMessageBody(msg, DestMsg);
-	SendMessageAsync(producer, msg, sendSuccessCallback , sendExceptionCallback);
-	usleep(100 * 1000);
-	ShutdownProducer(producer);
-	DestroyProducer(producer);
-	printf("Producer Shutdown!\n");
-}
-
 
 int main(int argc, char* argv[]) {
 	InitGoogleMock(&argc, argv);
 
-	testing::GTEST_FLAG(filter) = "Producer.asynSend";
+	testing::GTEST_FLAG(filter) = "Url.Url";
 	int itestts = RUN_ALL_TESTS();
 	printf("i %d" , itestts);
 	return itestts;

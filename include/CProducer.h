@@ -21,6 +21,7 @@
 #include "CCommon.h"
 #include "CMessage.h"
 #include "CSendResult.h"
+#include "CMQException.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,7 +31,7 @@ extern "C" {
 typedef struct CProducer CProducer;
 typedef int(*QueueSelectorCallback)(int size, CMessage *msg, void *arg);
 typedef void(*CSendSuccessCallback)(CSendResult result);
-typedef void(*CSendExceptionCallback)(const char* exceptionInfo);
+typedef void(*CSendExceptionCallback)(CMQException e);
 
 ROCKETMQCLIENT_API CProducer *CreateProducer(const char *groupId);
 ROCKETMQCLIENT_API int DestroyProducer(CProducer *producer);
