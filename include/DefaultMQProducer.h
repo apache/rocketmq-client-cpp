@@ -76,6 +76,9 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer {
   int getRetryTimes() const;
   void setRetryTimes(int times);
 
+  int getRetryTimes4Async() const;
+  void setRetryTimes4Async(int times);
+
  protected:
   SendResult sendAutoRetrySelectImpl(MQMessage& msg,
                                      MessageQueueSelector* pSelector,
@@ -97,9 +100,10 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer {
   int m_sendMsgTimeout;
   int m_compressMsgBodyOverHowmuch;
   int m_maxMessageSize;  //<! default:128K;
-  bool m_retryAnotherBrokerWhenNotStoreOK;
+  //bool m_retryAnotherBrokerWhenNotStoreOK;
   int m_compressLevel;
   int m_retryTimes;
+  int m_retryTimes4Async;  
 };
 //<!***************************************************************************
 }  //<!end namespace;

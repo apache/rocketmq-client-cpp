@@ -152,7 +152,7 @@ string MQClientAPIImpl::fetchNameServerAddr(const string& NSDomain) {
       // update the snapshot local file if nameSrv changes or
       // m_firstFetchNameSrv==true
       if (writeDataToFile(fileBak, addrs, true)) {
-        if (UtilAll::ReplaceFile(fileBak, file) == -1)
+        if (!UtilAll::ReplaceFile(fileBak, file))
           LOG_ERROR("could not rename bak file:%s", strerror(errno));
       }
     }
@@ -160,7 +160,7 @@ string MQClientAPIImpl::fetchNameServerAddr(const string& NSDomain) {
     if (!boost::filesystem::exists(snapshot_file)) {
       // the name server snapshot local file maybe deleted by force, create it
       if (writeDataToFile(fileBak, m_nameSrvAddr, true)) {
-        if (UtilAll::ReplaceFile(fileBak, file) == -1)
+        if (!UtilAll::ReplaceFile(fileBak, file))
           LOG_ERROR("could not rename bak file:%s", strerror(errno));
       }
     }
@@ -217,7 +217,7 @@ void MQClientAPIImpl::createTopic(
 
 SendResult MQClientAPIImpl::sendMessage(
     const string& addr, const string& brokerName, const MQMessage& msg,
-    SendMessageRequestHeader* pRequestHeader, int timeoutMillis,
+    SendMessageRequestHeader* pRequestHeader, int timeoutMillis, int maxRetrySendTimes,
     int communicationMode, SendCallback* pSendCallback,
     const SessionCredentials& sessionCredentials) {
   RemotingCommand request(SEND_MESSAGE, pRequestHeader);
@@ -232,8 +232,7 @@ SendResult MQClientAPIImpl::sendMessage(
       m_pRemotingClient->invokeOneway(addr, request);
       break;
     case ComMode_ASYNC:
-      sendMessageAsync(addr, brokerName, msg, request, pSendCallback,
-                       timeoutMillis);
+      sendMessageAsync(addr, brokerName, msg, request, pSendCallback, timeoutMillis, maxRetrySendTimes, 1);
       break;
     case ComMode_SYNC:
       return sendMessageSync(addr, brokerName, msg, request, timeoutMillis);
@@ -411,13 +410,38 @@ void MQClientAPIImpl::sendMessageAsync(const string& addr,
                                        const MQMessage& msg,
                                        RemotingCommand& request,
                                        SendCallback* pSendCallback,
-                                       int64 timeoutMilliseconds) {
+                                       int64 timeoutMilliseconds,
+                                       int maxRetryTimes,
+                                       int retrySendTimes) {
+  int64 begin_time = UtilAll::currentTimeMillis();
   //<!delete in future;
-  AsyncCallbackWrap* cbw =
-      new SendCallbackWrap(brokerName, msg, pSendCallback, this);
-  if (m_pRemotingClient->invokeAsync(addr, request, cbw, timeoutMilliseconds) ==
-      false) {
-    LOG_ERROR("sendMessageAsync failed to addr:%s", addr.c_str());
+  AsyncCallbackWrap* cbw = new SendCallbackWrap(brokerName, msg, pSendCallback, this);
+
+  LOG_DEBUG("sendMessageAsync request:%s, timeout:%lld, maxRetryTimes:%d retrySendTimes:%d", request.ToString().data(), timeoutMilliseconds, maxRetryTimes, retrySendTimes);
+  
+  if (m_pRemotingClient->invokeAsync(addr, request, cbw, timeoutMilliseconds, maxRetryTimes, retrySendTimes) ==
+    false) {
+    LOG_WARN("invokeAsync failed to addr:%s,topic:%s, timeout:%lld, maxRetryTimes:%d, retrySendTimes:%d", 
+	  addr.c_str(), msg.getTopic().data(), timeoutMilliseconds, maxRetryTimes, retrySendTimes);
+	  //when getTcp return false, need consider retrySendTimes
+	  int retry_time = retrySendTimes + 1;
+	  int64 time_out = timeoutMilliseconds - (UtilAll::currentTimeMillis() - begin_time);
+	  while (retry_time < maxRetryTimes && time_out > 0) {
+		  begin_time = UtilAll::currentTimeMillis();
+		  if (m_pRemotingClient->invokeAsync(addr, request, cbw, time_out, maxRetryTimes, retry_time) == false) {
+		    retry_time += 1;
+		    time_out = time_out - (UtilAll::currentTimeMillis() - begin_time);
+			  LOG_WARN("invokeAsync retry failed to addr:%s,topic:%s, timeout:%lld, maxRetryTimes:%d, retrySendTimes:%d", 
+				addr.c_str(), msg.getTopic().data(), time_out, maxRetryTimes, retry_time);
+			  continue;
+		  } else {
+			  return; //invokeAsync success
+		  }
+	  }
+
+    LOG_ERROR("sendMessageAsync failed to addr:%s,topic:%s, timeout:%lld, maxRetryTimes:%d, retrySendTimes:%d", 
+	  addr.c_str(), msg.getTopic().data(), time_out, maxRetryTimes, retrySendTimes);
+
     if (cbw) {
       cbw->onException();
       deleteAndZero(cbw);
