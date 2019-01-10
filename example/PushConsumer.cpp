@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
 
   if (info.syncpush) consumer.setAsyncPull(false);  // set sync pull
   if (info.broadcasting) {
-    consumer.setMessageModel(BROADCASTING);
+    consumer.setMessageModel(rocketmq::BROADCASTING);
   }
 
   consumer.setInstanceName(info.groupname);
