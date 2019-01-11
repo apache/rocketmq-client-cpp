@@ -28,7 +28,8 @@ PullRequest::PullRequest(const string& groupname)
       m_queueOffsetMax(0),
       m_bDroped(false),
       m_bLocked(false),
-      m_bPullMsgEventInprogress(false) {}
+      m_bPullMsgEventInprogress(false),
+      m_latestPullRequestOpaque(0) {}
 
 PullRequest::~PullRequest() {
   m_msgTreeMapTemp.clear();
@@ -45,6 +46,7 @@ PullRequest& PullRequest::operator=(const PullRequest& other) {
     m_messageQueue = other.m_messageQueue;
     m_msgTreeMap = other.m_msgTreeMap;
     m_msgTreeMapTemp = other.m_msgTreeMapTemp;
+    m_latestPullRequestOpaque = other.m_latestPullRequestOpaque;
   }
   return *this;
 }
@@ -258,6 +260,16 @@ bool PullRequest::addPullMsgEvent() {
     return true;
   }
   return false;
+}
+
+int PullRequest::getLatestPullRequestOpaque() const {
+    boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
+    return m_latestPullRequestOpaque;
+}
+
+void PullRequest::setLatestPullRequestOpaque(int opaque) {
+    boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
+    m_latestPullRequestOpaque = opaque;
 }
 
 //<!***************************************************************************

@@ -113,7 +113,7 @@ class MQClientFactory {
                           map<int, string>& brokerAddrs);
   map<string, map<int, string>> getBrokerAddrMap();
   void clearBrokerAddrMap();
-
+  void removeDropedPullRequestOpaque(PullRequest* pullRequest);
  private:
   void unregisterClient(const string& producerGroup,
                         const string& consumerGroup,

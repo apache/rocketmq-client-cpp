@@ -451,6 +451,10 @@ void MQClientAPIImpl::sendMessageAsync(const string& addr,
   }
 }
 
+void MQClientAPIImpl::deleteOpaqueForDropPullRequest(const MQMessageQueue& mq, int opaque) {
+    m_pRemotingClient->deleteOpaqueForDropPullRequest(mq, opaque);
+}
+
 PullResult* MQClientAPIImpl::pullMessage(
     const string& addr, PullMessageRequestHeader* pRequestHeader,
     int timeoutMillis, int communicationMode, PullCallback* pullCallback,
@@ -480,9 +484,21 @@ void MQClientAPIImpl::pullMessageAsync(const string& addr,
                                        PullCallback* pullCallback, void* pArg) {
   //<!delete in future;
   AsyncCallbackWrap* cbw = new PullCallbackWarp(pullCallback, this, pArg);
+  MQMessageQueue mq;
+  AsyncArg* pAsyncArg = static_cast<AsyncArg*>(pArg);
+  if (pAsyncArg && pAsyncArg->pPullRequest) {
+    mq = pAsyncArg->mq;
+    pAsyncArg->pPullRequest->setLatestPullRequestOpaque(request.getOpaque());
+    LOG_DEBUG("pullMessageAsync set opaque:%d, mq:%s", 
+        pAsyncArg->pPullRequest->getLatestPullRequestOpaque(),mq.toString().c_str());
+  }
+
   if (m_pRemotingClient->invokeAsync(addr, request, cbw, timeoutMillis) ==
       false) {
-    LOG_ERROR("pullMessageAsync failed of addr:%s", addr.c_str());
+    LOG_ERROR("pullMessageAsync failed of addr:%s, opaque:%d, mq:%s", addr.c_str(), request.getOpaque(), mq.toString().data());
+    if (pAsyncArg && pAsyncArg->pPullRequest) {
+        pAsyncArg->pPullRequest->setLatestPullRequestOpaque(0);
+    }
     deleteAndZero(cbw);
     THROW_MQEXCEPTION(MQClientException, "pullMessageAsync failed", -1);
   }

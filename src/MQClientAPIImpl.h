@@ -167,6 +167,8 @@ class MQClientAPIImpl {
                         SendCallback* pSendCallback, int64 timeoutMilliseconds,
                         int maxRetryTimes=1,
                         int retrySendTimes=1);
+  void deleteOpaqueForDropPullRequest(const MQMessageQueue& mq, int opaque);
+
  private:
   SendResult sendMessageSync(const string& addr, const string& brokerName,
                              const MQMessage& msg, RemotingCommand& request,
