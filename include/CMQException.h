@@ -24,12 +24,14 @@
 extern "C" {
 #endif
 
+#define  MAX_EXEPTION_CHAR_LENGTH 256
+
 typedef struct _CMQException_{
 	int error;
 	int line;
-	char file[MAX_MESSAGE_ID_LENGTH];
-	char msg[MAX_MESSAGE_ID_LENGTH];
-	char type[MAX_MESSAGE_ID_LENGTH];
+	char file[MAX_EXEPTION_CHAR_LENGTH];
+	char msg[MAX_EXEPTION_CHAR_LENGTH];
+	char type[MAX_EXEPTION_CHAR_LENGTH];
 
 } CMQException;
 

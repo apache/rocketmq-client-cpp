@@ -25,6 +25,8 @@
 #include "CMQException.h"
 
 #include <string.h>
+#include <typeinfo>
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,16 +70,16 @@ public:
 
 	}
     virtual void onException(MQException& e) {
-    	CMQException exception;
-		exception.error = e.GetError();
-		exception.line  = e.GetLine();
-		strncpy(exception.msg, e.what(), MAX_MESSAGE_ID_LENGTH - 1);
-		strncpy(exception.file, e.GetFile(), MAX_MESSAGE_ID_LENGTH - 1);
+        CMQException exception;
+        exception.error = e.GetError();
+        exception.line  = e.GetLine();
+        strncpy(exception.msg, e.what(), MAX_EXEPTION_CHAR_LENGTH - 1);
+        strncpy(exception.file, e.GetFile(), MAX_EXEPTION_CHAR_LENGTH - 1);
     	m_cSendExceptionCallback( exception );
     }
 private:
-	  CSendSuccessCallback m_cSendSuccessCallback;
-	  CSendExceptionCallback m_cSendExceptionCallback;
+	CSendSuccessCallback m_cSendSuccessCallback;
+	CSendExceptionCallback m_cSendExceptionCallback;
 };
 
 
@@ -173,6 +175,14 @@ int SendMessageAsync(CProducer *producer, CMessage *msg, CSendSuccessCallback cS
 	try {
 		defaultMQProducer->send(*message ,cSendCallback);
 	} catch (exception &e) {
+		if(cSendCallback != NULL){
+			if(typeid(e) == typeid( MQException )){
+				MQException &mqe = (MQException &)e;
+				cSendCallback->onException( mqe );
+			}
+			delete cSendCallback;
+			cSendCallback = NULL;
+		}
 		return PRODUCER_SEND_ONEWAY_FAILED;
 	}
 	return OK;
