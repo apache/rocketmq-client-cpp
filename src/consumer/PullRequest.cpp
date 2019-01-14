@@ -28,8 +28,8 @@ PullRequest::PullRequest(const string& groupname)
       m_queueOffsetMax(0),
       m_bDroped(false),
       m_bLocked(false),
-      m_bPullMsgEventInprogress(false),
-      m_latestPullRequestOpaque(0) {}
+      m_latestPullRequestOpaque(0),
+      m_bPullMsgEventInprogress(false) {}
 
 PullRequest::~PullRequest() {
   m_msgTreeMapTemp.clear();
@@ -262,7 +262,7 @@ bool PullRequest::addPullMsgEvent() {
   return false;
 }
 
-int PullRequest::getLatestPullRequestOpaque() const {
+int PullRequest::getLatestPullRequestOpaque() {
     boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
     return m_latestPullRequestOpaque;
 }

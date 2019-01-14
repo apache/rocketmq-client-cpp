@@ -69,7 +69,7 @@ class PullRequest {
   boost::timed_mutex& getPullRequestCriticalSection();
   void removePullMsgEvent();
   bool addPullMsgEvent();
-  int getLatestPullRequestOpaque() const;
+  int getLatestPullRequestOpaque();
   void setLatestPullRequestOpaque(int opaque);
 
  public:
