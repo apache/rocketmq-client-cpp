@@ -19,6 +19,7 @@
 #include "AsyncCallback.h"
 
 #include "CProducer.h"
+#include "CCommon.h"
 #include "CSendResult.h"
 #include "CMessage.h"
 #include "CMQException.h"
@@ -181,7 +182,7 @@ int SendMessageAsync(CProducer *producer, CMessage *msg, CSendSuccessCallback cS
 			delete cSendCallback;
 			cSendCallback = NULL;
 		}
-		return PRODUCER_SEND_ONEWAY_FAILED;
+		return PRODUCER_SEND_ASYNC_FAILED;
 	}
 	return OK;
 }

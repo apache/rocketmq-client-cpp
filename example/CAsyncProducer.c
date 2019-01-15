@@ -60,10 +60,10 @@ void startSendMessage(CProducer *producer) {
     for (i = 0; i < 10; i++) {
         printf("send one message : %d\n", i);
         memset(DestMsg, 0, sizeof(DestMsg));
-        snprintf(DestMsg, 255, "New message body: index %d", i);
+        snprintf(DestMsg, sizeof(DestMsg), "New message body: index %d", i);
         SetMessageBody(msg, DestMsg);
-        SendMessageAsync(producer, msg, sendSuccessCallback , sendExceptionCallback);
-        printf("Msg Send ID:%s\n", result.msgId);
+        int code = SendMessageAsync(producer, msg, sendSuccessCallback , sendExceptionCallback);
+        printf("Async send return code: %d\n", code);
         thread_sleep(1000);
     }
 }

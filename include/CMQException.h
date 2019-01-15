@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#define  MAX_EXEPTION_CHAR_LENGTH 256
+#define  MAX_EXEPTION_CHAR_LENGTH 512
 
 typedef struct _CMQException_{
 	int error;
