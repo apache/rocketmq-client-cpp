@@ -65,9 +65,9 @@ class ROCKETMQCLIENT_API MQException : public std::exception {
 
   virtual const char* GetType() const throw() { return m_type.c_str(); }
 
-  int GetLine() const throw(){ return m_line;}
+  int GetLine() { return m_line;}
 
-  const char* GetFile() const throw() { return m_file.c_str(); }
+  const char* GetFile()  { return m_file.c_str(); }
 
  protected:
   int m_error;

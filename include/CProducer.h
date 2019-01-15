@@ -18,7 +18,6 @@
 #ifndef __C_PRODUCER_H__
 #define __C_PRODUCER_H__
 
-#include "CCommon.h"
 #include "CMessage.h"
 #include "CSendResult.h"
 #include "CMQException.h"

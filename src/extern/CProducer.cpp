@@ -19,7 +19,6 @@
 #include "AsyncCallback.h"
 
 #include "CProducer.h"
-#include "CCommon.h"
 #include "CSendResult.h"
 #include "CMessage.h"
 #include "CMQException.h"
@@ -60,7 +59,6 @@ public:
 	}
 	virtual ~CSendCallback(){}
 	virtual void onSuccess(SendResult& sendResult) {
-		cout << "send onSuccess\n";
 		CSendResult result;
 		result.sendStatus = CSendStatus((int) sendResult.getSendStatus());
 		result.offset = sendResult.getQueueOffset();
