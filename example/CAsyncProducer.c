@@ -39,6 +39,17 @@ void thread_sleep(unsigned milliseconds) {
 #endif
 }
 
+void sendSuccessCallback(CSendResult result){
+	printf("Msg Send ID:%s\n", result.msgId);
+}
+
+void sendExceptionCallback(CMQException e){
+	printf("asyn send exception error : %d\n" , e.error);
+	printf("asyn send exception msg : %s\n" , e.msg);
+	printf("asyn send exception file : %s\n" , e.file);
+	printf("asyn send exception line : %d\n" , e.line);
+}
+
 void startSendMessage(CProducer *producer) {
     int i = 0;
     char DestMsg[256];
@@ -49,26 +60,36 @@ void startSendMessage(CProducer *producer) {
     for (i = 0; i < 10; i++) {
         printf("send one message : %d\n", i);
         memset(DestMsg, 0, sizeof(DestMsg));
-        snprintf(DestMsg, 255, "New message body: index %d", i);
+        snprintf(DestMsg, sizeof(DestMsg), "New message body: index %d", i);
         SetMessageBody(msg, DestMsg);
-        SendMessageSync(producer, msg, &result);
-        printf("Msg Send ID:%s\n", result.msgId);
+        int code = SendMessageAsync(producer, msg, sendSuccessCallback , sendExceptionCallback);
+        printf("Async send return code: %d\n", code);
         thread_sleep(1000);
     }
 }
 
+void CreateProducerAndStartSendMessage(int i){
+	printf("Producer Initializing.....\n");
+	CProducer *producer = CreateProducer("Group_producer");
+	SetProducerNameServerAddress(producer, "127.0.0.1:9876");
+	if(i == 1){
+		SetProducerSendMsgTimeout(producer , 3);
+	}
+	StartProducer(producer);
+	printf("Producer start.....\n");
+	startSendMessage(producer);
+	ShutdownProducer(producer);
+	DestroyProducer(producer);
+	printf("Producer Shutdown!\n");
+}
 
 int main(int argc, char *argv[]) {
-    printf("Producer Initializing.....\n");
+    printf("Send Async successCallback.....\n");
+    CreateProducerAndStartSendMessage(0);
 
-    CProducer *producer = CreateProducer("Group_producer");
-    SetProducerNameServerAddress(producer, "127.0.0.1:9876");
-    StartProducer(producer);
-    printf("Producer start.....\n");
-    startSendMessage(producer);
-    ShutdownProducer(producer);
-    DestroyProducer(producer);
-    printf("Producer Shutdown!\n");
+    printf("Send Async exceptionCallback.....\n");
+    CreateProducerAndStartSendMessage(1);
+
     return 0;
 }
 

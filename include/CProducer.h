@@ -18,9 +18,9 @@
 #ifndef __C_PRODUCER_H__
 #define __C_PRODUCER_H__
 
-#include "CCommon.h"
 #include "CMessage.h"
 #include "CSendResult.h"
+#include "CMQException.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +29,8 @@ extern "C" {
 //typedef struct _CProducer_ _CProducer;
 typedef struct CProducer CProducer;
 typedef int(*QueueSelectorCallback)(int size, CMessage *msg, void *arg);
+typedef void(*CSendSuccessCallback)(CSendResult result);
+typedef void(*CSendExceptionCallback)(CMQException e);
 
 ROCKETMQCLIENT_API CProducer *CreateProducer(const char *groupId);
 ROCKETMQCLIENT_API int DestroyProducer(CProducer *producer);
@@ -49,6 +51,7 @@ ROCKETMQCLIENT_API int SetProducerCompressLevel(CProducer *producer, int level);
 ROCKETMQCLIENT_API int SetProducerMaxMessageSize(CProducer *producer, int size);
 
 ROCKETMQCLIENT_API int SendMessageSync(CProducer *producer, CMessage *msg, CSendResult *result);
+ROCKETMQCLIENT_API int SendMessageAsync(CProducer *producer, CMessage *msg, CSendSuccessCallback cSendSuccessCallback , CSendExceptionCallback cSendExceptionCallback);
 ROCKETMQCLIENT_API int SendMessageOneway(CProducer *producer,CMessage *msg);
 ROCKETMQCLIENT_API int SendMessageOrderly(CProducer *producer, CMessage *msg, QueueSelectorCallback callback, void *arg, int autoRetryTimes, CSendResult *result);
 #ifdef __cplusplus
