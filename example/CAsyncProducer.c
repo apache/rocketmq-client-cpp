@@ -16,19 +16,15 @@
 */
 
 #include <stdio.h>
-
 #include "CProducer.h"
 #include "CCommon.h"
 #include "CMessage.h"
 #include "CSendResult.h"
-
 #ifdef _WIN32
 #include <windows.h>
 #else
-
 #include <unistd.h>
 #include <memory.h>
-
 #endif
 
 void thread_sleep(unsigned milliseconds) {
@@ -39,49 +35,47 @@ void thread_sleep(unsigned milliseconds) {
 #endif
 }
 
-void sendSuccessCallback(CSendResult result){
-	printf("Msg Send ID:%s\n", result.msgId);
+void SendSuccessCallback(CSendResult result){
+    printf("async send success, msgid:%s\n", result.msgId);
 }
 
-void sendExceptionCallback(CMQException e){
-	printf("asyn send exception error : %d\n" , e.error);
-	printf("asyn send exception msg : %s\n" , e.msg);
-	printf("asyn send exception file : %s\n" , e.file);
-	printf("asyn send exception line : %d\n" , e.line);
+void SendExceptionCallback(CMQException e){
+    char msg[1024];
+    snprintf(msg, sizeof(msg), "error:%d, msg:%s, file:%s:%d", e.error, e.msg, e.file, e.line);
+    printf("async send exception %s\n", msg);
 }
 
-void startSendMessage(CProducer *producer) {
+void StartSendMessage(CProducer *producer) {
     int i = 0;
-    char DestMsg[256];
+    int ret_code = 0;
+    char body[128];
     CMessage *msg = CreateMessage("T_TestTopic");
     SetMessageTags(msg, "Test_Tag");
     SetMessageKeys(msg, "Test_Keys");
-    CSendResult result;
     for (i = 0; i < 10; i++) {
-        printf("send one message : %d\n", i);
-        memset(DestMsg, 0, sizeof(DestMsg));
-        snprintf(DestMsg, sizeof(DestMsg), "New message body: index %d", i);
-        SetMessageBody(msg, DestMsg);
-        int code = SendMessageAsync(producer, msg, sendSuccessCallback , sendExceptionCallback);
-        printf("Async send return code: %d\n", code);
+        memset(body, 0, sizeof(body));
+        snprintf(body, sizeof(body), "new message body, index %d", i);
+        SetMessageBody(msg, body);
+        ret_code = SendMessageAsync(producer, msg, SendSuccessCallback , SendExceptionCallback);
+        printf("async send message[%d] return code: %d\n", i, ret_code);
         thread_sleep(1000);
     }
     DestroyMessage(msg);
 }
 
 void CreateProducerAndStartSendMessage(int i){
-	printf("Producer Initializing.....\n");
-	CProducer *producer = CreateProducer("Group_producer");
-	SetProducerNameServerAddress(producer, "127.0.0.1:9876");
-	if(i == 1){
-		SetProducerSendMsgTimeout(producer , 3);
-	}
-	StartProducer(producer);
-	printf("Producer start.....\n");
-	startSendMessage(producer);
-	ShutdownProducer(producer);
-	DestroyProducer(producer);
-	printf("Producer Shutdown!\n");
+    printf("Producer Initializing.....\n");
+    CProducer *producer = CreateProducer("Group_producer");
+    SetProducerNameServerAddress(producer, "127.0.0.1:9876");
+    if(i == 1){
+        SetProducerSendMsgTimeout(producer , 3);
+    }
+    StartProducer(producer);
+    printf("Producer start.....\n");
+    StartSendMessage(producer);
+    ShutdownProducer(producer);
+    DestroyProducer(producer);
+    printf("Producer Shutdown!\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -90,7 +84,6 @@ int main(int argc, char *argv[]) {
 
     printf("Send Async exceptionCallback.....\n");
     CreateProducerAndStartSendMessage(1);
-
     return 0;
 }
 

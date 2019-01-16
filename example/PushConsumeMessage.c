@@ -16,18 +16,14 @@
 */
 
 #include <stdio.h>
-
 #include "CPushConsumer.h"
 #include "CCommon.h"
 #include "CMessageExt.h"
-
 #ifdef _WIN32
 #include <windows.h>
 #else
-
 #include <unistd.h>
 #include <memory.h>
-
 #endif
 
 void thread_sleep(unsigned milliseconds) {
@@ -46,7 +42,6 @@ int doConsumeMessage(struct CPushConsumer *consumer, CMessageExt *msgExt) {
     printf("Msg Body:%s\n", GetMessageBody(msgExt));
     return E_CONSUME_SUCCESS;
 }
-
 
 int main(int argc, char *argv[]) {
     int i = 0;
