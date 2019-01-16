@@ -20,6 +20,15 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
+#include <stdio.h>
+
+#include "CProducer.h"
+#include "CCommon.h"
+#include "CMessage.h"
+#include "CSendResult.h"
+#include "CMQException.h"
+#include <unistd.h>
+
 using namespace std;
 using ::testing::InitGoogleTest;
 using ::testing::InitGoogleMock;
@@ -53,9 +62,13 @@ TEST(Url, Url) {
 
 }
 
+
+
 int main(int argc, char* argv[]) {
 	InitGoogleMock(&argc, argv);
 
 	testing::GTEST_FLAG(filter) = "Url.Url";
-	return RUN_ALL_TESTS();
+	int itestts = RUN_ALL_TESTS();
+	printf("i %d" , itestts);
+	return itestts;
 }
