@@ -24,7 +24,6 @@
 
 #include <string.h>
 #include "RocketMQClient.h"
-#include "CCommon.h"
 
 
 
