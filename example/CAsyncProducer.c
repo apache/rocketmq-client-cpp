@@ -66,6 +66,7 @@ void startSendMessage(CProducer *producer) {
         printf("Async send return code: %d\n", code);
         thread_sleep(1000);
     }
+    DestroyMessage(msg);
 }
 
 void CreateProducerAndStartSendMessage(int i){

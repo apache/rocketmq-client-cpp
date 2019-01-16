@@ -55,6 +55,7 @@ void startSendMessage(CProducer *producer) {
         printf("Msg Send ID:%s\n", result.msgId);
         thread_sleep(1000);
     }
+    DestroyMessage(msg);
 }
 
 
