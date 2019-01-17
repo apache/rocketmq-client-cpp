@@ -1065,7 +1065,7 @@ void MQClientFactory::resetOffset(
         pullreq->setDroped(true);
         LOG_INFO("resetOffset setDroped for opaque:%d, mq:%s", pullreq->getLatestPullRequestOpaque(), mq.toString().data());
         //delete the opaque record that's ignore the response of this pullrequest when drop pullrequest
-        removeDropedPullRequestOpaque(pullreq);
+        //removeDropedPullRequestOpaque(pullreq);
         pullreq->clearAllMsgs();
         pullreq->updateQueueMaxOffset(it->second);
       } else {
