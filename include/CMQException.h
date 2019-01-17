@@ -14,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
 #ifndef __C_MQEXCPTION_H__
 #define __C_MQEXCPTION_H__
 #include "CCommon.h"
@@ -24,14 +22,15 @@
 extern "C" {
 #endif
 
-#define  MAX_EXEPTION_CHAR_LENGTH 512
-
+#define MAX_EXEPTION_MSG_LENGTH  512
+#define MAX_EXEPTION_FILE_LENGTH 256
+#define MAX_EXEPTION_TYPE_LENGTH 128
 typedef struct _CMQException_{
-	int error;
-	int line;
-	char file[MAX_EXEPTION_CHAR_LENGTH];
-	char msg[MAX_EXEPTION_CHAR_LENGTH];
-	char type[MAX_EXEPTION_CHAR_LENGTH];
+    int error;
+    int line;
+    char file[MAX_EXEPTION_FILE_LENGTH];
+    char msg[MAX_EXEPTION_MSG_LENGTH];
+    char type[MAX_EXEPTION_TYPE_LENGTH];
 
 } CMQException;
 

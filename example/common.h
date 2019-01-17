@@ -65,20 +65,20 @@ class TpsReportService {
  public:
   TpsReportService() : tps_interval_(1), quit_flag_(false), tps_count_(0) {}
   void start() {
-	  if (tps_thread_ == NULL) {
-		  std::cout << "tps_thread_ is null" << std::endl;
-		  return;
-	  }
+    if (tps_thread_ == NULL) {
+        std::cout << "tps_thread_ is null" << std::endl;
+        return;
+    }
     tps_thread_.reset(
         new boost::thread(boost::bind(&TpsReportService::TpsReport, this)));
   }
 
   ~TpsReportService() {
     quit_flag_.store(true);
-	if (tps_thread_ == NULL) {
-		std::cout << "tps_thread_ is null" << std::endl;
-		return;
-	}
+    if (tps_thread_ == NULL) {
+        std::cout << "tps_thread_ is null" << std::endl;
+        return;
+    }
     if (tps_thread_->joinable()) tps_thread_->join();
   }
 
@@ -99,12 +99,14 @@ class TpsReportService {
   boost::atomic<long> tps_count_;
 };
 
+/*
 static void PrintResult(rocketmq::SendResult* result) {
   std::cout << "sendresult = " << result->getSendStatus()
             << ", msgid = " << result->getMsgId()
             << ", queueOffset = " << result->getQueueOffset() << ","
             << result->getMessageQueue().toString() << endl;
 }
+*/
 
 void PrintPullResult(rocketmq::PullResult* result) {
   std::cout << result->toString() << std::endl;
