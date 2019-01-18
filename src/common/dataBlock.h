@@ -51,6 +51,8 @@ class ROCKETMQCLIENT_API MemoryBlock {
   /** Creates a copy of another memory block. */
   MemoryBlock(const MemoryBlock&);
 
+  MemoryBlock(MemoryBlock &&);
+
   /** Destructor. */
   ~MemoryBlock();
 
@@ -58,6 +60,8 @@ class ROCKETMQCLIENT_API MemoryBlock {
       This block will be resized and copied to exactly match the other one.
   */
   MemoryBlock& operator=(const MemoryBlock&);
+
+  MemoryBlock &operator=(MemoryBlock &&);
 
   //==============================================================================
   /** Compares two memory blocks.

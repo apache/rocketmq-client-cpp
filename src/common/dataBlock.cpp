@@ -18,6 +18,7 @@
 #include <algorithm>
 
 namespace rocketmq {
+
 MemoryBlock::MemoryBlock() : size(0), data(NULL) {}
 
 MemoryBlock::MemoryBlock(const int initialSize, const bool initialiseToZero)
@@ -48,12 +49,31 @@ MemoryBlock::MemoryBlock(const MemoryBlock& other)
   }
 }
 
+MemoryBlock::MemoryBlock(MemoryBlock &&other) : size(other.size), data(other.data) {
+  other.size = 0;
+  other.data = NULL;
+}
+
 MemoryBlock::~MemoryBlock() { std::free(data); }
 
 MemoryBlock& MemoryBlock::operator=(const MemoryBlock& other) {
   if (this != &other) {
     setSize(other.size, false);
     memcpy(data, other.data, size);
+  }
+
+  return *this;
+}
+
+MemoryBlock &MemoryBlock::operator=(MemoryBlock &&other) {
+  if (this != &other) {
+    std::free(data);
+
+    size = other.size;
+    data = other.data;
+
+    other.size = 0;
+    other.data = NULL;
   }
 
   return *this;
