@@ -9,18 +9,21 @@
 #
 #===------------------------------------------------------------------------===#
 
- r"""
+r"""
 clang-format git integration
 ============================
- This file provides a clang-format integration for git. Put it somewhere in your
+
+This file provides a clang-format integration for git. Put it somewhere in your
 path and ensure that it is executable. Then, "git clang-format" will invoke
 clang-format on the changes in current files or a specific commit.
- For further details, run:
+
+For further details, run:
 git clang-format -h
- Requires Python 2.7
+
+Requires Python 2.7
 """
 
- import argparse
+import argparse
 import collections
 import contextlib
 import errno
@@ -29,31 +32,32 @@ import re
 import subprocess
 import sys
 
- usage = 'git clang-format [OPTIONS] [<commit>] [--] [<file>...]'
+usage = 'git clang-format [OPTIONS] [<commit>] [--] [<file>...]'
 
- desc = '''
+desc = '''
 Run clang-format on all lines that differ between the working directory
 and <commit>, which defaults to HEAD.  Changes are only applied to the working
 directory.
- The following git-config settings set the default of the corresponding option:
+
+The following git-config settings set the default of the corresponding option:
   clangFormat.binary
   clangFormat.commit
   clangFormat.extension
   clangFormat.style
 '''
 
- # Name of the temporary index file in which save the output of clang-format.
+# Name of the temporary index file in which save the output of clang-format.
 # This file is created within the .git directory.
 temp_index_basename = 'clang-format-index'
 
 
- Range = collections.namedtuple('Range', 'start, count')
+Range = collections.namedtuple('Range', 'start, count')
 
 
- def main():
+def main():
   config = load_git_config()
 
-   # In order to keep '--' yet allow options after positionals, we need to
+  # In order to keep '--' yet allow options after positionals, we need to
   # check for '--' ourselves.  (Setting nargs='*' throws away the '--', while
   # nargs=argparse.REMAINDER disallows options after positionals.)
   argv = sys.argv[1:]
@@ -65,7 +69,7 @@ temp_index_basename = 'clang-format-index'
     dash_dash = argv[idx:]
     argv = argv[:idx]
 
-   default_extensions = ','.join([
+  default_extensions = ','.join([
       # From clang/lib/Frontend/FrontendOptions.cpp, all lower case
       'c', 'h',  # C
       'm',  # ObjC
@@ -77,7 +81,7 @@ temp_index_basename = 'clang-format-index'
       'ts',  # TypeScript
       ])
 
-   p = argparse.ArgumentParser(
+  p = argparse.ArgumentParser(
     usage=usage, formatter_class=argparse.RawDescriptionHelpFormatter,
     description=desc)
   p.add_argument('--binary',
@@ -114,10 +118,10 @@ temp_index_basename = 'clang-format-index'
                  help='if specified, only consider differences in these files')
   opts = p.parse_args(argv)
 
-   opts.verbose -= opts.quiet
+  opts.verbose -= opts.quiet
   del opts.quiet
 
-   commit, files = interpret_args(opts.args, dash_dash, opts.commit)
+  commit, files = interpret_args(opts.args, dash_dash, opts.commit)
   changed_lines = compute_diff_and_extract_lines(commit, files)
   if opts.verbose >= 1:
     ignored_files = set(changed_lines)
@@ -163,9 +167,10 @@ temp_index_basename = 'clang-format-index'
         print '   ', filename
 
 
- def load_git_config(non_string_options=None):
+def load_git_config(non_string_options=None):
   """Return the git configuration as a dictionary.
-   All options are assumed to be strings unless in `non_string_options`, in which
+
+  All options are assumed to be strings unless in `non_string_options`, in which
   is a dictionary mapping option name (in lower case) to either "--bool" or
   "--int"."""
   if non_string_options is None:
@@ -180,11 +185,13 @@ temp_index_basename = 'clang-format-index'
   return out
 
 
- def interpret_args(args, dash_dash, default_commit):
+def interpret_args(args, dash_dash, default_commit):
   """Interpret `args` as "[commit] [--] [files...]" and return (commit, files).
-   It is assumed that "--" and everything that follows has been removed from
+
+  It is assumed that "--" and everything that follows has been removed from
   args and placed in `dash_dash`.
-   If "--" is present (i.e., `dash_dash` is non-empty), the argument to its
+
+  If "--" is present (i.e., `dash_dash` is non-empty), the argument to its
   left (if present) is taken as commit.  Otherwise, the first argument is
   checked if it is a commit or a file.  If commit is not given,
   `default_commit` is used."""
@@ -215,7 +222,7 @@ temp_index_basename = 'clang-format-index'
   return commit, files
 
 
- def disambiguate_revision(value):
+def disambiguate_revision(value):
   """Returns True if `value` is a revision, False if it is a file, or dies."""
   # If `value` is ambiguous (neither a commit nor a file), the following
   # command will die with an appropriate error message.
@@ -229,7 +236,7 @@ temp_index_basename = 'clang-format-index'
       (value, object_type))
 
 
- def get_object_type(value):
+def get_object_type(value):
   """Returns a string description of an object's type, or None if it is not
   a valid git object."""
   cmd = ['git', 'cat-file', '-t', value]
@@ -240,7 +247,7 @@ temp_index_basename = 'clang-format-index'
   return stdout.strip()
 
 
- def compute_diff_and_extract_lines(commit, files):
+def compute_diff_and_extract_lines(commit, files):
   """Calls compute_diff() followed by extract_lines()."""
   diff_process = compute_diff(commit, files)
   changed_lines = extract_lines(diff_process.stdout)
@@ -252,9 +259,10 @@ temp_index_basename = 'clang-format-index'
   return changed_lines
 
 
- def compute_diff(commit, files):
+def compute_diff(commit, files):
   """Return a subprocess object producing the diff from `commit`.
-   The return value's `stdin` file object will produce a patch with the
+
+  The return value's `stdin` file object will produce a patch with the
   differences between the working directory and `commit`, filtered on `files`
   (if non-empty).  Zero context lines are used in the patch."""
   cmd = ['git', 'diff-index', '-p', '-U0', commit, '--']
@@ -264,11 +272,13 @@ temp_index_basename = 'clang-format-index'
   return p
 
 
- def extract_lines(patch_file):
+def extract_lines(patch_file):
   """Extract the changed lines in `patch_file`.
-   The return value is a dictionary mapping filename to a list of (start_line,
+
+  The return value is a dictionary mapping filename to a list of (start_line,
   line_count) pairs.
-   The input must have been produced with ``-U0``, meaning unidiff format with
+
+  The input must have been produced with ``-U0``, meaning unidiff format with
   zero lines of context.  The return value is a dict mapping filename to a
   list of line `Range`s."""
   matches = {}
@@ -287,9 +297,10 @@ temp_index_basename = 'clang-format-index'
   return matches
 
 
- def filter_by_extension(dictionary, allowed_extensions):
+def filter_by_extension(dictionary, allowed_extensions):
   """Delete every key in `dictionary` that doesn't have an allowed extension.
-   `allowed_extensions` must be a collection of lowercase file extensions,
+
+  `allowed_extensions` must be a collection of lowercase file extensions,
   excluding the period."""
   allowed_extensions = frozenset(allowed_extensions)
   for filename in dictionary.keys():
@@ -298,22 +309,24 @@ temp_index_basename = 'clang-format-index'
       del dictionary[filename]
 
 
- def cd_to_toplevel():
+def cd_to_toplevel():
   """Change to the top level of the git repository."""
   toplevel = run('git', 'rev-parse', '--show-toplevel')
   os.chdir(toplevel)
 
 
- def create_tree_from_workdir(filenames):
+def create_tree_from_workdir(filenames):
   """Create a new git tree with the given files from the working directory.
-   Returns the object ID (SHA-1) of the created tree."""
+
+  Returns the object ID (SHA-1) of the created tree."""
   return create_tree(filenames, '--stdin')
 
 
- def run_clang_format_and_save_to_tree(changed_lines, binary='clang-format',
+def run_clang_format_and_save_to_tree(changed_lines, binary='clang-format',
                                       style=None):
   """Run clang-format on each file and save the result to a git tree.
-   Returns the object ID (SHA-1) of the created tree."""
+
+  Returns the object ID (SHA-1) of the created tree."""
   def index_info_generator():
     for filename, line_ranges in changed_lines.iteritems():
       mode = oct(os.stat(filename).st_mode)
@@ -323,9 +336,10 @@ temp_index_basename = 'clang-format-index'
   return create_tree(index_info_generator(), '--index-info')
 
 
- def create_tree(input_lines, mode):
+def create_tree(input_lines, mode):
   """Create a tree object from the given input.
-   If mode is '--stdin', it must be a list of filenames.  If mode is
+
+  If mode is '--stdin', it must be a list of filenames.  If mode is
   '--index-info' is must be a list of values suitable for "git update-index
   --index-info", such as "<mode> <SP> <sha1> <TAB> <filename>".  Any other mode
   is invalid."""
@@ -342,10 +356,11 @@ temp_index_basename = 'clang-format-index'
     return tree_id
 
 
- def clang_format_to_blob(filename, line_ranges, binary='clang-format',
+def clang_format_to_blob(filename, line_ranges, binary='clang-format',
                          style=None):
   """Run clang-format on the given file and save the result to a git blob.
-   Returns the object ID (SHA-1) of the created blob."""
+
+  Returns the object ID (SHA-1) of the created blob."""
   clang_format_cmd = [binary, filename]
   if style:
     clang_format_cmd.extend(['-style='+style])
@@ -373,7 +388,7 @@ temp_index_basename = 'clang-format-index'
   return stdout.rstrip('\r\n')
 
 
- @contextlib.contextmanager
+@contextlib.contextmanager
 def temporary_index_file(tree=None):
   """Context manager for setting GIT_INDEX_FILE to a temporary file and deleting
   the file afterward."""
@@ -390,9 +405,10 @@ def temporary_index_file(tree=None):
     os.remove(index_path)
 
 
- def create_temporary_index(tree=None):
+def create_temporary_index(tree=None):
   """Create a temporary index file and return the created file's path.
-   If `tree` is not None, use that as the tree to read in.  Otherwise, an
+
+  If `tree` is not None, use that as the tree to read in.  Otherwise, an
   empty index is created."""
   gitdir = run('git', 'rev-parse', '--git-dir')
   path = os.path.join(gitdir, temp_index_basename)
@@ -402,7 +418,7 @@ def temporary_index_file(tree=None):
   return path
 
 
- def print_diff(old_tree, new_tree):
+def print_diff(old_tree, new_tree):
   """Print the diff between the two trees to stdout."""
   # We use the porcelain 'diff' and not plumbing 'diff-tree' because the output
   # is expected to be viewed by the user, and only the former does nice things
@@ -410,9 +426,10 @@ def temporary_index_file(tree=None):
   subprocess.check_call(['git', 'diff', old_tree, new_tree, '--'])
 
 
- def apply_changes(old_tree, new_tree, force=False, patch_mode=False):
+def apply_changes(old_tree, new_tree, force=False, patch_mode=False):
   """Apply the changes in `new_tree` to the working directory.
-   Bails if there are local changes in those files and not `force`.  If
+
+  Bails if there are local changes in those files and not `force`.  If
   `patch_mode`, runs `git checkout --patch` to select hunks interactively."""
   changed_files = run('git', 'diff-tree', '-r', '-z', '--name-only', old_tree,
                       new_tree).rstrip('\0').split('\0')
@@ -440,7 +457,7 @@ def temporary_index_file(tree=None):
   return changed_files
 
 
- def run(*args, **kwargs):
+def run(*args, **kwargs):
   stdin = kwargs.pop('stdin', '')
   verbose = kwargs.pop('verbose', True)
   strip = kwargs.pop('strip', True)
@@ -464,10 +481,10 @@ def temporary_index_file(tree=None):
   sys.exit(2)
 
 
- def die(message):
+def die(message):
   print >>sys.stderr, 'error:', message
   sys.exit(2)
 
 
- if __name__ == '__main__':
+if __name__ == '__main__':
   main()
