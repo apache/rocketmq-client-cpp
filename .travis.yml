@@ -31,3 +31,14 @@ matrix:
   include:
     - os: linux
       env: CUSTOM_JDK="oraclejdk8"
+
+    # This is the job to check code format.
+    - os: linux
+      dist: trusty
+      env: LINT=1 PYTHON=2.7
+      before_install:
+        - sudo apt-get update -qq
+        - sudo apt-get install -qq clang-format-3.8
+      install: []
+      script:
+        - sudo sh .travis/check-git-clang-format.sh
