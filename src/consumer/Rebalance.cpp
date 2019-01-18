@@ -472,7 +472,7 @@ bool RebalancePush::updateRequestTableInRebalance(
         if (!(it->second->isDroped())) {
           it->second->setDroped(true);
           //delete the lastest pull request for this mq, which hasn't been response
-          m_pClientFactory->removeDropedPullRequestOpaque(it->second);
+          //m_pClientFactory->removeDropedPullRequestOpaque(it->second);
           removeUnnecessaryMessageQueue(mqtemp);
           it->second->clearAllMsgs();  // add clear operation to avoid bad state
                                        // when dropped pullRequest returns
