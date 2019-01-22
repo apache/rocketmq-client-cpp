@@ -48,6 +48,9 @@ const string MQMessage::PROPERTY_TRANSACTION_CHECK_TIMES = "TRANSACTION_CHECK_TI
 const string MQMessage::PROPERTY_CHECK_IMMUNITY_TIME_IN_SECONDS = "CHECK_IMMUNITY_TIME_IN_SECONDS";
 
 const string MQMessage::KEY_SEPARATOR = " ";
+
+static const string EMPTY_STRING = "";
+
 //<!************************************************************************
 MQMessage::MQMessage() { Init("", "", "", 0, "", true); }
 
@@ -109,9 +112,9 @@ void MQMessage::setPropertyInternal(const string& name, const string& value) {
 
 const string & MQMessage::getProperty(const string& name) const {
   map<string, string>::const_iterator it = m_properties.find(name);
-  if(it == m_properties.end()){
-    return "";
-  }else{
+  if (it == m_properties.end()) {
+    return EMPTY_STRING;
+  } else {
     return it->second;
   }
 }
