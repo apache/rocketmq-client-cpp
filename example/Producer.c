@@ -44,6 +44,7 @@ void StartSendMessage(CProducer *producer) {
     CSendResult result;
     for (i = 0; i < 10; i++) {
         memset(body, 0, sizeof(body));
+        snprintf(body, sizeof(body), "new message body, index %d", i);
         SetMessageBody(msg, body);
         SendMessageSync(producer, msg, &result);
         printf("send message[%d] result status:%d, msgId:%s\n", i, (int)result.sendStatus, result.msgId);
