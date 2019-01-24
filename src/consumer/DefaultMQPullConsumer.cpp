@@ -258,7 +258,6 @@ void DefaultMQPullConsumer::pullAsyncImpl(const MQMessageQueue& mq,
 
   int timeoutMillis = block ? 1000 * 30 : 1000 * 10;
 
-  //<!�첽����;
   AsyncArg arg;
   arg.mq = mq;
   arg.subData = *pSData;
@@ -370,7 +369,7 @@ void DefaultMQPullConsumer::getSubscriptions(std::vector<SubscriptionData>& resu
   }
 }
 
-void DefaultMQPullConsumer::producePullMsgTask(PullRequest*) {}
+void DefaultMQPullConsumer::producePullMsgTask(std::shared_ptr<PullRequest>) {}
 
 Rebalance* DefaultMQPullConsumer::getRebalance() const {
   return NULL;

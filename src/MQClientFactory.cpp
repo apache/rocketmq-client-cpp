@@ -976,7 +976,7 @@ void MQClientFactory::resetOffset(const std::string& group,
   if (pConsumer) {
     for (const auto& it : offsetTable) {
       const MQMessageQueue& mq = it.first;
-      auto* pullreq = pConsumer->getRebalance()->getPullRequest(mq);
+      std::shared_ptr<PullRequest> pullreq = pConsumer->getRebalance()->getPullRequest(mq);
       if (pullreq) {
         pullreq->setDroped(true);
         LOG_INFO("resetOffset setDroped for mq:%s", mq.toString().data());

@@ -33,8 +33,8 @@ class ConsumeMsgService {
   virtual ~ConsumeMsgService() = default;
   virtual void start() {}
   virtual void shutdown() {}
-  virtual void submitConsumeRequest(PullRequest* request, std::vector<MQMessageExt>& msgs) = 0;
-  virtual MessageListenerType getConsumeMsgSerivceListenerType() { return messageListenerDefaultly; }
+  virtual void submitConsumeRequest(std::shared_ptr<PullRequest> request, std::vector<MQMessageExt>& msgs) = 0;
+  virtual MessageListenerType getConsumeMsgServiceListenerType() { return messageListenerDefaultly; }
 };
 
 class ConsumeMessageConcurrentlyService : public ConsumeMsgService {
@@ -43,10 +43,10 @@ class ConsumeMessageConcurrentlyService : public ConsumeMsgService {
   ~ConsumeMessageConcurrentlyService() override;
   void start() override;
   void shutdown() override;
-  void submitConsumeRequest(PullRequest* request, std::vector<MQMessageExt>& msgs) override;
-  MessageListenerType getConsumeMsgSerivceListenerType() override;
+  void submitConsumeRequest(std::shared_ptr<PullRequest> request, std::vector<MQMessageExt>& msgs) override;
+  MessageListenerType getConsumeMsgServiceListenerType() override;
 
-  void ConsumeRequest(PullRequest* request, std::vector<MQMessageExt>& msgs);
+  void ConsumeRequest(std::shared_ptr<PullRequest> request, std::vector<MQMessageExt>& msgs);
 
  private:
   void resetRetryTopic(std::vector<MQMessageExt>& msgs);
@@ -64,14 +64,14 @@ class ConsumeMessageOrderlyService : public ConsumeMsgService {
   ~ConsumeMessageOrderlyService() override;
   void start() override;
   void shutdown() override;
-  void submitConsumeRequest(PullRequest* request, std::vector<MQMessageExt>& msgs) override;
-  MessageListenerType getConsumeMsgSerivceListenerType() override;
+  void submitConsumeRequest(std::shared_ptr<PullRequest> request, std::vector<MQMessageExt>& msgs) override;
+  MessageListenerType getConsumeMsgServiceListenerType() override;
 
   void stopThreadPool();
 
-  void tryLockLaterAndReconsume(PullRequest* request, bool tryLockMQ);
-  void submitConsumeRequestLater(PullRequest* request, bool tryLockMQ);
-  void ConsumeRequest(PullRequest* request);
+  void tryLockLaterAndReconsume(std::shared_ptr<PullRequest> request, bool tryLockMQ);
+  void submitConsumeRequestLater(std::shared_ptr<PullRequest> request, bool tryLockMQ);
+  void ConsumeRequest(std::shared_ptr<PullRequest> request);
   void lockMQPeriodically();
   void unlockAllMQ();
   bool lockOneMQ(const MQMessageQueue& mq);

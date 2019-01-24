@@ -80,12 +80,10 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
   Rebalance* getRebalance() const override;
   ConsumeMsgService* getConsumerMsgService() const;
 
-  void producePullMsgTask(PullRequest*) override;
-  void pullMessage(PullRequest* pullrequest);       // sync pullMsg
-  void pullMessageAsync(PullRequest* pullrequest);  // async pullMsg
+  void producePullMsgTask(std::shared_ptr<PullRequest>) override;
+  void pullMessage(std::shared_ptr<PullRequest> pullrequest);       // sync pullMsg
+  void pullMessageAsync(std::shared_ptr<PullRequest> pullrequest);  // async pullMsg
   void setAsyncPull(bool asyncFlag);
-  AsyncPullCallback* getAsyncPullCallBack(PullRequest* request, MQMessageQueue msgQueue);
-  void shutdownAsyncPullCallBack();
 
   /*
     for orderly consume, set the pull num of message size by each pullMsg,
@@ -132,8 +130,6 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
   int m_consumeMessageBatchMaxSize;
   int m_maxMsgCacheSize;
 
-  typedef std::map<MQMessageQueue, AsyncPullCallback*> PullMAP;
-  PullMAP m_PullCallback;
   bool m_asyncPull;
   int m_asyncPullTimeout;
   int m_pullMsgThreadPoolNum;

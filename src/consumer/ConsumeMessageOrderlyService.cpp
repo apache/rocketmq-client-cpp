@@ -84,15 +84,16 @@ void ConsumeMessageOrderlyService::stopThreadPool() {
   m_scheduledExecutorService.shutdown();
 }
 
-MessageListenerType ConsumeMessageOrderlyService::getConsumeMsgSerivceListenerType() {
+MessageListenerType ConsumeMessageOrderlyService::getConsumeMsgServiceListenerType() {
   return m_pMessageListener->getMessageListenerType();
 }
 
-void ConsumeMessageOrderlyService::submitConsumeRequest(PullRequest* request, std::vector<MQMessageExt>& msgs) {
+void ConsumeMessageOrderlyService::submitConsumeRequest(std::shared_ptr<PullRequest> request,
+                                                        std::vector<MQMessageExt>& msgs) {
   m_consumeExecutor.submit(std::bind(&ConsumeMessageOrderlyService::ConsumeRequest, this, request));
 }
 
-void ConsumeMessageOrderlyService::submitConsumeRequestLater(PullRequest* request, bool tryLockMQ) {
+void ConsumeMessageOrderlyService::submitConsumeRequestLater(std::shared_ptr<PullRequest> request, bool tryLockMQ) {
   LOG_INFO("submit consumeRequest later for mq:%s", request->m_messageQueue.toString().c_str());
   std::vector<MQMessageExt> msgs;
   submitConsumeRequest(request, msgs);
@@ -101,7 +102,7 @@ void ConsumeMessageOrderlyService::submitConsumeRequestLater(PullRequest* reques
   }
 }
 
-void ConsumeMessageOrderlyService::ConsumeRequest(PullRequest* request) {
+void ConsumeMessageOrderlyService::ConsumeRequest(std::shared_ptr<PullRequest> request) {
   bool bGetMutex = false;
   std::unique_lock<std::timed_mutex> lock(request->getPullRequestCriticalSection(), std::try_to_lock);
   if (!lock.owns_lock()) {
@@ -167,7 +168,7 @@ void ConsumeMessageOrderlyService::ConsumeRequest(PullRequest* request) {
   }
 }
 
-void ConsumeMessageOrderlyService::tryLockLaterAndReconsume(PullRequest* request, bool tryLockMQ) {
+void ConsumeMessageOrderlyService::tryLockLaterAndReconsume(std::shared_ptr<PullRequest> request, bool tryLockMQ) {
   int retryTimer = tryLockMQ ? 500 : 100;
 
   m_scheduledExecutorService.schedule(

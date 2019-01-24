@@ -26,11 +26,12 @@
 #include "RocketMQClient.h"
 
 namespace rocketmq {
+
 class SubscriptionData;
 class PullRequest;
 class Rebalance;
 class ConsumerRunningInfo;
-//<!************************************************************************
+
 class ROCKETMQCLIENT_API MQConsumer : public MQClient {
  public:
   virtual ~MQConsumer() {}
@@ -45,7 +46,7 @@ class ROCKETMQCLIENT_API MQConsumer : public MQClient {
   virtual ConsumeType getConsumeType() = 0;
   virtual ConsumeFromWhere getConsumeFromWhere() = 0;
   virtual void getSubscriptions(std::vector<SubscriptionData>&) = 0;
-  virtual void producePullMsgTask(PullRequest*) = 0;
+  virtual void producePullMsgTask(std::shared_ptr<PullRequest>) = 0;
   virtual Rebalance* getRebalance() const = 0;
   virtual PullResult pull(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums) = 0;
   virtual void pull(const MQMessageQueue& mq,

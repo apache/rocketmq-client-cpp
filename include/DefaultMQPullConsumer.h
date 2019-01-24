@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef __DEFAULTMQPULLCONSUMER_H__
-#define __DEFAULTMQPULLCONSUMER_H__
+#ifndef __DEFAULT_MQ_PULL_CONSUMER_H__
+#define __DEFAULT_MQ_PULL_CONSUMER_H__
 
 #include <set>
 #include <string>
@@ -31,7 +31,7 @@ class SubscriptionData;
 class OffsetStore;
 class PullAPIWrapper;
 class ConsumerRunningInfo;
-//<!***************************************************************************
+
 class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
  public:
   DefaultMQPullConsumer(const std::string& groupname);
@@ -54,28 +54,30 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
   virtual void getSubscriptions(std::vector<SubscriptionData>&);
   virtual void updateConsumeOffset(const MQMessageQueue& mq, int64 offset);
   virtual void removeConsumeOffset(const MQMessageQueue& mq);
-  virtual void producePullMsgTask(PullRequest*);
+  virtual void producePullMsgTask(std::shared_ptr<PullRequest>);
   virtual Rebalance* getRebalance() const;
   //<!end MQConsumer;
 
   void registerMessageQueueListener(const std::string& topic, MQueueListener* pListener);
+
   /**
-  * pull msg from specified queue, if no msg in queue, return directly
-  *
-  * @param mq
-  *            specify the pulled queue
-  * @param subExpression
-  *            set filter expression for pulled msg, broker will filter msg actively
-  *            Now only OR operation is supported, eg: "tag1 || tag2 || tag3"
-  *            if subExpression is setted to "null" or "*"，all msg will be subscribed
-  * @param offset
-  *            specify the started pull offset
-  * @param maxNums
-  *            specify max msg num by per pull
-  * @return
-  *            accroding to PullResult
-  */
+   * pull msg from specified queue, if no msg in queue, return directly
+   *
+   * @param mq
+   *            specify the pulled queue
+   * @param subExpression
+   *            set filter expression for pulled msg, broker will filter msg actively
+   *            Now only OR operation is supported, eg: "tag1 || tag2 || tag3"
+   *            if subExpression is setted to "null" or "*" all msg will be subscribed
+   * @param offset
+   *            specify the started pull offset
+   * @param maxNums
+   *            specify max msg num by per pull
+   * @return
+   *            accroding to PullResult
+   */
   virtual PullResult pull(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums);
+
   virtual void pull(const MQMessageQueue& mq,
                     const std::string& subExpression,
                     int64 offset,
@@ -83,22 +85,23 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
                     PullCallback* pPullCallback);
 
   /**
-  * pull msg from specified queue, if no msg, broker will suspend the pull request 20s
-  *
-  * @param mq
-  *            specify the pulled queue
-  * @param subExpression
-  *            set filter expression for pulled msg, broker will filter msg actively
-  *            Now only OR operation is supported, eg: "tag1 || tag2 || tag3"
-  *            if subExpression is setted to "null" or "*"，all msg will be subscribed
-  * @param offset
-  *            specify the started pull offset
-  * @param maxNums
-  *            specify max msg num by per pull
-  * @return
-  *            accroding to PullResult
-  */
+   * pull msg from specified queue, if no msg, broker will suspend the pull request 20s
+   *
+   * @param mq
+   *            specify the pulled queue
+   * @param subExpression
+   *            set filter expression for pulled msg, broker will filter msg actively
+   *            Now only OR operation is supported, eg: "tag1 || tag2 || tag3"
+   *            if subExpression is setted to "null" or "*" all msg will be subscribed
+   * @param offset
+   *            specify the started pull offset
+   * @param maxNums
+   *            specify max msg num by per pull
+   * @return
+   *            accroding to PullResult
+   */
   PullResult pullBlockIfNotFound(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums);
+
   void pullBlockIfNotFound(const MQMessageQueue& mq,
                            const std::string& subExpression,
                            int64 offset,
@@ -106,21 +109,23 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
                            PullCallback* pPullCallback);
 
   virtual ConsumerRunningInfo* getConsumerRunningInfo() { return NULL; }
+
   /**
-  * 获取消费进度，返回-1表示出错
-  *
-  * @param mq
-  * @param fromStore
-  * @return
-  */
+   * Fetch the offset
+   *
+   * @param mq
+   * @param fromStore
+   * @return
+   */
   int64 fetchConsumeOffset(const MQMessageQueue& mq, bool fromStore);
+
   /**
-  * 根据topic获取MessageQueue，以均衡方式在组内多个成员之间分配
-  *
-  * @param topic
-  *            消息Topic
-  * @return 返回队列集合
-  */
+   * Fetch the message queues according to the topic
+   *
+   * @param topic
+   *            Message Topic
+   * @return
+   */
   void fetchMessageQueuesInBalance(const std::string& topic, std::vector<MQMessageQueue> mqs);
 
   // temp persist consumer offset interface, only valid with
@@ -154,6 +159,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
   Rebalance* m_pRebalance;
   PullAPIWrapper* m_pPullAPIWrapper;
 };
-//<!***************************************************************************
-}  //<!end namespace;
-#endif
+
+}  // namespace rocketmq
+
+#endif  // __DEFAULT_MQ_PULL_CONSUMER_H__

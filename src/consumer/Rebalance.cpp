@@ -24,7 +24,10 @@
 #include "OffsetStore.h"
 
 namespace rocketmq {
-//<!************************************************************************
+
+//######################################
+// Rebalance
+//######################################
 
 Rebalance::Rebalance(MQConsumer* consumer, MQClientFactory* pFactory)
     : m_pConsumer(consumer), m_pClientFactory(pFactory) {
@@ -204,20 +207,22 @@ bool Rebalance::getTopicSubscribeInfo(const string& topic, std::vector<MQMessage
   return false;
 }
 
-void Rebalance::addPullRequest(const MQMessageQueue& mq, PullRequest* pPullRequest) {
+void Rebalance::addPullRequest(const MQMessageQueue& mq, std::shared_ptr<PullRequest> pPullRequest) {
   std::lock_guard<std::mutex> lock(m_requestTableMutex);
   m_requestQueueTable[mq] = pPullRequest;
 }
 
-PullRequest* Rebalance::getPullRequest(const MQMessageQueue& mq) {
+std::shared_ptr<PullRequest> Rebalance::getPullRequest(const MQMessageQueue& mq) {
   std::lock_guard<std::mutex> lock(m_requestTableMutex);
   if (m_requestQueueTable.find(mq) != m_requestQueueTable.end()) {
     return m_requestQueueTable[mq];
   }
-  return nullptr;
+
+  std::shared_ptr<PullRequest> ptr;
+  return ptr;
 }
 
-map<MQMessageQueue, PullRequest*> Rebalance::getPullRequestTable() {
+std::map<MQMessageQueue, std::shared_ptr<PullRequest>> Rebalance::getPullRequestTable() {
   std::lock_guard<std::mutex> lock(m_requestTableMutex);
   return m_requestQueueTable;
 }
@@ -253,7 +258,7 @@ void Rebalance::unlockAll(bool oneway) {
       m_pClientFactory->getMQClientAPIImpl()->unlockBatchMQ(pFindBrokerResult->brokerAddr, unlockBatchRequest.get(),
                                                             1000, m_pConsumer->getSessionCredentials());
       for (unsigned int i = 0; i != mqs.size(); ++i) {
-        PullRequest* pullreq = getPullRequest(mqs[i]);
+        std::shared_ptr<PullRequest> pullreq = getPullRequest(mqs[i]);
         if (pullreq) {
           LOG_INFO("unlockBatchMQ success of mq:%s", mqs[i].toString().c_str());
           pullreq->setLocked(false);
@@ -287,7 +292,7 @@ void Rebalance::unlock(MQMessageQueue mq) {
     m_pClientFactory->getMQClientAPIImpl()->unlockBatchMQ(pFindBrokerResult->brokerAddr, unlockBatchRequest.get(), 1000,
                                                           m_pConsumer->getSessionCredentials());
     for (unsigned int i = 0; i != mqs.size(); ++i) {
-      PullRequest* pullreq = getPullRequest(mqs[i]);
+      std::shared_ptr<PullRequest> pullreq = getPullRequest(mqs[i]);
       if (pullreq) {
         LOG_INFO("unlock success of mq:%s", mqs[i].toString().c_str());
         pullreq->setLocked(false);
@@ -334,7 +339,7 @@ void Rebalance::lockAll() {
       m_pClientFactory->getMQClientAPIImpl()->lockBatchMQ(pFindBrokerResult->brokerAddr, lockBatchRequest.get(),
                                                           messageQueues, 1000, m_pConsumer->getSessionCredentials());
       for (unsigned int i = 0; i != messageQueues.size(); ++i) {
-        PullRequest* pullreq = getPullRequest(messageQueues[i]);
+        std::shared_ptr<PullRequest> pullreq = getPullRequest(messageQueues[i]);
         if (pullreq) {
           LOG_INFO("lockBatchMQ success of mq:%s", messageQueues[i].toString().c_str());
           pullreq->setLocked(true);
@@ -377,7 +382,7 @@ bool Rebalance::lock(MQMessageQueue mq) {
       return false;
     }
     for (unsigned int i = 0; i != messageQueues.size(); ++i) {
-      PullRequest* pullreq = getPullRequest(messageQueues[i]);
+      std::shared_ptr<PullRequest> pullreq = getPullRequest(messageQueues[i]);
       if (pullreq) {
         LOG_INFO("lock success of mq:%s", messageQueues[i].toString().c_str());
         pullreq->setLocked(true);
@@ -395,7 +400,10 @@ bool Rebalance::lock(MQMessageQueue mq) {
   }
 }
 
-//<!************************************************************************
+//######################################
+// RebalancePull
+//######################################
+
 RebalancePull::RebalancePull(MQConsumer* consumer, MQClientFactory* pfactory) : Rebalance(consumer, pfactory) {}
 
 bool RebalancePull::updateRequestTableInRebalance(const string& topic, std::vector<MQMessageQueue>& mqsSelf) {
@@ -412,7 +420,10 @@ void RebalancePull::messageQueueChanged(const std::string& topic,
 
 void RebalancePull::removeUnnecessaryMessageQueue(const MQMessageQueue& mq) {}
 
-//<!***************************************************************************
+//######################################
+// RebalancePush
+//######################################
+
 RebalancePush::RebalancePush(MQConsumer* consumer, MQClientFactory* pfactory) : Rebalance(consumer, pfactory) {}
 
 bool RebalancePush::updateRequestTableInRebalance(const std::string& topic, std::vector<MQMessageQueue>& mqsSelf) {
@@ -423,97 +434,53 @@ bool RebalancePush::updateRequestTableInRebalance(const std::string& topic, std:
 
   bool changed = false;
 
-  //<!remove
-  MQ2PULLREQ requestQueueTable(getPullRequestTable());
-  MQ2PULLREQ::iterator it = requestQueueTable.begin();
-  for (; it != requestQueueTable.end(); ++it) {
-    MQMessageQueue mqtemp = it->first;
-    if (mqtemp.getTopic().compare(topic) == 0) {
+  // remove
+  MQ2PULLREQ requestQueueTable(getPullRequestTable());  // get copy of m_requestQueueTable
+  for (auto& it : requestQueueTable) {
+    MQMessageQueue mqtemp = it.first;
+    if (mqtemp.getTopic() == topic) {
+      // delete queue which is not in allocated
       if (mqsSelf.empty() || (find(mqsSelf.begin(), mqsSelf.end(), mqtemp) == mqsSelf.end())) {
-        if (!(it->second->isDroped())) {
-          it->second->setDroped(true);
-          // delete the lastest pull request for this mq, which hasn't been response
-          // m_pClientFactory->removeDropedPullRequestOpaque(it->second);
+        std::shared_ptr<PullRequest> pull = it.second;
+        if (!pull->isDroped()) {
+          pull->setDroped(true);
           removeUnnecessaryMessageQueue(mqtemp);
-          it->second->clearAllMsgs();  // add clear operation to avoid bad state
-                                       // when dropped pullRequest returns
-                                       // normal
-          LOG_INFO("drop mq:%s", mqtemp.toString().c_str());
+          pull->clearAllMsgs();  // add clear operation to avoid bad state when dropped pullRequest returns normal
+          changed = true;
+
+          LOG_INFO("doRebalance, %s, drop mq: %s", topic.c_str(), mqtemp.toString().c_str());
         }
-        changed = true;
       }
     }
   }
 
-  //<!add
-  std::vector<PullRequest*> pullrequestAdd;
-  DefaultMQPushConsumer* pConsumer = static_cast<DefaultMQPushConsumer*>(m_pConsumer);
-  std::vector<MQMessageQueue>::iterator it2 = mqsSelf.begin();
-  for (; it2 != mqsSelf.end(); ++it2) {
-    PullRequest* pPullRequest(getPullRequest(*it2));
-    if (pPullRequest && pPullRequest->isDroped()) {
-      LOG_DEBUG(
-          "before resume the pull handle of this pullRequest, its mq is:%s, "
-          "its offset is:%lld",
-          (it2->toString()).c_str(), pPullRequest->getNextOffset());
-      pConsumer->getOffsetStore()->removeOffset(*it2);  // remove dirty offset which maybe update to
-                                                        // OffsetStore::m_offsetTable by consuming After last
-                                                        // drop
-      int64 nextOffset = computePullFromWhere(*it2);
-      if (nextOffset >= 0) {
-        /*
-          Fix issue with following scenario:
-          1. pullRequest was dropped
-          2. the pullMsgEvent was not executed by taskQueue, so the PullMsgEvent
-          was not stop
-          3. pullReuest was resumed by next doRebalance, then mulitple
-          pullMsgEvent were produced for pullRequest
-        */
-        bool bPullMsgEvent = pPullRequest->addPullMsgEvent();
-        while (!bPullMsgEvent) {
-          std::this_thread::sleep_for(std::chrono::milliseconds(50));
-          LOG_INFO("pullRequest with mq :%s has unfinished pullMsgEvent", (it2->toString()).c_str());
-          bPullMsgEvent = pPullRequest->addPullMsgEvent();
-        }
-        pPullRequest->setDroped(false);
-        pPullRequest->clearAllMsgs();  // avoid consume accumulation and consume
-                                       // dumplication issues
-        pPullRequest->setNextOffset(nextOffset);
-        pPullRequest->updateQueueMaxOffset(nextOffset);
-        LOG_INFO(
-            "after resume the pull handle of this pullRequest, its mq is:%s, "
-            "its offset is:%lld",
-            (it2->toString()).c_str(), pPullRequest->getNextOffset());
-        changed = true;
-        pConsumer->producePullMsgTask(pPullRequest);
-      } else {
-        LOG_ERROR("get fatel error QueryOffset of mq:%s, do not reconsume this queue", (it2->toString()).c_str());
+  // update
+  auto* pConsumer = static_cast<DefaultMQPushConsumer*>(m_pConsumer);
+  for (auto& mq : mqsSelf) {
+    std::shared_ptr<PullRequest> pullRequest = getPullRequest(mq);
+    if (pullRequest == nullptr || pullRequest->isDroped()) {
+      if (pullRequest != nullptr) {
+        // remove dirty offset which maybe update to OffsetStore::m_offsetTable by consuming After last drop
+        pConsumer->getOffsetStore()->removeOffset(mq);
       }
-    }
 
-    if (!pPullRequest) {
-      LOG_INFO("updateRequestTableInRebalance Doesn't find old mq");
-      PullRequest* pullRequest = new PullRequest(m_pConsumer->getGroupName());
-      pullRequest->m_messageQueue = *it2;
-
-      int64 nextOffset = computePullFromWhere(*it2);
+      int64 nextOffset = computePullFromWhere(mq);
       if (nextOffset >= 0) {
+        pullRequest = std::shared_ptr<PullRequest>(new PullRequest(m_pConsumer->getGroupName()));
+        pullRequest->m_messageQueue = mq;
         pullRequest->setNextOffset(nextOffset);
-        pullRequest->clearAllMsgs();  // avoid consume accumulation and consume
-                                      // dumplication issues
-        changed = true;
+
         //<! mq-> pq;
-        addPullRequest(*it2, pullRequest);
-        pullrequestAdd.push_back(pullRequest);
-        LOG_INFO("add mq:%s, request initiall offset:%lld", (*it2).toString().c_str(), nextOffset);
+        addPullRequest(mq, pullRequest);
+        LOG_INFO("add mq:%s, request initial offset:%lld", mq.toString().c_str(), nextOffset);
+
+        pConsumer->producePullMsgTask(pullRequest);
+
+        changed = true;
+      } else {
+        LOG_ERROR("get fatal error QueryOffset of mq:%s, do not consume this queue", (mq.toString()).c_str());
       }
     }
-  }
-
-  std::vector<PullRequest*>::iterator it3 = pullrequestAdd.begin();
-  for (; it3 != pullrequestAdd.end(); ++it3) {
-    LOG_DEBUG("start pull request");
-    pConsumer->producePullMsgTask(*it3);
   }
 
   LOG_DEBUG("updateRequestTableInRebalance exit");

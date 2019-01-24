@@ -49,6 +49,7 @@ class Rebalance {
   void doRebalance() throw(MQClientException);
   void persistConsumerOffset();
   void persistConsumerOffsetByResetOffset();
+
   //<!m_subscriptionInner;
   SubscriptionData* getSubscriptionData(const std::string& topic);
   void setSubscriptionData(const std::string& topic, SubscriptionData* pdata);
@@ -59,9 +60,10 @@ class Rebalance {
   void setTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& mqs);
   bool getTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& mqs);
 
-  void addPullRequest(const MQMessageQueue& mq, PullRequest* pPullRequest);
-  PullRequest* getPullRequest(const MQMessageQueue& mq);
-  std::map<MQMessageQueue, PullRequest*> getPullRequestTable();
+  void addPullRequest(const MQMessageQueue& mq, std::shared_ptr<PullRequest> pPullRequest);
+  std::shared_ptr<PullRequest> getPullRequest(const MQMessageQueue& mq);
+  std::map<MQMessageQueue, std::shared_ptr<PullRequest>> getPullRequestTable();
+
   void lockAll();
   bool lock(MQMessageQueue mq);
   void unlockAll(bool oneway = false);
@@ -72,7 +74,8 @@ class Rebalance {
 
   std::mutex m_topicSubscribeInfoTableMutex;
   std::map<std::string, std::vector<MQMessageQueue>> m_topicSubscribeInfoTable;
-  typedef std::map<MQMessageQueue, PullRequest*> MQ2PULLREQ;
+
+  typedef std::map<MQMessageQueue, std::shared_ptr<PullRequest>> MQ2PULLREQ;
   MQ2PULLREQ m_requestQueueTable;
   std::mutex m_requestTableMutex;
 
@@ -84,33 +87,31 @@ class Rebalance {
 class RebalancePull : public Rebalance {
  public:
   RebalancePull(MQConsumer*, MQClientFactory*);
-  virtual ~RebalancePull(){};
 
-  virtual void messageQueueChanged(const std::string& topic,
-                                   std::vector<MQMessageQueue>& mqAll,
-                                   std::vector<MQMessageQueue>& mqDivided);
+  void messageQueueChanged(const std::string& topic,
+                           std::vector<MQMessageQueue>& mqAll,
+                           std::vector<MQMessageQueue>& mqDivided) override;
 
-  virtual void removeUnnecessaryMessageQueue(const MQMessageQueue& mq);
+  void removeUnnecessaryMessageQueue(const MQMessageQueue& mq) override;
 
-  virtual int64 computePullFromWhere(const MQMessageQueue& mq);
+  int64 computePullFromWhere(const MQMessageQueue& mq) override;
 
-  virtual bool updateRequestTableInRebalance(const std::string& topic, std::vector<MQMessageQueue>& mqsSelf);
+  bool updateRequestTableInRebalance(const std::string& topic, std::vector<MQMessageQueue>& mqsSelf) override;
 };
 
 class RebalancePush : public Rebalance {
  public:
   RebalancePush(MQConsumer*, MQClientFactory*);
-  virtual ~RebalancePush(){};
 
-  virtual void messageQueueChanged(const std::string& topic,
-                                   std::vector<MQMessageQueue>& mqAll,
-                                   std::vector<MQMessageQueue>& mqDivided);
+  void messageQueueChanged(const std::string& topic,
+                           std::vector<MQMessageQueue>& mqAll,
+                           std::vector<MQMessageQueue>& mqDivided) override;
 
-  virtual void removeUnnecessaryMessageQueue(const MQMessageQueue& mq);
+  void removeUnnecessaryMessageQueue(const MQMessageQueue& mq) override;
 
-  virtual int64 computePullFromWhere(const MQMessageQueue& mq);
+  int64 computePullFromWhere(const MQMessageQueue& mq) override;
 
-  virtual bool updateRequestTableInRebalance(const std::string& topic, std::vector<MQMessageQueue>& mqsSelf);
+  bool updateRequestTableInRebalance(const std::string& topic, std::vector<MQMessageQueue>& mqsSelf) override;
 };
 
 }  // namespace rocketmq

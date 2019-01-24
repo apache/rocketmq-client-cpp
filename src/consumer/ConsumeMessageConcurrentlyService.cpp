@@ -52,15 +52,17 @@ void ConsumeMessageConcurrentlyService::shutdown() {
   m_consumeExecutor.shutdown();
 }
 
-MessageListenerType ConsumeMessageConcurrentlyService::getConsumeMsgSerivceListenerType() {
+MessageListenerType ConsumeMessageConcurrentlyService::getConsumeMsgServiceListenerType() {
   return m_pMessageListener->getMessageListenerType();
 }
 
-void ConsumeMessageConcurrentlyService::submitConsumeRequest(PullRequest* request, std::vector<MQMessageExt>& msgs) {
+void ConsumeMessageConcurrentlyService::submitConsumeRequest(std::shared_ptr<PullRequest> request,
+                                                             std::vector<MQMessageExt>& msgs) {
   m_consumeExecutor.submit(std::bind(&ConsumeMessageConcurrentlyService::ConsumeRequest, this, request, msgs));
 }
 
-void ConsumeMessageConcurrentlyService::ConsumeRequest(PullRequest* request, std::vector<MQMessageExt>& msgs) {
+void ConsumeMessageConcurrentlyService::ConsumeRequest(std::shared_ptr<PullRequest> request,
+                                                       std::vector<MQMessageExt>& msgs) {
   if (!request || request->isDroped()) {
     LOG_WARN("the pull result is NULL or Had been dropped");
     request->clearAllMsgs();  // add clear operation to avoid bad state when dropped pullRequest returns normal
@@ -78,6 +80,13 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(PullRequest* request, std
     resetRetryTopic(msgs);  // set where to sendMessageBack
     request->setLastConsumeTimestamp(UtilAll::currentTimeMillis());
     status = m_pMessageListener->consumeMessage(msgs);
+  }
+
+  /*LOG_DEBUG("Consumed MSG size:%d of mq:%s", msgs.size(), (request->m_messageQueue).toString().c_str());*/
+  if (request->isDroped()) {
+    LOG_WARN("PullRequest[%p] is dropped without process consume result. messageQueue:%s", request.get(),
+             request->m_messageQueue.toString().c_str());
+    return;
   }
 
   /*LOG_DEBUG("Consumed MSG size:%d of mq:%s", msgs.size(), (request->m_messageQueue).toString().c_str());*/
@@ -115,6 +124,12 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(PullRequest* request, std
   // update offset
   int64 offset = request->removeMessage(msgs);
   if (offset >= 0) {
+    if (request->isDroped()) {
+      LOG_WARN("PullRequest[%p] is dropped without process consume result. messageQueue:%s", request.get(),
+               request->m_messageQueue.toString().c_str());
+      return;
+    }
+
     // LOG_DEBUG("update offset:%lld of mq: %s", offset, (request->m_messageQueue).toString().c_str());
     m_pConsumer->updateConsumeOffset(request->m_messageQueue, offset);
   } else {
