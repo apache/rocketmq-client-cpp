@@ -16,20 +16,16 @@
 */
 
 #include <stdio.h>
-
 #include "CPullConsumer.h"
 #include "CCommon.h"
 #include "CMessageExt.h"
 #include "CPullResult.h"
 #include "CMessageQueue.h"
-
 #ifdef _WIN32
 #include <windows.h>
 #else
-
 #include <unistd.h>
 #include <memory.h>
-
 #endif
 
 void thread_sleep(unsigned milliseconds) {

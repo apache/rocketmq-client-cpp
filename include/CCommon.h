@@ -57,7 +57,6 @@ typedef enum _CLogLevel_{
     E_LOG_LEVEL_LEVEL_NUM = 7
 } CLogLevel;
 
-
 #ifdef WIN32
 #ifdef ROCKETMQCLIENT_EXPORTS
 #ifdef _WINDLL

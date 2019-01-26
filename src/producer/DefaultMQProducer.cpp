@@ -37,9 +37,10 @@ DefaultMQProducer::DefaultMQProducer(const string& groupname)
     : m_sendMsgTimeout(3000),
       m_compressMsgBodyOverHowmuch(4 * 1024),
       m_maxMessageSize(1024 * 128),
-      m_retryAnotherBrokerWhenNotStoreOK(false),
+      //m_retryAnotherBrokerWhenNotStoreOK(false),
       m_compressLevel(5),
-      m_retryTimes(5) {
+      m_retryTimes(5),
+      m_retryTimes4Async(1) {
   //<!set default group name;
   string gname = groupname.empty() ? DEFAULT_PRODUCER_GROUP : groupname;
   setGroupName(gname);
@@ -50,7 +51,8 @@ DefaultMQProducer::~DefaultMQProducer() {}
 void DefaultMQProducer::start() {
 #ifndef WIN32
   /* Ignore the SIGPIPE */
-  struct sigaction sa = {0};
+  struct sigaction sa;
+  memset(&sa,0, sizeof(struct sigaction));
   sa.sa_handler = SIG_IGN;
   sa.sa_flags = 0;
   sigaction(SIGPIPE, &sa, 0);
@@ -284,7 +286,7 @@ SendResult DefaultMQProducer::sendDefaultImpl(MQMessage& msg,
       }
 
       try {
-        LOG_DEBUG("send to brokerName:%s", mq.getBrokerName().c_str());
+        LOG_DEBUG("send to mq:%s", mq.toString().data());
         sendResult = sendKernelImpl(msg, mq, communicationMode, pSendCallback);
         switch (communicationMode) {
           case ComMode_ASYNC:
@@ -315,7 +317,8 @@ SendResult DefaultMQProducer::sendDefaultImpl(MQMessage& msg,
     }  // end of for
     LOG_WARN("Retry many times, still failed");
   }
-  THROW_MQEXCEPTION(MQClientException, "No route info of this topic, ", -1);
+  string info = "No route info of this topic: " + msg.getTopic();
+  THROW_MQEXCEPTION(MQClientException, info, -1);
 }
 
 SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
@@ -355,7 +358,7 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
 
       return getFactory()->getMQClientAPIImpl()->sendMessage(
           brokerAddr, mq.getBrokerName(), msg, requestHeader,
-          getSendMsgTimeout(), communicationMode, sendCallback,
+          getSendMsgTimeout(), getRetryTimes4Async(), communicationMode, sendCallback,
           getSessionCredentials());
     } catch (MQException& e) {
       throw e;
@@ -493,5 +496,27 @@ void DefaultMQProducer::setRetryTimes(int times) {
   LOG_WARN("set retry times to:%d", times);
   m_retryTimes = times;
 }
+
+int DefaultMQProducer::getRetryTimes4Async() const 
+{ 
+  return m_retryTimes4Async; 
+}
+void DefaultMQProducer::setRetryTimes4Async(int times) 
+{
+  if (times <= 0) {
+    LOG_WARN("set retry times illegal, use default value:1");
+	m_retryTimes4Async = 1;
+    return;
+  }
+
+  if (times > 15) {
+    LOG_WARN("set retry times illegal, use max value:15");
+    m_retryTimes4Async = 15;
+    return;
+  }
+  LOG_INFO("set retry times to:%d", times);
+  m_retryTimes4Async = times;
+}
+
 //<!***************************************************************************
 }  //<!end namespace;

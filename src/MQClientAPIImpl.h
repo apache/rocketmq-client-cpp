@@ -60,7 +60,8 @@ class MQClientAPIImpl {
   SendResult sendMessage(const string& addr, const string& brokerName,
                          const MQMessage& msg,
                          SendMessageRequestHeader* pRequestHeader,
-                         int timeoutMillis, int communicationMode,
+                         int timeoutMillis, int maxRetrySendTimes,
+                         int communicationMode,
                          SendCallback* pSendCallback,
                          const SessionCredentials& sessionCredentials);
 
@@ -161,15 +162,22 @@ class MQClientAPIImpl {
                      int timeoutMillis,
                      const SessionCredentials& sessionCredentials);
 
+  void sendMessageAsync(const string& addr, const string& brokerName,
+                        const MQMessage& msg, RemotingCommand& request,
+                        SendCallback* pSendCallback, int64 timeoutMilliseconds,
+                        int maxRetryTimes=1,
+                        int retrySendTimes=1);
+  void deleteOpaqueForDropPullRequest(const MQMessageQueue& mq, int opaque);
+
  private:
   SendResult sendMessageSync(const string& addr, const string& brokerName,
                              const MQMessage& msg, RemotingCommand& request,
                              int timeoutMillis);
-
+  /*
   void sendMessageAsync(const string& addr, const string& brokerName,
                         const MQMessage& msg, RemotingCommand& request,
                         SendCallback* pSendCallback, int64 timeoutMilliseconds);
-
+  */
   PullResult* pullMessageSync(const string& addr, RemotingCommand& request,
                               int timeoutMillis);
 

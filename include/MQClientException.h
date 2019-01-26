@@ -21,10 +21,9 @@
 #include <ostream>
 #include <sstream>
 #include <string>
-
 #include <string.h>
 #include "RocketMQClient.h"
-
+#include "CCommon.h"
 
 
 namespace rocketmq {
@@ -55,14 +54,13 @@ class ROCKETMQCLIENT_API MQException : public std::exception {
     } catch (...) {
     }
   }
-
+  
   virtual ~MQException() throw() {}
-
   const char* what() const throw() { return m_msg.c_str(); }
-
   int GetError() const throw() { return m_error; }
-
   virtual const char* GetType() const throw() { return m_type.c_str(); }
+  int GetLine() { return m_line;}
+  const char* GetFile()  { return m_file.c_str(); }
 
   int GetLine() { return m_line;}
 

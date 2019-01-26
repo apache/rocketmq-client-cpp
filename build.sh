@@ -1,4 +1,5 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
+
 
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -253,7 +254,8 @@ BuildBoost()
         exit 1
     fi    
     echo "build boost static #####################"
-    ./b2 cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static runtime-link=static release install --prefix=${install_lib_dir}
+    pwd
+    ./b2 cflags=-fPIC cxxflags=-fPIC   --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static  release install --prefix=${install_lib_dir}
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -296,7 +298,7 @@ BuildGoogleTest()
         wget https://github.com/abseil/googletest/archive/release-1.8.1.tar.gz
     fi
     if [ ! -d "googletest-release-1.8.1" ];then
-        tar -zxvf release-1.8.1.tar.gz
+        tar -zxvf release-1.8.1.tar.gz > googletest.txt 2>&1
     fi
     cd googletest-release-1.8.1
     mkdir build; cd build

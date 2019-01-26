@@ -471,11 +471,13 @@ bool RebalancePush::updateRequestTableInRebalance(
           (find(mqsSelf.begin(), mqsSelf.end(), mqtemp) == mqsSelf.end())) {
         if (!(it->second->isDroped())) {
           it->second->setDroped(true);
+          //delete the lastest pull request for this mq, which hasn't been response
+          //m_pClientFactory->removeDropedPullRequestOpaque(it->second);
           removeUnnecessaryMessageQueue(mqtemp);
           it->second->clearAllMsgs();  // add clear operation to avoid bad state
                                        // when dropped pullRequest returns
                                        // normal
-          LOG_INFO("drop mq:%s", mqtemp.toString().c_str());
+          LOG_INFO("drop mq:%s, delete opaque:%d", mqtemp.toString().c_str(), it->second->getLatestPullRequestOpaque());
         }
         changed = true;
       }

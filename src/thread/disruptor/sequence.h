@@ -102,9 +102,9 @@ class PaddedSequence : public Sequence {
     PaddedSequence(int64_t initial_value = kInitialCursorValue) :
             Sequence(initial_value) {}
 
- private:
+ //private:
     // padding
-    int64_t padding_[ATOMIC_SEQUENCE_PADDING_LENGTH];
+    //int64_t padding_[ATOMIC_SEQUENCE_PADDING_LENGTH];
 
 };
 
@@ -133,8 +133,8 @@ class PaddedLong : public MutableLong {
  public:
      PaddedLong(int64_t initial_value = kInitialCursorValue) :
          MutableLong(initial_value) {}
- private:
-     int64_t padding_[SEQUENCE_PADDING_LENGTH];
+ //private:
+     //int64_t padding_[SEQUENCE_PADDING_LENGTH];
 };
 
 int64_t GetMinimumSequence(
