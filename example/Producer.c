@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
     SetProducerNameServerAddress(producer, "127.0.0.1:9876");
     StartProducer(producer);
     printf("Producer start.....\n");
-    startSendMessage(producer);
+    StartSendMessage(producer);
     ShutdownProducer(producer);
     DestroyProducer(producer);
     printf("Producer Shutdown!\n");

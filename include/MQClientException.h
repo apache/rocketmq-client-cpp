@@ -62,10 +62,6 @@ class ROCKETMQCLIENT_API MQException : public std::exception {
   int GetLine() { return m_line;}
   const char* GetFile()  { return m_file.c_str(); }
 
-  int GetLine() { return m_line;}
-
-  const char* GetFile()  { return m_file.c_str(); }
-
  protected:
   int m_error;
   int m_line;
