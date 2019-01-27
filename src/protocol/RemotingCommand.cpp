@@ -63,24 +63,23 @@ RemotingCommand& RemotingCommand::operator=(const RemotingCommand& command) {
 
 RemotingCommand::~RemotingCommand() { m_pExtHeader = NULL; }
 
-void RemotingCommand::Assign(const RemotingCommand& command)
-{
-    m_code = command.m_code;
-    m_language = command.m_language;
-    m_version = command.m_version;
-    m_opaque = command.m_opaque;
-    m_flag = command.m_flag;
-    m_remark = command.m_remark;
-    m_msgBody = command.m_msgBody;
-    
-    for (auto& it : command.m_extFields) {
-      m_extFields[it.first] = it.second;
-    }
-    m_head = command.m_head;
-    m_body = command.m_body;
-    s_seqNumber.store(command.s_seqNumber.load());
-    m_parsedJson = command.m_parsedJson;
-    //m_pExtHeader = command.m_pExtHeader; //ignore this filed at this moment, if need please add it
+void RemotingCommand::Assign(const RemotingCommand &command) {
+  m_code = command.m_code;
+  m_language = command.m_language;
+  m_version = command.m_version;
+  m_opaque = command.m_opaque;
+  m_flag = command.m_flag;
+  m_remark = command.m_remark;
+  m_msgBody = command.m_msgBody;
+
+  for (auto &it : command.m_extFields) {
+    m_extFields[it.first] = it.second;
+  }
+
+  m_head = command.m_head;
+  m_body = command.m_body;
+  m_parsedJson = command.m_parsedJson;
+  //m_pExtHeader = command.m_pExtHeader; //ignore this filed at this moment, if need please add it
 }
 
 void RemotingCommand::Encode() {
@@ -282,14 +281,13 @@ void RemotingCommand::addExtField(const string& key, const string& value) {
 }
 
 std::string RemotingCommand::ToString() const {
-	 std::stringstream ss;
-	 ss << "code:" << m_code
-	  <<",opaque:"<< m_opaque
-	  <<",flag:"<< m_flag
-	  <<",seqNumber:" << s_seqNumber
-	  <<",body.size:" << m_body.getSize()
-	  <<",header.size:" << m_head.getSize();
-	 return ss.str();
+  std::stringstream ss;
+  ss << "code:" << m_code
+     << ",opaque:" << m_opaque
+     << ",flag:" << m_flag
+     << ",body.size:" << m_body.getSize()
+     << ",header.size:" << m_head.getSize();
+  return ss.str();
 }
 
 }  //<!end namespace;
