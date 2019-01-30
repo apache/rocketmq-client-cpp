@@ -99,7 +99,7 @@ long long GetMessageStoreTimestamp(CMessageExt *msg){
     if (msg == NULL) {
         return NULL_POINTER;
     }
-    return ((MQMessageExt *) msg)->getBornTimestamp();
+    return ((MQMessageExt *) msg)->getStoreTimestamp();
 }
 
 long long GetMessageQueueOffset(CMessageExt *msg){
