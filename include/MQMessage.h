@@ -57,7 +57,7 @@ class ROCKETMQCLIENT_API MQMessage {
   int getDelayTimeLevel() const;
   void setDelayTimeLevel(int level);
 
-  bool isWaitStoreMsgOK();
+  bool isWaitStoreMsgOK() const;
   void setWaitStoreMsgOK(bool waitStoreMsgOK);
 
   int getFlag() const;

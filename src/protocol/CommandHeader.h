@@ -90,7 +90,8 @@ class SendMessageRequestHeader : public CommandHeader {
         bornTimestamp(0),
         flag(0),
         reconsumeTimes(0),
-        unitMode(false) {}
+        unitMode(false),
+        batch(false){}
   virtual ~SendMessageRequestHeader() {}
   virtual void Encode(Json::Value& outData);
   virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
@@ -109,6 +110,7 @@ class SendMessageRequestHeader : public CommandHeader {
   string properties;
   int reconsumeTimes;
   bool unitMode;
+  bool batch;
 };
 
 //<!************************************************************************

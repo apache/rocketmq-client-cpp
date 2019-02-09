@@ -41,18 +41,18 @@ foreach(file ${files})
     endif()
 
     if (MSVC)
-    	if (BUILD_ROCKETMQ_SHARED)
-        	target_link_libraries (${basename}  rocketmq_shared ${deplibs}
-        	${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES})
-    	else()
-        	target_link_libraries (${basename}  rocketmq_static ${deplibs}
-        	${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES})
+        if (BUILD_ROCKETMQ_SHARED)
+            target_link_libraries (${basename}  rocketmq_shared ${deplibs}
+            ${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES})
+        else()
+            target_link_libraries (${basename}  rocketmq_static ${deplibs}
+            ${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES})
         endif()
     else()
         if (BUILD_ROCKETMQ_SHARED)
-    	    target_link_libraries (${basename} rocketmq_shared)
+            target_link_libraries (${basename} rocketmq_shared)
         else()
-    	    target_link_libraries (${basename} rocketmq_static)
+            target_link_libraries (${basename} rocketmq_static)
         endif()
     endif()
 

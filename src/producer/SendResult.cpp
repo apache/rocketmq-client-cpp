@@ -42,7 +42,7 @@ SendResult& SendResult::operator=(const SendResult& other) {
   if (this != &other) {
     m_sendStatus = other.m_sendStatus;
     m_msgId = other.m_msgId;
-	m_offsetMsgId = other.m_offsetMsgId;
+    m_offsetMsgId = other.m_offsetMsgId;
     m_messageQueue = other.m_messageQueue;
     m_queueOffset = other.m_queueOffset;
   }

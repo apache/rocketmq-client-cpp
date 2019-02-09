@@ -173,7 +173,7 @@ void MQMessage::setDelayTimeLevel(int level) {
   setPropertyInternal(PROPERTY_DELAY_TIME_LEVEL, tmp);
 }
 
-bool MQMessage::isWaitStoreMsgOK() {
+bool MQMessage::isWaitStoreMsgOK() const {
   string tmp = getProperty(PROPERTY_WAIT_STORE_MSG_OK);
   if (tmp.empty()) {
     return true;
