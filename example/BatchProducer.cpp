@@ -70,6 +70,9 @@ void SyncProducerWorker(RocketmqSendAndConsumerArgs* info,
             }
         } catch (const MQException& e) {
             std::cout << "send failed: " << e.what() << std::endl;
+            std::unique_lock<std::mutex> lck(g_mtx);
+            g_finished.notify_one();
+            return;
         }
     }
 }
