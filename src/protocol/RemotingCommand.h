@@ -75,13 +75,13 @@ class RemotingCommand {
   string m_msgBody;
   map<string, string> m_extFields;
 
-  static boost::mutex m_clock;
   MemoryBlock m_head;
   MemoryBlock m_body;
   //<!save here
   Json::Value m_parsedJson;
-  static boost::atomic<int> s_seqNumber;
   unique_ptr<CommandHeader> m_pExtHeader;
+
+  static boost::atomic<int> s_seqNumber;
 };
 
 }  //<!end namespace;
