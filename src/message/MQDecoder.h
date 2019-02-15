@@ -32,12 +32,10 @@ class MQDecoder {
 
   static void decodes(const MemoryBlock* mem, vector<MQMessageExt>& mqvec);
 
-  static void decodes(const MemoryBlock* mem, vector<MQMessageExt>& mqvec,
-                      bool readBody);
+  static void decodes(const MemoryBlock* mem, vector<MQMessageExt>& mqvec, bool readBody);
 
   static string messageProperties2String(const map<string, string>& properties);
-  static void string2messageProperties(const string& propertiesString,
-                                       map<string, string>& properties);
+  static void string2messageProperties(const string& propertiesString, map<string, string>& properties);
 
  private:
   static MQMessageExt* decode(MemoryInputStream& byteBuffer);
