@@ -27,6 +27,15 @@
 #include <unistd.h>
 #include <stdio.h>
 
+#include <stdio.h>
+
+#include "CProducer.h"
+#include "CCommon.h"
+#include "CMessage.h"
+#include "CSendResult.h"
+#include "CMQException.h"
+#include <unistd.h>
+
 using namespace std;
 using ::testing::InitGoogleTest;
 using ::testing::InitGoogleMock;
@@ -58,11 +67,11 @@ TEST(Url, Url) {
     cout << nums << endl;
 }
 
+
+
 int main(int argc, char* argv[]) {
     InitGoogleMock(&argc, argv);
-
-    testing::GTEST_FLAG(filter) = "Url.Url";
-    int itestts = RUN_ALL_TESTS();
-    printf("RUN_ALL_TESTS return %d" , itestts);
+	testing::GTEST_FLAG(filter) = "Url.Url";
+	int itestts = RUN_ALL_TESTS();;
     return itestts;
 }
