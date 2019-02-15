@@ -18,39 +18,43 @@
 #include <algorithm>
 
 namespace rocketmq {
+
 MemoryBlock::MemoryBlock() : size(0), data(NULL) {}
 
 MemoryBlock::MemoryBlock(const int initialSize, const bool initialiseToZero)
     : size(0), data(NULL) {
   if (initialSize > 0) {
     size = initialSize;
-    data = static_cast<char*>(initialiseToZero
-                                  ? std::calloc(initialSize, sizeof(char))
-                                  : std::malloc(initialSize * sizeof(char)));
+    data = static_cast<char *>(initialiseToZero
+                               ? std::calloc(initialSize, sizeof(char))
+                               : std::malloc(initialSize * sizeof(char)));
   }
 }
 
-MemoryBlock::MemoryBlock(const void* const dataToInitialiseFrom,
-                         const size_t sizeInBytes)
+MemoryBlock::MemoryBlock(const void *const dataToInitialiseFrom, const size_t sizeInBytes)
     : size(sizeInBytes), data(NULL) {
   if (size > 0) {
-    data = static_cast<char*>(std::malloc(size * sizeof(char)));
+    data = static_cast<char *>(std::malloc(size * sizeof(char)));
 
     if (dataToInitialiseFrom != NULL) memcpy(data, dataToInitialiseFrom, size);
   }
 }
 
-MemoryBlock::MemoryBlock(const MemoryBlock& other)
-    : size(other.size), data(NULL) {
+MemoryBlock::MemoryBlock(const MemoryBlock &other) : size(other.size), data(NULL) {
   if (size > 0) {
-    data = static_cast<char*>(std::malloc(size * sizeof(char)));
+    data = static_cast<char *>(std::malloc(size * sizeof(char)));
     memcpy(data, other.data, size);
   }
 }
 
+MemoryBlock::MemoryBlock(MemoryBlock &&other) : size(other.size), data(other.data) {
+  other.size = 0;
+  other.data = NULL;
+}
+
 MemoryBlock::~MemoryBlock() { std::free(data); }
 
-MemoryBlock& MemoryBlock::operator=(const MemoryBlock& other) {
+MemoryBlock &MemoryBlock::operator=(const MemoryBlock &other) {
   if (this != &other) {
     setSize(other.size, false);
     memcpy(data, other.data, size);
@@ -59,16 +63,30 @@ MemoryBlock& MemoryBlock::operator=(const MemoryBlock& other) {
   return *this;
 }
 
+MemoryBlock &MemoryBlock::operator=(MemoryBlock &&other) {
+  if (this != &other) {
+    std::free(data);
+
+    size = other.size;
+    data = other.data;
+
+    other.size = 0;
+    other.data = NULL;
+  }
+
+  return *this;
+}
+
 //==============================================================================
-bool MemoryBlock::operator==(const MemoryBlock& other) const {
+bool MemoryBlock::operator==(const MemoryBlock &other) const {
   return matches(other.data, other.size);
 }
 
-bool MemoryBlock::operator!=(const MemoryBlock& other) const {
+bool MemoryBlock::operator!=(const MemoryBlock &other) const {
   return !operator==(other);
 }
 
-bool MemoryBlock::matches(const void* dataToCompare, int dataSize) const {
+bool MemoryBlock::matches(const void *dataToCompare, int dataSize) const {
   return size == dataSize && memcmp(data, dataToCompare, size) == 0;
 }
 
@@ -80,7 +98,7 @@ void MemoryBlock::setSize(const int newSize, const bool initialiseToZero) {
       reset();
     } else {
       if (data != NULL) {
-        data = static_cast<char*>(
+        data = static_cast<char *>(
             data == NULL ? std::malloc(newSize * sizeof(char))
                          : std::realloc(data, newSize * sizeof(char)));
 
@@ -88,9 +106,9 @@ void MemoryBlock::setSize(const int newSize, const bool initialiseToZero) {
           memset(data + size, 0, newSize - size);
       } else {
         std::free(data);
-        data = static_cast<char*>(initialiseToZero
-                                      ? std::calloc(newSize, sizeof(char))
-                                      : std::malloc(newSize * sizeof(char)));
+        data = static_cast<char *>(initialiseToZero
+                                   ? std::calloc(newSize, sizeof(char))
+                                   : std::malloc(newSize * sizeof(char)));
       }
 
       size = newSize;
@@ -104,15 +122,16 @@ void MemoryBlock::reset() {
   size = 0;
 }
 
-void MemoryBlock::ensureSize(const int minimumSize,
-                             const bool initialiseToZero) {
+void MemoryBlock::ensureSize(const int minimumSize, const bool initialiseToZero) {
   if (size < minimumSize) setSize(minimumSize, initialiseToZero);
 }
 
 //==============================================================================
-void MemoryBlock::fillWith(const int value) { memset(data, (int)value, size); }
+void MemoryBlock::fillWith(const int value) {
+  memset(data, (int) value, size);
+}
 
-void MemoryBlock::append(const void* const srcData, const int numBytes) {
+void MemoryBlock::append(const void *const srcData, const int numBytes) {
   if (numBytes > 0) {
     const int oldSize = size;
     setSize(size + numBytes);
@@ -120,15 +139,14 @@ void MemoryBlock::append(const void* const srcData, const int numBytes) {
   }
 }
 
-void MemoryBlock::replaceWith(const void* const srcData, const int numBytes) {
+void MemoryBlock::replaceWith(const void *const srcData, const int numBytes) {
   if (numBytes > 0) {
     setSize(numBytes);
     memcpy(data, srcData, numBytes);
   }
 }
 
-void MemoryBlock::insert(const void* const srcData, const int numBytes,
-                         int insertPosition) {
+void MemoryBlock::insert(const void *const srcData, const int numBytes, int insertPosition) {
   if (numBytes > 0) {
     insertPosition = std::min(insertPosition, size);
     const int trailingDataSize = size - insertPosition;
@@ -142,44 +160,42 @@ void MemoryBlock::insert(const void* const srcData, const int numBytes,
   }
 }
 
-void MemoryBlock::removeSection(const int startByte,
-                                const int numBytesToRemove) {
+void MemoryBlock::removeSection(const int startByte, const int numBytesToRemove) {
   if (startByte + numBytesToRemove >= size) {
     setSize(startByte);
   } else if (numBytesToRemove > 0) {
-    memmove(data + startByte, data + startByte + numBytesToRemove,
-            size - (startByte + numBytesToRemove));
+    memmove(data + startByte, data + startByte + numBytesToRemove, size - (startByte + numBytesToRemove));
 
     setSize(size - numBytesToRemove);
   }
 }
 
-void MemoryBlock::copyFrom(const void* const src, int offset, int num) {
-  const char* d = static_cast<const char*>(src);
+void MemoryBlock::copyFrom(const void *const src, int offset, int num) {
+  const char *d = static_cast<const char *>(src);
 
   if (offset < 0) {
     d -= offset;
-    num += (size_t)-offset;
+    num += (size_t) -offset;
     offset = 0;
   }
 
-  if ((size_t)offset + num > (unsigned int)size) num = size - (size_t)offset;
+  if ((size_t) offset + num > (unsigned int) size) num = size - (size_t) offset;
 
   if (num > 0) memcpy(data + offset, d, num);
 }
 
-void MemoryBlock::copyTo(void* const dst, int offset, int num) const {
-  char* d = static_cast<char*>(dst);
+void MemoryBlock::copyTo(void *const dst, int offset, int num) const {
+  char *d = static_cast<char *>(dst);
 
   if (offset < 0) {
-    memset(d, 0, (size_t)-offset);
+    memset(d, 0, (size_t) -offset);
     d -= offset;
-    num -= (size_t)-offset;
+    num -= (size_t) -offset;
     offset = 0;
   }
 
-  if ((size_t)offset + num > (unsigned int)size) {
-    const int newNum = (size_t)size - (size_t)offset;
+  if ((size_t) offset + num > (unsigned int) size) {
+    const int newNum = (size_t) size - (size_t) offset;
     memset(d + newNum, 0, num - newNum);
     num = newNum;
   }
