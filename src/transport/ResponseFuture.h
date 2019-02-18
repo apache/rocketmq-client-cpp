@@ -17,8 +17,8 @@
 #ifndef __RESPONSEFUTURE_H__
 #define __RESPONSEFUTURE_H__
 
-#include <boost/atomic.hpp>
-#include <boost/thread/condition_variable.hpp>
+#include <atomic>
+#include <condition_variable>
 
 #include "AsyncCallbackWrap.h"
 #include "RemotingCommand.h"
@@ -81,11 +81,11 @@ class ResponseFuture {
   AsyncCallbackWrap* m_pCallbackWrap;
 
   AsyncCallbackStatus m_asyncCallbackStatus;
-  boost::mutex m_asyncCallbackLock;
+  std::mutex m_asyncCallbackLock;
 
   bool m_haveResponse;
-  boost::mutex m_defaultEventLock;
-  boost::condition_variable_any m_defaultEvent;
+  std::mutex m_defaultEventLock;
+  std::condition_variable m_defaultEvent;
 
   int64 m_beginTimestamp;
   bool m_sendRequestOK;

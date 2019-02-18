@@ -91,7 +91,7 @@ void TcpRemotingClient::stopAllTcpTransportThread() {
   m_threadpool.join_all();
 
   {
-    boost::lock_guard<boost::mutex> lock(m_futureTableLock);
+    std::lock_guard<std::mutex> lock(m_futureTableLock);
     for (const auto& future : m_futureTable) {
       if (future.second)
         future.second->releaseThreadCondition();
@@ -108,9 +108,9 @@ void TcpRemotingClient::updateNameServerAddressList(const string& addrs) {
     return;
   }
 
-  boost::unique_lock<boost::timed_mutex> lock(m_namesrvLock, boost::try_to_lock);
+  std::unique_lock<std::timed_mutex> lock(m_namesrvLock, std::try_to_lock);
   if (!lock.owns_lock()) {
-    if (!lock.timed_lock(boost::get_system_time() + boost::posix_time::seconds(10))) {
+    if (!lock.try_lock_for(std::chrono::seconds(10))) {
       LOG_ERROR("updateNameServerAddressList get timed_mutex timeout");
       return;
     }
@@ -273,9 +273,9 @@ std::shared_ptr<TcpTransport> TcpRemotingClient::CreateTransport(const string& a
   {
     // try get m_tcpLock util m_tcpTransportTryLockTimeout to avoid blocking
     // long time, if could not get m_tcpLock, return NULL
-    boost::unique_lock<boost::timed_mutex> lock(m_tcpTableLock, boost::try_to_lock);
+    std::unique_lock<std::timed_mutex> lock(m_tcpTableLock, std::try_to_lock);
     if (!lock.owns_lock()) {
-      if (!lock.timed_lock(boost::get_system_time() + boost::posix_time::seconds(m_tcpTransportTryLockTimeout))) {
+      if (!lock.try_lock_for(std::chrono::seconds(m_tcpTransportTryLockTimeout))) {
         LOG_ERROR("GetTransport of:%s get timed_mutex timeout", addr.c_str());
         std::shared_ptr<TcpTransport> pTcp;
         return pTcp;
@@ -338,9 +338,9 @@ std::shared_ptr<TcpTransport> TcpRemotingClient::CreateNameServerTransport(bool 
   // try get m_tcpLock until m_tcpTransportTryLockTimeout to avoid blocking long
   // time, if could not get m_namesrvlock, return NULL
   LOG_DEBUG("--CreateNameserverTransport--");
-  boost::unique_lock<boost::timed_mutex> lock(m_namesrvLock, boost::try_to_lock);
+  std::unique_lock<std::timed_mutex> lock(m_namesrvLock, std::try_to_lock);
   if (!lock.owns_lock()) {
-    if (!lock.timed_lock(boost::get_system_time() + boost::posix_time::seconds(m_tcpTransportTryLockTimeout))) {
+    if (!lock.try_lock_for(std::chrono::seconds(m_tcpTransportTryLockTimeout))) {
       LOG_ERROR("CreateNameserverTransport get timed_mutex timeout");
       std::shared_ptr<TcpTransport> pTcp;
       return pTcp;
@@ -375,9 +375,9 @@ bool TcpRemotingClient::CloseTransport(const string& addr, std::shared_ptr<TcpTr
     return CloseNameServerTransport(pTcp);
   }
 
-  boost::unique_lock<boost::timed_mutex> lock(m_tcpTableLock, boost::try_to_lock);
+  std::unique_lock<std::timed_mutex> lock(m_tcpTableLock, std::try_to_lock);
   if (!lock.owns_lock()) {
-    if (!lock.timed_lock(boost::get_system_time() + boost::posix_time::seconds(m_tcpTransportTryLockTimeout))) {
+    if (!lock.try_lock_for(std::chrono::seconds(m_tcpTransportTryLockTimeout))) {
       LOG_ERROR("CloseTransport of:%s get timed_mutex timeout", addr.c_str());
       return false;
     }
@@ -411,9 +411,9 @@ bool TcpRemotingClient::CloseTransport(const string& addr, std::shared_ptr<TcpTr
 }
 
 bool TcpRemotingClient::CloseNameServerTransport(std::shared_ptr<TcpTransport> pTcp) {
-  boost::unique_lock<boost::timed_mutex> lock(m_namesrvLock, boost::try_to_lock);
+  std::unique_lock<std::timed_mutex> lock(m_namesrvLock, std::try_to_lock);
   if (!lock.owns_lock()) {
-    if (!lock.timed_lock(boost::get_system_time() + boost::posix_time::seconds(m_tcpTransportTryLockTimeout))) {
+    if (!lock.try_lock_for(std::chrono::seconds(m_tcpTransportTryLockTimeout))) {
       LOG_ERROR("CreateNameServerTransport get timed_mutex timeout");
       return false;
     }
@@ -545,14 +545,14 @@ void TcpRemotingClient::processRequestCommand(RemotingCommand* pCmd, const strin
 }
 
 void TcpRemotingClient::addResponseFuture(int opaque, std::shared_ptr<ResponseFuture> pFuture) {
-  boost::lock_guard<boost::mutex> lock(m_futureTableLock);
+  std::lock_guard<std::mutex> lock(m_futureTableLock);
   m_futureTable[opaque] = pFuture;
 }
 
 // Note: after call this function, shared_ptr of m_syncFutureTable[opaque] will
 // be erased, so caller must ensure the life cycle of returned shared_ptr;
 std::shared_ptr<ResponseFuture> TcpRemotingClient::findAndDeleteResponseFuture(int opaque) {
-  boost::lock_guard<boost::mutex> lock(m_futureTableLock);
+  std::lock_guard<std::mutex> lock(m_futureTableLock);
   std::shared_ptr<ResponseFuture> pResponseFuture;
   if (m_futureTable.find(opaque) != m_futureTable.end()) {
     pResponseFuture = m_futureTable[opaque];
@@ -562,14 +562,14 @@ std::shared_ptr<ResponseFuture> TcpRemotingClient::findAndDeleteResponseFuture(i
 }
 
 void TcpRemotingClient::addAsyncResponseFuture(int opaque, std::shared_ptr<ResponseFuture> pFuture) {
-  boost::lock_guard<boost::mutex> lock(m_asyncFutureTableLock);
+  std::lock_guard<std::mutex> lock(m_asyncFutureTableLock);
   m_asyncFutureTable[opaque] = pFuture;
 }
 
 // Note: after call this function, shared_ptr of m_asyncFutureTable[opaque] will
 // be erased, so caller must ensure the life cycle of returned shared_ptr;
 std::shared_ptr<ResponseFuture> TcpRemotingClient::findAndDeleteAsyncResponseFuture(int opaque) {
-  boost::lock_guard<boost::mutex> lock(m_asyncFutureTableLock);
+  std::lock_guard<std::mutex> lock(m_asyncFutureTableLock);
   std::shared_ptr<ResponseFuture> pResponseFuture;
   if (m_asyncFutureTable.find(opaque) != m_asyncFutureTable.end()) {
     pResponseFuture = m_asyncFutureTable[opaque];
@@ -585,7 +585,7 @@ void TcpRemotingClient::registerProcessor(MQRequestCode requestCode, ClientRemot
 }
 
 void TcpRemotingClient::addTimerCallback(boost::asio::deadline_timer* t, int opaque) {
-  boost::lock_guard<boost::mutex> lock(m_asyncTimerTableLock);
+  std::lock_guard<std::mutex> lock(m_asyncTimerTableLock);
   if (m_asyncTimerTable.find(opaque) != m_asyncTimerTable.end()) {
     LOG_DEBUG("addTimerCallback:erase timerCallback opaque:%lld", opaque);
     boost::asio::deadline_timer* old_t = m_asyncTimerTable[opaque];
@@ -601,7 +601,7 @@ void TcpRemotingClient::addTimerCallback(boost::asio::deadline_timer* t, int opa
 }
 
 void TcpRemotingClient::eraseTimerCallback(int opaque) {
-  boost::lock_guard<boost::mutex> lock(m_asyncTimerTableLock);
+  std::lock_guard<std::mutex> lock(m_asyncTimerTableLock);
   if (m_asyncTimerTable.find(opaque) != m_asyncTimerTable.end()) {
     LOG_DEBUG("eraseTimerCallback: opaque:%lld", opaque);
     boost::asio::deadline_timer* t = m_asyncTimerTable[opaque];
@@ -611,7 +611,7 @@ void TcpRemotingClient::eraseTimerCallback(int opaque) {
 }
 
 void TcpRemotingClient::cancelTimerCallback(int opaque) {
-  boost::lock_guard<boost::mutex> lock(m_asyncTimerTableLock);
+  std::lock_guard<std::mutex> lock(m_asyncTimerTableLock);
   if (m_asyncTimerTable.find(opaque) != m_asyncTimerTable.end()) {
     LOG_DEBUG("cancelTimerCallback: opaque:%lld", opaque);
     boost::asio::deadline_timer* t = m_asyncTimerTable[opaque];
@@ -626,7 +626,7 @@ void TcpRemotingClient::cancelTimerCallback(int opaque) {
 }
 
 void TcpRemotingClient::removeAllTimerCallback() {
-  boost::lock_guard<boost::mutex> lock(m_asyncTimerTableLock);
+  std::lock_guard<std::mutex> lock(m_asyncTimerTableLock);
   for (const auto& timer : m_asyncTimerTable) {
     boost::asio::deadline_timer* t = timer.second;
     try {

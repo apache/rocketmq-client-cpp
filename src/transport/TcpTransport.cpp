@@ -16,6 +16,8 @@
  */
 #include "TcpTransport.h"
 
+#include <chrono>
+
 #ifndef WIN32
 #include <arpa/inet.h>  // for sockaddr_in and inet_ntoa...
 #include <netinet/tcp.h>
@@ -65,9 +67,9 @@ TcpConnectStatus TcpTransport::getTcpConnectStatus() {
 }
 
 TcpConnectStatus TcpTransport::waitTcpConnectEvent(int timeoutMillis) {
-  boost::unique_lock<boost::mutex> eventLock(m_connectEventLock);
+  std::unique_lock<std::mutex> eventLock(m_connectEventLock);
   if (m_tcpConnectStatus == TCP_CONNECT_STATUS_WAIT) {
-    if (!m_connectEvent.timed_wait(eventLock, boost::posix_time::milliseconds(timeoutMillis))) {
+    if (m_connectEvent.wait_for(eventLock, std::chrono::milliseconds(timeoutMillis)) == std::cv_status::timeout) {
       LOG_INFO("connect timeout");
     }
   }
@@ -76,9 +78,9 @@ TcpConnectStatus TcpTransport::waitTcpConnectEvent(int timeoutMillis) {
 
 // internal method
 void TcpTransport::setTcpConnectEvent(TcpConnectStatus connectStatus) {
-  TcpConnectStatus baseStatus = m_tcpConnectStatus.exchange(connectStatus, boost::memory_order_relaxed);
+  TcpConnectStatus baseStatus = m_tcpConnectStatus.exchange(connectStatus, std::memory_order_relaxed);
   if (baseStatus == TCP_CONNECT_STATUS_WAIT) {
-    boost::unique_lock<boost::mutex> eventLock(m_connectEventLock);
+    std::unique_lock<std::mutex> eventLock(m_connectEventLock);
     m_connectEvent.notify_all();
   }
 }
@@ -125,7 +127,7 @@ u_long TcpTransport::getInetAddr(string& hostname) {
 
 void TcpTransport::disconnect(const string& addr) {
   // disconnect is idempotent.
-  boost::lock_guard<boost::mutex> lock(m_eventLock);
+  std::lock_guard<std::mutex> lock(m_eventLock);
   if (getTcpConnectStatus() != TCP_CONNECT_STATUS_INIT) {
     LOG_INFO("disconnect:%s start. event:%p", addr.c_str(), m_event.get());
     freeBufferEvent();
@@ -144,7 +146,7 @@ TcpConnectStatus TcpTransport::connect(const string& strServerURL, int timeoutMi
   }
 
   {
-    boost::lock_guard<boost::mutex> lock(m_eventLock);
+    std::lock_guard<std::mutex> lock(m_eventLock);
 
     struct sockaddr_in sin;
     memset(&sin, 0, sizeof(sin));
@@ -175,7 +177,7 @@ TcpConnectStatus TcpTransport::connect(const string& strServerURL, int timeoutMi
   if (connectStatus != TCP_CONNECT_STATUS_SUCCESS) {
     LOG_WARN("can not connect to server:%s", strServerURL.c_str());
 
-    boost::lock_guard<boost::mutex> lock(m_eventLock);
+    std::lock_guard<std::mutex> lock(m_eventLock);
     freeBufferEvent();
     setTcpConnectStatus(TCP_CONNECT_STATUS_FAILED);
     return TCP_CONNECT_STATUS_FAILED;
@@ -268,7 +270,7 @@ void TcpTransport::messageReceived(const MemoryBlock& mem, const std::string& ad
 }
 
 bool TcpTransport::sendMessage(const char* pData, size_t len) {
-  boost::lock_guard<boost::mutex> lock(m_eventLock);
+  std::lock_guard<std::mutex> lock(m_eventLock);
   if (getTcpConnectStatus() != TCP_CONNECT_STATUS_SUCCESS) {
     return false;
   }
@@ -281,7 +283,7 @@ bool TcpTransport::sendMessage(const char* pData, size_t len) {
 }
 
 const string TcpTransport::getPeerAddrAndPort() {
-  boost::lock_guard<boost::mutex> lock(m_eventLock);
+  std::lock_guard<std::mutex> lock(m_eventLock);
   return m_event ? m_event->getPeerAddrPort() : "";
 }
 

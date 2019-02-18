@@ -17,10 +17,9 @@
 #ifndef __TCPTRANSPORT_H__
 #define __TCPTRANSPORT_H__
 
-#include <boost/atomic.hpp>
-#include <boost/thread/condition_variable.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
 
 #include "EventLoop.h"
 #include "dataBlock.h"
@@ -77,11 +76,11 @@ class TcpTransport : public std::enable_shared_from_this<TcpTransport> {
   uint64_t m_startTime;
 
   std::shared_ptr<BufferEvent> m_event;  // NOTE: use m_event in callback is unsafe.
-  boost::mutex m_eventLock;
-  boost::atomic<TcpConnectStatus> m_tcpConnectStatus;
+  std::mutex m_eventLock;
+  std::atomic<TcpConnectStatus> m_tcpConnectStatus;
 
-  boost::mutex m_connectEventLock;
-  boost::condition_variable_any m_connectEvent;
+  std::mutex m_connectEventLock;
+  std::condition_variable m_connectEvent;
 
   //<! read data callback
   TcpTransportReadCallback m_readCallback;

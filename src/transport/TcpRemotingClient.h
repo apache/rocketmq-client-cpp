@@ -18,6 +18,7 @@
 #define __TCPREMOTINGCLIENT_H__
 
 #include <map>
+#include <mutex>
 
 #include <boost/asio.hpp>
 #include <boost/asio/io_service.hpp>
@@ -99,23 +100,23 @@ class TcpRemotingClient {
   RequestMap m_requestTable;
 
   TcpMap m_tcpTable;  //<! addr->tcp;
-  boost::timed_mutex m_tcpTableLock;
+  std::timed_mutex m_tcpTableLock;
 
   ResMap m_futureTable;  //<! id->future;
-  boost::mutex m_futureTableLock;
+  std::mutex m_futureTableLock;
 
   ResMap m_asyncFutureTable;
-  boost::mutex m_asyncFutureTableLock;
+  std::mutex m_asyncFutureTableLock;
 
   AsyncTimerMap m_asyncTimerTable;
-  boost::mutex m_asyncTimerTableLock;
+  std::mutex m_asyncTimerTableLock;
 
   int m_pullThreadNum;
   uint64_t m_tcpConnectTimeout;           // ms
   uint64_t m_tcpTransportTryLockTimeout;  // s
 
   //<! NameServer
-  boost::timed_mutex m_namesrvLock;
+  std::timed_mutex m_namesrvLock;
   vector<string> m_namesrvAddrList;
   string m_namesrvAddrChoosed;
   unsigned int m_namesrvIndex;

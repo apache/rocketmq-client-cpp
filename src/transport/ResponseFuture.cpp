@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 #include "ResponseFuture.h"
+
+#include <chrono>
+
 #include "Logging.h"
 #include "TcpRemotingClient.h"
 
@@ -55,12 +58,12 @@ void ResponseFuture::releaseThreadCondition() {
 }
 
 RemotingCommand* ResponseFuture::waitResponse(int timeoutMillis) {
-  boost::unique_lock<boost::mutex> eventLock(m_defaultEventLock);
+  std::unique_lock<std::mutex> eventLock(m_defaultEventLock);
   if (!m_haveResponse) {
     if (timeoutMillis <= 0) {
       timeoutMillis = m_timeout;
     }
-    if (!m_defaultEvent.timed_wait(eventLock, boost::posix_time::milliseconds(timeoutMillis))) {
+    if (m_defaultEvent.wait_for(eventLock, std::chrono::milliseconds(timeoutMillis)) == std::cv_status::timeout) {
       LOG_WARN("waitResponse of code:%d with opaque:%d timeout", m_requestCode, m_opaque);
       m_haveResponse = true;
     }
@@ -69,7 +72,7 @@ RemotingCommand* ResponseFuture::waitResponse(int timeoutMillis) {
 }
 
 bool ResponseFuture::setResponse(RemotingCommand* pResponseCommand) {
-  boost::unique_lock<boost::mutex> eventLock(m_defaultEventLock);
+  std::unique_lock<std::mutex> eventLock(m_defaultEventLock);
 
   if (m_haveResponse) {
     return false;
