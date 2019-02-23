@@ -18,9 +18,6 @@
 #include <unistd.h>
 #endif
 #include <stdio.h>
-
-
-
 #include "CPushConsumer.h"
 #include "CCommon.h"
 #include "CMessageExt.h"
