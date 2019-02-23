@@ -46,10 +46,12 @@ class ROCKETMQCLIENT_API MemoryBlock {
       @param dataToInitialiseFrom     some data to copy into this block
       @param sizeInBytes              how much space to use
   */
-  MemoryBlock(const void* dataToInitialiseFrom, size_t sizeInBytes);
+  MemoryBlock(const void *dataToInitialiseFrom, size_t sizeInBytes);
 
   /** Creates a copy of another memory block. */
-  MemoryBlock(const MemoryBlock&);
+  MemoryBlock(const MemoryBlock &);
+
+  MemoryBlock(MemoryBlock &&);
 
   /** Destructor. */
   ~MemoryBlock();
@@ -57,20 +59,22 @@ class ROCKETMQCLIENT_API MemoryBlock {
   /** Copies another memory block onto this one.
       This block will be resized and copied to exactly match the other one.
   */
-  MemoryBlock& operator=(const MemoryBlock&);
+  MemoryBlock &operator=(const MemoryBlock &);
+
+  MemoryBlock &operator=(MemoryBlock &&);
 
   //==============================================================================
   /** Compares two memory blocks.
       @returns true only if the two blocks are the same size and have identical
      contents.
   */
-  bool operator==(const MemoryBlock& other) const;
+  bool operator==(const MemoryBlock &other) const;
 
   /** Compares two memory blocks.
       @returns true if the two blocks are different sizes or have different
      contents.
   */
-  bool operator!=(const MemoryBlock& other) const;
+  bool operator!=(const MemoryBlock &other) const;
 
   //==============================================================================
   /** Returns a void pointer to the data.
@@ -78,19 +82,19 @@ class ROCKETMQCLIENT_API MemoryBlock {
       Note that the pointer returned will probably become invalid when the
       block is resized.
   */
-  char* getData() const { return data; }
+  char *getData() const { return data; }
 
   /** Returns a byte from the memory block.
       This returns a reference, so you can also use it to set a byte.
   */
-  template <typename Type>
-  char& operator[](const Type offset) const {
+  template<typename Type>
+  char &operator[](const Type offset) const {
     return data[offset];
   }
 
   /** Returns true if the data in this MemoryBlock matches the raw bytes
    * passed-in. */
-  bool matches(const void* data, int dataSize) const;
+  bool matches(const void *data, int dataSize) const;
 
   //==============================================================================
   /** Returns the block's current allocated size, in bytes. */
@@ -141,13 +145,13 @@ class ROCKETMQCLIENT_API MemoryBlock {
       The data pointer must not be null. This block's size will be increased
      accordingly.
   */
-  void append(const void* data, int numBytes);
+  void append(const void *data, int numBytes);
 
   /** Resizes this block to the given size and fills its contents from the
      supplied buffer.
       The data pointer must not be null.
   */
-  void replaceWith(const void* data, int numBytes);
+  void replaceWith(const void *data, int numBytes);
 
   /** Inserts some data into the block.
       The dataToInsert pointer must not be null. This block's size will be
@@ -156,7 +160,7 @@ class ROCKETMQCLIENT_API MemoryBlock {
      be clipped to
       within the range before being used.
   */
-  void insert(const void* dataToInsert, int numBytesToInsert,
+  void insert(const void *dataToInsert, int numBytesToInsert,
               int insertPosition);
 
   /** Chops out a section  of the block.
@@ -182,7 +186,7 @@ class ROCKETMQCLIENT_API MemoryBlock {
                                   it will be clipped so not to do anything
      nasty)
   */
-  void copyFrom(const void* srcData, int destinationOffset, int numBytes);
+  void copyFrom(const void *srcData, int destinationOffset, int numBytes);
 
   /** Copies data from this MemoryBlock to a memory address.
 
@@ -193,12 +197,12 @@ class ROCKETMQCLIENT_API MemoryBlock {
      limits of the memory block,
                               zeros will be used for that portion of the data)
   */
-  void copyTo(void* destData, int sourceOffset, int numBytes) const;
+  void copyTo(void *destData, int sourceOffset, int numBytes) const;
 
  private:
   //==============================================================================
   int size;
-  char* data;
+  char *data;
 };
 }
 

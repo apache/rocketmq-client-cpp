@@ -15,7 +15,6 @@
 
 project(test)
 
-
 SET(SUB_DIRS)
 file(GLOB children ${CMAKE_SOURCE_DIR}/src/*)
 FOREACH(child ${children})
@@ -31,7 +30,6 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/test/bin)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${Boost_INCLUDE_DIRS})
-
 
 set(Gtest_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/bin/include/gtest)
 set(Gmock_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/bin/include/gmock)
@@ -54,30 +52,42 @@ set(ROCKETMQ_LIBRARIES ${CMAKE_SOURCE_DIR}/bin/librocketmq.a)
 message(status "ROCKETMQ_LIBRARIES ${ROCKETMQ_LIBRARIES}")
 
 set(CMAKE_BUILD_TYPE "Debug")
-file(GLOB files "src/*.c*")
-foreach(file ${files})
-    get_filename_component(basename ${file} NAME_WE)
-    add_executable(${basename} ${file})
-    if(MSVC)
-        if(CMAKE_CONFIGURATION_TYPES STREQUAL "Release")
-            set_target_properties( ${basename} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMT" )
-        else()
-            set_target_properties( ${basename} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMTD" )
-        endif()
-    endif()
 
-    if (MSVC) 
-        if (BUILD_ROCKETMQ_SHARED)
-            target_link_libraries (${basename}  rocketmq_shared ${deplibs}
-            ${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES} ${x`})
-        else()
-            target_link_libraries (${basename}  rocketmq_static ${deplibs}
-            ${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES} ${Gtest_LIBRARIES})
+function(compile files)
+    foreach(file ${files})
+	      get_filename_component(basename ${file} NAME_WE)
+        add_executable(${basename} ${file})
+        if(MSVC)
+            if(CMAKE_CONFIGURATION_TYPES STREQUAL "Release")
+                set_target_properties( ${basename} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMT" )
+            else()
+                set_target_properties( ${basename} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMTD" )
+            endif()
         endif()
-    else()
+
+        if (MSVC) 
+            if (BUILD_ROCKETMQ_SHARED)
+                target_link_libraries (${basename}  rocketmq_shared ${deplibs}
+                ${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES} ${x`})
+            else()
+                target_link_libraries (${basename}  rocketmq_static ${deplibs}
+                ${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES} ${Gtest_LIBRARIES})
+            endif()
+        else()
             target_link_libraries (${basename}  rocketmq_shared ${deplibs})
             target_link_libraries (${basename}  rocketmq_shared ${Gtest_LIBRARIES})
             target_link_libraries (${basename}  rocketmq_shared ${Gmock_LIBRARIES})
+        endif()  
+    endforeach()
+endfunction()
+
+file(GLOB files "src/*.c*")
+compile("${files}")
+
+file(GLOB files "src/*")
+foreach(file ${files})
+    if(IS_DIRECTORY ${file})
+        file(GLOB filess "${file}/*.c*")
+        compile("${filess}")
     endif()
-    
 endforeach()

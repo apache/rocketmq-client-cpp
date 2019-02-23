@@ -21,8 +21,9 @@
 #include "SessionCredentials.h"
 
 namespace rocketmq {
+
 boost::atomic<int> RemotingCommand::s_seqNumber;
-boost::mutex RemotingCommand::m_clock;
+
 //<!************************************************************************
 RemotingCommand::RemotingCommand(int code,
                                  CommandHeader* pExtHeader /* = NULL */)
@@ -32,11 +33,9 @@ RemotingCommand::RemotingCommand(int code,
       m_flag(0),
       m_remark(""),
       m_pExtHeader(pExtHeader) {
-  boost::lock_guard<boost::mutex> lock(m_clock);
-  m_opaque = (s_seqNumber.load(boost::memory_order_acquire)) %
-             (numeric_limits<int>::max());
-  s_seqNumber.store(m_opaque, boost::memory_order_release);
-  ++s_seqNumber;
+
+  // mask sign bit
+  m_opaque = s_seqNumber.fetch_add(1, boost::memory_order_relaxed) & numeric_limits<int>::max();
 }
 
 RemotingCommand::RemotingCommand(int code, string language, int version,

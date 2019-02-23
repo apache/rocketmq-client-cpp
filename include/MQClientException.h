@@ -25,6 +25,7 @@
 #include "RocketMQClient.h"
 #include "CCommon.h"
 
+
 namespace rocketmq {
 //<!***************************************************************************
 class ROCKETMQCLIENT_API MQException : public std::exception {
@@ -68,6 +69,7 @@ class ROCKETMQCLIENT_API MQException : public std::exception {
   std::string m_file;
   std::string m_type;
 };
+
 
 inline std::ostream& operator<<(std::ostream& os, const MQException& e) {
   os << "Type: " << e.GetType() << " , " << e.what();

@@ -76,8 +76,9 @@ class ROCKETMQCLIENT_API MQMessage {
 
   const std::string toString() const {
     std::stringstream ss;
+    std::string tags = getTags();
     ss << "Message [topic=" << m_topic << ", flag=" << m_flag
-       << ", tag=" << getTags() << "]";
+       << ", tag=" << tags << "]";
     return ss.str();
   }
 
