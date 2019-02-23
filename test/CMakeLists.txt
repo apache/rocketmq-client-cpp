@@ -55,7 +55,7 @@ set(CMAKE_BUILD_TYPE "Debug")
 
 function(compile files)
     foreach(file ${files})
-	      get_filename_component(basename ${file} NAME_WE)
+        get_filename_component(basename ${file} NAME_WE)
         add_executable(${basename} ${file})
         if(MSVC)
             if(CMAKE_CONFIGURATION_TYPES STREQUAL "Release")
