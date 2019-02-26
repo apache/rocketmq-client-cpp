@@ -65,6 +65,22 @@ tcpConnectStatus TcpTransport::connect(const string &strServerURL,
   memset(&sin, 0, sizeof(sin));
   sin.sin_family = AF_INET;
   sin.sin_addr.s_addr = inet_addr(hostName.c_str());
+ 
+  if (sin.sin_addr.s_addr == INADDR_NONE) {
+	  struct hostent *host = gethostbyname(hostName.c_str());
+	  if (!host) {
+		  string info = "Get IP address error: " + hostName;
+		  THROW_MQEXCEPTION(MQClientException, info, -1);
+	  }
+
+	  for (int i = 0; host->h_addr_list[i]; i++) {
+		  sin.sin_addr.s_addr = inet_addr(inet_ntoa(*(struct in_addr*)host->h_addr_list[i]));
+		  if (sin.sin_addr.s_addr != INADDR_NONE) {
+			  break;
+		  }
+	  }
+  }
+ 
   sin.sin_port = htons(portNumber);
 
   m_eventBase = event_base_new();
