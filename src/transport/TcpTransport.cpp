@@ -67,16 +67,35 @@ tcpConnectStatus TcpTransport::connect(const string &strServerURL,
   sin.sin_addr.s_addr = inet_addr(hostName.c_str());
  
   if (sin.sin_addr.s_addr == INADDR_NONE) {
-	  struct hostent *host = gethostbyname(hostName.c_str());
-	  if (!host) {
-		  string info = "Get IP address error: " + hostName;
+	  struct evutil_addrinfo hints;
+	  struct evutil_addrinfo *answer = NULL;
+	  /* Build the hints to tell getaddrinfo how to act. */
+	  memset(&hints, 0, sizeof(hints));
+	  hints.ai_family = AF_UNSPEC; /* v4 or v6 is fine. */			   
+	  /* Look up the hostname. */
+	  int err = evutil_getaddrinfo(hostName.c_str(), NULL, &hints, &answer);
+	  if (err != 0) {
+		  string info = "Error while resolving " + hostName + ":" + evutil_gai_strerror(err);
 		  THROW_MQEXCEPTION(MQClientException, info, -1);
 	  }
 
-	  for (int i = 0; host->h_addr_list[i]; i++) {
-		  sin.sin_addr.s_addr = inet_addr(inet_ntoa(*(struct in_addr*)host->h_addr_list[i]));
-		  if (sin.sin_addr.s_addr != INADDR_NONE) {
-			  break;
+	  struct evutil_addrinfo *ai;
+	  for (ai = answer; ai; ai = ai->ai_next){
+		  char buf[128];
+		  const char *s = NULL;
+		  if (ai->ai_family == AF_INET) {
+			  struct sockaddr_in *sin = (struct sockaddr_in*)ai->ai_addr;
+			  s = evutil_inet_ntop(AF_INET, &sin->sin_addr, buf, 128);
+		  }
+		  else if (ai->ai_family == AF_INET6){
+			  struct sockaddr_in6 *sin6 = (struct sockaddr_in6*)ai->ai_addr;
+			  s = evutil_inet_ntop(AF_INET6, &sin6->sin6_addr, buf, 128);
+		  }
+		  if (s){
+			  sin.sin_addr.s_addr = inet_addr(s);
+			  if (sin.sin_addr.s_addr != INADDR_NONE) {
+				  break;
+			  }
 		  }
 	  }
   }
