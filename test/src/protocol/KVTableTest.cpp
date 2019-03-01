@@ -14,31 +14,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef __KVTABLE_H__
-#define __KVTABLE_H__
 #include <map>
 #include <string>
-#include "RemotingSerializable.h"
+
+#include "gtest/gtest.h"
+#include "gmock/gmock.h"
+
+#include "KVTable.h"
 
 using std::string;
 using std::map;
 
-namespace rocketmq {
-//<!***************************************************************************
-class KVTable : public RemotingSerializable {
- public:
-  virtual ~KVTable() { m_table.clear(); }
+using ::testing::InitGoogleTest;
+using ::testing::InitGoogleMock;
+using testing::Return;
 
-  void Encode(string& outData) {}
+using rocketmq::KVTable;
 
-  const map<string, string>& getTable() { return m_table; }
+TEST(KVTable, init) {
+    KVTable table;
 
-  void setTable(const map<string, string>& table) { m_table = table; }
+    EXPECT_EQ(table.getTable().size(), 0);
 
- private:
-  map<string, string> m_table;
-};
-}  //<!end namespace;
+    map<string, string> maps;
+    maps["string"] = "string";
+    table.setTable(maps);
+    EXPECT_EQ(table.getTable().size(), 1);
+}
 
-#endif
+int main(int argc, char* argv[]) {
+    InitGoogleMock(&argc, argv);
+    testing::GTEST_FLAG(throw_on_failure) = true;
+    testing::GTEST_FLAG(filter) = "KVTable.*";
+    int itestts = RUN_ALL_TESTS();
+    return itestts;
+}

@@ -14,31 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "gtest/gtest.h"
+#include "gmock/gmock.h"
 
-#ifndef __KVTABLE_H__
-#define __KVTABLE_H__
-#include <map>
-#include <string>
-#include "RemotingSerializable.h"
+#include "SocketUtil.h"
+#include "TopicFilterType.h"
+#include "MessageSysFlag.h"
+#include "MQMessageExt.h"
 
-using std::string;
-using std::map;
+using ::testing::InitGoogleTest;
+using ::testing::InitGoogleMock;
+using testing::Return;
 
-namespace rocketmq {
-//<!***************************************************************************
-class KVTable : public RemotingSerializable {
- public:
-  virtual ~KVTable() { m_table.clear(); }
+using rocketmq::MQMessageExt;
 
-  void Encode(string& outData) {}
 
-  const map<string, string>& getTable() { return m_table; }
 
-  void setTable(const map<string, string>& table) { m_table = table; }
 
- private:
-  map<string, string> m_table;
-};
-}  //<!end namespace;
+TEST(messageExt, init){
 
-#endif
+}
+
+
+int main(int argc, char* argv[]) {
+	InitGoogleMock(&argc, argv);
+	testing::GTEST_FLAG(throw_on_failure) = true;
+	testing::GTEST_FLAG(filter) = "messageExt.init";
+	int itestts = RUN_ALL_TESTS();
+	return itestts;
+}

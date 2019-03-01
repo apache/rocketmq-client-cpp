@@ -15,30 +15,36 @@
  * limitations under the License.
  */
 
-#ifndef __KVTABLE_H__
-#define __KVTABLE_H__
-#include <map>
 #include <string>
-#include "RemotingSerializable.h"
+
+#include "gtest/gtest.h"
+#include "gmock/gmock.h"
+
+#include "NamesrvConfig.h"
 
 using std::string;
-using std::map;
 
-namespace rocketmq {
-//<!***************************************************************************
-class KVTable : public RemotingSerializable {
- public:
-  virtual ~KVTable() { m_table.clear(); }
+using ::testing::InitGoogleTest;
+using ::testing::InitGoogleMock;
+using testing::Return;
 
-  void Encode(string& outData) {}
+using rocketmq::NamesrvConfig;
 
-  const map<string, string>& getTable() { return m_table; }
+TEST(namesrvConfig, init) {
+    NamesrvConfig namesrvConfig;
 
-  void setTable(const map<string, string>& table) { m_table = table; }
+    const string home = "/home/rocketmq";
+    namesrvConfig.setRocketmqHome( home );
+    EXPECT_EQ(namesrvConfig.getRocketmqHome() , "/home/rocketmq");
 
- private:
-  map<string, string> m_table;
-};
-}  //<!end namespace;
+    namesrvConfig.setKvConfigPath("/home/rocketmq");
+    EXPECT_EQ(namesrvConfig.getKvConfigPath() , "/home/rocketmq");
+}
 
-#endif
+int main(int argc, char* argv[]) {
+    InitGoogleMock(&argc, argv);
+    testing::GTEST_FLAG(throw_on_failure) = true;
+    testing::GTEST_FLAG(filter) = "namesrvConfig.init";
+    int itestts = RUN_ALL_TESTS();
+    return itestts;
+}

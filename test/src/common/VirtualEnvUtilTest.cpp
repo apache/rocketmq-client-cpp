@@ -14,31 +14,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "string.h"
 
-#ifndef __KVTABLE_H__
-#define __KVTABLE_H__
-#include <map>
-#include <string>
-#include "RemotingSerializable.h"
+#include "gtest/gtest.h"
+#include "gmock/gmock.h"
+
+#include "VirtualEnvUtil.h"
 
 using std::string;
-using std::map;
 
-namespace rocketmq {
-//<!***************************************************************************
-class KVTable : public RemotingSerializable {
- public:
-  virtual ~KVTable() { m_table.clear(); }
+using ::testing::InitGoogleTest;
+using ::testing::InitGoogleMock;
+using testing::Return;
 
-  void Encode(string& outData) {}
+using rocketmq::VirtualEnvUtil;
 
-  const map<string, string>& getTable() { return m_table; }
+VirtualEnvUtil virtualEnvUtil;
 
-  void setTable(const map<string, string>& table) { m_table = table; }
+TEST(virtualEnvUtil, buildWithProjectGroup) {
+    string origin = "origin";
+    string projectGroup;
+    EXPECT_EQ(virtualEnvUtil.buildWithProjectGroup(origin, string()), origin);
 
- private:
-  map<string, string> m_table;
-};
-}  //<!end namespace;
+    EXPECT_EQ(virtualEnvUtil.buildWithProjectGroup(origin, string("123")),
+              origin);
 
-#endif
+}
+
+TEST(virtualEnvUtil, clearProjectGroup) {
+
+}
+
+int main(int argc, char* argv[]) {
+    InitGoogleMock(&argc, argv);
+
+    testing::GTEST_FLAG(throw_on_failure) = true;
+    testing::GTEST_FLAG(filter) = "messageExt.init";
+    int itestts = RUN_ALL_TESTS();
+    return itestts;
+}
