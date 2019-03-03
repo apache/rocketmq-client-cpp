@@ -54,6 +54,10 @@ ROCKETMQCLIENT_API int SendMessageSync(CProducer *producer, CMessage *msg, CSend
 ROCKETMQCLIENT_API int SendMessageAsync(CProducer *producer, CMessage *msg, CSendSuccessCallback cSendSuccessCallback , CSendExceptionCallback cSendExceptionCallback);
 ROCKETMQCLIENT_API int SendMessageOneway(CProducer *producer,CMessage *msg);
 ROCKETMQCLIENT_API int SendMessageOrderly(CProducer *producer, CMessage *msg, QueueSelectorCallback callback, void *arg, int autoRetryTimes, CSendResult *result);
+
+
+ROCKETMQCLIENT_API int SendMessageOrderlyAsync(CProducer *producer,CMessage *msg,QueueSelectorCallback callback,void *arg,CSendSuccessCallback cSendSuccessCallback,CSendExceptionCallback cSendExceptionCallback );
+
 #ifdef __cplusplus
 };
 #endif
