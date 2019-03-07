@@ -35,12 +35,12 @@
     <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
@@ -73,20 +73,33 @@
     <LibraryPath>$(WindowsSdk_71A_LibraryPath_x86);$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;$(SolutionDir)..\thirdparty\boost_1_58_0\stage\lib</LibraryPath>
     <IntDir>$(Configuration)\$(ProjectName)</IntDir>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(WindowsSdk_71A_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)..\thirdparty\boost_1_58_0;$(SolutionDir)..\include;$(SolutionDir)..\thirdparty\libevent-release-2.0.22\include;$(SolutionDir)..\thirdparty\libevent-release-2.0.22\WIN32-Code\;$(SolutionDir)..\src\common;$(SolutionDir)..\src\consumer;$(SolutionDir)..\src\log;$(SolutionDir)..\src\message;$(SolutionDir)..\src\producer;$(SolutionDir)..\src\protocol;$(SolutionDir)..\src\thread;$(SolutionDir)..\src\transport;$(SolutionDir)..\thirdparty\jsoncpp-0.10.6\;$(SolutionDir)..\src;$(SolutionDir)..\libs\signature\include;$(VC_IncludePath)</IncludePath>
+    <LibraryPath>$(WindowsSdk_71A_LibraryPath_x64);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)..\thirdparty\boost_1_58_0\stage\lib</LibraryPath>
+    <IntDir>$(Configuration)\$(ProjectName)</IntDir>
+  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(WindowsSdk_71A_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)..\thirdparty\boost_1_58_0;$(SolutionDir)..\include;$(SolutionDir)..\thirdparty\libevent-release-2.0.22\include;$(SolutionDir)..\thirdparty\libevent-release-2.0.22\WIN32-Code\;$(SolutionDir)..\src\common;$(SolutionDir)..\src\consumer;$(SolutionDir)..\src\log;$(SolutionDir)..\src\message;$(SolutionDir)..\src\producer;$(SolutionDir)..\src\protocol;$(SolutionDir)..\src\thread;$(SolutionDir)..\src\transport;$(SolutionDir)..\thirdparty\jsoncpp-0.10.6\;$(SolutionDir)..\src;$(SolutionDir)..\libs\signature\include;$(VC_IncludePath)</IncludePath>
+    <LibraryPath>$(WindowsSdk_71A_LibraryPath_x64);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)..\thirdparty\boost_1_58_0\stage\lib</LibraryPath>
+    <IntDir>$(Configuration)\$(ProjectName)</IntDir>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;ROCKETMQCLIENT_EXPORTS;_WIN32_WINNT=0x501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
+      <AdditionalOptions>/MDd %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;$(SolutionDir)..\thirdparty\libevent-release-2.0.22\$(Configuration)\libevent.lib;$(SolutionDir)..\thirdparty\jsoncpp-0.10.6\$(Configuration)\jsoncpp_lib_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalOptions>/NODEFAULTLIB:library %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions> /NODEFAULTLIB:library %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -105,6 +118,44 @@
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;$(SolutionDir)..\thirdparty\libevent-release-2.0.22\$(Configuration)\libevent.lib;$(SolutionDir)..\thirdparty\jsoncpp-0.10.6\$(Configuration)\jsoncpp_lib_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;ROCKETMQCLIENT_EXPORTS;_WIN32_WINNT=0x501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalOptions>/FS %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX64</TargetMachine>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;$(SolutionDir)..\thirdparty\libevent-release-2.0.22\$(Platform)\$(Configuration)\libevent.lib;$(SolutionDir)..\thirdparty\jsoncpp-0.10.6\$(Platform)\$(Configuration)\jsoncpp_lib_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  
+  
+    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;_DEBUG;ROCKETMQCLIENT_EXPORTS;_WIN32_WINNT=0x501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+      <AdditionalOptions>/FS /MDd %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX64</TargetMachine>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;$(SolutionDir)..\thirdparty\libevent-release-2.0.22\$(Configuration)\libevent.lib;$(SolutionDir)..\thirdparty\jsoncpp-0.10.6\$(Configuration)\jsoncpp_lib_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions> /NODEFAULTLIB:library %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  
+
   <ItemGroup>
     <ClCompile Include="..\libs\signature\src\base64.c" />
     <ClCompile Include="..\libs\signature\src\hmac.c" />
