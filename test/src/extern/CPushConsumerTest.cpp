@@ -32,6 +32,7 @@ using std::string;
 using ::testing::_;
 using ::testing::InitGoogleMock;
 using ::testing::InitGoogleTest;
+using testing::Mock;
 using testing::Return;
 
 using rocketmq::DefaultMQPushConsumer;
@@ -67,7 +68,7 @@ TEST(cPushComsumer, infomock) {
     // EXPECT_CALL(*pushComsumer,setLogLevel(_)).Times(1);
     EXPECT_EQ(SetPushConsumerLogLevel(consumer, E_LOG_LEVEL_FATAL), OK);
 
-    delete pushComsumer;
+    Mock::AllowLeak(pushComsumer);
 }
 
 TEST(cPushComsumer, info) {
@@ -114,7 +115,7 @@ TEST(cPushComsumer, info) {
     EXPECT_EQ(SetPushConsumerMessageModel(cpushConsumer, BROADCASTING), OK);
     EXPECT_EQ(mqPushConsumer->getMessageModel(), MessageModel::BROADCASTING);
 
-    // EXPECT_EQ(DestroyPushConsumer(cpushConsumer), OK);
+    Mock::AllowLeak(mqPushConsumer);
 }
 
 TEST(cPushComsumer, null) {

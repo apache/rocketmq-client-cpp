@@ -116,7 +116,8 @@ TEST(cProducer, sendMessageSync) {
     MockDefaultMQProducer *mockProducer = new MockDefaultMQProducer("testGroup");
     CProducer *cProducer = (CProducer *) mockProducer;
 
-    CMessage *msg = (CMessage *) new MQMessage();
+    MQMessage *mqMessage = new MQMessage();
+    CMessage *msg = (CMessage *) mqMessage;
     CSendResult *result;
     MQMessageQueue messageQueue;
     EXPECT_EQ(SendMessageSync(NULL, NULL, NULL), NULL_POINTER);
@@ -149,6 +150,7 @@ TEST(cProducer, sendMessageSync) {
     EXPECT_EQ(SendMessageSync(cProducer, msg, result), OK);
     EXPECT_EQ(result->sendStatus, E_SEND_OK);
     Mock::AllowLeak(mockProducer);
+    delete mqMessage;
 }
 
 TEST(cProducer, infoMock) {

@@ -76,6 +76,8 @@ TEST(cmessageExt, info) {
 
     mqMessageExt->setPreparedTransactionOffset(4096);
     EXPECT_EQ(GetMessagePreparedTransactionOffset(messageExt), mqMessageExt->getPreparedTransactionOffset());
+
+    delete mqMessageExt;
 }
 
 TEST(cmessageExt, null) {
