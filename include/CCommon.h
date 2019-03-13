@@ -22,10 +22,10 @@
 extern "C" {
 #endif
 
-#define  MAX_MESSAGE_ID_LENGTH 256
-#define  MAX_TOPIC_LENGTH 512
-#define  MAX_BROKER_NAME_ID_LENGTH 256
-typedef enum _CStatus_{
+#define MAX_MESSAGE_ID_LENGTH 256
+#define MAX_TOPIC_LENGTH 512
+#define MAX_BROKER_NAME_ID_LENGTH 256
+typedef enum _CStatus_ {
     // Success
     OK = 0,
     // Failed, null pointer value
@@ -36,7 +36,7 @@ typedef enum _CStatus_{
     PRODUCER_SEND_SYNC_FAILED = 11,
     PRODUCER_SEND_ONEWAY_FAILED = 12,
     PRODUCER_SEND_ORDERLY_FAILED = 13,
-	PRODUCER_SEND_ASYNC_FAILED = 14,
+    PRODUCER_SEND_ASYNC_FAILED = 14,
 
     PUSHCONSUMER_ERROR_CODE_START = 20,
     PUSHCONSUMER_START_FAILED = 20,
@@ -47,7 +47,7 @@ typedef enum _CStatus_{
     PULLCONSUMER_FETCH_MESSAGE_FAILED = 32
 } CStatus;
 
-typedef enum _CLogLevel_{
+typedef enum _CLogLevel_ {
     E_LOG_LEVEL_FATAL = 1,
     E_LOG_LEVEL_ERROR = 2,
     E_LOG_LEVEL_WARN = 3,
@@ -75,12 +75,9 @@ typedef enum _CLogLevel_{
 #define ROCKETMQCLIENT_API
 #endif
 
-typedef enum _CMessageModel_{
-    BROADCASTING,
-    CLUSTERING
-} CMessageModel;
+typedef enum _CMessageModel_ { BROADCASTING, CLUSTERING } CMessageModel;
 
 #ifdef __cplusplus
 };
 #endif
-#endif //__C_COMMON_H__
+#endif  //__C_COMMON_H__
