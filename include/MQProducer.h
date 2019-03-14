@@ -52,6 +52,8 @@ class ROCKETMQCLIENT_API MQProducer : public MQClient {
                     SendCallback* sendCallback) = 0;
   virtual void send(MQMessage& msg, MessageQueueSelector* selector, void* arg,
                     SendCallback* sendCallback) = 0;
+  virtual SendResult send(std::vector<MQMessage>& msgs) = 0;
+  virtual SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq) = 0;
   virtual void sendOneway(MQMessage& msg, bool bSelectActiveBroker = false) = 0;
   virtual void sendOneway(MQMessage& msg, const MQMessageQueue& mq) = 0;
   virtual void sendOneway(MQMessage& msg, MessageQueueSelector* selector,

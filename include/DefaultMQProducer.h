@@ -22,6 +22,7 @@
 #include "MQProducer.h"
 #include "RocketMQClient.h"
 #include "SendResult.h"
+#include "BatchMessage.h"
 
 namespace rocketmq {
 //<!***************************************************************************
@@ -43,6 +44,8 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer {
   virtual SendResult send(MQMessage& msg, MessageQueueSelector* selector,
                           void* arg, int autoRetryTimes,
                           bool bActiveBroker = false);
+  virtual SendResult send(std::vector<MQMessage>& msgs);
+  virtual SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq);
   virtual void send(MQMessage& msg, SendCallback* pSendCallback,
                     bool bSelectActiveBroker = false);
   virtual void send(MQMessage& msg, const MQMessageQueue& mq,
@@ -95,6 +98,7 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer {
   SendResult sendKernelImpl(MQMessage& msg, const MQMessageQueue& mq,
                             int communicationMode, SendCallback* pSendCallback);
   bool tryToCompressMessage(MQMessage& msg);
+  BatchMessage buildBatchMessage(std::vector<MQMessage>& msgs);
 
  private:
   int m_sendMsgTimeout;
