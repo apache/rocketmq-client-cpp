@@ -17,16 +17,16 @@
 #include <map>
 #include <string>
 
-#include "gtest/gtest.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 #include "KVTable.h"
 
-using std::string;
 using std::map;
+using std::string;
 
-using ::testing::InitGoogleTest;
 using ::testing::InitGoogleMock;
+using ::testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::KVTable;
@@ -42,7 +42,7 @@ TEST(KVTable, init) {
     EXPECT_EQ(table.getTable().size(), 1);
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     InitGoogleMock(&argc, argv);
     testing::GTEST_FLAG(throw_on_failure) = true;
     testing::GTEST_FLAG(filter) = "KVTable.*";
