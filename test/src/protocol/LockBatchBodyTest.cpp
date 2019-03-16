@@ -17,24 +17,24 @@
 
 #include "vector"
 
-#include "gtest/gtest.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
-#include "dataBlock.h"
 #include "LockBatchBody.h"
 #include "MQMessageQueue.h"
+#include "dataBlock.h"
 
 using std::vector;
 
-using ::testing::InitGoogleTest;
 using ::testing::InitGoogleMock;
+using ::testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::LockBatchRequestBody;
 using rocketmq::LockBatchResponseBody;
-using rocketmq::UnlockBatchRequestBody;
-using rocketmq::MQMessageQueue;
 using rocketmq::MemoryBlock;
+using rocketmq::MQMessageQueue;
+using rocketmq::UnlockBatchRequestBody;
 
 TEST(lockBatchBody, LockBatchRequestBody) {
     LockBatchRequestBody lockBatchRequestBody;
@@ -52,8 +52,7 @@ TEST(lockBatchBody, LockBatchRequestBody) {
     lockBatchRequestBody.setMqSet(vectorMessageQueue);
     EXPECT_EQ(lockBatchRequestBody.getMqSet(), vectorMessageQueue);
 
-    Json::Value outJson = lockBatchRequestBody.toJson(
-            MQMessageQueue("topicTest", "testBroker", 10));
+    Json::Value outJson = lockBatchRequestBody.toJson(MQMessageQueue("topicTest", "testBroker", 10));
     EXPECT_EQ(outJson["topic"], "topicTest");
     EXPECT_EQ(outJson["brokerName"], "testBroker");
     EXPECT_EQ(outJson["queueId"], 10);
@@ -68,12 +67,9 @@ TEST(lockBatchBody, LockBatchRequestBody) {
     EXPECT_EQ(root["consumerGroup"], "testGroup");
 }
 
-TEST(lockBatchBody, UnlockBatchRequestBody) {
-
-}
+TEST(lockBatchBody, UnlockBatchRequestBody) {}
 
 TEST(lockBatchBody, LockBatchResponseBody) {
-
     Json::Value root;
     Json::Value mqs;
 
@@ -87,7 +83,7 @@ TEST(lockBatchBody, LockBatchResponseBody) {
     Json::FastWriter fastwrite;
     string outData = fastwrite.write(root);
 
-    MemoryBlock* mem = new MemoryBlock(outData.c_str(), outData.size());
+    MemoryBlock *mem = new MemoryBlock(outData.c_str(), outData.size());
 
     LockBatchResponseBody lockBatchResponseBody;
 
@@ -98,7 +94,7 @@ TEST(lockBatchBody, LockBatchResponseBody) {
     EXPECT_EQ(messageQueue, messageQueues[0]);
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     InitGoogleMock(&argc, argv);
     testing::GTEST_FLAG(throw_on_failure) = true;
     testing::GTEST_FLAG(filter) = "lockBatchBody.*";

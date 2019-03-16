@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "gtest/gtest.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 #include "MessageQueue.h"
 
-using ::testing::InitGoogleTest;
 using ::testing::InitGoogleMock;
+using ::testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::MessageQueue;
@@ -78,10 +78,9 @@ TEST(messageExt, operators) {
 
     messageQueue.setBrokerName("testBroker");
     EXPECT_FALSE(messageQueue == twoMessageQueue);
-
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     InitGoogleMock(&argc, argv);
     testing::GTEST_FLAG(throw_on_failure) = true;
     testing::GTEST_FLAG(filter) = "messageExt.*";
