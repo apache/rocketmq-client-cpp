@@ -14,31 +14,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <map>
+#include <string>
+
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
-#include <unistd.h>
-#include <stdio.h>
-#include "BatchMessage.h"
-#include "MQMessage.h"
-#include <map>
-#include "MQDecoder.h"
 
-using namespace std;
-using namespace rocketmq;
+#include "KVTable.h"
+
+using std::string;
+using std::map;
+
 using ::testing::InitGoogleTest;
 using ::testing::InitGoogleMock;
 using testing::Return;
 
-TEST(MQDecoderTest, messageProperties2String) {
-    map<string, string> properties;
-    string property = MQDecoder::messageProperties2String(properties);
-    EXPECT_EQ(property.size(), 0);
-    properties["aaa"] = "aaa";
-    property = MQDecoder::messageProperties2String(properties);
-    EXPECT_EQ(property.size(), 8);
+using rocketmq::KVTable;
+
+TEST(KVTable, init) {
+    KVTable table;
+
+    EXPECT_EQ(table.getTable().size(), 0);
+
+    map<string, string> maps;
+    maps["string"] = "string";
+    table.setTable(maps);
+    EXPECT_EQ(table.getTable().size(), 1);
 }
 
 int main(int argc, char* argv[]) {
     InitGoogleMock(&argc, argv);
-    return RUN_ALL_TESTS();
+    testing::GTEST_FLAG(throw_on_failure) = true;
+    testing::GTEST_FLAG(filter) = "KVTable.*";
+    int itestts = RUN_ALL_TESTS();
+    return itestts;
 }
