@@ -14,18 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "gtest/gtest.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 #include "SocketUtil.h"
 
-using ::testing::InitGoogleTest;
 using ::testing::InitGoogleMock;
+using ::testing::InitGoogleTest;
 using testing::Return;
 
 TEST(socketUtil, init) {
-    sockaddr addr = rocketmq::IPPort2socketAddress(inet_addr("127.0.0.1"),
-                                                   10091);
+    sockaddr addr = rocketmq::IPPort2socketAddress(inet_addr("127.0.0.1"), 10091);
 
     EXPECT_EQ(rocketmq::socketAddress2IPPort(addr), "1.0.0.127:10091");
 
@@ -39,7 +38,7 @@ TEST(socketUtil, init) {
     EXPECT_EQ(rocketmq::socketAddress2String(addr), "1.0.0.127");
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     InitGoogleMock(&argc, argv);
     testing::GTEST_FLAG(throw_on_failure) = true;
     testing::GTEST_FLAG(filter) = "socketUtil.init";
