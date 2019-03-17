@@ -21,21 +21,24 @@
 #include <string>
 #include "RemotingSerializable.h"
 
+using std::map;
+using std::string;
+
 namespace rocketmq {
 //<!***************************************************************************
 class KVTable : public RemotingSerializable {
- public:
-  virtual ~KVTable() { m_table.clear(); }
+   public:
+    virtual ~KVTable() { m_table.clear(); }
 
-  void Encode(string& outData) {}
+    void Encode(string &outData) {}
 
-  const map<string, string>& getTable() { return m_table; }
+    const map<string, string> &getTable() { return m_table; }
 
-  void setTable(const map<string, string>& table) { m_table = table; }
+    void setTable(const map<string, string> &table) { m_table = table; }
 
- private:
-  map<string, string> m_table;
+   private:
+    map<string, string> m_table;
 };
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif
