@@ -19,6 +19,9 @@
 
 #include <stdlib.h>
 #include <string>
+#include "UtilAll.h"
+
+
 namespace rocketmq {
 //<!***************************************************************************
 class NamesrvConfig {
@@ -26,7 +29,7 @@ class NamesrvConfig {
   NamesrvConfig() {
     m_kvConfigPath = "";
 
-    char* home = getenv(ROCKETMQ_HOME_ENV.c_str());
+    char* home = getenv(rocketmq::ROCKETMQ_HOME_ENV.c_str());
     if (home) {
       m_rocketmqHome = home;
     } else {
