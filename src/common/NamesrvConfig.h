@@ -21,39 +21,34 @@
 #include <string>
 #include "UtilAll.h"
 
-
 namespace rocketmq {
 //<!***************************************************************************
 class NamesrvConfig {
- public:
-  NamesrvConfig() {
-    m_kvConfigPath = "";
+   public:
+    NamesrvConfig() {
+        m_kvConfigPath = "";
 
-    char* home = getenv(rocketmq::ROCKETMQ_HOME_ENV.c_str());
-    if (home) {
-      m_rocketmqHome = home;
-    } else {
-      m_rocketmqHome = "";
+        char *home = getenv(rocketmq::ROCKETMQ_HOME_ENV.c_str());
+        if (home) {
+            m_rocketmqHome = home;
+        } else {
+            m_rocketmqHome = "";
+        }
     }
-  }
 
-  const string& getRocketmqHome() const { return m_rocketmqHome; }
+    const string &getRocketmqHome() const { return m_rocketmqHome; }
 
-  void setRocketmqHome(const string& rocketmqHome) {
-    m_rocketmqHome = rocketmqHome;
-  }
+    void setRocketmqHome(const string &rocketmqHome) { m_rocketmqHome = rocketmqHome; }
 
-  const string& getKvConfigPath() const { return m_kvConfigPath; }
+    const string &getKvConfigPath() const { return m_kvConfigPath; }
 
-  void setKvConfigPath(const string& kvConfigPath) {
-    m_kvConfigPath = kvConfigPath;
-  }
+    void setKvConfigPath(const string &kvConfigPath) { m_kvConfigPath = kvConfigPath; }
 
- private:
-  string m_rocketmqHome;
-  string m_kvConfigPath;
+   private:
+    string m_rocketmqHome;
+    string m_kvConfigPath;
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif
