@@ -36,7 +36,7 @@ using rocketmq::MemoryOutputStream;
 TEST(memoryOutputStream, init) {
     MemoryOutputStream memoryOutput;
     EXPECT_EQ(memoryOutput.getMemoryBlock().getSize(), 0);
-    EXPECT_TRUE(memoryOutput.getData() != NULL);
+    EXPECT_TRUE(memoryOutput.getData() != nullptr);
 
     EXPECT_EQ(memoryOutput.getPosition(), 0);
     EXPECT_EQ(memoryOutput.getDataSize(), 0);
