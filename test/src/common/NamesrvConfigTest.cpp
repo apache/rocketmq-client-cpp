@@ -17,15 +17,15 @@
 
 #include <string>
 
-#include "gtest/gtest.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 #include "NamesrvConfig.h"
 
 using std::string;
 
-using ::testing::InitGoogleTest;
 using ::testing::InitGoogleMock;
+using ::testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::NamesrvConfig;
@@ -34,14 +34,14 @@ TEST(namesrvConfig, init) {
     NamesrvConfig namesrvConfig;
 
     const string home = "/home/rocketmq";
-    namesrvConfig.setRocketmqHome( home );
-    EXPECT_EQ(namesrvConfig.getRocketmqHome() , "/home/rocketmq");
+    namesrvConfig.setRocketmqHome(home);
+    EXPECT_EQ(namesrvConfig.getRocketmqHome(), "/home/rocketmq");
 
     namesrvConfig.setKvConfigPath("/home/rocketmq");
-    EXPECT_EQ(namesrvConfig.getKvConfigPath() , "/home/rocketmq");
+    EXPECT_EQ(namesrvConfig.getKvConfigPath(), "/home/rocketmq");
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     InitGoogleMock(&argc, argv);
     testing::GTEST_FLAG(throw_on_failure) = true;
     testing::GTEST_FLAG(filter) = "namesrvConfig.init";
