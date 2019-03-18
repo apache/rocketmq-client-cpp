@@ -68,6 +68,7 @@ class TcpTransport {
   void freeBufferEvent();
   void exitBaseDispatch();
   void setTcpConnectEvent(tcpConnectStatus connectStatus);
+  u_long getInetAddr(std::string &hostname);
 
  private:
   uint64_t m_startTime;

@@ -64,7 +64,8 @@ tcpConnectStatus TcpTransport::connect(const string &strServerURL,
   struct sockaddr_in sin;
   memset(&sin, 0, sizeof(sin));
   sin.sin_family = AF_INET;
-  sin.sin_addr.s_addr = inet_addr(hostName.c_str());
+  sin.sin_addr.s_addr = getInetAddr(hostName);
+ 
   sin.sin_port = htons(portNumber);
 
   m_eventBase = event_base_new();
@@ -127,6 +128,48 @@ void TcpTransport::setTcpConnectEvent(tcpConnectStatus connectStatus) {
     LOG_INFO("received libevent callback event");
     m_connectEvent.notify_all();
   }
+}
+
+u_long TcpTransport::getInetAddr(string &hostname)
+{
+	u_long addr = inet_addr(hostname.c_str());
+
+	if (INADDR_NONE == addr) {
+		constexpr size_t length = 128;
+		struct evutil_addrinfo hints;
+		struct evutil_addrinfo *answer = NULL;
+		/* Build the hints to tell getaddrinfo how to act. */
+		memset(&hints, 0, sizeof(hints));
+		hints.ai_family = AF_UNSPEC; /* v4 or v6 is fine. */
+		//Look up the hostname.
+		int err = evutil_getaddrinfo(hostname.c_str(), NULL, &hints, &answer);
+		if (err != 0) {
+			string info = "Failed to resolve  host name(" + hostname + "): " + evutil_gai_strerror(err);
+			THROW_MQEXCEPTION(MQClientException, info, -1);
+		}
+
+		struct evutil_addrinfo *addressInfo;
+		for (addressInfo = answer; addressInfo; addressInfo = addressInfo->ai_next) {
+			char buf[length];
+			const char *address = NULL;
+			if (addressInfo->ai_family == AF_INET) {
+				struct sockaddr_in *sin = (struct sockaddr_in*)addressInfo->ai_addr;
+				address = evutil_inet_ntop(AF_INET, &sin->sin_addr, buf, length);
+			}
+			else if (addressInfo->ai_family == AF_INET6) {
+				struct sockaddr_in6 *sin6 = (struct sockaddr_in6*)addressInfo->ai_addr;
+				address = evutil_inet_ntop(AF_INET6, &sin6->sin6_addr, buf, length);
+			}
+			if (address) {
+				addr = inet_addr(address);
+				if (addr != INADDR_NONE) {
+					break;
+				}
+			}
+		}
+	}
+
+	return addr;
 }
 
 void TcpTransport::disconnect(const string &addr) {
