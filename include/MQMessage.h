@@ -23,10 +23,10 @@
 #include <vector>
 #include "RocketMQClient.h"
 
-
 namespace rocketmq {
 //<!***************************************************************************
 class ROCKETMQCLIENT_API MQMessage {
+
  public:
   MQMessage();
   MQMessage(const std::string& topic, const std::string& body);
@@ -57,7 +57,7 @@ class ROCKETMQCLIENT_API MQMessage {
   int getDelayTimeLevel() const;
   void setDelayTimeLevel(int level);
 
-  bool isWaitStoreMsgOK();
+  bool isWaitStoreMsgOK() const;
   void setWaitStoreMsgOK(bool waitStoreMsgOK);
 
   int getFlag() const;
@@ -130,5 +130,5 @@ class ROCKETMQCLIENT_API MQMessage {
   std::map<std::string, std::string> m_properties;
 };
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

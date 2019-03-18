@@ -60,7 +60,7 @@ void ConsumerRunningInfo::setStatusTable(const map<string, ConsumeStatus>&
 input_statusTable)
 {
 statusTable = input_statusTable;
-}	*/
+}    */
 
 const vector<SubscriptionData> ConsumerRunningInfo::getSubscriptionSet() const {
   return subscriptionSet;

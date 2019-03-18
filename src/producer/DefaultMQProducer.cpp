@@ -29,6 +29,8 @@
 #include "TopicPublishInfo.h"
 #include "Validators.h"
 #include "StringIdMaker.h"
+#include "BatchMessage.h"
+#include <typeinfo>
 
 namespace rocketmq {
 
@@ -125,6 +127,68 @@ void DefaultMQProducer::send(MQMessage& msg, SendCallback* pSendCallback,
     LOG_ERROR(e.what());
     throw e;
   }
+}
+
+SendResult DefaultMQProducer::send(std::vector<MQMessage>& msgs) {
+  SendResult result;
+  try {
+    BatchMessage batchMessage = buildBatchMessage(msgs);
+    result = sendDefaultImpl(batchMessage, ComMode_SYNC, NULL);
+  } catch (MQException& e) {
+    LOG_ERROR(e.what());
+    throw e;
+  }
+  return result;
+}
+
+SendResult DefaultMQProducer::send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq) {
+  SendResult result;
+  try {
+    BatchMessage batchMessage = buildBatchMessage(msgs);
+    result = sendKernelImpl(batchMessage, mq, ComMode_SYNC, NULL);
+  } catch (MQException& e) {
+    LOG_ERROR(e.what());
+    throw e;
+  }
+  return result;
+}
+
+BatchMessage DefaultMQProducer::buildBatchMessage(std::vector<MQMessage>& msgs) {
+
+  if (msgs.size() < 1) {
+    THROW_MQEXCEPTION(MQClientException, "msgs need one message at least", -1);
+  }
+  BatchMessage batchMessage;
+  bool firstFlag = true;
+  string topic;
+  bool waitStoreMsgOK = false;
+  for (auto& msg : msgs) {
+    Validators::checkMessage(msg, getMaxMessageSize());
+    if (firstFlag) {
+      topic = msg.getTopic();
+      waitStoreMsgOK = msg.isWaitStoreMsgOK();
+      firstFlag = false;
+
+      if (UtilAll::startsWith_retry(topic)) {
+        THROW_MQEXCEPTION(MQClientException, "Retry Group is not supported for batching", -1);
+      }
+    } else {
+
+      if (msg.getDelayTimeLevel() > 0) {
+        THROW_MQEXCEPTION(MQClientException, "TimeDelayLevel in not supported for batching", -1);
+      }
+      if (msg.getTopic() != topic) {
+        THROW_MQEXCEPTION(MQClientException, "msgs need one message at least", -1);
+      }
+      if (msg.isWaitStoreMsgOK() != waitStoreMsgOK) {
+        THROW_MQEXCEPTION(MQClientException, "msgs need one message at least", -2);
+      }
+    }
+  }
+  batchMessage.setBody(BatchMessage::encode(msgs));
+  batchMessage.setTopic(topic);
+  batchMessage.setWaitStoreMsgOK(waitStoreMsgOK);
+  return batchMessage;
 }
 
 SendResult DefaultMQProducer::send(MQMessage& msg, const MQMessageQueue& mq) {
@@ -336,9 +400,13 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
 
   if (!brokerAddr.empty()) {
     try {
-	  //msgId is produced by client, offsetMsgId produced by broker. (same with java sdk)
-	  string unique_id = StringIdMaker::get_mutable_instance().get_unique_id();
-	  msg.setProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX, unique_id);
+      BatchMessage batchMessage;
+      bool isBatchMsg = (typeid(msg).name() == typeid(batchMessage).name());
+      //msgId is produced by client, offsetMsgId produced by broker. (same with java sdk)
+      if (!isBatchMsg) {
+        string unique_id = StringIdMaker::get_mutable_instance().get_unique_id();
+        msg.setProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX, unique_id);
+      }
 
       LOG_DEBUG("produce before:%s to %s", msg.toString().c_str(), mq.toString().c_str());
 
@@ -353,6 +421,7 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
       requestHeader->sysFlag = (msg.getSysFlag());
       requestHeader->bornTimestamp = UtilAll::currentTimeMillis();
       requestHeader->flag = (msg.getFlag());
+      requestHeader->batch = isBatchMsg;
       requestHeader->properties =
           (MQDecoder::messageProperties2String(msg.getProperties()));
 
@@ -505,7 +574,7 @@ void DefaultMQProducer::setRetryTimes4Async(int times)
 {
   if (times <= 0) {
     LOG_WARN("set retry times illegal, use default value:1");
-	m_retryTimes4Async = 1;
+    m_retryTimes4Async = 1;
     return;
   }
 

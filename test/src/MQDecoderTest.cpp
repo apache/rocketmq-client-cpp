@@ -14,43 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <stdio.h>
-
-#include "MQMessageId.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "gmock/gmock.h"
+#include <unistd.h>
+#include <stdio.h>
+#include "BatchMessage.h"
+#include "MQMessage.h"
+#include <map>
+#include "MQDecoder.h"
 
 using namespace std;
-using ::testing::InitGoogleMock;
+using namespace rocketmq;
 using ::testing::InitGoogleTest;
+using ::testing::InitGoogleMock;
 using testing::Return;
 
-using rocketmq::MQMessageId;
-
-TEST(messageId, id) {
-    int host;
-    int port;
-    sockaddr addr = rocketmq::IPPort2socketAddress(inet_addr("127.0.0.1"), 10091);
-    MQMessageId id(addr, 1024);
-
-    rocketmq::socketAddress2IPPort(id.getAddress(), host, port);
-    EXPECT_EQ(host, inet_addr("127.0.0.1"));
-    EXPECT_EQ(port, 10091);
-    EXPECT_EQ(id.getOffset(), 1024);
-
-    id.setAddress(rocketmq::IPPort2socketAddress(inet_addr("127.0.0.2"), 10092));
-    id.setOffset(2048);
-
-    rocketmq::socketAddress2IPPort(id.getAddress(), host, port);
-    EXPECT_EQ(host, inet_addr("127.0.0.2"));
-    EXPECT_EQ(port, 10092);
-    EXPECT_EQ(id.getOffset(), 2048);
+TEST(MQDecoderTest, messageProperties2String) {
+    map<string, string> properties;
+    string property = MQDecoder::messageProperties2String(properties);
+    EXPECT_EQ(property.size(), 0);
+    properties["aaa"] = "aaa";
+    property = MQDecoder::messageProperties2String(properties);
+    EXPECT_EQ(property.size(), 8);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     InitGoogleMock(&argc, argv);
-
-    testing::GTEST_FLAG(filter) = "messageId.id";
-    int itestts = RUN_ALL_TESTS();
-    return itestts;
+    return RUN_ALL_TESTS();
 }

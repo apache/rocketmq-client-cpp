@@ -217,10 +217,10 @@ bool TcpRemotingClient::invokeAsync(const string& addr,
     int opaque = request.getOpaque();
     boost::shared_ptr<ResponseFuture> responseFuture(
         new ResponseFuture(code, opaque, this, timeoutMilliseconds, true, cbw));
-	responseFuture->setMaxRetrySendTimes(maxRetrySendTimes);
-	responseFuture->setRetrySendTimes(retrySendTimes);
-	responseFuture->setBrokerAddr(addr);
-	responseFuture->setRequestCommand(request);	
+    responseFuture->setMaxRetrySendTimes(maxRetrySendTimes);
+    responseFuture->setRetrySendTimes(retrySendTimes);
+    responseFuture->setBrokerAddr(addr);
+    responseFuture->setRequestCommand(request);    
     addAsyncResponseFuture(opaque, responseFuture);
     if (cbw) {
       boost::asio::deadline_timer* t = new boost::asio::deadline_timer(
@@ -593,7 +593,7 @@ void TcpRemotingClient::processResponseCommand(
       pfuture->setAsyncResponseFlag();
       pfuture->setAsyncCallBackStatus(asyncCallBackStatus_response);
       cancelTimerCallback(opaque);
-      pfuture->executeInvokeCallback();	  
+      pfuture->executeInvokeCallback();      
     }
   }
 }
