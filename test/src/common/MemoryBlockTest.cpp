@@ -161,6 +161,8 @@ TEST(memoryBlock, operators) {
     twoRemoveSectionMemoryBlock.removeSection(1, 4);
     string str(twoRemoveSectionMemoryBlock.getData(), 4);
     EXPECT_TRUE(str == "RtMQ");
+
+    free(buf);
 }
 
 int main(int argc, char *argv[]) {
