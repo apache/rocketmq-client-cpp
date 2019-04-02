@@ -61,6 +61,7 @@ TEST(memoryOutputStream, init) {
     fiveMemoryOutputStream.reset();
     EXPECT_EQ(memoryOutput.getPosition(), 0);
     EXPECT_EQ(memoryOutput.getDataSize(), 0);
+    free(buf);
 }
 
 TEST(memoryOutputStream, flush) {
@@ -70,6 +71,7 @@ TEST(memoryOutputStream, flush) {
     memoryOutput.write(buf, 8);
     memoryOutput.flush();
     EXPECT_FALSE(memoryOutput.getData() == buf);
+    free(buf);
 }
 
 TEST(memoryOutputStream, preallocate) {
@@ -86,6 +88,7 @@ TEST(memoryOutputStream, getMemoryBlock) {
     memoryOutput.write(buf, 8);
     MemoryBlock memoryBlock = memoryOutput.getMemoryBlock();
     EXPECT_EQ(memoryBlock.getSize(), memoryOutput.getDataSize());
+    free(buf);
 }
 
 TEST(memoryOutputStream, prepareToWriteAndGetData) {
@@ -109,6 +112,7 @@ TEST(memoryOutputStream, prepareToWriteAndGetData) {
     blockMmoryOutput.write(buf, 8);
     data = static_cast<const char *>(blockMmoryOutput.getData());
     EXPECT_EQ(string(data), "rocketMQrocketMQ");
+    free(buf);
 }
 
 TEST(memoryOutputStream, position) {
@@ -131,6 +135,7 @@ TEST(memoryOutputStream, position) {
 
     EXPECT_TRUE(memoryOutput.setPosition(7));
     EXPECT_EQ(memoryOutput.getPosition(), 7);
+    free(buf);
 }
 
 TEST(memoryOutputStream, write) {
@@ -190,6 +195,7 @@ TEST(memoryInputStream, info) {
 
     MemoryInputStream frouMemoryInput(memoryBlock, true);
     EXPECT_NE(frouMemoryInput.getData(), memoryBlock.getData());
+    free(buf);
 }
 
 TEST(memoryInputStream, position) {
@@ -206,6 +212,7 @@ TEST(memoryInputStream, position) {
 
     memoryInput.setPosition(-1);
     EXPECT_EQ(memoryInput.getPosition(), 0);
+    free(buf);
 }
 
 int main(int argc, char *argv[]) {
