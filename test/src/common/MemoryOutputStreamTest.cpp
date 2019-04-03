@@ -65,10 +65,10 @@ TEST(memoryOutputStream, init) {
 }
 
 TEST(memoryOutputStream, flush) {
-    char *buf = (char *) malloc(sizeof(char) * 8);
+    char *buf = (char *) malloc(sizeof(char) * 9);
     strcpy(buf, "RocketMQ");
     MemoryOutputStream memoryOutput;
-    memoryOutput.write(buf, 8);
+    memoryOutput.write(buf, 9);
     memoryOutput.flush();
     EXPECT_FALSE(memoryOutput.getData() == buf);
     free(buf);
@@ -82,19 +82,19 @@ TEST(memoryOutputStream, preallocate) {
 }
 
 TEST(memoryOutputStream, getMemoryBlock) {
-    char *buf = (char *) malloc(sizeof(char) * 8);
+    char *buf = (char *) malloc(sizeof(char) * 9);
     strcpy(buf, "RocketMQ");
     MemoryOutputStream memoryOutput;
-    memoryOutput.write(buf, 8);
+    memoryOutput.write(buf, 9);
     MemoryBlock memoryBlock = memoryOutput.getMemoryBlock();
     EXPECT_EQ(memoryBlock.getSize(), memoryOutput.getDataSize());
     free(buf);
 }
 
 TEST(memoryOutputStream, prepareToWriteAndGetData) {
-    char *buf = (char *) malloc(sizeof(char) * 8);
+    char *buf = (char *) malloc(sizeof(char) * 9);
     strcpy(buf, "RocketMQ");
-    MemoryOutputStream memoryOutput(buf, 8);
+    MemoryOutputStream memoryOutput(buf, 9);
     EXPECT_EQ(memoryOutput.getData(), buf);
 
     // prepareToWrite
@@ -116,7 +116,7 @@ TEST(memoryOutputStream, prepareToWriteAndGetData) {
 }
 
 TEST(memoryOutputStream, position) {
-    char *buf = (char *) malloc(sizeof(char) * 8);
+    char *buf = (char *) malloc(sizeof(char) * 9);
     strcpy(buf, "RocketMQ");
 
     MemoryOutputStream memoryOutput;
@@ -171,7 +171,7 @@ TEST(memoryOutputStream, write) {
 }
 
 TEST(memoryInputStream, info) {
-    char *buf = (char *) malloc(sizeof(char) * 8);
+    char *buf = (char *) malloc(sizeof(char) * 9);
     strcpy(buf, "RocketMQ");
 
     MemoryInputStream memoryInput(buf, 8, false);
@@ -199,7 +199,7 @@ TEST(memoryInputStream, info) {
 }
 
 TEST(memoryInputStream, position) {
-    char *buf = (char *) malloc(sizeof(char) * 8);
+    char *buf = (char *) malloc(sizeof(char) * 9);
     strcpy(buf, "RocketMQ");
 
     MemoryInputStream memoryInput(buf, 8, false);
