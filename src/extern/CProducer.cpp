@@ -197,6 +197,36 @@ int SendMessageOneway(CProducer *producer, CMessage *msg) {
 }
 
 int
+SendMessageOrderlyAsync(CProducer *producer,
+            CMessage *msg,
+            QueueSelectorCallback callback,
+            void *arg,
+            CSendSuccessCallback cSendSuccessCallback,
+            CSendExceptionCallback cSendExceptionCallback                    
+                    ) {
+    if (producer == NULL || msg == NULL || callback == NULL || cSendSuccessCallback == NULL || cSendExceptionCallback == NULL) {
+        return NULL_POINTER;
+    }
+    DefaultMQProducer *defaultMQProducer = (DefaultMQProducer *) producer;
+    MQMessage *message = (MQMessage *) msg;
+        CSendCallback* cSendCallback = new CSendCallback(cSendSuccessCallback , cSendExceptionCallback);
+
+    try {
+        //Constructing SelectMessageQueue objects through function pointer callback
+        SelectMessageQueue selectMessageQueue(callback);
+        defaultMQProducer->send(*message,
+         &selectMessageQueue, arg,cSendCallback);
+    } catch (exception &e) {
+        printf("%s\n",e.what());
+        //std::count<<e.what( )<<std::endl;
+        return PRODUCER_SEND_ORDERLYASYNC_FAILED;
+    }
+    return OK;
+}
+
+
+
+int
 SendMessageOrderly(CProducer *producer, CMessage *msg, QueueSelectorCallback callback, void *arg, int autoRetryTimes,
                    CSendResult *result) {
     if (producer == NULL || msg == NULL || callback == NULL || arg == NULL || result == NULL) {
