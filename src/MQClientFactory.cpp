@@ -631,35 +631,38 @@ string MQClientFactory::findBrokerAddressInPublish(const string& brokerName) {
   return "";
 }
 
-FindBrokerResult* MQClientFactory::findBrokerAddressInSubscribe(
-    const string& brokerName, int brokerId, bool onlyThisBroker) {
-  string brokerAddr;
-  bool slave = false;
-  bool found = false;
-  BrokerAddrMAP brokerTable(getBrokerAddrMap());
+FindBrokerResult *MQClientFactory::findBrokerAddressInSubscribe(const string &brokerName,
+                                                                int brokerId,
+                                                                bool onlyThisBroker) {
+    string brokerAddr;
+    bool slave = false;
+    bool found = false;
+    BrokerAddrMAP brokerTable(getBrokerAddrMap());
 
-  if (brokerTable.find(brokerName) != brokerTable.end()) {
-    map<int, string> brokerMap(brokerTable[brokerName]);
-    map<int, string>::iterator it1 = brokerMap.find(brokerId);
-    if (it1 != brokerMap.end()) {
-      brokerAddr = it1->second;
-      slave = (brokerId != MASTER_ID);
-      found = true;
-    } else  // from master
-    {
-      it1 = brokerMap.find(MASTER_ID);
-      if (it1 != brokerMap.end()) {
-        brokerAddr = it1->second;
-        slave = false;
-        found = true;
-      }
+    if (brokerTable.find(brokerName) != brokerTable.end()) {
+        map<int, string> brokerMap(brokerTable[brokerName]);
+        if (!brokerMap.empty()) {
+            auto iter = brokerMap.find(brokerId);
+            if (iter != brokerMap.end()) {
+                brokerAddr = iter->second;
+                slave = (brokerId != MASTER_ID);
+                found = true;
+            } else if (!onlyThisBroker) {  // not only from master
+                iter = brokerMap.begin();
+                brokerAddr = iter->second;
+                slave = iter->first != MASTER_ID;
+                found = true;
+            }
+        }
     }
-  }
 
-  brokerTable.clear();
-  if (found) return new FindBrokerResult(brokerAddr, slave);
+    brokerTable.clear();
 
-  return NULL;
+    if (found) {
+        return new FindBrokerResult(brokerAddr, slave);
+    }
+
+    return nullptr;
 }
 
 FindBrokerResult* MQClientFactory::findBrokerAddressInAdmin(
