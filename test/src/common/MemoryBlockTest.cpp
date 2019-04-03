@@ -46,7 +46,7 @@ TEST(memoryBlock, init) {
     EXPECT_EQ(frouMemoryBlock.getSize(), 12);
     EXPECT_TRUE(frouMemoryBlock.getData() != nullptr);
 
-    char *buf = (char *) malloc(sizeof(char) * 8);
+    char *buf = (char *) malloc(sizeof(char) * 9);
     strcpy(buf, "RocketMQ");
     MemoryBlock fiveMemoryBlock(buf, -1);
     EXPECT_EQ(fiveMemoryBlock.getSize(), -1);
@@ -80,7 +80,7 @@ TEST(memoryBlock, operators) {
 
     EXPECT_TRUE(operaterMemoryBlock == memoryBlock);
 
-    char *buf = (char *) malloc(sizeof(char) * 8);
+    char *buf = (char *) malloc(sizeof(char) * 9);
     strcpy(buf, "RocketMQ");
     MemoryBlock twoMemoryBlock(buf, 12);
     EXPECT_FALSE(memoryBlock == twoMemoryBlock);
@@ -163,6 +163,7 @@ TEST(memoryBlock, operators) {
     EXPECT_TRUE(str == "RtMQ");
 
     free(buf);
+    free(aliyunBuf);
 }
 
 int main(int argc, char *argv[]) {
