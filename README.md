@@ -20,7 +20,7 @@ RocketMQ-Client-CPP is the C/C++ client of Apache RocketMQ, a distributed messag
 **note**: make sure the following compile tools or libraries have been installed before running the build script **build.sh**.
 
 - compile tools:
-	- gcc-c++ 4.8.2: c++ compiler while need support C++11
+    - gcc-c++ 4.8.2: c++ compiler while need support C++11
 	- cmake 2.8.0: build jsoncpp require it
 	- automake 1.11.1: build libevent require it
 	- autoconf 2.65: build libevent require it
@@ -63,6 +63,10 @@ If your host is not available to internet to download the four library source fi
 
 And then run following command to build rocketmq-client:
 
+for x86 build:
+
     win32_build.bat build
+    
+for x86_64 build:
 
-
+    win32_build.bat
