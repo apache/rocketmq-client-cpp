@@ -53,7 +53,7 @@ TEST(memoryOutputStream, init) {
     EXPECT_EQ(frouMemoryOutput.getPosition(), memoryBlock.getSize());
     EXPECT_EQ(frouMemoryOutput.getDataSize(), memoryBlock.getSize());
 
-    char *buf = (char *) malloc(sizeof(char) * 8);
+    char *buf = (char *) malloc(sizeof(char) * 9);
     strcpy(buf, "RocketMQ");
     MemoryOutputStream fiveMemoryOutputStream(buf, 8);
     EXPECT_EQ(fiveMemoryOutputStream.getData(), buf);
