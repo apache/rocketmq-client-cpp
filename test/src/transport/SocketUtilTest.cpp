@@ -14,31 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "gtest/gtest.h"
 #include "gmock/gmock.h"
-#include <unistd.h>
-#include <stdio.h>
-#include "BatchMessage.h"
-#include "MQMessage.h"
-#include <map>
-#include "MQDecoder.h"
+#include "gtest/gtest.h"
 
-using namespace std;
-using namespace rocketmq;
-using ::testing::InitGoogleTest;
+#include "SocketUtil.h"
+
 using ::testing::InitGoogleMock;
+using ::testing::InitGoogleTest;
 using testing::Return;
 
-TEST(MQDecoderTest, messageProperties2String) {
-    map<string, string> properties;
-    string property = MQDecoder::messageProperties2String(properties);
-    EXPECT_EQ(property.size(), 0);
-    properties["aaa"] = "aaa";
-    property = MQDecoder::messageProperties2String(properties);
-    EXPECT_EQ(property.size(), 8);
+TEST(socketUtil, init) {
+    sockaddr addr = rocketmq::IPPort2socketAddress(inet_addr("127.0.0.1"), 10091);
+
+    EXPECT_EQ(rocketmq::socketAddress2IPPort(addr), "1.0.0.127:10091");
+
+    int host;
+    int port;
+
+    rocketmq::socketAddress2IPPort(addr, host, port);
+    EXPECT_EQ(host, inet_addr("127.0.0.1"));
+    EXPECT_EQ(port, 10091);
+
+    EXPECT_EQ(rocketmq::socketAddress2String(addr), "1.0.0.127");
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     InitGoogleMock(&argc, argv);
-    return RUN_ALL_TESTS();
+    testing::GTEST_FLAG(throw_on_failure) = true;
+    testing::GTEST_FLAG(filter) = "socketUtil.init";
+    int itestts = RUN_ALL_TESTS();
+    return itestts;
 }
