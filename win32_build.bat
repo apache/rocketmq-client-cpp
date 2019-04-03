@@ -14,17 +14,25 @@
 : * See the License for the specific language governing permissions and
 : * limitations under the License.
 : */
+@echo off
+if not exist "thirdparty/jsoncpp-0.10.6" (
+	@echo thirdparty not found,git clone thirdparty first.
+	call:download
+)
+
 
 if "%1" == "build" (
 	call:build
-) 
-if "%1" == "build64" (
-	call:build64
-) else (
-	call:download
-	call:build64
+)else (
+	if "%1" == "build64" (
+		call:build64
+	)	else (
+		@echo no build type specified,default buit default target:build64
+		call:build64
+	)
 )
 goto:eof
+
 
 :download --download dependency lib
 @echo download start
@@ -35,33 +43,46 @@ git clone https://github.com/jsj020122/jsoncpp-0.10.6.git
 git clone https://github.com/jsj020122/boost_1_58_0.git
 git clone https://github.com/jsj020122/libevent-release-2.0.22.git
 git clone https://github.com/jsj020122/zlib-1.2.3-src.git
+:echo %date:~0,4%%date:~5,2%%date:~8,2%%time:~0,2%%time:~3,2%%time:~6,2%>thirdparty.stat
 cd ..
-@echo download end
+@echo download thirdparty end
 goto:eof
 
 :build --build all project
-@echo build start
-cd thirdparty/boost_1_58_0
-@if "%programfiles%"=="" ("set programfiles=E:\Program Files (x86)")
-call "%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\Common7\Tools\vsvars32.bat"
-:: amd64
+@echo build x86 start
+@echo build tool setup
+if exist "%VS150COMNTOOLS%vsvars32.bat" (
+	@echo use build tool:vs2017
+	call "%VS150COMNTOOLS%\..\..\VC\vcvarsall.bat" x86
+)else (
+	if exist "%VS140COMNTOOLS%vsvars32.bat" (
+		@echo use build tool:vs2015
+		call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" x86
+	)	else (
+		@echo supported toolchains not found!please install vs2015 or vs2017
+		goto:eof
+	)
+)
 
-::call ""E:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat"" amd64
 
+@echo build thirdparty
 set  ZLIB_SOURCE="%cd%\zlib-1.2.3-src\src\zlib\1.2.3\zlib-1.2.3\"
-::cd boost_1_58_0
+set  ZLIB_INCLUDE="%cd%\zlib-1.2.3-src\src\zlib\1.2.3\zlib-1.2.3\"
+cd thirdparty/boost_1_58_0
 call bootstrap.bat
 @echo build start.....
 bjam.exe address-model=32 --with-serialization --with-atomic --with-log --with-locale --with-iostreams --with-system --with-regex --with-thread --with-date_time --with-chrono --with-filesystem  link=static  threading=multi variant=release runtime-link=shared
+
 cd ../jsoncpp-0.10.6
-devenv ./jsoncpp_lib_static.vcxproj  /Rebuild "Debug|x86" /out log.txt
+devenv ./jsoncpp_lib_static.vcxproj  /Rebuild "Release|x86" /out log.txt
 cd ../libevent-release-2.0.22
-devenv ./libevent.vcxproj  /Rebuild "Debug|x86" /out log.txt
+devenv ./libevent.vcxproj  /Rebuild "Release|x86" /out log.txt
 cd ../../Win32
 ::cd ./Win32
 ::devenv ./rocketmq-client-cpp.sln  /Rebuild "Release|x64" /out log.txt
 ::devenv ./rocketmq-client-cpp.vcxproj /Build "Release|x64" /out log.txt
-devenv ./rocketmq-client-cpp.sln /Build "Debug|x86" /out log.txt
+@echo build rocketmq-client-cpp
+devenv ./rocketmq-client-cpp.sln /Build "Release|x86" /out log.txt
 ::devenv ./rocketmq-client-cpp.vcxproj /Rebuild "Release|x64" /out log.txt
 ::cd ..
 @echo build end
@@ -70,21 +91,26 @@ goto:eof
 
 
 :build64 --build all project
-@echo build start
-cd thirdparty/boost_1_58_0
-@if "%programfiles%"=="" ("set programfiles=E:\Program Files (x86)")
-call "%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\Common7\Tools\vsvars32.bat"
-:: amd64
-
-::call ""E:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat"" amd64
-
+@echo build x86_64 start
+@echo build tool setup
+if exist "%VS150COMNTOOLS%vsvars32.bat" (
+	@echo use build tool:vs2017
+	call "%VS150COMNTOOLS%\..\..\VC\vcvarsall.bat" amd64
+)else (
+	if exist "%VS140COMNTOOLS%vsvars32.bat" (
+		@echo use build tool:vs2015
+		call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" amd64
+	)	else (
+		@echo supported toolchains not found!please install vs2015 or vs2017
+		goto:eof
+	)
+)
+@echo build thirdparty
 set  ZLIB_SOURCE="%cd%\zlib-1.2.3-src\src\zlib\1.2.3\zlib-1.2.3\"
 set  ZLIB_INCLUDE="%cd%\zlib-1.2.3-src\src\zlib\1.2.3\zlib-1.2.3\"
-
-
-::cd boost_1_58_0
+cd thirdparty/boost_1_58_0
 call bootstrap.bat
-@echo build start.....
+
 bjam.exe address-model=64 --with-serialization --with-atomic --with-log --with-locale --with-iostreams --with-system --with-regex --with-thread --with-date_time --with-chrono --with-filesystem  link=static  threading=multi variant=release runtime-link=shared
 cd ../jsoncpp-0.10.6
 devenv ./jsoncpp_lib_static.vcxproj  /Build "Release|x64" /out log.txt
@@ -94,6 +120,7 @@ cd ../../Win32
 ::cd ./Win32
 ::devenv ./rocketmq-client-cpp.sln  /Rebuild "Release|x64" /out log.txt
 ::devenv ./rocketmq-client-cpp.vcxproj /Build "Release|x64" /out log.txt
+@echo build rocketmq-client-cpp
 devenv ./rocketmq-client-cpp.sln /Build "Release|x64" /out log.txt
 ::devenv ./rocketmq-client-cpp.vcxproj /Rebuild "Release|x64" /out log.txt
 ::cd ..
