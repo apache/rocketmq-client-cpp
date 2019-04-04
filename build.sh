@@ -176,7 +176,7 @@ BuildLibevent()
     if [ $? -ne 0 ];then
         exit 1
     fi    
-    make
+    make -j
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -214,7 +214,7 @@ BuildJsonCPP()
     if [ $? -ne 0 ];then
         exit 1
     fi    
-    make
+    make -j
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -255,7 +255,7 @@ BuildBoost()
     fi    
     echo "build boost static #####################"
     pwd
-    ./b2 cflags=-fPIC cxxflags=-fPIC   --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static  release install --prefix=${install_lib_dir}
+    ./b2 -j10 cflags=-fPIC cxxflags=-fPIC   --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static  release install --prefix=${install_lib_dir}
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -269,7 +269,7 @@ BuildRocketMQClient()
     else
         cmake .. -DRUN_UNIT_TEST=ON
     fi
-    make
+    make -j
     if [ $? -ne 0 ];then
         exit 1
     fi        
@@ -307,7 +307,7 @@ BuildGoogleTest()
     if [ $? -ne 0 ];then
         exit 1
     fi    
-    make
+    make -j
     if [ $? -ne 0 ];then
         exit 1
     fi
