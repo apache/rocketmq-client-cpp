@@ -77,6 +77,7 @@ TEST(cProducer, SendMessageAsync) {
     EXPECT_CALL(*mockProducer, send(_, _)).Times(1);
     EXPECT_EQ(SendMessageAsync(cProducer, msg, cSendSuccessCallback, cSendExceptionCallback), OK);
     Mock::AllowLeak(mockProducer);
+    DestroyMessage(msg);
 }
 
 TEST(cProducer, sendMessageOrderly) {
@@ -97,6 +98,8 @@ TEST(cProducer, sendMessageOrderly) {
         .WillOnce(Return(SendResult(SendStatus::SEND_OK, "3", "offset1", messageQueue, 14)));
     // EXPECT_EQ(SendMessageOrderly(cProducer, msg, callback, msg, 1, result), OK);
     Mock::AllowLeak(mockProducer);
+    DestroyMessage(msg);
+    // free(result);
 }
 
 TEST(cProducer, sendOneway) {
@@ -110,6 +113,7 @@ TEST(cProducer, sendOneway) {
     EXPECT_CALL(*mockProducer, sendOneway(_, _)).Times(1);
     EXPECT_EQ(SendMessageOneway(cProducer, msg), OK);
     Mock::AllowLeak(mockProducer);
+    DestroyMessage(msg);
 }
 
 TEST(cProducer, sendMessageSync) {
@@ -150,7 +154,8 @@ TEST(cProducer, sendMessageSync) {
     EXPECT_EQ(SendMessageSync(cProducer, msg, result), OK);
     EXPECT_EQ(result->sendStatus, E_SEND_OK);
     Mock::AllowLeak(mockProducer);
-    delete mqMessage;
+    DestroyMessage(msg);
+    free(result);
 }
 
 TEST(cProducer, infoMock) {
