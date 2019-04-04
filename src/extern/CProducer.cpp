@@ -196,6 +196,21 @@ int SendMessageOneway(CProducer *producer, CMessage *msg) {
     return OK;
 }
 
+int SendMessageOnewayOrderly(CProducer *producer, CMessage *msg, QueueSelectorCallback selector, void* arg) {
+    if (producer == NULL || msg == NULL) {
+        return NULL_POINTER;
+    }
+    DefaultMQProducer *defaultMQProducer = (DefaultMQProducer *) producer;
+    MQMessage *message = (MQMessage *) msg;
+    try {
+        SelectMessageQueue selectMessageQueue(selector);
+        defaultMQProducer->sendOneway(*message, &selectMessageQueue, arg);
+    } catch (exception &e) {
+        return PRODUCER_SEND_ONEWAY_FAILED;
+    }
+    return OK;
+}
+
 int
 SendMessageOrderlyAsync(CProducer *producer,
             CMessage *msg,
