@@ -56,13 +56,7 @@ using rocketmq::SendMessageResponseHeader;
 TEST(remotingCommand, init) {
     RemotingCommand remotingCommand;
     EXPECT_EQ(remotingCommand.getCode(), 0);
-    EXPECT_EQ(remotingCommand.getOpaque(), 0);
-    EXPECT_EQ(remotingCommand.getRemark(), "");
-    EXPECT_EQ(remotingCommand.getVersion(), 0);
-    //  EXPECT_EQ(remotingCommand.getFlag() , 0);
-    EXPECT_EQ(remotingCommand.getMsgBody(), "");
-    EXPECT_TRUE(remotingCommand.getCommandHeader() == nullptr);
-
+    
     RemotingCommand twoRemotingCommand(13);
     EXPECT_EQ(twoRemotingCommand.getCode(), 13);
     EXPECT_EQ(twoRemotingCommand.getOpaque(), 0);
@@ -93,26 +87,8 @@ TEST(remotingCommand, init) {
     EXPECT_EQ(sixRemotingCommand.getFlag(), 3);
     EXPECT_EQ(sixRemotingCommand.getMsgBody(), "");
     EXPECT_TRUE(sixRemotingCommand.getCommandHeader() == nullptr);
-
-    RemotingCommand *sevenRemotingCommand = new RemotingCommand();
-    EXPECT_EQ(sevenRemotingCommand->getCode(), 0);
-    EXPECT_EQ(sevenRemotingCommand->getOpaque(), 0);
-    EXPECT_EQ(sevenRemotingCommand->getRemark(), "");
-    EXPECT_EQ(sevenRemotingCommand->getVersion(), 0);
-    EXPECT_EQ(sevenRemotingCommand->getFlag(), 0);
-    EXPECT_EQ(sevenRemotingCommand->getMsgBody(), "");
-    EXPECT_TRUE(sevenRemotingCommand->getCommandHeader() == nullptr);
-
-    RemotingCommand *egthRemotingCommand = sevenRemotingCommand;
-    EXPECT_EQ(egthRemotingCommand->getCode(), 0);
-    EXPECT_EQ(egthRemotingCommand->getOpaque(), 0);
-    EXPECT_EQ(egthRemotingCommand->getRemark(), "");
-    EXPECT_EQ(egthRemotingCommand->getVersion(), 0);
-    EXPECT_EQ(egthRemotingCommand->getFlag(), 0);
-    EXPECT_EQ(egthRemotingCommand->getMsgBody(), "");
-    EXPECT_TRUE(egthRemotingCommand->getCommandHeader() == nullptr);
-
-    sevenRemotingCommand = &sixRemotingCommand;
+    
+    RemotingCommand* sevenRemotingCommand = &sixRemotingCommand;
     EXPECT_EQ(sevenRemotingCommand->getCode(), 13);
     EXPECT_EQ(sevenRemotingCommand->getOpaque(), 12);
     EXPECT_EQ(sevenRemotingCommand->getRemark(), "remark");
@@ -120,9 +96,6 @@ TEST(remotingCommand, init) {
     EXPECT_EQ(sevenRemotingCommand->getFlag(), 3);
     EXPECT_EQ(sevenRemotingCommand->getMsgBody(), "");
     EXPECT_TRUE(sevenRemotingCommand->getCommandHeader() == nullptr);
-
-    // Assign
-    delete egthRemotingCommand;
 }
 
 TEST(remotingCommand, info) {

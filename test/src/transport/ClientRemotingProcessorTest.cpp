@@ -124,6 +124,7 @@ TEST(clientRemotingProcessor, processRequest) {
     command->setCode(1);
     EXPECT_TRUE(clientRemotingProcessor.processRequest(addr, command) == nullptr);
 
+    delete twoCommand;
     delete command;
     delete pResponse;
 }
@@ -158,7 +159,8 @@ TEST(clientRemotingProcessor, resetOffset) {
     request->SetBody(strData.c_str(), strData.size());
     clientRemotingProcessor.resetOffset(request);
 
-    delete header;
+    //here header no need delete, it will managered by RemotingCommand
+    //delete header;
     delete request;
 }
 

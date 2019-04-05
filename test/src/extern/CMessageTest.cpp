@@ -69,7 +69,7 @@ TEST(cmessages, null) {
     EXPECT_EQ(SetMessageBody(NULL, NULL), NULL_POINTER);
     EXPECT_EQ(SetByteMessageBody(NULL, NULL, 0), NULL_POINTER);
     EXPECT_EQ(SetMessageProperty(NULL, NULL, NULL), NULL_POINTER);
-    EXPECT_EQ(SetDelayTimeLevel(NULL, NULL), NULL_POINTER);
+    EXPECT_EQ(SetDelayTimeLevel(NULL, 0), NULL_POINTER);
 }
 
 int main(int argc, char *argv[]) {
