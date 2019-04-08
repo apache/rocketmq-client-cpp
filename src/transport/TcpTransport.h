@@ -33,62 +33,59 @@ extern "C" {
 namespace rocketmq {
 //<!***************************************************************************
 typedef enum {
-  e_connectInit = 0,
-  e_connectWaitResponse = 1,
-  e_connectSuccess = 2,
-  e_connectFail = 3
+    e_connectInit = 0,
+    e_connectWaitResponse = 1,
+    e_connectSuccess = 2,
+    e_connectFail = 3
 } tcpConnectStatus;
 
-typedef void (*READ_CALLBACK)(void *context, const MemoryBlock &,
-                              const std::string &);
+typedef void (*READ_CALLBACK)(void *context, const MemoryBlock &, const std::string &);
 class TcpRemotingClient;
 class TcpTransport {
- public:
-  TcpTransport(TcpRemotingClient *pTcpRemointClient,
-               READ_CALLBACK handle = NULL);
-  virtual ~TcpTransport();
+public:
+    TcpTransport(TcpRemotingClient *pTcpRemointClient, READ_CALLBACK handle = NULL);
+    virtual ~TcpTransport();
 
-  tcpConnectStatus connect(const std::string &strServerURL,
-                           int timeOutMillisecs = 3000);
-  void disconnect(const std::string &addr);
-  tcpConnectStatus waitTcpConnectEvent(int timeoutMillisecs = 3000);
-  void setTcpConnectStatus(tcpConnectStatus connectStatus);
-  tcpConnectStatus getTcpConnectStatus();
-  bool sendMessage(const char *pData, int len);
-  const std::string getPeerAddrAndPort();
-  const uint64_t getStartTime() const;
+    tcpConnectStatus connect(const std::string &strServerURL, int timeOutMillisecs = 3000);
+    void disconnect(const std::string &addr);
+    tcpConnectStatus waitTcpConnectEvent(int timeoutMillisecs = 3000);
+    void setTcpConnectStatus(tcpConnectStatus connectStatus);
+    tcpConnectStatus getTcpConnectStatus();
+    bool sendMessage(const char *pData, int len);
+    const std::string getPeerAddrAndPort();
+    const uint64_t getStartTime() const;
 
- private:
-  void messageReceived(const MemoryBlock &mem);
-  static void readNextMessageIntCallback(struct bufferevent *bev, void *ctx);
-  static void eventcb(struct bufferevent *bev, short what, void *ctx);
-  static void timeoutcb(evutil_socket_t fd, short what, void *arg);
-  void runThread();
-  void clearBufferEventCallback();
-  void freeBufferEvent();
-  void exitBaseDispatch();
-  void setTcpConnectEvent(tcpConnectStatus connectStatus);
-  u_long getInetAddr(std::string &hostname);
+private:
+    void messageReceived(const MemoryBlock &mem);
+    static void readNextMessageIntCallback(struct bufferevent *bev, void *ctx);
+    static void eventcb(struct bufferevent *bev, short what, void *ctx);
+    static void timeoutcb(evutil_socket_t fd, short what, void *arg);
+    void runThread();
+    void clearBufferEventCallback();
+    void freeBufferEvent();
+    void exitBaseDispatch();
+    void setTcpConnectEvent(tcpConnectStatus connectStatus);
+    u_long getInetAddr(std::string &hostname);
 
- private:
-  uint64_t m_startTime;
-  boost::mutex m_socketLock;
-  struct event_base *m_eventBase;
-  struct bufferevent *m_bufferEvent;
-  boost::atomic<tcpConnectStatus> m_tcpConnectStatus;
-  boost::mutex m_connectEventLock;
-  boost::condition_variable_any m_connectEvent;
+private:
+    uint64_t m_startTime;
+    boost::mutex m_socketLock;
+    struct event_base *m_eventBase;
+    struct bufferevent *m_bufferEvent;
+    boost::atomic<tcpConnectStatus> m_tcpConnectStatus;
+    boost::mutex m_connectEventLock;
+    boost::condition_variable_any m_connectEvent;
 
-  boost::atomic<bool> m_event_base_status;
-  boost::mutex        m_event_base_mtx;
-  boost::condition_variable_any m_event_base_cv;
+    boost::atomic<bool> m_event_base_status;
+    boost::mutex m_event_base_mtx;
+    boost::condition_variable_any m_event_base_cv;
 
-  //<!read data thread
-  boost::thread *m_ReadDatathread;
+    //<!read data thread
+    boost::thread *m_ReadDatathread;
 
-  //<! read data callback
-  READ_CALLBACK m_readcallback;
-  TcpRemotingClient *m_tcpRemotingClient;
+    //<! read data callback
+    READ_CALLBACK m_readcallback;
+    TcpRemotingClient *m_tcpRemotingClient;
 };
 
 //<!************************************************************************

@@ -31,14 +31,14 @@ using testing::Return;
 
 TEST(BatchMessageEncodeTest, encodeMQMessage) {
     MQMessage msg1("topic", "*", "test");
-    //const map<string,string>& properties = msg1.getProperties();
-    //for (auto& pair : properties) {
+    // const map<string,string>& properties = msg1.getProperties();
+    // for (auto& pair : properties) {
     //    std::cout << pair.first << " : " << pair.second << std::endl;
     //}
 
     EXPECT_EQ(msg1.getProperties().size(), 2);
     EXPECT_EQ(msg1.getBody().size(), 4);
-    //20 + bodyLen + 2 + propertiesLength;
+    // 20 + bodyLen + 2 + propertiesLength;
     string encodeMessage = BatchMessage::encode(msg1);
     EXPECT_EQ(encodeMessage.size(), 43);
 
@@ -50,12 +50,12 @@ TEST(BatchMessageEncodeTest, encodeMQMessage) {
 TEST(BatchMessageEncodeTest, encodeMQMessages) {
     std::vector<MQMessage> msgs;
     MQMessage msg1("topic", "*", "test1");
-    //const map<string,string>& properties = msg1.getProperties();
-    //for (auto& pair : properties) {
+    // const map<string,string>& properties = msg1.getProperties();
+    // for (auto& pair : properties) {
     //    std::cout << pair.first << " : " << pair.second << std::endl;
     //}
     msgs.push_back(msg1);
-    //20 + bodyLen + 2 + propertiesLength;
+    // 20 + bodyLen + 2 + propertiesLength;
     string encodeMessage = BatchMessage::encode(msgs);
     EXPECT_EQ(encodeMessage.size(), 86);
     MQMessage msg2("topic", "*", "test2");
@@ -63,7 +63,7 @@ TEST(BatchMessageEncodeTest, encodeMQMessages) {
     msgs.push_back(msg2);
     msgs.push_back(msg3);
     encodeMessage = BatchMessage::encode(msgs);
-    EXPECT_EQ(encodeMessage.size(), 258);//86*3
+    EXPECT_EQ(encodeMessage.size(), 258);  // 86*3
 }
 
 int main(int argc, char* argv[]) {

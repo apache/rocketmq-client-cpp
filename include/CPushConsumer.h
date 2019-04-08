@@ -25,15 +25,15 @@
 extern "C" {
 #endif
 
-//typedef struct _CConsumer_ _CConsumer;
+// typedef struct _CConsumer_ _CConsumer;
 typedef struct CPushConsumer CPushConsumer;
 
-typedef enum E_CConsumeStatus{
+typedef enum E_CConsumeStatus {
     E_CONSUME_SUCCESS = 0,
     E_RECONSUME_LATER = 1
 } CConsumeStatus;
 
-typedef int(*MessageCallBack)(CPushConsumer *, CMessageExt *);
+typedef int (*MessageCallBack)(CPushConsumer *, CMessageExt *);
 
 ROCKETMQCLIENT_API CPushConsumer *CreatePushConsumer(const char *groupId);
 ROCKETMQCLIENT_API int DestroyPushConsumer(CPushConsumer *consumer);
@@ -51,13 +51,14 @@ ROCKETMQCLIENT_API int UnregisterMessageCallback(CPushConsumer *consumer);
 ROCKETMQCLIENT_API int SetPushConsumerThreadCount(CPushConsumer *consumer, int threadCount);
 ROCKETMQCLIENT_API int SetPushConsumerMessageBatchMaxSize(CPushConsumer *consumer, int batchSize);
 ROCKETMQCLIENT_API int SetPushConsumerInstanceName(CPushConsumer *consumer, const char *instanceName);
-ROCKETMQCLIENT_API int SetPushConsumerSessionCredentials(CPushConsumer *consumer, const char *accessKey, const char *secretKey,const char *channel);                    
+ROCKETMQCLIENT_API int SetPushConsumerSessionCredentials(CPushConsumer *consumer, const char *accessKey,
+                                                         const char *secretKey, const char *channel);
 ROCKETMQCLIENT_API int SetPushConsumerLogPath(CPushConsumer *consumer, const char *logPath);
 ROCKETMQCLIENT_API int SetPushConsumerLogFileNumAndSize(CPushConsumer *consumer, int fileNum, long fileSize);
 ROCKETMQCLIENT_API int SetPushConsumerLogLevel(CPushConsumer *consumer, CLogLevel level);
 ROCKETMQCLIENT_API int SetPushConsumerMessageModel(CPushConsumer *consumer, CMessageModel messageModel);
-  
+
 #ifdef __cplusplus
 };
 #endif
-#endif //__C_PUSH_CONSUMER_H__
+#endif  //__C_PUSH_CONSUMER_H__

@@ -22,10 +22,10 @@
 extern "C" {
 #endif
 
-#define MAX_EXEPTION_MSG_LENGTH  512
+#define MAX_EXEPTION_MSG_LENGTH 512
 #define MAX_EXEPTION_FILE_LENGTH 256
 #define MAX_EXEPTION_TYPE_LENGTH 128
-typedef struct _CMQException_{
+typedef struct _CMQException_ {
     int error;
     int line;
     char file[MAX_EXEPTION_FILE_LENGTH];

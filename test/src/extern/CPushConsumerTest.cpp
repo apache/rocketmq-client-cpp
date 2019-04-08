@@ -42,7 +42,7 @@ using rocketmq::MessageModel;
 using rocketmq::SessionCredentials;
 
 class MockDefaultMQPushConsumer : public DefaultMQPushConsumer {
-   public:
+public:
     MockDefaultMQPushConsumer(const string &groupname) : DefaultMQPushConsumer(groupname) {}
 
     MOCK_METHOD0(start, void());
@@ -53,7 +53,7 @@ class MockDefaultMQPushConsumer : public DefaultMQPushConsumer {
 
 TEST(cPushComsumer, infomock) {
     MockDefaultMQPushConsumer *pushComsumer = new MockDefaultMQPushConsumer("testGroup");
-    CPushConsumer *consumer = (CPushConsumer *) pushComsumer;
+    CPushConsumer *consumer = (CPushConsumer *)pushComsumer;
 
     EXPECT_CALL(*pushComsumer, start()).Times(1);
     EXPECT_EQ(StartPushConsumer(consumer), OK);
@@ -71,13 +71,11 @@ TEST(cPushComsumer, infomock) {
     Mock::AllowLeak(pushComsumer);
 }
 
-int MessageCallBackFunc(CPushConsumer* consumer, CMessageExt* msg) {
-    return 0;
-}
+int MessageCallBackFunc(CPushConsumer *consumer, CMessageExt *msg) { return 0; }
 
 TEST(cPushComsumer, info) {
     CPushConsumer *cpushConsumer = CreatePushConsumer("testGroup");
-    DefaultMQPushConsumer *mqPushConsumer = (DefaultMQPushConsumer *) cpushConsumer;
+    DefaultMQPushConsumer *mqPushConsumer = (DefaultMQPushConsumer *)cpushConsumer;
 
     EXPECT_TRUE(cpushConsumer != NULL);
     EXPECT_EQ(string(GetPushConsumerGroupID(cpushConsumer)), "testGroup");

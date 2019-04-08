@@ -31,7 +31,7 @@ CMessage *CreateMessage(const char *topic) {
     if (topic != NULL) {
         mqMessage->setTopic(topic);
     }
-    return (CMessage *) mqMessage;
+    return (CMessage *)mqMessage;
 }
 int DestroyMessage(CMessage *msg) {
     if (msg == NULL) {
@@ -72,17 +72,17 @@ int SetByteMessageBody(CMessage *msg, const char *body, int len) {
     if (msg == NULL) {
         return NULL_POINTER;
     }
-    ((MQMessage *)msg)->setBody(body,len);
+    ((MQMessage *)msg)->setBody(body, len);
     return OK;
 }
 int SetMessageProperty(CMessage *msg, const char *key, const char *value) {
     if (msg == NULL) {
         return NULL_POINTER;
     }
-    ((MQMessage *)msg)->setProperty(key,value);
+    ((MQMessage *)msg)->setProperty(key, value);
     return OK;
 }
-int SetDelayTimeLevel(CMessage *msg, int level){
+int SetDelayTimeLevel(CMessage *msg, int level) {
     if (msg == NULL) {
         return NULL_POINTER;
     }

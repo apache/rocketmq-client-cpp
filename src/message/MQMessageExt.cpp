@@ -33,9 +33,8 @@ MQMessageExt::MQMessageExt()
       m_reconsumeTimes(3),
       m_msgId("") {}
 
-MQMessageExt::MQMessageExt(int queueId, int64 bornTimestamp, sockaddr bornHost,
-                           int64 storeTimestamp, sockaddr storeHost,
-                           string msgId)
+MQMessageExt::MQMessageExt(int queueId, int64 bornTimestamp, sockaddr bornHost, int64 storeTimestamp,
+                           sockaddr storeHost, string msgId)
     : m_queueOffset(0),
       m_commitLogOffset(0),
       m_bornTimestamp(bornTimestamp),
@@ -57,39 +56,25 @@ void MQMessageExt::setQueueId(int queueId) { m_queueId = queueId; }
 
 int64 MQMessageExt::getBornTimestamp() const { return m_bornTimestamp; }
 
-void MQMessageExt::setBornTimestamp(int64 bornTimestamp) {
-  m_bornTimestamp = bornTimestamp;
-}
+void MQMessageExt::setBornTimestamp(int64 bornTimestamp) { m_bornTimestamp = bornTimestamp; }
 
 sockaddr MQMessageExt::getBornHost() const { return m_bornHost; }
 
-string MQMessageExt::getBornHostString() const {
-  return socketAddress2String(m_bornHost);
-}
+string MQMessageExt::getBornHostString() const { return socketAddress2String(m_bornHost); }
 
-string MQMessageExt::getBornHostNameString() const {
-  return getHostName(m_bornHost);
-}
+string MQMessageExt::getBornHostNameString() const { return getHostName(m_bornHost); }
 
-void MQMessageExt::setBornHost(const sockaddr& bornHost) {
-  m_bornHost = bornHost;
-}
+void MQMessageExt::setBornHost(const sockaddr& bornHost) { m_bornHost = bornHost; }
 
 int64 MQMessageExt::getStoreTimestamp() const { return m_storeTimestamp; }
 
-void MQMessageExt::setStoreTimestamp(int64 storeTimestamp) {
-  m_storeTimestamp = storeTimestamp;
-}
+void MQMessageExt::setStoreTimestamp(int64 storeTimestamp) { m_storeTimestamp = storeTimestamp; }
 
 sockaddr MQMessageExt::getStoreHost() const { return m_storeHost; }
 
-string MQMessageExt::getStoreHostString() const {
-  return socketAddress2String(m_storeHost);
-}
+string MQMessageExt::getStoreHostString() const { return socketAddress2String(m_storeHost); }
 
-void MQMessageExt::setStoreHost(const sockaddr& storeHost) {
-  m_storeHost = storeHost;
-}
+void MQMessageExt::setStoreHost(const sockaddr& storeHost) { m_storeHost = storeHost; }
 
 const string& MQMessageExt::getMsgId() const { return m_msgId; }
 
@@ -105,41 +90,31 @@ void MQMessageExt::setBodyCRC(int bodyCRC) { m_bodyCRC = bodyCRC; }
 
 int64 MQMessageExt::getQueueOffset() const { return m_queueOffset; }
 
-void MQMessageExt::setQueueOffset(int64 queueOffset) {
-  m_queueOffset = queueOffset;
-}
+void MQMessageExt::setQueueOffset(int64 queueOffset) { m_queueOffset = queueOffset; }
 
 int64 MQMessageExt::getCommitLogOffset() const { return m_commitLogOffset; }
 
-void MQMessageExt::setCommitLogOffset(int64 physicOffset) {
-  m_commitLogOffset = physicOffset;
-}
+void MQMessageExt::setCommitLogOffset(int64 physicOffset) { m_commitLogOffset = physicOffset; }
 
 int MQMessageExt::getStoreSize() const { return m_storeSize; }
 
 void MQMessageExt::setStoreSize(int storeSize) { m_storeSize = storeSize; }
 
 int MQMessageExt::parseTopicFilterType(int sysFlag) {
-  if ((sysFlag & MessageSysFlag::MultiTagsFlag) ==
-      MessageSysFlag::MultiTagsFlag) {
-    return MULTI_TAG;
-  }
-  return SINGLE_TAG;
+    if ((sysFlag & MessageSysFlag::MultiTagsFlag) == MessageSysFlag::MultiTagsFlag) {
+        return MULTI_TAG;
+    }
+    return SINGLE_TAG;
 }
 
 int MQMessageExt::getReconsumeTimes() const { return m_reconsumeTimes; }
 
-void MQMessageExt::setReconsumeTimes(int reconsumeTimes) {
-  m_reconsumeTimes = reconsumeTimes;
-}
+void MQMessageExt::setReconsumeTimes(int reconsumeTimes) { m_reconsumeTimes = reconsumeTimes; }
 
-int64 MQMessageExt::getPreparedTransactionOffset() const {
-  return m_preparedTransactionOffset;
-}
+int64 MQMessageExt::getPreparedTransactionOffset() const { return m_preparedTransactionOffset; }
 
-void MQMessageExt::setPreparedTransactionOffset(
-    int64 preparedTransactionOffset) {
-  m_preparedTransactionOffset = preparedTransactionOffset;
+void MQMessageExt::setPreparedTransactionOffset(int64 preparedTransactionOffset) {
+    m_preparedTransactionOffset = preparedTransactionOffset;
 }
 
 //<!***************************************************************************

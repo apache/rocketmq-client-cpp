@@ -29,7 +29,7 @@ typedef enum E_CPullStatus {
     E_NO_NEW_MSG,
     E_NO_MATCHED_MSG,
     E_OFFSET_ILLEGAL,
-    E_BROKER_TIMEOUT   //indicate pull request timeout or received NULL response
+    E_BROKER_TIMEOUT  // indicate pull request timeout or received NULL response
 } CPullStatus;
 
 typedef struct _CPullResult_ {
@@ -45,4 +45,4 @@ typedef struct _CPullResult_ {
 #ifdef __cplusplus
 };
 #endif
-#endif //__C_PULL_RESULT_H__
+#endif  //__C_PULL_RESULT_H__

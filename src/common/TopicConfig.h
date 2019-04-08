@@ -23,38 +23,37 @@
 namespace rocketmq {
 //<!************************************************************************
 class TopicConfig {
- public:
-  TopicConfig();
-  TopicConfig(const string& topicName);
-  TopicConfig(const string& topicName, int readQueueNums, int writeQueueNums,
-              int perm);
-  ~TopicConfig();
+public:
+    TopicConfig();
+    TopicConfig(const string& topicName);
+    TopicConfig(const string& topicName, int readQueueNums, int writeQueueNums, int perm);
+    ~TopicConfig();
 
-  string encode();
-  bool decode(const string& in);
-  const string& getTopicName();
-  void setTopicName(const string& topicName);
-  int getReadQueueNums();
-  void setReadQueueNums(int readQueueNums);
-  int getWriteQueueNums();
-  void setWriteQueueNums(int writeQueueNums);
-  int getPerm();
-  void setPerm(int perm);
-  TopicFilterType getTopicFilterType();
-  void setTopicFilterType(TopicFilterType topicFilterType);
+    string encode();
+    bool decode(const string& in);
+    const string& getTopicName();
+    void setTopicName(const string& topicName);
+    int getReadQueueNums();
+    void setReadQueueNums(int readQueueNums);
+    int getWriteQueueNums();
+    void setWriteQueueNums(int writeQueueNums);
+    int getPerm();
+    void setPerm(int perm);
+    TopicFilterType getTopicFilterType();
+    void setTopicFilterType(TopicFilterType topicFilterType);
 
- public:
-  static int DefaultReadQueueNums;
-  static int DefaultWriteQueueNums;
+public:
+    static int DefaultReadQueueNums;
+    static int DefaultWriteQueueNums;
 
- private:
-  static string SEPARATOR;
+private:
+    static string SEPARATOR;
 
-  string m_topicName;
-  int m_readQueueNums;
-  int m_writeQueueNums;
-  int m_perm;
-  TopicFilterType m_topicFilterType;
+    string m_topicName;
+    int m_readQueueNums;
+    int m_writeQueueNums;
+    int m_perm;
+    TopicFilterType m_topicFilterType;
 };
 //<!***************************************************************************
 }  //<!end namespace;

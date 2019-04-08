@@ -44,7 +44,7 @@ using rocketmq::TcpRemotingClient;
 using rocketmq::UtilAll;
 
 class MockAsyncCallbackWrap : public SendCallbackWrap {
-   public:
+public:
     MockAsyncCallbackWrap(AsyncCallback *pAsyncCallback, MQClientAPIImpl *pclientAPI)
         : SendCallbackWrap("", MQMessage(), pAsyncCallback, pclientAPI) {}
 

@@ -23,11 +23,10 @@
 namespace rocketmq {
 //<!***************************************************************************
 class ROCKETMQCLIENT_API MQueueListener {
- public:
-  virtual ~MQueueListener() {}
-  virtual void messageQueueChanged(const std::string& topic,
-                                   std::vector<MQMessageQueue>& mqAll,
-                                   std::vector<MQMessageQueue>& mqDivided) = 0;
+public:
+    virtual ~MQueueListener() {}
+    virtual void messageQueueChanged(const std::string& topic, std::vector<MQMessageQueue>& mqAll,
+                                     std::vector<MQMessageQueue>& mqDivided) = 0;
 };
 //<!***************************************************************************
 }  //<!end namespace;

@@ -23,11 +23,11 @@
 namespace rocketmq {
 //<!***************************************************************************
 class TopicList {
- public:
-  static TopicList* Decode(const MemoryBlock* mem) { return new TopicList(); }
+public:
+    static TopicList* Decode(const MemoryBlock* mem) { return new TopicList(); }
 
- private:
-  vector<string> m_topicList;
+private:
+    vector<string> m_topicList;
 };
 //<!************************************************************************
 }  //<!end namespace;

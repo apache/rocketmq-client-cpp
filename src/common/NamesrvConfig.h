@@ -24,7 +24,7 @@
 namespace rocketmq {
 //<!***************************************************************************
 class NamesrvConfig {
-   public:
+public:
     NamesrvConfig() {
         m_kvConfigPath = "";
 
@@ -44,7 +44,7 @@ class NamesrvConfig {
 
     void setKvConfigPath(const string &kvConfigPath) { m_kvConfigPath = kvConfigPath; }
 
-   private:
+private:
     string m_rocketmqHome;
     string m_kvConfigPath;
 };

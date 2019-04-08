@@ -23,11 +23,10 @@
 extern "C" {
 #endif
 
-//typedef struct _CMessage_ CMessage;
+// typedef struct _CMessage_ CMessage;
 typedef struct CMessage CMessage;
 
-
-ROCKETMQCLIENT_API CMessage *  CreateMessage(const char *topic);
+ROCKETMQCLIENT_API CMessage *CreateMessage(const char *topic);
 ROCKETMQCLIENT_API int DestroyMessage(CMessage *msg);
 ROCKETMQCLIENT_API int SetMessageTopic(CMessage *msg, const char *topic);
 ROCKETMQCLIENT_API int SetMessageTags(CMessage *msg, const char *tags);
@@ -40,4 +39,4 @@ ROCKETMQCLIENT_API int SetDelayTimeLevel(CMessage *msg, int level);
 #ifdef __cplusplus
 };
 #endif
-#endif //__C_MESSAGE_H__
+#endif  //__C_MESSAGE_H__

@@ -22,31 +22,26 @@
 #include "CCommon.h"
 #include "CMessageExt.h"
 
-
-int doConsumeMessage(struct CPushConsumer * consumer, CMessageExt * msgExt)
-{
+int doConsumeMessage(struct CPushConsumer* consumer, CMessageExt* msgExt) {
     printf("Hello,doConsumeMessage by Application!\n");
-    printf("Msg Topic:%s\n",GetMessageTopic(msgExt));
-    printf("Msg Tags:%s\n",GetMessageTags(msgExt));
-    printf("Msg Keys:%s\n",GetMessageKeys(msgExt));
-    printf("Msg Body:%s\n",GetMessageBody(msgExt));
+    printf("Msg Topic:%s\n", GetMessageTopic(msgExt));
+    printf("Msg Tags:%s\n", GetMessageTags(msgExt));
+    printf("Msg Keys:%s\n", GetMessageKeys(msgExt));
+    printf("Msg Body:%s\n", GetMessageBody(msgExt));
     return E_CONSUME_SUCCESS;
 }
 
-
-int main(int argc,char * argv [])
-{
+int main(int argc, char* argv[]) {
     int i = 0;
     printf("PushConsumer Initializing....\n");
     CPushConsumer* consumer = CreatePushConsumer("Group_Consumer_Test");
-    SetPushConsumerNameServerAddress(consumer,"127.0.0.1:9876");
-    Subscribe(consumer,"test","*");
-    RegisterMessageCallbackOrderly(consumer,doConsumeMessage);
+    SetPushConsumerNameServerAddress(consumer, "127.0.0.1:9876");
+    Subscribe(consumer, "test", "*");
+    RegisterMessageCallbackOrderly(consumer, doConsumeMessage);
     StartPushConsumer(consumer);
     printf("Push Consumer Start...\n");
-    for( i=0; i<10; i++)
-    {
-        printf("Now Running : %d S\n",i*10);
+    for (i = 0; i < 10; i++) {
+        printf("Now Running : %d S\n", i * 10);
         sleep(10);
     }
     ShutdownPushConsumer(consumer);

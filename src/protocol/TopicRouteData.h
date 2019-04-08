@@ -54,7 +54,7 @@ struct BrokerData {
 
 //<!************************************************************************/
 class TopicRouteData {
-   public:
+public:
     virtual ~TopicRouteData() {
         m_brokerDatas.clear();
         m_queueDatas.clear();
@@ -152,7 +152,7 @@ class TopicRouteData {
                m_queueDatas == other.m_queueDatas;
     }
 
-   private:
+private:
     std::string m_orderTopicConf;
     std::vector<QueueData> m_queueDatas;
     std::vector<BrokerData> m_brokerDatas;

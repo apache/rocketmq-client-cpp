@@ -33,98 +33,88 @@ namespace rocketmq {
 //<!************************************************************************
 
 class TcpRemotingClient {
- public:
-  TcpRemotingClient(int pullThreadNum, uint64_t tcpConnectTimeout,
-                    uint64_t tcpTransportTryLockTimeout);
-  virtual ~TcpRemotingClient();
-  void stopAllTcpTransportThread();
-  void updateNameServerAddressList(const string& addrs);
+public:
+    TcpRemotingClient(int pullThreadNum, uint64_t tcpConnectTimeout, uint64_t tcpTransportTryLockTimeout);
+    virtual ~TcpRemotingClient();
+    void stopAllTcpTransportThread();
+    void updateNameServerAddressList(const string& addrs);
 
-  //<!delete outsite;
-  RemotingCommand* invokeSync(const string& addr, RemotingCommand& request,
-                              int timeoutMillis = 3000);
+    //<!delete outsite;
+    RemotingCommand* invokeSync(const string& addr, RemotingCommand& request, int timeoutMillis = 3000);
 
-  bool invokeHeartBeat(const string& addr, RemotingCommand& request);
+    bool invokeHeartBeat(const string& addr, RemotingCommand& request);
 
-  bool invokeAsync(const string& addr, RemotingCommand& request, AsyncCallbackWrap* cbw, 
-                   int64 timeoutMilliseconds, int maxRetrySendTimes=1, int retrySendTimes=1);
-  void invokeOneway(const string& addr, RemotingCommand& request);
-  
-  void ProcessData(const MemoryBlock& mem, const string& addr);
+    bool invokeAsync(const string& addr, RemotingCommand& request, AsyncCallbackWrap* cbw, int64 timeoutMilliseconds,
+                     int maxRetrySendTimes = 1, int retrySendTimes = 1);
+    void invokeOneway(const string& addr, RemotingCommand& request);
 
-  void registerProcessor(MQRequestCode requestCode,
-                         ClientRemotingProcessor* clientRemotingProcessor);
+    void ProcessData(const MemoryBlock& mem, const string& addr);
 
-  void boost_asio_work();
-  void handleAsyncPullForResponseTimeout(const boost::system::error_code& e,
-                                         int opaque);
-  void deleteOpaqueForDropPullRequest(const MQMessageQueue& mq, int opaque);
+    void registerProcessor(MQRequestCode requestCode, ClientRemotingProcessor* clientRemotingProcessor);
 
- private:
-  static void static_messageReceived(void* context, const MemoryBlock& mem,
-                                     const string& addr);
-  void messageReceived(const MemoryBlock& mem, const string& addr);
-  boost::shared_ptr<TcpTransport> GetTransport(const string& addr,
-                                               bool needRespons);
-  boost::shared_ptr<TcpTransport> CreateTransport(const string& addr,
-                                                  bool needRespons);
-  boost::shared_ptr<TcpTransport> CreateNameserverTransport(bool needRespons);
-  void CloseTransport(const string& addr, boost::shared_ptr<TcpTransport> pTcp);
-  void CloseNameServerTransport(boost::shared_ptr<TcpTransport> pTcp);
-  bool SendCommand(boost::shared_ptr<TcpTransport> pTts, RemotingCommand& msg);
-  void processRequestCommand(RemotingCommand* pCmd, const string& addr);
-  void processResponseCommand(RemotingCommand* pCmd,
-                              boost::shared_ptr<ResponseFuture> pfuture);
+    void boost_asio_work();
+    void handleAsyncPullForResponseTimeout(const boost::system::error_code& e, int opaque);
+    void deleteOpaqueForDropPullRequest(const MQMessageQueue& mq, int opaque);
 
-  void addResponseFuture(int opaque, boost::shared_ptr<ResponseFuture> pfuture);
-  boost::shared_ptr<ResponseFuture> findAndDeleteResponseFuture(int opaque);
+private:
+    static void static_messageReceived(void* context, const MemoryBlock& mem, const string& addr);
+    void messageReceived(const MemoryBlock& mem, const string& addr);
+    boost::shared_ptr<TcpTransport> GetTransport(const string& addr, bool needRespons);
+    boost::shared_ptr<TcpTransport> CreateTransport(const string& addr, bool needRespons);
+    boost::shared_ptr<TcpTransport> CreateNameserverTransport(bool needRespons);
+    void CloseTransport(const string& addr, boost::shared_ptr<TcpTransport> pTcp);
+    void CloseNameServerTransport(boost::shared_ptr<TcpTransport> pTcp);
+    bool SendCommand(boost::shared_ptr<TcpTransport> pTts, RemotingCommand& msg);
+    void processRequestCommand(RemotingCommand* pCmd, const string& addr);
+    void processResponseCommand(RemotingCommand* pCmd, boost::shared_ptr<ResponseFuture> pfuture);
 
-  void addAsyncResponseFuture(int opaque,
-                              boost::shared_ptr<ResponseFuture> pfuture);
-  boost::shared_ptr<ResponseFuture> findAndDeleteAsyncResponseFuture(
-      int opaque);
+    void addResponseFuture(int opaque, boost::shared_ptr<ResponseFuture> pfuture);
+    boost::shared_ptr<ResponseFuture> findAndDeleteResponseFuture(int opaque);
 
-  void addTimerCallback(boost::asio::deadline_timer* t, int opaque);
-  void eraseTimerCallback(int opaque);
-  void cancelTimerCallback(int opaque);
-  void removeAllTimerCallback();
+    void addAsyncResponseFuture(int opaque, boost::shared_ptr<ResponseFuture> pfuture);
+    boost::shared_ptr<ResponseFuture> findAndDeleteAsyncResponseFuture(int opaque);
 
- private:
-  typedef map<string, boost::shared_ptr<TcpTransport>> TcpMap;
-  typedef map<int, boost::shared_ptr<ResponseFuture>> ResMap;
+    void addTimerCallback(boost::asio::deadline_timer* t, int opaque);
+    void eraseTimerCallback(int opaque);
+    void cancelTimerCallback(int opaque);
+    void removeAllTimerCallback();
 
-  typedef map<int, ClientRemotingProcessor*> RequestMap;
-  RequestMap m_requestTable;
+private:
+    typedef map<string, boost::shared_ptr<TcpTransport>> TcpMap;
+    typedef map<int, boost::shared_ptr<ResponseFuture>> ResMap;
 
-  boost::mutex m_futureTableMutex;
-  ResMap m_futureTable;  //<! id->future;
+    typedef map<int, ClientRemotingProcessor*> RequestMap;
+    RequestMap m_requestTable;
 
-  ResMap m_asyncFutureTable;
-  boost::mutex m_asyncFutureLock;
+    boost::mutex m_futureTableMutex;
+    ResMap m_futureTable;  //<! id->future;
 
-  TcpMap m_tcpTable;  //<! ip->tcp;
-  boost::timed_mutex m_tcpLock;
+    ResMap m_asyncFutureTable;
+    boost::mutex m_asyncFutureLock;
 
-  // ThreadPool        m_threadpool;
-  int m_pullThreadNum;
-  uint64_t m_tcpConnectTimeout;           // ms
-  uint64_t m_tcpTransportTryLockTimeout;  // s
+    TcpMap m_tcpTable;  //<! ip->tcp;
+    boost::timed_mutex m_tcpLock;
 
-  //<! Nameserver
-  boost::timed_mutex m_namesrvlock;
-  vector<string> m_namesrvAddrList;
-  string m_namesrvAddrChoosed;
-  unsigned int m_namesrvIndex;
-  boost::asio::io_service m_ioService;
-  boost::thread_group m_threadpool;
-  boost::asio::io_service::work m_ioServiceWork;
+    // ThreadPool        m_threadpool;
+    int m_pullThreadNum;
+    uint64_t m_tcpConnectTimeout;           // ms
+    uint64_t m_tcpTransportTryLockTimeout;  // s
 
-  boost::asio::io_service m_async_ioService;
-  unique_ptr<boost::thread> m_async_service_thread;
+    //<! Nameserver
+    boost::timed_mutex m_namesrvlock;
+    vector<string> m_namesrvAddrList;
+    string m_namesrvAddrChoosed;
+    unsigned int m_namesrvIndex;
+    boost::asio::io_service m_ioService;
+    boost::thread_group m_threadpool;
+    boost::asio::io_service::work m_ioServiceWork;
 
-  typedef map<int, boost::asio::deadline_timer*> asyncTimerMap;
-  boost::mutex m_timerMapMutex;
-  asyncTimerMap m_async_timer_map;
+    boost::asio::io_service m_async_ioService;
+    unique_ptr<boost::thread> m_async_service_thread;
+
+    typedef map<int, boost::asio::deadline_timer*> asyncTimerMap;
+    boost::mutex m_timerMapMutex;
+    asyncTimerMap m_async_timer_map;
 };
 
 //<!************************************************************************

@@ -21,9 +21,9 @@
 namespace rocketmq {
 //<!***************************************************************************
 class RemotingSerializable {
- public:
-  virtual ~RemotingSerializable(){};
-  virtual void Encode(std::string& outData) = 0;
+public:
+    virtual ~RemotingSerializable() {};
+    virtual void Encode(std::string& outData) = 0;
 };
 
 //<!************************************************************************

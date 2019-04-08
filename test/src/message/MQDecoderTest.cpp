@@ -56,7 +56,7 @@ TEST(decoders, messageId) {
     int host;
     int port;
     string msgIdStr =
-        MQDecoder::createMessageId(rocketmq::IPPort2socketAddress(inet_addr("127.0.0.1"), 10091), (int64) 1024);
+        MQDecoder::createMessageId(rocketmq::IPPort2socketAddress(inet_addr("127.0.0.1"), 10091), (int64)1024);
     MQMessageId msgId = MQDecoder::decodeMessageId(msgIdStr);
 
     EXPECT_EQ(msgId.getOffset(), 1024);
@@ -87,23 +87,23 @@ TEST(decoder, decoder) {
     memoryOut->writeIntBigEndian(4);
     mext.setFlag(4);
     // 6 QUEUEOFFSET  28 = 20+8
-    memoryOut->writeInt64BigEndian((int64) 1024);
+    memoryOut->writeInt64BigEndian((int64)1024);
     mext.setQueueOffset(1024);
     // 7 PHYSICALOFFSET 36=28+8
-    memoryOut->writeInt64BigEndian((int64) 2048);
+    memoryOut->writeInt64BigEndian((int64)2048);
     mext.setCommitLogOffset(2048);
     // 8 SYSFLAG  40=36+4
     memoryOut->writeIntBigEndian(0);
     mext.setSysFlag(0);
     // 9 BORNTIMESTAMP 48 = 40+8
-    memoryOut->writeInt64BigEndian((int64) 4096);
+    memoryOut->writeInt64BigEndian((int64)4096);
     mext.setBornTimestamp(4096);
     // 10 BORNHOST 56= 48+8
     memoryOut->writeIntBigEndian(inet_addr("127.0.0.1"));
     memoryOut->writeIntBigEndian(10091);
     mext.setBornHost(rocketmq::IPPort2socketAddress(inet_addr("127.0.0.1"), 10091));
     // 11 STORETIMESTAMP 64 =56+8
-    memoryOut->writeInt64BigEndian((int64) 4096);
+    memoryOut->writeInt64BigEndian((int64)4096);
     mext.setStoreTimestamp(4096);
     // 12 STOREHOST 72 = 64+8
     memoryOut->writeIntBigEndian(inet_addr("127.0.0.2"));
@@ -113,7 +113,7 @@ TEST(decoder, decoder) {
     mext.setReconsumeTimes(111111);
     memoryOut->writeIntBigEndian(mext.getReconsumeTimes());
     // 14 Prepared Transaction Offset 84 = 76+8
-    memoryOut->writeInt64BigEndian((int64) 12);
+    memoryOut->writeInt64BigEndian((int64)12);
     mext.setPreparedTransactionOffset(12);
     // 15 BODY 88 = 84+4   10
     string *body = new string("1234567890");
@@ -129,7 +129,7 @@ TEST(decoder, decoder) {
     // 17 PROPERTIES
     memoryOut->writeShortBigEndian(0);
 
-    mext.setMsgId(MQDecoder::createMessageId(mext.getStoreHost(), (int64) mext.getCommitLogOffset()));
+    mext.setMsgId(MQDecoder::createMessageId(mext.getStoreHost(), (int64)mext.getCommitLogOffset()));
 
     vector<MQMessageExt> mqvec;
     MemoryBlock block = memoryOut->getMemoryBlock();

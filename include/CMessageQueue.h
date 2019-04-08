@@ -25,12 +25,12 @@ extern "C" {
 #endif
 
 typedef struct _CMessageQueue_ {
-    char      topic[MAX_TOPIC_LENGTH];
-    char      brokerName[MAX_BROKER_NAME_ID_LENGTH];
-    int       queueId;
+    char topic[MAX_TOPIC_LENGTH];
+    char brokerName[MAX_BROKER_NAME_ID_LENGTH];
+    int queueId;
 } CMessageQueue;
 
 #ifdef __cplusplus
 };
 #endif
-#endif //__C_MESSAGE_H__
+#endif  //__C_MESSAGE_H__

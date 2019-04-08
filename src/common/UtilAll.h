@@ -77,8 +77,8 @@ const string null = "";
 
 template <typename Type>
 inline void deleteAndZero(Type &pointer) {
-  delete pointer;
-  pointer = NULL;
+    delete pointer;
+    pointer = NULL;
 }
 #define EMPTY_STR_PTR(ptr) (ptr == NULL || ptr[0] == '\0')
 #ifdef WIN32
@@ -89,56 +89,54 @@ inline void deleteAndZero(Type &pointer) {
 
 //<!************************************************************************
 class UtilAll {
- public:
-  static bool startsWith_retry(const string &topic);
-  static string getRetryTopic(const string &consumerGroup);
+public:
+    static bool startsWith_retry(const string &topic);
+    static string getRetryTopic(const string &consumerGroup);
 
-  static void Trim(string &str);
-  static bool isBlank(const string &str);
-  static uint64 hexstr2ull(const char *str);
-  static int64 str2ll(const char *str);
-  static string bytes2string(const char *bytes, int len);
+    static void Trim(string &str);
+    static bool isBlank(const string &str);
+    static uint64 hexstr2ull(const char *str);
+    static int64 str2ll(const char *str);
+    static string bytes2string(const char *bytes, int len);
 
-  template <typename T>
-  static string to_string(const T &n) {
-    std::ostringstream stm;
-    stm << n;
-    return stm.str();
-  }
+    template <typename T>
+    static string to_string(const T &n) {
+        std::ostringstream stm;
+        stm << n;
+        return stm.str();
+    }
 
-  static bool to_bool(std::string const &s) { return atoi(s.c_str()); }
+    static bool to_bool(std::string const &s) { return atoi(s.c_str()); }
 
-  static bool SplitURL(const string &serverURL, string &addr, short &nPort);
-  static int Split(vector<string> &ret_, const string &strIn, const char sep);
-  static int Split(vector<string> &ret_, const string &strIn,
-                   const string &sep);
+    static bool SplitURL(const string &serverURL, string &addr, short &nPort);
+    static int Split(vector<string> &ret_, const string &strIn, const char sep);
+    static int Split(vector<string> &ret_, const string &strIn, const string &sep);
 
-  static int32_t StringToInt32(const std::string &str, int32_t &out);
-  static int64_t StringToInt64(const std::string &str, int64_t &val);
+    static int32_t StringToInt32(const std::string &str, int32_t &out);
+    static int64_t StringToInt64(const std::string &str, int64_t &val);
 
-  static string getLocalHostName();
-  static string getLocalAddress();
-  static string getHomeDirectory();
+    static string getLocalHostName();
+    static string getLocalAddress();
+    static string getHomeDirectory();
 
-  static string getProcessName();
+    static string getProcessName();
 
-  static uint64_t currentTimeMillis();
-  static uint64_t currentTimeSeconds();
+    static uint64_t currentTimeMillis();
+    static uint64_t currentTimeSeconds();
 
-  static bool deflate(std::string &input, std::string &out, int level);
-  static bool inflate(std::string &input, std::string &out);
-  // Renames file |from_path| to |to_path|. Both paths must be on the same
-  // volume, or the function will fail. Destination file will be created
-  // if it doesn't exist. Prefer this function over Move when dealing with
-  // temporary files. On Windows it preserves attributes of the target file.
-  // Returns true on success.
-  // Returns false on failure..
-  static bool ReplaceFile(const std::string &from_path,
-                          const std::string &to_path);
+    static bool deflate(std::string &input, std::string &out, int level);
+    static bool inflate(std::string &input, std::string &out);
+    // Renames file |from_path| to |to_path|. Both paths must be on the same
+    // volume, or the function will fail. Destination file will be created
+    // if it doesn't exist. Prefer this function over Move when dealing with
+    // temporary files. On Windows it preserves attributes of the target file.
+    // Returns true on success.
+    // Returns false on failure..
+    static bool ReplaceFile(const std::string &from_path, const std::string &to_path);
 
- private:
-  static std::string s_localHostName;
-  static std::string s_localIpAddress;
+private:
+    static std::string s_localHostName;
+    static std::string s_localIpAddress;
 };
 //<!***************************************************************************
 }  //<!end namespace;

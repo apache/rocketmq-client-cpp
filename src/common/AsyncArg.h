@@ -26,10 +26,10 @@ namespace rocketmq {
 //<!***************************************************************************
 
 struct AsyncArg {
-  MQMessageQueue mq;
-  SubscriptionData subData;
-  PullAPIWrapper* pPullWrapper;
-  PullRequest* pPullRequest;
+    MQMessageQueue mq;
+    SubscriptionData subData;
+    PullAPIWrapper* pPullWrapper;
+    PullRequest* pPullRequest;
 };
 
 //<!***************************************************************************

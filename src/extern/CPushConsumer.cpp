@@ -36,15 +36,14 @@ public:
     ~MessageListenerInner() {}
 
     ConsumeStatus consumeMessage(const std::vector<MQMessageExt> &msgs) {
-        //to do user call back
+        // to do user call back
         if (m_pMsgReceiveCallback == NULL) {
             return RECONSUME_LATER;
         }
         for (size_t i = 0; i < msgs.size(); ++i) {
             MQMessageExt *msg = const_cast<MQMessageExt *>(&msgs[i]);
-            CMessageExt *message = (CMessageExt *) (msg);
-            if (m_pMsgReceiveCallback(m_pconsumer, message) != E_CONSUME_SUCCESS)
-                return RECONSUME_LATER;
+            CMessageExt *message = (CMessageExt *)(msg);
+            if (m_pMsgReceiveCallback(m_pconsumer, message) != E_CONSUME_SUCCESS) return RECONSUME_LATER;
         }
         return CONSUME_SUCCESS;
     }
@@ -67,9 +66,8 @@ public:
         }
         for (size_t i = 0; i < msgs.size(); ++i) {
             MQMessageExt *msg = const_cast<MQMessageExt *>(&msgs[i]);
-            CMessageExt *message = (CMessageExt *) (msg);
-            if (m_pMsgReceiveCallback(m_pconsumer, message) != E_CONSUME_SUCCESS)
-                return RECONSUME_LATER;
+            CMessageExt *message = (CMessageExt *)(msg);
+            if (m_pMsgReceiveCallback(m_pconsumer, message) != E_CONSUME_SUCCESS) return RECONSUME_LATER;
         }
         return CONSUME_SUCCESS;
     }
@@ -85,20 +83,19 @@ map<CPushConsumer *, MessageListenerOrderlyInner *> g_OrderListenerMap;
 extern "C" {
 #endif
 
-
 CPushConsumer *CreatePushConsumer(const char *groupId) {
     if (groupId == NULL) {
         return NULL;
     }
     DefaultMQPushConsumer *defaultMQPushConsumer = new DefaultMQPushConsumer(groupId);
     defaultMQPushConsumer->setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
-    return (CPushConsumer *) defaultMQPushConsumer;
+    return (CPushConsumer *)defaultMQPushConsumer;
 }
 int DestroyPushConsumer(CPushConsumer *consumer) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }
-    delete reinterpret_cast<DefaultMQPushConsumer * >(consumer);
+    delete reinterpret_cast<DefaultMQPushConsumer *>(consumer);
     return OK;
 }
 int StartPushConsumer(CPushConsumer *consumer) {
@@ -106,8 +103,9 @@ int StartPushConsumer(CPushConsumer *consumer) {
         return NULL_POINTER;
     }
     try {
-        ((DefaultMQPushConsumer *) consumer)->start();
-    } catch (exception &e) {
+        ((DefaultMQPushConsumer *)consumer)->start();
+    }
+    catch (exception &e) {
         return PUSHCONSUMER_START_FAILED;
     }
     return OK;
@@ -116,41 +114,41 @@ int ShutdownPushConsumer(CPushConsumer *consumer) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }
-    ((DefaultMQPushConsumer *) consumer)->shutdown();
+    ((DefaultMQPushConsumer *)consumer)->shutdown();
     return OK;
 }
 int SetPushConsumerGroupID(CPushConsumer *consumer, const char *groupId) {
     if (consumer == NULL || groupId == NULL) {
         return NULL_POINTER;
     }
-    ((DefaultMQPushConsumer *) consumer)->setGroupName(groupId);
+    ((DefaultMQPushConsumer *)consumer)->setGroupName(groupId);
     return OK;
 }
 const char *GetPushConsumerGroupID(CPushConsumer *consumer) {
     if (consumer == NULL) {
         return NULL;
     }
-    return ((DefaultMQPushConsumer *) consumer)->getGroupName().c_str();
+    return ((DefaultMQPushConsumer *)consumer)->getGroupName().c_str();
 }
 int SetPushConsumerNameServerAddress(CPushConsumer *consumer, const char *namesrv) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }
-    ((DefaultMQPushConsumer *) consumer)->setNamesrvAddr(namesrv);
+    ((DefaultMQPushConsumer *)consumer)->setNamesrvAddr(namesrv);
     return OK;
 }
 int SetPushConsumerNameServerDomain(CPushConsumer *consumer, const char *domain) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }
-    ((DefaultMQPushConsumer *) consumer)->setNamesrvDomain(domain);
+    ((DefaultMQPushConsumer *)consumer)->setNamesrvDomain(domain);
     return OK;
 }
 int Subscribe(CPushConsumer *consumer, const char *topic, const char *expression) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }
-    ((DefaultMQPushConsumer *) consumer)->subscribe(topic, expression);
+    ((DefaultMQPushConsumer *)consumer)->subscribe(topic, expression);
     return OK;
 }
 
@@ -159,7 +157,7 @@ int RegisterMessageCallback(CPushConsumer *consumer, MessageCallBack pCallback) 
         return NULL_POINTER;
     }
     MessageListenerInner *listenerInner = new MessageListenerInner(consumer, pCallback);
-    ((DefaultMQPushConsumer *) consumer)->registerMessageListener(listenerInner);
+    ((DefaultMQPushConsumer *)consumer)->registerMessageListener(listenerInner);
     g_ListenerMap[consumer] = listenerInner;
     return OK;
 }
@@ -169,11 +167,10 @@ int RegisterMessageCallbackOrderly(CPushConsumer *consumer, MessageCallBack pCal
         return NULL_POINTER;
     }
     MessageListenerOrderlyInner *messageListenerOrderlyInner = new MessageListenerOrderlyInner(consumer, pCallback);
-    ((DefaultMQPushConsumer *) consumer)->registerMessageListener(messageListenerOrderlyInner);
+    ((DefaultMQPushConsumer *)consumer)->registerMessageListener(messageListenerOrderlyInner);
     g_OrderListenerMap[consumer] = messageListenerOrderlyInner;
     return OK;
 }
-
 
 int UnregisterMessageCallbackOrderly(CPushConsumer *consumer) {
     if (consumer == NULL) {
@@ -212,21 +209,21 @@ int SetPushConsumerMessageModel(CPushConsumer *consumer, CMessageModel messageMo
     if (consumer == NULL) {
         return NULL_POINTER;
     }
-    ((DefaultMQPushConsumer *) consumer)->setMessageModel(MessageModel((int) messageModel));
+    ((DefaultMQPushConsumer *)consumer)->setMessageModel(MessageModel((int)messageModel));
     return OK;
 }
 int SetPushConsumerThreadCount(CPushConsumer *consumer, int threadCount) {
     if (consumer == NULL || threadCount == 0) {
         return NULL_POINTER;
     }
-    ((DefaultMQPushConsumer *) consumer)->setConsumeThreadCount(threadCount);
+    ((DefaultMQPushConsumer *)consumer)->setConsumeThreadCount(threadCount);
     return OK;
 }
 int SetPushConsumerMessageBatchMaxSize(CPushConsumer *consumer, int batchSize) {
     if (consumer == NULL || batchSize == 0) {
         return NULL_POINTER;
     }
-    ((DefaultMQPushConsumer *) consumer)->setConsumeMessageBatchMaxSize(batchSize);
+    ((DefaultMQPushConsumer *)consumer)->setConsumeMessageBatchMaxSize(batchSize);
     return OK;
 }
 
@@ -234,7 +231,7 @@ int SetPushConsumerInstanceName(CPushConsumer *consumer, const char *instanceNam
     if (consumer == NULL) {
         return NULL_POINTER;
     }
-    ((DefaultMQPushConsumer *) consumer)->setInstanceName(instanceName);
+    ((DefaultMQPushConsumer *)consumer)->setInstanceName(instanceName);
     return OK;
 }
 
@@ -243,7 +240,7 @@ int SetPushConsumerSessionCredentials(CPushConsumer *consumer, const char *acces
     if (consumer == NULL) {
         return NULL_POINTER;
     }
-    ((DefaultMQPushConsumer *) consumer)->setSessionCredentials(accessKey, secretKey, channel);
+    ((DefaultMQPushConsumer *)consumer)->setSessionCredentials(accessKey, secretKey, channel);
     return OK;
 }
 
@@ -251,7 +248,7 @@ int SetPushConsumerLogPath(CPushConsumer *consumer, const char *logPath) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }
-    //Todo, This api should be implemented by core api.
+    // Todo, This api should be implemented by core api.
     //((DefaultMQPushConsumer *) consumer)->setInstanceName(instanceName);
     return OK;
 }
@@ -260,7 +257,7 @@ int SetPushConsumerLogFileNumAndSize(CPushConsumer *consumer, int fileNum, long 
     if (consumer == NULL) {
         return NULL_POINTER;
     }
-    ((DefaultMQPushConsumer *) consumer)->setLogFileSizeAndNum(fileNum, fileSize);
+    ((DefaultMQPushConsumer *)consumer)->setLogFileSizeAndNum(fileNum, fileSize);
     return OK;
 }
 
@@ -268,7 +265,7 @@ int SetPushConsumerLogLevel(CPushConsumer *consumer, CLogLevel level) {
     if (consumer == NULL) {
         return NULL_POINTER;
     }
-    ((DefaultMQPushConsumer *) consumer)->setLogLevel((elogLevel) level);
+    ((DefaultMQPushConsumer *)consumer)->setLogLevel((elogLevel)level);
     return OK;
 }
 

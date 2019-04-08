@@ -35,17 +35,15 @@ void thread_sleep(unsigned milliseconds) {
 #endif
 }
 
-void SendSuccessCallback(CSendResult result){
-    printf("async send success, msgid:%s\n", result.msgId);
-}
+void SendSuccessCallback(CSendResult result) { printf("async send success, msgid:%s\n", result.msgId); }
 
-void SendExceptionCallback(CMQException e){
+void SendExceptionCallback(CMQException e) {
     char msg[1024];
     snprintf(msg, sizeof(msg), "error:%d, msg:%s, file:%s:%d", e.error, e.msg, e.file, e.line);
     printf("async send exception %s\n", msg);
 }
 
-int aQueueSelectorCallback(int size, CMessage *msg, void *arg){
+int aQueueSelectorCallback(int size, CMessage *msg, void *arg) {
     return 0;
 };
 
@@ -60,22 +58,20 @@ void StartSendMessage(CProducer *producer) {
         memset(body, 0, sizeof(body));
         snprintf(body, sizeof(body), "new message body, index %d", i);
         SetMessageBody(msg, body);
-        ret_code = SendMessageOrderlyAsync(producer, msg,
-        aQueueSelectorCallback,
-        (void*)&i,
-         SendSuccessCallback , SendExceptionCallback);
+        ret_code = SendMessageOrderlyAsync(producer, msg, aQueueSelectorCallback, (void *)&i, SendSuccessCallback,
+                                           SendExceptionCallback);
         printf("async send message[%d] return code: %d\n", i, ret_code);
         thread_sleep(1000);
     }
     DestroyMessage(msg);
 }
 
-void CreateProducerAndStartSendMessage(int i){
+void CreateProducerAndStartSendMessage(int i) {
     printf("Producer Initializing.....\n");
     CProducer *producer = CreateProducer("FooBarGroup1");
     SetProducerNameServerAddress(producer, "192.168.0.149:9876");
-    if(i == 1){
-        SetProducerSendMsgTimeout(producer , 3);
+    if (i == 1) {
+        SetProducerSendMsgTimeout(producer, 3);
     }
     StartProducer(producer);
     printf("Producer start.....\n");
@@ -93,4 +89,3 @@ int main(int argc, char *argv[]) {
     CreateProducerAndStartSendMessage(1);
     return 0;
 }
-

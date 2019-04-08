@@ -27,37 +27,36 @@ namespace rocketmq {
 //<!* MQ(T,B,ID);
 //<!************************************************************************/
 class ROCKETMQCLIENT_API MQMessageQueue {
- public:
-  MQMessageQueue();
-  MQMessageQueue(const std::string& topic, const std::string& brokerName, int queueId);
-  MQMessageQueue(const MQMessageQueue& other);
-  MQMessageQueue& operator=(const MQMessageQueue& other);
+public:
+    MQMessageQueue();
+    MQMessageQueue(const std::string& topic, const std::string& brokerName, int queueId);
+    MQMessageQueue(const MQMessageQueue& other);
+    MQMessageQueue& operator=(const MQMessageQueue& other);
 
-  std::string getTopic() const;
-  void setTopic(const std::string& topic);
+    std::string getTopic() const;
+    void setTopic(const std::string& topic);
 
-  std::string getBrokerName() const;
-  void setBrokerName(const std::string& brokerName);
+    std::string getBrokerName() const;
+    void setBrokerName(const std::string& brokerName);
 
-  int getQueueId() const;
-  void setQueueId(int queueId);
+    int getQueueId() const;
+    void setQueueId(int queueId);
 
-  bool operator==(const MQMessageQueue& mq) const;
-  bool operator<(const MQMessageQueue& mq) const;
-  int compareTo(const MQMessageQueue& mq) const;
+    bool operator==(const MQMessageQueue& mq) const;
+    bool operator<(const MQMessageQueue& mq) const;
+    int compareTo(const MQMessageQueue& mq) const;
 
-  const std::string toString() const {
-    std::stringstream ss;
-    ss << "MessageQueue [topic=" << m_topic << ", brokerName=" << m_brokerName
-       << ", queueId=" << m_queueId << "]";
+    const std::string toString() const {
+        std::stringstream ss;
+        ss << "MessageQueue [topic=" << m_topic << ", brokerName=" << m_brokerName << ", queueId=" << m_queueId << "]";
 
-    return ss.str();
-  }
+        return ss.str();
+    }
 
- private:
-  std::string m_topic;
-  std::string m_brokerName;
-  int m_queueId;
+private:
+    std::string m_topic;
+    std::string m_brokerName;
+    int m_queueId;
 };
 //<!***************************************************************************
 }  //<!end namespace;

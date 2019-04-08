@@ -54,69 +54,62 @@ static const string EMPTY_STRING = "";
 //<!************************************************************************
 MQMessage::MQMessage() { Init("", "", "", 0, "", true); }
 
-MQMessage::MQMessage(const string& topic, const string& body) {
-  Init(topic, "", "", 0, body, true);
+MQMessage::MQMessage(const string& topic, const string& body) { Init(topic, "", "", 0, body, true); }
+
+MQMessage::MQMessage(const string& topic, const string& tags, const string& body) {
+    Init(topic, tags, "", 0, body, true);
 }
 
-MQMessage::MQMessage(const string& topic, const string& tags,
-                     const string& body) {
-  Init(topic, tags, "", 0, body, true);
+MQMessage::MQMessage(const string& topic, const string& tags, const string& keys, const string& body) {
+    Init(topic, tags, keys, 0, body, true);
 }
 
-MQMessage::MQMessage(const string& topic, const string& tags,
-                     const string& keys, const string& body) {
-  Init(topic, tags, keys, 0, body, true);
-}
-
-MQMessage::MQMessage(const string& topic, const string& tags,
-                     const string& keys, const int flag, const string& body,
+MQMessage::MQMessage(const string& topic, const string& tags, const string& keys, const int flag, const string& body,
                      bool waitStoreMsgOK) {
-  Init(topic, tags, keys, flag, body, waitStoreMsgOK);
+    Init(topic, tags, keys, flag, body, waitStoreMsgOK);
 }
 
 MQMessage::~MQMessage() { m_properties.clear(); }
 
 MQMessage::MQMessage(const MQMessage& other) {
-  m_body = other.m_body;
-  m_topic = other.m_topic;
-  m_flag = other.m_flag;
-  m_sysFlag = other.m_sysFlag;
-  m_properties = other.m_properties;
-}
-
-MQMessage& MQMessage::operator=(const MQMessage& other) {
-  if (this != &other) {
     m_body = other.m_body;
     m_topic = other.m_topic;
     m_flag = other.m_flag;
     m_sysFlag = other.m_sysFlag;
     m_properties = other.m_properties;
-  }
-  return *this;
+}
+
+MQMessage& MQMessage::operator=(const MQMessage& other) {
+    if (this != &other) {
+        m_body = other.m_body;
+        m_topic = other.m_topic;
+        m_flag = other.m_flag;
+        m_sysFlag = other.m_sysFlag;
+        m_properties = other.m_properties;
+    }
+    return *this;
 }
 
 void MQMessage::setProperty(const string& name, const string& value) {
-  if (PROPERTY_TRANSACTION_PREPARED == name) {
-    if (!value.empty() && value == "true") {
-      m_sysFlag |= MessageSysFlag::TransactionPreparedType;
-    } else {
-      m_sysFlag &= ~MessageSysFlag::TransactionPreparedType;
+    if (PROPERTY_TRANSACTION_PREPARED == name) {
+        if (!value.empty() && value == "true") {
+            m_sysFlag |= MessageSysFlag::TransactionPreparedType;
+        } else {
+            m_sysFlag &= ~MessageSysFlag::TransactionPreparedType;
+        }
     }
-  }
-  m_properties[name] = value;
+    m_properties[name] = value;
 }
 
-void MQMessage::setPropertyInternal(const string& name, const string& value) {
-  m_properties[name] = value;
-}
+void MQMessage::setPropertyInternal(const string& name, const string& value) { m_properties[name] = value; }
 
-const string & MQMessage::getProperty(const string& name) const {
-  map<string, string>::const_iterator it = m_properties.find(name);
-  if (it == m_properties.end()) {
-    return EMPTY_STRING;
-  } else {
-    return it->second;
-  }
+const string& MQMessage::getProperty(const string& name) const {
+    map<string, string>::const_iterator it = m_properties.find(name);
+    if (it == m_properties.end()) {
+        return EMPTY_STRING;
+    } else {
+        return it->second;
+    }
 }
 
 const string& MQMessage::getTopic() const { return m_topic; }
@@ -124,70 +117,66 @@ const string& MQMessage::getTopic() const { return m_topic; }
 void MQMessage::setTopic(const string& topic) { m_topic = topic; }
 
 void MQMessage::setTopic(const char* body, int len) {
-  m_topic.clear();
-  m_topic.append(body, len);
+    m_topic.clear();
+    m_topic.append(body, len);
 }
 
 const string& MQMessage::getTags() const { return getProperty(PROPERTY_TAGS); }
 
-void MQMessage::setTags(const string& tags) {
-  setPropertyInternal(PROPERTY_TAGS, tags);
-}
+void MQMessage::setTags(const string& tags) { setPropertyInternal(PROPERTY_TAGS, tags); }
 
 const string& MQMessage::getKeys() const { return getProperty(PROPERTY_KEYS); }
 
-void MQMessage::setKeys(const string& keys) {
-  setPropertyInternal(PROPERTY_KEYS, keys);
-}
+void MQMessage::setKeys(const string& keys) { setPropertyInternal(PROPERTY_KEYS, keys); }
 
 void MQMessage::setKeys(const vector<string>& keys) {
-  if (keys.empty()) {
-    return;
-  }
+    if (keys.empty()) {
+        return;
+    }
 
-  vector<string>::const_iterator it = keys.begin();
-  string str;
-  str += *it;
-  it++;
-
-  for (; it != keys.end(); it++) {
-    str += KEY_SEPARATOR;
+    vector<string>::const_iterator it = keys.begin();
+    string str;
     str += *it;
-  }
+    it++;
 
-  setKeys(str);
+    for (; it != keys.end(); it++) {
+        str += KEY_SEPARATOR;
+        str += *it;
+    }
+
+    setKeys(str);
 }
 
 int MQMessage::getDelayTimeLevel() const {
-  string tmp = getProperty(PROPERTY_DELAY_TIME_LEVEL);
-  if (!tmp.empty()) {
-    return atoi(tmp.c_str());
-  }
-  return 0;
+    string tmp = getProperty(PROPERTY_DELAY_TIME_LEVEL);
+    if (!tmp.empty()) {
+        return atoi(tmp.c_str());
+    }
+    return 0;
 }
 
 void MQMessage::setDelayTimeLevel(int level) {
-  char tmp[16];
-  sprintf(tmp, "%d", level);
+    char tmp[16];
+    sprintf(tmp, "%d", level);
 
-  setPropertyInternal(PROPERTY_DELAY_TIME_LEVEL, tmp);
+    setPropertyInternal(PROPERTY_DELAY_TIME_LEVEL, tmp);
 }
 
 bool MQMessage::isWaitStoreMsgOK() const {
-  string tmp = getProperty(PROPERTY_WAIT_STORE_MSG_OK);
-  if (tmp.empty()) {
-    return true;
-  } else {
-    return (tmp == "true") ? true : false;
-  }
+    string tmp = getProperty(PROPERTY_WAIT_STORE_MSG_OK);
+    if (tmp.empty()) {
+        return true;
+    } else {
+        return (tmp == "true") ? true : false;
+    }
 }
 
 void MQMessage::setWaitStoreMsgOK(bool waitStoreMsgOK) {
-  if (waitStoreMsgOK) {
-    setPropertyInternal(PROPERTY_WAIT_STORE_MSG_OK, "true");
-  } else {
-    setPropertyInternal(PROPERTY_WAIT_STORE_MSG_OK, "false");
-  }
+    if (waitStoreMsgOK) {
+        setPropertyInternal(PROPERTY_WAIT_STORE_MSG_OK, "true");
+    } else {
+        setPropertyInternal(PROPERTY_WAIT_STORE_MSG_OK, "false");
+    }
 }
 
 int MQMessage::getFlag() const { return m_flag; }
@@ -201,51 +190,48 @@ void MQMessage::setSysFlag(int sysFlag) { m_sysFlag = sysFlag; }
 const string& MQMessage::getBody() const { return m_body; }
 
 void MQMessage::setBody(const char* body, int len) {
-  m_body.clear();
-  m_body.append(body, len);
+    m_body.clear();
+    m_body.append(body, len);
 }
 
-void MQMessage::setBody(const string &body) {
-  m_body.clear();
-  m_body.append(body);
+void MQMessage::setBody(const string& body) {
+    m_body.clear();
+    m_body.append(body);
 }
 
 map<string, string> MQMessage::getProperties() const { return m_properties; }
 
 void MQMessage::setProperties(map<string, string>& properties) {
-  m_properties = properties;
+    m_properties = properties;
 
-  map<string, string>::const_iterator it = m_properties.find(PROPERTY_TRANSACTION_PREPARED);
-  if (it != m_properties.end()) {
-    string tranMsg = it->second;
-    if (!tranMsg.empty() && tranMsg == "true") {
-      m_sysFlag |= MessageSysFlag::TransactionPreparedType;
-    } else {
-      m_sysFlag &= ~MessageSysFlag::TransactionPreparedType;
+    map<string, string>::const_iterator it = m_properties.find(PROPERTY_TRANSACTION_PREPARED);
+    if (it != m_properties.end()) {
+        string tranMsg = it->second;
+        if (!tranMsg.empty() && tranMsg == "true") {
+            m_sysFlag |= MessageSysFlag::TransactionPreparedType;
+        } else {
+            m_sysFlag &= ~MessageSysFlag::TransactionPreparedType;
+        }
     }
-  }
 }
 
-void MQMessage::setPropertiesInternal(map<string, string>& properties) {
-  m_properties = properties;
-}
+void MQMessage::setPropertiesInternal(map<string, string>& properties) { m_properties = properties; }
 
-void MQMessage::Init(const string& topic, const string& tags,
-                     const string& keys, const int flag, const string& body,
+void MQMessage::Init(const string& topic, const string& tags, const string& keys, const int flag, const string& body,
                      bool waitStoreMsgOK) {
-  m_topic = topic;
-  m_flag = flag;
-  m_sysFlag = 0;
-  m_body = body;
+    m_topic = topic;
+    m_flag = flag;
+    m_sysFlag = 0;
+    m_body = body;
 
-  if (tags.length() > 0) {
-    setTags(tags);
-  }
+    if (tags.length() > 0) {
+        setTags(tags);
+    }
 
-  if (keys.length() > 0) {
-    setKeys(keys);
-  }
+    if (keys.length() > 0) {
+        setKeys(keys);
+    }
 
-  setWaitStoreMsgOK(waitStoreMsgOK);
+    setWaitStoreMsgOK(waitStoreMsgOK);
 }
 }  //<!end namespace;

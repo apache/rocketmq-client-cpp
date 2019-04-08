@@ -14,13 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #ifndef __COMMUNICATIONMODE_H__
 #define __COMMUNICATIONMODE_H__
 
 namespace rocketmq {
 //<!***************************************************************************
-enum CommunicationMode { ComMode_SYNC, ComMode_ASYNC, ComMode_ONEWAY };
+enum CommunicationMode {
+    ComMode_SYNC,
+    ComMode_ASYNC,
+    ComMode_ONEWAY
+};
 
 //<!***************************************************************************
 }  //<!end namespace;

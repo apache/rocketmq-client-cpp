@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-//typedef struct _CMessageExt_ _CMessageExt;
+// typedef struct _CMessageExt_ _CMessageExt;
 typedef struct CMessageExt CMessageExt;
 
 ROCKETMQCLIENT_API const char *GetMessageTopic(CMessageExt *msgExt);
@@ -46,4 +46,4 @@ ROCKETMQCLIENT_API long long GetMessagePreparedTransactionOffset(CMessageExt *ms
 #ifdef __cplusplus
 };
 #endif
-#endif //__C_MESSAGE_EXT_H__
+#endif  //__C_MESSAGE_EXT_H__

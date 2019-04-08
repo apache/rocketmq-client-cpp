@@ -21,12 +21,11 @@
 namespace rocketmq {
 //<!************************************************************************
 struct FindBrokerResult {
-  FindBrokerResult(const std::string& sbrokerAddr, bool bslave)
-      : brokerAddr(sbrokerAddr), slave(bslave) {}
+    FindBrokerResult(const std::string& sbrokerAddr, bool bslave) : brokerAddr(sbrokerAddr), slave(bslave) {}
 
- public:
-  std::string brokerAddr;
-  bool slave;
+public:
+    std::string brokerAddr;
+    bool slave;
 };
 }
 

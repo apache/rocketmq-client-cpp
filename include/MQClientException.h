@@ -28,14 +28,15 @@
 namespace rocketmq {
 //<!***************************************************************************
 class ROCKETMQCLIENT_API MQException : public std::exception {
-   public:
+public:
     MQException(const std::string &msg, int error, const char *file, int line) throw()
         : m_error(error), m_line(line), m_file(file) {
         try {
             std::stringstream ss;
             ss << "msg: " << msg << ",error:" << error << ",in file <" << file << "> line:" << line;
             m_msg = ss.str();
-        } catch (...) {
+        }
+        catch (...) {
         }
     }
 
@@ -45,7 +46,8 @@ class ROCKETMQCLIENT_API MQException : public std::exception {
             std::stringstream ss;
             ss << "msg: " << msg << ",error:" << error << ",in file <" << file << "> line:" << line;
             m_msg = ss.str();
-        } catch (...) {
+        }
+        catch (...) {
         }
     }
 
@@ -56,7 +58,7 @@ class ROCKETMQCLIENT_API MQException : public std::exception {
     int GetLine() { return m_line; }
     const char *GetFile() { return m_file.c_str(); }
 
-   protected:
+protected:
     int m_error;
     int m_line;
     std::string m_msg;
@@ -71,7 +73,7 @@ inline std::ostream &operator<<(std::ostream &os, const MQException &e) {
 
 #define DEFINE_MQCLIENTEXCEPTION(name)                                              \
     class ROCKETMQCLIENT_API name : public MQException {                            \
-       public:                                                                      \
+    public:                                                                         \
         name(const std::string &msg, int error, const char *file, int line) throw() \
             : MQException(msg, error, file, #name, line) {}                         \
         virtual const char *GetType() const throw() { return m_type.c_str(); }      \

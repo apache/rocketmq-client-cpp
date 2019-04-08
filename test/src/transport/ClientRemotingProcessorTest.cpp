@@ -66,7 +66,7 @@ using rocketmq::SessionCredentials;
 using rocketmq::UtilAll;
 
 class MockClientRemotingProcessor : public ClientRemotingProcessor {
-   public:
+public:
     MockClientRemotingProcessor(MQClientFactory *factrory) : ClientRemotingProcessor(factrory) {}
     MOCK_METHOD1(resetOffset, RemotingCommand *(RemotingCommand *request));
     MOCK_METHOD1(getConsumerRunningInfo, RemotingCommand *(RemotingCommand *request));
@@ -74,12 +74,9 @@ class MockClientRemotingProcessor : public ClientRemotingProcessor {
 };
 
 class MockMQClientFactory : public MQClientFactory {
-   public:
-    MockMQClientFactory(const string &clientID,
-                        int pullThreadNum,
-                        uint64_t tcpConnectTimeout,
-                        uint64_t tcpTransportTryLockTimeout,
-                        string unitName)
+public:
+    MockMQClientFactory(const string &clientID, int pullThreadNum, uint64_t tcpConnectTimeout,
+                        uint64_t tcpTransportTryLockTimeout, string unitName)
         : MQClientFactory(clientID, pullThreadNum, tcpConnectTimeout, tcpTransportTryLockTimeout, unitName) {}
 
     MOCK_METHOD3(resetOffset,
@@ -159,8 +156,8 @@ TEST(clientRemotingProcessor, resetOffset) {
     request->SetBody(strData.c_str(), strData.size());
     clientRemotingProcessor.resetOffset(request);
 
-    //here header no need delete, it will managered by RemotingCommand
-    //delete header;
+    // here header no need delete, it will managered by RemotingCommand
+    // delete header;
     delete request;
 }
 

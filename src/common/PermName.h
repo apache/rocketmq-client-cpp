@@ -22,16 +22,16 @@
 namespace rocketmq {
 //<!***************************************************************************
 class PermName {
- public:
-  static int PERM_PRIORITY;
-  static int PERM_READ;
-  static int PERM_WRITE;
-  static int PERM_INHERIT;
+public:
+    static int PERM_PRIORITY;
+    static int PERM_READ;
+    static int PERM_WRITE;
+    static int PERM_INHERIT;
 
-  static bool isReadable(int perm);
-  static bool isWriteable(int perm);
-  static bool isInherited(int perm);
-  static std::string perm2String(int perm);
+    static bool isReadable(int perm);
+    static bool isWriteable(int perm);
+    static bool isInherited(int perm);
+    static std::string perm2String(int perm);
 };
 
 //<!***************************************************************************

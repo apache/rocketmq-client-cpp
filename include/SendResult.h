@@ -24,35 +24,35 @@ namespace rocketmq {
 //<!***************************************************************************
 //<!all to Master;
 enum SendStatus {
-  SEND_OK,
-  SEND_FLUSH_DISK_TIMEOUT,
-  SEND_FLUSH_SLAVE_TIMEOUT,
-  SEND_SLAVE_NOT_AVAILABLE
+    SEND_OK,
+    SEND_FLUSH_DISK_TIMEOUT,
+    SEND_FLUSH_SLAVE_TIMEOUT,
+    SEND_SLAVE_NOT_AVAILABLE
 };
 
 //<!***************************************************************************
 class ROCKETMQCLIENT_API SendResult {
- public:
-  SendResult();
-  SendResult(const SendStatus& sendStatus, const std::string& msgId, const std::string& offsetMsgId,
-             const MQMessageQueue& messageQueue, int64 queueOffset);
+public:
+    SendResult();
+    SendResult(const SendStatus& sendStatus, const std::string& msgId, const std::string& offsetMsgId,
+               const MQMessageQueue& messageQueue, int64 queueOffset);
 
-  virtual ~SendResult();
-  SendResult(const SendResult& other);
-  SendResult& operator=(const SendResult& other);
+    virtual ~SendResult();
+    SendResult(const SendResult& other);
+    SendResult& operator=(const SendResult& other);
 
-  const std::string& getMsgId() const;
-  const std::string& getOffsetMsgId() const;
-  SendStatus getSendStatus() const;
-  MQMessageQueue getMessageQueue() const;
-  int64 getQueueOffset() const;
+    const std::string& getMsgId() const;
+    const std::string& getOffsetMsgId() const;
+    SendStatus getSendStatus() const;
+    MQMessageQueue getMessageQueue() const;
+    int64 getQueueOffset() const;
 
- private:
-  SendStatus m_sendStatus;
-  std::string m_msgId;
-  std::string m_offsetMsgId;
-  MQMessageQueue m_messageQueue;
-  int64 m_queueOffset;
+private:
+    SendStatus m_sendStatus;
+    std::string m_msgId;
+    std::string m_offsetMsgId;
+    MQMessageQueue m_messageQueue;
+    int64 m_queueOffset;
 };
 
 //<!***************************************************************************

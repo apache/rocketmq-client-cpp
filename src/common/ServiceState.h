@@ -18,7 +18,12 @@
 #define __SERVICESTATE_H__
 namespace rocketmq {
 //<!***************************************************************************
-enum ServiceState { CREATE_JUST, RUNNING, SHUTDOWN_ALREADY, START_FAILED };
+enum ServiceState {
+    CREATE_JUST,
+    RUNNING,
+    SHUTDOWN_ALREADY,
+    START_FAILED
+};
 
 //<!***************************************************************************
 }  //<!end namespace;

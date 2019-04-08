@@ -25,22 +25,20 @@
 namespace rocketmq {
 //<!***************************************************************************
 class MQClientManager {
- public:
-  virtual ~MQClientManager();
-  MQClientFactory* getMQClientFactory(const string& clientId, int pullThreadNum,
-                                      uint64_t tcpConnectTimeout,
-                                      uint64_t tcpTransportTryLockTimeout,
-                                      string unitName);
-  void removeClientFactory(const string& clientId);
+public:
+    virtual ~MQClientManager();
+    MQClientFactory* getMQClientFactory(const string& clientId, int pullThreadNum, uint64_t tcpConnectTimeout,
+                                        uint64_t tcpTransportTryLockTimeout, string unitName);
+    void removeClientFactory(const string& clientId);
 
-  static MQClientManager* getInstance();
+    static MQClientManager* getInstance();
 
- private:
-  MQClientManager();
+private:
+    MQClientManager();
 
- private:
-  typedef map<string, MQClientFactory*> FTMAP;
-  FTMAP m_factoryTable;
+private:
+    typedef map<string, MQClientFactory*> FTMAP;
+    FTMAP m_factoryTable;
 };
 
 //<!***************************************************************************

@@ -44,7 +44,7 @@ using ::testing::InitGoogleTest;
 using testing::Return;
 
 class MockTopicConfig : public TopicConfig {
-   public:
+public:
     MOCK_METHOD0(getReadQueueNums, int());
 };
 

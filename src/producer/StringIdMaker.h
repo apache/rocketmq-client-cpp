@@ -49,26 +49,26 @@
 
 namespace rocketmq {
 class StringIdMaker : public boost::serialization::singleton<StringIdMaker> {
- public:
-  StringIdMaker();
-  ~StringIdMaker();
-  std::string get_unique_id();
+public:
+    StringIdMaker();
+    ~StringIdMaker();
+    std::string get_unique_id();
 
- private:
-  uint32_t get_ip();
-  void init_prefix();
-  uint64_t get_curr_ms();
-  int atomic_incr(int id);
-  void set_start_and_next_tm();
+private:
+    uint32_t get_ip();
+    void init_prefix();
+    uint64_t get_curr_ms();
+    int atomic_incr(int id);
+    void set_start_and_next_tm();
 
-  void hexdump(unsigned char *buffer, char *out_buff, unsigned long index);
+    void hexdump(unsigned char *buffer, char *out_buff, unsigned long index);
 
- private:
-  uint64_t _start_tm;
-  uint64_t _next_start_tm;
-  unsigned char _buff[16];
-  char _0x_buff[33];
-  int16_t seqid;
+private:
+    uint64_t _start_tm;
+    uint64_t _next_start_tm;
+    unsigned char _buff[16];
+    char _0x_buff[33];
+    int16_t seqid;
 };
 }
 #endif

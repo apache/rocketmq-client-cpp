@@ -50,7 +50,7 @@ using rocketmq::SendStatus;
 using rocketmq::SessionCredentials;
 
 class MockDefaultMQProducer : public DefaultMQProducer {
-   public:
+public:
     MockDefaultMQProducer(const string &groupname) : DefaultMQProducer(groupname) {}
     MOCK_METHOD0(start, void());
     MOCK_METHOD0(shutdown, void());
@@ -62,15 +62,13 @@ class MockDefaultMQProducer : public DefaultMQProducer {
     MOCK_METHOD5(send, SendResult(MQMessage &, MessageQueueSelector *, void *, int, bool));
 };
 
-void CSendSuccessCallbackFunc(CSendResult result) {
-}
-void cSendExceptionCallbackFunc(CMQException e) {
-}
+void CSendSuccessCallbackFunc(CSendResult result) {}
+void cSendExceptionCallbackFunc(CMQException e) {}
 
 TEST(cProducer, SendMessageAsync) {
     MockDefaultMQProducer *mockProducer = new MockDefaultMQProducer("testGroup");
-    CProducer *cProducer = (CProducer *) mockProducer;
-    CMessage *msg = (CMessage *) new MQMessage();
+    CProducer *cProducer = (CProducer *)mockProducer;
+    CMessage *msg = (CMessage *)new MQMessage();
 
     EXPECT_EQ(SendMessageAsync(NULL, NULL, NULL, NULL), NULL_POINTER);
     EXPECT_EQ(SendMessageAsync(cProducer, NULL, NULL, NULL), NULL_POINTER);
@@ -82,14 +80,12 @@ TEST(cProducer, SendMessageAsync) {
     DestroyMessage(msg);
 }
 
-int QueueSelectorCallbackFunc(int size, CMessage *msg, void *arg) {
-    return 0;
-}
+int QueueSelectorCallbackFunc(int size, CMessage *msg, void *arg) { return 0; }
 
 TEST(cProducer, sendMessageOrderly) {
     MockDefaultMQProducer *mockProducer = new MockDefaultMQProducer("testGroup");
-    CProducer *cProducer = (CProducer *) mockProducer;
-    CMessage *msg = (CMessage *) new MQMessage();
+    CProducer *cProducer = (CProducer *)mockProducer;
+    CMessage *msg = (CMessage *)new MQMessage();
     MQMessageQueue messageQueue;
 
     EXPECT_EQ(SendMessageOrderly(NULL, NULL, NULL, msg, 1, NULL), NULL_POINTER);
@@ -108,8 +104,8 @@ TEST(cProducer, sendMessageOrderly) {
 
 TEST(cProducer, sendOneway) {
     MockDefaultMQProducer *mockProducer = new MockDefaultMQProducer("testGroup");
-    CProducer *cProducer = (CProducer *) mockProducer;
-    CMessage *msg = (CMessage *) new MQMessage();
+    CProducer *cProducer = (CProducer *)mockProducer;
+    CMessage *msg = (CMessage *)new MQMessage();
 
     EXPECT_EQ(SendMessageOneway(NULL, NULL), NULL_POINTER);
     EXPECT_EQ(SendMessageOneway(cProducer, NULL), NULL_POINTER);
@@ -122,10 +118,10 @@ TEST(cProducer, sendOneway) {
 
 TEST(cProducer, sendMessageSync) {
     MockDefaultMQProducer *mockProducer = new MockDefaultMQProducer("testGroup");
-    CProducer *cProducer = (CProducer *) mockProducer;
+    CProducer *cProducer = (CProducer *)mockProducer;
 
     MQMessage *mqMessage = new MQMessage();
-    CMessage *msg = (CMessage *) mqMessage;
+    CMessage *msg = (CMessage *)mqMessage;
     CSendResult *result;
     MQMessageQueue messageQueue;
     EXPECT_EQ(SendMessageSync(NULL, NULL, NULL), NULL_POINTER);
@@ -133,7 +129,7 @@ TEST(cProducer, sendMessageSync) {
 
     EXPECT_EQ(SendMessageSync(cProducer, msg, NULL), NULL_POINTER);
 
-    result = (CSendResult *) malloc(sizeof(CSendResult));
+    result = (CSendResult *)malloc(sizeof(CSendResult));
 
     EXPECT_CALL(*mockProducer, send(_, _))
         .Times(5)
@@ -141,7 +137,7 @@ TEST(cProducer, sendMessageSync) {
         .WillOnce(Return(SendResult(SendStatus::SEND_FLUSH_SLAVE_TIMEOUT, "2", "offset1", messageQueue, 14)))
         .WillOnce(Return(SendResult(SendStatus::SEND_SLAVE_NOT_AVAILABLE, "3", "offset1", messageQueue, 14)))
         .WillOnce(Return(SendResult(SendStatus::SEND_OK, "3", "offset1", messageQueue, 14)))
-        .WillOnce(Return(SendResult((SendStatus) -1, "4", "offset1", messageQueue, 14)));
+        .WillOnce(Return(SendResult((SendStatus) - 1, "4", "offset1", messageQueue, 14)));
 
     EXPECT_EQ(SendMessageSync(cProducer, msg, result), OK);
     EXPECT_EQ(result->sendStatus, E_SEND_FLUSH_DISK_TIMEOUT);
@@ -164,7 +160,7 @@ TEST(cProducer, sendMessageSync) {
 
 TEST(cProducer, infoMock) {
     MockDefaultMQProducer *mockProducer = new MockDefaultMQProducer("testGroup");
-    CProducer *cProducer = (CProducer *) mockProducer;
+    CProducer *cProducer = (CProducer *)mockProducer;
 
     EXPECT_CALL(*mockProducer, start()).Times(1);
     EXPECT_EQ(StartProducer(cProducer), OK);
@@ -182,7 +178,7 @@ TEST(cProducer, infoMock) {
 
 TEST(cProducer, info) {
     CProducer *cProducer = CreateProducer("groupTest");
-    DefaultMQProducer *defaultMQProducer = (DefaultMQProducer *) cProducer;
+    DefaultMQProducer *defaultMQProducer = (DefaultMQProducer *)cProducer;
     EXPECT_TRUE(cProducer != NULL);
     EXPECT_EQ(defaultMQProducer->getGroupName(), "groupTest");
 

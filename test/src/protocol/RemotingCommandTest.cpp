@@ -56,7 +56,7 @@ using rocketmq::SendMessageResponseHeader;
 TEST(remotingCommand, init) {
     RemotingCommand remotingCommand;
     EXPECT_EQ(remotingCommand.getCode(), 0);
-    
+
     RemotingCommand twoRemotingCommand(13);
     EXPECT_EQ(twoRemotingCommand.getCode(), 13);
     EXPECT_EQ(twoRemotingCommand.getOpaque(), 0);
@@ -87,8 +87,8 @@ TEST(remotingCommand, init) {
     EXPECT_EQ(sixRemotingCommand.getFlag(), 3);
     EXPECT_EQ(sixRemotingCommand.getMsgBody(), "");
     EXPECT_TRUE(sixRemotingCommand.getCommandHeader() == nullptr);
-    
-    RemotingCommand* sevenRemotingCommand = &sixRemotingCommand;
+
+    RemotingCommand *sevenRemotingCommand = &sixRemotingCommand;
     EXPECT_EQ(sevenRemotingCommand->getCode(), 13);
     EXPECT_EQ(sevenRemotingCommand->getOpaque(), 12);
     EXPECT_EQ(sevenRemotingCommand->getRemark(), "remark");

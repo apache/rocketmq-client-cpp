@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     for (i = 1; i <= 5; i++) {
         printf("FetchSubscriptionMessageQueues : %d times\n", i);
         ret = FetchSubscriptionMessageQueues(consumer, "T_TestTopic", &mqs, &size);
-        if(ret != OK) {
+        if (ret != OK) {
             printf("Get MQ Queue Failed,ErrorCode:%d\n", ret);
         }
         printf("Get MQ Size:%d\n", size);
@@ -69,7 +69,8 @@ int main(int argc, char *argv[]) {
                     case E_FOUND:
                         printf("Get Message Size:%d\n", pullResult.size);
                         for (k = 0; k < pullResult.size; ++k) {
-                            printf("Got Message ID:%s,Body:%s\n", GetMessageId(pullResult.msgFoundList[k]),GetMessageBody(pullResult.msgFoundList[k]));
+                            printf("Got Message ID:%s,Body:%s\n", GetMessageId(pullResult.msgFoundList[k]),
+                                   GetMessageBody(pullResult.msgFoundList[k]));
                         }
                         break;
                     case E_NO_MATCHED_MSG:

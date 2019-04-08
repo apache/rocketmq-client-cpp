@@ -26,29 +26,25 @@ int PermName::PERM_INHERIT = 0x1 << 0;
 
 bool PermName::isReadable(int perm) { return (perm & PERM_READ) == PERM_READ; }
 
-bool PermName::isWriteable(int perm) {
-  return (perm & PERM_WRITE) == PERM_WRITE;
-}
+bool PermName::isWriteable(int perm) { return (perm & PERM_WRITE) == PERM_WRITE; }
 
-bool PermName::isInherited(int perm) {
-  return (perm & PERM_INHERIT) == PERM_INHERIT;
-}
+bool PermName::isInherited(int perm) { return (perm & PERM_INHERIT) == PERM_INHERIT; }
 
 string PermName::perm2String(int perm) {
-  string pm("---");
-  if (isReadable(perm)) {
-    pm.replace(0, 1, "R");
-  }
+    string pm("---");
+    if (isReadable(perm)) {
+        pm.replace(0, 1, "R");
+    }
 
-  if (isWriteable(perm)) {
-    pm.replace(1, 2, "W");
-  }
+    if (isWriteable(perm)) {
+        pm.replace(1, 2, "W");
+    }
 
-  if (isInherited(perm)) {
-    pm.replace(2, 3, "X");
-  }
+    if (isInherited(perm)) {
+        pm.replace(2, 3, "X");
+    }
 
-  return pm;
+    return pm;
 }
 
 //<!***************************************************************************

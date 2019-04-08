@@ -30,7 +30,7 @@ using rocketmq::MQMessageExt;
 
 TEST(cmessageExt, info) {
     MQMessageExt *mqMessageExt = new MQMessageExt();
-    CMessageExt *messageExt = (CMessageExt *) mqMessageExt;
+    CMessageExt *messageExt = (CMessageExt *)mqMessageExt;
 
     mqMessageExt->setTopic("testTopic");
     EXPECT_EQ(GetMessageTopic(messageExt), mqMessageExt->getTopic());

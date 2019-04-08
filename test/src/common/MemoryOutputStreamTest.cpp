@@ -53,7 +53,7 @@ TEST(memoryOutputStream, init) {
     EXPECT_EQ(frouMemoryOutput.getPosition(), memoryBlock.getSize());
     EXPECT_EQ(frouMemoryOutput.getDataSize(), memoryBlock.getSize());
 
-    char *buf = (char *) malloc(sizeof(char) * 9);
+    char *buf = (char *)malloc(sizeof(char) * 9);
     strcpy(buf, "RocketMQ");
     MemoryOutputStream fiveMemoryOutputStream(buf, 8);
     EXPECT_EQ(fiveMemoryOutputStream.getData(), buf);
@@ -65,7 +65,7 @@ TEST(memoryOutputStream, init) {
 }
 
 TEST(memoryOutputStream, flush) {
-    char *buf = (char *) malloc(sizeof(char) * 9);
+    char *buf = (char *)malloc(sizeof(char) * 9);
     strcpy(buf, "RocketMQ");
     MemoryOutputStream memoryOutput;
     memoryOutput.write(buf, 9);
@@ -82,7 +82,7 @@ TEST(memoryOutputStream, preallocate) {
 }
 
 TEST(memoryOutputStream, getMemoryBlock) {
-    char *buf = (char *) malloc(sizeof(char) * 9);
+    char *buf = (char *)malloc(sizeof(char) * 9);
     strcpy(buf, "RocketMQ");
     MemoryOutputStream memoryOutput;
     memoryOutput.write(buf, 9);
@@ -92,7 +92,7 @@ TEST(memoryOutputStream, getMemoryBlock) {
 }
 
 TEST(memoryOutputStream, prepareToWriteAndGetData) {
-    char *buf = (char *) malloc(sizeof(char) * 9);
+    char *buf = (char *)malloc(sizeof(char) * 9);
     strcpy(buf, "RocketMQ");
     MemoryOutputStream memoryOutput(buf, 9);
     EXPECT_EQ(memoryOutput.getData(), buf);
@@ -104,7 +104,7 @@ TEST(memoryOutputStream, prepareToWriteAndGetData) {
     EXPECT_EQ(string(data), "rocketMQ");
 
     MemoryOutputStream blockMmoryOutput(8);
-    char *memoryData = (char *) blockMmoryOutput.getData();
+    char *memoryData = (char *)blockMmoryOutput.getData();
 
     EXPECT_EQ(memoryData[blockMmoryOutput.getDataSize()], 0);
 
@@ -116,7 +116,7 @@ TEST(memoryOutputStream, prepareToWriteAndGetData) {
 }
 
 TEST(memoryOutputStream, position) {
-    char *buf = (char *) malloc(sizeof(char) * 9);
+    char *buf = (char *)malloc(sizeof(char) * 9);
     strcpy(buf, "RocketMQ");
 
     MemoryOutputStream memoryOutput;
@@ -171,12 +171,12 @@ TEST(memoryOutputStream, write) {
 }
 
 TEST(memoryInputStream, info) {
-    char *buf = (char *) malloc(sizeof(char) * 9);
+    char *buf = (char *)malloc(sizeof(char) * 9);
     strcpy(buf, "RocketMQ");
 
     MemoryInputStream memoryInput(buf, 8, false);
 
-    char *memoryData = (char *) memoryInput.getData();
+    char *memoryData = (char *)memoryInput.getData();
     EXPECT_EQ(memoryData, buf);
 
     EXPECT_EQ(memoryInput.getTotalLength(), 8);
@@ -184,12 +184,12 @@ TEST(memoryInputStream, info) {
     MemoryInputStream twoMemoryInput(buf, 8, true);
     EXPECT_NE(twoMemoryInput.getData(), buf);
 
-    memoryData = (char *) twoMemoryInput.getData();
+    memoryData = (char *)twoMemoryInput.getData();
     EXPECT_NE(&memoryData, &buf);
 
     MemoryBlock memoryBlock(buf, 8);
     MemoryInputStream threeMemoryInput(memoryBlock, false);
-    memoryData = (char *) threeMemoryInput.getData();
+    memoryData = (char *)threeMemoryInput.getData();
     EXPECT_EQ(memoryData, threeMemoryInput.getData());
     EXPECT_EQ(threeMemoryInput.getTotalLength(), 8);
 
@@ -199,7 +199,7 @@ TEST(memoryInputStream, info) {
 }
 
 TEST(memoryInputStream, position) {
-    char *buf = (char *) malloc(sizeof(char) * 9);
+    char *buf = (char *)malloc(sizeof(char) * 9);
     strcpy(buf, "RocketMQ");
 
     MemoryInputStream memoryInput(buf, 8, false);

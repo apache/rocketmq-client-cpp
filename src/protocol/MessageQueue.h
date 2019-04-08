@@ -25,31 +25,30 @@ namespace rocketmq {
 //<!* MQ(T,B,ID);
 //<!************************************************************************/
 class MessageQueue {
- public:
-  MessageQueue();
-  MessageQueue(const std::string& topic, const std::string& brokerName,
-               int queueId);
-  MessageQueue(const MessageQueue& other);
-  MessageQueue& operator=(const MessageQueue& other);
+public:
+    MessageQueue();
+    MessageQueue(const std::string& topic, const std::string& brokerName, int queueId);
+    MessageQueue(const MessageQueue& other);
+    MessageQueue& operator=(const MessageQueue& other);
 
-  std::string getTopic() const;
-  void setTopic(const std::string& topic);
+    std::string getTopic() const;
+    void setTopic(const std::string& topic);
 
-  std::string getBrokerName() const;
-  void setBrokerName(const std::string& brokerName);
+    std::string getBrokerName() const;
+    void setBrokerName(const std::string& brokerName);
 
-  int getQueueId() const;
-  void setQueueId(int queueId);
+    int getQueueId() const;
+    void setQueueId(int queueId);
 
-  bool operator==(const MessageQueue& mq) const;
-  bool operator<(const MessageQueue& mq) const;
-  int compareTo(const MessageQueue& mq) const;
-  Json::Value toJson() const;
+    bool operator==(const MessageQueue& mq) const;
+    bool operator<(const MessageQueue& mq) const;
+    int compareTo(const MessageQueue& mq) const;
+    Json::Value toJson() const;
 
- private:
-  std::string m_topic;
-  std::string m_brokerName;
-  int m_queueId;
+private:
+    std::string m_topic;
+    std::string m_brokerName;
+    int m_queueId;
 };
 //<!***************************************************************************
 }  //<!end namespace;

@@ -20,14 +20,14 @@
 namespace rocketmq {
 //<!***************************************************************************
 enum TopicFilterType {
-  /**
-   * each msg could only have one tag
-   */
-  SINGLE_TAG,
-  /**
-   * not support now
-   */
-  MULTI_TAG
+    /**
+     * each msg could only have one tag
+     */
+    SINGLE_TAG,
+    /**
+     * not support now
+     */
+    MULTI_TAG
 };
 //<!***************************************************************************
 }  //<!end namespace;

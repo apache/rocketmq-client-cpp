@@ -26,22 +26,22 @@
 
 namespace rocketmq {
 class TopAddressing {
- public:
-  TopAddressing(string unitName);
-  virtual ~TopAddressing();
+public:
+    TopAddressing(string unitName);
+    virtual ~TopAddressing();
 
- public:
-  string fetchNSAddr(const string& NSDomain);
+public:
+    string fetchNSAddr(const string& NSDomain);
 
- private:
-  string clearNewLine(const string& str);
-  void updateNameServerAddressList(const string& adds);
-  int IsIPAddr(const char* sValue);
+private:
+    string clearNewLine(const string& str);
+    void updateNameServerAddressList(const string& adds);
+    int IsIPAddr(const char* sValue);
 
- private:
-  boost::mutex m_addrLock;
-  list<string> m_addrs;
-  string m_unitName;
+private:
+    boost::mutex m_addrLock;
+    list<string> m_addrs;
+    string m_unitName;
 };
 }
 #endif

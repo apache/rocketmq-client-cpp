@@ -24,23 +24,23 @@
 namespace rocketmq {
 //<!***************************************************************************
 class ROCKETMQCLIENT_API SendMessageContext {
- public:
-  string producerGroup;
-  MQMessage msg;
-  MQMessageQueue mq;
-  string brokerAddr;
-  int communicationMode;
-  SendResult sendResult;
-  MQException* pException;
-  void* pArg;
+public:
+    string producerGroup;
+    MQMessage msg;
+    MQMessageQueue mq;
+    string brokerAddr;
+    int communicationMode;
+    SendResult sendResult;
+    MQException* pException;
+    void* pArg;
 };
 
 class ROCKETMQCLIENT_API SendMessageHook {
- public:
-  virtual ~SendMessageHook() {}
-  virtual string hookName() = 0;
-  virtual void sendMessageBefore(const SendMessageContext& context) = 0;
-  virtual void sendMessageAfter(const SendMessageContext& context) = 0;
+public:
+    virtual ~SendMessageHook() {}
+    virtual string hookName() = 0;
+    virtual void sendMessageBefore(const SendMessageContext& context) = 0;
+    virtual void sendMessageAfter(const SendMessageContext& context) = 0;
 };
 //<!***************************************************************************
 }  //<!end namespace;

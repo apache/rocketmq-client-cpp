@@ -27,7 +27,7 @@ using std::string;
 namespace rocketmq {
 //<!***************************************************************************
 class KVTable : public RemotingSerializable {
-   public:
+public:
     virtual ~KVTable() { m_table.clear(); }
 
     void Encode(string &outData) {}
@@ -36,7 +36,7 @@ class KVTable : public RemotingSerializable {
 
     void setTable(const map<string, string> &table) { m_table = table; }
 
-   private:
+private:
     map<string, string> m_table;
 };
 }  // namespace rocketmq

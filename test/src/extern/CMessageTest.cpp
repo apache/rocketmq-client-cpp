@@ -29,7 +29,7 @@ using rocketmq::MQMessage;
 
 TEST(cmessages, info) {
     CMessage *message = CreateMessage(NULL);
-    MQMessage *mqMessage = (MQMessage *) message;
+    MQMessage *mqMessage = (MQMessage *)message;
     EXPECT_EQ(mqMessage->getTopic(), "");
 
     SetMessageTopic(message, "testTopic");
@@ -56,7 +56,7 @@ TEST(cmessages, info) {
     EXPECT_EQ(DestroyMessage(message), OK);
 
     CMessage *twomessage = CreateMessage("testTwoTopic");
-    MQMessage *twoMqMessage = (MQMessage *) twomessage;
+    MQMessage *twoMqMessage = (MQMessage *)twomessage;
     EXPECT_EQ(twoMqMessage->getTopic(), "testTwoTopic");
 
     EXPECT_EQ(DestroyMessage(twomessage), OK);

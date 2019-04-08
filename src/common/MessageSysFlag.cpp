@@ -25,13 +25,9 @@ int MessageSysFlag::TransactionPreparedType = (0x1 << 2);
 int MessageSysFlag::TransactionCommitType = (0x2 << 2);
 int MessageSysFlag::TransactionRollbackType = (0x3 << 2);
 
-int MessageSysFlag::getTransactionValue(int flag) {
-  return flag & TransactionRollbackType;
-}
+int MessageSysFlag::getTransactionValue(int flag) { return flag & TransactionRollbackType; }
 
-int MessageSysFlag::resetTransactionValue(int flag, int type) {
-  return (flag & (~TransactionRollbackType)) | type;
-}
+int MessageSysFlag::resetTransactionValue(int flag, int type) { return (flag & (~TransactionRollbackType)) | type; }
 
 //<!***************************************************************************
 }  //<!end namespace;

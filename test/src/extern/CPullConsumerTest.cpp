@@ -51,7 +51,7 @@ using rocketmq::PullStatus;
 using rocketmq::SessionCredentials;
 
 class MockDefaultMQPullConsumer : public DefaultMQPullConsumer {
-   public:
+public:
     MockDefaultMQPullConsumer(const string &groupname) : DefaultMQPullConsumer(groupname) {}
     MOCK_METHOD0(start, void());
     MOCK_METHOD0(shutdown, void());
@@ -63,10 +63,10 @@ class MockDefaultMQPullConsumer : public DefaultMQPullConsumer {
 
 TEST(cpullConsumer, pull) {
     MockDefaultMQPullConsumer *mqPullConsumer = new MockDefaultMQPullConsumer("groudId");
-    CPullConsumer *pullConsumer = (CPullConsumer *) mqPullConsumer;
+    CPullConsumer *pullConsumer = (CPullConsumer *)mqPullConsumer;
 
     CMessageQueue *cMessageQueue;
-    cMessageQueue = (CMessageQueue *) malloc(sizeof(CMessageQueue));
+    cMessageQueue = (CMessageQueue *)malloc(sizeof(CMessageQueue));
     strncpy(cMessageQueue->topic, "testTopic", 8);
     strncpy(cMessageQueue->brokerName, "testBroker", 9);
     cMessageQueue->queueId = 1;
@@ -79,7 +79,7 @@ TEST(cpullConsumer, pull) {
 
     PullResult offsetIllegalPullResult(PullStatus::OFFSET_ILLEGAL, 1, 2, 3);
 
-    PullResult defaultPullResult((PullStatus) -1, 1, 2, 3);
+    PullResult defaultPullResult((PullStatus) - 1, 1, 2, 3);
 
     vector<MQMessageExt> src;
     for (int i = 0; i < 5; i++) {
@@ -123,7 +123,7 @@ TEST(cpullConsumer, pull) {
 
 TEST(cpullConsumer, infoMock) {
     MockDefaultMQPullConsumer *mqPullConsumer = new MockDefaultMQPullConsumer("groudId");
-    CPullConsumer *pullConsumer = (CPullConsumer *) mqPullConsumer;
+    CPullConsumer *pullConsumer = (CPullConsumer *)mqPullConsumer;
 
     Expectation exp = EXPECT_CALL(*mqPullConsumer, start()).Times(1);
     EXPECT_EQ(StartPullConsumer(pullConsumer), OK);
@@ -154,7 +154,7 @@ TEST(cpullConsumer, infoMock) {
 
 TEST(cpullConsumer, init) {
     CPullConsumer *pullConsumer = CreatePullConsumer("testGroupId");
-    DefaultMQPullConsumer *defaultMQPullConsumer = (DefaultMQPullConsumer *) pullConsumer;
+    DefaultMQPullConsumer *defaultMQPullConsumer = (DefaultMQPullConsumer *)pullConsumer;
     EXPECT_FALSE(pullConsumer == NULL);
 
     EXPECT_EQ(SetPullConsumerGroupID(pullConsumer, "groupId"), OK);
@@ -178,7 +178,7 @@ TEST(cpullConsumer, init) {
 
 TEST(cpullConsumer, null) {
     CPullConsumer *pullConsumer = CreatePullConsumer("testGroupId");
-    DefaultMQPullConsumer *defaultMQPullConsumer = (DefaultMQPullConsumer *) pullConsumer;
+    DefaultMQPullConsumer *defaultMQPullConsumer = (DefaultMQPullConsumer *)pullConsumer;
     EXPECT_FALSE(pullConsumer == NULL);
 
     EXPECT_EQ(SetPullConsumerGroupID(pullConsumer, "groupId"), OK);

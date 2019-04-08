@@ -39,180 +39,150 @@ namespace rocketmq {
 //<!************************************************************************
 class TopicPublishInfo;
 class MQClientFactory {
- public:
-  MQClientFactory(const string& clientID, int pullThreadNum,
-                  uint64_t tcpConnectTimeout,
-                  uint64_t tcpTransportTryLockTimeout, string unitName);
-  virtual ~MQClientFactory();
+public:
+    MQClientFactory(const string& clientID, int pullThreadNum, uint64_t tcpConnectTimeout,
+                    uint64_t tcpTransportTryLockTimeout, string unitName);
+    virtual ~MQClientFactory();
 
-  void start();
-  void shutdown();
-  bool registerProducer(MQProducer* pProducer);
-  void unregisterProducer(MQProducer* pProducer);
-  bool registerConsumer(MQConsumer* pConsumer);
-  void unregisterConsumer(MQConsumer* pConsumer);
+    void start();
+    void shutdown();
+    bool registerProducer(MQProducer* pProducer);
+    void unregisterProducer(MQProducer* pProducer);
+    bool registerConsumer(MQConsumer* pConsumer);
+    void unregisterConsumer(MQConsumer* pConsumer);
 
-  void createTopic(const string& key, const string& newTopic, int queueNum,
-                   const SessionCredentials& session_credentials);
-  int64 minOffset(const MQMessageQueue& mq,
-                  const SessionCredentials& session_credentials);
-  int64 maxOffset(const MQMessageQueue& mq,
-                  const SessionCredentials& session_credentials);
-  int64 searchOffset(const MQMessageQueue& mq, int64 timestamp,
+    void createTopic(const string& key, const string& newTopic, int queueNum,
                      const SessionCredentials& session_credentials);
-  int64 earliestMsgStoreTime(const MQMessageQueue& mq,
+    int64 minOffset(const MQMessageQueue& mq, const SessionCredentials& session_credentials);
+    int64 maxOffset(const MQMessageQueue& mq, const SessionCredentials& session_credentials);
+    int64 searchOffset(const MQMessageQueue& mq, int64 timestamp, const SessionCredentials& session_credentials);
+    int64 earliestMsgStoreTime(const MQMessageQueue& mq, const SessionCredentials& session_credentials);
+    MQMessageExt* viewMessage(const string& msgId, const SessionCredentials& session_credentials);
+    QueryResult queryMessage(const string& topic, const string& key, int maxNum, int64 begin, int64 end,
                              const SessionCredentials& session_credentials);
-  MQMessageExt* viewMessage(const string& msgId,
-                            const SessionCredentials& session_credentials);
-  QueryResult queryMessage(const string& topic, const string& key, int maxNum,
-                           int64 begin, int64 end,
-                           const SessionCredentials& session_credentials);
 
-  MQClientAPIImpl* getMQClientAPIImpl() const;
-  MQProducer* selectProducer(const string& group);
-  MQConsumer* selectConsumer(const string& group);
+    MQClientAPIImpl* getMQClientAPIImpl() const;
+    MQProducer* selectProducer(const string& group);
+    MQConsumer* selectConsumer(const string& group);
 
-  boost::shared_ptr<TopicPublishInfo> topicRouteData2TopicPublishInfo(
-      const string& topic, TopicRouteData* pRoute);
+    boost::shared_ptr<TopicPublishInfo> topicRouteData2TopicPublishInfo(const string& topic, TopicRouteData* pRoute);
 
-  void topicRouteData2TopicSubscribeInfo(const string& topic,
-                                         TopicRouteData* pRoute,
-                                         vector<MQMessageQueue>& mqs);
+    void topicRouteData2TopicSubscribeInfo(const string& topic, TopicRouteData* pRoute, vector<MQMessageQueue>& mqs);
 
-  FindBrokerResult* findBrokerAddressInSubscribe(const string& brokerName,
-                                                 int brokerId,
-                                                 bool onlyThisBroker);
+    FindBrokerResult* findBrokerAddressInSubscribe(const string& brokerName, int brokerId, bool onlyThisBroker);
 
-  FindBrokerResult* findBrokerAddressInAdmin(const string& brokerName);
+    FindBrokerResult* findBrokerAddressInAdmin(const string& brokerName);
 
-  string findBrokerAddressInPublish(const string& brokerName);
+    string findBrokerAddressInPublish(const string& brokerName);
 
-  boost::shared_ptr<TopicPublishInfo> tryToFindTopicPublishInfo(
-      const string& topic, const SessionCredentials& session_credentials);
+    boost::shared_ptr<TopicPublishInfo> tryToFindTopicPublishInfo(const string& topic,
+                                                                  const SessionCredentials& session_credentials);
 
-  void fetchSubscribeMessageQueues(
-      const string& topic, vector<MQMessageQueue>& mqs,
-      const SessionCredentials& session_credentials);
+    void fetchSubscribeMessageQueues(const string& topic, vector<MQMessageQueue>& mqs,
+                                     const SessionCredentials& session_credentials);
 
-  bool updateTopicRouteInfoFromNameServer(
-      const string& topic, const SessionCredentials& session_credentials,
-      bool isDefault = false);
-  void rebalanceImmediately();
-  void doRebalanceByConsumerGroup(const string& consumerGroup);
-  void sendHeartbeatToAllBroker();
+    bool updateTopicRouteInfoFromNameServer(const string& topic, const SessionCredentials& session_credentials,
+                                            bool isDefault = false);
+    void rebalanceImmediately();
+    void doRebalanceByConsumerGroup(const string& consumerGroup);
+    void sendHeartbeatToAllBroker();
 
-  void findConsumerIds(const string& topic, const string& group,
-                       vector<string>& cids,
-                       const SessionCredentials& session_credentials);
-  void resetOffset(const string& group, const string& topic,
-                   const map<MQMessageQueue, int64>& offsetTable);
-  ConsumerRunningInfo* consumerRunningInfo(const string& consumerGroup);
-  bool getSessionCredentialFromConsumer(const string& consumerGroup,
-                                        SessionCredentials& sessionCredentials);
-  void addBrokerToAddrMap(const string& brokerName,
-                          map<int, string>& brokerAddrs);
-  map<string, map<int, string>> getBrokerAddrMap();
-  void clearBrokerAddrMap();
-  void removeDropedPullRequestOpaque(PullRequest* pullRequest);
- private:
-  void unregisterClient(const string& producerGroup,
-                        const string& consumerGroup,
-                        const SessionCredentials& session_credentials);
-  TopicRouteData* getTopicRouteData(const string& topic);
-  void addTopicRouteData(const string& topic, TopicRouteData* pTopicRouteData);
-  HeartbeatData* prepareHeartbeatData();
+    void findConsumerIds(const string& topic, const string& group, vector<string>& cids,
+                         const SessionCredentials& session_credentials);
+    void resetOffset(const string& group, const string& topic, const map<MQMessageQueue, int64>& offsetTable);
+    ConsumerRunningInfo* consumerRunningInfo(const string& consumerGroup);
+    bool getSessionCredentialFromConsumer(const string& consumerGroup, SessionCredentials& sessionCredentials);
+    void addBrokerToAddrMap(const string& brokerName, map<int, string>& brokerAddrs);
+    map<string, map<int, string>> getBrokerAddrMap();
+    void clearBrokerAddrMap();
+    void removeDropedPullRequestOpaque(PullRequest* pullRequest);
 
-  void startScheduledTask(bool startFetchNSService = true);
-  //<!timer async callback
-  void fetchNameServerAddr(boost::system::error_code& ec,
-                           boost::asio::deadline_timer* t);
-  void updateTopicRouteInfo(boost::system::error_code& ec,
-                            boost::asio::deadline_timer* t);
-  void timerCB_sendHeartbeatToAllBroker(boost::system::error_code& ec,
-                                        boost::asio::deadline_timer* t);
+private:
+    void unregisterClient(const string& producerGroup, const string& consumerGroup,
+                          const SessionCredentials& session_credentials);
+    TopicRouteData* getTopicRouteData(const string& topic);
+    void addTopicRouteData(const string& topic, TopicRouteData* pTopicRouteData);
+    HeartbeatData* prepareHeartbeatData();
 
-  // consumer related operation
-  void consumer_timerOperation();
-  void persistAllConsumerOffset(boost::system::error_code& ec,
-                                boost::asio::deadline_timer* t);
-  void doRebalance();
-  void timerCB_doRebalance(boost::system::error_code& ec,
-                           boost::asio::deadline_timer* t);
-  bool getSessionCredentialFromConsumerTable(
-      SessionCredentials& sessionCredentials);
-  bool addConsumerToTable(const string& consumerName, MQConsumer* pMQConsumer);
-  void eraseConsumerFromTable(const string& consumerName);
-  int getConsumerTableSize();
-  void getTopicListFromConsumerSubscription(set<string>& topicList);
-  void updateConsumerSubscribeTopicInfo(const string& topic,
-                                        vector<MQMessageQueue> mqs);
-  void insertConsumerInfoToHeartBeatData(HeartbeatData* pHeartbeatData);
+    void startScheduledTask(bool startFetchNSService = true);
+    //<!timer async callback
+    void fetchNameServerAddr(boost::system::error_code& ec, boost::asio::deadline_timer* t);
+    void updateTopicRouteInfo(boost::system::error_code& ec, boost::asio::deadline_timer* t);
+    void timerCB_sendHeartbeatToAllBroker(boost::system::error_code& ec, boost::asio::deadline_timer* t);
 
-  // producer related operation
-  bool getSessionCredentialFromProducerTable(
-      SessionCredentials& sessionCredentials);
-  bool addProducerToTable(const string& producerName, MQProducer* pMQProducer);
-  void eraseProducerFromTable(const string& producerName);
-  int getProducerTableSize();
-  void insertProducerInfoToHeartBeatData(HeartbeatData* pHeartbeatData);
+    // consumer related operation
+    void consumer_timerOperation();
+    void persistAllConsumerOffset(boost::system::error_code& ec, boost::asio::deadline_timer* t);
+    void doRebalance();
+    void timerCB_doRebalance(boost::system::error_code& ec, boost::asio::deadline_timer* t);
+    bool getSessionCredentialFromConsumerTable(SessionCredentials& sessionCredentials);
+    bool addConsumerToTable(const string& consumerName, MQConsumer* pMQConsumer);
+    void eraseConsumerFromTable(const string& consumerName);
+    int getConsumerTableSize();
+    void getTopicListFromConsumerSubscription(set<string>& topicList);
+    void updateConsumerSubscribeTopicInfo(const string& topic, vector<MQMessageQueue> mqs);
+    void insertConsumerInfoToHeartBeatData(HeartbeatData* pHeartbeatData);
 
-  // topicPublishInfo related operation
-  void addTopicInfoToTable(
-      const string& topic,
-      boost::shared_ptr<TopicPublishInfo> pTopicPublishInfo);
-  void eraseTopicInfoFromTable(const string& topic);
-  bool isTopicInfoValidInTable(const string& topic);
-  boost::shared_ptr<TopicPublishInfo> getTopicPublishInfoFromTable(
-      const string& topic);
-  void getTopicListFromTopicPublishInfo(set<string>& topicList);
+    // producer related operation
+    bool getSessionCredentialFromProducerTable(SessionCredentials& sessionCredentials);
+    bool addProducerToTable(const string& producerName, MQProducer* pMQProducer);
+    void eraseProducerFromTable(const string& producerName);
+    int getProducerTableSize();
+    void insertProducerInfoToHeartBeatData(HeartbeatData* pHeartbeatData);
 
-  void getSessionCredentialsFromOneOfProducerOrConsumer(
-      SessionCredentials& session_credentials);
+    // topicPublishInfo related operation
+    void addTopicInfoToTable(const string& topic, boost::shared_ptr<TopicPublishInfo> pTopicPublishInfo);
+    void eraseTopicInfoFromTable(const string& topic);
+    bool isTopicInfoValidInTable(const string& topic);
+    boost::shared_ptr<TopicPublishInfo> getTopicPublishInfoFromTable(const string& topic);
+    void getTopicListFromTopicPublishInfo(set<string>& topicList);
 
- private:
-  string m_clientId;
-  string m_nameSrvDomain;  // per clientId
-  ServiceState m_serviceState;
-  bool m_bFetchNSService;
+    void getSessionCredentialsFromOneOfProducerOrConsumer(SessionCredentials& session_credentials);
 
-  //<! group --> MQProducer;
-  typedef map<string, MQProducer*> MQPMAP;
-  boost::mutex m_producerTableMutex;
-  MQPMAP m_producerTable;
+private:
+    string m_clientId;
+    string m_nameSrvDomain;  // per clientId
+    ServiceState m_serviceState;
+    bool m_bFetchNSService;
 
-  //<! group --> MQConsumer;
-  typedef map<string, MQConsumer*> MQCMAP;
-  boost::mutex m_consumerTableMutex;
-  MQCMAP m_consumerTable;
+    //<! group --> MQProducer;
+    typedef map<string, MQProducer*> MQPMAP;
+    boost::mutex m_producerTableMutex;
+    MQPMAP m_producerTable;
 
-  //<! Topic---> TopicRouteData
-  typedef map<string, TopicRouteData*> TRDMAP;
-  boost::mutex m_topicRouteTableMutex;
-  TRDMAP m_topicRouteTable;
+    //<! group --> MQConsumer;
+    typedef map<string, MQConsumer*> MQCMAP;
+    boost::mutex m_consumerTableMutex;
+    MQCMAP m_consumerTable;
 
-  //<!-----brokerName
-  //<!     ------brokerid;
-  //<!     ------add;
-  boost::mutex m_brokerAddrlock;
-  typedef map<string, map<int, string>> BrokerAddrMAP;
-  BrokerAddrMAP m_brokerAddrTable;
+    //<! Topic---> TopicRouteData
+    typedef map<string, TopicRouteData*> TRDMAP;
+    boost::mutex m_topicRouteTableMutex;
+    TRDMAP m_topicRouteTable;
 
-  //<!topic ---->TopicPublishInfo> ;
-  typedef map<string, boost::shared_ptr<TopicPublishInfo>> TPMap;
-  boost::mutex m_topicPublishInfoTableMutex;
-  TPMap m_topicPublishInfoTable;
-  boost::mutex m_factoryLock;
-  boost::mutex m_topicPublishInfoLock;
+    //<!-----brokerName
+    //<!     ------brokerid;
+    //<!     ------add;
+    boost::mutex m_brokerAddrlock;
+    typedef map<string, map<int, string>> BrokerAddrMAP;
+    BrokerAddrMAP m_brokerAddrTable;
 
-  //<!clientapi;
-  unique_ptr<MQClientAPIImpl> m_pClientAPIImpl;
-  unique_ptr<ClientRemotingProcessor> m_pClientRemotingProcessor;
+    //<!topic ---->TopicPublishInfo> ;
+    typedef map<string, boost::shared_ptr<TopicPublishInfo>> TPMap;
+    boost::mutex m_topicPublishInfoTableMutex;
+    TPMap m_topicPublishInfoTable;
+    boost::mutex m_factoryLock;
+    boost::mutex m_topicPublishInfoLock;
 
-  boost::asio::io_service m_async_ioService;
-  unique_ptr<boost::thread> m_async_service_thread;
+    //<!clientapi;
+    unique_ptr<MQClientAPIImpl> m_pClientAPIImpl;
+    unique_ptr<ClientRemotingProcessor> m_pClientRemotingProcessor;
 
-  boost::asio::io_service m_consumer_async_ioService;
-  unique_ptr<boost::thread> m_consumer_async_service_thread;
+    boost::asio::io_service m_async_ioService;
+    unique_ptr<boost::thread> m_async_service_thread;
+
+    boost::asio::io_service m_consumer_async_ioService;
+    unique_ptr<boost::thread> m_consumer_async_service_thread;
 };
 
 }  //<!end namespace;

@@ -29,42 +29,42 @@ using rocketmq::BigEndianReader;
 using rocketmq::BigEndianWriter;
 
 TEST(big_endian, bigEndianObject) {
-    char *buf = (char *) malloc(sizeof(char) * 32);
+    char *buf = (char *)malloc(sizeof(char) * 32);
 
     BigEndianWriter writer(buf, 32);
     BigEndianReader reader(buf, 32);
 
-    uint8_t *unit8 = (uint8_t *) malloc(sizeof(uint8_t));
-    EXPECT_TRUE(writer.WriteU8((uint8_t) 12));
+    uint8_t *unit8 = (uint8_t *)malloc(sizeof(uint8_t));
+    EXPECT_TRUE(writer.WriteU8((uint8_t)12));
     EXPECT_TRUE(reader.ReadU8(unit8));
     EXPECT_EQ(*unit8, 12);
     free(unit8);
 
-    uint16_t *unit16 = (uint16_t *) malloc(sizeof(uint16_t));
-    EXPECT_TRUE(writer.WriteU16((uint16_t) 1200));
+    uint16_t *unit16 = (uint16_t *)malloc(sizeof(uint16_t));
+    EXPECT_TRUE(writer.WriteU16((uint16_t)1200));
     EXPECT_TRUE(reader.ReadU16(unit16));
     EXPECT_EQ(*unit16, 1200);
     free(unit16);
 
-    uint32_t *unit32 = (uint32_t *) malloc(sizeof(uint32_t));
+    uint32_t *unit32 = (uint32_t *)malloc(sizeof(uint32_t));
 
-    EXPECT_TRUE(writer.WriteU32((uint32_t) 120000));
+    EXPECT_TRUE(writer.WriteU32((uint32_t)120000));
     EXPECT_TRUE(reader.ReadU32(unit32));
     EXPECT_EQ(*unit32, 120000);
     free(unit32);
 
-    uint64_t *unit64 = (uint64_t *) malloc(sizeof(uint64_t));
+    uint64_t *unit64 = (uint64_t *)malloc(sizeof(uint64_t));
 
-    EXPECT_TRUE(writer.WriteU64((uint64_t) 120000));
+    EXPECT_TRUE(writer.WriteU64((uint64_t)120000));
     EXPECT_TRUE(reader.ReadU64(unit64));
     EXPECT_EQ(*unit64, 120000);
     free(unit64);
 
-    char *newBuf = (char *) malloc(sizeof(char) * 8);
-    char *writeBuf = (char *) malloc(sizeof(char) * 8);
+    char *newBuf = (char *)malloc(sizeof(char) * 8);
+    char *writeBuf = (char *)malloc(sizeof(char) * 8);
     strcpy(writeBuf, "RocketMQ");
-    EXPECT_TRUE(writer.WriteBytes(writeBuf, (size_t) 8));
-    EXPECT_TRUE(reader.ReadBytes(newBuf, (size_t) 8));
+    EXPECT_TRUE(writer.WriteBytes(writeBuf, (size_t)8));
+    EXPECT_TRUE(reader.ReadBytes(newBuf, (size_t)8));
     EXPECT_EQ(*writeBuf, *newBuf);
 
     free(newBuf);
@@ -84,8 +84,8 @@ TEST(big_endian, bigEndian) {
         EXPECT_EQ(writeBuf, readBuf);
     */
 
-    rocketmq::WriteBigEndian(writeBuf, (uint8_t) 12);
-    uint8_t *out = (uint8_t *) malloc(sizeof(uint8_t));
+    rocketmq::WriteBigEndian(writeBuf, (uint8_t)12);
+    uint8_t *out = (uint8_t *)malloc(sizeof(uint8_t));
     rocketmq::ReadBigEndian(writeBuf, out);
     EXPECT_EQ(*out, 12);
     free(out);

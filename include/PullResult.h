@@ -24,45 +24,41 @@
 namespace rocketmq {
 //<!***************************************************************************
 enum PullStatus {
-  FOUND,
-  NO_NEW_MSG,
-  NO_MATCHED_MSG,
-  OFFSET_ILLEGAL,
-  BROKER_TIMEOUT  // indicate pull request timeout or received NULL response
+    FOUND,
+    NO_NEW_MSG,
+    NO_MATCHED_MSG,
+    OFFSET_ILLEGAL,
+    BROKER_TIMEOUT  // indicate pull request timeout or received NULL response
 };
 
-static const char* EnumStrings[] = {"FOUND", "NO_NEW_MSG", "NO_MATCHED_MSG",
-                                    "OFFSET_ILLEGAL", "BROKER_TIMEOUT"};
+static const char* EnumStrings[] = {"FOUND", "NO_NEW_MSG", "NO_MATCHED_MSG", "OFFSET_ILLEGAL", "BROKER_TIMEOUT"};
 
 //<!***************************************************************************
 class ROCKETMQCLIENT_API PullResult {
- public:
-  PullResult();
-  PullResult(PullStatus status);
-  PullResult(PullStatus pullStatus, int64 nextBeginOffset,
-             int64 minOffset, int64 maxOffset);
+public:
+    PullResult();
+    PullResult(PullStatus status);
+    PullResult(PullStatus pullStatus, int64 nextBeginOffset, int64 minOffset, int64 maxOffset);
 
-  PullResult(PullStatus pullStatus, int64 nextBeginOffset,
-             int64 minOffset, int64 maxOffset,
-             const std::vector<MQMessageExt>& src);
+    PullResult(PullStatus pullStatus, int64 nextBeginOffset, int64 minOffset, int64 maxOffset,
+               const std::vector<MQMessageExt>& src);
 
-  virtual ~PullResult();
+    virtual ~PullResult();
 
-  std::string toString() {
-    std::stringstream ss;
-    ss << "PullResult [ pullStatus=" << EnumStrings[pullStatus]
-       << ", nextBeginOffset=" << nextBeginOffset << ", minOffset=" << minOffset
-       << ", maxOffset=" << maxOffset
-       << ", msgFoundList=" << msgFoundList.size() << " ]";
-    return ss.str();
-  }
+    std::string toString() {
+        std::stringstream ss;
+        ss << "PullResult [ pullStatus=" << EnumStrings[pullStatus] << ", nextBeginOffset=" << nextBeginOffset
+           << ", minOffset=" << minOffset << ", maxOffset=" << maxOffset << ", msgFoundList=" << msgFoundList.size()
+           << " ]";
+        return ss.str();
+    }
 
- public:
-  PullStatus pullStatus;
-  int64 nextBeginOffset;
-  int64 minOffset;
-  int64 maxOffset;
-  std::vector<MQMessageExt> msgFoundList;
+public:
+    PullStatus pullStatus;
+    int64 nextBeginOffset;
+    int64 minOffset;
+    int64 maxOffset;
+    std::vector<MQMessageExt> msgFoundList;
 };
 //<!***************************************************************************
 }  //<!end namespace;

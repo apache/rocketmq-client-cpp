@@ -22,21 +22,19 @@
 #include "Logging.h"
 namespace rocketmq {
 //<!************************************************************************
-SubscriptionData::SubscriptionData() {
-  m_subVersion = UtilAll::currentTimeMillis();
-}
+SubscriptionData::SubscriptionData() { m_subVersion = UtilAll::currentTimeMillis(); }
 
 SubscriptionData::SubscriptionData(const string& topic, const string& subString)
     : m_topic(topic), m_subString(subString) {
-  m_subVersion = UtilAll::currentTimeMillis();
+    m_subVersion = UtilAll::currentTimeMillis();
 }
 
 SubscriptionData::SubscriptionData(const SubscriptionData& other) {
-  m_subString = other.m_subString;
-  m_subVersion = other.m_subVersion;
-  m_tagSet = other.m_tagSet;
-  m_topic = other.m_topic;
-  m_codeSet = other.m_codeSet;
+    m_subString = other.m_subString;
+    m_subVersion = other.m_subVersion;
+    m_tagSet = other.m_tagSet;
+    m_topic = other.m_topic;
+    m_codeSet = other.m_codeSet;
 }
 
 const string& SubscriptionData::getTopic() const { return m_topic; }
@@ -47,73 +45,71 @@ void SubscriptionData::setSubString(const string& sub) { m_subString = sub; }
 
 int64 SubscriptionData::getSubVersion() const { return m_subVersion; }
 
-void SubscriptionData::putTagsSet(const string& tag) {
-  m_tagSet.push_back(tag);
-}
+void SubscriptionData::putTagsSet(const string& tag) { m_tagSet.push_back(tag); }
 
 bool SubscriptionData::containTag(const string& tag) {
-  return std::find(m_tagSet.begin(), m_tagSet.end(), tag) != m_tagSet.end();
+    return std::find(m_tagSet.begin(), m_tagSet.end(), tag) != m_tagSet.end();
 }
 
 vector<string>& SubscriptionData::getTagsSet() { return m_tagSet; }
 
 bool SubscriptionData::operator==(const SubscriptionData& other) const {
-  if (!m_subString.compare(other.m_subString)) {
-    return false;
-  }
-  if (m_subVersion != other.m_subVersion) {
-    return false;
-  }
-  if (m_tagSet.size() != other.m_tagSet.size()) {
-    return false;
-  }
-  if (!m_topic.compare(other.m_topic)) {
-    return false;
-  }
-  return true;
+    if (!m_subString.compare(other.m_subString)) {
+        return false;
+    }
+    if (m_subVersion != other.m_subVersion) {
+        return false;
+    }
+    if (m_tagSet.size() != other.m_tagSet.size()) {
+        return false;
+    }
+    if (!m_topic.compare(other.m_topic)) {
+        return false;
+    }
+    return true;
 }
 
 bool SubscriptionData::operator<(const SubscriptionData& other) const {
-  int ret = m_topic.compare(other.m_topic);
-  if (ret < 0) {
-    return true;
-  } else if (ret == 0) {
-    ret = m_subString.compare(other.m_subString);
+    int ret = m_topic.compare(other.m_topic);
     if (ret < 0) {
-      return true;
+        return true;
+    } else if (ret == 0) {
+        ret = m_subString.compare(other.m_subString);
+        if (ret < 0) {
+            return true;
+        } else {
+            return false;
+        }
     } else {
-      return false;
+        return false;
     }
-  } else {
-    return false;
-  }
 }
 
 void SubscriptionData::putCodeSet(const string& tag) {
-  int value = atoi(tag.c_str());
-  m_codeSet.push_back(value);
+    int value = atoi(tag.c_str());
+    m_codeSet.push_back(value);
 }
 
 Json::Value SubscriptionData::toJson() const {
-  Json::Value outJson;
-  outJson["subString"] = m_subString;
-  outJson["subVersion"] = UtilAll::to_string(m_subVersion);
-  outJson["topic"] = m_topic;
+    Json::Value outJson;
+    outJson["subString"] = m_subString;
+    outJson["subVersion"] = UtilAll::to_string(m_subVersion);
+    outJson["topic"] = m_topic;
 
-  {
-    vector<string>::const_iterator it = m_tagSet.begin();
-    for (; it != m_tagSet.end(); it++) {
-      outJson["tagsSet"].append(*it);
+    {
+        vector<string>::const_iterator it = m_tagSet.begin();
+        for (; it != m_tagSet.end(); it++) {
+            outJson["tagsSet"].append(*it);
+        }
     }
-  }
 
-  {
-    vector<int>::const_iterator it = m_codeSet.begin();
-    for (; it != m_codeSet.end(); it++) {
-      outJson["codeSet"].append(*it);
+    {
+        vector<int>::const_iterator it = m_codeSet.begin();
+        for (; it != m_codeSet.end(); it++) {
+            outJson["codeSet"].append(*it);
+        }
     }
-  }
-  return outJson;
+    return outJson;
 }
 
 //<!***************************************************************************
