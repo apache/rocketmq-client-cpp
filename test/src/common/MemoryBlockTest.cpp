@@ -80,7 +80,8 @@ TEST(memoryBlock, operators) {
 
     EXPECT_TRUE(operaterMemoryBlock == memoryBlock);
 
-    char *buf = (char *) malloc(sizeof(char) * 9);
+    char *buf = (char *) malloc(sizeof(char) * 16);
+    memset(buf, 0, 16);
     strcpy(buf, "RocketMQ");
     MemoryBlock twoMemoryBlock(buf, 12);
     EXPECT_FALSE(memoryBlock == twoMemoryBlock);
@@ -90,7 +91,7 @@ TEST(memoryBlock, operators) {
     EXPECT_TRUE(twoMemoryBlock != threeMemoryBlock);
 
     threeMemoryBlock.fillWith(49);
-    EXPECT_EQ(string(threeMemoryBlock.getData()), "1111111111111111");
+    EXPECT_EQ(string(threeMemoryBlock.getData(), 16), "1111111111111111");
 
     threeMemoryBlock.reset();
     EXPECT_EQ(threeMemoryBlock.getSize(), 0);
@@ -115,26 +116,24 @@ TEST(memoryBlock, operators) {
     appendMemoryBlock.append(buf, 8);
     EXPECT_EQ(appendMemoryBlock.getSize(), 8);
 
-    EXPECT_EQ(string(appendMemoryBlock.getData()), "RocketMQ11111111");
-
     MemoryBlock replaceWithMemoryBlock;
     replaceWithMemoryBlock.append(buf, 8);
 
     char *aliyunBuf = (char *) malloc(sizeof(char) * 8);
+    memset(aliyunBuf, 0, 8);
     strcpy(aliyunBuf, "aliyun");
     replaceWithMemoryBlock.replaceWith(aliyunBuf, 0);
     EXPECT_EQ(replaceWithMemoryBlock.getSize(), 8);
-    EXPECT_EQ(string(replaceWithMemoryBlock.getData()), "RocketMQ");
+    EXPECT_EQ(string(replaceWithMemoryBlock.getData(), 8), "RocketMQ");
 
     replaceWithMemoryBlock.replaceWith(aliyunBuf, 6);
     EXPECT_EQ(replaceWithMemoryBlock.getSize(), 6);
-    EXPECT_EQ(string(replaceWithMemoryBlock.getData()), "aliyunMQ");
+    EXPECT_EQ(string(replaceWithMemoryBlock.getData(), strlen(aliyunBuf)), "aliyun");
 
     MemoryBlock insertMemoryBlock;
     insertMemoryBlock.append(buf, 8);
-
     insertMemoryBlock.insert(aliyunBuf, -1, -1);
-    EXPECT_EQ(string(insertMemoryBlock.getData()), "RocketMQ");
+    EXPECT_EQ(string(insertMemoryBlock.getData(), 8), "RocketMQ");
 
     /*    MemoryBlock fourInsertMemoryBlock;
      fourInsertMemoryBlock.append(buf , 8);
@@ -145,17 +144,17 @@ TEST(memoryBlock, operators) {
 
     MemoryBlock twoInsertMemoryBlock;
     twoInsertMemoryBlock.append(buf, 8);
-    twoInsertMemoryBlock.insert(aliyunBuf, 8, 0);
-    EXPECT_EQ(string(twoInsertMemoryBlock.getData()), "aliyun");
+    twoInsertMemoryBlock.insert(aliyunBuf, strlen(aliyunBuf), 0);
+    EXPECT_EQ(string(twoInsertMemoryBlock.getData(), 8 + strlen(aliyunBuf)), "aliyunRocketMQ");
 
     MemoryBlock threeInsertMemoryBlock;
     threeInsertMemoryBlock.append(buf, 8);
     threeInsertMemoryBlock.insert(aliyunBuf, 6, 100);
-    EXPECT_EQ(string(threeInsertMemoryBlock.getData()), "RocketMQaliyun");
+    EXPECT_EQ(string(threeInsertMemoryBlock.getData(), 8 + strlen(aliyunBuf)), "RocketMQaliyun");
 
     MemoryBlock removeSectionMemoryBlock(buf, 8);
     removeSectionMemoryBlock.removeSection(8, -1);
-    EXPECT_EQ(string(removeSectionMemoryBlock.getData()), "RocketMQ");
+    EXPECT_EQ(string(removeSectionMemoryBlock.getData(), 8), "RocketMQ");
 
     MemoryBlock twoRemoveSectionMemoryBlock(buf, 8);
     twoRemoveSectionMemoryBlock.removeSection(1, 4);

@@ -62,37 +62,41 @@ class MockDefaultMQProducer : public DefaultMQProducer {
     MOCK_METHOD5(send, SendResult(MQMessage &, MessageQueueSelector *, void *, int, bool));
 };
 
+void CSendSuccessCallbackFunc(CSendResult result) {
+}
+void cSendExceptionCallbackFunc(CMQException e) {
+}
+
 TEST(cProducer, SendMessageAsync) {
     MockDefaultMQProducer *mockProducer = new MockDefaultMQProducer("testGroup");
     CProducer *cProducer = (CProducer *) mockProducer;
     CMessage *msg = (CMessage *) new MQMessage();
 
-    CSendSuccessCallback cSendSuccessCallback;
-    CSendExceptionCallback cSendExceptionCallback;
-
     EXPECT_EQ(SendMessageAsync(NULL, NULL, NULL, NULL), NULL_POINTER);
     EXPECT_EQ(SendMessageAsync(cProducer, NULL, NULL, NULL), NULL_POINTER);
-    EXPECT_EQ(SendMessageAsync(cProducer, msg, cSendSuccessCallback, NULL), NULL_POINTER);
+    EXPECT_EQ(SendMessageAsync(cProducer, msg, CSendSuccessCallbackFunc, NULL), NULL_POINTER);
 
     EXPECT_CALL(*mockProducer, send(_, _)).Times(1);
-    EXPECT_EQ(SendMessageAsync(cProducer, msg, cSendSuccessCallback, cSendExceptionCallback), OK);
+    EXPECT_EQ(SendMessageAsync(cProducer, msg, CSendSuccessCallbackFunc, cSendExceptionCallbackFunc), OK);
     Mock::AllowLeak(mockProducer);
     DestroyMessage(msg);
+}
+
+int QueueSelectorCallbackFunc(int size, CMessage *msg, void *arg) {
+    return 0;
 }
 
 TEST(cProducer, sendMessageOrderly) {
     MockDefaultMQProducer *mockProducer = new MockDefaultMQProducer("testGroup");
     CProducer *cProducer = (CProducer *) mockProducer;
     CMessage *msg = (CMessage *) new MQMessage();
-    CSendResult *result;
     MQMessageQueue messageQueue;
-    QueueSelectorCallback callback;
 
     EXPECT_EQ(SendMessageOrderly(NULL, NULL, NULL, msg, 1, NULL), NULL_POINTER);
     EXPECT_EQ(SendMessageOrderly(cProducer, NULL, NULL, msg, 1, NULL), NULL_POINTER);
     EXPECT_EQ(SendMessageOrderly(cProducer, msg, NULL, msg, 1, NULL), NULL_POINTER);
-    EXPECT_EQ(SendMessageOrderly(cProducer, msg, callback, NULL, 1, NULL), NULL_POINTER);
-    EXPECT_EQ(SendMessageOrderly(cProducer, msg, callback, msg, 1, NULL), NULL_POINTER);
+    EXPECT_EQ(SendMessageOrderly(cProducer, msg, QueueSelectorCallbackFunc, NULL, 1, NULL), NULL_POINTER);
+    EXPECT_EQ(SendMessageOrderly(cProducer, msg, QueueSelectorCallbackFunc, msg, 1, NULL), NULL_POINTER);
 
     EXPECT_CALL(*mockProducer, send(_, _, _, _, _))
         .WillOnce(Return(SendResult(SendStatus::SEND_OK, "3", "offset1", messageQueue, 14)));

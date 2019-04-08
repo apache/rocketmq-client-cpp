@@ -71,6 +71,10 @@ TEST(cPushComsumer, infomock) {
     Mock::AllowLeak(pushComsumer);
 }
 
+int MessageCallBackFunc(CPushConsumer* consumer, CMessageExt* msg) {
+    return 0;
+}
+
 TEST(cPushComsumer, info) {
     CPushConsumer *cpushConsumer = CreatePushConsumer("testGroup");
     DefaultMQPushConsumer *mqPushConsumer = (DefaultMQPushConsumer *) cpushConsumer;
@@ -89,11 +93,10 @@ TEST(cPushComsumer, info) {
 
     EXPECT_EQ(Subscribe(cpushConsumer, "testTopic", "testSub"), OK);
 
-    MessageCallBack pCallback;
-    EXPECT_EQ(RegisterMessageCallbackOrderly(cpushConsumer, pCallback), OK);
+    EXPECT_EQ(RegisterMessageCallbackOrderly(cpushConsumer, MessageCallBackFunc), OK);
     EXPECT_EQ(mqPushConsumer->getMessageListenerType(), MessageListenerType::messageListenerOrderly);
 
-    EXPECT_EQ(RegisterMessageCallback(cpushConsumer, pCallback), OK);
+    EXPECT_EQ(RegisterMessageCallback(cpushConsumer, MessageCallBackFunc), OK);
     EXPECT_EQ(mqPushConsumer->getMessageListenerType(), MessageListenerType::messageListenerConcurrently);
 
     EXPECT_EQ(UnregisterMessageCallbackOrderly(cpushConsumer), OK);
@@ -135,8 +138,8 @@ TEST(cPushComsumer, null) {
     EXPECT_EQ(RegisterMessageCallback(NULL, NULL), NULL_POINTER);
     EXPECT_EQ(UnregisterMessageCallbackOrderly(NULL), NULL_POINTER);
     EXPECT_EQ(UnregisterMessageCallback(NULL), NULL_POINTER);
-    EXPECT_EQ(SetPushConsumerThreadCount(NULL, NULL), NULL_POINTER);
-    EXPECT_EQ(SetPushConsumerMessageBatchMaxSize(NULL, NULL), NULL_POINTER);
+    EXPECT_EQ(SetPushConsumerThreadCount(NULL, 0), NULL_POINTER);
+    EXPECT_EQ(SetPushConsumerMessageBatchMaxSize(NULL, 0), NULL_POINTER);
     EXPECT_EQ(SetPushConsumerInstanceName(NULL, NULL), NULL_POINTER);
     EXPECT_EQ(SetPushConsumerSessionCredentials(NULL, NULL, NULL, NULL), NULL_POINTER);
     EXPECT_EQ(SetPushConsumerLogPath(NULL, NULL), NULL_POINTER);
