@@ -460,8 +460,8 @@ SendResult DefaultMQProducer::sendAutoRetrySelectImpl(MQMessage& msg,
     boost::shared_ptr<TopicPublishInfo> topicPublishInfo(weak_topicPublishInfo.lock());
     if (topicPublishInfo) {
       SendResult sendResult;
-      if (times == 1) {  // always send to selected MQ firstly, evenif bActiveMQ
-                         // was setted to true
+      if (times == 1) {
+        // always send to selected MQ firstly, evenif bActiveMQ was setted to true
         mq = pSelector->select(topicPublishInfo->getMessageQueueList(), msg, pArg);
         lastmq = mq;
       } else {
