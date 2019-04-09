@@ -25,24 +25,24 @@
 extern "C" {
 #endif
 typedef enum E_CPullStatus {
-    E_FOUND,
-    E_NO_NEW_MSG,
-    E_NO_MATCHED_MSG,
-    E_OFFSET_ILLEGAL,
-    E_BROKER_TIMEOUT   //indicate pull request timeout or received NULL response
+  E_FOUND,
+  E_NO_NEW_MSG,
+  E_NO_MATCHED_MSG,
+  E_OFFSET_ILLEGAL,
+  E_BROKER_TIMEOUT  // indicate pull request timeout or received NULL response
 } CPullStatus;
 
 typedef struct _CPullResult_ {
-    CPullStatus pullStatus;
-    long long nextBeginOffset;
-    long long minOffset;
-    long long maxOffset;
-    CMessageExt **msgFoundList;
-    int size;
-    void *pData;
+  CPullStatus pullStatus;
+  long long nextBeginOffset;
+  long long minOffset;
+  long long maxOffset;
+  CMessageExt** msgFoundList;
+  int size;
+  void* pData;
 } CPullResult;
 
 #ifdef __cplusplus
 };
 #endif
-#endif //__C_PULL_RESULT_H__
+#endif  //__C_PULL_RESULT_H__

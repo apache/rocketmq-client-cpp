@@ -56,25 +56,24 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
 
   //<!begin MQConsumer
   virtual void sendMessageBack(MQMessageExt& msg, int delayLevel);
-  virtual void fetchSubscribeMessageQueues(const std::string& topic,
-                                           std::vector<MQMessageQueue>& mqs);
+  virtual void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs);
   virtual void doRebalance();
   virtual void persistConsumerOffset();
   virtual void persistConsumerOffsetByResetOffset();
-  virtual void updateTopicSubscribeInfo(const std::string& topic,
-                                        std::vector<MQMessageQueue>& info);
+  virtual void updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info);
   virtual ConsumeType getConsumeType();
   virtual ConsumeFromWhere getConsumeFromWhere();
   void setConsumeFromWhere(ConsumeFromWhere consumeFromWhere);
   virtual void getSubscriptions(std::vector<SubscriptionData>&);
   virtual void updateConsumeOffset(const MQMessageQueue& mq, int64 offset);
   virtual void removeConsumeOffset(const MQMessageQueue& mq);
-  virtual PullResult pull(const MQMessageQueue& mq, const std::string& subExpression,
-                          int64 offset, int maxNums) {
+  virtual PullResult pull(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums) {
     return PullResult();
   }
-  virtual void pull(const MQMessageQueue& mq, const std::string& subExpression,
-                    int64 offset, int maxNums,
+  virtual void pull(const MQMessageQueue& mq,
+                    const std::string& subExpression,
+                    int64 offset,
+                    int maxNums,
                     PullCallback* pPullCallback) {}
   virtual ConsumerRunningInfo* getConsumerRunningInfo();
   //<!end MQConsumer;
@@ -88,14 +87,12 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
   ConsumeMsgService* getConsumerMsgService() const;
 
   virtual void producePullMsgTask(PullRequest*);
-  void triggerNextPullRequest(boost::asio::deadline_timer* t,
-                              PullRequest* request);
+  void triggerNextPullRequest(boost::asio::deadline_timer* t, PullRequest* request);
   void runPullMsgQueue(TaskQueue* pTaskQueue);
   void pullMessage(PullRequest* pullrequest);       // sync pullMsg
   void pullMessageAsync(PullRequest* pullrequest);  // async pullMsg
   void setAsyncPull(bool asyncFlag);
-  AsyncPullCallback* getAsyncPullCallBack(PullRequest* request,
-                                          MQMessageQueue msgQueue);
+  AsyncPullCallback* getAsyncPullCallBack(PullRequest* request, MQMessageQueue msgQueue);
   void shutdownAsyncPullCallBack();
 
   /*

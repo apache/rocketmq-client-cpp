@@ -39,13 +39,21 @@ SubscriptionData::SubscriptionData(const SubscriptionData& other) {
   m_codeSet = other.m_codeSet;
 }
 
-const string& SubscriptionData::getTopic() const { return m_topic; }
+const string& SubscriptionData::getTopic() const {
+  return m_topic;
+}
 
-const string& SubscriptionData::getSubString() const { return m_subString; }
+const string& SubscriptionData::getSubString() const {
+  return m_subString;
+}
 
-void SubscriptionData::setSubString(const string& sub) { m_subString = sub; }
+void SubscriptionData::setSubString(const string& sub) {
+  m_subString = sub;
+}
 
-int64 SubscriptionData::getSubVersion() const { return m_subVersion; }
+int64 SubscriptionData::getSubVersion() const {
+  return m_subVersion;
+}
 
 void SubscriptionData::putTagsSet(const string& tag) {
   m_tagSet.push_back(tag);
@@ -55,7 +63,9 @@ bool SubscriptionData::containTag(const string& tag) {
   return std::find(m_tagSet.begin(), m_tagSet.end(), tag) != m_tagSet.end();
 }
 
-vector<string>& SubscriptionData::getTagsSet() { return m_tagSet; }
+vector<string>& SubscriptionData::getTagsSet() {
+  return m_tagSet;
+}
 
 bool SubscriptionData::operator==(const SubscriptionData& other) const {
   if (!m_subString.compare(other.m_subString)) {

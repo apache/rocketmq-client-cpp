@@ -39,7 +39,7 @@ int MQDecoder::MessageStoreTimestampPostion = 56;
 
 //<!***************************************************************************
 string MQDecoder::createMessageId(sockaddr addr, int64 offset) {
-  struct sockaddr_in *sa = (struct sockaddr_in *) &addr;
+  struct sockaddr_in* sa = (struct sockaddr_in*)&addr;
 
   MemoryOutputStream outputmen(MSG_ID_LENGTH);
   outputmen.writeIntBigEndian(sa->sin_addr.s_addr);
@@ -47,19 +47,18 @@ string MQDecoder::createMessageId(sockaddr addr, int64 offset) {
   outputmen.write(&(sa->sin_port), 2);
   outputmen.writeInt64BigEndian(offset);
 
-  const char *bytes = static_cast<const char *>(outputmen.getData());
+  const char* bytes = static_cast<const char*>(outputmen.getData());
   int len = outputmen.getDataSize();
 
   return UtilAll::bytes2string(bytes, len);
 }
 
-MQMessageId MQDecoder::decodeMessageId(const string &msgId) {
-
+MQMessageId MQDecoder::decodeMessageId(const string& msgId) {
   string ipStr = msgId.substr(0, 8);
   string portStr = msgId.substr(8, 8);
   string offsetStr = msgId.substr(16);
 
-  char *end;
+  char* end;
   int ipInt = strtoul(ipStr.c_str(), &end, 16);
   int portInt = strtoul(portStr.c_str(), &end, 16);
 
@@ -70,16 +69,16 @@ MQMessageId MQDecoder::decodeMessageId(const string &msgId) {
   sa.sin_port = htons(portInt);
   sa.sin_addr.s_addr = htonl(ipInt);
 
-  MQMessageId id(*((sockaddr*) &sa), offset);
+  MQMessageId id(*((sockaddr*)&sa), offset);
   return id;
 }
 
-MQMessageExt *MQDecoder::decode(MemoryInputStream &byteBuffer) {
+MQMessageExt* MQDecoder::decode(MemoryInputStream& byteBuffer) {
   return decode(byteBuffer, true);
 }
 
-MQMessageExt *MQDecoder::decode(MemoryInputStream &byteBuffer, bool readBody) {
-  MQMessageExt *msgExt = new MQMessageExt();
+MQMessageExt* MQDecoder::decode(MemoryInputStream& byteBuffer, bool readBody) {
+  MQMessageExt* msgExt = new MQMessageExt();
 
   // 1 TOTALSIZE
   int storeSize = byteBuffer.readIntBigEndian();
@@ -147,7 +146,7 @@ MQMessageExt *MQDecoder::decode(MemoryInputStream &byteBuffer, bool readBody) {
       MemoryBlock block;
       byteBuffer.readIntoMemoryBlock(block, bodyLen);
 
-      const char *const pBody = static_cast<const char *>(block.getData());
+      const char* const pBody = static_cast<const char*>(block.getData());
       int len = block.getSize();
       string msgbody(pBody, len);
 
@@ -166,10 +165,10 @@ MQMessageExt *MQDecoder::decode(MemoryInputStream &byteBuffer, bool readBody) {
   }
 
   // 16 TOPIC
-  int topicLen = (int) byteBuffer.readByte();
+  int topicLen = (int)byteBuffer.readByte();
   MemoryBlock block;
   byteBuffer.readIntoMemoryBlock(block, topicLen);
-  const char *const pTopic = static_cast<const char *>(block.getData());
+  const char* const pTopic = static_cast<const char*>(block.getData());
   topicLen = block.getSize();
   msgExt->setTopic(pTopic, topicLen);
 
@@ -178,7 +177,7 @@ MQMessageExt *MQDecoder::decode(MemoryInputStream &byteBuffer, bool readBody) {
   if (propertiesLen > 0) {
     MemoryBlock block;
     byteBuffer.readIntoMemoryBlock(block, propertiesLen);
-    const char *const pProperty = static_cast<const char *>(block.getData());
+    const char* const pProperty = static_cast<const char*>(block.getData());
     int len = block.getSize();
     string propertiesString(pProperty, len);
 
@@ -189,7 +188,7 @@ MQMessageExt *MQDecoder::decode(MemoryInputStream &byteBuffer, bool readBody) {
   }
 
   // 18 msg ID
-  string offsetMsgId = createMessageId(msgExt->getStoreHost(), (int64) msgExt->getCommitLogOffset());
+  string offsetMsgId = createMessageId(msgExt->getStoreHost(), (int64)msgExt->getCommitLogOffset());
   msgExt->setOffsetMsgId(offsetMsgId);
 
   string msgId = msgExt->getProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);
@@ -202,12 +201,12 @@ MQMessageExt *MQDecoder::decode(MemoryInputStream &byteBuffer, bool readBody) {
   return msgExt;
 }
 
-void MQDecoder::decodes(const MemoryBlock *mem, vector<MQMessageExt> &mqvec) {
+void MQDecoder::decodes(const MemoryBlock* mem, vector<MQMessageExt>& mqvec) {
   mqvec.clear();
   decodes(mem, mqvec, true);
 }
 
-void MQDecoder::decodes(const MemoryBlock *mem, vector<MQMessageExt> &mqvec, bool readBody) {
+void MQDecoder::decodes(const MemoryBlock* mem, vector<MQMessageExt>& mqvec, bool readBody) {
   MemoryInputStream rawInput(*mem, true);
 
   while (rawInput.getNumBytesRemaining() > 0) {
@@ -216,10 +215,10 @@ void MQDecoder::decodes(const MemoryBlock *mem, vector<MQMessageExt> &mqvec, boo
   }
 }
 
-string MQDecoder::messageProperties2String(const map<string, string> &properties) {
+string MQDecoder::messageProperties2String(const map<string, string>& properties) {
   string os;
 
-  for (const auto &it : properties) {
+  for (const auto& it : properties) {
     // os << it->first << NAME_VALUE_SEPARATOR << it->second << PROPERTY_SEPARATOR;
     os.append(it.first);
     os += NAME_VALUE_SEPARATOR;
@@ -230,7 +229,7 @@ string MQDecoder::messageProperties2String(const map<string, string> &properties
   return os;
 }
 
-void MQDecoder::string2messageProperties(const string &propertiesString, map<string, string> &properties) {
+void MQDecoder::string2messageProperties(const string& propertiesString, map<string, string>& properties) {
   vector<string> out;
   UtilAll::Split(out, propertiesString, PROPERTY_SEPARATOR);
 

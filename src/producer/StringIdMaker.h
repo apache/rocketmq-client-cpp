@@ -61,7 +61,7 @@ class StringIdMaker : public boost::serialization::singleton<StringIdMaker> {
   int atomic_incr(int id);
   void set_start_and_next_tm();
 
-  void hexdump(unsigned char *buffer, char *out_buff, unsigned long index);
+  void hexdump(unsigned char* buffer, char* out_buff, unsigned long index);
 
  private:
   uint64_t _start_tm;

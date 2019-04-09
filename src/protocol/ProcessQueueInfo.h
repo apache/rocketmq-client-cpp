@@ -44,9 +44,7 @@ class ProcessQueueInfo {
  public:
   const uint64 getCommitOffset() const { return commitOffset; }
 
-  void setCommitOffset(uint64 input_commitOffset) {
-    commitOffset = input_commitOffset;
-  }
+  void setCommitOffset(uint64 input_commitOffset) { commitOffset = input_commitOffset; }
 
   void setLocked(bool in_locked) { locked = in_locked; }
 
@@ -59,25 +57,18 @@ class ProcessQueueInfo {
   Json::Value toJson() const {
     Json::Value outJson;
     outJson["commitOffset"] = (UtilAll::to_string(commitOffset)).c_str();
-    outJson["cachedMsgMinOffset"] =
-        (UtilAll::to_string(cachedMsgMinOffset)).c_str();
-    outJson["cachedMsgMaxOffset"] =
-        (UtilAll::to_string(cachedMsgMaxOffset)).c_str();
+    outJson["cachedMsgMinOffset"] = (UtilAll::to_string(cachedMsgMinOffset)).c_str();
+    outJson["cachedMsgMaxOffset"] = (UtilAll::to_string(cachedMsgMaxOffset)).c_str();
     outJson["cachedMsgCount"] = (int)(cachedMsgCount);
-    outJson["transactionMsgMinOffset"] =
-        (UtilAll::to_string(transactionMsgMinOffset)).c_str();
-    outJson["transactionMsgMaxOffset"] =
-        (UtilAll::to_string(transactionMsgMaxOffset)).c_str();
+    outJson["transactionMsgMinOffset"] = (UtilAll::to_string(transactionMsgMinOffset)).c_str();
+    outJson["transactionMsgMaxOffset"] = (UtilAll::to_string(transactionMsgMaxOffset)).c_str();
     outJson["transactionMsgCount"] = (int)(transactionMsgCount);
     outJson["locked"] = (locked);
     outJson["tryUnlockTimes"] = (int)(tryUnlockTimes);
-    outJson["lastLockTimestamp"] =
-        (UtilAll::to_string(lastLockTimestamp)).c_str();
+    outJson["lastLockTimestamp"] = (UtilAll::to_string(lastLockTimestamp)).c_str();
     outJson["droped"] = (droped);
-    outJson["lastPullTimestamp"] =
-        (UtilAll::to_string(lastPullTimestamp)).c_str();
-    outJson["lastConsumeTimestamp"] =
-        (UtilAll::to_string(lastConsumeTimestamp)).c_str();
+    outJson["lastPullTimestamp"] = (UtilAll::to_string(lastPullTimestamp)).c_str();
+    outJson["lastConsumeTimestamp"] = (UtilAll::to_string(lastConsumeTimestamp)).c_str();
 
     return outJson;
   }

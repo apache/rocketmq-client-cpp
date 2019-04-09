@@ -39,7 +39,7 @@ DefaultMQProducer::DefaultMQProducer(const string& groupname)
     : m_sendMsgTimeout(3000),
       m_compressMsgBodyOverHowmuch(4 * 1024),
       m_maxMessageSize(1024 * 128),
-      //m_retryAnotherBrokerWhenNotStoreOK(false),
+      // m_retryAnotherBrokerWhenNotStoreOK(false),
       m_compressLevel(5),
       m_retryTimes(5),
       m_retryTimes4Async(1) {
@@ -54,7 +54,7 @@ void DefaultMQProducer::start() {
 #ifndef WIN32
   /* Ignore the SIGPIPE */
   struct sigaction sa;
-  memset(&sa,0, sizeof(struct sigaction));
+  memset(&sa, 0, sizeof(struct sigaction));
   sa.sa_handler = SIG_IGN;
   sa.sa_flags = 0;
   sigaction(SIGPIPE, &sa, 0);
@@ -71,9 +71,7 @@ void DefaultMQProducer::start() {
         m_serviceState = CREATE_JUST;
         THROW_MQEXCEPTION(
             MQClientException,
-            "The producer group[" + getGroupName() +
-                "] has been created before, specify another name please.",
-            -1);
+            "The producer group[" + getGroupName() + "] has been created before, specify another name please.", -1);
       }
 
       getFactory()->start();
@@ -118,8 +116,7 @@ SendResult DefaultMQProducer::send(MQMessage& msg, bool bSelectActiveBroker) {
   return SendResult();
 }
 
-void DefaultMQProducer::send(MQMessage& msg, SendCallback* pSendCallback,
-                             bool bSelectActiveBroker) {
+void DefaultMQProducer::send(MQMessage& msg, SendCallback* pSendCallback, bool bSelectActiveBroker) {
   Validators::checkMessage(msg, getMaxMessageSize());
   try {
     sendDefaultImpl(msg, ComMode_ASYNC, pSendCallback, bSelectActiveBroker);
@@ -154,7 +151,6 @@ SendResult DefaultMQProducer::send(std::vector<MQMessage>& msgs, const MQMessage
 }
 
 BatchMessage DefaultMQProducer::buildBatchMessage(std::vector<MQMessage>& msgs) {
-
   if (msgs.size() < 1) {
     THROW_MQEXCEPTION(MQClientException, "msgs need one message at least", -1);
   }
@@ -173,7 +169,6 @@ BatchMessage DefaultMQProducer::buildBatchMessage(std::vector<MQMessage>& msgs) 
         THROW_MQEXCEPTION(MQClientException, "Retry Group is not supported for batching", -1);
       }
     } else {
-
       if (msg.getDelayTimeLevel() > 0) {
         THROW_MQEXCEPTION(MQClientException, "TimeDelayLevel in not supported for batching", -1);
       }
@@ -205,8 +200,7 @@ SendResult DefaultMQProducer::send(MQMessage& msg, const MQMessageQueue& mq) {
   return SendResult();
 }
 
-void DefaultMQProducer::send(MQMessage& msg, const MQMessageQueue& mq,
-                             SendCallback* pSendCallback) {
+void DefaultMQProducer::send(MQMessage& msg, const MQMessageQueue& mq, SendCallback* pSendCallback) {
   Validators::checkMessage(msg, getMaxMessageSize());
   if (msg.getTopic() != mq.getTopic()) {
     LOG_WARN("message's topic not equal mq's topic");
@@ -242,8 +236,7 @@ void DefaultMQProducer::sendOneway(MQMessage& msg, const MQMessageQueue& mq) {
   }
 }
 
-SendResult DefaultMQProducer::send(MQMessage& msg,
-                                   MessageQueueSelector* pSelector, void* arg) {
+SendResult DefaultMQProducer::send(MQMessage& msg, MessageQueueSelector* pSelector, void* arg) {
   try {
     return sendSelectImpl(msg, pSelector, arg, ComMode_SYNC, NULL);
   } catch (MQException& e) {
@@ -254,11 +247,12 @@ SendResult DefaultMQProducer::send(MQMessage& msg,
 }
 
 SendResult DefaultMQProducer::send(MQMessage& msg,
-                                   MessageQueueSelector* pSelector, void* arg,
-                                   int autoRetryTimes, bool bActiveBroker) {
+                                   MessageQueueSelector* pSelector,
+                                   void* arg,
+                                   int autoRetryTimes,
+                                   bool bActiveBroker) {
   try {
-    return sendAutoRetrySelectImpl(msg, pSelector, arg, ComMode_SYNC, NULL,
-                                   autoRetryTimes, bActiveBroker);
+    return sendAutoRetrySelectImpl(msg, pSelector, arg, ComMode_SYNC, NULL, autoRetryTimes, bActiveBroker);
   } catch (MQException& e) {
     LOG_ERROR(e.what());
     throw e;
@@ -266,8 +260,7 @@ SendResult DefaultMQProducer::send(MQMessage& msg,
   return SendResult();
 }
 
-void DefaultMQProducer::send(MQMessage& msg, MessageQueueSelector* pSelector,
-                             void* arg, SendCallback* pSendCallback) {
+void DefaultMQProducer::send(MQMessage& msg, MessageQueueSelector* pSelector, void* arg, SendCallback* pSendCallback) {
   try {
     sendSelectImpl(msg, pSelector, arg, ComMode_ASYNC, pSendCallback);
   } catch (MQException& e) {
@@ -276,8 +269,7 @@ void DefaultMQProducer::send(MQMessage& msg, MessageQueueSelector* pSelector,
   }
 }
 
-void DefaultMQProducer::sendOneway(MQMessage& msg,
-                                   MessageQueueSelector* pSelector, void* arg) {
+void DefaultMQProducer::sendOneway(MQMessage& msg, MessageQueueSelector* pSelector, void* arg) {
   try {
     sendSelectImpl(msg, pSelector, arg, ComMode_ONEWAY, NULL);
   } catch (MQException& e) {
@@ -286,7 +278,9 @@ void DefaultMQProducer::sendOneway(MQMessage& msg,
   }
 }
 
-int DefaultMQProducer::getSendMsgTimeout() const { return m_sendMsgTimeout; }
+int DefaultMQProducer::getSendMsgTimeout() const {
+  return m_sendMsgTimeout;
+}
 
 void DefaultMQProducer::setSendMsgTimeout(int sendMsgTimeout) {
   m_sendMsgTimeout = sendMsgTimeout;
@@ -296,18 +290,21 @@ int DefaultMQProducer::getCompressMsgBodyOverHowmuch() const {
   return m_compressMsgBodyOverHowmuch;
 }
 
-void DefaultMQProducer::setCompressMsgBodyOverHowmuch(
-    int compressMsgBodyOverHowmuch) {
+void DefaultMQProducer::setCompressMsgBodyOverHowmuch(int compressMsgBodyOverHowmuch) {
   m_compressMsgBodyOverHowmuch = compressMsgBodyOverHowmuch;
 }
 
-int DefaultMQProducer::getMaxMessageSize() const { return m_maxMessageSize; }
+int DefaultMQProducer::getMaxMessageSize() const {
+  return m_maxMessageSize;
+}
 
 void DefaultMQProducer::setMaxMessageSize(int maxMessageSize) {
   m_maxMessageSize = maxMessageSize;
 }
 
-int DefaultMQProducer::getCompressLevel() const { return m_compressLevel; }
+int DefaultMQProducer::getCompressLevel() const {
+  return m_compressLevel;
+}
 
 void DefaultMQProducer::setCompressLevel(int compressLevel) {
   assert((compressLevel >= 0 && compressLevel <= 9) || compressLevel == -1);
@@ -324,10 +321,8 @@ SendResult DefaultMQProducer::sendDefaultImpl(MQMessage& msg,
   int mq_index = 0;
   for (int times = 1; times <= m_retryTimes; times++) {
     boost::weak_ptr<TopicPublishInfo> weak_topicPublishInfo(
-        getFactory()->tryToFindTopicPublishInfo(msg.getTopic(),
-                                                getSessionCredentials()));
-    boost::shared_ptr<TopicPublishInfo> topicPublishInfo(
-        weak_topicPublishInfo.lock());
+        getFactory()->tryToFindTopicPublishInfo(msg.getTopic(), getSessionCredentials()));
+    boost::shared_ptr<TopicPublishInfo> topicPublishInfo(weak_topicPublishInfo.lock());
     if (topicPublishInfo) {
       if (times == 1) {
         mq_index = topicPublishInfo->getWhichQueue();
@@ -360,8 +355,7 @@ SendResult DefaultMQProducer::sendDefaultImpl(MQMessage& msg,
           case ComMode_SYNC:
             if (sendResult.getSendStatus() != SEND_OK) {
               if (bActiveMQ) {
-                topicPublishInfo->updateNonServiceMessageQueue(
-                    mq, getSendMsgTimeout());
+                topicPublishInfo->updateNonServiceMessageQueue(mq, getSendMsgTimeout());
               }
               continue;
             }
@@ -370,11 +364,9 @@ SendResult DefaultMQProducer::sendDefaultImpl(MQMessage& msg,
             break;
         }
       } catch (...) {
-        LOG_ERROR("send failed of times:%d,brokerName:%s", times,
-                  mq.getBrokerName().c_str());
+        LOG_ERROR("send failed of times:%d,brokerName:%s", times, mq.getBrokerName().c_str());
         if (bActiveMQ) {
-          topicPublishInfo->updateNonServiceMessageQueue(mq,
-                                                         getSendMsgTimeout());
+          topicPublishInfo->updateNonServiceMessageQueue(mq, getSendMsgTimeout());
         }
         continue;
       }
@@ -389,12 +381,10 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
                                              const MQMessageQueue& mq,
                                              int communicationMode,
                                              SendCallback* sendCallback) {
-  string brokerAddr =
-      getFactory()->findBrokerAddressInPublish(mq.getBrokerName());
+  string brokerAddr = getFactory()->findBrokerAddressInPublish(mq.getBrokerName());
 
   if (brokerAddr.empty()) {
-    getFactory()->tryToFindTopicPublishInfo(mq.getTopic(),
-                                            getSessionCredentials());
+    getFactory()->tryToFindTopicPublishInfo(mq.getTopic(), getSessionCredentials());
     brokerAddr = getFactory()->findBrokerAddressInPublish(mq.getBrokerName());
   }
 
@@ -402,7 +392,7 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
     try {
       BatchMessage batchMessage;
       bool isBatchMsg = (typeid(msg).name() == typeid(batchMessage).name());
-      //msgId is produced by client, offsetMsgId produced by broker. (same with java sdk)
+      // msgId is produced by client, offsetMsgId produced by broker. (same with java sdk)
       if (!isBatchMsg) {
         string unique_id = StringIdMaker::get_mutable_instance().get_unique_id();
         msg.setProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX, unique_id);
@@ -422,45 +412,43 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
       requestHeader->bornTimestamp = UtilAll::currentTimeMillis();
       requestHeader->flag = (msg.getFlag());
       requestHeader->batch = isBatchMsg;
-      requestHeader->properties =
-          (MQDecoder::messageProperties2String(msg.getProperties()));
+      requestHeader->properties = (MQDecoder::messageProperties2String(msg.getProperties()));
 
-      return getFactory()->getMQClientAPIImpl()->sendMessage(
-          brokerAddr, mq.getBrokerName(), msg, requestHeader,
-          getSendMsgTimeout(), getRetryTimes4Async(), communicationMode, sendCallback,
-          getSessionCredentials());
+      return getFactory()->getMQClientAPIImpl()->sendMessage(brokerAddr, mq.getBrokerName(), msg, requestHeader,
+                                                             getSendMsgTimeout(), getRetryTimes4Async(),
+                                                             communicationMode, sendCallback, getSessionCredentials());
     } catch (MQException& e) {
       throw e;
     }
   }
-  THROW_MQEXCEPTION(MQClientException,
-                    "The broker[" + mq.getBrokerName() + "] not exist", -1);
+  THROW_MQEXCEPTION(MQClientException, "The broker[" + mq.getBrokerName() + "] not exist", -1);
 }
 
 SendResult DefaultMQProducer::sendSelectImpl(MQMessage& msg,
                                              MessageQueueSelector* pSelector,
-                                             void* pArg, int communicationMode,
+                                             void* pArg,
+                                             int communicationMode,
                                              SendCallback* sendCallback) {
   Validators::checkMessage(msg, getMaxMessageSize());
 
   boost::weak_ptr<TopicPublishInfo> weak_topicPublishInfo(
-      getFactory()->tryToFindTopicPublishInfo(msg.getTopic(),
-                                              getSessionCredentials()));
-  boost::shared_ptr<TopicPublishInfo> topicPublishInfo(
-      weak_topicPublishInfo.lock());
+      getFactory()->tryToFindTopicPublishInfo(msg.getTopic(), getSessionCredentials()));
+  boost::shared_ptr<TopicPublishInfo> topicPublishInfo(weak_topicPublishInfo.lock());
   if (topicPublishInfo)  //&& topicPublishInfo->ok())
   {
-    MQMessageQueue mq =
-        pSelector->select(topicPublishInfo->getMessageQueueList(), msg, pArg);
+    MQMessageQueue mq = pSelector->select(topicPublishInfo->getMessageQueueList(), msg, pArg);
     return sendKernelImpl(msg, mq, communicationMode, sendCallback);
   }
   THROW_MQEXCEPTION(MQClientException, "No route info for this topic", -1);
 }
 
-SendResult DefaultMQProducer::sendAutoRetrySelectImpl(
-    MQMessage& msg, MessageQueueSelector* pSelector, void* pArg,
-    int communicationMode, SendCallback* pSendCallback, int autoRetryTimes,
-    bool bActiveMQ) {
+SendResult DefaultMQProducer::sendAutoRetrySelectImpl(MQMessage& msg,
+                                                      MessageQueueSelector* pSelector,
+                                                      void* pArg,
+                                                      int communicationMode,
+                                                      SendCallback* pSendCallback,
+                                                      int autoRetryTimes,
+                                                      bool bActiveMQ) {
   Validators::checkMessage(msg, getMaxMessageSize());
 
   MQMessageQueue lastmq;
@@ -468,22 +456,20 @@ SendResult DefaultMQProducer::sendAutoRetrySelectImpl(
   int mq_index = 0;
   for (int times = 1; times <= autoRetryTimes + 1; times++) {
     boost::weak_ptr<TopicPublishInfo> weak_topicPublishInfo(
-        getFactory()->tryToFindTopicPublishInfo(msg.getTopic(),
-                                                getSessionCredentials()));
-    boost::shared_ptr<TopicPublishInfo> topicPublishInfo(
-        weak_topicPublishInfo.lock());
+        getFactory()->tryToFindTopicPublishInfo(msg.getTopic(), getSessionCredentials()));
+    boost::shared_ptr<TopicPublishInfo> topicPublishInfo(weak_topicPublishInfo.lock());
     if (topicPublishInfo) {
       SendResult sendResult;
       if (times == 1) {  // always send to selected MQ firstly, evenif bActiveMQ
                          // was setted to true
-        mq = pSelector->select(topicPublishInfo->getMessageQueueList(), msg,
-                               pArg);
+        mq = pSelector->select(topicPublishInfo->getMessageQueueList(), msg, pArg);
         lastmq = mq;
       } else {
         LOG_INFO("sendAutoRetrySelectImpl with times:%d", times);
         vector<MQMessageQueue> mqs(topicPublishInfo->getMessageQueueList());
         for (size_t i = 0; i < mqs.size(); i++) {
-          if (mqs[i] == lastmq) mq_index = i;
+          if (mqs[i] == lastmq)
+            mq_index = i;
         }
         if (bActiveMQ)
           mq = topicPublishInfo->selectOneActiveMessageQueue(lastmq, mq_index);
@@ -508,8 +494,7 @@ SendResult DefaultMQProducer::sendAutoRetrySelectImpl(
           case ComMode_SYNC:
             if (sendResult.getSendStatus() != SEND_OK) {
               if (bActiveMQ) {
-                topicPublishInfo->updateNonServiceMessageQueue(
-                    mq, getSendMsgTimeout());
+                topicPublishInfo->updateNonServiceMessageQueue(mq, getSendMsgTimeout());
               }
               continue;
             }
@@ -518,11 +503,9 @@ SendResult DefaultMQProducer::sendAutoRetrySelectImpl(
             break;
         }
       } catch (...) {
-        LOG_ERROR("send failed of times:%d,mq:%s", times,
-                  mq.toString().c_str());
+        LOG_ERROR("send failed of times:%d,mq:%s", times, mq.toString().c_str());
         if (bActiveMQ) {
-          topicPublishInfo->updateNonServiceMessageQueue(mq,
-                                                         getSendMsgTimeout());
+          topicPublishInfo->updateNonServiceMessageQueue(mq, getSendMsgTimeout());
         }
         continue;
       }
@@ -550,7 +533,9 @@ bool DefaultMQProducer::tryToCompressMessage(MQMessage& msg) {
 
   return false;
 }
-int DefaultMQProducer::getRetryTimes() const { return m_retryTimes; }
+int DefaultMQProducer::getRetryTimes() const {
+  return m_retryTimes;
+}
 void DefaultMQProducer::setRetryTimes(int times) {
   if (times <= 0) {
     LOG_WARN("set retry times illegal, use default value:5");
@@ -566,12 +551,10 @@ void DefaultMQProducer::setRetryTimes(int times) {
   m_retryTimes = times;
 }
 
-int DefaultMQProducer::getRetryTimes4Async() const 
-{ 
-  return m_retryTimes4Async; 
+int DefaultMQProducer::getRetryTimes4Async() const {
+  return m_retryTimes4Async;
 }
-void DefaultMQProducer::setRetryTimes4Async(int times) 
-{
+void DefaultMQProducer::setRetryTimes4Async(int times) {
   if (times <= 0) {
     LOG_WARN("set retry times illegal, use default value:1");
     m_retryTimes4Async = 1;

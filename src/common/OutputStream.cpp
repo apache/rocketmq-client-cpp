@@ -29,11 +29,14 @@ bool OutputStream::writeBool(const bool b) {
   return writeByte(b ? (char)1 : (char)0);
 }
 
-bool OutputStream::writeByte(char byte) { return write(&byte, 1); }
+bool OutputStream::writeByte(char byte) {
+  return write(&byte, 1);
+}
 
 bool OutputStream::writeRepeatedByte(uint8 byte, size_t numTimesToRepeat) {
   for (size_t i = 0; i < numTimesToRepeat; ++i)
-    if (!writeByte((char)byte)) return false;
+    if (!writeByte((char)byte))
+      return false;
 
   return true;
 }
@@ -77,18 +80,18 @@ bool OutputStream::writeDoubleBigEndian(double value) {
   return writeInt64BigEndian(n.asInt);
 }
 
-int64 OutputStream::writeFromInputStream(InputStream& source,
-                                         int64 numBytesToWrite) {
-  if (numBytesToWrite < 0) numBytesToWrite = std::numeric_limits<int64>::max();
+int64 OutputStream::writeFromInputStream(InputStream& source, int64 numBytesToWrite) {
+  if (numBytesToWrite < 0)
+    numBytesToWrite = std::numeric_limits<int64>::max();
 
   int64 numWritten = 0;
 
   while (numBytesToWrite > 0) {
     char buffer[8192];
-    const int num = source.read(
-        buffer, (int)std::min(numBytesToWrite, (int64)sizeof(buffer)));
+    const int num = source.read(buffer, (int)std::min(numBytesToWrite, (int64)sizeof(buffer)));
 
-    if (num <= 0) break;
+    if (num <= 0)
+      break;
 
     write(buffer, (size_t)num);
 

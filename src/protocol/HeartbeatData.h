@@ -29,9 +29,7 @@ namespace rocketmq {
 class ProducerData {
  public:
   ProducerData(){};
-  bool operator<(const ProducerData& pd) const {
-    return groupName < pd.groupName;
-  }
+  bool operator<(const ProducerData& pd) const { return groupName < pd.groupName; }
   Json::Value toJson() const {
     Json::Value outJson;
     outJson["groupName"] = groupName;
@@ -47,9 +45,7 @@ class ConsumerData {
  public:
   ConsumerData(){};
   virtual ~ConsumerData() { subscriptionDataSet.clear(); }
-  bool operator<(const ConsumerData& cd) const {
-    return groupName < cd.groupName;
-  }
+  bool operator<(const ConsumerData& cd) const { return groupName < cd.groupName; }
 
   Json::Value toJson() const {
     Json::Value outJson;

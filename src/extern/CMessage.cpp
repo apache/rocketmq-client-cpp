@@ -25,69 +25,68 @@ extern "C" {
 
 using namespace rocketmq;
 
-CMessage *CreateMessage(const char *topic) {
-
-    MQMessage *mqMessage = new MQMessage();
-    if (topic != NULL) {
-        mqMessage->setTopic(topic);
-    }
-    return (CMessage *) mqMessage;
+CMessage* CreateMessage(const char* topic) {
+  MQMessage* mqMessage = new MQMessage();
+  if (topic != NULL) {
+    mqMessage->setTopic(topic);
+  }
+  return (CMessage*)mqMessage;
 }
-int DestroyMessage(CMessage *msg) {
-    if (msg == NULL) {
-        return NULL_POINTER;
-    }
-    delete (MQMessage *)msg;
-    return OK;
+int DestroyMessage(CMessage* msg) {
+  if (msg == NULL) {
+    return NULL_POINTER;
+  }
+  delete (MQMessage*)msg;
+  return OK;
 }
-int SetMessageTopic(CMessage *msg, const char *topic) {
-    if (msg == NULL) {
-        return NULL_POINTER;
-    }
-    ((MQMessage *)msg)->setTopic(topic);
-    return OK;
+int SetMessageTopic(CMessage* msg, const char* topic) {
+  if (msg == NULL) {
+    return NULL_POINTER;
+  }
+  ((MQMessage*)msg)->setTopic(topic);
+  return OK;
 }
-int SetMessageTags(CMessage *msg, const char *tags) {
-    if (msg == NULL) {
-        return NULL_POINTER;
-    }
-    ((MQMessage *)msg)->setTags(tags);
-    return OK;
+int SetMessageTags(CMessage* msg, const char* tags) {
+  if (msg == NULL) {
+    return NULL_POINTER;
+  }
+  ((MQMessage*)msg)->setTags(tags);
+  return OK;
 }
-int SetMessageKeys(CMessage *msg, const char *keys) {
-    if (msg == NULL) {
-        return NULL_POINTER;
-    }
-    ((MQMessage *)msg)->setKeys(keys);
-    return OK;
+int SetMessageKeys(CMessage* msg, const char* keys) {
+  if (msg == NULL) {
+    return NULL_POINTER;
+  }
+  ((MQMessage*)msg)->setKeys(keys);
+  return OK;
 }
-int SetMessageBody(CMessage *msg, const char *body) {
-    if (msg == NULL) {
-        return NULL_POINTER;
-    }
-    ((MQMessage *)msg)->setBody(body);
-    return OK;
+int SetMessageBody(CMessage* msg, const char* body) {
+  if (msg == NULL) {
+    return NULL_POINTER;
+  }
+  ((MQMessage*)msg)->setBody(body);
+  return OK;
 }
-int SetByteMessageBody(CMessage *msg, const char *body, int len) {
-    if (msg == NULL) {
-        return NULL_POINTER;
-    }
-    ((MQMessage *)msg)->setBody(body,len);
-    return OK;
+int SetByteMessageBody(CMessage* msg, const char* body, int len) {
+  if (msg == NULL) {
+    return NULL_POINTER;
+  }
+  ((MQMessage*)msg)->setBody(body, len);
+  return OK;
 }
-int SetMessageProperty(CMessage *msg, const char *key, const char *value) {
-    if (msg == NULL) {
-        return NULL_POINTER;
-    }
-    ((MQMessage *)msg)->setProperty(key,value);
-    return OK;
+int SetMessageProperty(CMessage* msg, const char* key, const char* value) {
+  if (msg == NULL) {
+    return NULL_POINTER;
+  }
+  ((MQMessage*)msg)->setProperty(key, value);
+  return OK;
 }
-int SetDelayTimeLevel(CMessage *msg, int level){
-    if (msg == NULL) {
-        return NULL_POINTER;
-    }
-    ((MQMessage *)msg)->setDelayTimeLevel(level);
-    return OK;
+int SetDelayTimeLevel(CMessage* msg, int level) {
+  if (msg == NULL) {
+    return NULL_POINTER;
+  }
+  ((MQMessage*)msg)->setDelayTimeLevel(level);
+  return OK;
 }
 
 #ifdef __cplusplus

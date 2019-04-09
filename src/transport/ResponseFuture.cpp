@@ -20,8 +20,10 @@
 
 namespace rocketmq {
 //<!************************************************************************
-ResponseFuture::ResponseFuture(int requestCode, int opaque,
-                               TcpRemotingClient* powner, int64 timeout,
+ResponseFuture::ResponseFuture(int requestCode,
+                               int opaque,
+                               TcpRemotingClient* powner,
+                               int64 timeout,
                                bool bAsync /* = false */,
                                AsyncCallbackWrap* pcall /* = NULL */) {
   m_bAsync.store(bAsync);
@@ -55,14 +57,14 @@ ResponseFuture::~ResponseFuture() {
   */
 }
 
-void ResponseFuture::releaseThreadCondition() { m_defaultEvent.notify_all(); }
+void ResponseFuture::releaseThreadCondition() {
+  m_defaultEvent.notify_all();
+}
 
 RemotingCommand* ResponseFuture::waitResponse(int timeoutMillis) {
   boost::unique_lock<boost::mutex> lk(m_defaultEventLock);
-  if (!m_defaultEvent.timed_wait(
-          lk, boost::posix_time::milliseconds(timeoutMillis))) {
-    LOG_WARN("waitResponse of code:%d with opaque:%d timeout", m_requestCode,
-             m_opaque);
+  if (!m_defaultEvent.timed_wait(lk, boost::posix_time::milliseconds(timeoutMillis))) {
+    LOG_WARN("waitResponse of code:%d with opaque:%d timeout", m_requestCode, m_opaque);
     m_syncResponse.store(true);
   }
   return m_pResponseCommand;
@@ -96,7 +98,9 @@ const bool ResponseFuture::getAsyncResponseFlag() {
   return false;
 }
 
-void ResponseFuture::setAsyncResponseFlag() { m_asyncResponse.store(true); }
+void ResponseFuture::setAsyncResponseFlag() {
+  m_asyncResponse.store(true);
+}
 
 const bool ResponseFuture::getASyncFlag() {
   if (m_bAsync.load() == true) {
@@ -106,18 +110,23 @@ const bool ResponseFuture::getASyncFlag() {
   return false;
 }
 
-bool ResponseFuture::isSendRequestOK() { return m_sendRequestOK; }
+bool ResponseFuture::isSendRequestOK() {
+  return m_sendRequestOK;
+}
 
 void ResponseFuture::setSendRequestOK(bool sendRequestOK) {
   m_sendRequestOK = sendRequestOK;
 }
 
-int ResponseFuture::getOpaque() const { return m_opaque; }
+int ResponseFuture::getOpaque() const {
+  return m_opaque;
+}
 
-int ResponseFuture::getRequestCode() const { return m_requestCode; }
+int ResponseFuture::getRequestCode() const {
+  return m_requestCode;
+}
 
-void ResponseFuture::setAsyncCallBackStatus(
-    asyncCallBackStatus asyncCallbackStatus) {
+void ResponseFuture::setAsyncCallBackStatus(asyncCallBackStatus asyncCallbackStatus) {
   boost::lock_guard<boost::mutex> lock(m_asyncCallbackLock);
   if (m_asyncCallbackStatus == asyncCallBackStatus_init) {
     m_asyncCallbackStatus = asyncCallbackStatus;
@@ -151,9 +160,9 @@ void ResponseFuture::executeInvokeCallbackException() {
     return;
   } else {
     if (m_asyncCallbackStatus == asyncCallBackStatus_timeout) {
-
-    //here no need retrySendTimes process because of it have timeout
-    LOG_ERROR("send msg, callback timeout, opaque:%d, sendTimes:%d, maxRetryTimes:%d", getOpaque(), getRetrySendTimes(), getMaxRetrySendTimes());
+      // here no need retrySendTimes process because of it have timeout
+      LOG_ERROR("send msg, callback timeout, opaque:%d, sendTimes:%d, maxRetryTimes:%d", getOpaque(),
+                getRetrySendTimes(), getMaxRetrySendTimes());
 
       m_pCallbackWrap->onException();
     } else {
@@ -172,36 +181,36 @@ bool ResponseFuture::isTimeOut() const {
 }
 
 int ResponseFuture::getMaxRetrySendTimes() const {
-    return m_maxRetrySendTimes;
-} 
+  return m_maxRetrySendTimes;
+}
 int ResponseFuture::getRetrySendTimes() const {
-    return m_retrySendTimes;
+  return m_retrySendTimes;
 }
 
 void ResponseFuture::setMaxRetrySendTimes(int maxRetryTimes) {
-    m_maxRetrySendTimes = maxRetryTimes;
+  m_maxRetrySendTimes = maxRetryTimes;
 }
 void ResponseFuture::setRetrySendTimes(int retryTimes) {
-    m_retrySendTimes = retryTimes;
+  m_retrySendTimes = retryTimes;
 }
 
 void ResponseFuture::setBrokerAddr(const std::string& brokerAddr) {
-    m_brokerAddr = brokerAddr;
+  m_brokerAddr = brokerAddr;
 }
 void ResponseFuture::setRequestCommand(const RemotingCommand& requestCommand) {
-    m_requestCommand = requestCommand;
+  m_requestCommand = requestCommand;
 }
 
 const RemotingCommand& ResponseFuture::getRequestCommand() {
-    return m_requestCommand;
+  return m_requestCommand;
 }
 std::string ResponseFuture::getBrokerAddr() const {
-    return m_brokerAddr;
+  return m_brokerAddr;
 }
 
 int64 ResponseFuture::leftTime() const {
-    int64 diff = UtilAll::currentTimeMillis() - m_beginTimestamp;
-    return m_timeout - diff;
+  int64 diff = UtilAll::currentTimeMillis() - m_beginTimestamp;
+  return m_timeout - diff;
 }
 
 RemotingCommand* ResponseFuture::getCommand() const {

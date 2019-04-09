@@ -51,8 +51,7 @@ class LockBatchResponseBody {
   virtual ~LockBatchResponseBody() { lockOKMQSet.clear(); }
   vector<MQMessageQueue> getLockOKMQSet();
   void setLockOKMQSet(vector<MQMessageQueue> lockOKMQSet);
-  static void Decode(const MemoryBlock* mem,
-                     vector<MQMessageQueue>& messageQueues);
+  static void Decode(const MemoryBlock* mem, vector<MQMessageQueue>& messageQueues);
 
  private:
   vector<MQMessageQueue> lockOKMQSet;

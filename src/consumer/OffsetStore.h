@@ -28,11 +28,11 @@ namespace rocketmq {
 class MQClientFactory;
 //<!***************************************************************************
 enum ReadOffsetType {
-  //read offset from memory
+  // read offset from memory
   READ_FROM_MEMORY,
-  //read offset from remoting
+  // read offset from remoting
   READ_FROM_STORE,
-  //read offset from memory firstly, then from remoting
+  // read offset from memory firstly, then from remoting
   MEMORY_FIRST_THEN_STORE,
 };
 
@@ -44,10 +44,10 @@ class OffsetStore {
 
   virtual void load() = 0;
   virtual void updateOffset(const MQMessageQueue& mq, int64 offset) = 0;
-  virtual int64 readOffset(const MQMessageQueue& mq, ReadOffsetType type,
+  virtual int64 readOffset(const MQMessageQueue& mq,
+                           ReadOffsetType type,
                            const SessionCredentials& session_credentials) = 0;
-  virtual void persist(const MQMessageQueue& mq,
-                       const SessionCredentials& session_credentials) = 0;
+  virtual void persist(const MQMessageQueue& mq, const SessionCredentials& session_credentials) = 0;
   virtual void persistAll(const std::vector<MQMessageQueue>& mq) = 0;
   virtual void removeOffset(const MQMessageQueue& mq) = 0;
 
@@ -67,10 +67,10 @@ class LocalFileOffsetStore : public OffsetStore {
 
   virtual void load();
   virtual void updateOffset(const MQMessageQueue& mq, int64 offset);
-  virtual int64 readOffset(const MQMessageQueue& mq, ReadOffsetType type,
+  virtual int64 readOffset(const MQMessageQueue& mq,
+                           ReadOffsetType type,
                            const SessionCredentials& session_credentials);
-  virtual void persist(const MQMessageQueue& mq,
-                       const SessionCredentials& session_credentials);
+  virtual void persist(const MQMessageQueue& mq, const SessionCredentials& session_credentials);
   virtual void persistAll(const std::vector<MQMessageQueue>& mq);
   virtual void removeOffset(const MQMessageQueue& mq);
 
@@ -87,19 +87,18 @@ class RemoteBrokerOffsetStore : public OffsetStore {
 
   virtual void load();
   virtual void updateOffset(const MQMessageQueue& mq, int64 offset);
-  virtual int64 readOffset(const MQMessageQueue& mq, ReadOffsetType type,
+  virtual int64 readOffset(const MQMessageQueue& mq,
+                           ReadOffsetType type,
                            const SessionCredentials& session_credentials);
-  virtual void persist(const MQMessageQueue& mq,
-                       const SessionCredentials& session_credentials);
+  virtual void persist(const MQMessageQueue& mq, const SessionCredentials& session_credentials);
   virtual void persistAll(const std::vector<MQMessageQueue>& mq);
   virtual void removeOffset(const MQMessageQueue& mq);
 
  private:
-  void updateConsumeOffsetToBroker(
-      const MQMessageQueue& mq, int64 offset,
-      const SessionCredentials& session_credentials);
-  int64 fetchConsumeOffsetFromBroker(
-      const MQMessageQueue& mq, const SessionCredentials& session_credentials);
+  void updateConsumeOffsetToBroker(const MQMessageQueue& mq,
+                                   int64 offset,
+                                   const SessionCredentials& session_credentials);
+  int64 fetchConsumeOffsetFromBroker(const MQMessageQueue& mq, const SessionCredentials& session_credentials);
 };
 //<!***************************************************************************
 }  //<!end namespace;

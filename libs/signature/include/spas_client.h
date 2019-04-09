@@ -28,14 +28,15 @@ extern "C" {
 namespace rocketmqSignature {
 #endif
 
-#define SPAS_MAX_KEY_LEN 128            /* max access_key/secret_key length */
-#define SPAS_MAX_PATH 256               /* max credential file path length */
-#define SPAS_ACCESS_KEY_TAG "accessKey" /* access_key tag in credential file \
-                                           */
-#define SPAS_SECRET_KEY_TAG "secretKey" /* secret_key tag in credential file \
-                                           */
-#define SPAS_CREDENTIAL_ENV \
-  "SPAS_CREDENTIAL" /* credential file environment variable */
+#define SPAS_MAX_KEY_LEN 128 /* max access_key/secret_key length */
+#define SPAS_MAX_PATH 256    /* max credential file path length */
+#define SPAS_ACCESS_KEY_TAG                        \
+  "accessKey" /* access_key tag in credential file \
+                 */
+#define SPAS_SECRET_KEY_TAG                                                        \
+  "secretKey"                                 /* secret_key tag in credential file \
+                                                 */
+#define SPAS_CREDENTIAL_ENV "SPAS_CREDENTIAL" /* credential file environment variable */
 
 typedef enum {
   SIGN_HMACSHA1 = 0,   /* HmacSHA1 */
@@ -67,31 +68,29 @@ typedef struct _spas_credential {
   char secret_key[SPAS_MAX_KEY_LEN];
 } SPAS_CREDENTIAL;
 
-extern int spas_load_credential(char *path, CREDENTIAL_UPDATE_MODE mode);
-extern int spas_set_access_key(char *key);
-extern int spas_set_secret_key(char *key);
-extern char *spas_get_access_key(void);
-extern char *spas_get_secret_key(void);
-extern SPAS_CREDENTIAL *spas_get_credential(void);
+extern int spas_load_credential(char* path, CREDENTIAL_UPDATE_MODE mode);
+extern int spas_set_access_key(char* key);
+extern int spas_set_secret_key(char* key);
+extern char* spas_get_access_key(void);
+extern char* spas_get_secret_key(void);
+extern SPAS_CREDENTIAL* spas_get_credential(void);
 
 #ifdef SPAS_MT
 
-extern int spas_load_thread_credential(char *path);
-extern int spas_set_thread_access_key(char *key);
-extern int spas_set_thread_secret_key(char *key);
-extern char *spas_get_thread_access_key(void);
-extern char *spas_get_thread_secret_key(void);
+extern int spas_load_thread_credential(char* path);
+extern int spas_set_thread_access_key(char* key);
+extern int spas_set_thread_secret_key(char* key);
+extern char* spas_get_thread_access_key(void);
+extern char* spas_get_thread_secret_key(void);
 
 #endif
 
-extern char *spas_get_signature(const SPAS_PARAM_LIST *list, const char *key);
-extern char *spas_get_signature2(const SPAS_PARAM_LIST *list, const char *key,
-                                 SPAS_SIGN_ALGORITHM algorithm);
-extern char *spas_sign(const char *data, size_t size, const char *key);
-extern char *spas_sign2(const char *data, size_t size, const char *key,
-                        SPAS_SIGN_ALGORITHM algorithm);
-extern void spas_mem_free(char *pSignature);
-extern char *spas_get_version(void);
+extern char* spas_get_signature(const SPAS_PARAM_LIST* list, const char* key);
+extern char* spas_get_signature2(const SPAS_PARAM_LIST* list, const char* key, SPAS_SIGN_ALGORITHM algorithm);
+extern char* spas_sign(const char* data, size_t size, const char* key);
+extern char* spas_sign2(const char* data, size_t size, const char* key, SPAS_SIGN_ALGORITHM algorithm);
+extern void spas_mem_free(char* pSignature);
+extern char* spas_get_version(void);
 
 #ifdef __cplusplus
 }

@@ -28,54 +28,54 @@ using testing::Return;
 using rocketmq::MQMessage;
 
 TEST(cmessages, info) {
-    CMessage *message = CreateMessage(NULL);
-    MQMessage *mqMessage = (MQMessage *) message;
-    EXPECT_EQ(mqMessage->getTopic(), "");
+  CMessage* message = CreateMessage(NULL);
+  MQMessage* mqMessage = (MQMessage*)message;
+  EXPECT_EQ(mqMessage->getTopic(), "");
 
-    SetMessageTopic(message, "testTopic");
-    EXPECT_EQ(mqMessage->getTopic(), "testTopic");
+  SetMessageTopic(message, "testTopic");
+  EXPECT_EQ(mqMessage->getTopic(), "testTopic");
 
-    SetMessageTags(message, "testTags");
-    EXPECT_EQ(mqMessage->getTags(), "testTags");
+  SetMessageTags(message, "testTags");
+  EXPECT_EQ(mqMessage->getTags(), "testTags");
 
-    SetMessageKeys(message, "testKeys");
-    EXPECT_EQ(mqMessage->getKeys(), "testKeys");
+  SetMessageKeys(message, "testKeys");
+  EXPECT_EQ(mqMessage->getKeys(), "testKeys");
 
-    SetMessageBody(message, "testBody");
-    EXPECT_EQ(mqMessage->getBody(), "testBody");
+  SetMessageBody(message, "testBody");
+  EXPECT_EQ(mqMessage->getBody(), "testBody");
 
-    SetByteMessageBody(message, "testBody", 5);
-    EXPECT_EQ(mqMessage->getBody(), "testB");
+  SetByteMessageBody(message, "testBody", 5);
+  EXPECT_EQ(mqMessage->getBody(), "testB");
 
-    SetMessageProperty(message, "testKey", "testValue");
-    EXPECT_EQ(mqMessage->getProperty("testKey"), "testValue");
+  SetMessageProperty(message, "testKey", "testValue");
+  EXPECT_EQ(mqMessage->getProperty("testKey"), "testValue");
 
-    SetDelayTimeLevel(message, 1);
-    EXPECT_EQ(mqMessage->getDelayTimeLevel(), 1);
+  SetDelayTimeLevel(message, 1);
+  EXPECT_EQ(mqMessage->getDelayTimeLevel(), 1);
 
-    EXPECT_EQ(DestroyMessage(message), OK);
+  EXPECT_EQ(DestroyMessage(message), OK);
 
-    CMessage *twomessage = CreateMessage("testTwoTopic");
-    MQMessage *twoMqMessage = (MQMessage *) twomessage;
-    EXPECT_EQ(twoMqMessage->getTopic(), "testTwoTopic");
+  CMessage* twomessage = CreateMessage("testTwoTopic");
+  MQMessage* twoMqMessage = (MQMessage*)twomessage;
+  EXPECT_EQ(twoMqMessage->getTopic(), "testTwoTopic");
 
-    EXPECT_EQ(DestroyMessage(twomessage), OK);
+  EXPECT_EQ(DestroyMessage(twomessage), OK);
 }
 
 TEST(cmessages, null) {
-    EXPECT_EQ(SetMessageTopic(NULL, NULL), NULL_POINTER);
-    EXPECT_EQ(SetMessageTags(NULL, NULL), NULL_POINTER);
-    EXPECT_EQ(SetMessageKeys(NULL, NULL), NULL_POINTER);
-    EXPECT_EQ(SetMessageBody(NULL, NULL), NULL_POINTER);
-    EXPECT_EQ(SetByteMessageBody(NULL, NULL, 0), NULL_POINTER);
-    EXPECT_EQ(SetMessageProperty(NULL, NULL, NULL), NULL_POINTER);
-    EXPECT_EQ(SetDelayTimeLevel(NULL, 0), NULL_POINTER);
+  EXPECT_EQ(SetMessageTopic(NULL, NULL), NULL_POINTER);
+  EXPECT_EQ(SetMessageTags(NULL, NULL), NULL_POINTER);
+  EXPECT_EQ(SetMessageKeys(NULL, NULL), NULL_POINTER);
+  EXPECT_EQ(SetMessageBody(NULL, NULL), NULL_POINTER);
+  EXPECT_EQ(SetByteMessageBody(NULL, NULL, 0), NULL_POINTER);
+  EXPECT_EQ(SetMessageProperty(NULL, NULL, NULL), NULL_POINTER);
+  EXPECT_EQ(SetDelayTimeLevel(NULL, 0), NULL_POINTER);
 }
 
-int main(int argc, char *argv[]) {
-    InitGoogleMock(&argc, argv);
+int main(int argc, char* argv[]) {
+  InitGoogleMock(&argc, argv);
 
-    testing::GTEST_FLAG(filter) = "cmessages.null";
-    int itestts = RUN_ALL_TESTS();
-    return itestts;
+  testing::GTEST_FLAG(filter) = "cmessages.null";
+  int itestts = RUN_ALL_TESTS();
+  return itestts;
 }

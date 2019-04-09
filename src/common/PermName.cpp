@@ -24,7 +24,9 @@ int PermName::PERM_READ = 0x1 << 2;
 int PermName::PERM_WRITE = 0x1 << 1;
 int PermName::PERM_INHERIT = 0x1 << 0;
 
-bool PermName::isReadable(int perm) { return (perm & PERM_READ) == PERM_READ; }
+bool PermName::isReadable(int perm) {
+  return (perm & PERM_READ) == PERM_READ;
+}
 
 bool PermName::isWriteable(int perm) {
   return (perm & PERM_WRITE) == PERM_WRITE;

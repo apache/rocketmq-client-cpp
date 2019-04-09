@@ -45,7 +45,8 @@ class Task_impl : public ITask_impl {
     m_arg = 0;
   }
   virtual void run() {
-    if (m_func != 0) m_func(m_arg);
+    if (m_func != 0)
+      m_func(m_arg);
   }
   virtual ITask_impl* fork() { return new Task_impl(m_func, m_arg); }
 
@@ -72,7 +73,8 @@ struct Task {
     return *this;
   }
   void run() {
-    if (m_pTaskImpl) m_pTaskImpl->run();
+    if (m_pTaskImpl)
+      m_pTaskImpl->run();
   }
 
  private:
@@ -131,8 +133,7 @@ struct TaskBinder {
       FUNCT dest_func;
       ARG1 arg1;
       ARG2 arg2;
-      lambda(FUNCT func, const ARG1& arg1, const ARG2& arg2)
-          : dest_func(func), arg1(arg1), arg2(arg2) {}
+      lambda(FUNCT func, const ARG1& arg1, const ARG2& arg2) : dest_func(func), arg1(arg1), arg2(arg2) {}
       virtual void run() { (*dest_func)(arg1, arg2); }
       virtual ITask_impl* fork() { return new lambda(dest_func, arg1, arg2); }
     };
@@ -149,15 +150,12 @@ struct TaskBinder {
       lambda(FUNCT func, const ARG1& arg1, const ARG2& arg2, const ARG3& arg3)
           : dest_func(func), arg1(arg1), arg2(arg2), arg3(arg3) {}
       virtual void run() { (*dest_func)(arg1, arg2, arg3); }
-      virtual ITask_impl* fork() {
-        return new lambda(dest_func, arg1, arg2, arg3);
-      }
+      virtual ITask_impl* fork() { return new lambda(dest_func, arg1, arg2, arg3); }
     };
     return Task(new lambda(func, arg1, arg2, arg3));
   }
 
-  template <typename FUNCT, typename ARG1, typename ARG2, typename ARG3,
-            typename ARG4>
+  template <typename FUNCT, typename ARG1, typename ARG2, typename ARG3, typename ARG4>
   static Task gen(FUNCT func, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4) {
     struct lambda : public ITask_impl {
       FUNCT dest_func;
@@ -165,21 +163,16 @@ struct TaskBinder {
       ARG2 arg2;
       ARG3 arg3;
       ARG4 arg4;
-      lambda(FUNCT func, const ARG1& arg1, const ARG2& arg2, const ARG3& arg3,
-             const ARG4& arg4)
+      lambda(FUNCT func, const ARG1& arg1, const ARG2& arg2, const ARG3& arg3, const ARG4& arg4)
           : dest_func(func), arg1(arg1), arg2(arg2), arg3(arg3), arg4(arg4) {}
       virtual void run() { (*dest_func)(arg1, arg2, arg3, arg4); }
-      virtual ITask_impl* fork() {
-        return new lambda(dest_func, arg1, arg2, arg3, arg4);
-      }
+      virtual ITask_impl* fork() { return new lambda(dest_func, arg1, arg2, arg3, arg4); }
     };
     return Task(new lambda(func, arg1, arg2, arg3, arg4));
   }
 
-  template <typename FUNCT, typename ARG1, typename ARG2, typename ARG3,
-            typename ARG4, typename ARG5>
-  static Task gen(FUNCT func, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4,
-                  ARG5 arg5) {
+  template <typename FUNCT, typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5>
+  static Task gen(FUNCT func, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5) {
     struct lambda : public ITask_impl {
       FUNCT dest_func;
       ARG1 arg1;
@@ -187,26 +180,16 @@ struct TaskBinder {
       ARG3 arg3;
       ARG4 arg4;
       ARG5 arg5;
-      lambda(FUNCT func, const ARG1& arg1, const ARG2& arg2, const ARG3& arg3,
-             const ARG4& arg4, const ARG5& arg5)
-          : dest_func(func),
-            arg1(arg1),
-            arg2(arg2),
-            arg3(arg3),
-            arg4(arg4),
-            arg5(arg5) {}
+      lambda(FUNCT func, const ARG1& arg1, const ARG2& arg2, const ARG3& arg3, const ARG4& arg4, const ARG5& arg5)
+          : dest_func(func), arg1(arg1), arg2(arg2), arg3(arg3), arg4(arg4), arg5(arg5) {}
       virtual void run() { (*dest_func)(arg1, arg2, arg3, arg4, arg5); }
-      virtual ITask_impl* fork() {
-        return new lambda(dest_func, arg1, arg2, arg3, arg4, arg5);
-      }
+      virtual ITask_impl* fork() { return new lambda(dest_func, arg1, arg2, arg3, arg4, arg5); }
     };
     return Task(new lambda(func, arg1, arg2, arg3, arg4, arg5));
   }
 
-  template <typename FUNCT, typename ARG1, typename ARG2, typename ARG3,
-            typename ARG4, typename ARG5, typename ARG6>
-  static Task gen(FUNCT func, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4,
-                  ARG5 arg5, ARG6 arg6) {
+  template <typename FUNCT, typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6>
+  static Task gen(FUNCT func, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6) {
     struct lambda : public ITask_impl {
       FUNCT dest_func;
       ARG1 arg1;
@@ -215,27 +198,29 @@ struct TaskBinder {
       ARG4 arg4;
       ARG5 arg5;
       ARG6 arg6;
-      lambda(FUNCT func, const ARG1& arg1, const ARG2& arg2, const ARG3& arg3,
-             const ARG4& arg4, const ARG5& arg5, const ARG6& arg6)
-          : dest_func(func),
-            arg1(arg1),
-            arg2(arg2),
-            arg3(arg3),
-            arg4(arg4),
-            arg5(arg5),
-            arg6(arg6) {}
+      lambda(FUNCT func,
+             const ARG1& arg1,
+             const ARG2& arg2,
+             const ARG3& arg3,
+             const ARG4& arg4,
+             const ARG5& arg5,
+             const ARG6& arg6)
+          : dest_func(func), arg1(arg1), arg2(arg2), arg3(arg3), arg4(arg4), arg5(arg5), arg6(arg6) {}
       virtual void run() { (*dest_func)(arg1, arg2, arg3, arg4, arg5, arg6); }
-      virtual ITask_impl* fork() {
-        return new lambda(dest_func, arg1, arg2, arg3, arg4, arg5, arg6);
-      }
+      virtual ITask_impl* fork() { return new lambda(dest_func, arg1, arg2, arg3, arg4, arg5, arg6); }
     };
     return Task(new lambda(func, arg1, arg2, arg3, arg4, arg5, arg6));
   }
 
-  template <typename FUNCT, typename ARG1, typename ARG2, typename ARG3,
-            typename ARG4, typename ARG5, typename ARG6, typename ARG7>
-  static Task gen(FUNCT func, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4,
-                  ARG5 arg5, ARG6 arg6, ARG7 arg7) {
+  template <typename FUNCT,
+            typename ARG1,
+            typename ARG2,
+            typename ARG3,
+            typename ARG4,
+            typename ARG5,
+            typename ARG6,
+            typename ARG7>
+  static Task gen(FUNCT func, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6, ARG7 arg7) {
     struct lambda : public ITask_impl {
       FUNCT dest_func;
       ARG1 arg1;
@@ -245,32 +230,31 @@ struct TaskBinder {
       ARG5 arg5;
       ARG6 arg6;
       ARG7 arg7;
-      lambda(FUNCT func, const ARG1& arg1, const ARG2& arg2, const ARG3& arg3,
-             const ARG4& arg4, const ARG5& arg5, const ARG6& arg6,
+      lambda(FUNCT func,
+             const ARG1& arg1,
+             const ARG2& arg2,
+             const ARG3& arg3,
+             const ARG4& arg4,
+             const ARG5& arg5,
+             const ARG6& arg6,
              const ARG7& arg7)
-          : dest_func(func),
-            arg1(arg1),
-            arg2(arg2),
-            arg3(arg3),
-            arg4(arg4),
-            arg5(arg5),
-            arg6(arg6),
-            arg7(arg7) {}
-      virtual void run() {
-        (*dest_func)(arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-      }
-      virtual ITask_impl* fork() {
-        return new lambda(dest_func, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-      }
+          : dest_func(func), arg1(arg1), arg2(arg2), arg3(arg3), arg4(arg4), arg5(arg5), arg6(arg6), arg7(arg7) {}
+      virtual void run() { (*dest_func)(arg1, arg2, arg3, arg4, arg5, arg6, arg7); }
+      virtual ITask_impl* fork() { return new lambda(dest_func, arg1, arg2, arg3, arg4, arg5, arg6, arg7); }
     };
     return Task(new lambda(func, arg1, arg2, arg3, arg4, arg5, arg6, arg7));
   }
 
-  template <typename FUNCT, typename ARG1, typename ARG2, typename ARG3,
-            typename ARG4, typename ARG5, typename ARG6, typename ARG7,
+  template <typename FUNCT,
+            typename ARG1,
+            typename ARG2,
+            typename ARG3,
+            typename ARG4,
+            typename ARG5,
+            typename ARG6,
+            typename ARG7,
             typename ARG8>
-  static Task gen(FUNCT func, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4,
-                  ARG5 arg5, ARG6 arg6, ARG7 arg7, ARG8 arg8) {
+  static Task gen(FUNCT func, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6, ARG7 arg7, ARG8 arg8) {
     struct lambda : public ITask_impl {
       FUNCT dest_func;
       ARG1 arg1;
@@ -281,9 +265,15 @@ struct TaskBinder {
       ARG6 arg6;
       ARG7 arg7;
       ARG8 arg8;
-      lambda(FUNCT func, const ARG1& arg1, const ARG2& arg2, const ARG3& arg3,
-             const ARG4& arg4, const ARG5& arg5, const ARG6& arg6,
-             const ARG7& arg7, const ARG8& arg8)
+      lambda(FUNCT func,
+             const ARG1& arg1,
+             const ARG2& arg2,
+             const ARG3& arg3,
+             const ARG4& arg4,
+             const ARG5& arg5,
+             const ARG6& arg6,
+             const ARG7& arg7,
+             const ARG8& arg8)
           : dest_func(func),
             arg1(arg1),
             arg2(arg2),
@@ -293,23 +283,24 @@ struct TaskBinder {
             arg6(arg6),
             arg7(arg7),
             arg8(arg8) {}
-      virtual void run() {
-        (*dest_func)(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-      }
-      virtual ITask_impl* fork() {
-        return new lambda(dest_func, arg1, arg2, arg3, arg4, arg5, arg6, arg7,
-                          arg8);
-      }
+      virtual void run() { (*dest_func)(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8); }
+      virtual ITask_impl* fork() { return new lambda(dest_func, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8); }
     };
-    return Task(
-        new lambda(func, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8));
+    return Task(new lambda(func, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8));
   }
 
-  template <typename FUNCT, typename ARG1, typename ARG2, typename ARG3,
-            typename ARG4, typename ARG5, typename ARG6, typename ARG7,
-            typename ARG8, typename ARG9>
-  static Task gen(FUNCT func, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4,
-                  ARG5 arg5, ARG6 arg6, ARG7 arg7, ARG8 arg8, ARG9 arg9) {
+  template <typename FUNCT,
+            typename ARG1,
+            typename ARG2,
+            typename ARG3,
+            typename ARG4,
+            typename ARG5,
+            typename ARG6,
+            typename ARG7,
+            typename ARG8,
+            typename ARG9>
+  static Task
+  gen(FUNCT func, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6, ARG7 arg7, ARG8 arg8, ARG9 arg9) {
     struct lambda : public ITask_impl {
       FUNCT dest_func;
       ARG1 arg1;
@@ -321,9 +312,16 @@ struct TaskBinder {
       ARG7 arg7;
       ARG8 arg8;
       ARG9 arg9;
-      lambda(FUNCT func, const ARG1& arg1, const ARG2& arg2, const ARG3& arg3,
-             const ARG4& arg4, const ARG5& arg5, const ARG6& arg6,
-             const ARG7& arg7, const ARG8& arg8, const ARG9& arg9)
+      lambda(FUNCT func,
+             const ARG1& arg1,
+             const ARG2& arg2,
+             const ARG3& arg3,
+             const ARG4& arg4,
+             const ARG5& arg5,
+             const ARG6& arg6,
+             const ARG7& arg7,
+             const ARG8& arg8,
+             const ARG9& arg9)
           : dest_func(func),
             arg1(arg1),
             arg2(arg2),
@@ -334,16 +332,10 @@ struct TaskBinder {
             arg7(arg7),
             arg8(arg8),
             arg9(arg9) {}
-      virtual void run() {
-        (*dest_func)(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-      }
-      virtual ITask_impl* fork() {
-        return new lambda(dest_func, arg1, arg2, arg3, arg4, arg5, arg6, arg7,
-                          arg8, arg9);
-      }
+      virtual void run() { (*dest_func)(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9); }
+      virtual ITask_impl* fork() { return new lambda(dest_func, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9); }
     };
-    return Task(
-        new lambda(func, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9));
+    return Task(new lambda(func, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9));
   }
 
   //<!***************************************************************************
@@ -367,59 +359,62 @@ struct TaskBinder {
       RET (T::*dest_func)(FARG1);
       T* obj;
       ARG1 arg1;
-      lambda(RET (T::*pfunc)(FARG1), T* obj, const ARG1& arg1)
-          : dest_func(pfunc), obj(obj), arg1(arg1) {}
+      lambda(RET (T::*pfunc)(FARG1), T* obj, const ARG1& arg1) : dest_func(pfunc), obj(obj), arg1(arg1) {}
       virtual void run() { (obj->*dest_func)(arg1); }
       virtual ITask_impl* fork() { return new lambda(dest_func, obj, arg1); }
     };
     return Task(new lambda(func, obj, arg1));
   }
 
-  template <typename T, typename RET, typename FARG1, typename FARG2,
-            typename ARG1, typename ARG2>
+  template <typename T, typename RET, typename FARG1, typename FARG2, typename ARG1, typename ARG2>
   static Task gen(RET (T::*func)(FARG1, FARG2), T* obj, ARG1 arg1, ARG2 arg2) {
     struct lambda : public ITask_impl {
       RET (T::*dest_func)(FARG1, FARG2);
       T* obj;
       ARG1 arg1;
       ARG2 arg2;
-      lambda(RET (T::*func)(FARG1, FARG2), T* obj, const ARG1& arg1,
-             const ARG2& arg2)
+      lambda(RET (T::*func)(FARG1, FARG2), T* obj, const ARG1& arg1, const ARG2& arg2)
           : dest_func(func), obj(obj), arg1(arg1), arg2(arg2) {}
       virtual void run() { (obj->*dest_func)(arg1, arg2); }
-      virtual ITask_impl* fork() {
-        return new lambda(dest_func, obj, arg1, arg2);
-      }
+      virtual ITask_impl* fork() { return new lambda(dest_func, obj, arg1, arg2); }
     };
     return Task(new lambda(func, obj, arg1, arg2));
   }
 
-  template <typename T, typename RET, typename FARG1, typename FARG2,
-            typename FARG3, typename ARG1, typename ARG2, typename ARG3>
-  static Task gen(RET (T::*func)(FARG1, FARG2, FARG3), T* obj, ARG1 arg1,
-                  ARG2 arg2, ARG3 arg3) {
+  template <typename T,
+            typename RET,
+            typename FARG1,
+            typename FARG2,
+            typename FARG3,
+            typename ARG1,
+            typename ARG2,
+            typename ARG3>
+  static Task gen(RET (T::*func)(FARG1, FARG2, FARG3), T* obj, ARG1 arg1, ARG2 arg2, ARG3 arg3) {
     struct lambda : public ITask_impl {
       RET (T::*dest_func)(FARG1, FARG2, FARG3);
       T* obj;
       ARG1 arg1;
       ARG2 arg2;
       ARG3 arg3;
-      lambda(RET (T::*func)(FARG1, FARG2, FARG3), T* obj, const ARG1& arg1,
-             const ARG2& arg2, const ARG3& arg3)
+      lambda(RET (T::*func)(FARG1, FARG2, FARG3), T* obj, const ARG1& arg1, const ARG2& arg2, const ARG3& arg3)
           : dest_func(func), obj(obj), arg1(arg1), arg2(arg2), arg3(arg3) {}
       virtual void run() { (obj->*dest_func)(arg1, arg2, arg3); }
-      virtual ITask_impl* fork() {
-        return new lambda(dest_func, obj, arg1, arg2, arg3);
-      }
+      virtual ITask_impl* fork() { return new lambda(dest_func, obj, arg1, arg2, arg3); }
     };
     return Task(new lambda(func, obj, arg1, arg2, arg3));
   }
 
-  template <typename T, typename RET, typename FARG1, typename FARG2,
-            typename FARG3, typename FARG4, typename ARG1, typename ARG2,
-            typename ARG3, typename ARG4>
-  static Task gen(RET (T::*func)(FARG1, FARG2, FARG3, FARG4), T* obj, ARG1 arg1,
-                  ARG2 arg2, ARG3 arg3, ARG4 arg4) {
+  template <typename T,
+            typename RET,
+            typename FARG1,
+            typename FARG2,
+            typename FARG3,
+            typename FARG4,
+            typename ARG1,
+            typename ARG2,
+            typename ARG3,
+            typename ARG4>
+  static Task gen(RET (T::*func)(FARG1, FARG2, FARG3, FARG4), T* obj, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4) {
     struct lambda : public ITask_impl {
       RET (T::*dest_func)(FARG1, FARG2, FARG3, FARG4);
       T* obj;
@@ -427,28 +422,38 @@ struct TaskBinder {
       ARG2 arg2;
       ARG3 arg3;
       ARG4 arg4;
-      lambda(RET (T::*func)(FARG1, FARG2, FARG3, FARG4), T* obj,
-             const ARG1& arg1, const ARG2& arg2, const ARG3& arg3,
+      lambda(RET (T::*func)(FARG1, FARG2, FARG3, FARG4),
+             T* obj,
+             const ARG1& arg1,
+             const ARG2& arg2,
+             const ARG3& arg3,
              const ARG4& arg4)
-          : dest_func(func),
-            obj(obj),
-            arg1(arg1),
-            arg2(arg2),
-            arg3(arg3),
-            arg4(arg4) {}
+          : dest_func(func), obj(obj), arg1(arg1), arg2(arg2), arg3(arg3), arg4(arg4) {}
       virtual void run() { (obj->*dest_func)(arg1, arg2, arg3, arg4); }
-      virtual ITask_impl* fork() {
-        return new lambda(dest_func, obj, arg1, arg2, arg3, arg4);
-      }
+      virtual ITask_impl* fork() { return new lambda(dest_func, obj, arg1, arg2, arg3, arg4); }
     };
     return Task(new lambda(func, obj, arg1, arg2, arg3, arg4));
   }
 
-  template <typename T, typename RET, typename FARG1, typename FARG2,
-            typename FARG3, typename FARG4, typename FARG5, typename ARG1,
-            typename ARG2, typename ARG3, typename ARG4, typename ARG5>
-  static Task gen(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5), T* obj,
-                  ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5) {
+  template <typename T,
+            typename RET,
+            typename FARG1,
+            typename FARG2,
+            typename FARG3,
+            typename FARG4,
+            typename FARG5,
+            typename ARG1,
+            typename ARG2,
+            typename ARG3,
+            typename ARG4,
+            typename ARG5>
+  static Task gen(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5),
+                  T* obj,
+                  ARG1 arg1,
+                  ARG2 arg2,
+                  ARG3 arg3,
+                  ARG4 arg4,
+                  ARG5 arg5) {
     struct lambda : public ITask_impl {
       RET (T::*dest_func)(FARG1, FARG2, FARG3, FARG4, FARG5);
       T* obj;
@@ -457,30 +462,41 @@ struct TaskBinder {
       ARG3 arg3;
       ARG4 arg4;
       ARG5 arg5;
-      lambda(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5), T* obj,
-             const ARG1& arg1, const ARG2& arg2, const ARG3& arg3,
-             const ARG4& arg4, const ARG5& arg5)
-          : dest_func(func),
-            obj(obj),
-            arg1(arg1),
-            arg2(arg2),
-            arg3(arg3),
-            arg4(arg4),
-            arg5(arg5) {}
+      lambda(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5),
+             T* obj,
+             const ARG1& arg1,
+             const ARG2& arg2,
+             const ARG3& arg3,
+             const ARG4& arg4,
+             const ARG5& arg5)
+          : dest_func(func), obj(obj), arg1(arg1), arg2(arg2), arg3(arg3), arg4(arg4), arg5(arg5) {}
       virtual void run() { (obj->*dest_func)(arg1, arg2, arg3, arg4, arg5); }
-      virtual ITask_impl* fork() {
-        return new lambda(dest_func, obj, arg1, arg2, arg3, arg4, arg5);
-      }
+      virtual ITask_impl* fork() { return new lambda(dest_func, obj, arg1, arg2, arg3, arg4, arg5); }
     };
     return Task(new lambda(func, obj, arg1, arg2, arg3, arg4, arg5));
   }
 
-  template <typename T, typename RET, typename FARG1, typename FARG2,
-            typename FARG3, typename FARG4, typename FARG5, typename FARG6,
-            typename ARG1, typename ARG2, typename ARG3, typename ARG4,
-            typename ARG5, typename ARG6>
+  template <typename T,
+            typename RET,
+            typename FARG1,
+            typename FARG2,
+            typename FARG3,
+            typename FARG4,
+            typename FARG5,
+            typename FARG6,
+            typename ARG1,
+            typename ARG2,
+            typename ARG3,
+            typename ARG4,
+            typename ARG5,
+            typename ARG6>
   static Task gen(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5, FARG6),
-                  T* obj, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5,
+                  T* obj,
+                  ARG1 arg1,
+                  ARG2 arg2,
+                  ARG3 arg3,
+                  ARG4 arg4,
+                  ARG5 arg5,
                   ARG6 arg6) {
     struct lambda : public ITask_impl {
       RET (T::*dest_func)(FARG1, FARG2, FARG3, FARG4, FARG5, FARG6);
@@ -491,35 +507,46 @@ struct TaskBinder {
       ARG4 arg4;
       ARG5 arg5;
       ARG6 arg6;
-      lambda(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5, FARG6), T* obj,
-             const ARG1& arg1, const ARG2& arg2, const ARG3& arg3,
-             const ARG4& arg4, const ARG5& arg5, const ARG6& arg6)
-          : dest_func(func),
-            obj(obj),
-            arg1(arg1),
-            arg2(arg2),
-            arg3(arg3),
-            arg4(arg4),
-            arg5(arg5),
-            arg6(arg6) {}
-      virtual void run() {
-        (obj->*dest_func)(arg1, arg2, arg3, arg4, arg5, arg6);
-      }
-      virtual ITask_impl* fork() {
-        return new lambda(dest_func, obj, arg1, arg2, arg3, arg4, arg5, arg6);
-      }
+      lambda(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5, FARG6),
+             T* obj,
+             const ARG1& arg1,
+             const ARG2& arg2,
+             const ARG3& arg3,
+             const ARG4& arg4,
+             const ARG5& arg5,
+             const ARG6& arg6)
+          : dest_func(func), obj(obj), arg1(arg1), arg2(arg2), arg3(arg3), arg4(arg4), arg5(arg5), arg6(arg6) {}
+      virtual void run() { (obj->*dest_func)(arg1, arg2, arg3, arg4, arg5, arg6); }
+      virtual ITask_impl* fork() { return new lambda(dest_func, obj, arg1, arg2, arg3, arg4, arg5, arg6); }
     };
     return Task(new lambda(func, obj, arg1, arg2, arg3, arg4, arg5, arg6));
   }
 
-  template <typename T, typename RET, typename FARG1, typename FARG2,
-            typename FARG3, typename FARG4, typename FARG5, typename FARG6,
-            typename FARG7, typename ARG1, typename ARG2, typename ARG3,
-            typename ARG4, typename ARG5, typename ARG6, typename ARG7>
-  static Task gen(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5, FARG6,
-                                 FARG7),
-                  T* obj, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5,
-                  ARG6 arg6, ARG7 arg7) {
+  template <typename T,
+            typename RET,
+            typename FARG1,
+            typename FARG2,
+            typename FARG3,
+            typename FARG4,
+            typename FARG5,
+            typename FARG6,
+            typename FARG7,
+            typename ARG1,
+            typename ARG2,
+            typename ARG3,
+            typename ARG4,
+            typename ARG5,
+            typename ARG6,
+            typename ARG7>
+  static Task gen(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5, FARG6, FARG7),
+                  T* obj,
+                  ARG1 arg1,
+                  ARG2 arg2,
+                  ARG3 arg3,
+                  ARG4 arg4,
+                  ARG5 arg5,
+                  ARG6 arg6,
+                  ARG7 arg7) {
     struct lambda : public ITask_impl {
       RET (T::*dest_func)(FARG1, FARG2, FARG3, FARG4, FARG5, FARG6, FARG7);
       T* obj;
@@ -531,8 +558,13 @@ struct TaskBinder {
       ARG6 arg6;
       ARG7 arg7;
       lambda(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5, FARG6, FARG7),
-             T* obj, const ARG1& arg1, const ARG2& arg2, const ARG3& arg3,
-             const ARG4& arg4, const ARG5& arg5, const ARG6& arg6,
+             T* obj,
+             const ARG1& arg1,
+             const ARG2& arg2,
+             const ARG3& arg3,
+             const ARG4& arg4,
+             const ARG5& arg5,
+             const ARG6& arg6,
              const ARG7& arg7)
           : dest_func(func),
             obj(obj),
@@ -543,29 +575,42 @@ struct TaskBinder {
             arg5(arg5),
             arg6(arg6),
             arg7(arg7) {}
-      virtual void run() {
-        (obj->*dest_func)(arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-      }
-      virtual ITask_impl* fork() {
-        return new lambda(dest_func, obj, arg1, arg2, arg3, arg4, arg5, arg6,
-                          arg7);
-      }
+      virtual void run() { (obj->*dest_func)(arg1, arg2, arg3, arg4, arg5, arg6, arg7); }
+      virtual ITask_impl* fork() { return new lambda(dest_func, obj, arg1, arg2, arg3, arg4, arg5, arg6, arg7); }
     };
-    return Task(
-        new lambda(func, obj, arg1, arg2, arg3, arg4, arg5, arg6, arg7));
+    return Task(new lambda(func, obj, arg1, arg2, arg3, arg4, arg5, arg6, arg7));
   }
 
-  template <typename T, typename RET, typename FARG1, typename FARG2,
-            typename FARG3, typename FARG4, typename FARG5, typename FARG6,
-            typename FARG7, typename FARG8, typename ARG1, typename ARG2,
-            typename ARG3, typename ARG4, typename ARG5, typename ARG6,
-            typename ARG7, typename ARG8>
-  static Task gen(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5, FARG6,
-                                 FARG7, FARG8),
-                  T* obj, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5,
-                  ARG6 arg6, ARG7 arg7, ARG8 arg8) {
+  template <typename T,
+            typename RET,
+            typename FARG1,
+            typename FARG2,
+            typename FARG3,
+            typename FARG4,
+            typename FARG5,
+            typename FARG6,
+            typename FARG7,
+            typename FARG8,
+            typename ARG1,
+            typename ARG2,
+            typename ARG3,
+            typename ARG4,
+            typename ARG5,
+            typename ARG6,
+            typename ARG7,
+            typename ARG8>
+  static Task gen(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5, FARG6, FARG7, FARG8),
+                  T* obj,
+                  ARG1 arg1,
+                  ARG2 arg2,
+                  ARG3 arg3,
+                  ARG4 arg4,
+                  ARG5 arg5,
+                  ARG6 arg6,
+                  ARG7 arg7,
+                  ARG8 arg8) {
     struct lambda : public ITask_impl {
-      RET (T::*dest_func)
+      RET(T::*dest_func)
       (FARG1, FARG2, FARG3, FARG4, FARG5, FARG6, FARG7, FARG8);
       T* obj;
       ARG1 arg1;
@@ -576,11 +621,16 @@ struct TaskBinder {
       ARG6 arg6;
       ARG7 arg7;
       ARG8 arg8;
-      lambda(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5, FARG6, FARG7,
-                            FARG8),
-             T* obj, const ARG1& arg1, const ARG2& arg2, const ARG3& arg3,
-             const ARG4& arg4, const ARG5& arg5, const ARG6& arg6,
-             const ARG7& arg7, const ARG8& arg8)
+      lambda(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5, FARG6, FARG7, FARG8),
+             T* obj,
+             const ARG1& arg1,
+             const ARG2& arg2,
+             const ARG3& arg3,
+             const ARG4& arg4,
+             const ARG5& arg5,
+             const ARG6& arg6,
+             const ARG7& arg7,
+             const ARG8& arg8)
           : dest_func(func),
             obj(obj),
             arg1(arg1),
@@ -591,29 +641,45 @@ struct TaskBinder {
             arg6(arg6),
             arg7(arg7),
             arg8(arg8) {}
-      virtual void run() {
-        (obj->*dest_func)(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-      }
-      virtual ITask_impl* fork() {
-        return new lambda(dest_func, obj, arg1, arg2, arg3, arg4, arg5, arg6,
-                          arg7, arg8);
-      }
+      virtual void run() { (obj->*dest_func)(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8); }
+      virtual ITask_impl* fork() { return new lambda(dest_func, obj, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8); }
     };
-    return Task(
-        new lambda(func, obj, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8));
+    return Task(new lambda(func, obj, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8));
   }
 
-  template <typename T, typename RET, typename FARG1, typename FARG2,
-            typename FARG3, typename FARG4, typename FARG5, typename FARG6,
-            typename FARG7, typename FARG8, typename FARG9, typename ARG1,
-            typename ARG2, typename ARG3, typename ARG4, typename ARG5,
-            typename ARG6, typename ARG7, typename ARG8, typename ARG9>
-  static Task gen(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5, FARG6,
-                                 FARG7, FARG8, FARG9),
-                  T* obj, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5,
-                  ARG6 arg6, ARG7 arg7, ARG8 arg8, ARG9 arg9) {
+  template <typename T,
+            typename RET,
+            typename FARG1,
+            typename FARG2,
+            typename FARG3,
+            typename FARG4,
+            typename FARG5,
+            typename FARG6,
+            typename FARG7,
+            typename FARG8,
+            typename FARG9,
+            typename ARG1,
+            typename ARG2,
+            typename ARG3,
+            typename ARG4,
+            typename ARG5,
+            typename ARG6,
+            typename ARG7,
+            typename ARG8,
+            typename ARG9>
+  static Task gen(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5, FARG6, FARG7, FARG8, FARG9),
+                  T* obj,
+                  ARG1 arg1,
+                  ARG2 arg2,
+                  ARG3 arg3,
+                  ARG4 arg4,
+                  ARG5 arg5,
+                  ARG6 arg6,
+                  ARG7 arg7,
+                  ARG8 arg8,
+                  ARG9 arg9) {
     struct lambda : public ITask_impl {
-      RET (T::*dest_func)
+      RET(T::*dest_func)
       (FARG1, FARG2, FARG3, FARG4, FARG5, FARG6, FARG7, FARG8, FARG9);
       T* obj;
       ARG1 arg1;
@@ -625,11 +691,17 @@ struct TaskBinder {
       ARG7 arg7;
       ARG8 arg8;
       ARG9 arg9;
-      lambda(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5, FARG6, FARG7,
-                            FARG8, FARG9),
-             T* obj, const ARG1& arg1, const ARG2& arg2, const ARG3& arg3,
-             const ARG4& arg4, const ARG5& arg5, const ARG6& arg6,
-             const ARG7& arg7, const ARG8& arg8, const ARG9& arg9)
+      lambda(RET (T::*func)(FARG1, FARG2, FARG3, FARG4, FARG5, FARG6, FARG7, FARG8, FARG9),
+             T* obj,
+             const ARG1& arg1,
+             const ARG2& arg2,
+             const ARG3& arg3,
+             const ARG4& arg4,
+             const ARG5& arg5,
+             const ARG6& arg6,
+             const ARG7& arg7,
+             const ARG8& arg8,
+             const ARG9& arg9)
           : dest_func(func),
             obj(obj),
             arg1(arg1),
@@ -641,16 +713,12 @@ struct TaskBinder {
             arg7(arg7),
             arg8(arg8),
             arg9(arg9) {}
-      virtual void run() {
-        (obj->*dest_func)(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-      }
+      virtual void run() { (obj->*dest_func)(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9); }
       virtual ITask_impl* fork() {
-        return new lambda(dest_func, obj, arg1, arg2, arg3, arg4, arg5, arg6,
-                          arg7, arg8, arg9);
+        return new lambda(dest_func, obj, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
       }
     };
-    return Task(new lambda(func, obj, arg1, arg2, arg3, arg4, arg5, arg6, arg7,
-                           arg8, arg9));
+    return Task(new lambda(func, obj, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9));
   }
 };
 

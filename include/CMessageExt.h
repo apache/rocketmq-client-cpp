@@ -24,26 +24,26 @@
 extern "C" {
 #endif
 
-//typedef struct _CMessageExt_ _CMessageExt;
+// typedef struct _CMessageExt_ _CMessageExt;
 typedef struct CMessageExt CMessageExt;
 
-ROCKETMQCLIENT_API const char *GetMessageTopic(CMessageExt *msgExt);
-ROCKETMQCLIENT_API const char *GetMessageTags(CMessageExt *msgExt);
-ROCKETMQCLIENT_API const char *GetMessageKeys(CMessageExt *msgExt);
-ROCKETMQCLIENT_API const char *GetMessageBody(CMessageExt *msgExt);
-ROCKETMQCLIENT_API const char *GetMessageProperty(CMessageExt *msgExt, const char *key);
-ROCKETMQCLIENT_API const char *GetMessageId(CMessageExt *msgExt);
-ROCKETMQCLIENT_API int GetMessageDelayTimeLevel(CMessageExt *msgExt);
-ROCKETMQCLIENT_API int GetMessageQueueId(CMessageExt *msgExt);
-ROCKETMQCLIENT_API int GetMessageReconsumeTimes(CMessageExt *msgExt);
-ROCKETMQCLIENT_API int GetMessageStoreSize(CMessageExt *msgExt);
-ROCKETMQCLIENT_API long long GetMessageBornTimestamp(CMessageExt *msgExt);
-ROCKETMQCLIENT_API long long GetMessageStoreTimestamp(CMessageExt *msgExt);
-ROCKETMQCLIENT_API long long GetMessageQueueOffset(CMessageExt *msgExt);
-ROCKETMQCLIENT_API long long GetMessageCommitLogOffset(CMessageExt *msgExt);
-ROCKETMQCLIENT_API long long GetMessagePreparedTransactionOffset(CMessageExt *msgExt);
+ROCKETMQCLIENT_API const char* GetMessageTopic(CMessageExt* msgExt);
+ROCKETMQCLIENT_API const char* GetMessageTags(CMessageExt* msgExt);
+ROCKETMQCLIENT_API const char* GetMessageKeys(CMessageExt* msgExt);
+ROCKETMQCLIENT_API const char* GetMessageBody(CMessageExt* msgExt);
+ROCKETMQCLIENT_API const char* GetMessageProperty(CMessageExt* msgExt, const char* key);
+ROCKETMQCLIENT_API const char* GetMessageId(CMessageExt* msgExt);
+ROCKETMQCLIENT_API int GetMessageDelayTimeLevel(CMessageExt* msgExt);
+ROCKETMQCLIENT_API int GetMessageQueueId(CMessageExt* msgExt);
+ROCKETMQCLIENT_API int GetMessageReconsumeTimes(CMessageExt* msgExt);
+ROCKETMQCLIENT_API int GetMessageStoreSize(CMessageExt* msgExt);
+ROCKETMQCLIENT_API long long GetMessageBornTimestamp(CMessageExt* msgExt);
+ROCKETMQCLIENT_API long long GetMessageStoreTimestamp(CMessageExt* msgExt);
+ROCKETMQCLIENT_API long long GetMessageQueueOffset(CMessageExt* msgExt);
+ROCKETMQCLIENT_API long long GetMessageCommitLogOffset(CMessageExt* msgExt);
+ROCKETMQCLIENT_API long long GetMessagePreparedTransactionOffset(CMessageExt* msgExt);
 
 #ifdef __cplusplus
 };
 #endif
-#endif //__C_MESSAGE_EXT_H__
+#endif  //__C_MESSAGE_EXT_H__

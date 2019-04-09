@@ -24,8 +24,7 @@ namespace rocketmq {
 //<!************************************************************************
 class ROCKETMQCLIENT_API QueryResult {
  public:
-  QueryResult(uint64 indexLastUpdateTimestamp,
-              const std::vector<MQMessageExt*>& messageList) {
+  QueryResult(uint64 indexLastUpdateTimestamp, const std::vector<MQMessageExt*>& messageList) {
     m_indexLastUpdateTimestamp = indexLastUpdateTimestamp;
     m_messageList = messageList;
   }

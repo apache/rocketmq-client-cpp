@@ -24,8 +24,7 @@ namespace rocketmq {
 //<!***************************************************************************
 class MQMessageId {
  public:
-  MQMessageId(sockaddr address, int64 offset)
-      : m_address(address), m_offset(offset) {}
+  MQMessageId(sockaddr address, int64 offset) : m_address(address), m_offset(offset) {}
 
   sockaddr getAddress() const { return m_address; }
 

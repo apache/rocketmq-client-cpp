@@ -141,8 +141,7 @@ class ROCKETMQCLIENT_API OutputStream {
                                   is exhausted)
       @returns the number of bytes written
   */
-  virtual int64 writeFromInputStream(InputStream& source,
-                                     int64 maxNumBytesToWrite);
+  virtual int64 writeFromInputStream(InputStream& source, int64 maxNumBytesToWrite);
 };
 }
 

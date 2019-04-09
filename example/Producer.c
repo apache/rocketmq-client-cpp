@@ -29,40 +29,39 @@
 
 void thread_sleep(unsigned milliseconds) {
 #ifdef _WIN32
-    Sleep(milliseconds);
+  Sleep(milliseconds);
 #else
-    usleep(milliseconds * 1000);  // takes microseconds
+  usleep(milliseconds * 1000);  // takes microseconds
 #endif
 }
 
-void StartSendMessage(CProducer *producer) {
-    int i = 0;
-    char body[256];
-    CMessage *msg = CreateMessage("T_TestTopic");
-    SetMessageTags(msg, "Test_Tag");
-    SetMessageKeys(msg, "Test_Keys");
-    CSendResult result;
-    for (i = 0; i < 10; i++) {
-        memset(body, 0, sizeof(body));
-        snprintf(body, sizeof(body), "new message body, index %d", i);
-        SetMessageBody(msg, body);
-        SendMessageSync(producer, msg, &result);
-        printf("send message[%d] result status:%d, msgId:%s\n", i, (int)result.sendStatus, result.msgId);
-        thread_sleep(1000);
-    }
-    DestroyMessage(msg);
+void StartSendMessage(CProducer* producer) {
+  int i = 0;
+  char body[256];
+  CMessage* msg = CreateMessage("T_TestTopic");
+  SetMessageTags(msg, "Test_Tag");
+  SetMessageKeys(msg, "Test_Keys");
+  CSendResult result;
+  for (i = 0; i < 10; i++) {
+    memset(body, 0, sizeof(body));
+    snprintf(body, sizeof(body), "new message body, index %d", i);
+    SetMessageBody(msg, body);
+    SendMessageSync(producer, msg, &result);
+    printf("send message[%d] result status:%d, msgId:%s\n", i, (int)result.sendStatus, result.msgId);
+    thread_sleep(1000);
+  }
+  DestroyMessage(msg);
 }
 
-int main(int argc, char *argv[]) {
-    printf("Producer Initializing.....\n");
-    CProducer *producer = CreateProducer("Group_producer");
-    SetProducerNameServerAddress(producer, "127.0.0.1:9876");
-    StartProducer(producer);
-    printf("Producer start.....\n");
-    StartSendMessage(producer);
-    ShutdownProducer(producer);
-    DestroyProducer(producer);
-    printf("Producer Shutdown!\n");
-    return 0;
+int main(int argc, char* argv[]) {
+  printf("Producer Initializing.....\n");
+  CProducer* producer = CreateProducer("Group_producer");
+  SetProducerNameServerAddress(producer, "127.0.0.1:9876");
+  StartProducer(producer);
+  printf("Producer start.....\n");
+  StartSendMessage(producer);
+  ShutdownProducer(producer);
+  DestroyProducer(producer);
+  printf("Producer Shutdown!\n");
+  return 0;
 }
-

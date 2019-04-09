@@ -57,8 +57,7 @@ class ROCKETMQCLIENT_API MemoryOutputStream : public OutputStream {
                                               the block will be cleared before
      use
   */
-  MemoryOutputStream(MemoryBlock& memoryBlockToWriteTo,
-                     bool appendToExistingBlockContent);
+  MemoryOutputStream(MemoryBlock& memoryBlockToWriteTo, bool appendToExistingBlockContent);
 
   /** Creates a MemoryOutputStream that will write into a user-supplied,
      fixed-size
@@ -126,7 +125,6 @@ class ROCKETMQCLIENT_API MemoryOutputStream : public OutputStream {
 
 /** Copies all the data that has been written to a MemoryOutputStream into
  * another stream. */
-OutputStream& operator<<(OutputStream& stream,
-                         const MemoryOutputStream& streamToRead);
+OutputStream& operator<<(OutputStream& stream, const MemoryOutputStream& streamToRead);
 }
 #endif  // MEMORYOUTPUTSTREAM_H_INCLUDED
