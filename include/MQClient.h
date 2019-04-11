@@ -60,7 +60,7 @@ class ROCKETMQCLIENT_API MQClient {
   //<!groupName;
   const std::string& getGroupName() const;
   void setGroupName(const std::string& groupname);
-  
+
   /**
   * no realization
   */
@@ -122,8 +122,7 @@ class ROCKETMQCLIENT_API MQClient {
   * @return
   *            according to QueryResult
   */
-  QueryResult queryMessage(const std::string& topic, const std::string& key, int maxNum,
-                           int64 begin, int64 end);
+  QueryResult queryMessage(const std::string& topic, const std::string& key, int maxNum, int64 begin, int64 end);
 
   std::vector<MQMessageQueue> getTopicMessageQueueInfo(const std::string& topic);
 
@@ -131,8 +130,7 @@ class ROCKETMQCLIENT_API MQClient {
   // log file num is 3, each log size is 100M
   void setLogLevel(elogLevel inputLevel);
   elogLevel getLogLevel();
-  void setLogFileSizeAndNum(int fileNum,
-                                 long perFileSize);  // perFileSize is MB unit
+  void setLogFileSizeAndNum(int fileNum, long perFileSize);  // perFileSize is MB unit
 
   /** set TcpTransport pull thread num, which dermine the num of threads to
  distribute network data,

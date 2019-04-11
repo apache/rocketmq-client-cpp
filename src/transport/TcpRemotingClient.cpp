@@ -27,21 +27,18 @@
 namespace rocketmq {
 
 //<!************************************************************************
-TcpRemotingClient::TcpRemotingClient(int pullThreadNum,
-                                     uint64_t tcpConnectTimeout,
-                                     uint64_t tcpTransportTryLockTimeout)
+TcpRemotingClient::TcpRemotingClient(int pullThreadNum, uint64_t tcpConnectTimeout, uint64_t tcpTransportTryLockTimeout)
     : m_pullThreadNum(pullThreadNum),
       m_tcpConnectTimeout(tcpConnectTimeout),
       m_tcpTransportTryLockTimeout(tcpTransportTryLockTimeout),
       m_namesrvIndex(0),
       m_ioServiceWork(m_ioService) {
-#if !defined(WIN32) && !defined(__APPLE__)  
+#if !defined(WIN32) && !defined(__APPLE__)
   string taskName = UtilAll::getProcessName();
   prctl(PR_SET_NAME, "networkTP", 0, 0, 0);
 #endif
   for (int i = 0; i != pullThreadNum; ++i) {
-    m_threadpool.create_thread(
-        boost::bind(&boost::asio::io_service::run, &m_ioService));
+    m_threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &m_ioService));
   }
 #if !defined(WIN32) && !defined(__APPLE__)
   prctl(PR_SET_NAME, taskName.c_str(), 0, 0, 0);
@@ -50,8 +47,7 @@ TcpRemotingClient::TcpRemotingClient(int pullThreadNum,
       "m_tcpConnectTimeout:%ju, m_tcpTransportTryLockTimeout:%ju, "
       "m_pullThreadNum:%d",
       m_tcpConnectTimeout, m_tcpTransportTryLockTimeout, m_pullThreadNum);
-  m_async_service_thread.reset(new boost::thread(
-      boost::bind(&TcpRemotingClient::boost_asio_work, this)));
+  m_async_service_thread.reset(new boost::thread(boost::bind(&TcpRemotingClient::boost_asio_work, this)));
 }
 
 void TcpRemotingClient::boost_asio_work() {
@@ -91,9 +87,9 @@ void TcpRemotingClient::stopAllTcpTransportThread() {
 
   {
     boost::lock_guard<boost::mutex> lock(m_futureTableMutex);
-    for (ResMap::iterator it = m_futureTable.begin(); it != m_futureTable.end();
-         ++it) {
-      if (it->second) it->second->releaseThreadCondition();
+    for (ResMap::iterator it = m_futureTable.begin(); it != m_futureTable.end(); ++it) {
+      if (it->second)
+        it->second->releaseThreadCondition();
     }
   }
   LOG_DEBUG("TcpRemotingClient::stopAllTcpTransportThread End");
@@ -101,11 +97,9 @@ void TcpRemotingClient::stopAllTcpTransportThread() {
 
 void TcpRemotingClient::updateNameServerAddressList(const string& addrs) {
   if (!addrs.empty()) {
-    boost::unique_lock<boost::timed_mutex> lock(m_namesrvlock,
-                                                boost::try_to_lock);
+    boost::unique_lock<boost::timed_mutex> lock(m_namesrvlock, boost::try_to_lock);
     if (!lock.owns_lock()) {
-      if (!lock.timed_lock(boost::get_system_time() +
-                           boost::posix_time::seconds(10))) {
+      if (!lock.timed_lock(boost::get_system_time() + boost::posix_time::seconds(10))) {
         LOG_ERROR("updateNameServerAddressList get timed_mutex timeout");
         return;
       }
@@ -130,14 +124,12 @@ void TcpRemotingClient::updateNameServerAddressList(const string& addrs) {
   }
 }
 
-bool TcpRemotingClient::invokeHeartBeat(const string& addr,
-                                        RemotingCommand& request) {
+bool TcpRemotingClient::invokeHeartBeat(const string& addr, RemotingCommand& request) {
   boost::shared_ptr<TcpTransport> pTcp = GetTransport(addr, true);
   if (pTcp != NULL) {
     int code = request.getCode();
     int opaque = request.getOpaque();
-    boost::shared_ptr<ResponseFuture> responseFuture(
-        new ResponseFuture(code, opaque, this, 3000, false, NULL));
+    boost::shared_ptr<ResponseFuture> responseFuture(new ResponseFuture(code, opaque, this, 3000, false, NULL));
     addResponseFuture(opaque, responseFuture);
     // LOG_INFO("invokeHeartbeat success, addr:%s, code:%d, opaque:%d,
     // timeoutms:%d", addr.c_str(), code, opaque, 3000);
@@ -146,16 +138,13 @@ bool TcpRemotingClient::invokeHeartBeat(const string& addr,
       responseFuture->setSendRequestOK(true);
       unique_ptr<RemotingCommand> pRsp(responseFuture->waitResponse(3000));
       if (pRsp == NULL) {
-        LOG_ERROR(
-            "wait response timeout of heartbeat, so closeTransport of addr:%s",
-            addr.c_str());
+        LOG_ERROR("wait response timeout of heartbeat, so closeTransport of addr:%s", addr.c_str());
         CloseTransport(addr, pTcp);
         return false;
       } else if (pRsp->getCode() == SUCCESS_VALUE) {
         return true;
       } else {
-        LOG_WARN("get error response:%d of heartbeat to addr:%s",
-                 pRsp->getCode(), addr.c_str());
+        LOG_WARN("get error response:%d of heartbeat to addr:%s", pRsp->getCode(), addr.c_str());
         return false;
       }
     } else {
@@ -220,25 +209,21 @@ bool TcpRemotingClient::invokeAsync(const string& addr,
     responseFuture->setMaxRetrySendTimes(maxRetrySendTimes);
     responseFuture->setRetrySendTimes(retrySendTimes);
     responseFuture->setBrokerAddr(addr);
-    responseFuture->setRequestCommand(request);    
+    responseFuture->setRequestCommand(request);
     addAsyncResponseFuture(opaque, responseFuture);
     if (cbw) {
-      boost::asio::deadline_timer* t = new boost::asio::deadline_timer(
-          m_async_ioService,
-          boost::posix_time::milliseconds(timeoutMilliseconds));
+      boost::asio::deadline_timer* t =
+          new boost::asio::deadline_timer(m_async_ioService, boost::posix_time::milliseconds(timeoutMilliseconds));
       addTimerCallback(t, opaque);
       boost::system::error_code e;
-      t->async_wait(
-          boost::bind(&TcpRemotingClient::handleAsyncPullForResponseTimeout,
-                      this, e, opaque));
+      t->async_wait(boost::bind(&TcpRemotingClient::handleAsyncPullForResponseTimeout, this, e, opaque));
     }
 
     if (SendCommand(pTcp, request))  // Even if send failed, asyncTimerThread
                                      // will trigger next pull request or report
                                      // send msg failed
     {
-      LOG_DEBUG("invokeAsync success, addr:%s, code:%d, opaque:%d",
-                addr.c_str(), code, opaque);
+      LOG_DEBUG("invokeAsync success, addr:%s, code:%d, opaque:%d", addr.c_str(), code, opaque);
       responseFuture->setSendRequestOK(true);
     }
     return true;
@@ -247,27 +232,24 @@ bool TcpRemotingClient::invokeAsync(const string& addr,
   return false;
 }
 
-void TcpRemotingClient::invokeOneway(const string& addr,
-                                     RemotingCommand& request) {
+void TcpRemotingClient::invokeOneway(const string& addr, RemotingCommand& request) {
   //<!not need callback;
   boost::shared_ptr<TcpTransport> pTcp = GetTransport(addr, true);
   if (pTcp != NULL) {
     request.markOnewayRPC();
-    LOG_DEBUG("invokeOneway success, addr:%s, code:%d", addr.c_str(),
-              request.getCode());
+    LOG_DEBUG("invokeOneway success, addr:%s, code:%d", addr.c_str(), request.getCode());
     SendCommand(pTcp, request);
   }
 }
 
-boost::shared_ptr<TcpTransport> TcpRemotingClient::GetTransport(
-    const string& addr, bool needRespons) {
-  if (addr.empty()) return CreateNameserverTransport(needRespons);
+boost::shared_ptr<TcpTransport> TcpRemotingClient::GetTransport(const string& addr, bool needRespons) {
+  if (addr.empty())
+    return CreateNameserverTransport(needRespons);
 
   return CreateTransport(addr, needRespons);
 }
 
-boost::shared_ptr<TcpTransport> TcpRemotingClient::CreateTransport(
-    const string& addr, bool needRespons) {
+boost::shared_ptr<TcpTransport> TcpRemotingClient::CreateTransport(const string& addr, bool needRespons) {
   boost::shared_ptr<TcpTransport> tts;
   {
     // try get m_tcpLock util m_tcpTransportTryLockTimeout to avoid blocking
@@ -276,9 +258,7 @@ boost::shared_ptr<TcpTransport> TcpRemotingClient::CreateTransport(
     bool bGetMutex = false;
     boost::unique_lock<boost::timed_mutex> lock(m_tcpLock, boost::try_to_lock);
     if (!lock.owns_lock()) {
-      if (!lock.timed_lock(
-              boost::get_system_time() +
-              boost::posix_time::seconds(m_tcpTransportTryLockTimeout))) {
+      if (!lock.timed_lock(boost::get_system_time() + boost::posix_time::seconds(m_tcpTransportTryLockTimeout))) {
         LOG_ERROR("GetTransport of:%s get timed_mutex timeout", addr.c_str());
         boost::shared_ptr<TcpTransport> pTcp;
         return pTcp;
@@ -298,10 +278,8 @@ boost::shared_ptr<TcpTransport> TcpRemotingClient::CreateTransport(
             boost::shared_ptr<TcpTransport> pTcp;
             return pTcp;
           } else if (connectStatus == e_connectFail) {
-            LOG_ERROR("tcpTransport with server disconnected, erase server:%s",
-                      addr.c_str());
-            tcp->disconnect(
-                addr);  // avoid coredump when connection with broker was broken
+            LOG_ERROR("tcpTransport with server disconnected, erase server:%s", addr.c_str());
+            tcp->disconnect(addr);  // avoid coredump when connection with broker was broken
             m_tcpTable.erase(addr);
           } else if (connectStatus == e_connectSuccess) {
             return tcp;
@@ -316,8 +294,7 @@ boost::shared_ptr<TcpTransport> TcpRemotingClient::CreateTransport(
       }
 
       //<!callback;
-      READ_CALLBACK callback =
-          needRespons ? &TcpRemotingClient::static_messageReceived : NULL;
+      READ_CALLBACK callback = needRespons ? &TcpRemotingClient::static_messageReceived : NULL;
 
       tts.reset(new TcpTransport(this, callback));
       tcpConnectStatus connectStatus = tts->connect(addr, m_tcpConnectTimeout);
@@ -338,8 +315,7 @@ boost::shared_ptr<TcpTransport> TcpRemotingClient::CreateTransport(
     }
   }
 
-  tcpConnectStatus connectStatus =
-      tts->waitTcpConnectEvent(m_tcpConnectTimeout);
+  tcpConnectStatus connectStatus = tts->waitTcpConnectEvent(m_tcpConnectTimeout);
   if (connectStatus != e_connectSuccess) {
     LOG_WARN("can not connect to server:%s", addr.c_str());
     tts->disconnect(addr);
@@ -351,19 +327,15 @@ boost::shared_ptr<TcpTransport> TcpRemotingClient::CreateTransport(
   }
 }
 
-boost::shared_ptr<TcpTransport> TcpRemotingClient::CreateNameserverTransport(
-    bool needRespons) {
+boost::shared_ptr<TcpTransport> TcpRemotingClient::CreateNameserverTransport(bool needRespons) {
   // m_namesrvLock was added to avoid operation of nameServer was blocked by
   // m_tcpLock, it was used by single Thread mostly, so no performance impact
   // try get m_tcpLock util m_tcpTransportTryLockTimeout to avoid blocking long
   // time, if could not get m_namesrvlock, return NULL
   bool bGetMutex = false;
-  boost::unique_lock<boost::timed_mutex> lock(m_namesrvlock,
-                                              boost::try_to_lock);
+  boost::unique_lock<boost::timed_mutex> lock(m_namesrvlock, boost::try_to_lock);
   if (!lock.owns_lock()) {
-    if (!lock.timed_lock(
-            boost::get_system_time() +
-            boost::posix_time::seconds(m_tcpTransportTryLockTimeout))) {
+    if (!lock.timed_lock(boost::get_system_time() + boost::posix_time::seconds(m_tcpTransportTryLockTimeout))) {
       LOG_ERROR("CreateNameserverTransport get timed_mutex timeout");
       boost::shared_ptr<TcpTransport> pTcp;
       return pTcp;
@@ -376,8 +348,7 @@ boost::shared_ptr<TcpTransport> TcpRemotingClient::CreateNameserverTransport(
 
   if (bGetMutex) {
     if (!m_namesrvAddrChoosed.empty()) {
-      boost::shared_ptr<TcpTransport> pTcp =
-          GetTransport(m_namesrvAddrChoosed, true);
+      boost::shared_ptr<TcpTransport> pTcp = GetTransport(m_namesrvAddrChoosed, true);
       if (pTcp)
         return pTcp;
       else
@@ -390,11 +361,9 @@ boost::shared_ptr<TcpTransport> TcpRemotingClient::CreateNameserverTransport(
       if (m_namesrvIndex == numeric_limits<unsigned int>::max())
         m_namesrvIndex = 0;
       m_namesrvIndex++;
-      LOG_INFO("namesrvIndex is:%d, index:%d, namesrvaddrlist size:" SIZET_FMT
-               "",
-               m_namesrvIndex, index, m_namesrvAddrList.size());
-      boost::shared_ptr<TcpTransport> pTcp =
-          GetTransport(m_namesrvAddrList[index], true);
+      LOG_INFO("namesrvIndex is:%d, index:%d, namesrvaddrlist size:" SIZET_FMT "", m_namesrvIndex, index,
+               m_namesrvAddrList.size());
+      boost::shared_ptr<TcpTransport> pTcp = GetTransport(m_namesrvAddrList[index], true);
       if (pTcp) {
         m_namesrvAddrChoosed = m_namesrvAddrList[index];
         return pTcp;
@@ -409,8 +378,7 @@ boost::shared_ptr<TcpTransport> TcpRemotingClient::CreateNameserverTransport(
   }
 }
 
-void TcpRemotingClient::CloseTransport(const string& addr,
-                                       boost::shared_ptr<TcpTransport> pTcp) {
+void TcpRemotingClient::CloseTransport(const string& addr, boost::shared_ptr<TcpTransport> pTcp) {
   if (addr.empty()) {
     return CloseNameServerTransport(pTcp);
   }
@@ -418,9 +386,7 @@ void TcpRemotingClient::CloseTransport(const string& addr,
   bool bGetMutex = false;
   boost::unique_lock<boost::timed_mutex> lock(m_tcpLock, boost::try_to_lock);
   if (!lock.owns_lock()) {
-    if (!lock.timed_lock(
-            boost::get_system_time() +
-            boost::posix_time::seconds(m_tcpTransportTryLockTimeout))) {
+    if (!lock.timed_lock(boost::get_system_time() + boost::posix_time::seconds(m_tcpTransportTryLockTimeout))) {
       LOG_ERROR("CloseTransport of:%s get timed_mutex timeout", addr.c_str());
       return;
     } else {
@@ -441,18 +407,15 @@ void TcpRemotingClient::CloseTransport(const string& addr,
         removeItemFromTable = false;
       }
     } else {
-      LOG_INFO(
-          "tcpTransport with addr:%s had been removed from tcpTable before",
-          addr.c_str());
+      LOG_INFO("tcpTransport with addr:%s had been removed from tcpTable before", addr.c_str());
       removeItemFromTable = false;
     }
 
     if (removeItemFromTable == true) {
-      LOG_WARN("closeTransport: disconnect broker:%s with state:%d",
-               addr.c_str(), m_tcpTable[addr]->getTcpConnectStatus());
+      LOG_WARN("closeTransport: disconnect broker:%s with state:%d", addr.c_str(),
+               m_tcpTable[addr]->getTcpConnectStatus());
       if (m_tcpTable[addr]->getTcpConnectStatus() == e_connectSuccess)
-        m_tcpTable[addr]->disconnect(
-            addr);  // avoid coredump when connection with server was broken
+        m_tcpTable[addr]->disconnect(addr);  // avoid coredump when connection with server was broken
       LOG_WARN("closeTransport: erase broker: %s", addr.c_str());
       m_tcpTable.erase(addr);
     }
@@ -463,15 +426,11 @@ void TcpRemotingClient::CloseTransport(const string& addr,
   LOG_ERROR("CloseTransport of:%s end", addr.c_str());
 }
 
-void TcpRemotingClient::CloseNameServerTransport(
-    boost::shared_ptr<TcpTransport> pTcp) {
+void TcpRemotingClient::CloseNameServerTransport(boost::shared_ptr<TcpTransport> pTcp) {
   bool bGetMutex = false;
-  boost::unique_lock<boost::timed_mutex> lock(m_namesrvlock,
-                                              boost::try_to_lock);
+  boost::unique_lock<boost::timed_mutex> lock(m_namesrvlock, boost::try_to_lock);
   if (!lock.owns_lock()) {
-    if (!lock.timed_lock(
-            boost::get_system_time() +
-            boost::posix_time::seconds(m_tcpTransportTryLockTimeout))) {
+    if (!lock.timed_lock(boost::get_system_time() + boost::posix_time::seconds(m_tcpTransportTryLockTimeout))) {
       LOG_ERROR("CreateNameserverTransport get timed_mutex timeout");
       return;
     } else {
@@ -492,28 +451,23 @@ void TcpRemotingClient::CloseNameServerTransport(
         removeItemFromTable = false;
       }
     } else {
-      LOG_INFO(
-          "tcpTransport with addr:%s had been removed from tcpTable before",
-          addr.c_str());
+      LOG_INFO("tcpTransport with addr:%s had been removed from tcpTable before", addr.c_str());
       removeItemFromTable = false;
     }
 
     if (removeItemFromTable == true) {
-      m_tcpTable[addr]->disconnect(
-          addr);  // avoid coredump when connection with server was broken
+      m_tcpTable[addr]->disconnect(addr);  // avoid coredump when connection with server was broken
       LOG_WARN("closeTransport: erase broker: %s", addr.c_str());
       m_tcpTable.erase(addr);
       m_namesrvAddrChoosed.clear();
     }
   } else {
-    LOG_WARN("CloseNameServerTransport::get tcpTransport mutex failed:%s",
-             m_namesrvAddrChoosed.c_str());
+    LOG_WARN("CloseNameServerTransport::get tcpTransport mutex failed:%s", m_namesrvAddrChoosed.c_str());
     return;
   }
 }
 
-bool TcpRemotingClient::SendCommand(boost::shared_ptr<TcpTransport> pTts,
-                                    RemotingCommand& msg) {
+bool TcpRemotingClient::SendCommand(boost::shared_ptr<TcpTransport> pTts, RemotingCommand& msg) {
   const MemoryBlock* phead = msg.GetHead();
   const MemoryBlock* pbody = msg.GetBody();
 
@@ -529,21 +483,17 @@ bool TcpRemotingClient::SendCommand(boost::shared_ptr<TcpTransport> pTts,
   return pTts->sendMessage(pData, len);
 }
 
-void TcpRemotingClient::static_messageReceived(void* context,
-                                               const MemoryBlock& mem,
-                                               const string& addr) {
+void TcpRemotingClient::static_messageReceived(void* context, const MemoryBlock& mem, const string& addr) {
   TcpRemotingClient* pTcpRemotingClient = (TcpRemotingClient*)context;
-  if (pTcpRemotingClient) pTcpRemotingClient->messageReceived(mem, addr);
+  if (pTcpRemotingClient)
+    pTcpRemotingClient->messageReceived(mem, addr);
 }
 
-void TcpRemotingClient::messageReceived(const MemoryBlock& mem,
-                                        const string& addr) {
-  m_ioService.post(
-      boost::bind(&TcpRemotingClient::ProcessData, this, mem, addr));
+void TcpRemotingClient::messageReceived(const MemoryBlock& mem, const string& addr) {
+  m_ioService.post(boost::bind(&TcpRemotingClient::ProcessData, this, mem, addr));
 }
 
-void TcpRemotingClient::ProcessData(const MemoryBlock& mem,
-                                    const string& addr) {
+void TcpRemotingClient::ProcessData(const MemoryBlock& mem, const string& addr) {
   RemotingCommand* pRespondCmd = NULL;
   try {
     pRespondCmd = RemotingCommand::Decode(mem);
@@ -556,8 +506,7 @@ void TcpRemotingClient::ProcessData(const MemoryBlock& mem,
 
   //<!process self;
   if (pRespondCmd->isResponseType()) {
-    boost::shared_ptr<ResponseFuture> pFuture(
-        findAndDeleteAsyncResponseFuture(opaque));
+    boost::shared_ptr<ResponseFuture> pFuture(findAndDeleteAsyncResponseFuture(opaque));
     if (!pFuture) {
       pFuture = findAndDeleteResponseFuture(opaque);
       if (pFuture) {
@@ -579,11 +528,11 @@ void TcpRemotingClient::ProcessData(const MemoryBlock& mem,
   }
 }
 
-void TcpRemotingClient::processResponseCommand(
-    RemotingCommand* pCmd, boost::shared_ptr<ResponseFuture> pfuture) {
+void TcpRemotingClient::processResponseCommand(RemotingCommand* pCmd, boost::shared_ptr<ResponseFuture> pfuture) {
   int code = pfuture->getRequestCode();
   int opaque = pCmd->getOpaque();
-  LOG_DEBUG("processResponseCommand, code:%d,opaque:%d, maxRetryTimes:%d, retrySendTimes:%d", code, opaque, pfuture->getMaxRetrySendTimes(), pfuture->getRetrySendTimes());
+  LOG_DEBUG("processResponseCommand, code:%d,opaque:%d, maxRetryTimes:%d, retrySendTimes:%d", code, opaque,
+            pfuture->getMaxRetrySendTimes(), pfuture->getRetrySendTimes());
   pCmd->SetExtHeader(code);  // set head , for response use
 
   pfuture->setResponse(pCmd);
@@ -593,21 +542,18 @@ void TcpRemotingClient::processResponseCommand(
       pfuture->setAsyncResponseFlag();
       pfuture->setAsyncCallBackStatus(asyncCallBackStatus_response);
       cancelTimerCallback(opaque);
-      pfuture->executeInvokeCallback();      
+      pfuture->executeInvokeCallback();
     }
   }
 }
 
-void TcpRemotingClient::processRequestCommand(RemotingCommand* pCmd,
-                                              const string& addr) {
+void TcpRemotingClient::processRequestCommand(RemotingCommand* pCmd, const string& addr) {
   unique_ptr<RemotingCommand> pRequestCommand(pCmd);
   int requestCode = pRequestCommand->getCode();
   if (m_requestTable.find(requestCode) == m_requestTable.end()) {
     LOG_ERROR("can_not_find request:%d processor", requestCode);
   } else {
-    unique_ptr<RemotingCommand> pResponse(
-        m_requestTable[requestCode]->processRequest(addr,
-                                                    pRequestCommand.get()));
+    unique_ptr<RemotingCommand> pResponse(m_requestTable[requestCode]->processRequest(addr, pRequestCommand.get()));
     if (!pRequestCommand->isOnewayRPC()) {
       if (pResponse) {
         pResponse->setOpaque(pRequestCommand->getOpaque());
@@ -620,16 +566,14 @@ void TcpRemotingClient::processRequestCommand(RemotingCommand* pCmd,
   }
 }
 
-void TcpRemotingClient::addResponseFuture(
-    int opaque, boost::shared_ptr<ResponseFuture> pfuture) {
+void TcpRemotingClient::addResponseFuture(int opaque, boost::shared_ptr<ResponseFuture> pfuture) {
   boost::lock_guard<boost::mutex> lock(m_futureTableMutex);
   m_futureTable[opaque] = pfuture;
 }
 
 // Note: after call this function, shared_ptr of m_syncFutureTable[opaque] will
 // be erased, so caller must ensure the life cycle of returned shared_ptr;
-boost::shared_ptr<ResponseFuture>
-TcpRemotingClient::findAndDeleteResponseFuture(int opaque) {
+boost::shared_ptr<ResponseFuture> TcpRemotingClient::findAndDeleteResponseFuture(int opaque) {
   boost::lock_guard<boost::mutex> lock(m_futureTableMutex);
   boost::shared_ptr<ResponseFuture> pResponseFuture;
   if (m_futureTable.find(opaque) != m_futureTable.end()) {
@@ -639,19 +583,17 @@ TcpRemotingClient::findAndDeleteResponseFuture(int opaque) {
   return pResponseFuture;
 }
 
-void TcpRemotingClient::handleAsyncPullForResponseTimeout(
-    const boost::system::error_code& e, int opaque) {
+void TcpRemotingClient::handleAsyncPullForResponseTimeout(const boost::system::error_code& e, int opaque) {
   if (e == boost::asio::error::operation_aborted) {
-    LOG_INFO("handleAsyncPullForResponseTimeout aborted opaque:%d, e_code:%d, msg:%s", opaque, e.value(), e.message().data());
+    LOG_INFO("handleAsyncPullForResponseTimeout aborted opaque:%d, e_code:%d, msg:%s", opaque, e.value(),
+             e.message().data());
     return;
   }
 
   LOG_DEBUG("handleAsyncPullForResponseTimeout opaque:%d, e_code:%d, msg:%s", opaque, e.value(), e.message().data());
-  boost::shared_ptr<ResponseFuture> pFuture(
-      findAndDeleteAsyncResponseFuture(opaque));
+  boost::shared_ptr<ResponseFuture> pFuture(findAndDeleteAsyncResponseFuture(opaque));
   if (pFuture && pFuture->getASyncFlag() && (pFuture->getAsyncCallbackWrap())) {
-    if ((pFuture->getAsyncResponseFlag() !=
-         true))  // if no response received, then check timeout or not
+    if ((pFuture->getAsyncResponseFlag() != true))  // if no response received, then check timeout or not
     {
       LOG_ERROR("no response got for opaque:%d", opaque);
       pFuture->setAsyncCallBackStatus(asyncCallBackStatus_timeout);
@@ -662,16 +604,14 @@ void TcpRemotingClient::handleAsyncPullForResponseTimeout(
   eraseTimerCallback(opaque);
 }
 
-void TcpRemotingClient::addAsyncResponseFuture(
-    int opaque, boost::shared_ptr<ResponseFuture> pfuture) {
+void TcpRemotingClient::addAsyncResponseFuture(int opaque, boost::shared_ptr<ResponseFuture> pfuture) {
   boost::lock_guard<boost::mutex> lock(m_asyncFutureLock);
   m_asyncFutureTable[opaque] = pfuture;
 }
 
 // Note: after call this function, shared_ptr of m_asyncFutureTable[opaque] will
 // be erased, so caller must ensure the life cycle of returned shared_ptr;
-boost::shared_ptr<ResponseFuture>
-TcpRemotingClient::findAndDeleteAsyncResponseFuture(int opaque) {
+boost::shared_ptr<ResponseFuture> TcpRemotingClient::findAndDeleteAsyncResponseFuture(int opaque) {
   boost::lock_guard<boost::mutex> lock(m_asyncFutureLock);
   boost::shared_ptr<ResponseFuture> pResponseFuture;
   if (m_asyncFutureTable.find(opaque) != m_asyncFutureTable.end()) {
@@ -682,16 +622,13 @@ TcpRemotingClient::findAndDeleteAsyncResponseFuture(int opaque) {
   return pResponseFuture;
 }
 
-void TcpRemotingClient::registerProcessor(
-    MQRequestCode requestCode,
-    ClientRemotingProcessor* clientRemotingProcessor) {
+void TcpRemotingClient::registerProcessor(MQRequestCode requestCode, ClientRemotingProcessor* clientRemotingProcessor) {
   if (m_requestTable.find(requestCode) != m_requestTable.end())
     m_requestTable.erase(requestCode);
   m_requestTable[requestCode] = clientRemotingProcessor;
 }
 
-void TcpRemotingClient::addTimerCallback(boost::asio::deadline_timer* t,
-                                         int opaque) {
+void TcpRemotingClient::addTimerCallback(boost::asio::deadline_timer* t, int opaque) {
   boost::lock_guard<boost::mutex> lock(m_timerMapMutex);
   if (m_async_timer_map.find(opaque) != m_async_timer_map.end()) {
     LOG_DEBUG("addTimerCallback:erase timerCallback opaque:%lld", opaque);
@@ -718,7 +655,7 @@ void TcpRemotingClient::eraseTimerCallback(int opaque) {
 void TcpRemotingClient::cancelTimerCallback(int opaque) {
   boost::lock_guard<boost::mutex> lock(m_timerMapMutex);
   if (m_async_timer_map.find(opaque) != m_async_timer_map.end()) {
-    LOG_DEBUG("cancelTimerCallback: opaque:%lld", opaque);    
+    LOG_DEBUG("cancelTimerCallback: opaque:%lld", opaque);
     boost::asio::deadline_timer* t = m_async_timer_map[opaque];
     t->cancel();
     delete t;
@@ -729,8 +666,7 @@ void TcpRemotingClient::cancelTimerCallback(int opaque) {
 
 void TcpRemotingClient::removeAllTimerCallback() {
   boost::lock_guard<boost::mutex> lock(m_timerMapMutex);
-  for (asyncTimerMap::iterator it = m_async_timer_map.begin();
-       it != m_async_timer_map.end(); ++it) {
+  for (asyncTimerMap::iterator it = m_async_timer_map.begin(); it != m_async_timer_map.end(); ++it) {
     boost::asio::deadline_timer* t = it->second;
     t->cancel();
     delete t;
@@ -740,7 +676,8 @@ void TcpRemotingClient::removeAllTimerCallback() {
 }
 
 void TcpRemotingClient::deleteOpaqueForDropPullRequest(const MQMessageQueue& mq, int opaque) {
-  //delete the map record of opaque<->ResponseFuture, so the answer for the pull request will discard when receive it later
+  // delete the map record of opaque<->ResponseFuture, so the answer for the pull request will discard when receive it
+  // later
   boost::shared_ptr<ResponseFuture> pFuture(findAndDeleteAsyncResponseFuture(opaque));
   if (!pFuture) {
     pFuture = findAndDeleteResponseFuture(opaque);
@@ -748,9 +685,9 @@ void TcpRemotingClient::deleteOpaqueForDropPullRequest(const MQMessageQueue& mq,
       LOG_DEBUG("succ deleted the sync pullrequest for opaque:%d, mq:%s", opaque, mq.toString().data());
     }
   } else {
-    LOG_DEBUG("succ deleted the async pullrequest for opaque:%d, mq:%s", opaque, mq.toString().data()); 
+    LOG_DEBUG("succ deleted the async pullrequest for opaque:%d, mq:%s", opaque, mq.toString().data());
   }
-  //delete the timeout timer for opaque for pullrequest
+  // delete the timeout timer for opaque for pullrequest
   cancelTimerCallback(opaque);
 }
 

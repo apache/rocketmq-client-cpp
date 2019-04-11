@@ -42,8 +42,7 @@ class Rebalance {
 
   virtual int64 computePullFromWhere(const MQMessageQueue& mq) = 0;
 
-  virtual bool updateRequestTableInRebalance(
-      const string& topic, vector<MQMessageQueue>& mqsSelf) = 0;
+  virtual bool updateRequestTableInRebalance(const string& topic, vector<MQMessageQueue>& mqsSelf) = 0;
 
  public:
   void doRebalance();
@@ -95,8 +94,7 @@ class RebalancePull : public Rebalance {
 
   virtual int64 computePullFromWhere(const MQMessageQueue& mq);
 
-  virtual bool updateRequestTableInRebalance(const string& topic,
-                                             vector<MQMessageQueue>& mqsSelf);
+  virtual bool updateRequestTableInRebalance(const string& topic, vector<MQMessageQueue>& mqsSelf);
 };
 
 //<!***************************************************************************
@@ -113,8 +111,7 @@ class RebalancePush : public Rebalance {
 
   virtual int64 computePullFromWhere(const MQMessageQueue& mq);
 
-  virtual bool updateRequestTableInRebalance(const string& topic,
-                                             vector<MQMessageQueue>& mqsSelf);
+  virtual bool updateRequestTableInRebalance(const string& topic, vector<MQMessageQueue>& mqsSelf);
 };
 
 //<!************************************************************************

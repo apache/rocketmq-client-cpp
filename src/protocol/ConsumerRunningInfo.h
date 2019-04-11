@@ -49,8 +49,7 @@ class ConsumerRunningInfo {
   // const map<string, ConsumeStatus> getStatusTable() const;
   // void setStatusTable(const map<string, ConsumeStatus>& input_statusTable) ;
   const vector<SubscriptionData> getSubscriptionSet() const;
-  void setSubscriptionSet(
-      const vector<SubscriptionData>& input_subscriptionSet);
+  void setSubscriptionSet(const vector<SubscriptionData>& input_subscriptionSet);
   const string getJstack() const;
   void setJstack(const string& input_jstack);
   string encode();

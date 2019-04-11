@@ -72,15 +72,18 @@ uint64 swapll(uint64 v) {
 #ifdef ENDIANMODE_BIG
   return v;
 #else
-  uint64 ret = ((v << 56) | ((v & 0xff00) << 40) | ((v & 0xff0000) << 24) |
-                ((v & 0xff000000) << 8) | ((v >> 8) & 0xff000000) |
-                ((v >> 24) & 0xff0000) | ((v >> 40) & 0xff00) | (v >> 56));
+  uint64 ret = ((v << 56) | ((v & 0xff00) << 40) | ((v & 0xff0000) << 24) | ((v & 0xff000000) << 8) |
+                ((v >> 8) & 0xff000000) | ((v >> 24) & 0xff0000) | ((v >> 40) & 0xff00) | (v >> 56));
 
   return ret;
 #endif
 }
 
-uint64 h2nll(uint64 v) { return swapll(v); }
+uint64 h2nll(uint64 v) {
+  return swapll(v);
+}
 
-uint64 n2hll(uint64 v) { return swapll(v); }
+uint64 n2hll(uint64 v) {
+  return swapll(v);
+}
 }  //<!end namespace;

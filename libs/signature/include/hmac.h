@@ -25,15 +25,15 @@ extern "C" {
 #include <sys/types.h>
 
 #ifndef SHA1_DIGEST_LEN
-#define SHA1_DIGEST_LEN		20
+#define SHA1_DIGEST_LEN 20
 #endif
 
 #ifndef SHA256_DIGEST_LEN
-#define SHA256_DIGEST_LEN	32
+#define SHA256_DIGEST_LEN 32
 #endif
 
 #ifndef SHA512_DIGEST_LEN
-#define SHA512_DIGEST_LEN	64
+#define SHA512_DIGEST_LEN 64
 #endif
 
 /*
@@ -51,13 +51,13 @@ extern "C" {
  */
 
 #ifdef __cplusplus
-namespace rocketmqSignature{
+namespace rocketmqSignature {
 
 #endif
 
-extern int hmac_sha1(const void *key, size_t key_len, const void *data, size_t data_len, void *ret_buf);
-extern int hmac_sha256(const void *key, size_t key_len, const void *data, size_t data_len, void *ret_buf);
-extern int hmac_sha512(const void *key, size_t key_len, const void *data, size_t data_len, void *ret_buf);
+extern int hmac_sha1(const void* key, size_t key_len, const void* data, size_t data_len, void* ret_buf);
+extern int hmac_sha256(const void* key, size_t key_len, const void* data, size_t data_len, void* ret_buf);
+extern int hmac_sha512(const void* key, size_t key_len, const void* data, size_t data_len, void* ret_buf);
 
 #ifdef __cplusplus
 }
@@ -68,4 +68,3 @@ extern int hmac_sha512(const void *key, size_t key_len, const void *data, size_t
 #endif
 
 #endif
-

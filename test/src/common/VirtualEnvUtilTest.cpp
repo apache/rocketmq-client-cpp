@@ -32,20 +32,20 @@ using rocketmq::VirtualEnvUtil;
 VirtualEnvUtil virtualEnvUtil;
 
 TEST(virtualEnvUtil, buildWithProjectGroup) {
-    string origin = "origin";
-    string projectGroup;
-    EXPECT_EQ(virtualEnvUtil.buildWithProjectGroup(origin, string()), origin);
+  string origin = "origin";
+  string projectGroup;
+  EXPECT_EQ(virtualEnvUtil.buildWithProjectGroup(origin, string()), origin);
 
-    EXPECT_EQ(virtualEnvUtil.buildWithProjectGroup(origin, string("123")), origin);
+  EXPECT_EQ(virtualEnvUtil.buildWithProjectGroup(origin, string("123")), origin);
 }
 
 TEST(virtualEnvUtil, clearProjectGroup) {}
 
-int main(int argc, char *argv[]) {
-    InitGoogleMock(&argc, argv);
+int main(int argc, char* argv[]) {
+  InitGoogleMock(&argc, argv);
 
-    testing::GTEST_FLAG(throw_on_failure) = true;
-    testing::GTEST_FLAG(filter) = "messageExt.init";
-    int itestts = RUN_ALL_TESTS();
-    return itestts;
+  testing::GTEST_FLAG(throw_on_failure) = true;
+  testing::GTEST_FLAG(filter) = "messageExt.init";
+  int itestts = RUN_ALL_TESTS();
+  return itestts;
 }

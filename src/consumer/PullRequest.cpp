@@ -82,16 +82,16 @@ int64 PullRequest::getCacheMinOffset() {
   }
 }
 
-int64 PullRequest::getCacheMaxOffset() { return m_queueOffsetMax; }
+int64 PullRequest::getCacheMaxOffset() {
+  return m_queueOffsetMax;
+}
 
 int PullRequest::getCacheMsgCount() {
   boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
   return m_msgTreeMap.size();
 }
 
-void PullRequest::getMessageByQueueOffset(vector<MQMessageExt>& msgs,
-                                          int64 minQueueOffset,
-                                          int64 maxQueueOffset) {
+void PullRequest::getMessageByQueueOffset(vector<MQMessageExt>& msgs, int64 minQueueOffset, int64 maxQueueOffset) {
   boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
 
   int64 it = minQueueOffset;
@@ -107,23 +107,19 @@ int64 PullRequest::removeMessage(vector<MQMessageExt>& msgs) {
   LOG_DEBUG("m_queueOffsetMax is:%lld", m_queueOffsetMax);
   if (!m_msgTreeMap.empty()) {
     result = m_queueOffsetMax + 1;
-    LOG_DEBUG(
-        " offset result is:%lld, m_queueOffsetMax is:%lld, msgs size:" SIZET_FMT
-        "",
-        result, m_queueOffsetMax, msgs.size());
+    LOG_DEBUG(" offset result is:%lld, m_queueOffsetMax is:%lld, msgs size:" SIZET_FMT "", result, m_queueOffsetMax,
+              msgs.size());
     vector<MQMessageExt>::iterator it = msgs.begin();
     for (; it != msgs.end(); it++) {
-      LOG_DEBUG("remove these msg from m_msgTreeMap, its offset:%lld",
-                it->getQueueOffset());
+      LOG_DEBUG("remove these msg from m_msgTreeMap, its offset:%lld", it->getQueueOffset());
       m_msgTreeMap.erase(it->getQueueOffset());
     }
 
     if (!m_msgTreeMap.empty()) {
       map<int64, MQMessageExt>::iterator it = m_msgTreeMap.begin();
       result = it->first;
-      LOG_INFO("cache msg size:" SIZET_FMT
-               " of pullRequest:%s, return offset result is:%lld",
-               m_msgTreeMap.size(), m_messageQueue.toString().c_str(), result);
+      LOG_INFO("cache msg size:" SIZET_FMT " of pullRequest:%s, return offset result is:%lld", m_msgTreeMap.size(),
+               m_messageQueue.toString().c_str(), result);
     }
   }
 
@@ -166,7 +162,9 @@ void PullRequest::setDroped(bool droped) {
   */
 }
 
-bool PullRequest::isDroped() const { return m_bDroped.load() == 1; }
+bool PullRequest::isDroped() const {
+  return m_bDroped.load() == 1;
+}
 
 int64 PullRequest::getNextOffset() {
   boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
@@ -177,24 +175,29 @@ void PullRequest::setLocked(bool Locked) {
   int temp = (Locked == true ? 1 : 0);
   m_bLocked.store(temp);
 }
-bool PullRequest::isLocked() const { return m_bLocked.load() == 1; }
+bool PullRequest::isLocked() const {
+  return m_bLocked.load() == 1;
+}
 
 bool PullRequest::isLockExpired() const {
-  return (UtilAll::currentTimeMillis() - m_lastLockTimestamp) >
-         RebalanceLockMaxLiveTime;
+  return (UtilAll::currentTimeMillis() - m_lastLockTimestamp) > RebalanceLockMaxLiveTime;
 }
 
 void PullRequest::setLastLockTimestamp(int64 time) {
   m_lastLockTimestamp = time;
 }
 
-int64 PullRequest::getLastLockTimestamp() const { return m_lastLockTimestamp; }
+int64 PullRequest::getLastLockTimestamp() const {
+  return m_lastLockTimestamp;
+}
 
 void PullRequest::setLastPullTimestamp(uint64 time) {
   m_lastPullTimestamp = time;
 }
 
-uint64 PullRequest::getLastPullTimestamp() const { return m_lastPullTimestamp; }
+uint64 PullRequest::getLastPullTimestamp() const {
+  return m_lastPullTimestamp;
+}
 
 void PullRequest::setLastConsumeTimestamp(uint64 time) {
   m_lastConsumeTimestamp = time;
@@ -204,16 +207,22 @@ uint64 PullRequest::getLastConsumeTimestamp() const {
   return m_lastConsumeTimestamp;
 }
 
-void PullRequest::setTryUnlockTimes(int time) { m_lastLockTimestamp = time; }
+void PullRequest::setTryUnlockTimes(int time) {
+  m_lastLockTimestamp = time;
+}
 
-int PullRequest::getTryUnlockTimes() const { return m_lastLockTimestamp; }
+int PullRequest::getTryUnlockTimes() const {
+  return m_lastLockTimestamp;
+}
 
 void PullRequest::setNextOffset(int64 nextoffset) {
   boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
   m_nextOffset = nextoffset;
 }
 
-string PullRequest::getGroupName() const { return m_groupname; }
+string PullRequest::getGroupName() const {
+  return m_groupname;
+}
 
 boost::timed_mutex& PullRequest::getPullRequestCriticalSection() {
   return m_consumeLock;
@@ -250,26 +259,27 @@ int64 PullRequest::commit() {
   }
 }
 
-void PullRequest::removePullMsgEvent() { m_bPullMsgEventInprogress = false; }
+void PullRequest::removePullMsgEvent() {
+  m_bPullMsgEventInprogress = false;
+}
 
 bool PullRequest::addPullMsgEvent() {
   if (m_bPullMsgEventInprogress == false) {
     m_bPullMsgEventInprogress = true;
-    LOG_INFO("pullRequest with mq :%s set pullMsgEvent",
-             m_messageQueue.toString().c_str());
+    LOG_INFO("pullRequest with mq :%s set pullMsgEvent", m_messageQueue.toString().c_str());
     return true;
   }
   return false;
 }
 
 int PullRequest::getLatestPullRequestOpaque() {
-    boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
-    return m_latestPullRequestOpaque;
+  boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
+  return m_latestPullRequestOpaque;
 }
 
 void PullRequest::setLatestPullRequestOpaque(int opaque) {
-    boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
-    m_latestPullRequestOpaque = opaque;
+  boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
+  m_latestPullRequestOpaque = opaque;
 }
 
 //<!***************************************************************************

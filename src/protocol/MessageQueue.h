@@ -27,8 +27,7 @@ namespace rocketmq {
 class MessageQueue {
  public:
   MessageQueue();
-  MessageQueue(const std::string& topic, const std::string& brokerName,
-               int queueId);
+  MessageQueue(const std::string& topic, const std::string& brokerName, int queueId);
   MessageQueue(const MessageQueue& other);
   MessageQueue& operator=(const MessageQueue& other);
 

@@ -23,20 +23,20 @@ namespace rocketmq {
 std::string UtilAll::s_localHostName;
 std::string UtilAll::s_localIpAddress;
 
-bool UtilAll::startsWith_retry(const string &topic) {
+bool UtilAll::startsWith_retry(const string& topic) {
   return topic.find(RETRY_GROUP_TOPIC_PREFIX) == 0;
 }
 
-string UtilAll::getRetryTopic(const string &consumerGroup) {
+string UtilAll::getRetryTopic(const string& consumerGroup) {
   return RETRY_GROUP_TOPIC_PREFIX + consumerGroup;
 }
 
-void UtilAll::Trim(string &str) {
+void UtilAll::Trim(string& str) {
   str.erase(0, str.find_first_not_of(' '));  // prefixing spaces
   str.erase(str.find_last_not_of(' ') + 1);  // surfixing spaces
 }
 
-bool UtilAll::isBlank(const string &str) {
+bool UtilAll::isBlank(const string& str) {
   if (str.empty()) {
     return true;
   }
@@ -51,27 +51,19 @@ bool UtilAll::isBlank(const string &str) {
 }
 
 const int hex2int[256] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-     0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1,
-    -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-};
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+    -1, -1, -1, -1, -1, -1, -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
-uint64 UtilAll::hexstr2ull(const char *str) {
+uint64 UtilAll::hexstr2ull(const char* str) {
   uint64 num = 0;
-  unsigned char *ch = (unsigned char *) str;
+  unsigned char* ch = (unsigned char*)str;
   while (*ch != '\0') {
     num = (num << 4) + hex2int[*ch];
     ch++;
@@ -79,11 +71,11 @@ uint64 UtilAll::hexstr2ull(const char *str) {
   return num;
 }
 
-int64 UtilAll::str2ll(const char *str) {
+int64 UtilAll::str2ll(const char* str) {
   return boost::lexical_cast<int64>(str);
 }
 
-string UtilAll::bytes2string(const char *bytes, int len) {
+string UtilAll::bytes2string(const char* bytes, int len) {
   if (bytes == NULL || len <= 0) {
     return string();
   }
@@ -113,7 +105,7 @@ string UtilAll::bytes2string(const char *bytes, int len) {
 #endif
 }
 
-bool UtilAll::SplitURL(const string &serverURL, string &addr, short &nPort) {
+bool UtilAll::SplitURL(const string& serverURL, string& addr, short& nPort) {
   size_t pos = serverURL.find(':');
   if (pos == string::npos) {
     return false;
@@ -133,8 +125,9 @@ bool UtilAll::SplitURL(const string &serverURL, string &addr, short &nPort) {
   return true;
 }
 
-int UtilAll::Split(vector<string> &ret_, const string &strIn, const char sep) {
-  if (strIn.empty()) return 0;
+int UtilAll::Split(vector<string>& ret_, const string& strIn, const char sep) {
+  if (strIn.empty())
+    return 0;
 
   string tmp;
   string::size_type pos_begin = strIn.find_first_not_of(sep);
@@ -157,9 +150,9 @@ int UtilAll::Split(vector<string> &ret_, const string &strIn, const char sep) {
   }
   return ret_.size();
 }
-int UtilAll::Split(vector<string> &ret_, const string &strIn,
-                   const string &sep) {
-  if (strIn.empty()) return 0;
+int UtilAll::Split(vector<string>& ret_, const string& strIn, const string& sep) {
+  if (strIn.empty())
+    return 0;
 
   string tmp;
   string::size_type pos_begin = strIn.find_first_not_of(sep);
@@ -183,31 +176,33 @@ int UtilAll::Split(vector<string> &ret_, const string &strIn,
   return ret_.size();
 }
 
-int32_t UtilAll::StringToInt32(const std::string &str, int32_t &out) {
+int32_t UtilAll::StringToInt32(const std::string& str, int32_t& out) {
   out = 0;
   if (str.empty()) {
     return false;
   }
 
-  char *end = NULL;
+  char* end = NULL;
   errno = 0;
   long l = strtol(str.c_str(), &end, 10);
   /* Both checks are needed because INT_MAX == LONG_MAX is possible. */
-  if (l > INT_MAX || (errno == ERANGE && l == LONG_MAX)) return false;
-  if (l < INT_MIN || (errno == ERANGE && l == LONG_MIN)) return false;
-  if (*end != '\0') return false;
+  if (l > INT_MAX || (errno == ERANGE && l == LONG_MAX))
+    return false;
+  if (l < INT_MIN || (errno == ERANGE && l == LONG_MIN))
+    return false;
+  if (*end != '\0')
+    return false;
   out = l;
   return true;
 }
 
-int64_t UtilAll::StringToInt64(const std::string &str, int64_t &val) {
-  char *endptr = NULL;
+int64_t UtilAll::StringToInt64(const std::string& str, int64_t& val) {
+  char* endptr = NULL;
   errno = 0; /* To distinguish success/failure after call */
   val = strtoll(str.c_str(), &endptr, 10);
 
   /* Check for various possible errors */
-  if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN)) ||
-      (errno != 0 && val == 0)) {
+  if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN)) || (errno != 0 && val == 0)) {
     return false;
   }
   /*no digit was found Or  Further characters after number*/
@@ -229,8 +224,7 @@ string UtilAll::getLocalHostName() {
 
     char name[1024];
     boost::system::error_code ec;
-    if (boost::asio::detail::socket_ops::gethostname(name, sizeof(name), ec) !=
-        0) {
+    if (boost::asio::detail::socket_ops::gethostname(name, sizeof(name), ec) != 0) {
       return std::string();
     }
     s_localHostName.append(name, strlen(name));
@@ -244,8 +238,7 @@ string UtilAll::getLocalAddress() {
     boost::asio::ip::tcp::resolver resolver(io_service);
     boost::asio::ip::tcp::resolver::query query(getLocalHostName(), "");
     boost::system::error_code error;
-    boost::asio::ip::tcp::resolver::iterator iter =
-        resolver.resolve(query, error);
+    boost::asio::ip::tcp::resolver::iterator iter = resolver.resolve(query, error);
     if (error) {
       return "";
     }
@@ -261,7 +254,7 @@ string UtilAll::getLocalAddress() {
 
 string UtilAll::getHomeDirectory() {
 #ifndef WIN32
-  char *homeEnv = getenv("HOME");
+  char* homeEnv = getenv("HOME");
   string homeDir;
   if (homeEnv == NULL) {
     homeDir.append(getpwuid(getuid())->pw_dir);
@@ -294,7 +287,7 @@ string UtilAll::getProcessName() {
   else
     buf[retval] = '\0';
 
-  char *process_name = strrchr(buf, '/');
+  char* process_name = strrchr(buf, '/');
   if (process_name) {
     return std::string(process_name + 1);
   } else {
@@ -309,21 +302,18 @@ string UtilAll::getProcessName() {
 
 uint64_t UtilAll::currentTimeMillis() {
   auto since_epoch =
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          std::chrono::system_clock::now().time_since_epoch());
+      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
   return static_cast<uint64_t>(since_epoch.count());
 }
 
 uint64_t UtilAll::currentTimeSeconds() {
   auto since_epoch =
-      std::chrono::duration_cast<std::chrono::seconds>(
-          std::chrono::system_clock::now().time_since_epoch());
+      std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch());
   return static_cast<uint64_t>(since_epoch.count());
 }
 
-bool UtilAll::deflate(std::string &input, std::string &out, int level) {
-  boost::iostreams::zlib_params zlibParams(level,
-                                           boost::iostreams::zlib::deflated);
+bool UtilAll::deflate(std::string& input, std::string& out, int level) {
+  boost::iostreams::zlib_params zlibParams(level, boost::iostreams::zlib::deflated);
   boost::iostreams::filtering_ostream compressingStream;
   compressingStream.push(boost::iostreams::zlib_compressor(zlibParams));
   compressingStream.push(boost::iostreams::back_inserter(out));
@@ -333,7 +323,7 @@ bool UtilAll::deflate(std::string &input, std::string &out, int level) {
   return true;
 }
 
-bool UtilAll::inflate(std::string &input, std::string &out) {
+bool UtilAll::inflate(std::string& input, std::string& out) {
   boost::iostreams::filtering_ostream decompressingStream;
   decompressingStream.push(boost::iostreams::zlib_decompressor());
   decompressingStream.push(boost::iostreams::back_inserter(out));
@@ -343,23 +333,23 @@ bool UtilAll::inflate(std::string &input, std::string &out) {
   return true;
 }
 
-bool UtilAll::ReplaceFile(const std::string &from_path,
-                          const std::string &to_path) {
+bool UtilAll::ReplaceFile(const std::string& from_path, const std::string& to_path) {
 #ifdef WIN32
   // Try a simple move first.  It will only succeed when |to_path| doesn't
   // already exist.
-  if (::MoveFile(from_path.c_str(), to_path.c_str())) return true;
+  if (::MoveFile(from_path.c_str(), to_path.c_str()))
+    return true;
   // Try the full-blown replace if the move fails, as ReplaceFile will only
   // succeed when |to_path| does exist. When writing to a network share, we may
   // not be able to change the ACLs. Ignore ACL errors then
   // (REPLACEFILE_IGNORE_MERGE_ERRORS).
-  if (::ReplaceFile(to_path.c_str(), from_path.c_str(), NULL,
-                    REPLACEFILE_IGNORE_MERGE_ERRORS, NULL, NULL)) {
+  if (::ReplaceFile(to_path.c_str(), from_path.c_str(), NULL, REPLACEFILE_IGNORE_MERGE_ERRORS, NULL, NULL)) {
     return true;
   }
   return false;
 #else
-  if (rename(from_path.c_str(), to_path.c_str()) == 0) return true;
+  if (rename(from_path.c_str(), to_path.c_str()) == 0)
+    return true;
   return false;
 #endif
 }

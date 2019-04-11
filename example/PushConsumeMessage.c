@@ -28,36 +28,36 @@
 
 void thread_sleep(unsigned milliseconds) {
 #ifdef _WIN32
-    Sleep(milliseconds);
+  Sleep(milliseconds);
 #else
-    usleep(milliseconds * 1000);  // takes microseconds
+  usleep(milliseconds * 1000);  // takes microseconds
 #endif
 }
 
-int doConsumeMessage(struct CPushConsumer *consumer, CMessageExt *msgExt) {
-    printf("Hello,doConsumeMessage by Application!\n");
-    printf("Msg Topic:%s\n", GetMessageTopic(msgExt));
-    printf("Msg Tags:%s\n", GetMessageTags(msgExt));
-    printf("Msg Keys:%s\n", GetMessageKeys(msgExt));
-    printf("Msg Body:%s\n", GetMessageBody(msgExt));
-    return E_CONSUME_SUCCESS;
+int doConsumeMessage(struct CPushConsumer* consumer, CMessageExt* msgExt) {
+  printf("Hello,doConsumeMessage by Application!\n");
+  printf("Msg Topic:%s\n", GetMessageTopic(msgExt));
+  printf("Msg Tags:%s\n", GetMessageTags(msgExt));
+  printf("Msg Keys:%s\n", GetMessageKeys(msgExt));
+  printf("Msg Body:%s\n", GetMessageBody(msgExt));
+  return E_CONSUME_SUCCESS;
 }
 
-int main(int argc, char *argv[]) {
-    int i = 0;
-    printf("PushConsumer Initializing....\n");
-    CPushConsumer *consumer = CreatePushConsumer("Group_Consumer_Test");
-    SetPushConsumerNameServerAddress(consumer, "172.17.0.2:9876");
-    Subscribe(consumer, "T_TestTopic", "*");
-    RegisterMessageCallback(consumer, doConsumeMessage);
-    StartPushConsumer(consumer);
-    printf("Push Consumer Start...\n");
-    for (i = 0; i < 10; i++) {
-        printf("Now Running : %d S\n", i * 10);
-        thread_sleep(10000);
-    }
-    ShutdownPushConsumer(consumer);
-    DestroyPushConsumer(consumer);
-    printf("PushConsumer Shutdown!\n");
-    return 0;
+int main(int argc, char* argv[]) {
+  int i = 0;
+  printf("PushConsumer Initializing....\n");
+  CPushConsumer* consumer = CreatePushConsumer("Group_Consumer_Test");
+  SetPushConsumerNameServerAddress(consumer, "172.17.0.2:9876");
+  Subscribe(consumer, "T_TestTopic", "*");
+  RegisterMessageCallback(consumer, doConsumeMessage);
+  StartPushConsumer(consumer);
+  printf("Push Consumer Start...\n");
+  for (i = 0; i < 10; i++) {
+    printf("Now Running : %d S\n", i * 10);
+    thread_sleep(10000);
+  }
+  ShutdownPushConsumer(consumer);
+  DestroyPushConsumer(consumer);
+  printf("PushConsumer Shutdown!\n");
+  return 0;
 }

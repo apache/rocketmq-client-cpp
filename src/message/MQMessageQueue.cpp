@@ -24,14 +24,11 @@ MQMessageQueue::MQMessageQueue() {
   m_brokerName.clear();
 }
 
-MQMessageQueue::MQMessageQueue(const std::string& topic, const std::string& brokerName,
-                               int queueId)
+MQMessageQueue::MQMessageQueue(const std::string& topic, const std::string& brokerName, int queueId)
     : m_topic(topic), m_brokerName(brokerName), m_queueId(queueId) {}
 
 MQMessageQueue::MQMessageQueue(const MQMessageQueue& other)
-    : m_topic(other.m_topic),
-      m_brokerName(other.m_brokerName),
-      m_queueId(other.m_queueId) {}
+    : m_topic(other.m_topic), m_brokerName(other.m_brokerName), m_queueId(other.m_queueId) {}
 
 MQMessageQueue& MQMessageQueue::operator=(const MQMessageQueue& other) {
   if (this != &other) {
@@ -42,19 +39,29 @@ MQMessageQueue& MQMessageQueue::operator=(const MQMessageQueue& other) {
   return *this;
 }
 
-std::string MQMessageQueue::getTopic() const { return m_topic; }
+std::string MQMessageQueue::getTopic() const {
+  return m_topic;
+}
 
-void MQMessageQueue::setTopic(const std::string& topic) { m_topic = topic; }
+void MQMessageQueue::setTopic(const std::string& topic) {
+  m_topic = topic;
+}
 
-std::string MQMessageQueue::getBrokerName() const { return m_brokerName; }
+std::string MQMessageQueue::getBrokerName() const {
+  return m_brokerName;
+}
 
 void MQMessageQueue::setBrokerName(const std::string& brokerName) {
   m_brokerName = brokerName;
 }
 
-int MQMessageQueue::getQueueId() const { return m_queueId; }
+int MQMessageQueue::getQueueId() const {
+  return m_queueId;
+}
 
-void MQMessageQueue::setQueueId(int queueId) { m_queueId = queueId; }
+void MQMessageQueue::setQueueId(int queueId) {
+  m_queueId = queueId;
+}
 
 bool MQMessageQueue::operator==(const MQMessageQueue& mq) const {
   if (this == &mq) {

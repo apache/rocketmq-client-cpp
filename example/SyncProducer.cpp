@@ -35,8 +35,7 @@ std::mutex g_mtx;
 std::condition_variable g_finished;
 TpsReportService g_tps;
 
-void SyncProducerWorker(RocketmqSendAndConsumerArgs* info,
-                        DefaultMQProducer* producer) {
+void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* producer) {
   while (!g_quit.load()) {
     if (g_msgCount.load() <= 0) {
       std::unique_lock<std::mutex> lck(g_mtx);
@@ -51,11 +50,9 @@ void SyncProducerWorker(RocketmqSendAndConsumerArgs* info,
       g_tps.Increment();
       --g_msgCount;
       auto end = std::chrono::system_clock::now();
-      auto duration =
-          std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+      auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
       if (duration.count() >= 500) {
-        std::cout << "send RT more than: " << duration.count()
-                  << " ms with msgid: " << sendResult.getMsgId() << endl;
+        std::cout << "send RT more than: " << duration.count() << " ms with msgid: " << sendResult.getMsgId() << endl;
       }
     } catch (const MQException& e) {
       std::cout << "send failed: " << std::endl;
@@ -87,8 +84,7 @@ int main(int argc, char* argv[]) {
 
   int threadCount = info.thread_count;
   for (int j = 0; j < threadCount; j++) {
-    std::shared_ptr<std::thread> th =
-        std::make_shared<std::thread>(SyncProducerWorker, &info, &producer);
+    std::shared_ptr<std::thread> th = std::make_shared<std::thread>(SyncProducerWorker, &info, &producer);
     work_pool.push_back(th);
   }
 
@@ -99,12 +95,10 @@ int main(int argc, char* argv[]) {
   }
 
   auto end = std::chrono::system_clock::now();
-  auto duration =
-      std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-  std::cout
-      << "per msg time: " << duration.count() / (double)msgcount << "ms \n"
-      << "========================finished==============================\n";
+  std::cout << "per msg time: " << duration.count() / (double)msgcount << "ms \n"
+            << "========================finished==============================\n";
 
   for (size_t th = 0; th != work_pool.size(); ++th) {
     work_pool[th]->join();

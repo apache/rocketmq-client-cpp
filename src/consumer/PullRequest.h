@@ -35,8 +35,7 @@ class PullRequest {
   int64 getCacheMinOffset();
   int64 getCacheMaxOffset();
   int getCacheMsgCount();
-  void getMessageByQueueOffset(vector<MQMessageExt>& msgs, int64 minQueueOffset,
-                               int64 maxQueueOffset);
+  void getMessageByQueueOffset(vector<MQMessageExt>& msgs, int64 minQueueOffset, int64 maxQueueOffset);
   int64 removeMessage(vector<MQMessageExt>& msgs);
   void clearAllMsgs();
 
@@ -87,10 +86,10 @@ class PullRequest {
   map<int64, MQMessageExt> m_msgTreeMapTemp;
   boost::mutex m_pullRequestLock;
   uint64 m_lastLockTimestamp;  // ms
-  //uint64 m_tryUnlockTimes;
+  // uint64 m_tryUnlockTimes;
   uint64 m_lastPullTimestamp;
   uint64 m_lastConsumeTimestamp;
-  int    m_latestPullRequestOpaque;
+  int m_latestPullRequestOpaque;
   boost::timed_mutex m_consumeLock;
   boost::atomic<bool> m_bPullMsgEventInprogress;
 };

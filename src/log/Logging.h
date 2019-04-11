@@ -47,10 +47,7 @@ class logAdapter {
   void setLogLevel(elogLevel logLevel);
   elogLevel getLogLevel();
   void setLogFileNumAndSize(int logNum, int sizeOfPerFile);
-  src::severity_logger<boost::log::trivial::severity_level>&
-  getSeverityLogger() {
-    return m_severityLogger;
-  }
+  src::severity_logger<boost::log::trivial::severity_level>& getSeverityLogger() { return m_severityLogger; }
 
  private:
   logAdapter();
@@ -69,8 +66,7 @@ class logAdapter {
 
 class LogUtil {
  public:
-  static void LogMessage(boost::log::trivial::severity_level level, int line,
-                         const char* format, ...) {
+  static void LogMessage(boost::log::trivial::severity_level level, int line, const char* format, ...) {
     va_list arg_ptr;
     va_start(arg_ptr, format);
     boost::scoped_array<char> formattedString(new char[1024]);
@@ -80,15 +76,10 @@ class LogUtil {
   }
 };
 
-#define LOG_FATAL(...) \
-  LogUtil::LogMessage(boost::log::trivial::fatal, __LINE__, __VA_ARGS__)
-#define LOG_ERROR(...) \
-  LogUtil::LogMessage(boost::log::trivial::error, __LINE__, __VA_ARGS__)
-#define LOG_WARN(...) \
-  LogUtil::LogMessage(boost::log::trivial::warning, __LINE__, __VA_ARGS__)
-#define LOG_INFO(...) \
-  LogUtil::LogMessage(boost::log::trivial::info, __LINE__, __VA_ARGS__)
-#define LOG_DEBUG(...) \
-  LogUtil::LogMessage(boost::log::trivial::debug, __LINE__, __VA_ARGS__)
+#define LOG_FATAL(...) LogUtil::LogMessage(boost::log::trivial::fatal, __LINE__, __VA_ARGS__)
+#define LOG_ERROR(...) LogUtil::LogMessage(boost::log::trivial::error, __LINE__, __VA_ARGS__)
+#define LOG_WARN(...) LogUtil::LogMessage(boost::log::trivial::warning, __LINE__, __VA_ARGS__)
+#define LOG_INFO(...) LogUtil::LogMessage(boost::log::trivial::info, __LINE__, __VA_ARGS__)
+#define LOG_DEBUG(...) LogUtil::LogMessage(boost::log::trivial::debug, __LINE__, __VA_ARGS__)
 }
 #endif

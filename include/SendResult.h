@@ -23,19 +23,17 @@
 namespace rocketmq {
 //<!***************************************************************************
 //<!all to Master;
-enum SendStatus {
-  SEND_OK,
-  SEND_FLUSH_DISK_TIMEOUT,
-  SEND_FLUSH_SLAVE_TIMEOUT,
-  SEND_SLAVE_NOT_AVAILABLE
-};
+enum SendStatus { SEND_OK, SEND_FLUSH_DISK_TIMEOUT, SEND_FLUSH_SLAVE_TIMEOUT, SEND_SLAVE_NOT_AVAILABLE };
 
 //<!***************************************************************************
 class ROCKETMQCLIENT_API SendResult {
  public:
   SendResult();
-  SendResult(const SendStatus& sendStatus, const std::string& msgId, const std::string& offsetMsgId,
-             const MQMessageQueue& messageQueue, int64 queueOffset);
+  SendResult(const SendStatus& sendStatus,
+             const std::string& msgId,
+             const std::string& offsetMsgId,
+             const MQMessageQueue& messageQueue,
+             int64 queueOffset);
 
   virtual ~SendResult();
   SendResult(const SendResult& other);

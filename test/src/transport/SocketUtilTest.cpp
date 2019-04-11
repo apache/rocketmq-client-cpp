@@ -24,24 +24,24 @@ using ::testing::InitGoogleTest;
 using testing::Return;
 
 TEST(socketUtil, init) {
-    sockaddr addr = rocketmq::IPPort2socketAddress(inet_addr("127.0.0.1"), 10091);
+  sockaddr addr = rocketmq::IPPort2socketAddress(inet_addr("127.0.0.1"), 10091);
 
-    EXPECT_EQ(rocketmq::socketAddress2IPPort(addr), "1.0.0.127:10091");
+  EXPECT_EQ(rocketmq::socketAddress2IPPort(addr), "1.0.0.127:10091");
 
-    int host;
-    int port;
+  int host;
+  int port;
 
-    rocketmq::socketAddress2IPPort(addr, host, port);
-    EXPECT_EQ(host, inet_addr("127.0.0.1"));
-    EXPECT_EQ(port, 10091);
+  rocketmq::socketAddress2IPPort(addr, host, port);
+  EXPECT_EQ(host, inet_addr("127.0.0.1"));
+  EXPECT_EQ(port, 10091);
 
-    EXPECT_EQ(rocketmq::socketAddress2String(addr), "1.0.0.127");
+  EXPECT_EQ(rocketmq::socketAddress2String(addr), "1.0.0.127");
 }
 
-int main(int argc, char *argv[]) {
-    InitGoogleMock(&argc, argv);
-    testing::GTEST_FLAG(throw_on_failure) = true;
-    testing::GTEST_FLAG(filter) = "socketUtil.init";
-    int itestts = RUN_ALL_TESTS();
-    return itestts;
+int main(int argc, char* argv[]) {
+  InitGoogleMock(&argc, argv);
+  testing::GTEST_FLAG(throw_on_failure) = true;
+  testing::GTEST_FLAG(filter) = "socketUtil.init";
+  int itestts = RUN_ALL_TESTS();
+  return itestts;
 }

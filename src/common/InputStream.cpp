@@ -23,7 +23,8 @@ namespace rocketmq {
 int64 InputStream::getNumBytesRemaining() {
   int64 len = getTotalLength();
 
-  if (len >= 0) len -= getPosition();
+  if (len >= 0)
+    len -= getPosition();
 
   return len;
 }
@@ -34,7 +35,9 @@ char InputStream::readByte() {
   return temp;
 }
 
-bool InputStream::readBool() { return readByte() != 0; }
+bool InputStream::readBool() {
+  return readByte() != 0;
+}
 
 short InputStream::readShortBigEndian() {
   char temp[2];
@@ -100,8 +103,7 @@ void InputStream::skipNextBytes(int64 numBytesToSkip) {
     char* temp = static_cast<char*>(std::malloc(skipBufferSize * sizeof(char)));
 
     while (numBytesToSkip > 0 && !isExhausted())
-      numBytesToSkip -=
-          read(temp, (int)std::min(numBytesToSkip, (int64)skipBufferSize));
+      numBytesToSkip -= read(temp, (int)std::min(numBytesToSkip, (int64)skipBufferSize));
 
     std::free(temp);
   }

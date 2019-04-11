@@ -26,21 +26,21 @@ using testing::Return;
 using rocketmq::PermName;
 
 TEST(permName, perm2String) {
-    EXPECT_EQ(PermName::perm2String(0), "---");
-    EXPECT_EQ(PermName::perm2String(1), "--X");
-    EXPECT_EQ(PermName::perm2String(2), "-W");
-    EXPECT_EQ(PermName::perm2String(3), "-WX");
-    EXPECT_EQ(PermName::perm2String(4), "R--");
-    EXPECT_EQ(PermName::perm2String(5), "R-X");
-    EXPECT_EQ(PermName::perm2String(6), "RW");
-    EXPECT_EQ(PermName::perm2String(7), "RWX");
-    EXPECT_EQ(PermName::perm2String(8), "---");
+  EXPECT_EQ(PermName::perm2String(0), "---");
+  EXPECT_EQ(PermName::perm2String(1), "--X");
+  EXPECT_EQ(PermName::perm2String(2), "-W");
+  EXPECT_EQ(PermName::perm2String(3), "-WX");
+  EXPECT_EQ(PermName::perm2String(4), "R--");
+  EXPECT_EQ(PermName::perm2String(5), "R-X");
+  EXPECT_EQ(PermName::perm2String(6), "RW");
+  EXPECT_EQ(PermName::perm2String(7), "RWX");
+  EXPECT_EQ(PermName::perm2String(8), "---");
 }
 
-int main(int argc, char *argv[]) {
-    InitGoogleMock(&argc, argv);
-    testing::GTEST_FLAG(throw_on_failure) = true;
-    testing::GTEST_FLAG(filter) = "permName.perm2String";
-    int itestts = RUN_ALL_TESTS();
-    return itestts;
+int main(int argc, char* argv[]) {
+  InitGoogleMock(&argc, argv);
+  testing::GTEST_FLAG(throw_on_failure) = true;
+  testing::GTEST_FLAG(filter) = "permName.perm2String";
+  int itestts = RUN_ALL_TESTS();
+  return itestts;
 }

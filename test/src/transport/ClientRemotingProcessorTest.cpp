@@ -66,172 +66,172 @@ using rocketmq::SessionCredentials;
 using rocketmq::UtilAll;
 
 class MockClientRemotingProcessor : public ClientRemotingProcessor {
-   public:
-    MockClientRemotingProcessor(MQClientFactory *factrory) : ClientRemotingProcessor(factrory) {}
-    MOCK_METHOD1(resetOffset, RemotingCommand *(RemotingCommand *request));
-    MOCK_METHOD1(getConsumerRunningInfo, RemotingCommand *(RemotingCommand *request));
-    MOCK_METHOD1(notifyConsumerIdsChanged, RemotingCommand *(RemotingCommand *request));
+ public:
+  MockClientRemotingProcessor(MQClientFactory* factrory) : ClientRemotingProcessor(factrory) {}
+  MOCK_METHOD1(resetOffset, RemotingCommand*(RemotingCommand* request));
+  MOCK_METHOD1(getConsumerRunningInfo, RemotingCommand*(RemotingCommand* request));
+  MOCK_METHOD1(notifyConsumerIdsChanged, RemotingCommand*(RemotingCommand* request));
 };
 
 class MockMQClientFactory : public MQClientFactory {
-   public:
-    MockMQClientFactory(const string &clientID,
-                        int pullThreadNum,
-                        uint64_t tcpConnectTimeout,
-                        uint64_t tcpTransportTryLockTimeout,
-                        string unitName)
-        : MQClientFactory(clientID, pullThreadNum, tcpConnectTimeout, tcpTransportTryLockTimeout, unitName) {}
+ public:
+  MockMQClientFactory(const string& clientID,
+                      int pullThreadNum,
+                      uint64_t tcpConnectTimeout,
+                      uint64_t tcpTransportTryLockTimeout,
+                      string unitName)
+      : MQClientFactory(clientID, pullThreadNum, tcpConnectTimeout, tcpTransportTryLockTimeout, unitName) {}
 
-    MOCK_METHOD3(resetOffset,
-                 void(const string &group, const string &topic, const map<MQMessageQueue, int64> &offsetTable));
-    MOCK_METHOD1(consumerRunningInfo, ConsumerRunningInfo *(const string &consumerGroup));
-    MOCK_METHOD2(getSessionCredentialFromConsumer,
-                 bool(const string &consumerGroup, SessionCredentials &sessionCredentials));
-    MOCK_METHOD1(doRebalanceByConsumerGroup, void(const string &consumerGroup));
+  MOCK_METHOD3(resetOffset,
+               void(const string& group, const string& topic, const map<MQMessageQueue, int64>& offsetTable));
+  MOCK_METHOD1(consumerRunningInfo, ConsumerRunningInfo*(const string& consumerGroup));
+  MOCK_METHOD2(getSessionCredentialFromConsumer,
+               bool(const string& consumerGroup, SessionCredentials& sessionCredentials));
+  MOCK_METHOD1(doRebalanceByConsumerGroup, void(const string& consumerGroup));
 };
 
 TEST(clientRemotingProcessor, processRequest) {
-    MockMQClientFactory *factory = new MockMQClientFactory("testClientId", 4, 3000, 4000, "a");
-    ClientRemotingProcessor clientRemotingProcessor(factory);
+  MockMQClientFactory* factory = new MockMQClientFactory("testClientId", 4, 3000, 4000, "a");
+  ClientRemotingProcessor clientRemotingProcessor(factory);
 
-    string addr = "127.0.0.1:9876";
-    RemotingCommand *command = new RemotingCommand();
-    RemotingCommand *pResponse = new RemotingCommand(13);
+  string addr = "127.0.0.1:9876";
+  RemotingCommand* command = new RemotingCommand();
+  RemotingCommand* pResponse = new RemotingCommand(13);
 
-    pResponse->setCode(MQRequestCode::RESET_CONSUMER_CLIENT_OFFSET);
-    command->setCode(MQRequestCode::RESET_CONSUMER_CLIENT_OFFSET);
-    EXPECT_TRUE(clientRemotingProcessor.processRequest(addr, command) == nullptr);
-    EXPECT_EQ(nullptr, clientRemotingProcessor.processRequest(addr, command));
+  pResponse->setCode(MQRequestCode::RESET_CONSUMER_CLIENT_OFFSET);
+  command->setCode(MQRequestCode::RESET_CONSUMER_CLIENT_OFFSET);
+  EXPECT_TRUE(clientRemotingProcessor.processRequest(addr, command) == nullptr);
+  EXPECT_EQ(nullptr, clientRemotingProcessor.processRequest(addr, command));
 
-    NotifyConsumerIdsChangedRequestHeader *header = new NotifyConsumerIdsChangedRequestHeader();
-    header->setGroup("testGroup");
-    RemotingCommand *twoCommand = new RemotingCommand(MQRequestCode::NOTIFY_CONSUMER_IDS_CHANGED, header);
+  NotifyConsumerIdsChangedRequestHeader* header = new NotifyConsumerIdsChangedRequestHeader();
+  header->setGroup("testGroup");
+  RemotingCommand* twoCommand = new RemotingCommand(MQRequestCode::NOTIFY_CONSUMER_IDS_CHANGED, header);
 
-    EXPECT_EQ(NULL, clientRemotingProcessor.processRequest(addr, twoCommand));
+  EXPECT_EQ(NULL, clientRemotingProcessor.processRequest(addr, twoCommand));
 
-    command->setCode(MQRequestCode::GET_CONSUMER_RUNNING_INFO);
-    // EXPECT_EQ(NULL , clientRemotingProcessor.processRequest(addr, command));
+  command->setCode(MQRequestCode::GET_CONSUMER_RUNNING_INFO);
+  // EXPECT_EQ(NULL , clientRemotingProcessor.processRequest(addr, command));
 
-    command->setCode(MQRequestCode::CHECK_TRANSACTION_STATE);
-    EXPECT_TRUE(clientRemotingProcessor.processRequest(addr, command) == nullptr);
+  command->setCode(MQRequestCode::CHECK_TRANSACTION_STATE);
+  EXPECT_TRUE(clientRemotingProcessor.processRequest(addr, command) == nullptr);
 
-    command->setCode(MQRequestCode::GET_CONSUMER_STATUS_FROM_CLIENT);
-    EXPECT_TRUE(clientRemotingProcessor.processRequest(addr, command) == nullptr);
+  command->setCode(MQRequestCode::GET_CONSUMER_STATUS_FROM_CLIENT);
+  EXPECT_TRUE(clientRemotingProcessor.processRequest(addr, command) == nullptr);
 
-    command->setCode(MQRequestCode::CONSUME_MESSAGE_DIRECTLY);
-    EXPECT_TRUE(clientRemotingProcessor.processRequest(addr, command) == nullptr);
+  command->setCode(MQRequestCode::CONSUME_MESSAGE_DIRECTLY);
+  EXPECT_TRUE(clientRemotingProcessor.processRequest(addr, command) == nullptr);
 
-    command->setCode(1);
-    EXPECT_TRUE(clientRemotingProcessor.processRequest(addr, command) == nullptr);
+  command->setCode(1);
+  EXPECT_TRUE(clientRemotingProcessor.processRequest(addr, command) == nullptr);
 
-    delete twoCommand;
-    delete command;
-    delete pResponse;
+  delete twoCommand;
+  delete command;
+  delete pResponse;
 }
 
 TEST(clientRemotingProcessor, resetOffset) {
-    MockMQClientFactory *factory = new MockMQClientFactory("testClientId", 4, 3000, 4000, "a");
-    Mock::AllowLeak(factory);
-    ClientRemotingProcessor clientRemotingProcessor(factory);
-    Value root;
-    Value messageQueues;
-    Value messageQueue;
-    messageQueue["brokerName"] = "testBroker";
-    messageQueue["queueId"] = 4;
-    messageQueue["topic"] = "testTopic";
-    messageQueue["offset"] = 1024;
+  MockMQClientFactory* factory = new MockMQClientFactory("testClientId", 4, 3000, 4000, "a");
+  Mock::AllowLeak(factory);
+  ClientRemotingProcessor clientRemotingProcessor(factory);
+  Value root;
+  Value messageQueues;
+  Value messageQueue;
+  messageQueue["brokerName"] = "testBroker";
+  messageQueue["queueId"] = 4;
+  messageQueue["topic"] = "testTopic";
+  messageQueue["offset"] = 1024;
 
-    messageQueues.append(messageQueue);
-    root["offsetTable"] = messageQueues;
+  messageQueues.append(messageQueue);
+  root["offsetTable"] = messageQueues;
 
-    FastWriter wrtier;
-    string strData = wrtier.write(root);
+  FastWriter wrtier;
+  string strData = wrtier.write(root);
 
-    ResetOffsetRequestHeader *header = new ResetOffsetRequestHeader();
-    RemotingCommand *request = new RemotingCommand(13, header);
+  ResetOffsetRequestHeader* header = new ResetOffsetRequestHeader();
+  RemotingCommand* request = new RemotingCommand(13, header);
 
-    EXPECT_CALL(*factory, resetOffset(_, _, _)).Times(1);
-    clientRemotingProcessor.resetOffset(request);
+  EXPECT_CALL(*factory, resetOffset(_, _, _)).Times(1);
+  clientRemotingProcessor.resetOffset(request);
 
-    request->SetBody(strData.c_str(), strData.size() - 2);
-    clientRemotingProcessor.resetOffset(request);
+  request->SetBody(strData.c_str(), strData.size() - 2);
+  clientRemotingProcessor.resetOffset(request);
 
-    request->SetBody(strData.c_str(), strData.size());
-    clientRemotingProcessor.resetOffset(request);
+  request->SetBody(strData.c_str(), strData.size());
+  clientRemotingProcessor.resetOffset(request);
 
-    //here header no need delete, it will managered by RemotingCommand
-    //delete header;
-    delete request;
+  // here header no need delete, it will managered by RemotingCommand
+  // delete header;
+  delete request;
 }
 
 TEST(clientRemotingProcessorS, getConsumerRunningInfo) {
-    MockMQClientFactory *factory = new MockMQClientFactory("testClientId", 4, 3000, 4000, "a");
-    ConsumerRunningInfo *info = new ConsumerRunningInfo();
-    EXPECT_CALL(*factory, consumerRunningInfo(_)).Times(2).WillOnce(Return(info)).WillOnce(Return(info));
-    EXPECT_CALL(*factory, getSessionCredentialFromConsumer(_, _))
-        .Times(2);  //.WillRepeatedly(SetArgReferee<1>(sessionCredentials));
-    ClientRemotingProcessor clientRemotingProcessor(factory);
+  MockMQClientFactory* factory = new MockMQClientFactory("testClientId", 4, 3000, 4000, "a");
+  ConsumerRunningInfo* info = new ConsumerRunningInfo();
+  EXPECT_CALL(*factory, consumerRunningInfo(_)).Times(2).WillOnce(Return(info)).WillOnce(Return(info));
+  EXPECT_CALL(*factory, getSessionCredentialFromConsumer(_, _))
+      .Times(2);  //.WillRepeatedly(SetArgReferee<1>(sessionCredentials));
+  ClientRemotingProcessor clientRemotingProcessor(factory);
 
-    GetConsumerRunningInfoRequestHeader *header = new GetConsumerRunningInfoRequestHeader();
-    header->setConsumerGroup("testGroup");
+  GetConsumerRunningInfoRequestHeader* header = new GetConsumerRunningInfoRequestHeader();
+  header->setConsumerGroup("testGroup");
 
-    RemotingCommand *request = new RemotingCommand(14, header);
+  RemotingCommand* request = new RemotingCommand(14, header);
 
-    RemotingCommand *command = clientRemotingProcessor.getConsumerRunningInfo("127.0.0.1:9876", request);
-    EXPECT_EQ(command->getCode(), MQResponseCode::SYSTEM_ERROR);
-    EXPECT_EQ(command->getRemark(), "The Consumer Group not exist in this consumer");
-    delete command;
-    delete request;
+  RemotingCommand* command = clientRemotingProcessor.getConsumerRunningInfo("127.0.0.1:9876", request);
+  EXPECT_EQ(command->getCode(), MQResponseCode::SYSTEM_ERROR);
+  EXPECT_EQ(command->getRemark(), "The Consumer Group not exist in this consumer");
+  delete command;
+  delete request;
 }
 
 TEST(clientRemotingProcessor, notifyConsumerIdsChanged) {
-    MockMQClientFactory *factory = new MockMQClientFactory("testClientId", 4, 3000, 4000, "a");
-    Mock::AllowLeak(factory);
-    ClientRemotingProcessor clientRemotingProcessor(factory);
-    NotifyConsumerIdsChangedRequestHeader *header = new NotifyConsumerIdsChangedRequestHeader();
-    header->setGroup("testGroup");
-    RemotingCommand *request = new RemotingCommand(14, header);
+  MockMQClientFactory* factory = new MockMQClientFactory("testClientId", 4, 3000, 4000, "a");
+  Mock::AllowLeak(factory);
+  ClientRemotingProcessor clientRemotingProcessor(factory);
+  NotifyConsumerIdsChangedRequestHeader* header = new NotifyConsumerIdsChangedRequestHeader();
+  header->setGroup("testGroup");
+  RemotingCommand* request = new RemotingCommand(14, header);
 
-    EXPECT_CALL(*factory, doRebalanceByConsumerGroup(_)).Times(1);
-    clientRemotingProcessor.notifyConsumerIdsChanged(request);
+  EXPECT_CALL(*factory, doRebalanceByConsumerGroup(_)).Times(1);
+  clientRemotingProcessor.notifyConsumerIdsChanged(request);
 
-    delete request;
+  delete request;
 }
 
 TEST(clientRemotingProcessor, resetOffsetBody) {
-    MockMQClientFactory *factory = new MockMQClientFactory("testClientId", 4, 3000, 4000, "a");
-    ClientRemotingProcessor clientRemotingProcessor(factory);
+  MockMQClientFactory* factory = new MockMQClientFactory("testClientId", 4, 3000, 4000, "a");
+  ClientRemotingProcessor clientRemotingProcessor(factory);
 
-    Value root;
-    Value messageQueues;
-    Value messageQueue;
-    messageQueue["brokerName"] = "testBroker";
-    messageQueue["queueId"] = 4;
-    messageQueue["topic"] = "testTopic";
-    messageQueue["offset"] = 1024;
+  Value root;
+  Value messageQueues;
+  Value messageQueue;
+  messageQueue["brokerName"] = "testBroker";
+  messageQueue["queueId"] = 4;
+  messageQueue["topic"] = "testTopic";
+  messageQueue["offset"] = 1024;
 
-    messageQueues.append(messageQueue);
-    root["offsetTable"] = messageQueues;
+  messageQueues.append(messageQueue);
+  root["offsetTable"] = messageQueues;
 
-    FastWriter wrtier;
-    string strData = wrtier.write(root);
+  FastWriter wrtier;
+  string strData = wrtier.write(root);
 
-    MemoryBlock *mem = new MemoryBlock(strData.c_str(), strData.size());
+  MemoryBlock* mem = new MemoryBlock(strData.c_str(), strData.size());
 
-    ResetOffsetBody *resetOffset = ResetOffsetBody::Decode(mem);
+  ResetOffsetBody* resetOffset = ResetOffsetBody::Decode(mem);
 
-    map<MQMessageQueue, int64> map = resetOffset->getOffsetTable();
-    MQMessageQueue mqmq("testTopic", "testBroker", 4);
-    EXPECT_EQ(map[mqmq], 1024);
-    Mock::AllowLeak(factory);
-    delete resetOffset;
-    delete mem;
+  map<MQMessageQueue, int64> map = resetOffset->getOffsetTable();
+  MQMessageQueue mqmq("testTopic", "testBroker", 4);
+  EXPECT_EQ(map[mqmq], 1024);
+  Mock::AllowLeak(factory);
+  delete resetOffset;
+  delete mem;
 }
 
-int main(int argc, char *argv[]) {
-    InitGoogleMock(&argc, argv);
-    testing::GTEST_FLAG(throw_on_failure) = true;
-    testing::GTEST_FLAG(filter) = "clientRemotingProcessor.*";
-    int itestts = RUN_ALL_TESTS();
-    return itestts;
+int main(int argc, char* argv[]) {
+  InitGoogleMock(&argc, argv);
+  testing::GTEST_FLAG(throw_on_failure) = true;
+  testing::GTEST_FLAG(filter) = "clientRemotingProcessor.*";
+  int itestts = RUN_ALL_TESTS();
+  return itestts;
 }

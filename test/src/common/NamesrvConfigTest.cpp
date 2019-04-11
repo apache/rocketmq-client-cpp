@@ -31,20 +31,20 @@ using testing::Return;
 using rocketmq::NamesrvConfig;
 
 TEST(namesrvConfig, init) {
-    NamesrvConfig namesrvConfig;
+  NamesrvConfig namesrvConfig;
 
-    const string home = "/home/rocketmq";
-    namesrvConfig.setRocketmqHome(home);
-    EXPECT_EQ(namesrvConfig.getRocketmqHome(), "/home/rocketmq");
+  const string home = "/home/rocketmq";
+  namesrvConfig.setRocketmqHome(home);
+  EXPECT_EQ(namesrvConfig.getRocketmqHome(), "/home/rocketmq");
 
-    namesrvConfig.setKvConfigPath("/home/rocketmq");
-    EXPECT_EQ(namesrvConfig.getKvConfigPath(), "/home/rocketmq");
+  namesrvConfig.setKvConfigPath("/home/rocketmq");
+  EXPECT_EQ(namesrvConfig.getKvConfigPath(), "/home/rocketmq");
 }
 
-int main(int argc, char *argv[]) {
-    InitGoogleMock(&argc, argv);
-    testing::GTEST_FLAG(throw_on_failure) = true;
-    testing::GTEST_FLAG(filter) = "namesrvConfig.init";
-    int itestts = RUN_ALL_TESTS();
-    return itestts;
+int main(int argc, char* argv[]) {
+  InitGoogleMock(&argc, argv);
+  testing::GTEST_FLAG(throw_on_failure) = true;
+  testing::GTEST_FLAG(filter) = "namesrvConfig.init";
+  int itestts = RUN_ALL_TESTS();
+  return itestts;
 }

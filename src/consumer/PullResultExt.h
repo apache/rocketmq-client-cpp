@@ -25,22 +25,32 @@ namespace rocketmq {
 //<!***************************************************************************
 class PullResultExt : public PullResult {
  public:
-  PullResultExt(PullStatus pullStatus, int64 nextBeginOffset, int64 minOffset,
-                int64 maxOffset, int suggestWhichBrokerId, const MemoryBlock &messageBinary)
+  PullResultExt(PullStatus pullStatus,
+                int64 nextBeginOffset,
+                int64 minOffset,
+                int64 maxOffset,
+                int suggestWhichBrokerId,
+                const MemoryBlock& messageBinary)
       : PullResult(pullStatus, nextBeginOffset, minOffset, maxOffset),
         suggestWhichBrokerId(suggestWhichBrokerId),
         msgMemBlock(messageBinary) {}
 
-  PullResultExt(PullStatus pullStatus, int64 nextBeginOffset, int64 minOffset,
-                int64 maxOffset, int suggestWhichBrokerId, MemoryBlock &&messageBinary)
+  PullResultExt(PullStatus pullStatus,
+                int64 nextBeginOffset,
+                int64 minOffset,
+                int64 maxOffset,
+                int suggestWhichBrokerId,
+                MemoryBlock&& messageBinary)
       : PullResult(pullStatus, nextBeginOffset, minOffset, maxOffset),
         suggestWhichBrokerId(suggestWhichBrokerId),
         msgMemBlock(std::forward<MemoryBlock>(messageBinary)) {}
 
-  PullResultExt(PullStatus pullStatus, int64 nextBeginOffset, int64 minOffset,
-                int64 maxOffset, int suggestWhichBrokerId)
-      : PullResult(pullStatus, nextBeginOffset, minOffset, maxOffset),
-        suggestWhichBrokerId(suggestWhichBrokerId) {}
+  PullResultExt(PullStatus pullStatus,
+                int64 nextBeginOffset,
+                int64 minOffset,
+                int64 maxOffset,
+                int suggestWhichBrokerId)
+      : PullResult(pullStatus, nextBeginOffset, minOffset, maxOffset), suggestWhichBrokerId(suggestWhichBrokerId) {}
 
   virtual ~PullResultExt() {}
 

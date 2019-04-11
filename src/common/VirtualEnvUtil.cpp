@@ -23,8 +23,7 @@ namespace rocketmq {
 const char* VirtualEnvUtil::VIRTUAL_APPGROUP_PREFIX = "%%PROJECT_%s%%";
 
 //<!***************************************************************************
-string VirtualEnvUtil::buildWithProjectGroup(const string& origin,
-                                             const string& projectGroup) {
+string VirtualEnvUtil::buildWithProjectGroup(const string& origin, const string& projectGroup) {
   if (!UtilAll::isBlank(projectGroup)) {
     char prefix[1024];
     sprintf(prefix, VIRTUAL_APPGROUP_PREFIX, projectGroup.c_str());
@@ -39,8 +38,7 @@ string VirtualEnvUtil::buildWithProjectGroup(const string& origin,
   }
 }
 
-string VirtualEnvUtil::clearProjectGroup(const string& origin,
-                                         const string& projectGroup) {
+string VirtualEnvUtil::clearProjectGroup(const string& origin, const string& projectGroup) {
   char prefix[1024];
   sprintf(prefix, VIRTUAL_APPGROUP_PREFIX, projectGroup.c_str());
   string::size_type pos = origin.find_last_of(prefix);

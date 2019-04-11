@@ -22,8 +22,11 @@ namespace rocketmq {
 //<!***************************************************************************
 SendResult::SendResult() : m_sendStatus(SEND_OK), m_queueOffset(0) {}
 
-SendResult::SendResult(const SendStatus& sendStatus, const std::string& msgId, const std::string& offsetMsgId,
-                       const MQMessageQueue& messageQueue, int64 queueOffset)
+SendResult::SendResult(const SendStatus& sendStatus,
+                       const std::string& msgId,
+                       const std::string& offsetMsgId,
+                       const MQMessageQueue& messageQueue,
+                       int64 queueOffset)
     : m_sendStatus(sendStatus),
       m_msgId(msgId),
       m_offsetMsgId(offsetMsgId),
@@ -51,15 +54,25 @@ SendResult& SendResult::operator=(const SendResult& other) {
 
 SendResult::~SendResult() {}
 
-const string& SendResult::getMsgId() const { return m_msgId; }
+const string& SendResult::getMsgId() const {
+  return m_msgId;
+}
 
-const string& SendResult::getOffsetMsgId() const { return m_offsetMsgId; }
+const string& SendResult::getOffsetMsgId() const {
+  return m_offsetMsgId;
+}
 
-SendStatus SendResult::getSendStatus() const { return m_sendStatus; }
+SendStatus SendResult::getSendStatus() const {
+  return m_sendStatus;
+}
 
-MQMessageQueue SendResult::getMessageQueue() const { return m_messageQueue; }
+MQMessageQueue SendResult::getMessageQueue() const {
+  return m_messageQueue;
+}
 
-int64 SendResult::getQueueOffset() const { return m_queueOffset; }
+int64 SendResult::getQueueOffset() const {
+  return m_queueOffset;
+}
 
 //<!************************************************************************
 }  //<!end namespace;

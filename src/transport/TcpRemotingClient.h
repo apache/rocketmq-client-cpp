@@ -34,55 +34,49 @@ namespace rocketmq {
 
 class TcpRemotingClient {
  public:
-  TcpRemotingClient(int pullThreadNum, uint64_t tcpConnectTimeout,
-                    uint64_t tcpTransportTryLockTimeout);
+  TcpRemotingClient(int pullThreadNum, uint64_t tcpConnectTimeout, uint64_t tcpTransportTryLockTimeout);
   virtual ~TcpRemotingClient();
   void stopAllTcpTransportThread();
   void updateNameServerAddressList(const string& addrs);
 
   //<!delete outsite;
-  RemotingCommand* invokeSync(const string& addr, RemotingCommand& request,
-                              int timeoutMillis = 3000);
+  RemotingCommand* invokeSync(const string& addr, RemotingCommand& request, int timeoutMillis = 3000);
 
   bool invokeHeartBeat(const string& addr, RemotingCommand& request);
 
-  bool invokeAsync(const string& addr, RemotingCommand& request, AsyncCallbackWrap* cbw, 
-                   int64 timeoutMilliseconds, int maxRetrySendTimes=1, int retrySendTimes=1);
+  bool invokeAsync(const string& addr,
+                   RemotingCommand& request,
+                   AsyncCallbackWrap* cbw,
+                   int64 timeoutMilliseconds,
+                   int maxRetrySendTimes = 1,
+                   int retrySendTimes = 1);
   void invokeOneway(const string& addr, RemotingCommand& request);
-  
+
   void ProcessData(const MemoryBlock& mem, const string& addr);
 
-  void registerProcessor(MQRequestCode requestCode,
-                         ClientRemotingProcessor* clientRemotingProcessor);
+  void registerProcessor(MQRequestCode requestCode, ClientRemotingProcessor* clientRemotingProcessor);
 
   void boost_asio_work();
-  void handleAsyncPullForResponseTimeout(const boost::system::error_code& e,
-                                         int opaque);
+  void handleAsyncPullForResponseTimeout(const boost::system::error_code& e, int opaque);
   void deleteOpaqueForDropPullRequest(const MQMessageQueue& mq, int opaque);
 
  private:
-  static void static_messageReceived(void* context, const MemoryBlock& mem,
-                                     const string& addr);
+  static void static_messageReceived(void* context, const MemoryBlock& mem, const string& addr);
   void messageReceived(const MemoryBlock& mem, const string& addr);
-  boost::shared_ptr<TcpTransport> GetTransport(const string& addr,
-                                               bool needRespons);
-  boost::shared_ptr<TcpTransport> CreateTransport(const string& addr,
-                                                  bool needRespons);
+  boost::shared_ptr<TcpTransport> GetTransport(const string& addr, bool needRespons);
+  boost::shared_ptr<TcpTransport> CreateTransport(const string& addr, bool needRespons);
   boost::shared_ptr<TcpTransport> CreateNameserverTransport(bool needRespons);
   void CloseTransport(const string& addr, boost::shared_ptr<TcpTransport> pTcp);
   void CloseNameServerTransport(boost::shared_ptr<TcpTransport> pTcp);
   bool SendCommand(boost::shared_ptr<TcpTransport> pTts, RemotingCommand& msg);
   void processRequestCommand(RemotingCommand* pCmd, const string& addr);
-  void processResponseCommand(RemotingCommand* pCmd,
-                              boost::shared_ptr<ResponseFuture> pfuture);
+  void processResponseCommand(RemotingCommand* pCmd, boost::shared_ptr<ResponseFuture> pfuture);
 
   void addResponseFuture(int opaque, boost::shared_ptr<ResponseFuture> pfuture);
   boost::shared_ptr<ResponseFuture> findAndDeleteResponseFuture(int opaque);
 
-  void addAsyncResponseFuture(int opaque,
-                              boost::shared_ptr<ResponseFuture> pfuture);
-  boost::shared_ptr<ResponseFuture> findAndDeleteAsyncResponseFuture(
-      int opaque);
+  void addAsyncResponseFuture(int opaque, boost::shared_ptr<ResponseFuture> pfuture);
+  boost::shared_ptr<ResponseFuture> findAndDeleteAsyncResponseFuture(int opaque);
 
   void addTimerCallback(boost::asio::deadline_timer* t, int opaque);
   void eraseTimerCallback(int opaque);

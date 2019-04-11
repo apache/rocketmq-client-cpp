@@ -26,8 +26,7 @@ class TopicConfig {
  public:
   TopicConfig();
   TopicConfig(const string& topicName);
-  TopicConfig(const string& topicName, int readQueueNums, int writeQueueNums,
-              int perm);
+  TopicConfig(const string& topicName, int readQueueNums, int writeQueueNums, int perm);
   ~TopicConfig();
 
   string encode();

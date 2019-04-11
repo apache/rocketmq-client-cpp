@@ -25,10 +25,8 @@ namespace rocketmq {
 //<!***************************************************************************
 class Validators {
  public:
-  static bool regularExpressionMatcher(const string& origin,
-                                       const string& patternStr);
-  static string getGroupWithRegularExpression(const string& origin,
-                                              const string& patternStr);
+  static bool regularExpressionMatcher(const string& origin, const string& patternStr);
+  static string getGroupWithRegularExpression(const string& origin, const string& patternStr);
   static void checkTopic(const string& topic);
   static void checkGroup(const string& group);
   static void checkMessage(const MQMessage& msg, int maxMessageSize);

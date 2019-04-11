@@ -42,7 +42,7 @@ uint64_t getMessageQueueOffset(MQMessageQueue mq) {
   return 0;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   RocketmqSendAndConsumerArgs info;
   if (!ParseArgs(argc, argv, &info)) {
     exit(-1);
@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
     for (; iter != mqs.end(); ++iter) {
       std::cout << "mq:" << (*iter).toString() << endl;
     }
-  } catch (MQException &e) {
+  } catch (MQException& e) {
     std::cout << e << endl;
   }
 
@@ -79,8 +79,7 @@ int main(int argc, char *argv[]) {
     bool noNewMsg = false;
     do {
       try {
-        PullResult result =
-            consumer.pull(mq, "*", getMessageQueueOffset(mq), 32);
+        PullResult result = consumer.pull(mq, "*", getMessageQueueOffset(mq), 32);
         g_msgCount += result.msgFoundList.size();
         std::cout << result.msgFoundList.size() << std::endl;
         // if pull request timeout or received NULL response, pullStatus will be
@@ -104,21 +103,18 @@ int main(int argc, char *argv[]) {
           default:
             break;
         }
-      } catch (MQClientException &e) {
+      } catch (MQClientException& e) {
         std::cout << e << std::endl;
       }
     } while (!noNewMsg);
   }
 
   auto end = std::chrono::system_clock::now();
-  auto duration =
-      std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
   std::cout << "msg count: " << g_msgCount.load() << "\n";
-  std::cout
-      << "per msg time: " << duration.count() / (double)g_msgCount.load()
-      << "ms \n"
-      << "========================finished==============================\n";
+  std::cout << "per msg time: " << duration.count() / (double)g_msgCount.load() << "ms \n"
+            << "========================finished==============================\n";
 
   consumer.shutdown();
   return 0;

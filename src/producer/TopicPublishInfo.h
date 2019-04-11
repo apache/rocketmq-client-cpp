@@ -32,8 +32,7 @@ namespace rocketmq {
 class TopicPublishInfo {
  public:
   TopicPublishInfo() : m_sendWhichQueue(0) {
-    m_async_service_thread.reset(new boost::thread(
-        boost::bind(&TopicPublishInfo::boost_asio_work, this)));
+    m_async_service_thread.reset(new boost::thread(boost::bind(&TopicPublishInfo::boost_asio_work, this)));
   }
 
   void boost_asio_work() {
@@ -42,10 +41,8 @@ class TopicPublishInfo {
                                                             // after first timer
                                                             // timeout callback
     boost::system::error_code e;
-    boost::asio::deadline_timer t(m_async_ioService,
-                                  boost::posix_time::seconds(60));
-    t.async_wait(boost::bind(
-        &TopicPublishInfo::op_resumeNonServiceMessageQueueList, this, e, &t));
+    boost::asio::deadline_timer t(m_async_ioService, boost::posix_time::seconds(60));
+    t.async_wait(boost::bind(&TopicPublishInfo::op_resumeNonServiceMessageQueueList, this, e, &t));
     boost::system::error_code ec;
     m_async_ioService.run(ec);
   }
@@ -79,23 +76,18 @@ class TopicPublishInfo {
     }
   }
 
-  void op_resumeNonServiceMessageQueueList(boost::system::error_code& ec,
-                                           boost::asio::deadline_timer* t) {
+  void op_resumeNonServiceMessageQueueList(boost::system::error_code& ec, boost::asio::deadline_timer* t) {
     resumeNonServiceMessageQueueList();
     boost::system::error_code e;
-    t->expires_from_now(t->expires_from_now() + boost::posix_time::seconds(60),
-                        e);
-    t->async_wait(boost::bind(
-        &TopicPublishInfo::op_resumeNonServiceMessageQueueList, this, e, t));
+    t->expires_from_now(t->expires_from_now() + boost::posix_time::seconds(60), e);
+    t->async_wait(boost::bind(&TopicPublishInfo::op_resumeNonServiceMessageQueueList, this, e, t));
   }
 
   void resumeNonServiceMessageQueueList() {
     boost::lock_guard<boost::mutex> lock(m_queuelock);
-    for (map<MQMessageQueue, int64>::iterator it = m_brokerTimerMap.begin();
-         it != m_brokerTimerMap.end(); ++it) {
+    for (map<MQMessageQueue, int64>::iterator it = m_brokerTimerMap.begin(); it != m_brokerTimerMap.end(); ++it) {
       if (UtilAll::currentTimeMillis() - it->second >= 1000 * 60 * 5) {
-        string key = it->first.getBrokerName() +
-                     UtilAll::to_string(it->first.getQueueId());
+        string key = it->first.getBrokerName() + UtilAll::to_string(it->first.getQueueId());
         if (m_nonSerivceQueues.find(key) != m_nonSerivceQueues.end()) {
           m_nonSerivceQueues.erase(key);
         }
@@ -104,8 +96,7 @@ class TopicPublishInfo {
     }
   }
 
-  void updateNonServiceMessageQueue(const MQMessageQueue& mq,
-                                    int timeoutMilliseconds) {
+  void updateNonServiceMessageQueue(const MQMessageQueue& mq, int timeoutMilliseconds) {
     boost::lock_guard<boost::mutex> lock(m_queuelock);
 
     string key = mq.getBrokerName() + UtilAll::to_string(mq.getQueueId());
@@ -125,17 +116,13 @@ class TopicPublishInfo {
     return m_queues;
   }
 
-  int getWhichQueue() {
-    return m_sendWhichQueue.load(boost::memory_order_acquire);
-  }
+  int getWhichQueue() { return m_sendWhichQueue.load(boost::memory_order_acquire); }
 
-  MQMessageQueue selectOneMessageQueue(const MQMessageQueue& lastmq,
-                                       int& mq_index) {
+  MQMessageQueue selectOneMessageQueue(const MQMessageQueue& lastmq, int& mq_index) {
     boost::lock_guard<boost::mutex> lock(m_queuelock);
 
     if (m_queues.size() > 0) {
-      LOG_DEBUG("selectOneMessageQueue Enter, queue size:" SIZET_FMT "",
-                m_queues.size());
+      LOG_DEBUG("selectOneMessageQueue Enter, queue size:" SIZET_FMT "", m_queues.size());
       unsigned int pos = 0;
       if (mq_index >= 0) {
         pos = mq_index % m_queues.size();
@@ -145,12 +132,12 @@ class TopicPublishInfo {
       }
       if (!lastmq.getBrokerName().empty()) {
         for (size_t i = 0; i < m_queues.size(); i++) {
-          if (m_sendWhichQueue.load(boost::memory_order_acquire) ==
-              (numeric_limits<int>::max)()) {
+          if (m_sendWhichQueue.load(boost::memory_order_acquire) == (numeric_limits<int>::max)()) {
             m_sendWhichQueue.store(0, boost::memory_order_release);
           }
 
-          if (pos >= m_queues.size()) pos = pos % m_queues.size();
+          if (pos >= m_queues.size())
+            pos = pos % m_queues.size();
 
           ++m_sendWhichQueue;
           MQMessageQueue mq = m_queues.at(pos);
@@ -165,8 +152,7 @@ class TopicPublishInfo {
         LOG_ERROR("could not find property mq");
         return MQMessageQueue();
       } else {
-        if (m_sendWhichQueue.load(boost::memory_order_acquire) ==
-            (numeric_limits<int>::max)()) {
+        if (m_sendWhichQueue.load(boost::memory_order_acquire) == (numeric_limits<int>::max)()) {
           m_sendWhichQueue.store(0, boost::memory_order_release);
         }
 
@@ -182,8 +168,7 @@ class TopicPublishInfo {
     }
   }
 
-  MQMessageQueue selectOneActiveMessageQueue(const MQMessageQueue& lastmq,
-                                             int& mq_index) {
+  MQMessageQueue selectOneActiveMessageQueue(const MQMessageQueue& lastmq, int& mq_index) {
     boost::lock_guard<boost::mutex> lock(m_queuelock);
 
     if (m_queues.size() > 0) {
@@ -196,12 +181,12 @@ class TopicPublishInfo {
       }
       if (!lastmq.getBrokerName().empty()) {
         for (size_t i = 0; i < m_queues.size(); i++) {
-          if (m_sendWhichQueue.load(boost::memory_order_acquire) ==
-              (numeric_limits<int>::max)()) {
+          if (m_sendWhichQueue.load(boost::memory_order_acquire) == (numeric_limits<int>::max)()) {
             m_sendWhichQueue.store(0, boost::memory_order_release);
           }
 
-          if (pos >= m_queues.size()) pos = pos % m_queues.size();
+          if (pos >= m_queues.size())
+            pos = pos % m_queues.size();
 
           ++m_sendWhichQueue;
           MQMessageQueue mq = m_queues.at(pos);
@@ -214,8 +199,7 @@ class TopicPublishInfo {
           ++pos;
         }
 
-        for (MQMAP::iterator it = m_nonSerivceQueues.begin();
-             it != m_nonSerivceQueues.end();
+        for (MQMAP::iterator it = m_nonSerivceQueues.begin(); it != m_nonSerivceQueues.end();
              ++it) {  // if no MQMessageQueue(except lastmq) in
                       // m_onSerivceQueues, search m_nonSerivceQueues
           if (it->second.getBrokerName().compare(lastmq.getBrokerName()) != 0)
@@ -225,11 +209,11 @@ class TopicPublishInfo {
         return MQMessageQueue();
       } else {
         for (size_t i = 0; i < m_queues.size(); i++) {
-          if (m_sendWhichQueue.load(boost::memory_order_acquire) ==
-              (numeric_limits<int>::max)()) {
+          if (m_sendWhichQueue.load(boost::memory_order_acquire) == (numeric_limits<int>::max)()) {
             m_sendWhichQueue.store(0, boost::memory_order_release);
           }
-          if (pos >= m_queues.size()) pos = pos % m_queues.size();
+          if (pos >= m_queues.size())
+            pos = pos % m_queues.size();
 
           ++m_sendWhichQueue;
           LOG_DEBUG("lastmq broker empty, m_sendWhichQueue:%d, pos:%d",
@@ -244,8 +228,7 @@ class TopicPublishInfo {
           }
         }
 
-        for (MQMAP::iterator it = m_nonSerivceQueues.begin();
-             it != m_nonSerivceQueues.end();
+        for (MQMAP::iterator it = m_nonSerivceQueues.begin(); it != m_nonSerivceQueues.end();
              ++it) {  // if no MQMessageQueue(except lastmq) in
                       // m_onSerivceQueues, search m_nonSerivceQueues
           if (it->second.getBrokerName().compare(lastmq.getBrokerName()) != 0)

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #ifndef __COMMANDCUSTOMHEADER_H__
 #define __COMMANDCUSTOMHEADER_H__
 
@@ -32,8 +32,7 @@ class CommandHeader {
  public:
   virtual ~CommandHeader() {}
   virtual void Encode(Json::Value& outData) {}
-  virtual void SetDeclaredFieldOfCommandHeader(
-      map<string, string>& requestMap) {}
+  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {}
 };
 
 //<!************************************************************************
@@ -91,7 +90,7 @@ class SendMessageRequestHeader : public CommandHeader {
         flag(0),
         reconsumeTimes(0),
         unitMode(false),
-        batch(false){}
+        batch(false) {}
   virtual ~SendMessageRequestHeader() {}
   virtual void Encode(Json::Value& outData);
   virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
@@ -158,11 +157,7 @@ class PullMessageRequestHeader : public CommandHeader {
 //<!************************************************************************
 class PullMessageResponseHeader : public CommandHeader {
  public:
-  PullMessageResponseHeader()
-      : suggestWhichBrokerId(0),
-        nextBeginOffset(0),
-        minOffset(0),
-        maxOffset(0) {}
+  PullMessageResponseHeader() : suggestWhichBrokerId(0), nextBeginOffset(0), minOffset(0), maxOffset(0) {}
   virtual ~PullMessageResponseHeader() {}
   static CommandHeader* Decode(Json::Value& ext);
   virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);

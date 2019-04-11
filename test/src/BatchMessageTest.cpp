@@ -30,43 +30,43 @@ using ::testing::InitGoogleMock;
 using testing::Return;
 
 TEST(BatchMessageEncodeTest, encodeMQMessage) {
-    MQMessage msg1("topic", "*", "test");
-    //const map<string,string>& properties = msg1.getProperties();
-    //for (auto& pair : properties) {
-    //    std::cout << pair.first << " : " << pair.second << std::endl;
-    //}
+  MQMessage msg1("topic", "*", "test");
+  // const map<string,string>& properties = msg1.getProperties();
+  // for (auto& pair : properties) {
+  //    std::cout << pair.first << " : " << pair.second << std::endl;
+  //}
 
-    EXPECT_EQ(msg1.getProperties().size(), 2);
-    EXPECT_EQ(msg1.getBody().size(), 4);
-    //20 + bodyLen + 2 + propertiesLength;
-    string encodeMessage = BatchMessage::encode(msg1);
-    EXPECT_EQ(encodeMessage.size(), 43);
+  EXPECT_EQ(msg1.getProperties().size(), 2);
+  EXPECT_EQ(msg1.getBody().size(), 4);
+  // 20 + bodyLen + 2 + propertiesLength;
+  string encodeMessage = BatchMessage::encode(msg1);
+  EXPECT_EQ(encodeMessage.size(), 43);
 
-    msg1.setProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX, "1");
-    encodeMessage = BatchMessage::encode(msg1);
-    EXPECT_EQ(encodeMessage.size(), 54);
+  msg1.setProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX, "1");
+  encodeMessage = BatchMessage::encode(msg1);
+  EXPECT_EQ(encodeMessage.size(), 54);
 }
 
 TEST(BatchMessageEncodeTest, encodeMQMessages) {
-    std::vector<MQMessage> msgs;
-    MQMessage msg1("topic", "*", "test1");
-    //const map<string,string>& properties = msg1.getProperties();
-    //for (auto& pair : properties) {
-    //    std::cout << pair.first << " : " << pair.second << std::endl;
-    //}
-    msgs.push_back(msg1);
-    //20 + bodyLen + 2 + propertiesLength;
-    string encodeMessage = BatchMessage::encode(msgs);
-    EXPECT_EQ(encodeMessage.size(), 86);
-    MQMessage msg2("topic", "*", "test2");
-    MQMessage msg3("topic", "*", "test3");
-    msgs.push_back(msg2);
-    msgs.push_back(msg3);
-    encodeMessage = BatchMessage::encode(msgs);
-    EXPECT_EQ(encodeMessage.size(), 258);//86*3
+  std::vector<MQMessage> msgs;
+  MQMessage msg1("topic", "*", "test1");
+  // const map<string,string>& properties = msg1.getProperties();
+  // for (auto& pair : properties) {
+  //    std::cout << pair.first << " : " << pair.second << std::endl;
+  //}
+  msgs.push_back(msg1);
+  // 20 + bodyLen + 2 + propertiesLength;
+  string encodeMessage = BatchMessage::encode(msgs);
+  EXPECT_EQ(encodeMessage.size(), 86);
+  MQMessage msg2("topic", "*", "test2");
+  MQMessage msg3("topic", "*", "test3");
+  msgs.push_back(msg2);
+  msgs.push_back(msg3);
+  encodeMessage = BatchMessage::encode(msgs);
+  EXPECT_EQ(encodeMessage.size(), 258);  // 86*3
 }
 
 int main(int argc, char* argv[]) {
-    InitGoogleMock(&argc, argv);
-    return RUN_ALL_TESTS();
+  InitGoogleMock(&argc, argv);
+  return RUN_ALL_TESTS();
 }

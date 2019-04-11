@@ -22,14 +22,12 @@
 
 namespace rocketmq {
 
-ClientRemotingProcessor::ClientRemotingProcessor(
-    MQClientFactory* mqClientFactory)
+ClientRemotingProcessor::ClientRemotingProcessor(MQClientFactory* mqClientFactory)
     : m_mqClientFactory(mqClientFactory) {}
 
 ClientRemotingProcessor::~ClientRemotingProcessor() {}
 
-RemotingCommand* ClientRemotingProcessor::processRequest(
-    const string& addr, RemotingCommand* request) {
+RemotingCommand* ClientRemotingProcessor::processRequest(const string& addr, RemotingCommand* request) {
   LOG_DEBUG("request Command received:processRequest");
   switch (request->getCode()) {
     case CHECK_TRANSACTION_STATE:
@@ -55,21 +53,16 @@ RemotingCommand* ClientRemotingProcessor::processRequest(
   return NULL;
 }
 
-RemotingCommand* ClientRemotingProcessor::resetOffset(
-    RemotingCommand* request) {
+RemotingCommand* ClientRemotingProcessor::resetOffset(RemotingCommand* request) {
   request->SetExtHeader(request->getCode());
   const MemoryBlock* pbody = request->GetBody();
   if (pbody->getSize()) {
     ResetOffsetBody* offsetBody = ResetOffsetBody::Decode(pbody);
-    ResetOffsetRequestHeader* offsetHeader =
-        (ResetOffsetRequestHeader*)request->getCommandHeader();
+    ResetOffsetRequestHeader* offsetHeader = (ResetOffsetRequestHeader*)request->getCommandHeader();
     if (offsetBody) {
-      m_mqClientFactory->resetOffset(offsetHeader->getGroup(),
-                                     offsetHeader->getTopic(),
-                                     offsetBody->getOffsetTable());
+      m_mqClientFactory->resetOffset(offsetHeader->getGroup(), offsetHeader->getTopic(), offsetBody->getOffsetTable());
     } else {
-      LOG_ERROR(
-          "resetOffset failed as received data could not be unserialized");
+      LOG_ERROR("resetOffset failed as received data could not be unserialized");
     }
   }
   return NULL;  // as resetOffset is oneWayRPC, do not need return any response
@@ -104,29 +97,25 @@ ResetOffsetBody* ResetOffsetBody::Decode(const MemoryBlock* mem) {
     mq.setQueueId(qd["queueId"].asInt());
     mq.setTopic(qd["topic"].asString());
     int64 offset = qd["offset"].asInt64();
-    LOG_INFO("ResetOffsetBody brokerName:%s, queueID:%d, topic:%s, offset:%lld",
-             mq.getBrokerName().c_str(), mq.getQueueId(), mq.getTopic().c_str(),
-             offset);
+    LOG_INFO("ResetOffsetBody brokerName:%s, queueID:%d, topic:%s, offset:%lld", mq.getBrokerName().c_str(),
+             mq.getQueueId(), mq.getTopic().c_str(), offset);
     rfb->setOffsetTable(mq, offset);
   }
   return rfb;
 }
 
-RemotingCommand* ClientRemotingProcessor::getConsumerRunningInfo(
-    const string& addr, RemotingCommand* request) {
+RemotingCommand* ClientRemotingProcessor::getConsumerRunningInfo(const string& addr, RemotingCommand* request) {
   request->SetExtHeader(request->getCode());
   GetConsumerRunningInfoRequestHeader* requestHeader =
       (GetConsumerRunningInfoRequestHeader*)request->getCommandHeader();
-  LOG_INFO("getConsumerRunningInfo:%s",
-           requestHeader->getConsumerGroup().c_str());
+  LOG_INFO("getConsumerRunningInfo:%s", requestHeader->getConsumerGroup().c_str());
 
-  RemotingCommand* pResponse = new RemotingCommand(
-      request->getCode(), "CPP", request->getVersion(), request->getOpaque(),
-      request->getFlag(), request->getRemark(), NULL);
+  RemotingCommand* pResponse =
+      new RemotingCommand(request->getCode(), "CPP", request->getVersion(), request->getOpaque(), request->getFlag(),
+                          request->getRemark(), NULL);
 
   unique_ptr<ConsumerRunningInfo> runningInfo(
-      m_mqClientFactory->consumerRunningInfo(
-          requestHeader->getConsumerGroup()));
+      m_mqClientFactory->consumerRunningInfo(requestHeader->getConsumerGroup()));
   if (runningInfo) {
     if (requestHeader->isJstackEnable()) {
       /*string jstack = UtilAll::jstack();
@@ -142,16 +131,14 @@ RemotingCommand* ClientRemotingProcessor::getConsumerRunningInfo(
   }
 
   SessionCredentials sessionCredentials;
-  m_mqClientFactory->getSessionCredentialFromConsumer(
-      requestHeader->getConsumerGroup(), sessionCredentials);
+  m_mqClientFactory->getSessionCredentialFromConsumer(requestHeader->getConsumerGroup(), sessionCredentials);
   ClientRPCHook rpcHook(sessionCredentials);
   rpcHook.doBeforeRequest(addr, *pResponse);
   pResponse->Encode();
   return pResponse;
 }
 
-RemotingCommand* ClientRemotingProcessor::notifyConsumerIdsChanged(
-    RemotingCommand* request) {
+RemotingCommand* ClientRemotingProcessor::notifyConsumerIdsChanged(RemotingCommand* request) {
   request->SetExtHeader(request->getCode());
   NotifyConsumerIdsChangedRequestHeader* requestHeader =
       (NotifyConsumerIdsChangedRequestHeader*)request->getCommandHeader();

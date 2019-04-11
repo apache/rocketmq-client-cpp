@@ -57,13 +57,10 @@ class MyAutoDeleteSendCallback : public AutoDeleteSendCallBack {
       g_finished.notify_one();
     }
   }
-  virtual void onException(MQException& e) {
-    std::cout << "send Exception" << e << "\n";
-  }
+  virtual void onException(MQException& e) { std::cout << "send Exception" << e << "\n"; }
 };
 
-void AsyncProducerWorker(RocketmqSendAndConsumerArgs* info,
-                         DefaultMQProducer* producer) {
+void AsyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* producer) {
   while (!g_quit.load()) {
     if (g_msgCount.load() <= 0) {
       std::unique_lock<std::mutex> lck(g_mtx);
@@ -99,7 +96,8 @@ int main(int argc, char* argv[]) {
 
   PrintRocketmqSendAndConsumerArgs(info);
 
-  if (!info.namesrv.empty()) producer.setNamesrvAddr(info.namesrv);
+  if (!info.namesrv.empty())
+    producer.setNamesrvAddr(info.namesrv);
 
   producer.setGroupName(info.groupname);
   producer.setInstanceName(info.groupname);
@@ -110,8 +108,7 @@ int main(int argc, char* argv[]) {
   auto start = std::chrono::system_clock::now();
   int msgcount = g_msgCount.load();
   for (int j = 0; j < info.thread_count; j++) {
-    std::shared_ptr<std::thread> th =
-        std::make_shared<std::thread>(AsyncProducerWorker, &info, &producer);
+    std::shared_ptr<std::thread> th = std::make_shared<std::thread>(AsyncProducerWorker, &info, &producer);
     work_pool.push_back(th);
   }
 
@@ -122,12 +119,10 @@ int main(int argc, char* argv[]) {
   }
 
   auto end = std::chrono::system_clock::now();
-  auto duration =
-      std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-  std::cout
-      << "per msg time: " << duration.count() / (double)msgcount << "ms \n"
-      << "========================finished==============================\n";
+  std::cout << "per msg time: " << duration.count() / (double)msgcount << "ms \n"
+            << "========================finished==============================\n";
 
   producer.shutdown();
   for (size_t th = 0; th != work_pool.size(); ++th) {

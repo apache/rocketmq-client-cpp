@@ -34,9 +34,8 @@ boost::atomic<bool> g_quit(false);
 
 class SelectMessageQueueByHash : public MessageQueueSelector {
  public:
-  MQMessageQueue select(const std::vector<MQMessageQueue> &mqs,
-                        const MQMessage &msg, void *arg) {
-    int orderId = *static_cast<int *>(arg);
+  MQMessageQueue select(const std::vector<MQMessageQueue>& mqs, const MQMessage& msg, void* arg) {
+    int orderId = *static_cast<int*>(arg);
     int index = orderId % mqs.size();
     return mqs[index];
   }
@@ -44,8 +43,7 @@ class SelectMessageQueueByHash : public MessageQueueSelector {
 
 SelectMessageQueueByHash g_mySelector;
 
-void ProducerWorker(RocketmqSendAndConsumerArgs *info,
-                    DefaultMQProducer *producer) {
+void ProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* producer) {
   while (!g_quit.load()) {
     if (g_msgCount.load() <= 0) {
       std::unique_lock<std::mutex> lck(g_mtx);
@@ -57,13 +55,12 @@ void ProducerWorker(RocketmqSendAndConsumerArgs *info,
 
     int orderId = 1;
     SendResult sendResult =
-        producer->send(msg, &g_mySelector, static_cast<void *>(&orderId),
-                       info->retrytimes, info->SelectUnactiveBroker);
+        producer->send(msg, &g_mySelector, static_cast<void*>(&orderId), info->retrytimes, info->SelectUnactiveBroker);
     --g_msgCount;
   }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   RocketmqSendAndConsumerArgs info;
   if (!ParseArgs(argc, argv, &info)) {
     exit(-1);
@@ -84,8 +81,7 @@ int main(int argc, char *argv[]) {
 
   int threadCount = info.thread_count;
   for (int j = 0; j < threadCount; j++) {
-    std::shared_ptr<std::thread> th =
-        std::make_shared<std::thread>(ProducerWorker, &info, &producer);
+    std::shared_ptr<std::thread> th = std::make_shared<std::thread>(ProducerWorker, &info, &producer);
     work_pool.push_back(th);
   }
 
@@ -97,12 +93,10 @@ int main(int argc, char *argv[]) {
   }
 
   auto end = std::chrono::system_clock::now();
-  auto duration =
-      std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-  std::cout
-      << "per msg time: " << duration.count() / (double)msgcount << "ms \n"
-      << "========================finished==============================\n";
+  std::cout << "per msg time: " << duration.count() / (double)msgcount << "ms \n"
+            << "========================finished==============================\n";
 
   for (size_t th = 0; th != work_pool.size(); ++th) {
     work_pool[th]->join();

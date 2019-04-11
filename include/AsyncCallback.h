@@ -27,38 +27,30 @@ namespace rocketmq {
 //<!***************************************************************************
 struct AsyncCallback {};
 //<!***************************************************************************
-typedef enum sendCallbackType {
-  noAutoDeleteSendCallback = 0,
-  autoDeleteSendCallback = 1
-} sendCallbackType;
+typedef enum sendCallbackType { noAutoDeleteSendCallback = 0, autoDeleteSendCallback = 1 } sendCallbackType;
 
 class ROCKETMQCLIENT_API SendCallback : public AsyncCallback {
  public:
   virtual ~SendCallback() {}
   virtual void onSuccess(SendResult& sendResult) = 0;
   virtual void onException(MQException& e) = 0;
-  virtual sendCallbackType getSendCallbackType() {
-    return noAutoDeleteSendCallback;
-  }
+  virtual sendCallbackType getSendCallbackType() { return noAutoDeleteSendCallback; }
 };
 
-//async SendCallback will be deleted automatically by rocketmq cpp after invoke callback interface
+// async SendCallback will be deleted automatically by rocketmq cpp after invoke callback interface
 class ROCKETMQCLIENT_API AutoDeleteSendCallBack : public SendCallback {
  public:
   virtual ~AutoDeleteSendCallBack() {}
   virtual void onSuccess(SendResult& sendResult) = 0;
   virtual void onException(MQException& e) = 0;
-  virtual sendCallbackType getSendCallbackType() {
-    return autoDeleteSendCallback;
-  }
+  virtual sendCallbackType getSendCallbackType() { return autoDeleteSendCallback; }
 };
 
 //<!************************************************************************
 class ROCKETMQCLIENT_API PullCallback : public AsyncCallback {
  public:
   virtual ~PullCallback() {}
-  virtual void onSuccess(MQMessageQueue& mq, PullResult& result,
-                         bool bProducePullRequest) = 0;
+  virtual void onSuccess(MQMessageQueue& mq, PullResult& result, bool bProducePullRequest) = 0;
   virtual void onException(MQException& e) = 0;
 };
 //<!***************************************************************************

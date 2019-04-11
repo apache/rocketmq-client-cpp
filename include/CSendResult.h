@@ -23,20 +23,20 @@
 extern "C" {
 #endif
 
-typedef enum E_CSendStatus_{
-    E_SEND_OK = 0,
-    E_SEND_FLUSH_DISK_TIMEOUT = 1,
-    E_SEND_FLUSH_SLAVE_TIMEOUT = 2,
-    E_SEND_SLAVE_NOT_AVAILABLE = 3
+typedef enum E_CSendStatus_ {
+  E_SEND_OK = 0,
+  E_SEND_FLUSH_DISK_TIMEOUT = 1,
+  E_SEND_FLUSH_SLAVE_TIMEOUT = 2,
+  E_SEND_SLAVE_NOT_AVAILABLE = 3
 } CSendStatus;
 
 typedef struct _SendResult_ {
-    CSendStatus sendStatus;
-    char        msgId[MAX_MESSAGE_ID_LENGTH];
-    long long   offset;
+  CSendStatus sendStatus;
+  char msgId[MAX_MESSAGE_ID_LENGTH];
+  long long offset;
 } CSendResult;
 
 #ifdef __cplusplus
 };
 #endif
-#endif //__C_PRODUCER_H__
+#endif  //__C_PRODUCER_H__

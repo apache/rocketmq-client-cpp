@@ -39,77 +39,77 @@ using rocketmq::ProducerData;
 using rocketmq::SubscriptionData;
 
 TEST(heartbeatData, ProducerData) {
-    ProducerData producerData;
-    producerData.groupName = "testGroup";
+  ProducerData producerData;
+  producerData.groupName = "testGroup";
 
-    Json::Value outJson = producerData.toJson();
-    EXPECT_EQ(outJson["groupName"], "testGroup");
+  Json::Value outJson = producerData.toJson();
+  EXPECT_EQ(outJson["groupName"], "testGroup");
 }
 
 TEST(heartbeatData, ConsumerData) {
-    ConsumerData consumerData;
-    consumerData.groupName = "testGroup";
-    consumerData.consumeType = ConsumeType::CONSUME_ACTIVELY;
-    consumerData.messageModel = MessageModel::BROADCASTING;
-    consumerData.consumeFromWhere = ConsumeFromWhere::CONSUME_FROM_TIMESTAMP;
+  ConsumerData consumerData;
+  consumerData.groupName = "testGroup";
+  consumerData.consumeType = ConsumeType::CONSUME_ACTIVELY;
+  consumerData.messageModel = MessageModel::BROADCASTING;
+  consumerData.consumeFromWhere = ConsumeFromWhere::CONSUME_FROM_TIMESTAMP;
 
-    vector<SubscriptionData> subs;
-    subs.push_back(SubscriptionData("testTopic", "sub"));
+  vector<SubscriptionData> subs;
+  subs.push_back(SubscriptionData("testTopic", "sub"));
 
-    consumerData.subscriptionDataSet = subs;
+  consumerData.subscriptionDataSet = subs;
 
-    Json::Value outJson = consumerData.toJson();
+  Json::Value outJson = consumerData.toJson();
 
-    EXPECT_EQ(outJson["groupName"], "testGroup");
+  EXPECT_EQ(outJson["groupName"], "testGroup");
 
-    EXPECT_EQ(outJson["consumeType"].asInt(), ConsumeType::CONSUME_ACTIVELY);
-    EXPECT_EQ(outJson["messageModel"].asInt(), MessageModel::BROADCASTING);
-    EXPECT_EQ(outJson["consumeFromWhere"].asInt(), ConsumeFromWhere::CONSUME_FROM_TIMESTAMP);
+  EXPECT_EQ(outJson["consumeType"].asInt(), ConsumeType::CONSUME_ACTIVELY);
+  EXPECT_EQ(outJson["messageModel"].asInt(), MessageModel::BROADCASTING);
+  EXPECT_EQ(outJson["consumeFromWhere"].asInt(), ConsumeFromWhere::CONSUME_FROM_TIMESTAMP);
 
-    Json::Value subsValue = outJson["subscriptionDataSet"];
-    EXPECT_EQ(subsValue[0]["topic"], "testTopic");
-    EXPECT_EQ(subsValue[0]["subString"], "sub");
+  Json::Value subsValue = outJson["subscriptionDataSet"];
+  EXPECT_EQ(subsValue[0]["topic"], "testTopic");
+  EXPECT_EQ(subsValue[0]["subString"], "sub");
 }
 
 TEST(heartbeatData, HeartbeatData) {
-    HeartbeatData heartbeatData;
-    heartbeatData.setClientID("testClientId");
+  HeartbeatData heartbeatData;
+  heartbeatData.setClientID("testClientId");
 
-    ProducerData producerData;
-    producerData.groupName = "testGroup";
+  ProducerData producerData;
+  producerData.groupName = "testGroup";
 
-    EXPECT_TRUE(heartbeatData.isProducerDataSetEmpty());
-    heartbeatData.insertDataToProducerDataSet(producerData);
-    EXPECT_FALSE(heartbeatData.isProducerDataSetEmpty());
+  EXPECT_TRUE(heartbeatData.isProducerDataSetEmpty());
+  heartbeatData.insertDataToProducerDataSet(producerData);
+  EXPECT_FALSE(heartbeatData.isProducerDataSetEmpty());
 
-    ConsumerData consumerData;
-    consumerData.groupName = "testGroup";
-    consumerData.consumeType = ConsumeType::CONSUME_ACTIVELY;
-    consumerData.messageModel = MessageModel::BROADCASTING;
-    consumerData.consumeFromWhere = ConsumeFromWhere::CONSUME_FROM_TIMESTAMP;
+  ConsumerData consumerData;
+  consumerData.groupName = "testGroup";
+  consumerData.consumeType = ConsumeType::CONSUME_ACTIVELY;
+  consumerData.messageModel = MessageModel::BROADCASTING;
+  consumerData.consumeFromWhere = ConsumeFromWhere::CONSUME_FROM_TIMESTAMP;
 
-    vector<SubscriptionData> subs;
-    subs.push_back(SubscriptionData("testTopic", "sub"));
+  vector<SubscriptionData> subs;
+  subs.push_back(SubscriptionData("testTopic", "sub"));
 
-    consumerData.subscriptionDataSet = subs;
-    EXPECT_TRUE(heartbeatData.isConsumerDataSetEmpty());
-    heartbeatData.insertDataToConsumerDataSet(consumerData);
-    EXPECT_FALSE(heartbeatData.isConsumerDataSetEmpty());
+  consumerData.subscriptionDataSet = subs;
+  EXPECT_TRUE(heartbeatData.isConsumerDataSetEmpty());
+  heartbeatData.insertDataToConsumerDataSet(consumerData);
+  EXPECT_FALSE(heartbeatData.isConsumerDataSetEmpty());
 
-    string outData;
-    heartbeatData.Encode(outData);
+  string outData;
+  heartbeatData.Encode(outData);
 
-    Json::Value root;
-    Json::Reader reader;
-    reader.parse(outData, root);
+  Json::Value root;
+  Json::Reader reader;
+  reader.parse(outData, root);
 
-    EXPECT_EQ(root["clientID"], "testClientId");
+  EXPECT_EQ(root["clientID"], "testClientId");
 }
 
-int main(int argc, char *argv[]) {
-    InitGoogleMock(&argc, argv);
-    testing::GTEST_FLAG(throw_on_failure) = true;
-    testing::GTEST_FLAG(filter) = "heartbeatData.*";
-    int itestts = RUN_ALL_TESTS();
-    return itestts;
+int main(int argc, char* argv[]) {
+  InitGoogleMock(&argc, argv);
+  testing::GTEST_FLAG(throw_on_failure) = true;
+  testing::GTEST_FLAG(filter) = "heartbeatData.*";
+  int itestts = RUN_ALL_TESTS();
+  return itestts;
 }
