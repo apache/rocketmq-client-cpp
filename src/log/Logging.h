@@ -31,6 +31,7 @@
 #include <boost/scoped_array.hpp>
 #include <boost/shared_ptr.hpp>
 #include "MQClient.h"
+#include <string.h>
 
 namespace logging = boost::log;
 namespace src = boost::log::sources;
@@ -51,6 +52,7 @@ class logAdapter {
 
  private:
   logAdapter();
+  void setLogLevelInner(elogLevel logLevel);
   elogLevel m_logLevel;
   std::string m_logFile;
   src::severity_logger<boost::log::trivial::severity_level> m_severityLogger;
@@ -74,12 +76,22 @@ class LogUtil {
     BOOST_LOG_SEV(AGENT_LOGGER, level) << formattedString.get();
     va_end(arg_ptr);
   }
+    static void LogMessageFull(boost::log::trivial::severity_level level,const char* file, const char* func , int line, const char* format, ...) {
+        va_list arg_ptr;
+        va_start(arg_ptr, format);
+        boost::scoped_array<char> formattedString(new char[1024]);
+        vsnprintf(formattedString.get(), 1024, format, arg_ptr);
+        //BOOST_LOG_SEV(AGENT_LOGGER, level) << formattedString.get() << "[" << file << ":" << func << ":"<< line << "]";
+        BOOST_LOG_SEV(AGENT_LOGGER, level) << formattedString.get() << "[" << func << ":"<< line << "]";
+        va_end(arg_ptr);
+    }
 };
 
-#define LOG_FATAL(...) LogUtil::LogMessage(boost::log::trivial::fatal, __LINE__, __VA_ARGS__)
-#define LOG_ERROR(...) LogUtil::LogMessage(boost::log::trivial::error, __LINE__, __VA_ARGS__)
-#define LOG_WARN(...) LogUtil::LogMessage(boost::log::trivial::warning, __LINE__, __VA_ARGS__)
-#define LOG_INFO(...) LogUtil::LogMessage(boost::log::trivial::info, __LINE__, __VA_ARGS__)
-#define LOG_DEBUG(...) LogUtil::LogMessage(boost::log::trivial::debug, __LINE__, __VA_ARGS__)
+#define LOG_FATAL(...) LogUtil::LogMessageFull(boost::log::trivial::fatal, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+#define LOG_ERROR(...) LogUtil::LogMessageFull(boost::log::trivial::error, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+#define LOG_WARN(...) LogUtil::LogMessageFull(boost::log::trivial::warning, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+//#define LOG_INFO(...) LogUtil::LogMessage(boost::log::trivial::info, __LINE__, __VA_ARGS__)
+#define LOG_INFO(...) LogUtil::LogMessageFull(boost::log::trivial::info, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+#define LOG_DEBUG(...) LogUtil::LogMessageFull(boost::log::trivial::debug, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
 }
 #endif

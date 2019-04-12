@@ -53,13 +53,13 @@ logAdapter::logAdapter() : m_logLevel(eLOG_LEVEL_INFO) {
                                     keywords::min_free_space = 300 * 1024 * 1024, keywords::target = homeDir,
                                     keywords::max_size = 200 * 1024 * 1024,  // max keep 3 log file defaultly
                                     keywords::auto_flush = true);
-  logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::info);
+  //logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::info);
+  setLogLevelInner(m_logLevel);
 
   logging::add_common_attributes();
 }
 
-void logAdapter::setLogLevel(elogLevel logLevel) {
-  m_logLevel = logLevel;
+void logAdapter::setLogLevelInner(elogLevel logLevel) {
   switch (logLevel) {
     case eLOG_LEVEL_FATAL:
       logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::fatal);
@@ -89,6 +89,10 @@ void logAdapter::setLogLevel(elogLevel logLevel) {
 
       break;
   }
+}
+void logAdapter::setLogLevel(elogLevel logLevel) {
+    m_logLevel = logLevel;
+    setLogLevelInner(logLevel);
 }
 
 elogLevel logAdapter::getLogLevel() {
