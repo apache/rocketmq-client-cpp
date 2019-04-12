@@ -96,6 +96,7 @@ void TcpRemotingClient::stopAllTcpTransportThread() {
 }
 
 void TcpRemotingClient::updateNameServerAddressList(const string& addrs) {
+  LOG_INFO("updateNameServerAddressList: [%s]", addrs.c_str());
   if (!addrs.empty()) {
     boost::unique_lock<boost::timed_mutex> lock(m_namesrvlock, boost::try_to_lock);
     if (!lock.owns_lock()) {
@@ -118,6 +119,8 @@ void TcpRemotingClient::updateNameServerAddressList(const string& addrs) {
       if (UtilAll::SplitURL(addr, hostName, portNumber)) {
         LOG_INFO("update Namesrv:%s", addr.c_str());
         m_namesrvAddrList.push_back(addr);
+      } else {
+        LOG_INFO("This may be invalid namer server: [%s]", addr.c_str());
       }
     }
     out.clear();
@@ -157,6 +160,7 @@ bool TcpRemotingClient::invokeHeartBeat(const string& addr, RemotingCommand& req
 RemotingCommand* TcpRemotingClient::invokeSync(const string& addr,
                                                RemotingCommand& request,
                                                int timeoutMillis /* = 3000 */) {
+  LOG_DEBUG("InvokeSync:", addr.c_str());
   boost::shared_ptr<TcpTransport> pTcp = GetTransport(addr, true);
   if (pTcp != NULL) {
     int code = request.getCode();
@@ -190,6 +194,7 @@ RemotingCommand* TcpRemotingClient::invokeSync(const string& addr,
       CloseTransport(addr, pTcp);
     }
   }
+  LOG_DEBUG("InvokeSync [%s] Failed: Cannot Get Transport.", addr.c_str());
   return NULL;
 }
 
@@ -243,9 +248,10 @@ void TcpRemotingClient::invokeOneway(const string& addr, RemotingCommand& reques
 }
 
 boost::shared_ptr<TcpTransport> TcpRemotingClient::GetTransport(const string& addr, bool needRespons) {
-  if (addr.empty())
+  if (addr.empty()) {
+    LOG_DEBUG("GetTransport of NameServer");
     return CreateNameserverTransport(needRespons);
-
+  }
   return CreateTransport(addr, needRespons);
 }
 
@@ -332,6 +338,7 @@ boost::shared_ptr<TcpTransport> TcpRemotingClient::CreateNameserverTransport(boo
   // m_tcpLock, it was used by single Thread mostly, so no performance impact
   // try get m_tcpLock util m_tcpTransportTryLockTimeout to avoid blocking long
   // time, if could not get m_namesrvlock, return NULL
+  LOG_DEBUG("--CreateNameserverTransport--");
   bool bGetMutex = false;
   boost::unique_lock<boost::timed_mutex> lock(m_namesrvlock, boost::try_to_lock);
   if (!lock.owns_lock()) {
@@ -692,4 +699,4 @@ void TcpRemotingClient::deleteOpaqueForDropPullRequest(const MQMessageQueue& mq,
 }
 
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

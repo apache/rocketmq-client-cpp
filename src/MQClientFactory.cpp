@@ -170,6 +170,7 @@ bool MQClientFactory::updateTopicRouteInfoFromNameServer(const string& topic,
         it->writeQueueNums = queueNums;
       }
     }
+    LOG_DEBUG("getTopicRouteInfoFromNameServer is null for topic :%s", topic.c_str());
   } else {
     pTopicRouteData.reset(m_pClientAPIImpl->getTopicRouteInfoFromNameServer(topic, 1000 * 5, session_credentials));
   }
