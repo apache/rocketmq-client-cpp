@@ -71,11 +71,9 @@ void SendMessageRequestHeader::Encode(Json::Value& outData) {
   outData["bornTimestamp"] = UtilAll::to_string(bornTimestamp);
   outData["flag"] = flag;
   outData["properties"] = properties;
-#ifdef ONS
   outData["reconsumeTimes"] = UtilAll::to_string(reconsumeTimes);
   outData["unitMode"] = UtilAll::to_string(unitMode);
-#endif
-  outData["batch"] = batch;
+  //outData["batch"] = batch;
 }
 
 int SendMessageRequestHeader::getReconsumeTimes() {
@@ -106,11 +104,9 @@ void SendMessageRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, strin
   requestMap.insert(pair<string, string>("bornTimestamp", UtilAll::to_string(bornTimestamp)));
   requestMap.insert(pair<string, string>("flag", UtilAll::to_string(flag)));
   requestMap.insert(pair<string, string>("properties", properties));
-#ifdef ONS
   requestMap.insert(pair<string, string>("reconsumeTimes", UtilAll::to_string(reconsumeTimes)));
   requestMap.insert(pair<string, string>("unitMode", UtilAll::to_string(unitMode)));
-#endif
-  requestMap.insert(pair<string, string>("batch", UtilAll::to_string(batch)));
+  //requestMap.insert(pair<string, string>("batch", UtilAll::to_string(batch)));
 }
 
 //<!************************************************************************
