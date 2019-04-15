@@ -20,21 +20,20 @@
 
 namespace rocketmq {
 
-    bool NameSpaceUtil::isEndPointURL(string nameServerAddr) {
-        if (nameServerAddr.length() >= ENDPOINT_PREFIX_LENGTH &&
-            nameServerAddr.find(ENDPOINT_PREFIX) != string::npos) {
-            return true;
-        }
-        return false;
-    }
-
-    string NameSpaceUtil::formatNameServerURL(string nameServerAddr) {
-        int index = nameServerAddr.find(ENDPOINT_PREFIX);
-        if (index != string::npos) {
-            LOG_DEBUG("Get Name Server from endpoint [%s]", nameServerAddr.substr(ENDPOINT_PREFIX_LENGTH,
-                    nameServerAddr.length() - ENDPOINT_PREFIX_LENGTH).c_str());
-            return nameServerAddr.substr(ENDPOINT_PREFIX_LENGTH, nameServerAddr.length() - ENDPOINT_PREFIX_LENGTH);
-        }
-        return nameServerAddr;
-    }
+bool NameSpaceUtil::isEndPointURL(string nameServerAddr) {
+  if (nameServerAddr.length() >= ENDPOINT_PREFIX_LENGTH && nameServerAddr.find(ENDPOINT_PREFIX) != string::npos) {
+    return true;
+  }
+  return false;
 }
+
+string NameSpaceUtil::formatNameServerURL(string nameServerAddr) {
+  int index = nameServerAddr.find(ENDPOINT_PREFIX);
+  if (index != string::npos) {
+    LOG_DEBUG("Get Name Server from endpoint [%s]",
+              nameServerAddr.substr(ENDPOINT_PREFIX_LENGTH, nameServerAddr.length() - ENDPOINT_PREFIX_LENGTH).c_str());
+    return nameServerAddr.substr(ENDPOINT_PREFIX_LENGTH, nameServerAddr.length() - ENDPOINT_PREFIX_LENGTH);
+  }
+  return nameServerAddr;
+}
+}  // namespace rocketmq

@@ -25,12 +25,12 @@ using namespace std;
 static const string ENDPOINT_PREFIX = "http://";
 static const int ENDPOINT_PREFIX_LENGTH = ENDPOINT_PREFIX.length();
 namespace rocketmq {
-    class NameSpaceUtil {
-    public:
-        static bool isEndPointURL(string nameServerAddr);
+class NameSpaceUtil {
+ public:
+  static bool isEndPointURL(string nameServerAddr);
 
-        static string formatNameServerURL(string nameServerAddr);
-    };
+  static string formatNameServerURL(string nameServerAddr);
+};
 
-}
-#endif //__NAMESPACEUTIL_H__
+}  // namespace rocketmq
+#endif  //__NAMESPACEUTIL_H__
