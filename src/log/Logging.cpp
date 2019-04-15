@@ -1,19 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include "Logging.h"
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include "UtilAll.h"
@@ -53,7 +53,7 @@ logAdapter::logAdapter() : m_logLevel(eLOG_LEVEL_INFO) {
                                     keywords::min_free_space = 300 * 1024 * 1024, keywords::target = homeDir,
                                     keywords::max_size = 200 * 1024 * 1024,  // max keep 3 log file defaultly
                                     keywords::auto_flush = true);
-  //logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::info);
+  // logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::info);
   setLogLevelInner(m_logLevel);
 
   logging::add_common_attributes();
@@ -91,8 +91,8 @@ void logAdapter::setLogLevelInner(elogLevel logLevel) {
   }
 }
 void logAdapter::setLogLevel(elogLevel logLevel) {
-    m_logLevel = logLevel;
-    setLogLevelInner(logLevel);
+  m_logLevel = logLevel;
+  setLogLevelInner(logLevel);
 }
 
 elogLevel logAdapter::getLogLevel() {
@@ -105,4 +105,4 @@ void logAdapter::setLogFileNumAndSize(int logNum, int sizeOfPerFile) {
   m_logSink->locked_backend()->set_file_collector(sinks::file::make_collector(
       keywords::target = homeDir, keywords::max_size = logNum * sizeOfPerFile * 1024 * 1024));
 }
-}
+}  // namespace rocketmq
