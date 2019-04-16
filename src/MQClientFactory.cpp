@@ -164,7 +164,6 @@ bool MQClientFactory::updateTopicRouteInfoFromNameServer(const string& topic,
       vector<QueueData>& queueDatas = pTopicRouteData->getQueueDatas();
       vector<QueueData>::iterator it = queueDatas.begin();
       for (; it != queueDatas.end(); ++it) {
-        // ¶ÁÐ´·ÖÇø¸öÊýÊÇÒ»ÖÂ£¬¹ÊÖ»×öÒ»´ÎÅÐ¶Ï;
         int queueNums = std::min(4, it->readQueueNums);
         it->readQueueNums = queueNums;
         it->writeQueueNums = queueNums;
@@ -281,7 +280,6 @@ void MQClientFactory::shutdown() {
 
   switch (m_serviceState) {
     case RUNNING: {
-      //<! stop;
       if (m_consumer_async_service_thread) {
         m_consumer_async_ioService.stop();
         m_consumer_async_service_thread->interrupt();
@@ -306,7 +304,6 @@ void MQClientFactory::shutdown() {
       break;
   }
 
-  //<!É¾³ý×Ô¼º;
   MQClientManager::getInstance()->removeClientFactory(m_clientId);
 }
 
