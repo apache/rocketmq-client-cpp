@@ -139,6 +139,8 @@ bool TcpRemotingClient::invokeHeartBeat(const string& addr, RemotingCommand& req
       unique_ptr<RemotingCommand> pRsp(responseFuture->waitResponse(3000));
       if (pRsp == NULL) {
         LOG_ERROR("wait response timeout of heartbeat, so closeTransport of addr:%s", addr.c_str());
+        // avoid responseFuture leak;
+        findAndDeleteResponseFuture(opaque);
         CloseTransport(addr, pTcp);
         return false;
       } else if (pRsp->getCode() == SUCCESS_VALUE) {
@@ -148,6 +150,8 @@ bool TcpRemotingClient::invokeHeartBeat(const string& addr, RemotingCommand& req
         return false;
       }
     } else {
+      // avoid responseFuture leak;
+      findAndDeleteResponseFuture(opaque);
       CloseTransport(addr, pTcp);
     }
   }
