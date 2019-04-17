@@ -107,7 +107,6 @@ void SendMessageRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, strin
   requestMap.insert(pair<string, string>("reconsumeTimes", UtilAll::to_string(reconsumeTimes)));
   requestMap.insert(pair<string, string>("unitMode", UtilAll::to_string(unitMode)));
   // requestMap.insert(pair<string, string>("batch", UtilAll::to_string(batch)));
-  // this is only used for connect aliyun mq, maybe there will be side effect on send batch messages
 }
 
 //<!************************************************************************
