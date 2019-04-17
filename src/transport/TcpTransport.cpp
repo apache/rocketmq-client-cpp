@@ -53,7 +53,9 @@ TcpTransport::~TcpTransport() {
 tcpConnectStatus TcpTransport::connect(const string& strServerURL, int timeOutMillisecs /* = 3000 */) {
   string hostName;
   short portNumber;
+  LOG_DEBUG("connect to [%s].", strServerURL.c_str());
   if (!UtilAll::SplitURL(strServerURL, hostName, portNumber)) {
+    LOG_INFO("connect to [%s] failed, Invalid url.", strServerURL.c_str());
     return e_connectFail;
   }
 
