@@ -988,18 +988,6 @@ void MQClientFactory::findConsumerIds(const string& topic,
   }
 }
 
-void MQClientFactory::removeDropedPullRequestOpaque(PullRequest* pullRequest) {
-  // delete the opaque record that's ignore the response of this pullrequest when drop pullrequest
-  if (!pullRequest)
-    return;
-  MQMessageQueue mq = pullRequest->m_messageQueue;
-  int opaque = pullRequest->getLatestPullRequestOpaque();
-  if (opaque > 0) {
-    LOG_INFO("####### need delete the pullrequest for opaque:%d, mq:%s", opaque, mq.toString().data());
-    getMQClientAPIImpl()->deleteOpaqueForDropPullRequest(mq, opaque);
-  }
-}
-
 void MQClientFactory::resetOffset(const string& group,
                                   const string& topic,
                                   const map<MQMessageQueue, int64>& offsetTable) {
@@ -1012,10 +1000,7 @@ void MQClientFactory::resetOffset(const string& group,
       PullRequest* pullreq = pConsumer->getRebalance()->getPullRequest(mq);
       if (pullreq) {
         pullreq->setDroped(true);
-        LOG_INFO("resetOffset setDroped for opaque:%d, mq:%s", pullreq->getLatestPullRequestOpaque(),
-                 mq.toString().data());
-        // delete the opaque record that's ignore the response of this pullrequest when drop pullrequest
-        // removeDropedPullRequestOpaque(pullreq);
+        LOG_INFO("resetOffset setDroped for mq:%s", mq.toString().data());
         pullreq->clearAllMsgs();
         pullreq->updateQueueMaxOffset(it->second);
       } else {
@@ -1102,4 +1087,4 @@ void MQClientFactory::getSessionCredentialsFromOneOfProducerOrConsumer(SessionCr
 }
 
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

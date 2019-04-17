@@ -58,8 +58,6 @@ class TcpRemotingClient {
 
   void registerProcessor(MQRequestCode requestCode, ClientRemotingProcessor* clientRemotingProcessor);
 
-  void deleteOpaqueForDropPullRequest(const MQMessageQueue& mq, int opaque);
-
  private:
   static void static_messageReceived(void* context, const MemoryBlock& mem, const string& addr);
 

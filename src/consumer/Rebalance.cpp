@@ -458,7 +458,7 @@ bool RebalancePush::updateRequestTableInRebalance(const string& topic, vector<MQ
           it->second->clearAllMsgs();  // add clear operation to avoid bad state
                                        // when dropped pullRequest returns
                                        // normal
-          LOG_INFO("drop mq:%s, delete opaque:%d", mqtemp.toString().c_str(), it->second->getLatestPullRequestOpaque());
+          LOG_INFO("drop mq:%s", mqtemp.toString().c_str());
         }
         changed = true;
       }
@@ -634,4 +634,4 @@ void RebalancePush::removeUnnecessaryMessageQueue(const MQMessageQueue& mq) {
 }
 
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

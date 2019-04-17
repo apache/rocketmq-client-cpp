@@ -639,21 +639,5 @@ void TcpRemotingClient::removeAllTimerCallback() {
   m_asyncTimerTable.clear();
 }
 
-void TcpRemotingClient::deleteOpaqueForDropPullRequest(const MQMessageQueue& mq, int opaque) {
-  // delete the map record of opaque<->ResponseFuture, so the answer for the pull request will
-  // discard when receive it later
-  std::shared_ptr<ResponseFuture> pFuture(findAndDeleteAsyncResponseFuture(opaque));
-  if (!pFuture) {
-    pFuture = findAndDeleteResponseFuture(opaque);
-    if (pFuture) {
-      LOG_DEBUG("succ deleted the sync pullrequest for opaque:%d, mq:%s", opaque, mq.toString().data());
-    }
-  } else {
-    LOG_DEBUG("succ deleted the async pullrequest for opaque:%d, mq:%s", opaque, mq.toString().data());
-    // delete the timeout timer for opaque for pullrequest
-    cancelTimerCallback(opaque);
-  }
-}
-
 //<!************************************************************************
 }  // namespace rocketmq
