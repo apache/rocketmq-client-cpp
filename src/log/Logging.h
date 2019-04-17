@@ -1,23 +1,24 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef _ALOG_ADAPTER_H_
 #define _ALOG_ADAPTER_H_
 
+#include <string.h>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
@@ -51,6 +52,7 @@ class logAdapter {
 
  private:
   logAdapter();
+  void setLogLevelInner(elogLevel logLevel);
   elogLevel m_logLevel;
   std::string m_logFile;
   src::severity_logger<boost::log::trivial::severity_level> m_severityLogger;
@@ -74,12 +76,31 @@ class LogUtil {
     BOOST_LOG_SEV(AGENT_LOGGER, level) << formattedString.get();
     va_end(arg_ptr);
   }
+  static void LogMessageFull(boost::log::trivial::severity_level level,
+                             const char* file,
+                             const char* func,
+                             int line,
+                             const char* format,
+                             ...) {
+    va_list arg_ptr;
+    va_start(arg_ptr, format);
+    boost::scoped_array<char> formattedString(new char[1024]);
+    vsnprintf(formattedString.get(), 1024, format, arg_ptr);
+    // BOOST_LOG_SEV(AGENT_LOGGER, level) << formattedString.get() << "[" << file << ":" << func << ":"<< line << "]";
+    BOOST_LOG_SEV(AGENT_LOGGER, level) << formattedString.get() << "[" << func << ":" << line << "]";
+    va_end(arg_ptr);
+  }
 };
 
-#define LOG_FATAL(...) LogUtil::LogMessage(boost::log::trivial::fatal, __LINE__, __VA_ARGS__)
-#define LOG_ERROR(...) LogUtil::LogMessage(boost::log::trivial::error, __LINE__, __VA_ARGS__)
-#define LOG_WARN(...) LogUtil::LogMessage(boost::log::trivial::warning, __LINE__, __VA_ARGS__)
-#define LOG_INFO(...) LogUtil::LogMessage(boost::log::trivial::info, __LINE__, __VA_ARGS__)
-#define LOG_DEBUG(...) LogUtil::LogMessage(boost::log::trivial::debug, __LINE__, __VA_ARGS__)
-}
+#define LOG_FATAL(...) \
+  LogUtil::LogMessageFull(boost::log::trivial::fatal, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+#define LOG_ERROR(...) \
+  LogUtil::LogMessageFull(boost::log::trivial::error, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+#define LOG_WARN(...) \
+  LogUtil::LogMessageFull(boost::log::trivial::warning, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+//#define LOG_INFO(...) LogUtil::LogMessage(boost::log::trivial::info, __LINE__, __VA_ARGS__)
+#define LOG_INFO(...) LogUtil::LogMessageFull(boost::log::trivial::info, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+#define LOG_DEBUG(...) \
+  LogUtil::LogMessageFull(boost::log::trivial::debug, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+}  // namespace rocketmq
 #endif

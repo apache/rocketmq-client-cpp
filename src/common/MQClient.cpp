@@ -21,6 +21,7 @@
 #include "MQClientManager.h"
 #include "TopicPublishInfo.h"
 #include "UtilAll.h"
+#include "NameSpaceUtil.h"
 
 namespace rocketmq {
 
@@ -68,7 +69,7 @@ const string& MQClient::getNamesrvAddr() const {
 }
 
 void MQClient::setNamesrvAddr(const string& namesrvAddr) {
-  m_namesrvAddr = namesrvAddr;
+  m_namesrvAddr = NameSpaceUtil::formatNameServerURL(namesrvAddr);
 }
 
 const string& MQClient::getNamesrvDomain() const {
