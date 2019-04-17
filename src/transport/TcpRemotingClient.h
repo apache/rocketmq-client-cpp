@@ -79,9 +79,6 @@ class TcpRemotingClient {
   void addResponseFuture(int opaque, std::shared_ptr<ResponseFuture> pFuture);
   std::shared_ptr<ResponseFuture> findAndDeleteResponseFuture(int opaque);
 
-  void addAsyncResponseFuture(int opaque, std::shared_ptr<ResponseFuture> pFuture);
-  std::shared_ptr<ResponseFuture> findAndDeleteAsyncResponseFuture(int opaque);
-
   void addTimerCallback(boost::asio::deadline_timer* t, int opaque);
   void eraseTimerCallback(int opaque);
   void cancelTimerCallback(int opaque);
@@ -102,9 +99,6 @@ class TcpRemotingClient {
 
   ResMap m_futureTable;  //<! id->future;
   std::mutex m_futureTableLock;
-
-  ResMap m_asyncFutureTable;
-  std::mutex m_asyncFutureTableLock;
 
   AsyncTimerMap m_asyncTimerTable;
   std::mutex m_asyncTimerTableLock;
