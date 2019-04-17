@@ -33,7 +33,7 @@ if (COMMAND cmake_policy)
 endif()
 
 # First, declare project (important for prerequisite checks).
-project(all)
+project(rocketmq-client-cpp)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
