@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # source files
-project(rocketmq4cpp)
+project(rocketmq-client)
 
 file(GLOB_RECURSE SRC_FILES   ${CMAKE_SOURCE_DIR}/src/*)
 list(REMOVE_ITEM  SRC_FILES   ${CMAKE_SOURCE_DIR}/src/dllmain.cpp)
