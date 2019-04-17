@@ -149,10 +149,10 @@ bool TcpRemotingClient::invokeHeartBeat(const string& addr, RemotingCommand& req
         return true;
       } else {
         LOG_WARN("get error response:%d of heartbeat to addr:%s", pRsp->getCode(), addr.c_str());
-        findAndDeleteResponseFuture(opaque);
         return false;
       }
     } else {
+      findAndDeleteResponseFuture(opaque);
       CloseTransport(addr, pTcp);
     }
   }
