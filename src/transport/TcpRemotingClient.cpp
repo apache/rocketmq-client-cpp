@@ -142,12 +142,14 @@ bool TcpRemotingClient::invokeHeartBeat(const string& addr, RemotingCommand& req
       unique_ptr<RemotingCommand> pRsp(responseFuture->waitResponse(3000));
       if (pRsp == NULL) {
         LOG_ERROR("wait response timeout of heartbeat, so closeTransport of addr:%s", addr.c_str());
+        findAndDeleteResponseFuture(opaque);
         CloseTransport(addr, pTcp);
         return false;
       } else if (pRsp->getCode() == SUCCESS_VALUE) {
         return true;
       } else {
         LOG_WARN("get error response:%d of heartbeat to addr:%s", pRsp->getCode(), addr.c_str());
+        findAndDeleteResponseFuture(opaque);
         return false;
       }
     } else {
