@@ -27,7 +27,7 @@ namespace rocketmq {
 	public:
 		static MQClientErrorContainer * instance();
 
-		void setErr(std::string & str);
+		void setErr(std::string str);
 
 		std::string getErr();
 
