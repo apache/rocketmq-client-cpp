@@ -35,7 +35,7 @@ void StartSendMessage(CProducer* producer) {
     memset(body, 0, sizeof(body));
     snprintf(body, sizeof(body), "new message body, index %d", i);
     SetMessageBody(msg, body);
-    addMessage(batchMessage, msg);
+    AddMessage(batchMessage, msg);
   }
   CSendResult result;
   int ok = SendBatchMessage(producer, batchMessage, &result);

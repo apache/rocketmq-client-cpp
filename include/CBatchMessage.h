@@ -27,7 +27,7 @@ extern "C" {
 typedef struct CBatchMessage CBatchMessage;
 
 ROCKETMQCLIENT_API CBatchMessage* CreateBatchMessage();
-ROCKETMQCLIENT_API int addMessage(CBatchMessage* batchMsg, CMessage* msg);
+ROCKETMQCLIENT_API int AddMessage(CBatchMessage* batchMsg, CMessage* msg);
 ROCKETMQCLIENT_API int DestroyBatchMessage(CBatchMessage* batchMsg);
 
 #ifdef __cplusplus
