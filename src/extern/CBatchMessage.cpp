@@ -30,28 +30,28 @@ extern "C" {
 
 using namespace rocketmq;
 
-CBatchMessage *CreateBatchMessage() {
-    vector<MQMessage> *msgs = new vector<MQMessage>();
-    return (CBatchMessage *) msgs;
+CBatchMessage* CreateBatchMessage() {
+  vector<MQMessage>* msgs = new vector<MQMessage>();
+  return (CBatchMessage*)msgs;
 }
 
-int addMessage(CBatchMessage *batchMsg, CMessage *msg) {
-    if (msg == NULL) {
-        return NULL_POINTER;
-    }
-    if (batchMsg == NULL) {
-        return NULL_POINTER;
-    }
-    MQMessage *message = (MQMessage *) msg;
-    ((vector<MQMessage> *) batchMsg)->push_back(*message);
-    return OK;
+int AddMessage(CBatchMessage* batchMsg, CMessage* msg) {
+  if (msg == NULL) {
+    return NULL_POINTER;
+  }
+  if (batchMsg == NULL) {
+    return NULL_POINTER;
+  }
+  MQMessage* message = (MQMessage*)msg;
+  ((vector<MQMessage>*)batchMsg)->push_back(*message);
+  return OK;
 }
-int DestroyBatchMessage(CBatchMessage *batchMsg) {
-    if (batchMsg == NULL) {
-        return NULL_POINTER;
-    }
-    delete (vector<MQMessage> *) batchMsg;
-    return OK;
+int DestroyBatchMessage(CBatchMessage* batchMsg) {
+  if (batchMsg == NULL) {
+    return NULL_POINTER;
+  }
+  delete (vector<MQMessage>*)batchMsg;
+  return OK;
 }
 
 #ifdef __cplusplus
