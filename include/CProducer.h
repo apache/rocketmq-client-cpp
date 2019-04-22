@@ -81,4 +81,4 @@ ROCKETMQCLIENT_API int SendMessageOrderlyAsync(CProducer* producer,
 #ifdef __cplusplus
 };
 #endif
-#endif //__C_PRODUCER_H__
+#endif  //__C_PRODUCER_H__
