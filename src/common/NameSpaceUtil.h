@@ -23,7 +23,7 @@
 using namespace std;
 
 static const string ENDPOINT_PREFIX = "http://";
-static const int ENDPOINT_PREFIX_LENGTH = ENDPOINT_PREFIX.length();
+static const unsigned int ENDPOINT_PREFIX_LENGTH = ENDPOINT_PREFIX.length();
 namespace rocketmq {
 class NameSpaceUtil {
  public:
