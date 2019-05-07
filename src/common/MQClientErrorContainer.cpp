@@ -19,6 +19,9 @@
  
 #include "MQClientErrorContainer.h"
 
+
+
+
 namespace rocketmq {
 	MQClientErrorContainer * MQClientErrorContainer::s_instance = nullptr;
 
@@ -29,10 +32,12 @@ namespace rocketmq {
 	}
 
 	void MQClientErrorContainer::setErr(std::string str) {
+		boost::lock_guard<boost::mutex> lock(this->mutex);
 		this->m_err = str;
 	}
 
 	std::string MQClientErrorContainer::getErr() {
+		boost::lock_guard<boost::mutex> lock(this->mutex);
 		return this->m_err;
 	}
 }

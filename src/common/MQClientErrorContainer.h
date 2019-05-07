@@ -20,6 +20,8 @@
 #define MQCLIENTERRORCONTAINER_H_INCLUDE
 #include <string>
 #include <exception>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/lock_guard.hpp>
 
 namespace rocketmq {
 	class  MQClientErrorContainer {
@@ -34,6 +36,7 @@ namespace rocketmq {
 	private:
 		std::string m_err;
 		static MQClientErrorContainer * s_instance;
+		boost::mutex mutex;
 	};
 }
 
