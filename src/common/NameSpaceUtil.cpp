@@ -28,7 +28,7 @@ bool NameSpaceUtil::isEndPointURL(string nameServerAddr) {
 }
 
 string NameSpaceUtil::formatNameServerURL(string nameServerAddr) {
-  unsigned int index = nameServerAddr.find(ENDPOINT_PREFIX);
+  string::size_type index = nameServerAddr.find(ENDPOINT_PREFIX);
   if (index != string::npos) {
     LOG_DEBUG("Get Name Server from endpoint [%s]",
               nameServerAddr.substr(ENDPOINT_PREFIX_LENGTH, nameServerAddr.length() - ENDPOINT_PREFIX_LENGTH).c_str());
