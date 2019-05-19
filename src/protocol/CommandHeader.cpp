@@ -73,7 +73,7 @@ void SendMessageRequestHeader::Encode(Json::Value& outData) {
   outData["properties"] = properties;
   outData["reconsumeTimes"] = UtilAll::to_string(reconsumeTimes);
   outData["unitMode"] = UtilAll::to_string(unitMode);
-  // outData["batch"] = batch;
+  outData["batch"] = batch;
 }
 
 int SendMessageRequestHeader::getReconsumeTimes() {
