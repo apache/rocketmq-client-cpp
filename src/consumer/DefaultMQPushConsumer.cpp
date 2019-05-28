@@ -185,7 +185,7 @@ class AsyncPullCallback : public PullCallback {
 };
 
 //<!***************************************************************************
-<<<<<<< HEAD
+
 static boost::mutex m_asyncCallbackLock;
 
 DefaultMQPushConsumer::DefaultMQPushConsumer(const string& groupname)
@@ -286,114 +286,6 @@ void DefaultMQPushConsumer::persistConsumerOffsetByResetOffset() {
 }
 
 void DefaultMQPushConsumer::start() {
-=======
-    static boost::mutex m_asyncCallbackLock;
-
-    DefaultMQPushConsumer::DefaultMQPushConsumer(const string &groupname)
-            : m_consumeFromWhere(CONSUME_FROM_LAST_OFFSET),
-              m_pOffsetStore(NULL),
-              m_pRebalance(NULL),
-              m_pPullAPIWrapper(NULL),
-              m_consumerService(NULL),
-              m_pMessageListener(NULL),
-              m_consumeMessageBatchMaxSize(1),
-              m_maxMsgCacheSize(1000),
-              m_pullmsgQueue(NULL) {
-        //<!set default group name;
-        string gname = groupname.empty() ? DEFAULT_CONSUMER_GROUP : groupname;
-        setGroupName(gname);
-        m_asyncPull = true;
-        m_asyncPullTimeout = 30 * 1000;
-        setMessageModel(CLUSTERING);
-
-        m_startTime = UtilAll::currentTimeMillis();
-        m_consumeThreadCount = boost::thread::hardware_concurrency();
-        m_pullMsgThreadPoolNum = boost::thread::hardware_concurrency();
-        m_async_service_thread.reset(new boost::thread(
-                boost::bind(&DefaultMQPushConsumer::boost_asio_work, this)));
-
-
-
-    }
-
-    void DefaultMQPushConsumer::boost_asio_work() {
-        LOG_INFO("DefaultMQPushConsumer::boost asio async service runing");
-        boost::asio::io_service::work work(m_async_ioService);  // avoid async io
-        // service stops after
-        // first timer timeout
-        // callback
-        m_async_ioService.run();
-    }
-
-    DefaultMQPushConsumer::~DefaultMQPushConsumer() {
-        m_pMessageListener = NULL;
-        if (m_pullmsgQueue != NULL) {
-            deleteAndZero(m_pullmsgQueue);
-        }
-        if (m_pRebalance != NULL) {
-            deleteAndZero(m_pRebalance);
-        }
-        if (m_pOffsetStore != NULL) {
-            deleteAndZero(m_pOffsetStore);
-        }
-        if (m_pPullAPIWrapper != NULL) {
-            deleteAndZero(m_pPullAPIWrapper);
-        }
-        if (m_consumerService != NULL) {
-            deleteAndZero(m_consumerService);
-        }
-        PullMAP::iterator it = m_PullCallback.begin();
-        for (; it != m_PullCallback.end(); ++it) {
-            deleteAndZero(it->second);
-        }
-        m_PullCallback.clear();
-        m_subTopics.clear();
-    }
-
-    void DefaultMQPushConsumer::sendMessageBack(MQMessageExt &msg, int delayLevel) {
-        try {
-            getFactory()->getMQClientAPIImpl()->consumerSendMessageBack(
-                    msg, getGroupName(), delayLevel, 3000, getSessionCredentials());
-        } catch (MQException &e) {
-            LOG_ERROR(e.what());
-        }
-    }
-
-    void DefaultMQPushConsumer::fetchSubscribeMessageQueues(
-            const string &topic, vector<MQMessageQueue> &mqs) {
-        mqs.clear();
-        try {
-            getFactory()->fetchSubscribeMessageQueues(topic, mqs,
-                                                      getSessionCredentials());
-        } catch (MQException &e) {
-            LOG_ERROR(e.what());
-        }
-    }
-
-    void DefaultMQPushConsumer::doRebalance() {
-        if (isServiceStateOk()) {
-            try {
-                m_pRebalance->doRebalance();
-            } catch (MQException &e) {
-                LOG_ERROR(e.what());
-            }
-        }
-    }
-
-    void DefaultMQPushConsumer::persistConsumerOffset() {
-        if (isServiceStateOk()) {
-            m_pRebalance->persistConsumerOffset();
-        }
-    }
-
-    void DefaultMQPushConsumer::persistConsumerOffsetByResetOffset() {
-        if (isServiceStateOk()) {
-            m_pRebalance->persistConsumerOffsetByResetOffset();
-        }
-    }
-
-    void DefaultMQPushConsumer::start() {
->>>>>>> 1e22016... message trace
 #ifndef WIN32
   /* Ignore the SIGPIPE */
   struct sigaction sa;
