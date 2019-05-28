@@ -49,6 +49,7 @@ class MyMsgListener : public MessageListenerOrderly {
     for (size_t i = 0; i < msgs.size(); i++) {
       ++g_consumedCount;
       g_tps.Increment();
+      printf("msgbody:%s,%d\n",msgs[i].getBody().c_str(),i);
     }
     return CONSUME_SUCCESS;
   }
@@ -56,16 +57,22 @@ class MyMsgListener : public MessageListenerOrderly {
 
 int main(int argc, char* argv[]) {
   RocketmqSendAndConsumerArgs info;
-  if (!ParseArgs(argc, argv, &info)) {
-    exit(-1);
-  }
+//  if (!ParseArgs(argc, argv, &info2)) {
+    //exit(-1);
+  //}
+  //RocketmqSendAndConsumerArgs info;
+  info.namesrv = "192.168.249.128:9876";
+  info.namesrv_domain = "192.168.249.128";
+  info.groupname = "FooBarGroup1";
+  info.topic = "RMQ_SYS_TRACE_TOPIC";//topic_COrderlyAsyncProducer
+  //RMQ_SYS_TRACE_TOPIC
   PrintRocketmqSendAndConsumerArgs(info);
   DefaultMQPushConsumer consumer("please_rename_unique_group_name");
-  DefaultMQProducer producer("please_rename_unique_group_name");
+  /*DefaultMQProducer producer("please_rename_unique_group_name");
 
   producer.setNamesrvAddr(info.namesrv);
   producer.setGroupName("msg-persist-group_producer_sandbox");
-  producer.start();
+  producer.start();*/
 
   consumer.setNamesrvAddr(info.namesrv);
   consumer.setNamesrvDomain(info.namesrv_domain);
@@ -94,7 +101,7 @@ int main(int argc, char* argv[]) {
                   info.body);  // body
 
     try {
-      producer.send(msg);
+      //producer.send(msg);
     } catch (MQException& e) {
       std::cout << e << endl;  // if catch excepiton , need re-send this msg by
                                // service
@@ -106,7 +113,7 @@ int main(int argc, char* argv[]) {
     g_finished.wait(lk);
   }
 
-  producer.shutdown();
+  //producer.shutdown();
   consumer.shutdown();
   return 0;
 }

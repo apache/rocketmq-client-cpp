@@ -22,6 +22,7 @@
 #include "CSendResult.h"
 #ifdef _WIN32
 #include <windows.h>
+
 #else
 #include <unistd.h>
 #include <memory.h>
@@ -56,14 +57,14 @@ void StartSendMessage(CProducer* producer) {
   CMessage* msg = CreateMessage("topic_COrderlyAsyncProducer");
   SetMessageTags(msg, "Test_Tag");
   SetMessageKeys(msg, "Test_Keys");
-  for (i = 0; i < 10; i++) {
+  for (i = 0; i < 1; i++) {
     memset(body, 0, sizeof(body));
     snprintf(body, sizeof(body), "new message body, index %d", i);
     SetMessageBody(msg, body);
     ret_code = SendMessageOrderlyAsync(producer, msg, aQueueSelectorCallback, (void*)&i, SendSuccessCallback,
                                        SendExceptionCallback);
     printf("async send message[%d] return code: %d\n", i, ret_code);
-    thread_sleep(1000);
+    thread_sleep(1500);
   }
   DestroyMessage(msg);
 }
@@ -71,22 +72,23 @@ void StartSendMessage(CProducer* producer) {
 void CreateProducerAndStartSendMessage(int i) {
   printf("Producer Initializing.....\n");
   CProducer* producer = CreateProducer("FooBarGroup1");
-  SetProducerNameServerAddress(producer, "192.168.0.149:9876");
+  SetProducerNameServerAddress(producer, "192.168.249.128:9876");
   if (i == 1) {
-    SetProducerSendMsgTimeout(producer, 3);
+    SetProducerSendMsgTimeout(producer, 3000);
   }
   StartProducer(producer);
   printf("Producer start.....\n");
   StartSendMessage(producer);
   ShutdownProducer(producer);
   DestroyProducer(producer);
+  Sleep(15 * 1000);
   printf("Producer Shutdown!\n");
 }
 
 int main(int argc, char* argv[]) {
   printf("COrderlyAsyncProducer successCallback.....\n");
   CreateProducerAndStartSendMessage(0);
-
+  return 0;
   printf("COrderlyAsyncProducer exceptionCallback.....\n");
   CreateProducerAndStartSendMessage(1);
   return 0;

@@ -14,375 +14,68 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
+ /*
 package org.apache.rocketmq.client.trace;
 
 import org.apache.rocketmq.common.message.MessageType;
 
 import java.util.ArrayList;
 import java.util.List;
+*/
+
+#include "TraceHelper.h"
+#include "UtilAll.h"
+#include "MQMessageListener.h"
+#include"CommunicationMode.h"
+#include <sstream>
 
 namespace rocketmq {
 
-public class TraceBean {
-    private static final String LOCAL_ADDRESS = UtilAll.ipToIPv4Str(UtilAll.getIP());
-    private String topic = "";
-    private String msgId = "";
-    private String offsetMsgId = "";
-    private String tags = "";
-    private String keys = "";
-    private String storeHost = LOCAL_ADDRESS;
-    private String clientHost = LOCAL_ADDRESS;
-    private long storeTime;
-    private int retryTimes;
-    private int bodyLength;
-    private MessageType msgType;
-
-
-    public MessageType getMsgType() {
-        return msgType;
-    }
-
-
-    public void setMsgType(final MessageType msgType) {
-        this.msgType = msgType;
-    }
-
-
-    public String getOffsetMsgId() {
-        return offsetMsgId;
-    }
-
-
-    public void setOffsetMsgId(final String offsetMsgId) {
-        this.offsetMsgId = offsetMsgId;
-    }
-
-    public String getTopic() {
-        return topic;
-    }
-
-
-    public void setTopic(String topic) {
-        this.topic = topic;
-    }
-
-
-    public String getMsgId() {
-        return msgId;
-    }
-
-
-    public void setMsgId(String msgId) {
-        this.msgId = msgId;
-    }
-
-
-    public String getTags() {
-        return tags;
-    }
-
-
-    public void setTags(String tags) {
-        this.tags = tags;
-    }
-
-
-    public String getKeys() {
-        return keys;
-    }
-
-
-    public void setKeys(String keys) {
-        this.keys = keys;
-    }
-
-
-    public String getStoreHost() {
-        return storeHost;
-    }
-
-
-    public void setStoreHost(String storeHost) {
-        this.storeHost = storeHost;
-    }
-
-
-    public String getClientHost() {
-        return clientHost;
-    }
-
-
-    public void setClientHost(String clientHost) {
-        this.clientHost = clientHost;
-    }
-
-
-    public long getStoreTime() {
-        return storeTime;
-    }
-
-
-    public void setStoreTime(long storeTime) {
-        this.storeTime = storeTime;
-    }
-
-
-    public int getRetryTimes() {
-        return retryTimes;
-    }
-
-
-    public void setRetryTimes(int retryTimes) {
-        this.retryTimes = retryTimes;
-    }
-
-
-    public int getBodyLength() {
-        return bodyLength;
-    }
-
-
-    public void setBodyLength(int bodyLength) {
-        this.bodyLength = bodyLength;
-    }
-}
-
-
-
-
-
-
-
-public class TraceConstants {
-
-    public static final String GROUP_NAME = "_INNER_TRACE_PRODUCER";
-    public static final char CONTENT_SPLITOR = (char) 1;
-    public static final char FIELD_SPLITOR = (char) 2;
-    public static final String TRACE_INSTANCE_NAME = "PID_CLIENT_INNER_TRACE_PRODUCER";
-    public static final String TRACE_TOPIC_PREFIX = MixAll.SYSTEM_TOPIC_PREFIX + "TRACE_DATA_";
-}
-
-
-
-
-
-
-
-
-public class TraceContext implements Comparable<TraceContext> {
-
-    private TraceType traceType;
-    private long timeStamp = System.currentTimeMillis();
-    private String regionId = "";
-    private String regionName = "";
-    private String groupName = "";
-    private int costTime = 0;
-    private boolean isSuccess = true;
-    private String requestId = MessageClientIDSetter.createUniqID();
-    private int contextCode = 0;
-    private List<TraceBean> traceBeans;
-
-    public int getContextCode() {
-        return contextCode;
-    }
-
-    public void setContextCode(final int contextCode) {
-        this.contextCode = contextCode;
-    }
-
-    public List<TraceBean> getTraceBeans() {
-        return traceBeans;
-    }
-
-    public void setTraceBeans(List<TraceBean> traceBeans) {
-        this.traceBeans = traceBeans;
-    }
-
-    public String getRegionId() {
-        return regionId;
-    }
-
-    public void setRegionId(String regionId) {
-        this.regionId = regionId;
-    }
-
-    public TraceType getTraceType() {
-        return traceType;
-    }
-
-    public void setTraceType(TraceType traceType) {
-        this.traceType = traceType;
-    }
-
-    public long getTimeStamp() {
-        return timeStamp;
-    }
-
-    public void setTimeStamp(long timeStamp) {
-        this.timeStamp = timeStamp;
-    }
-
-    public String getGroupName() {
-        return groupName;
-    }
-
-    public void setGroupName(String groupName) {
-        this.groupName = groupName;
-    }
-
-    public int getCostTime() {
-        return costTime;
-    }
-
-    public void setCostTime(int costTime) {
-        this.costTime = costTime;
-    }
-
-    public boolean isSuccess() {
-        return isSuccess;
-    }
-
-    public void setSuccess(boolean success) {
-        isSuccess = success;
-    }
-
-    public String getRequestId() {
-        return requestId;
-    }
-
-    public void setRequestId(String requestId) {
-        this.requestId = requestId;
-    }
-
-    public String getRegionName() {
-        return regionName;
-    }
-
-    public void setRegionName(String regionName) {
-        this.regionName = regionName;
-    }
-
-    @Override
-    public int compareTo(TraceContext o) {
-        return (int) (this.timeStamp - o.getTimeStamp());
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder(1024);
+std::string TraceConstants::TRACE_INSTANCE_NAME = "PID_CLIENT_INNER_TRACE_PRODUCER";
+std::string TraceConstants::TRACE_TOPIC_PREFIX = "TRACE_DATA_";
+std::string TraceConstants::TraceConstants_GROUP_NAME = "_INNER_TRACE_PRODUCER";
+char TraceConstants::CONTENT_SPLITOR = (char)1;
+char TraceConstants::FIELD_SPLITOR = (char)2;
+
+std::string TraceBean::LOCAL_ADDRESS = UtilAll::getLocalAddress();
+  
+
+     std::string TraceContext2String() {
+		 std::string sb;/*(1024);
         sb.append(traceType).append("_").append(groupName)
             .append("_").append(regionId).append("_").append(isSuccess).append("_");
         if (traceBeans != null && traceBeans.size() > 0) {
             for (TraceBean bean : traceBeans) {
                 sb.append(bean.getMsgId() + "_" + bean.getTopic() + "_");
             }
-        }
-        return "TraceContext{" + sb.toString() + '}';
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-public interface TraceDispatcher {
-
-    /**
-     * Initialize asynchronous transfer data module
-     */
-    void start(String nameSrvAddr, AccessChannel accessChannel) throws MQClientException;
-
-    /**
-     * Append the transfering data
-     * @param ctx data infomation
-     * @return
-     */
-    boolean append(Object ctx);
-
-    /**
-     * Write flush action
-     *
-     * @throws IOException
-     */
-    void flush() throws IOException;
-
-    /**
-     * Close the trace Hook
-     */
-    void shutdown();
-}
-
-
-
-public enum TraceDispatcherType {
-    PRODUCER,
-    CONSUMER
-}
-
-
-
-
-
-
-
-
-
-public class TraceTransferBean {
-    private String transData;
-    private Set<String> transKey = new HashSet<String>();
-
-    public String getTransData() {
-        return transData;
+        }*/
+        return "TraceContext{" + sb+ '}';
     }
 
-    public void setTransData(String transData) {
-        this.transData = transData;
+
+
+
+	std::string ConsumeStatus2str(ConsumeStatus p) {
+      return p == ConsumeStatus::CONSUME_SUCCESS ? "CONSUME_SUCCESS" : "RECONSUME_LATER";
     }
 
-    public Set<String> getTransKey() {
-        return transKey;
+	 
+
+std::ostream& operator<<(std::ostream& os, TraceType traceType) {
+      switch (traceType) {
+		case TraceType::Pub:
+			  return os << "Pub";
+		case TraceType::SubBefore:
+			  return os << "SubBefore";
+		case TraceType::SubAfter:
+          return os << "SubAfter";
+          // omit default case to trigger compiler warning for missing cases
+      }
+      return os << static_cast<std::uint16_t>(traceType);
     }
 
-    public void setTransKey(Set<String> transKey) {
-        this.transKey = transKey;
-    }
-}
-
-
-
-
-
-
-
-
-
-
-public enum TraceType {
-    Pub,
-    SubBefore,
-    SubAfter,
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
 
 
 
@@ -390,22 +83,15 @@ public enum TraceType {
 /**
  * Encode/decode for Trace Data
  */
-public class TraceDataEncoder {
 
-    /**
-     * Resolving traceContext list From trace data String
-     *
-     * @param traceData
-     * @return
-     */
-    public static List<TraceContext> decoderFromTraceDataString(String traceData) {
-        List<TraceContext> resList = new ArrayList<TraceContext>();
+   std::list<TraceContext> TraceDataEncoder::decoderFromTraceDatastring(std::string& traceData) {
+        std::list<TraceContext> resList;/*
         if (traceData == null || traceData.length() <= 0) {
             return resList;
         }
-        String[] contextList = traceData.split(String.valueOf(TraceConstants.FIELD_SPLITOR));
-        for (String context : contextList) {
-            String[] line = context.split(String.valueOf(TraceConstants.CONTENT_SPLITOR));
+        std::string[] contextList = traceData.split(std::string.valueOf(TraceConstants.FIELD_SPLITOR));
+        for (std::string context : contextList) {
+            std::string[] line = context.split(std::string.valueOf(TraceConstants::CONTENT_SPLITOR));
             if (line[0].equals(TraceType.Pub.name())) {
                 TraceContext pubContext = new TraceContext();
                 pubContext.setTraceType(TraceType.Pub);
@@ -428,7 +114,7 @@ public class TraceDataEncoder {
                     bean.setOffsetMsgId(line[12]);
                     pubContext.setSuccess(Boolean.parseBoolean(line[13]));
                 }
-                pubContext.setTraceBeans(new ArrayList<TraceBean>(1));
+                pubContext.setTraceBeans(new Arraystd::list<TraceBean>(1));
                 pubContext.getTraceBeans().add(bean);
                 resList.add(pubContext);
             } else if (line[0].equals(TraceType.SubBefore.name())) {
@@ -442,7 +128,7 @@ public class TraceDataEncoder {
                 bean.setMsgId(line[5]);
                 bean.setRetryTimes(Integer.parseInt(line[6]));
                 bean.setKeys(line[7]);
-                subBeforeContext.setTraceBeans(new ArrayList<TraceBean>(1));
+                subBeforeContext.setTraceBeans(new Arraystd::list<TraceBean>(1));
                 subBeforeContext.getTraceBeans().add(bean);
                 resList.add(subBeforeContext);
             } else if (line[0].equals(TraceType.SubAfter.name())) {
@@ -452,7 +138,7 @@ public class TraceDataEncoder {
                 TraceBean bean = new TraceBean();
                 bean.setMsgId(line[2]);
                 bean.setKeys(line[5]);
-                subAfterContext.setTraceBeans(new ArrayList<TraceBean>(1));
+                subAfterContext.setTraceBeans(new Arraystd::list<TraceBean>(1));
                 subAfterContext.getTraceBeans().add(bean);
                 subAfterContext.setCostTime(Integer.parseInt(line[3]));
                 subAfterContext.setSuccess(Boolean.parseBoolean(line[4]));
@@ -462,85 +148,129 @@ public class TraceDataEncoder {
                 }
                 resList.add(subAfterContext);
             }
-        }
+        }*/
         return resList;
     }
 
     /**
-     * Encoding the trace context into data strings and keyset sets
+     * Encoding the trace context into data std::strings and keyset sets
      *
      * @param ctx
      * @return
      */
-    public static TraceTransferBean encoderFromContextBean(TraceContext ctx) {
-        if (ctx == null) {
-            return null;
+    TraceTransferBean TraceDataEncoder::encoderFromContextBean(TraceContext* ctxp) {
+      TraceTransferBean transferBean;
+        if (ctxp == nullptr) {
+			return transferBean;
         }
-        //build message trace of the transfering entity content bean
-        TraceTransferBean transferBean = new TraceTransferBean();
-        StringBuilder sb = new StringBuilder(256);
+
+		TraceContext& ctx = *ctxp;
+        std::string sb;
+        std::stringstream ss;
+
         switch (ctx.getTraceType()) {
             case Pub: {
-                TraceBean bean = ctx.getTraceBeans().get(0);
+                TraceBean bean = ctx.getTraceBeans().front();
                 //append the content of context and traceBean to transferBean's TransData
-                sb.append(ctx.getTraceType()).append(TraceConstants.CONTENT_SPLITOR)//
-                    .append(ctx.getTimeStamp()).append(TraceConstants.CONTENT_SPLITOR)//
-                    .append(ctx.getRegionId()).append(TraceConstants.CONTENT_SPLITOR)//
-                    .append(ctx.getGroupName()).append(TraceConstants.CONTENT_SPLITOR)//
-                    .append(bean.getTopic()).append(TraceConstants.CONTENT_SPLITOR)//
-                    .append(bean.getMsgId()).append(TraceConstants.CONTENT_SPLITOR)//
-                    .append(bean.getTags()).append(TraceConstants.CONTENT_SPLITOR)//
-                    .append(bean.getKeys()).append(TraceConstants.CONTENT_SPLITOR)//
-                    .append(bean.getStoreHost()).append(TraceConstants.CONTENT_SPLITOR)//
-                    .append(bean.getBodyLength()).append(TraceConstants.CONTENT_SPLITOR)//
-                    .append(ctx.getCostTime()).append(TraceConstants.CONTENT_SPLITOR)//
-                    .append(bean.getMsgType().ordinal()).append(TraceConstants.CONTENT_SPLITOR)//
-                    .append(bean.getOffsetMsgId()).append(TraceConstants.CONTENT_SPLITOR)//
-                    .append(ctx.isSuccess()).append(TraceConstants.FIELD_SPLITOR);
-            }
+               
+				
+					ss<<ctx.getTraceType()<<TraceConstants::CONTENT_SPLITOR
+                    <<ctx.getTimeStamp()<<TraceConstants::CONTENT_SPLITOR
+                    <<ctx.getRegionId()<<TraceConstants::CONTENT_SPLITOR
+                    <<ctx.getGroupName()<<TraceConstants::CONTENT_SPLITOR
+                    <<bean.getTopic()<<TraceConstants::CONTENT_SPLITOR
+                    <<bean.getMsgId()<<TraceConstants::CONTENT_SPLITOR
+                    <<bean.getTags()<<TraceConstants::CONTENT_SPLITOR
+                    <<bean.getKeys()<<TraceConstants::CONTENT_SPLITOR
+                    <<bean.getStoreHost()<<TraceConstants::CONTENT_SPLITOR
+                    <<bean.getBodyLength()<<TraceConstants::CONTENT_SPLITOR
+                    <<ctx.getCostTime()<<TraceConstants::CONTENT_SPLITOR
+                    <<bean.getMsgType()<<TraceConstants::CONTENT_SPLITOR
+                    <<bean.getOffsetMsgId()<<TraceConstants::CONTENT_SPLITOR
+                    <<ctx.isSuccess()<<TraceConstants::FIELD_SPLITOR;
+
+
+					/*
+
+					                sb.append(ctx.getTraceType()).append(TraceConstants::CONTENT_SPLITOR)//
+                    .append(ctx.getTimeStamp()).append(TraceConstants::CONTENT_SPLITOR)//
+                    .append(ctx.getRegionId()).append(TraceConstants::CONTENT_SPLITOR)//
+                    .append(ctx.getGroupName()).append(TraceConstants::CONTENT_SPLITOR)//
+                    .append(bean.getTopic()).append(TraceConstants::CONTENT_SPLITOR)//
+                    .append(bean.getMsgId()).append(TraceConstants::CONTENT_SPLITOR)//
+                    .append(bean.getTags()).append(TraceConstants::CONTENT_SPLITOR)//
+                    .append(bean.getKeys()).append(TraceConstants::CONTENT_SPLITOR)//
+                    .append(bean.getStoreHost()).append(TraceConstants::CONTENT_SPLITOR)//
+                    .append(bean.getBodyLength()).append(TraceConstants::CONTENT_SPLITOR)//
+                    .append(ctx.getCostTime()).append(TraceConstants::CONTENT_SPLITOR)//
+                    .append(bean.getMsgType().ordinal()).append(TraceConstants::CONTENT_SPLITOR)//
+                    .append(bean.getOffsetMsgId()).append(TraceConstants::CONTENT_SPLITOR)//
+                    .append(ctx.isSuccess()).append(TraceConstants::FIELD_SPLITOR);*/
+            }//case
             break;
-            case SubBefore: {
+            case SubBefore: { 
+				
+
+
+
+
+
+				
                 for (TraceBean bean : ctx.getTraceBeans()) {
-                    sb.append(ctx.getTraceType()).append(TraceConstants.CONTENT_SPLITOR)//
-                        .append(ctx.getTimeStamp()).append(TraceConstants.CONTENT_SPLITOR)//
-                        .append(ctx.getRegionId()).append(TraceConstants.CONTENT_SPLITOR)//
-                        .append(ctx.getGroupName()).append(TraceConstants.CONTENT_SPLITOR)//
-                        .append(ctx.getRequestId()).append(TraceConstants.CONTENT_SPLITOR)//
-                        .append(bean.getMsgId()).append(TraceConstants.CONTENT_SPLITOR)//
-                        .append(bean.getRetryTimes()).append(TraceConstants.CONTENT_SPLITOR)//
-                        .append(bean.getKeys()).append(TraceConstants.FIELD_SPLITOR);//
-                }
-            }
+                ss << ctx.getTraceType() << TraceConstants::CONTENT_SPLITOR << ctx.getTimeStamp()
+                   << TraceConstants::CONTENT_SPLITOR << ctx.getRegionId() << TraceConstants::CONTENT_SPLITOR
+                     << ctx.getGroupName() << TraceConstants::CONTENT_SPLITOR << ctx.getRequestId()
+                   << TraceConstants::CONTENT_SPLITOR << bean.getMsgId() << TraceConstants::CONTENT_SPLITOR
+                   << bean.getRetryTimes() << TraceConstants::CONTENT_SPLITOR << bean.getKeys()
+                   << TraceConstants::CONTENT_SPLITOR;
+                    
+					/*
+                    sb.append(ctx.getTraceType()).append(TraceConstants::CONTENT_SPLITOR)//
+                        .append(ctx.getTimeStamp()).append(TraceConstants::CONTENT_SPLITOR)//
+                        .append(ctx.getRegionId()).append(TraceConstants::CONTENT_SPLITOR)//
+                        .append(ctx.getGroupName()).append(TraceConstants::CONTENT_SPLITOR)//
+                        .append(ctx.getRequestId()).append(TraceConstants::CONTENT_SPLITOR)//
+                        .append(bean.getMsgId()).append(TraceConstants::CONTENT_SPLITOR)//
+                        .append(bean.getRetryTimes()).append(TraceConstants::CONTENT_SPLITOR)//
+                      .append(bean.getKeys()).append(TraceConstants::FIELD_SPLITOR);  //
+					*/
+                }//for
+            }//case
             break;
             case SubAfter: {
-                for (TraceBean bean : ctx.getTraceBeans()) {
-                    sb.append(ctx.getTraceType()).append(TraceConstants.CONTENT_SPLITOR)//
-                        .append(ctx.getRequestId()).append(TraceConstants.CONTENT_SPLITOR)//
-                        .append(bean.getMsgId()).append(TraceConstants.CONTENT_SPLITOR)//
-                        .append(ctx.getCostTime()).append(TraceConstants.CONTENT_SPLITOR)//
-                        .append(ctx.isSuccess()).append(TraceConstants.CONTENT_SPLITOR)//
-                        .append(bean.getKeys()).append(TraceConstants.CONTENT_SPLITOR)//
-                        .append(ctx.getContextCode()).append(TraceConstants.FIELD_SPLITOR);
-                }
-            }
+              for (TraceBean bean : ctx.getTraceBeans()) {
+                ss << ctx.getTraceType() << TraceConstants::CONTENT_SPLITOR << ctx.getRequestId()
+                   << TraceConstants::CONTENT_SPLITOR << bean.getMsgId() << TraceConstants::CONTENT_SPLITOR
+                   << ctx.getCostTime() << TraceConstants::CONTENT_SPLITOR << ctx.isSuccess()
+                   << TraceConstants::CONTENT_SPLITOR << bean.getKeys() << TraceConstants::CONTENT_SPLITOR
+                   << ctx.getContextCode() << TraceConstants::FIELD_SPLITOR;
+
+                /*
+                      sb.append(ctx.getTraceType()).append(TraceConstants::CONTENT_SPLITOR)//
+                          .append(ctx.getRequestId()).append(TraceConstants::CONTENT_SPLITOR)//
+                          .append(bean.getMsgId()).append(TraceConstants::CONTENT_SPLITOR)//
+                          .append(ctx.getCostTime()).append(TraceConstants::CONTENT_SPLITOR)//
+                          .append(ctx.isSuccess()).append(TraceConstants::CONTENT_SPLITOR)//
+                          .append(bean.getKeys()).append(TraceConstants::CONTENT_SPLITOR)//
+                        .append(ctx.getContextCode()).append(TraceConstants::FIELD_SPLITOR);
+
+            */
+              }//for
+            }//case
             break;
             default:
-        }
-        transferBean.setTransData(sb.toString());
+              break;
+        }//sw
+
+        transferBean.setTransData(ss.str());
         for (TraceBean bean : ctx.getTraceBeans()) {
-
-            transferBean.getTransKey().add(bean.getMsgId());
+            transferBean.getTransKey().insert(bean.getMsgId());
             if (bean.getKeys() != null && bean.getKeys().length() > 0) {
-                transferBean.getTransKey().add(bean.getKeys());
+              transferBean.getTransKey().insert(bean.getKeys());
             }
-        }
-        return transferBean;
+        }//for
+		 return  transferBean;
     }
-}
-
-
-
-
 
 
 

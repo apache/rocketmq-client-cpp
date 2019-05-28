@@ -144,11 +144,16 @@ class MQClientFactory {
   int getProducerTableSize();
   void insertProducerInfoToHeartBeatData(HeartbeatData* pHeartbeatData);
 
+    public:
   // topicPublishInfo related operation
   void addTopicInfoToTable(const string& topic, boost::shared_ptr<TopicPublishInfo> pTopicPublishInfo);
   void eraseTopicInfoFromTable(const string& topic);
   bool isTopicInfoValidInTable(const string& topic);
+
+  public:
   boost::shared_ptr<TopicPublishInfo> getTopicPublishInfoFromTable(const string& topic);
+
+   private:
   void getTopicListFromTopicPublishInfo(set<string>& topicList);
 
   void getSessionCredentialsFromOneOfProducerOrConsumer(SessionCredentials& session_credentials);

@@ -24,12 +24,18 @@
 #include "RocketMQClient.h"
 #include "SendResult.h"
 
+
+#include "SendMessageHook.h"
+#include "ConsumeMessageHook.h"
+
+#include <memory>
 namespace rocketmq {
 //<!***************************************************************************
 class ROCKETMQCLIENT_API MQProducer : public MQClient {
  public:
-  MQProducer() {}
-  virtual ~MQProducer() {}
+  MQProducer(){};
+  MQProducer(bool b, void* rpcHook = nullptr);  // {}
+  virtual ~MQProducer();
   // if setted bActiveBroker, will search brokers with best service state
   // firstly, then search brokers that had been sent failed by last time;
   virtual SendResult send(MQMessage& msg, bool bSelectActiveBroker = false) = 0;
@@ -56,6 +62,22 @@ class ROCKETMQCLIENT_API MQProducer : public MQClient {
   virtual void sendOneway(MQMessage& msg, const MQMessageQueue& mq) = 0;
 
   virtual void sendOneway(MQMessage& msg, MessageQueueSelector* selector, void* arg) = 0;
+
+
+
+protected:
+ std::shared_ptr<TraceDispatcher> traceDispatcher;
+ std::vector<std::shared_ptr<SendMessageHook> > sendMessageHookList;
+ bool WithoutTrace;
+
+public:
+	bool hasHook();
+
+	bool hasSendMessageHook();
+  void registerSendMessageHook(std::shared_ptr<SendMessageHook>& hook);
+	void  executeSendMessageHookBefore(SendMessageContext& context);
+	void  executeSendMessageHookAfter(SendMessageContext& context);
+
 
 };
 //<!***************************************************************************

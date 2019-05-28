@@ -29,6 +29,7 @@ FOREACH(child ${children})
 ENDFOREACH()
 LIST(APPEND SUB_DIRS ${CMAKE_SOURCE_DIR}/src)
 
+
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${SUB_DIRS})
 
@@ -55,7 +56,8 @@ endif()
 
 # shared
 if(BUILD_ROCKETMQ_SHARED)
-    set(CMAKE_SHARED_LINKER_FLAGS "-DBOOST_ALL_DYN_LINK -shared ")
+    #set(CMAKE_SHARED_LINKER_FLAGS "-DBOOST_ALL_DYN_LINK -shared ")
+	set(CMAKE_SHARED_LINKER_FLAGS " -shared ")
     add_library(rocketmq_shared SHARED ${SRC_FILES})
     set_target_properties(rocketmq_shared PROPERTIES OUTPUT_NAME "rocketmq")
     add_dependencies(rocketmq_shared Signature)
@@ -75,3 +77,8 @@ if(BUILD_ROCKETMQ_SHARED)
 endif()
 install (DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include/rocketmq)
 install (DIRECTORY ${CMAKE_SOURCE_DIR}/doc/     DESTINATION doc)
+
+
+
+message(STATUS "** project CMAKE_CXX_FLAGS_RELEASE: ${CMAKE_CXX_FLAGS_RELEASE}")
+message(STATUS "** project CMAKE_CXX_FLAGS_DEBUG: ${CMAKE_CXX_FLAGS_DEBUG}")

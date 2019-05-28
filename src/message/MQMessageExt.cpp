@@ -20,6 +20,9 @@
 #include "TopicFilterType.h"
 
 namespace rocketmq {
+
+
+
 //<!************************************************************************
 MQMessageExt::MQMessageExt()
     : m_queueOffset(0),

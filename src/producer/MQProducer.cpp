@@ -16,10 +16,15 @@
  */
 
 #include "MQProducer.h"
+#include "AsyncTraceDispatcher.h"
+#include "ClientRPCHook.h"
+#include "Logging.h"
+#include "trace/hook/SendMessageTraceHookImpl.h"
+#include "ClientRPCHook.h"
 
 namespace rocketmq {
+/*
 
-//<!************************************************************************
 MQProducer::MQProducer(const string& groupname)
     : m_sendMsgTimeout(3000),
       m_compressMsgBodyOverHowmuch(4 * 1024),
@@ -31,68 +36,85 @@ MQProducer::MQProducer(const string& groupname)
   //<!set default group name;
   string gname = groupname.empty() ? DEFAULT_PRODUCER_GROUP : groupname;
   setGroupName(gname);
+*/
+MQProducer::MQProducer(bool b, void* rpcHookv) {
+  LOG_INFO("MQProducer::MQProducer(bool WithoutTrace) %d", b);
+  std::string customizedTraceTopic;
+  // char* rpcHook = nullptr;
+  bool enableMsgTrace = true;
+  WithoutTrace = b;
+  traceDispatcher = nullptr;
+  // const SessionCredentials& MQClient::getSessionCredentials() const {
+  RPCHook* rpcHook = nullptr;
+  if (rpcHookv != nullptr) {
+    rpcHook = (RPCHook*)rpcHookv;
+  } else {
+    rpcHook=new ClientRPCHook(getSessionCredentials());
+  }
+
+  if (WithoutTrace == false && enableMsgTrace == true) {
+    try {
+      std::shared_ptr<TraceDispatcher>  ptraceDispatcher =
+          std::shared_ptr<TraceDispatcher>(new AsyncTraceDispatcher(customizedTraceTopic, rpcHook));
+      // dispatcher.setHostProducer(this.defaultMQProducerImpl);
+      traceDispatcher = std::shared_ptr<TraceDispatcher>(ptraceDispatcher);
+      std::shared_ptr<SendMessageTraceHookImpl> pSendMessageTraceHookImpl =
+          std::shared_ptr<SendMessageTraceHookImpl>(new SendMessageTraceHookImpl(ptraceDispatcher));
+      registerSendMessageHook(std::dynamic_pointer_cast<SendMessageHook>(pSendMessageTraceHookImpl));
+
+      LOG_INFO("registerSendMessageHook");
+
+    } catch (...) {
+      LOG_INFO("system mqtrace hook init failed ,maybe can't send msg trace data");
+    }
+  }  // if
 
 
-
-
-          if (enableMsgTrace) {
-            try {
-                AsyncTraceDispatcher dispatcher = new AsyncTraceDispatcher(customizedTraceTopic, rpcHook);
-                dispatcher.setHostProducer(this.defaultMQProducerImpl);
-                traceDispatcher = dispatcher;
-                this.defaultMQProducerImpl.registerSendMessageHook(
-                    new SendMessageTraceHookImpl(traceDispatcher));
-
-                    //N:\OPENSOURCE_JOB\APACHE_ROCKETMQ\DEV_SRC\rocketmq-client-cpp\src\trace\hook\SendMessageTraceHookImpl.cpp
-
-                    
-            } catch (Throwable e) {
-                log.error("system mqtrace hook init failed ,maybe can't send msg trace data");
-            }
-        }
 }
 
 
 
-    public void registerSendMessageHook(final SendMessageHook hook) {
-        this.sendMessageHookList.add(hook);
-        log.info("register sendMessage Hook, {}", hook.hookName());
+MQProducer::~MQProducer() {
+  if (traceDispatcher.use_count()>0) {
+    traceDispatcher->shutdown();
+    traceDispatcher->setdelydelflag(true);
+  }
+}
+void MQProducer::registerSendMessageHook(
+        std::shared_ptr<SendMessageHook>& hook) {
+  sendMessageHookList.push_back(hook);
+  LOG_INFO("register sendMessage Hook, {}, hook.hookName()");
+}
+
+bool MQProducer::hasSendMessageHook() {
+  return !sendMessageHookList.empty();
+}
+
+void MQProducer::executeSendMessageHookBefore(SendMessageContext& context) {
+  if (!sendMessageHookList.empty()) {
+    for (auto& hook : sendMessageHookList) {
+      try {
+        LOG_INFO("hook->sendMessageBefore YES:%d", 1);
+        hook->sendMessageBefore(context);
+      } catch (...) {
+        LOG_WARN("failed to executeSendMessageHookBefore, e");
+      }
     }
+  }
+}
 
-
-
-public boolean hasSendMessageHook() {
-        return !this.sendMessageHookList.isEmpty();
+void MQProducer::executeSendMessageHookAfter(SendMessageContext& context) {
+  if (!sendMessageHookList.empty()) {
+    for (auto& hook : sendMessageHookList) {
+      try {
+        LOG_INFO("hook->executeSendMessageHookAfter YES:%d", 1);
+        hook->sendMessageAfter(context);
+      } catch (...) {
+        LOG_WARN("failed to executeSendMessageHookBefore, e");
+      }
     }
-
-    public void executeSendMessageHookBefore(final SendMessageContext context) {
-        if (!this.sendMessageHookList.isEmpty()) {
-            for (SendMessageHook hook : this.sendMessageHookList) {
-                try {
-                    hook.sendMessageBefore(context);
-                } catch (Throwable e) {
-                    log.warn("failed to executeSendMessageHookBefore", e);
-                }
-            }
-        }
-    }
-
-    public void executeSendMessageHookAfter(final SendMessageContext context) {
-        if (!this.sendMessageHookList.isEmpty()) {
-            for (SendMessageHook hook : this.sendMessageHookList) {
-                try {
-                    hook.sendMessageAfter(context);
-                } catch (Throwable e) {
-                    log.warn("failed to executeSendMessageHookAfter", e);
-                }
-            }
-        }
-    }
-
-
-    
-
-    
+  }
+}
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

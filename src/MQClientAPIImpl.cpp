@@ -217,7 +217,9 @@ SendResult MQClientAPIImpl::sendMessage(const string& addr,
                                         int maxRetrySendTimes,
                                         int communicationMode,
                                         SendCallback* pSendCallback,
-                                        const SessionCredentials& sessionCredentials) {
+                                        const SessionCredentials& sessionCredentials
+                                        //,SendMessageContext* context
+) {
   RemotingCommand request(SEND_MESSAGE, pRequestHeader);
   string body = msg.getBody();
   request.SetBody(body.c_str(), body.length());
@@ -391,7 +393,8 @@ void MQClientAPIImpl::sendMessageAsync(const string& addr,
                                        SendCallback* pSendCallback,
                                        int64 timeoutMilliseconds,
                                        int maxRetryTimes,
-                                       int retrySendTimes) {
+                                       int retrySendTimes
+                                       ) {
   int64 begin_time = UtilAll::currentTimeMillis();
   //<!delete in future;
   AsyncCallbackWrap* cbw = new SendCallbackWrap(brokerName, msg, pSendCallback, this);
@@ -414,7 +417,10 @@ void MQClientAPIImpl::sendMessageAsync(const string& addr,
                  addr.c_str(), msg.getTopic().data(), time_out, maxRetryTimes, retry_time);
         continue;
       } else {
-        return;  // invokeAsync success
+
+
+
+        return;  // invokeAsync successf
       }
     }
 

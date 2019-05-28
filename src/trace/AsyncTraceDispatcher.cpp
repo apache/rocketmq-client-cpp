@@ -14,396 +14,488 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.rocketmq.client.trace;
+#include "AsyncTraceDispatcher.h"
+#include <chrono>
+#include "ClientRPCHook.h"
+#include "Logging.h"
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.rocketmq.client.AccessChannel;
-import org.apache.rocketmq.client.common.ThreadLocalIndex;
-import org.apache.rocketmq.client.exception.MQClientException;
-import org.apache.rocketmq.client.impl.consumer.DefaultMQPushConsumerImpl;
-import org.apache.rocketmq.client.impl.producer.DefaultMQProducerImpl;
-import org.apache.rocketmq.client.impl.producer.TopicPublishInfo;
-import org.apache.rocketmq.client.log.ClientLogger;
-import org.apache.rocketmq.client.producer.DefaultMQProducer;
-import org.apache.rocketmq.client.producer.MessageQueueSelector;
-import org.apache.rocketmq.client.producer.SendCallback;
-import org.apache.rocketmq.client.producer.SendResult;
-import org.apache.rocketmq.common.MixAll;
-import org.apache.rocketmq.common.ThreadFactoryImpl;
-import org.apache.rocketmq.common.UtilAll;
-import org.apache.rocketmq.common.message.Message;
-import org.apache.rocketmq.common.message.MessageQueue;
-import org.apache.rocketmq.logging.InternalLogger;
-import org.apache.rocketmq.remoting.RPCHook;
+//#include "MQClient.h"
+#include "MQClientFactory.h"
+#include "MQSelector.h"
+#include "ThreadLocalIndex.h"
+#include "TopicPublishInfo.h"
+#include "UtilAll.h"
 
-import static org.apache.rocketmq.client.trace.TraceConstants.TRACE_INSTANCE_NAME;
+#include <chrono>
+#include <cmath>
 
-public class AsyncTraceDispatcher implements TraceDispatcher {
+namespace rocketmq {
 
-    private final static InternalLogger log = ClientLogger.getLog();
-    private final int queueSize;
-    private final int batchSize;
-    private final int maxMsgSize;
-    private final DefaultMQProducer traceProducer;
-    private final ThreadPoolExecutor traceExecutor;
-    // The last discard number of log
-    private AtomicLong discardCount;
-    private Thread worker;
-    private ArrayBlockingQueue<TraceContext> traceContextQueue;
-    private ArrayBlockingQueue<Runnable> appenderQueue;
-    private volatile Thread shutDownHook;
-    private volatile boolean stopped = false;
-    private DefaultMQProducerImpl hostProducer;
-    private DefaultMQPushConsumerImpl hostConsumer;
-    private volatile ThreadLocalIndex sendWhichQueue = new ThreadLocalIndex();
-    private String dispatcherId = UUID.randomUUID().toString();
-    private String traceTopicName;
-    private AtomicBoolean isStarted = new AtomicBoolean(false);
-    private AccessChannel accessChannel = AccessChannel.LOCAL;
+class TraceMessageQueueSelector : public MessageQueueSelector {
+ private:
+  ThreadLocalIndex tli;
 
-    public AsyncTraceDispatcher(String traceTopicName, RPCHook rpcHook) {
-        // queueSize is greater than or equal to the n power of 2 of value
-        this.queueSize = 2048;
-        this.batchSize = 100;
-        this.maxMsgSize = 128000;
-        this.discardCount = new AtomicLong(0L);
-        this.traceContextQueue = new ArrayBlockingQueue<TraceContext>(1024);
-        this.appenderQueue = new ArrayBlockingQueue<Runnable>(queueSize);
-        if (!UtilAll.isBlank(traceTopicName)) {
-            this.traceTopicName = traceTopicName;
-        } else {
-            this.traceTopicName = MixAll.RMQ_SYS_TRACE_TOPIC;
-        }
-        this.traceExecutor = new ThreadPoolExecutor(//
-            10, //
-            20, //
-            1000 * 60, //
-            TimeUnit.MILLISECONDS, //
-            this.appenderQueue, //
-            new ThreadFactoryImpl("MQTraceSendThread_"));
-        traceProducer = getAndCreateTraceProducer(rpcHook);
+ public: /*
+  MQMessageQueue select(const std::vector<MQMessageQueue>& mqs, const MQMessage& msg, void* arg) {
+    int orderId = *static_cast<int*>(arg);
+    int index = orderId % mqs.size();
+    return mqs[index];
+  }*/
+         // MessageQueue select(List<MessageQueue> mqs, Message msg, Object arg) {
+  MQMessageQueue select(const std::vector<MQMessageQueue>& mqs, const MQMessage& msg, void* arg) {
+    // Set<String> brokerSet = (Set<String>)arg;
+    std::set<std::string>* brokerSet = (std::set<std::string>*)arg;
+    // List<MessageQueue> filterMqs = new ArrayList<MessageQueue>();
+    std::vector<MQMessageQueue> filterMqs;  //= new ArrayList<MessageQueue>();
+    for (auto& queue : mqs) {
+      if (brokerSet->end() != brokerSet->find(queue.getBrokerName())) {
+        filterMqs.push_back(queue);
+      }
     }
-
-    public AccessChannel getAccessChannel() {
-        return accessChannel;
+    int index = tli.getAndIncrement();
+    int pos = std::abs(index) % filterMqs.size();
+    if (pos < 0) {
+      pos = 0;
     }
+    return filterMqs.at(pos);
+  }
+};
 
-    public void setAccessChannel(AccessChannel accessChannel) {
-        this.accessChannel = accessChannel;
-    }
+class TraceMessageSendCallback : public SendCallback {
+  /*SendCallback callback = new SendCallback() {
+     @Override public void onSuccess(SendResult sendResult) {
+     }
 
-    public String getTraceTopicName() {
-        return traceTopicName;
-    }
+     @Override public void onException(Throwable e) {
+       log.info("send trace data ,the traceData is " + data);
+     }
+   };*/
 
-    public void setTraceTopicName(String traceTopicName) {
-        this.traceTopicName = traceTopicName;
-    }
+  virtual void onSuccess(SendResult& sendResult) {
+    ;
+    LOG_INFO("send trace data ,onSuccess,the traceData" /*+ data.cstr()*/);
+  }
+  virtual void onException(MQException& e) {
+    LOG_INFO("send trace data ,onException,the traceData" /*+ data.cstr()*/);
+    ;
+  }
+};
 
-    public DefaultMQProducer getTraceProducer() {
-        return traceProducer;
-    }
+void AsyncRunnable_run(AsyncRunnable_run_context* ctx);
 
-    public DefaultMQProducerImpl getHostProducer() {
-        return hostProducer;
-    }
+AsyncTraceDispatcher::AsyncTraceDispatcher(std::string traceTopicNamev, RPCHook* rpcHook) {
+  // queueSize is greater than or equal to the n power of 2 of value
+  queueSize = 2048;
+  batchSize = 100;
+  maxMsgSize = 128000;
+  traceProducer = std::shared_ptr<DefaultMQProducer>(
+      new DefaultMQProducer(TraceConstants::TraceConstants_GROUP_NAME, true, (void*)rpcHook));
+  // traceProducer->setSessionCredentials(rpcHook->s)
 
-    public void setHostProducer(DefaultMQProducerImpl hostProducer) {
-        this.hostProducer = hostProducer;
-    }
+  isStarted = false;
+  discardCount = ATOMIC_VAR_INIT(0);
+  delydelflag = ATOMIC_VAR_INIT(false);
+  // traceContextQueue = new ArrayBlockingQueue<TraceContext>(1024);
+  // appenderQueue = new ArrayBlockingQueue<Runnable>(queueSize);
 
-    public DefaultMQPushConsumerImpl getHostConsumer() {
-        return hostConsumer;
-    }
-
-    public void setHostConsumer(DefaultMQPushConsumerImpl hostConsumer) {
-        this.hostConsumer = hostConsumer;
-    }
-
-    public void start(String nameSrvAddr, AccessChannel accessChannel) throws MQClientException {
-        if (isStarted.compareAndSet(false, true)) {
-            traceProducer.setNamesrvAddr(nameSrvAddr);
-            traceProducer.setInstanceName(TRACE_INSTANCE_NAME + "_" + nameSrvAddr);
-            traceProducer.start();
-        }
-        this.accessChannel = accessChannel;
-        this.worker = new Thread(new AsyncRunnable(), "MQ-AsyncTraceDispatcher-Thread-" + dispatcherId);
-        this.worker.setDaemon(true);
-        this.worker.start();
-        this.registerShutDownHook();
-    }
-
-    private DefaultMQProducer getAndCreateTraceProducer(RPCHook rpcHook) {
-        DefaultMQProducer traceProducerInstance = this.traceProducer;
-        if (traceProducerInstance == null) {
-            traceProducerInstance = new DefaultMQProducer(rpcHook);
-            traceProducerInstance.setProducerGroup(TraceConstants.GROUP_NAME);
-            traceProducerInstance.setSendMsgTimeout(5000);
-            traceProducerInstance.setVipChannelEnabled(false);
-            // The max size of message is 128K
-            traceProducerInstance.setMaxMessageSize(maxMsgSize - 10 * 1000);
-        }
-        return traceProducerInstance;
-    }
-
-    @Override
-    public boolean append(final Object ctx) {
-        boolean result = traceContextQueue.offer((TraceContext) ctx);
-        if (!result) {
-            log.info("buffer full" + discardCount.incrementAndGet() + " ,context is " + ctx);
-        }
-        return result;
-    }
-
-    @Override
-    public void flush() throws IOException {
-        // The maximum waiting time for refresh,avoid being written all the time, resulting in failure to return.
-        long end = System.currentTimeMillis() + 500;
-        while (traceContextQueue.size() > 0 || appenderQueue.size() > 0 && System.currentTimeMillis() <= end) {
-            try {
-                Thread.sleep(1);
-            } catch (InterruptedException e) {
-                break;
-            }
-        }
-        log.info("------end trace send " + traceContextQueue.size() + "   " + appenderQueue.size());
-    }
-
-    @Override
-    public void shutdown() {
-        this.stopped = true;
-        this.traceExecutor.shutdown();
-        if (isStarted.get()) {
-            traceProducer.shutdown();
-        }
-        this.removeShutdownHook();
-    }
-
-    public void registerShutDownHook() {
-        if (shutDownHook == null) {
-            shutDownHook = new Thread(new Runnable() {
-                private volatile boolean hasShutdown = false;
-
-                @Override
-                public void run() {
-                    synchronized (this) {
-                        if (!this.hasShutdown) {
-                            try {
-                                flush();
-                            } catch (IOException e) {
-                                log.error("system MQTrace hook shutdown failed ,maybe loss some trace data");
-                            }
-                        }
-                    }
-                }
-            }, "ShutdownHookMQTrace");
-            Runtime.getRuntime().addShutdownHook(shutDownHook);
-        }
-    }
-
-    public void removeShutdownHook() {
-        if (shutDownHook != null) {
-            Runtime.getRuntime().removeShutdownHook(shutDownHook);
-        }
-    }
-
-    class AsyncRunnable implements Runnable {
-        private boolean stopped;
-
-        @Override
-        public void run() {
-            while (!stopped) {
-                List<TraceContext> contexts = new ArrayList<TraceContext>(batchSize);
-                for (int i = 0; i < batchSize; i++) {
-                    TraceContext context = null;
-                    try {
-                        //get trace data element from blocking Queue — traceContextQueue
-                        context = traceContextQueue.poll(5, TimeUnit.MILLISECONDS);
-                    } catch (InterruptedException e) {
-                    }
-                    if (context != null) {
-                        contexts.add(context);
-                    } else {
-                        break;
-                    }
-                }
-                if (contexts.size() > 0) {
-                    AsyncAppenderRequest request = new AsyncAppenderRequest(contexts);
-                    traceExecutor.submit(request);
-                } else if (AsyncTraceDispatcher.this.stopped) {
-                    this.stopped = true;
-                }
-            }
-
-        }
-    }
-
-    class AsyncAppenderRequest implements Runnable {
-        List<TraceContext> contextList;
-
-        public AsyncAppenderRequest(final List<TraceContext> contextList) {
-            if (contextList != null) {
-                this.contextList = contextList;
-            } else {
-                this.contextList = new ArrayList<TraceContext>(1);
-            }
-        }
-
-        @Override
-        public void run() {
-            sendTraceData(contextList);
-        }
-
-        public void sendTraceData(List<TraceContext> contextList) {
-            Map<String, List<TraceTransferBean>> transBeanMap = new HashMap<String, List<TraceTransferBean>>();
-            for (TraceContext context : contextList) {
-                if (context.getTraceBeans().isEmpty()) {
-                    continue;
-                }
-                // Topic value corresponding to original message entity content
-                String topic = context.getTraceBeans().get(0).getTopic();
-                String regionId = context.getRegionId();
-                // Use  original message entity's topic as key
-                String key = topic;
-                if (!StringUtils.isBlank(regionId)) {
-                    key = key + TraceConstants.CONTENT_SPLITOR + regionId;
-                }
-                List<TraceTransferBean> transBeanList = transBeanMap.get(key);
-                if (transBeanList == null) {
-                    transBeanList = new ArrayList<TraceTransferBean>();
-                    transBeanMap.put(key, transBeanList);
-                }
-                TraceTransferBean traceData = TraceDataEncoder.encoderFromContextBean(context);
-                transBeanList.add(traceData);
-            }
-            for (Map.Entry<String, List<TraceTransferBean>> entry : transBeanMap.entrySet()) {
-                String[] key = entry.getKey().split(String.valueOf(TraceConstants.CONTENT_SPLITOR));
-                String dataTopic = entry.getKey();
-                String regionId = null;
-                if (key.length > 1) {
-                    dataTopic = key[0];
-                    regionId = key[1];
-                }
-                flushData(entry.getValue(), dataTopic, regionId);
-            }
-        }
-
-        /**
-         * Batch sending data actually
-         */
-        private void flushData(List<TraceTransferBean> transBeanList, String dataTopic, String regionId) {
-            if (transBeanList.size() == 0) {
-                return;
-            }
-            // Temporary buffer
-            StringBuilder buffer = new StringBuilder(1024);
-            int count = 0;
-            Set<String> keySet = new HashSet<String>();
-
-            for (TraceTransferBean bean : transBeanList) {
-                // Keyset of message trace includes msgId of or original message
-                keySet.addAll(bean.getTransKey());
-                buffer.append(bean.getTransData());
-                count++;
-                // Ensure that the size of the package should not exceed the upper limit.
-                if (buffer.length() >= traceProducer.getMaxMessageSize()) {
-                    sendTraceDataByMQ(keySet, buffer.toString(), dataTopic, regionId);
-                    // Clear temporary buffer after finishing
-                    buffer.delete(0, buffer.length());
-                    keySet.clear();
-                    count = 0;
-                }
-            }
-            if (count > 0) {
-                sendTraceDataByMQ(keySet, buffer.toString(), dataTopic, regionId);
-            }
-            transBeanList.clear();
-        }
-
-        /**
-         * Send message trace data
-         *
-         * @param keySet the keyset in this batch(including msgId in original message not offsetMsgId)
-         * @param data the message trace data in this batch
-         */
-        private void sendTraceDataByMQ(Set<String> keySet, final String data, String dataTopic, String regionId) {
-            String traceTopic = traceTopicName;
-            if (AccessChannel.CLOUD == accessChannel) {
-                traceTopic = TraceConstants.TRACE_TOPIC_PREFIX + regionId;
-            }
-            final Message message = new Message(traceTopic, data.getBytes());
-            // Keyset of message trace includes msgId of or original message
-            message.setKeys(keySet);
-            try {
-                Set<String> traceBrokerSet = tryGetMessageQueueBrokerSet(traceProducer.getDefaultMQProducerImpl(), traceTopic);
-                SendCallback callback = new SendCallback() {
-                    @Override
-                    public void onSuccess(SendResult sendResult) {
-
-                    }
-
-                    @Override
-                    public void onException(Throwable e) {
-                        log.info("send trace data ,the traceData is " + data);
-                    }
-                };
-                if (traceBrokerSet.isEmpty()) {
-                    // No cross set
-                    traceProducer.send(message, callback, 5000);
-                } else {
-                    traceProducer.send(message, new MessageQueueSelector() {
-                        @Override
-                        public MessageQueue select(List<MessageQueue> mqs, Message msg, Object arg) {
-                            Set<String> brokerSet = (Set<String>) arg;
-                            List<MessageQueue> filterMqs = new ArrayList<MessageQueue>();
-                            for (MessageQueue queue : mqs) {
-                                if (brokerSet.contains(queue.getBrokerName())) {
-                                    filterMqs.add(queue);
-                                }
-                            }
-                            int index = sendWhichQueue.getAndIncrement();
-                            int pos = Math.abs(index) % filterMqs.size();
-                            if (pos < 0) {
-                                pos = 0;
-                            }
-                            return filterMqs.get(pos);
-                        }
-                    }, traceBrokerSet, callback);
-                }
-
-            } catch (Exception e) {
-                log.info("send trace data,the traceData is" + data);
-            }
-        }
-
-        private Set<String> tryGetMessageQueueBrokerSet(DefaultMQProducerImpl producer, String topic) {
-            Set<String> brokerSet = new HashSet<String>();
-            TopicPublishInfo topicPublishInfo = producer.getTopicPublishInfoTable().get(topic);
-            if (null == topicPublishInfo || !topicPublishInfo.ok()) {
-                producer.getTopicPublishInfoTable().putIfAbsent(topic, new TopicPublishInfo());
-                producer.getmQClientFactory().updateTopicRouteInfoFromNameServer(topic);
-                topicPublishInfo = producer.getTopicPublishInfoTable().get(topic);
-            }
-            if (topicPublishInfo.isHaveTopicRouterInfo() || topicPublishInfo.ok()) {
-                for (MessageQueue queue : topicPublishInfo.getMessageQueueList()) {
-                    brokerSet.add(queue.getBrokerName());
-                }
-            }
-            return brokerSet;
-        }
-    }
-
+  if (!UtilAll::isBlank(traceTopicNamev)) {
+    traceTopicName = traceTopicNamev;
+  } else {
+    traceTopicName = RMQ_SYS_TRACE_TOPIC;
+  }
+  /// traceExecutor = nullptr;
+  /*new ThreadPoolExecutor(//
+      10, //
+      20, //
+      1000 * 60, //
+      TimeUnit.MILLISECONDS, //
+      appenderQueue, //
+      new ThreadFactoryImpl("MQTraceSendThread_"));*/
+  /// traceProducer = getAndCreateTraceProducer(rpcHook);
 }
+
+void AsyncTraceDispatcher::start(std::string nameSrvAddr, AccessChannel accessChannel)  // throws MQClientException
+{
+  LOG_INFO("AsyncTraceDispatcher:%s start", nameSrvAddr.c_str());
+  // if (isStarted.compareAndSet(false, true)) {
+
+  bool NotStated = false;
+  if (isStarted.compare_exchange_weak(NotStated, true) == true) {
+    // isStarted.compare_exchange_weak()
+    traceProducer->setNamesrvAddr(nameSrvAddr);
+    traceProducer->setInstanceName(TraceConstants::TRACE_INSTANCE_NAME + "_" + nameSrvAddr);
+    traceProducer->start();
+  }
+  accessChannel = accessChannel;
+
+  // worker = new Thread(new AsyncRunnable(), "MQ-AsyncTraceDispatcher-Thread-" + dispatcherId
+  AsyncRunnable_run_context* arctx = new AsyncRunnable_run_context(false, 1, shared_from_this(), getTraceTopicName());
+  if (worker.use_count() == 0) {
+    worker = std::shared_ptr<std::thread>(new std::thread(&AsyncRunnable_run, arctx));
+  }
+
+  worker->detach();
+  /*worker->setDaemon(true);
+  worker->start();
+  registerShutDownHook();*/
+}
+
+DefaultMQProducer* AsyncTraceDispatcher::getAndCreateTraceProducer(/*RPCHook* rpcHook*/) {
+  DefaultMQProducer* traceProducerInstance = traceProducer.get();
+  if (traceProducerInstance == nullptr) {
+    traceProducerInstance = new DefaultMQProducer(TraceConstants::TraceConstants_GROUP_NAME);  //"rpcHook");
+    // traceProducerInstance->setProducerGroup(TraceConstants::GROUP_NAME);
+    traceProducerInstance->setSendMsgTimeout(5000);
+    // traceProducerInstance->setVipChannelEnabled(false);
+    // The max size of message is 128K
+    traceProducerInstance->setMaxMessageSize(maxMsgSize - 10 * 1000);
+  }
+  return traceProducerInstance;
+}
+
+bool AsyncTraceDispatcher::append(TraceContext* ctx) {
+  {
+    // printf("AsyncTraceDispatcher append\n");
+    // TLock lock(m_mutex);
+    std::unique_lock<std::mutex> lock(m_traceContextQueuenotEmpty_mutex);
+    traceContextQueue.push_back(*ctx);
+  }
+  bool result = true;
+  // boolean result = traceContextQueue.offer((TraceContext) ctx);
+  /*if (!result) {
+    log.info("buffer full" + discardCount.incrementAndGet() + " ,context is " + ctx);
+  }*/
+  return result;
+}
+
+void AsyncTraceDispatcher::flush() {
+  // The maximum waiting time for refresh,avoid being written all the time, resulting in failure to return.
+  // long end = 0;  //    System.currentTimeMillis() + 500;
+  auto end = std::chrono::system_clock::now() + std::chrono::milliseconds(500);
+
+  while (traceContextQueue.size() > 0 || appenderQueue.size() > 0 && std::chrono::system_clock::now() <= end) {
+    try {
+      // Thread.sleep(1);
+      Sleep(1);
+    } catch (InterruptedException e) {
+      break;
+    }
+  }
+  LOG_INFO("------end trace send  traceContextQueue.size() appenderQueue.size()");
+}
+
+void AsyncTraceDispatcher::shutdown() {
+  stopped = true; /*
+  traceExecutor.shutdown();
+    if (isStarted.get()) {
+      traceProducer.shutdown();
+    }*/
+  //removeShutdownHook();
+}
+
+void AsyncTraceDispatcher::registerShutDownHook() {
+  if (shutDownHook == nullptr) {
+    /*shutDownHook = new Thread(new Runnable() {
+      private volatile boolean hasShutdown = false;
+
+      @Override
+      public void run() {
+        synchronized (this) {
+          if (!hasShutdown) {
+            try {
+              flush();
+            } catch (IOException e) {
+              log.error("system MQTrace hook shutdown failed ,maybe loss some trace data");
+            }
+          }
+        }
+      }
+    }, "ShutdownHookMQTrace");
+    Runtime.getRuntime().addShutdownHook(shutDownHook);*/
+  }
+}
+
+void AsyncTraceDispatcher::removeShutdownHook() {
+  if (shutDownHook != nullptr) {
+    // Runtime.getRuntime().removeShutdownHook(shutDownHook);
+  }
+}
+
+// class AsyncRunnable implements Runnable {
+// private boolean stopped;
+
+//@Override
+/*
+struct AsyncRunnable_run_context{
+  boolean stopped;
+  int batchSize;
+  AsyncTraceDispatcher *atd;
+};*/
+
+void AsyncRunnable_run(AsyncRunnable_run_context* ctx) {
+  while (!ctx->atd->stopped) {
+    // List<TraceContext> contexts = new ArrayList<TraceContext>(batchSize);
+    std::vector<TraceContext> contexts;  // = new std::vector<TraceContext>(ctx->batchSize);
+    LOG_INFO("AsyncRunnable_run:TraceContext fetch ctx->atd->traceContextQueue %d", ctx->atd->traceContextQueue.size());
+    for (int i = 0; i < ctx->batchSize; i++) {
+      try {
+        // get trace data element from blocking Queue — traceContextQueue
+        // context = traceContextQueue.poll(5, TimeUnit.MILLISECONDS);
+        {
+          /// TLock lock(m_mutex);
+          std::unique_lock<std::mutex> lock(ctx->atd->m_traceContextQueuenotEmpty_mutex);
+          if (ctx->atd->traceContextQueue.empty()) {
+            ctx->atd->m_traceContextQueuenotEmpty.wait_for(lock,
+                                                           // std::chrono::duration(std::chrono::seconds(5))
+                                                           std::chrono::seconds(5));
+          }
+          if (!ctx->atd->traceContextQueue.empty()) {
+            contexts.push_back(ctx->atd->traceContextQueue.front());
+            ctx->atd->traceContextQueue.pop_front();
+          }
+        }  // lock scope
+
+      }  // try
+      catch (InterruptedException e) {
+        ;
+      }
+
+    }  // for
+
+    LOG_INFO("AsyncRunnable_run:TraceContext fetchs end %d", contexts.size());
+    if (contexts.size() > 0) {
+      std::shared_ptr<AsyncAppenderRequest> request = std::shared_ptr<AsyncAppenderRequest>(new AsyncAppenderRequest(
+          contexts, ctx->atd->traceProducer.get(), ctx->atd->accessChannel, ctx->TraceTopicName));
+      // traceExecutor.submit(request);
+      request->run();
+    }
+	else if (ctx->atd->stopped) {
+      if (ctx->atd->getdelydelflag() == true) {
+        delete ctx;
+      }
+    }
+  }  // while
+}  // foo
+
+AsyncAppenderRequest::AsyncAppenderRequest(std::vector<TraceContext>& contextListv,
+                                           DefaultMQProducer* traceProducerv,
+                                           AccessChannel accessChannelv,
+                                           std::string& traceTopicNamev) {
+  if (!contextListv.empty()) {
+    // contextList.assign(contextListv.begin(), contextListv.end());
+    contextList = contextListv;
+    traceProducer = traceProducerv;
+    accessChannel = accessChannelv;
+    traceTopicName = traceTopicNamev;
+  }
+}
+
+void AsyncAppenderRequest::run() {
+  sendTraceData(contextList);
+}
+
+void AsyncAppenderRequest::sendTraceData(std::vector<TraceContext>& contextListv) {
+  LOG_INFO("sendTraceData:s start");
+
+  // Map<String, List<TraceTransferBean>> transBeanMap = new HashMap<String, List<TraceTransferBean>>();
+
+  std::map<std::string, std::vector<TraceTransferBean>> transBeanMap;
+
+  for (auto& context : contextListv) {
+    if (context.getTraceBeans().empty()) {
+      continue;
+    }
+    // Topic value corresponding to original message entity content
+    std::string topic = context.getTraceBeans().front().getTopic();
+    std::string regionId = context.getRegionId();
+    // Use  original message entity's topic as key
+    std::string key = topic;
+    if (!regionId.empty()) {
+      key = key + TraceConstants::CONTENT_SPLITOR + regionId;
+    }
+
+    if (transBeanMap.find(key) == transBeanMap.end()) {
+      std::vector<TraceTransferBean> transBeanList;
+      transBeanMap.insert(std::make_pair(key, transBeanList));
+    }
+    auto it = transBeanMap.find(key);
+    std::vector<TraceTransferBean>& transBeanList = it->second;
+
+    TraceTransferBean traceData = TraceDataEncoder::encoderFromContextBean(&context);
+    transBeanList.push_back(traceData);
+  }
+
+  auto it = transBeanMap.begin();
+
+  while (it != transBeanMap.end()) {
+    // for (Map.Entry<String, List<TraceTransferBean>> entry : transBeanMap.()) {
+    // String[] key = entry.getKey().split(String.valueOf(TraceConstants.CONTENT_SPLITOR));
+
+    vector<string> key;
+    // int UtilAll::Split(vector<string> & ret_, const string& strIn, const char sep) {
+    UtilAll::Split(key, it->first, TraceConstants::CONTENT_SPLITOR);
+
+    std::string dataTopic = it->first;
+    std::string regionId = "";
+
+    if (key.size() > 1) {
+      dataTopic = key[0];
+      regionId = key[1];
+    }
+    // flushData(entry.getValue(), dataTopic, regionId);
+    flushData(it->second, dataTopic, regionId);
+
+    it++;
+  }
+}
+
+/**
+ * Batch sending data actually
+ */
+
+void AsyncAppenderRequest::flushData(std::vector<TraceTransferBean> transBeanList,
+                                     std::string dataTopic,
+                                     std::string regionId) {
+  if (transBeanList.size() == 0) {
+    return;
+  }
+  // Temporary buffer
+  string buffer;
+  int count = 0;
+
+  // Set<String> keySet = new HashSet<String>();
+  std::set<std::string> keySet;  //
+  for (TraceTransferBean bean : transBeanList) {
+    // Keyset of message trace includes msgId of or original message
+    // keySet.addAll(bean.getTransKey());
+
+    auto TK = bean.getTransKey();
+    keySet.insert(TK.begin(), TK.end());
+
+    buffer.append(bean.getTransData());
+    count++;
+    // Ensure that the size of the package should not exceed the upper limit.
+    // if (buffer.length() >= traceProducer.getMaxMessageSize()) {
+    if (buffer.length() >= traceProducer->getMaxMessageSize()) {
+      // sendTraceDataByMQ(keySet, buffer.toString(), dataTopic, regionId);
+
+      std::vector<std::string> keySetv;
+      std::copy(keySet.begin(), keySet.end(), keySetv.begin());
+
+      sendTraceDataByMQ(keySetv, buffer, dataTopic, regionId);
+      // Clear temporary buffer after finishing
+
+      // buffer.delete(0, buffer.length());
+
+      keySet.clear();
+      count = 0;
+    }
+  }
+  if (count > 0) {
+    // sendTraceDataByMQ(keySet, buffer.toString(), dataTopic, regionId);
+
+    std::vector<std::string> keySetv;
+    std::copy(keySet.begin(), keySet.end(), keySetv.begin());
+    sendTraceDataByMQ(keySetv, buffer, dataTopic, regionId);
+  }
+  transBeanList.clear();
+}
+
+/**
+ * Send message trace data
+ *
+ * @param keySet the keyset in this batch(including msgId in original message not offsetMsgId)
+ * @param data the message trace data in this batch
+ */
+
+void AsyncAppenderRequest::sendTraceDataByMQ(std::vector<std::string> keySet,
+                                             std::string data,
+                                             std::string dataTopic,
+                                             std::string regionId) {
+  std::string traceTopic = traceTopicName;  //  "traceTopicName";
+  if (AccessChannel::CLOUD == accessChannel) {
+    traceTopic = TraceConstants::TRACE_TOPIC_PREFIX + regionId;
+  }
+  std::shared_ptr<MQMessage> message = std::shared_ptr<MQMessage>(new MQMessage(traceTopic, data.c_str()));
+  // Keyset of message trace includes msgId of or original message
+  message->setKeys(keySet);
+  try {
+    std::set<std::string> traceBrokerSet = tryGetMessageQueueBrokerSet(
+        // traceProducer->getDefaultMQProducerImpl(),
+        traceProducer, traceTopic);
+    /*SendCallback callback = new SendCallback() {
+      @Override public void onSuccess(SendResult sendResult) {
+      }
+
+      @Override public void onException(Throwable e) {
+        log.info("send trace data ,the traceData is " + data);
+      }
+    };*/
+
+    static TraceMessageSendCallback callback;
+    // callback
+    if (traceBrokerSet.empty()) {
+      // No cross set
+      traceProducer->send(*message, &callback, false);
+    } else {
+      static TraceMessageQueueSelector se;
+      traceProducer->send(*message, &se,
+                          /*new MessageQueueSelector() {
+                            @Override public MessageQueue select(List<MessageQueue> mqs, Message msg, Object arg) {
+                              Set<String> brokerSet = (Set<String>)arg;
+                              List<MessageQueue> filterMqs = new ArrayList<MessageQueue>();
+                              for (MessageQueue queue : mqs) {
+                                if (brokerSet.contains(queue.getBrokerName())) {
+                                  filterMqs.add(queue);
+                                }
+                              }
+                              int index = sendWhichQueue.getAndIncrement();
+                              int pos = Math.abs(index) % filterMqs.size();
+                              if (pos < 0) {
+                                pos = 0;
+                              }
+                              return filterMqs.get(pos);
+                            }
+                          },
+                          },
+                          },*/
+                          //
+                          // traceBrokerSet,
+                          nullptr, &callback);
+     
+    }
+    LOG_INFO("try send trace data,the traceData is %s", data.c_str());
+  } catch (...) {
+    LOG_INFO("catch send trace data,the traceData is %s", data.c_str());
+  }
+}
+
+// boost::shared_ptr<TopicPublishInfo> MQClientFactory::getTopicPublishInfoFromTable(const string& topic) {
+
+std::set<std::string> AsyncAppenderRequest::tryGetMessageQueueBrokerSet(DefaultMQProducer* producer,
+                                                                        // MQClientFactory* clientFactory,
+                                                                        std::string topic) {
+  // return  std::set<std::string>();
+  MQClientFactory* clientFactory = producer->getFactory();
+
+  std::set<std::string> brokerSet;  //     = new HashSet<String>();
+  // TopicPublishInfo topicPublishInfo = clientFactory->getTopicPublishInfoTable().at(topic);
+  auto& topicPublishInfo = clientFactory->getTopicPublishInfoFromTable(topic);
+  // producer.getTopicPublishInfoTable().get(topic);
+
+  // if (null == topicPublishInfo || !topicPublishInfo.ok()) {
+  if (topicPublishInfo.use_count() > 0) {
+    boost::shared_ptr<TopicPublishInfo> info(new TopicPublishInfo());
+    clientFactory->addTopicInfoToTable(topic, info);
+    clientFactory->updateTopicRouteInfoFromNameServer(topic, producer->getSessionCredentials());
+    topicPublishInfo = clientFactory->getTopicPublishInfoFromTable(topic);
+  }
+  /*if (topicPublishInfo->isHaveTopicRouterInfo() || topicPublishInfo->ok()) {
+    for (MessageQueue queue : topicPublishInfo.getMessageQueueList()) {
+      brokerSet.add(queue.getBrokerName());
+    }
+  }*/
+  return brokerSet;
+}
+
+}  // namespace rocketmq

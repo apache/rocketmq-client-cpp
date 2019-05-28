@@ -35,9 +35,10 @@ endif()
 # First, declare project (important for prerequisite checks).
 project(rocketmq-client-cpp)
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release")
+    set(CMAKE_BUILD_TYPE "Debug")
+	message(STATUS "** CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 endif()
-set(CMAKE_CONFIGURATION_TYPES "Release")
+set(CMAKE_CONFIGURATION_TYPES "Debug")
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
 set(CMAKE_VERBOSE_MAKEFILE 1)
@@ -49,13 +50,25 @@ option(Boost_USE_STATIC_LIBS    "only find boost static libs"     ON) # only fin
 set(Boost_USE_MULTITHREADED          ON)
 set(Boost_USE_STATIC_RUNTIME         ON)
 if(WIN32)
-    find_package(Boost 1.56 REQUIRED COMPONENTS atomic thread system chrono date_time
+    find_package(Boost 1.56  COMPONENTS atomic thread system chrono date_time
         log log_setup regex serialization filesystem locale iostreams zlib)
     if(Boost_FOUND)
         message(STATUS "** Boost Include dir: ${Boost_INCLUDE_DIR}")
         message(STATUS "** Boost Libraries dir: ${Boost_LIBRARY_DIRS}")
         message(STATUS "** Boost Libraries: ${Boost_LIBRARIES}")
         include_directories(${Boost_INCLUDE_DIRS})
+	else()
+		#find_package(Boost 1.56 REQUIRED COMPONENTS atomic thread system chrono date_time log log_setup regex serialization filesystem locale iostreams) 
+		message("**mannual setup Boost")
+		set(Boost_INCLUDE_DIR    ${PROJECT_SOURCE_DIR}/thirdparty/boost_1_58_0/)
+		set(Boost_INCLUDE_DIRS    ${PROJECT_SOURCE_DIR}/thirdparty/boost_1_58_0/)
+		set(Boost_LIBRARY_DIRS    ${PROJECT_SOURCE_DIR}/thirdparty/boost_1_58_0/stage/lib)
+		link_directories(${Boost_LIBRARY_DIRS})
+		#set(Boost_LIBRARIES      ${Boost_LIBRARY_DIRS}/libboost_zlib-vc140-mt-1_58.lib;${Boost_LIBRARY_DIRS}/libboost_thread.a;${Boost_LIBRARY_DIRS}/libboost_system.a;${Boost_LIBRARY_DIRS}/libboost_chrono.a;
+		#	${Boost_LIBRARY_DIRS}/libboost_date_time.a;${Boost_LIBRARY_DIRS}/libboost_log.a;${Boost_LIBRARY_DIRS}/libboost_log_setup.a;
+		#	${Boost_LIBRARY_DIRS}/libboost_regex.a;${Boost_LIBRARY_DIRS}/libboost_serialization.a;${Boost_LIBRARY_DIRS}/libboost_filesystem.a;
+		#	${Boost_LIBRARY_DIRS}/libboost_locale.a;${Boost_LIBRARY_DIRS}/libboost_iostreams.a)
+		include_directories(${Boost_INCLUDE_DIRS})
     endif()
 else()
     #find_package(Boost 1.56 REQUIRED COMPONENTS atomic thread system chrono date_time log log_setup regex serialization filesystem locale iostreams) 
@@ -73,12 +86,20 @@ message(STATUS "** Boost_LIBRARIES: ${Boost_LIBRARIES}")
 
 option(Libevent_USE_STATIC_LIBS "only find libevent static libs"   ON) # only find static libs
 if(WIN32)
-    find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
+    find_package(Libevent 2.0.22  COMPONENTS)
     if(LIBEVENT_FOUND)
         include_directories(${LIBEVENT_INCLUDE_DIRS})
         message(STATUS "** libevent Include dir: ${LIBEVENT_INCLUDE_DIR}")
         message(STATUS "** libevent Libraries: ${LIBEVENT_LIBRARIES}")
-    endif()
+	else()
+		#find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
+		message("**mannual setup Libevent")
+		set(LIBEVENT_INCLUDE_DIRS  ${PROJECT_SOURCE_DIR}/thirdparty/libevent-release-2.0.22/include;${PROJECT_SOURCE_DIR}/thirdparty/libevent-release-2.0.22/WIN32-Code;)
+		set(LIBEVENT_LIBRARIES_DIR ${PROJECT_SOURCE_DIR}/thirdparty/libevent-release-2.0.22/x64/Release)
+		set(LIBEVENT_LIBRARIES     ${LIBEVENT_LIBRARIES_DIR}/libevent.lib;)
+		set(LIBEVENT_LIBRARY     ${LIBEVENT_LIBRARIES_DIR})
+		include_directories(${LIBEVENT_INCLUDE_DIRS})
+	endif()
 else()
     #find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
     set(LIBEVENT_INCLUDE_DIRS  ${PROJECT_SOURCE_DIR}/bin/include)
@@ -95,7 +116,13 @@ if(WIN32)
     find_package(Jsoncpp 0.10.6)
     if(JSONCPP_FOUND)
         include_directories(${JSONCPP_INCLUDE_DIRS})
-    endif()
+	else()
+		set(JSONCPP_INCLUDE_DIRS   ${PROJECT_SOURCE_DIR}/thirdparty/jsoncpp-0.10.6)
+		set(JSONCPP_LIBRARIES_DIR  ${PROJECT_SOURCE_DIR}/thirdparty/jsoncpp-0.10.6/x64/Release)
+		set(JSONCPP_LIBRARIES      ${JSONCPP_LIBRARIES_DIR}/jsoncpp_lib_static.lib)
+		set(JSONCPP_LIBRARY      ${JSONCPP_LIBRARIES_DIR})
+		include_directories(${JSONCPP_INCLUDE_DIRS})
+	endif()
 else()
     set(JSONCPP_INCLUDE_DIRS   ${PROJECT_SOURCE_DIR}/bin/include/jsoncpp)
     set(JSONCPP_LIBRARIES_DIR  ${PROJECT_SOURCE_DIR}/bin/lib)
@@ -122,8 +149,8 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 IF (WIN32)
   add_definitions(-DWIN32 -DROCKETMQCLIENT_EXPORTS)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
-  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+  #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+  #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 ELSE()
 set(C_FLAGS
   #-g
@@ -170,11 +197,9 @@ else() #not-condition
   list(APPEND CXX_FLAGS "-m64")
 endif()
 
-string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
-string(REPLACE ";" " " CMAKE_C_FLAGS "${C_FLAGS}")
+#string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
+#string(REPLACE ";" " " CMAKE_C_FLAGS "${C_FLAGS}")
 
-set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -DDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 
 # Declare deplibs, so we can use list in linker later. There's probably
@@ -217,15 +242,29 @@ set(HAVE_SOCKLEN_T 1)
 
 # add_definitions(-DSYSAPI_UNIX=1 -DHAVE_CONFIG_H)
 
+
+if(WIN32)
+set(CMAKE_CXX_FLAGS_RELEASE "/MT")
+set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
+endif()
+
 add_subdirectory(libs)
 add_subdirectory(project)
 add_subdirectory(example)
+
+if(WIN32)
+set(CMAKE_CXX_FLAGS_RELEASE "/MT")
+set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
+endif()
+
 
 
 option(RUN_UNIT_TEST "RUN_UNIT_TEST" OFF)
 
 if(RUN_UNIT_TEST)
   message(STATUS "** RUN_UNIT_TEST: ${RUN_UNIT_TEST} Do execution testing")
-  add_subdirectory(test)
+  #add_subdirectory(test)
 endif()
 
+message(STATUS "** CMAKE_CXX_FLAGS_RELEASE: ${CMAKE_CXX_FLAGS_RELEASE}")
+message(STATUS "** CMAKE_CXX_FLAGS_DEBUG: ${CMAKE_CXX_FLAGS_DEBUG}")

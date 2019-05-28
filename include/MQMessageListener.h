@@ -29,7 +29,7 @@ enum ConsumeStatus {
   // consume fail, but will be re-consume by call messageLisenter again
   RECONSUME_LATER
 };
-
+std::string ConsumeStatus2str(ConsumeStatus p);
 /*enum ConsumeOrderlyStatus
 {*/
 /**

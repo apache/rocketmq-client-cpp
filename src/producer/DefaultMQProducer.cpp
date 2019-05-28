@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -32,11 +32,15 @@
 #include "BatchMessage.h"
 #include <typeinfo>
 
+
+#include "AsyncTraceDispatcher.h"
+#include <stdio.h>
 namespace rocketmq {
 
 //<!************************************************************************
-DefaultMQProducer::DefaultMQProducer(const string& groupname)
-    : m_sendMsgTimeout(3000),
+DefaultMQProducer::DefaultMQProducer(const string& groupname, bool b,void* rpcHook)
+    : MQProducer(b, rpcHook),
+		m_sendMsgTimeout(3000),
       m_compressMsgBodyOverHowmuch(4 * 1024),
       m_maxMessageSize(1024 * 128),
       // m_retryAnotherBrokerWhenNotStoreOK(false),
@@ -64,44 +68,6 @@ DefaultMQProducer::DefaultMQProducer(const string& groupname)
 }
 
 
-
-    public void registerSendMessageHook(final SendMessageHook hook) {
-        this.sendMessageHookList.add(hook);
-        log.info("register sendMessage Hook, {}", hook.hookName());
-    }
-
-
-
-public boolean hasSendMessageHook() {
-        return !this.sendMessageHookList.isEmpty();
-    }
-
-    public void executeSendMessageHookBefore(final SendMessageContext context) {
-        if (!this.sendMessageHookList.isEmpty()) {
-            for (SendMessageHook hook : this.sendMessageHookList) {
-                try {
-                    hook.sendMessageBefore(context);
-                } catch (Throwable e) {
-                    log.warn("failed to executeSendMessageHookBefore", e);
-                }
-            }
-        }
-    }
-
-    public void executeSendMessageHookAfter(final SendMessageContext context) {
-        if (!this.sendMessageHookList.isEmpty()) {
-            for (SendMessageHook hook : this.sendMessageHookList) {
-                try {
-                    hook.sendMessageAfter(context);
-                } catch (Throwable e) {
-                    log.warn("failed to executeSendMessageHookAfter", e);
-                }
-            }
-        }
-    }
-
-
-
 DefaultMQProducer::~DefaultMQProducer() {}
 
 void DefaultMQProducer::start() {
@@ -113,7 +79,19 @@ void DefaultMQProducer::start() {
   sa.sa_flags = 0;
   sigaction(SIGPIPE, &sa, 0);
 #endif
+  
+  LOG_INFO("DefaultMQProducer :%d,%d traceDispatcher", WithoutTrace == false ? 0 : 1,
+           traceDispatcher != nullptr ? 1 : 0);
 
+  printf("traceDispatcherdo 0,%d,%d\n", WithoutTrace, traceDispatcher);
+
+  if (WithoutTrace == false && traceDispatcher != nullptr) {
+    printf("traceDispatcherdo 11\n");
+    LOG_INFO("DefaultMQProducer :%d,%d traceDispatcherdo", WithoutTrace, traceDispatcher);
+    traceDispatcher->start(getNamesrvAddr());
+  }
+
+  printf("traceDispatcherdo 2\n");
   switch (m_serviceState) {
     case CREATE_JUST: {
       m_serviceState = START_FAILED;
@@ -397,6 +375,32 @@ SendResult DefaultMQProducer::sendDefaultImpl(MQMessage& msg,
         // invalide", -1);
         continue;
       }
+      
+
+
+
+  if (this.hasSendMessageHook()) {
+                    context = new SendMessageContext();
+                    context.setProducer(this);
+                    context.setProducerGroup(this.defaultMQProducer.getProducerGroup());
+                    context.setCommunicationMode(communicationMode);
+                    context.setBornHost(this.defaultMQProducer.getClientIP());
+                    context.setBrokerAddr(brokerAddr);
+                    context.setMessage(msg);
+                    context.setMq(mq);
+                    context.setNamespace(this.defaultMQProducer.getNamespace());
+                    String isTrans = msg.getProperty(MessageConst.PROPERTY_TRANSACTION_PREPARED);
+                    if (isTrans != null && isTrans.equals("true")) {
+                        context.setMsgType(MessageType.Trans_Msg_Half);
+                    }
+
+                    if (msg.getProperty("__STARTDELIVERTIME") != null || msg.getProperty(MessageConst.PROPERTY_DELAY_TIME_LEVEL) != null) {
+                        context.setMsgType(MessageType.Delay_Msg);
+                    }
+                    this.executeSendMessageHookBefore(context);
+                }
+
+
 
 
   if (this.hasSendMessageHook()) {
@@ -437,11 +441,20 @@ SendResult DefaultMQProducer::sendDefaultImpl(MQMessage& msg,
               }
               continue;
             }
-            return sendResult;
+
           default:
             break;
         }
+
+
+
       } catch (...) {
+
+        /*if (hasSendMessageHook()) {
+          context->setException(e);
+          executeSendMessageHookAfter(context);
+        }*/
+
         LOG_ERROR("send failed of times:%d,brokerName:%s", times, mq.getBrokerName().c_str());
         if (bActiveMQ) {
           topicPublishInfo->updateNonServiceMessageQueue(mq, getSendMsgTimeout());
@@ -459,6 +472,7 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
                                              const MQMessageQueue& mq,
                                              int communicationMode,
                                              SendCallback* sendCallback) {
+  std::shared_ptr<SendMessageContext> sendMessageContext;
   string brokerAddr = getFactory()->findBrokerAddressInPublish(mq.getBrokerName());
 
   if (brokerAddr.empty()) {
@@ -492,9 +506,49 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
       requestHeader->batch = isBatchMsg;
       requestHeader->properties = (MQDecoder::messageProperties2String(msg.getProperties()));
 
-      return getFactory()->getMQClientAPIImpl()->sendMessage(brokerAddr, mq.getBrokerName(), msg, requestHeader,
+
+	  LOG_INFO("sendKernelImpl hasSendMessageHook:%d", 1);
+      if (hasSendMessageHook()) {
+        LOG_INFO("sendKernelImpl hasSendMessageHook YES:%d", 1);
+        sendMessageContext = std::shared_ptr<SendMessageContext>(new SendMessageContext());
+		
+		//context->setProducer(this);
+        sendMessageContext->setProducerGroup(getGroupName());
+	   
+        sendMessageContext->setCommunicationMode((CommunicationMode)communicationMode);
+        string clientIP = UtilAll::getLocalAddress();
+        sendMessageContext->setBornHost(clientIP);
+        sendMessageContext->setBrokerAddr(brokerAddr);
+       sendMessageContext->setMessage(msg);
+        sendMessageContext->setMq(mq);
+       sendMessageContext->setNamespace(getNamesrvDomain());
+        
+        std::string isTrans = msg.getProperty(MQMessage::PROPERTY_TRANSACTION_PREPARED);
+        if (isTrans != null && isTrans == ("true")) {
+          sendMessageContext->setMsgType(MessageType::Trans_Msg_Half);
+        }
+
+        if (msg.getProperty("__STARTDELIVERTIME") != null ||
+                msg.getProperty(MQMessage::PROPERTY_DELAY_TIME_LEVEL).compare("") == 0) {
+          sendMessageContext->setMsgType(MessageType::Delay_Msg);
+        }
+        executeSendMessageHookBefore(*sendMessageContext);
+      }
+
+
+      SendResult& sendResult = getFactory()->getMQClientAPIImpl()->sendMessage(
+          brokerAddr, mq.getBrokerName(), msg, requestHeader,
                                                              getSendMsgTimeout(), getRetryTimes4Async(),
                                                              communicationMode, sendCallback, getSessionCredentials());
+
+	  
+	if (hasSendMessageHook()) {
+        sendMessageContext->setSendResult(&sendResult);
+    executeSendMessageHookAfter(*sendMessageContext);
+      }
+
+      return sendResult;
+
     } catch (MQException& e) {
       throw e;
     }

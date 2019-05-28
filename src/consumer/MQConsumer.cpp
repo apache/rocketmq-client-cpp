@@ -1,4 +1,5 @@
-/*
+﻿/*
+
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,65 +17,76 @@
  */
 
 #include "MQConsumer.h"
-
+#include "Logging.h"
+#include "ConsumeMessageHook.h"
+#include "ClientRPCHook.h"
+#include "trace/hook/ConsumeMessageTraceHookImpl.h"
+#include "AsyncTraceDispatcher.h"
 namespace rocketmq {
 
-    class MQConsumer {
-    public:
-        MQConsumer(DefaultMQPushConsumer *pushConsumer, PullRequest *request){
-            sendMessageHookList = new std::vector<ConsumeMessageHook>();
+      MQConsumer::MQConsumer(PullRequest* request) {
+  LOG_INFO("MQConsumer::MQConsumer(bool WithoutTrace) ");
+  std::string customizedTraceTopic;
+  // char* rpcHook = nullptr;
+  bool enableMsgTrace = true;
+  traceDispatcher = nullptr;
+  // const SessionCredentials& MQClient::getSessionCredentials() const {
+  RPCHook* rpcHook = nullptr;
+    rpcHook = new ClientRPCHook(getSessionCredentials());
 
+  if ( enableMsgTrace == true) {
+    try {
+          std::shared_ptr<TraceDispatcher> ptraceDispatcher =
+              std::shared_ptr<TraceDispatcher>(new AsyncTraceDispatcher(customizedTraceTopic, rpcHook));
+          // dispatcher.setHostProducer(this.defaultMQProducerImpl);
+          traceDispatcher = std::shared_ptr<TraceDispatcher>(ptraceDispatcher);
+          std::shared_ptr<ConsumeMessageTraceHookImpl> pSendMessageTraceHookImpl =
+              std::shared_ptr<ConsumeMessageTraceHookImpl>(new ConsumeMessageTraceHookImpl(ptraceDispatcher));
+          registerConsumeMessageHook(std::dynamic_pointer_cast<ConsumeMessageHook>(pSendMessageTraceHookImpl));
 
-
-             if (enableMsgTrace) {
-            try {
-                AsyncTraceDispatcher dispatcher = new AsyncTraceDispatcher(customizedTraceTopic, rpcHook);
-                dispatcher.setHostConsumer(this.getDefaultMQPushConsumerImpl());
-                traceDispatcher = dispatcher;
-                this.getDefaultMQPushConsumerImpl().registerConsumeMessageHook(
-                    new ConsumeMessageTraceHookImpl(traceDispatcher));
-
-                    //N:\OPENSOURCE_JOB\APACHE_ROCKETMQ\DEV_SRC\rocketmq-client-cpp\src\trace\hook\ConsumeMessageTraceHookImpl.cpp
-
-                    
-            } catch (Throwable e) {
-                log.error("system mqtrace hook init failed ,maybe can't send msg trace data");
-            }
-        }
-
-
-        }
-
-        virtual ~MQConsumer() {
+				}
+				catch (...) {
+					LOG_ERROR("system mqtrace hook init failed ,maybe can't send msg trace data");
+				}
+			}//if
 
         }
 
-    public boolean hasHook() {
-        return !this.consumeMessageHookList.isEmpty();
+
+   MQConsumer::~MQConsumer() {
+	if (traceDispatcher.use_count()>0) {
+		traceDispatcher->shutdown();
+		traceDispatcher->setdelydelflag(true);
+	  }
+   }
+
+    void MQConsumer::registerConsumeMessageHook(std::shared_ptr<ConsumeMessageHook>& hook) {
+        consumeMessageHookList.push_back(hook);
+		LOG_INFO("register consumeMessageHook Hook, {}hook.hookName()");
     }
 
-    public void registerConsumeMessageHook(final ConsumeMessageHook hook) {
-        this.consumeMessageHookList.add(hook);
-        log.info("register consumeMessageHook Hook, {}", hook.hookName());
-    }
-
-    public void executeHookBefore(final ConsumeMessageContext context) {
-        if (!this.consumeMessageHookList.isEmpty()) {
-            for (ConsumeMessageHook hook : this.consumeMessageHookList) {
+    void MQConsumer::executeHookBefore(ConsumeMessageContext& context) {
+        if (!consumeMessageHookList.empty()) {
+            for (auto& hook : consumeMessageHookList) {
                 try {
-                    hook.consumeMessageBefore(context);
-                } catch (Throwable e) {
+                    hook->consumeMessageBefore(context);
+                } catch (...) {
+
+>>>>>>> message trace
                 }
             }
         }
     }
 
-    public void executeHookAfter(final ConsumeMessageContext context) {
-        if (!this.consumeMessageHookList.isEmpty()) {
-            for (ConsumeMessageHook hook : this.consumeMessageHookList) {
+
+    void MQConsumer::executeHookAfter(ConsumeMessageContext& context) {
+        if (!consumeMessageHookList.empty()) {
+            for (auto& hook : consumeMessageHookList) {
                 try {
-                    hook.consumeMessageAfter(context);
-                } catch (Throwable e) {
+                    hook->consumeMessageAfter(context);
+                } catch (...) {
+
+
                 }
             }
         }

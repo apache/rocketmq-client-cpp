@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,12 +23,12 @@
 #include "RocketMQClient.h"
 #include "SendResult.h"
 #include "BatchMessage.h"
-
+//B(int c,int d):A(100,200)
 namespace rocketmq {
 //<!***************************************************************************
 class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer {
  public:
-  DefaultMQProducer(const std::string& groupname);
+  DefaultMQProducer(const std::string& groupname, bool Withouttrace = false, void* rpcHook = nullptr);
   virtual ~DefaultMQProducer();
 
   //<!begin mqadmin;

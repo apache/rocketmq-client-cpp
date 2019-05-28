@@ -18,6 +18,7 @@
 #define __MQCONSUMER_H__
 
 #include <string>
+#include <memory>
 #include "AsyncCallback.h"
 #include "ConsumeType.h"
 #include "MQClient.h"
@@ -25,7 +26,25 @@
 #include "ConsumeMessageHook.h"
 
 
+#include "SendMessageHook.h"
+#include "ConsumeMessageHook.h"
+#include "traceDispatcher.h"
+
+#include "MQMessageListener.h"
+
+
 namespace rocketmq {
+
+	/*
+	//MQMessageListener.h(28)
+	enum ConsumeConcurrentlyStatus {
+		//Success consumption		
+		CONSUME_SUCCESS,
+		//Failure consumption,later try to consume		
+		RECONSUME_LATER
+	};*/
+
+
 class SubscriptionData;
 class PullRequest;
 class Rebalance;
@@ -33,7 +52,10 @@ class ConsumerRunningInfo;
 //<!************************************************************************
 class ROCKETMQCLIENT_API MQConsumer : public MQClient {
  public:
-  virtual ~MQConsumer() {}
+  MQConsumer(){};
+  MQConsumer(PullRequest* request);
+  virtual ~MQConsumer();
+
   virtual void sendMessageBack(MQMessageExt& msg, int delayLevel) = 0;
   virtual void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) = 0;
   virtual void doRebalance() = 0;
@@ -63,12 +85,25 @@ class ROCKETMQCLIENT_API MQConsumer : public MQClient {
   MessageModel m_messageModel;
 
 
-  private TraceDispatcher traceDispatcher = null;
-  protected final transient DefaultMQProducerImpl defaultMQProducerImpl;
+
+  private:
+  std::shared_ptr<TraceDispatcher> traceDispatcher;
+  protected:
+   //DefaultMQProducerImpl defaultMQProducerImpl;
 
   
-  std::vector<ConsumeMessageHook> consumeMessageHookList;
+  std::vector<std::shared_ptr<ConsumeMessageHook> > consumeMessageHookList;
+
+  public:
+	//bool hasHook();
+	bool hasConsumeMessageHook() { return !consumeMessageHookList.empty(); }
+ void registerConsumeMessageHook(std::shared_ptr<ConsumeMessageHook>& hook);
+	void  executeHookBefore(ConsumeMessageContext& context);
+	void  executeHookAfter(ConsumeMessageContext& context);
+
+
 };
+
 
 //<!***************************************************************************
 }  //<!end namespace;
