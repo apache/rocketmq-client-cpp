@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #ifndef _CONSUMEMESSAGESERVICE_H_
 #define _CONSUMEMESSAGESERVICE_H_
 
@@ -38,22 +38,17 @@ class ConsumeMsgService {
   virtual void start() {}
   virtual void shutdown() {}
   virtual void stopThreadPool() {}
-  virtual void submitConsumeRequest(PullRequest* request,
-                                    vector<MQMessageExt>& msgs) {}
-  virtual MessageListenerType getConsumeMsgSerivceListenerType() {
-    return messageListenerDefaultly;
-  }
+  virtual void submitConsumeRequest(PullRequest* request, vector<MQMessageExt>& msgs) {}
+  virtual MessageListenerType getConsumeMsgSerivceListenerType() { return messageListenerDefaultly; }
 };
 
 class ConsumeMessageConcurrentlyService : public ConsumeMsgService {
  public:
-  ConsumeMessageConcurrentlyService(MQConsumer*, int threadCount,
-                                    MQMessageListener* msgListener);
+  ConsumeMessageConcurrentlyService(MQConsumer*, int threadCount, MQMessageListener* msgListener);
   virtual ~ConsumeMessageConcurrentlyService();
   virtual void start();
   virtual void shutdown();
-  virtual void submitConsumeRequest(PullRequest* request,
-                                    vector<MQMessageExt>& msgs);
+  virtual void submitConsumeRequest(PullRequest* request, vector<MQMessageExt>& msgs);
   virtual MessageListenerType getConsumeMsgSerivceListenerType();
   virtual void stopThreadPool();
 
@@ -72,13 +67,11 @@ class ConsumeMessageConcurrentlyService : public ConsumeMsgService {
 
 class ConsumeMessageOrderlyService : public ConsumeMsgService {
  public:
-  ConsumeMessageOrderlyService(MQConsumer*, int threadCount,
-                               MQMessageListener* msgListener);
+  ConsumeMessageOrderlyService(MQConsumer*, int threadCount, MQMessageListener* msgListener);
   virtual ~ConsumeMessageOrderlyService();
   virtual void start();
   virtual void shutdown();
-  virtual void submitConsumeRequest(PullRequest* request,
-                                    vector<MQMessageExt>& msgs);
+  virtual void submitConsumeRequest(PullRequest* request, vector<MQMessageExt>& msgs);
   virtual void stopThreadPool();
   virtual MessageListenerType getConsumeMsgSerivceListenerType();
 
@@ -89,8 +82,7 @@ class ConsumeMessageOrderlyService : public ConsumeMsgService {
                                                bool tryLockMQ,
                                                boost::asio::deadline_timer* t);
   void ConsumeRequest(PullRequest* request);
-  void lockMQPeriodically(boost::system::error_code& ec,
-                          boost::asio::deadline_timer* t);
+  void lockMQPeriodically(boost::system::error_code& ec, boost::asio::deadline_timer* t);
   void unlockAllMQ();
   bool lockOneMQ(const MQMessageQueue& mq);
 

@@ -33,28 +33,28 @@ using rocketmq::SessionCredentials;
 using rocketmq::ClientRPCHook;
 
 TEST(clientRPCHook, doBeforeRequest) {
-    SessionCredentials sessionCredentials;
-    sessionCredentials.setAccessKey("accessKey");
-    sessionCredentials.setSecretKey("secretKey");
-    sessionCredentials.setAuthChannel("onsChannel");
+  SessionCredentials sessionCredentials;
+  sessionCredentials.setAccessKey("accessKey");
+  sessionCredentials.setSecretKey("secretKey");
+  sessionCredentials.setAuthChannel("onsChannel");
 
-    ClientRPCHook clientRPCHook(sessionCredentials);
+  ClientRPCHook clientRPCHook(sessionCredentials);
 
-    RemotingCommand remotingCommand;
-    clientRPCHook.doBeforeRequest("127.0.0.1:9876", remotingCommand);
+  RemotingCommand remotingCommand;
+  clientRPCHook.doBeforeRequest("127.0.0.1:9876", remotingCommand);
 
-    SendMessageRequestHeader *sendMessageRequestHeader = new SendMessageRequestHeader();
-    RemotingCommand headeRremotingCommand(17, sendMessageRequestHeader);
-    clientRPCHook.doBeforeRequest("127.0.0.1:9876", headeRremotingCommand);
+  SendMessageRequestHeader* sendMessageRequestHeader = new SendMessageRequestHeader();
+  RemotingCommand headeRremotingCommand(17, sendMessageRequestHeader);
+  clientRPCHook.doBeforeRequest("127.0.0.1:9876", headeRremotingCommand);
 
-    headeRremotingCommand.setMsgBody("1231231");
-    clientRPCHook.doBeforeRequest("127.0.0.1:9876", headeRremotingCommand);
+  headeRremotingCommand.setMsgBody("1231231");
+  clientRPCHook.doBeforeRequest("127.0.0.1:9876", headeRremotingCommand);
 }
 
-int main(int argc, char *argv[]) {
-    InitGoogleMock(&argc, argv);
-    testing::GTEST_FLAG(throw_on_failure) = true;
-    testing::GTEST_FLAG(filter) = "clientRPCHook.doBeforeRequest";
-    int itestts = RUN_ALL_TESTS();
-    return itestts;
+int main(int argc, char* argv[]) {
+  InitGoogleMock(&argc, argv);
+  testing::GTEST_FLAG(throw_on_failure) = true;
+  testing::GTEST_FLAG(filter) = "clientRPCHook.doBeforeRequest";
+  int itestts = RUN_ALL_TESTS();
+  return itestts;
 }

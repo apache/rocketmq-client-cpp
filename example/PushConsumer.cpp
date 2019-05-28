@@ -39,7 +39,7 @@ class MyMsgListener : public MessageListenerConcurrently {
   MyMsgListener() {}
   virtual ~MyMsgListener() {}
 
-  virtual ConsumeStatus consumeMessage(const std::vector<MQMessageExt> &msgs) {
+  virtual ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) {
     g_msgCount.store(g_msgCount.load() - msgs.size());
     for (size_t i = 0; i < msgs.size(); ++i) {
       g_tps.Increment();
@@ -54,7 +54,7 @@ class MyMsgListener : public MessageListenerConcurrently {
   }
 };
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   RocketmqSendAndConsumerArgs info;
   if (!ParseArgs(argc, argv, &info)) {
     exit(-1);
@@ -62,8 +62,7 @@ int main(int argc, char *argv[]) {
   PrintRocketmqSendAndConsumerArgs(info);
   DefaultMQPushConsumer consumer("please_rename_unique_group_name");
   DefaultMQProducer producer("please_rename_unique_group_name");
-  producer.setSessionCredentials("AccessKey",
-                                 "SecretKey", "ALIYUN");
+  producer.setSessionCredentials("AccessKey", "SecretKey", "ALIYUN");
   producer.setTcpTransportTryLockTimeout(1000);
   producer.setTcpTransportConnectTimeout(400);
   producer.setNamesrvDomain(info.namesrv_domain);
@@ -73,13 +72,13 @@ int main(int argc, char *argv[]) {
 
   consumer.setNamesrvAddr(info.namesrv);
   consumer.setGroupName(info.groupname);
-  consumer.setSessionCredentials("AccessKey",
-                                 "SecretKey", "ALIYUN");
+  consumer.setSessionCredentials("AccessKey", "SecretKey", "ALIYUN");
   consumer.setConsumeThreadCount(info.thread_count);
   consumer.setNamesrvDomain(info.namesrv_domain);
   consumer.setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
 
-  if (info.syncpush) consumer.setAsyncPull(false);  // set sync pull
+  if (info.syncpush)
+    consumer.setAsyncPull(false);  // set sync pull
   if (info.broadcasting) {
     consumer.setMessageModel(rocketmq::BROADCASTING);
   }
@@ -96,7 +95,7 @@ int main(int argc, char *argv[]) {
 
   try {
     consumer.start();
-  } catch (MQClientException &e) {
+  } catch (MQClientException& e) {
     cout << e << endl;
   }
   g_tps.start();
@@ -110,7 +109,7 @@ int main(int argc, char *argv[]) {
     //    std::this_thread::sleep_for(std::chrono::seconds(100000));
     try {
       producer.send(msg);
-    } catch (MQException &e) {
+    } catch (MQException& e) {
       std::cout << e << endl;  // if catch excepiton , need re-send this msg by
                                // service
     }

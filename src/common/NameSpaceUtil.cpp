@@ -14,18 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "MQVersion.h"
+
+#include "NameSpaceUtil.h"
+#include "Logging.h"
 
 namespace rocketmq {
-int MQVersion::s_CurrentVersion = MQVersion::V3_1_8;
 
-//<!************************************************************************
-const char* MQVersion::getVersionDesc(int value) {
-  switch (value) {
-    // case V1_0_0:
-    // return "V1_0_0";
+bool NameSpaceUtil::isEndPointURL(string nameServerAddr) {
+  if (nameServerAddr.length() >= ENDPOINT_PREFIX_LENGTH && nameServerAddr.find(ENDPOINT_PREFIX) != string::npos) {
+    return true;
   }
-  return "";
+  return false;
 }
-//<!***************************************************************************
-}  //<!end namespace;
+
+string NameSpaceUtil::formatNameServerURL(string nameServerAddr) {
+  auto index = nameServerAddr.find(ENDPOINT_PREFIX);
+  if (index != string::npos) {
+    LOG_DEBUG("Get Name Server from endpoint [%s]",
+              nameServerAddr.substr(ENDPOINT_PREFIX_LENGTH, nameServerAddr.length() - ENDPOINT_PREFIX_LENGTH).c_str());
+    return nameServerAddr.substr(ENDPOINT_PREFIX_LENGTH, nameServerAddr.length() - ENDPOINT_PREFIX_LENGTH);
+  }
+  return nameServerAddr;
+}
+}  // namespace rocketmq

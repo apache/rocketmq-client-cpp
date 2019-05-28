@@ -17,7 +17,7 @@
 
 
 TMPFILE=".clang_format_file.tmp"
-FORMAT="{BasedOnStyle: Google,IndentWidth: 2,ColumnLimit: 80}"
+FORMAT="{BasedOnStyle: Chromium, ColumnLimit: 120, TabWidth: 2}"
 
 function Usage
 {
@@ -62,7 +62,7 @@ done
 for file in $files
 do
     echo $file
-    clang-format -style="$FORMAT" $file > $TMPFILE
+    clang-format $file > $TMPFILE
 
     if [ -e $TMPFILE ];then
         filesize=`wc -c $TMPFILE |cut -d " " -f1`

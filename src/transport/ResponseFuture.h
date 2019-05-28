@@ -34,8 +34,11 @@ class TcpRemotingClient;
 //<!***************************************************************************
 class ResponseFuture {
  public:
-  ResponseFuture(int requestCode, int opaque, TcpRemotingClient* powner,
-                 int64 timeoutMilliseconds, bool bAsync = false,
+  ResponseFuture(int requestCode,
+                 int opaque,
+                 TcpRemotingClient* powner,
+                 int64 timeoutMilliseconds,
+                 bool bAsync = false,
                  AsyncCallbackWrap* pcall = NULL);
   virtual ~ResponseFuture();
   void releaseThreadCondition();
@@ -51,9 +54,9 @@ class ResponseFuture {
   //<!callback;
   void executeInvokeCallback();
   void executeInvokeCallbackException();
-  bool isTimeOut() const; 
-  int getMaxRetrySendTimes() const; 
-  int getRetrySendTimes() const;   
+  bool isTimeOut() const;
+  int getMaxRetrySendTimes() const;
+  int getRetrySendTimes() const;
   int64 leftTime() const;
   // bool    isTimeOutMoreThan30s() const;
   const bool getASyncFlag();
@@ -62,12 +65,13 @@ class ResponseFuture {
   const bool getSyncResponseFlag();
   AsyncCallbackWrap* getAsyncCallbackWrap();
   void setAsyncCallBackStatus(asyncCallBackStatus asyncCallbackStatus);
-  void setMaxRetrySendTimes(int maxRetryTimes); 
-  void setRetrySendTimes(int retryTimes);   
-  void setBrokerAddr(const std::string& brokerAddr); 
+  void setMaxRetrySendTimes(int maxRetryTimes);
+  void setRetrySendTimes(int retryTimes);
+  void setBrokerAddr(const std::string& brokerAddr);
   void setRequestCommand(const RemotingCommand& requestCommand);
   const RemotingCommand& getRequestCommand();
   std::string getBrokerAddr() const;
+
  private:
   int m_requestCode;
   int m_opaque;
@@ -84,8 +88,8 @@ class ResponseFuture {
   boost::atomic<bool> m_asyncResponse;
   boost::atomic<bool> m_syncResponse;
 
-  int   m_maxRetrySendTimes;
-  int   m_retrySendTimes; 
+  int m_maxRetrySendTimes;
+  int m_retrySendTimes;
   std::string m_brokerAddr;
   RemotingCommand m_requestCommand;
   // TcpRemotingClient*    m_tcpRemoteClient;

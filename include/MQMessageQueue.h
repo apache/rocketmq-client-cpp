@@ -48,8 +48,7 @@ class ROCKETMQCLIENT_API MQMessageQueue {
 
   const std::string toString() const {
     std::stringstream ss;
-    ss << "MessageQueue [topic=" << m_topic << ", brokerName=" << m_brokerName
-       << ", queueId=" << m_queueId << "]";
+    ss << "MessageQueue [topic=" << m_topic << ", brokerName=" << m_brokerName << ", queueId=" << m_queueId << "]";
 
     return ss.str();
   }

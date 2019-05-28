@@ -24,18 +24,16 @@
 namespace rocketmq {
 
 //<!************************************************************************
-ConsumeMessageConcurrentlyService::ConsumeMessageConcurrentlyService(
-    MQConsumer* consumer, int threadCount, MQMessageListener* msgListener)
-    : m_pConsumer(consumer),
-      m_pMessageListener(msgListener),
-      m_ioServiceWork(m_ioService) {
+ConsumeMessageConcurrentlyService::ConsumeMessageConcurrentlyService(MQConsumer* consumer,
+                                                                     int threadCount,
+                                                                     MQMessageListener* msgListener)
+    : m_pConsumer(consumer), m_pMessageListener(msgListener), m_ioServiceWork(m_ioService) {
 #if !defined(WIN32) && !defined(__APPLE__)
   string taskName = UtilAll::getProcessName();
   prctl(PR_SET_NAME, "ConsumeTP", 0, 0, 0);
 #endif
   for (int i = 0; i != threadCount; ++i) {
-    m_threadpool.create_thread(
-        boost::bind(&boost::asio::io_service::run, &m_ioService));
+    m_threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &m_ioService));
   }
 #if !defined(WIN32) && !defined(__APPLE__)
   prctl(PR_SET_NAME, taskName.c_str(), 0, 0, 0);
@@ -49,26 +47,24 @@ ConsumeMessageConcurrentlyService::~ConsumeMessageConcurrentlyService(void) {
 
 void ConsumeMessageConcurrentlyService::start() {}
 
-void ConsumeMessageConcurrentlyService::shutdown() { stopThreadPool(); }
+void ConsumeMessageConcurrentlyService::shutdown() {
+  stopThreadPool();
+}
 
 void ConsumeMessageConcurrentlyService::stopThreadPool() {
   m_ioService.stop();
   m_threadpool.join_all();
 }
 
-MessageListenerType
-ConsumeMessageConcurrentlyService::getConsumeMsgSerivceListenerType() {
+MessageListenerType ConsumeMessageConcurrentlyService::getConsumeMsgSerivceListenerType() {
   return m_pMessageListener->getMessageListenerType();
 }
 
-void ConsumeMessageConcurrentlyService::submitConsumeRequest(
-    PullRequest* request, vector<MQMessageExt>& msgs) {
-  m_ioService.post(boost::bind(
-      &ConsumeMessageConcurrentlyService::ConsumeRequest, this, request, msgs));
+void ConsumeMessageConcurrentlyService::submitConsumeRequest(PullRequest* request, vector<MQMessageExt>& msgs) {
+  m_ioService.post(boost::bind(&ConsumeMessageConcurrentlyService::ConsumeRequest, this, request, msgs));
 }
 
-void ConsumeMessageConcurrentlyService::ConsumeRequest(
-    PullRequest* request, vector<MQMessageExt>& msgs) {
+void ConsumeMessageConcurrentlyService::ConsumeRequest(PullRequest* request, vector<MQMessageExt>& msgs) {
   if (!request || request->isDroped()) {
     LOG_WARN("the pull result is NULL or Had been dropped");
     request->clearAllMsgs();  // add clear operation to avoid bad state when
@@ -78,8 +74,7 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(
 
   //<!¶ÁÈ¡Êý¾Ý;
   if (msgs.empty()) {
-    LOG_WARN("the msg of pull result is NULL,its mq:%s",
-             (request->m_messageQueue).toString().c_str());
+    LOG_WARN("the msg of pull result is NULL,its mq:%s", (request->m_messageQueue).toString().c_str());
     return;
   }
 
@@ -109,8 +104,7 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(
       // Note: broadcasting reconsume should do by application, as it has big
       // affect to broker cluster
       if (ackIndex != (int)msgs.size())
-        LOG_WARN("BROADCASTING, the message consume failed, drop it:%s",
-                 (request->m_messageQueue).toString().c_str());
+        LOG_WARN("BROADCASTING, the message consume failed, drop it:%s", (request->m_messageQueue).toString().c_str());
       break;
     case CLUSTERING:
       // send back msg to broker;
@@ -118,8 +112,8 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(
         LOG_WARN("consume fail, MQ is:%s, its msgId is:%s, index is:" SIZET_FMT
                  ", reconsume "
                  "times is:%d",
-                 (request->m_messageQueue).toString().c_str(),
-                 msgs[i].getMsgId().c_str(), i, msgs[i].getReconsumeTimes());
+                 (request->m_messageQueue).toString().c_str(), msgs[i].getMsgId().c_str(), i,
+                 msgs[i].getReconsumeTimes());
         m_pConsumer->sendMessageBack(msgs[i], 0);
       }
       break;
@@ -134,13 +128,11 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(
   if (offset >= 0) {
     m_pConsumer->updateConsumeOffset(request->m_messageQueue, offset);
   } else {
-    LOG_WARN("Note: accumulation consume occurs on mq:%s",
-             (request->m_messageQueue).toString().c_str());
+    LOG_WARN("Note: accumulation consume occurs on mq:%s", (request->m_messageQueue).toString().c_str());
   }
 }
 
-void ConsumeMessageConcurrentlyService::resetRetryTopic(
-    vector<MQMessageExt>& msgs) {
+void ConsumeMessageConcurrentlyService::resetRetryTopic(vector<MQMessageExt>& msgs) {
   string groupTopic = UtilAll::getRetryTopic(m_pConsumer->getGroupName());
   for (size_t i = 0; i < msgs.size(); i++) {
     MQMessageExt& msg = msgs[i];

@@ -30,18 +30,13 @@ class MQClientAPIImpl;
 class DefaultMQProducer;
 class SendMessageRequestHeader;
 //<!***************************************************************************
-enum asyncCallBackType {
-  asyncCallbackWrap = 0,
-  sendCallbackWrap = 1,
-  pullCallbackWarp = 2
-};
+enum asyncCallBackType { asyncCallbackWrap = 0, sendCallbackWrap = 1, pullCallbackWarp = 2 };
 
 struct AsyncCallbackWrap {
  public:
   AsyncCallbackWrap(AsyncCallback* pAsyncCallback, MQClientAPIImpl* pclientAPI);
   virtual ~AsyncCallbackWrap();
-  virtual void operationComplete(ResponseFuture* pResponseFuture,
-                                 bool bProducePullRequest) = 0;
+  virtual void operationComplete(ResponseFuture* pResponseFuture, bool bProducePullRequest) = 0;
   virtual void onException() = 0;
   virtual asyncCallBackType getCallbackType() = 0;
 
@@ -53,12 +48,13 @@ struct AsyncCallbackWrap {
 //<!************************************************************************
 class SendCallbackWrap : public AsyncCallbackWrap {
  public:
-  SendCallbackWrap(const string& brokerName, const MQMessage& msg,
-                   AsyncCallback* pAsyncCallback, MQClientAPIImpl* pclientAPI);
+  SendCallbackWrap(const string& brokerName,
+                   const MQMessage& msg,
+                   AsyncCallback* pAsyncCallback,
+                   MQClientAPIImpl* pclientAPI);
 
   virtual ~SendCallbackWrap(){};
-  virtual void operationComplete(ResponseFuture* pResponseFuture,
-                                 bool bProducePullRequest);
+  virtual void operationComplete(ResponseFuture* pResponseFuture, bool bProducePullRequest);
   virtual void onException();
   virtual asyncCallBackType getCallbackType() { return sendCallbackWrap; }
 
@@ -70,11 +66,9 @@ class SendCallbackWrap : public AsyncCallbackWrap {
 //<!***************************************************************************
 class PullCallbackWarp : public AsyncCallbackWrap {
  public:
-  PullCallbackWarp(AsyncCallback* pAsyncCallback, MQClientAPIImpl* pclientAPI,
-                   void* pArg);
+  PullCallbackWarp(AsyncCallback* pAsyncCallback, MQClientAPIImpl* pclientAPI, void* pArg);
   virtual ~PullCallbackWarp();
-  virtual void operationComplete(ResponseFuture* pResponseFuture,
-                                 bool bProducePullRequest);
+  virtual void operationComplete(ResponseFuture* pResponseFuture, bool bProducePullRequest);
   virtual void onException();
   virtual asyncCallBackType getCallbackType() { return pullCallbackWarp; }
 

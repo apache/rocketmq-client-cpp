@@ -23,21 +23,20 @@
 extern "C" {
 #endif
 
-//typedef struct _CMessage_ CMessage;
+// typedef struct _CMessage_ CMessage;
 typedef struct CMessage CMessage;
 
-
-ROCKETMQCLIENT_API CMessage *  CreateMessage(const char *topic);
-ROCKETMQCLIENT_API int DestroyMessage(CMessage *msg);
-ROCKETMQCLIENT_API int SetMessageTopic(CMessage *msg, const char *topic);
-ROCKETMQCLIENT_API int SetMessageTags(CMessage *msg, const char *tags);
-ROCKETMQCLIENT_API int SetMessageKeys(CMessage *msg, const char *keys);
-ROCKETMQCLIENT_API int SetMessageBody(CMessage *msg, const char *body);
-ROCKETMQCLIENT_API int SetByteMessageBody(CMessage *msg, const char *body, int len);
-ROCKETMQCLIENT_API int SetMessageProperty(CMessage *msg, const char *key, const char *value);
-ROCKETMQCLIENT_API int SetDelayTimeLevel(CMessage *msg, int level);
+ROCKETMQCLIENT_API CMessage* CreateMessage(const char* topic);
+ROCKETMQCLIENT_API int DestroyMessage(CMessage* msg);
+ROCKETMQCLIENT_API int SetMessageTopic(CMessage* msg, const char* topic);
+ROCKETMQCLIENT_API int SetMessageTags(CMessage* msg, const char* tags);
+ROCKETMQCLIENT_API int SetMessageKeys(CMessage* msg, const char* keys);
+ROCKETMQCLIENT_API int SetMessageBody(CMessage* msg, const char* body);
+ROCKETMQCLIENT_API int SetByteMessageBody(CMessage* msg, const char* body, int len);
+ROCKETMQCLIENT_API int SetMessageProperty(CMessage* msg, const char* key, const char* value);
+ROCKETMQCLIENT_API int SetDelayTimeLevel(CMessage* msg, int level);
 
 #ifdef __cplusplus
 };
 #endif
-#endif //__C_MESSAGE_H__
+#endif  //__C_MESSAGE_H__

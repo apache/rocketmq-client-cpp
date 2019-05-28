@@ -25,10 +25,8 @@ class RPCHook {
  public:
   RPCHook() {}
   virtual ~RPCHook() {}
-  virtual void doBeforeRequest(const string& remoteAddr,
-                               RemotingCommand& request) = 0;
-  virtual void doAfterResponse(RemotingCommand& request,
-                               RemotingCommand& response) = 0;
+  virtual void doBeforeRequest(const string& remoteAddr, RemotingCommand& request) = 0;
+  virtual void doAfterResponse(RemotingCommand& request, RemotingCommand& response) = 0;
 };
 
 class ClientRPCHook : public RPCHook {
@@ -36,15 +34,12 @@ class ClientRPCHook : public RPCHook {
   SessionCredentials sessionCredentials;
 
  public:
-  ClientRPCHook(const SessionCredentials& session_credentials)
-      : sessionCredentials(session_credentials) {}
+  ClientRPCHook(const SessionCredentials& session_credentials) : sessionCredentials(session_credentials) {}
   virtual ~ClientRPCHook() {}
 
-  virtual void doBeforeRequest(const string& remoteAddr,
-                               RemotingCommand& request);
+  virtual void doBeforeRequest(const string& remoteAddr, RemotingCommand& request);
 
-  virtual void doAfterResponse(RemotingCommand& request,
-                               RemotingCommand& response) {}
+  virtual void doAfterResponse(RemotingCommand& request, RemotingCommand& response) {}
 };
 }
 #endif

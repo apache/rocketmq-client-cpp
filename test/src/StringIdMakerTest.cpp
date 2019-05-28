@@ -27,12 +27,12 @@ using ::testing::InitGoogleMock;
 using testing::Return;
 
 TEST(StringIdMakerTest, get_unique_id) {
-    string unique_id = StringIdMaker::get_mutable_instance().get_unique_id();
-    cout << "unique_id: " << unique_id << endl;
-    EXPECT_EQ(unique_id.size(), 32);
+  string unique_id = StringIdMaker::get_mutable_instance().get_unique_id();
+  cout << "unique_id: " << unique_id << endl;
+  EXPECT_EQ(unique_id.size(), 32);
 }
 
 int main(int argc, char* argv[]) {
-    InitGoogleMock(&argc, argv);
-    return RUN_ALL_TESTS();
+  InitGoogleMock(&argc, argv);
+  return RUN_ALL_TESTS();
 }

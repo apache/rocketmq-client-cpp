@@ -28,51 +28,51 @@ using rocketmq::MQMessageExt;
 using rocketmq::ProcessQueueInfo;
 
 TEST(processQueueInfo, init) {
-    ProcessQueueInfo processQueueInfo;
-    EXPECT_EQ(processQueueInfo.commitOffset, 0);
-    EXPECT_EQ(processQueueInfo.cachedMsgMinOffset, 0);
-    EXPECT_EQ(processQueueInfo.cachedMsgMaxOffset, 0);
-    EXPECT_EQ(processQueueInfo.cachedMsgCount, 0);
-    EXPECT_EQ(processQueueInfo.transactionMsgMinOffset, 0);
-    EXPECT_EQ(processQueueInfo.transactionMsgMaxOffset, 0);
-    EXPECT_EQ(processQueueInfo.transactionMsgCount, 0);
-    EXPECT_EQ(processQueueInfo.locked, false);
-    EXPECT_EQ(processQueueInfo.tryUnlockTimes, 0);
-    EXPECT_EQ(processQueueInfo.lastLockTimestamp, 123);
-    EXPECT_EQ(processQueueInfo.droped, false);
-    EXPECT_EQ(processQueueInfo.lastPullTimestamp, 0);
-    EXPECT_EQ(processQueueInfo.lastConsumeTimestamp, 0);
+  ProcessQueueInfo processQueueInfo;
+  EXPECT_EQ(processQueueInfo.commitOffset, 0);
+  EXPECT_EQ(processQueueInfo.cachedMsgMinOffset, 0);
+  EXPECT_EQ(processQueueInfo.cachedMsgMaxOffset, 0);
+  EXPECT_EQ(processQueueInfo.cachedMsgCount, 0);
+  EXPECT_EQ(processQueueInfo.transactionMsgMinOffset, 0);
+  EXPECT_EQ(processQueueInfo.transactionMsgMaxOffset, 0);
+  EXPECT_EQ(processQueueInfo.transactionMsgCount, 0);
+  EXPECT_EQ(processQueueInfo.locked, false);
+  EXPECT_EQ(processQueueInfo.tryUnlockTimes, 0);
+  EXPECT_EQ(processQueueInfo.lastLockTimestamp, 123);
+  EXPECT_EQ(processQueueInfo.droped, false);
+  EXPECT_EQ(processQueueInfo.lastPullTimestamp, 0);
+  EXPECT_EQ(processQueueInfo.lastConsumeTimestamp, 0);
 
-    processQueueInfo.setLocked(true);
-    EXPECT_EQ(processQueueInfo.isLocked(), true);
+  processQueueInfo.setLocked(true);
+  EXPECT_EQ(processQueueInfo.isLocked(), true);
 
-    processQueueInfo.setDroped(true);
-    EXPECT_EQ(processQueueInfo.isDroped(), true);
+  processQueueInfo.setDroped(true);
+  EXPECT_EQ(processQueueInfo.isDroped(), true);
 
-    processQueueInfo.setCommitOffset(456);
-    EXPECT_EQ(processQueueInfo.getCommitOffset(), 456);
+  processQueueInfo.setCommitOffset(456);
+  EXPECT_EQ(processQueueInfo.getCommitOffset(), 456);
 
-    Json::Value outJson = processQueueInfo.toJson();
+  Json::Value outJson = processQueueInfo.toJson();
 
-    EXPECT_EQ(outJson["commitOffset"], "456");
-    EXPECT_EQ(outJson["cachedMsgMinOffset"], "0");
-    EXPECT_EQ(outJson["cachedMsgMaxOffset"], "0");
-    EXPECT_EQ(outJson["cachedMsgCount"].asInt(), 0);
-    EXPECT_EQ(outJson["transactionMsgMinOffset"], "0");
-    EXPECT_EQ(outJson["transactionMsgMaxOffset"], "0");
-    EXPECT_EQ(outJson["transactionMsgCount"].asInt(), 0);
-    EXPECT_EQ(outJson["locked"].asBool(), true);
-    EXPECT_EQ(outJson["tryUnlockTimes"].asInt(), 0);
-    EXPECT_EQ(outJson["lastLockTimestamp"], "123");
-    EXPECT_EQ(outJson["droped"].asBool(), true);
-    EXPECT_EQ(outJson["lastPullTimestamp"], "0");
-    EXPECT_EQ(outJson["lastConsumeTimestamp"], "0");
+  EXPECT_EQ(outJson["commitOffset"], "456");
+  EXPECT_EQ(outJson["cachedMsgMinOffset"], "0");
+  EXPECT_EQ(outJson["cachedMsgMaxOffset"], "0");
+  EXPECT_EQ(outJson["cachedMsgCount"].asInt(), 0);
+  EXPECT_EQ(outJson["transactionMsgMinOffset"], "0");
+  EXPECT_EQ(outJson["transactionMsgMaxOffset"], "0");
+  EXPECT_EQ(outJson["transactionMsgCount"].asInt(), 0);
+  EXPECT_EQ(outJson["locked"].asBool(), true);
+  EXPECT_EQ(outJson["tryUnlockTimes"].asInt(), 0);
+  EXPECT_EQ(outJson["lastLockTimestamp"], "123");
+  EXPECT_EQ(outJson["droped"].asBool(), true);
+  EXPECT_EQ(outJson["lastPullTimestamp"], "0");
+  EXPECT_EQ(outJson["lastConsumeTimestamp"], "0");
 }
 
-int main(int argc, char *argv[]) {
-    InitGoogleMock(&argc, argv);
-    testing::GTEST_FLAG(throw_on_failure) = true;
-    testing::GTEST_FLAG(filter) = "processQueueInfo.init";
-    int itestts = RUN_ALL_TESTS();
-    return itestts;
+int main(int argc, char* argv[]) {
+  InitGoogleMock(&argc, argv);
+  testing::GTEST_FLAG(throw_on_failure) = true;
+  testing::GTEST_FLAG(filter) = "processQueueInfo.init";
+  int itestts = RUN_ALL_TESTS();
+  return itestts;
 }

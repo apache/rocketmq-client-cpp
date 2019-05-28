@@ -18,35 +18,26 @@
 
 namespace rocketmq {
 MemoryOutputStream::MemoryOutputStream(const size_t initialSize)
-    : blockToUse(&internalBlock),
-      externalData(NULL),
-      position(0),
-      size(0),
-      availableSize(0) {
+    : blockToUse(&internalBlock), externalData(NULL), position(0), size(0), availableSize(0) {
   internalBlock.setSize(initialSize, false);
 }
 
-MemoryOutputStream::MemoryOutputStream(MemoryBlock& memoryBlockToWriteTo,
-                                       const bool appendToExistingBlockContent)
-    : blockToUse(&memoryBlockToWriteTo),
-      externalData(NULL),
-      position(0),
-      size(0),
-      availableSize(0) {
+MemoryOutputStream::MemoryOutputStream(MemoryBlock& memoryBlockToWriteTo, const bool appendToExistingBlockContent)
+    : blockToUse(&memoryBlockToWriteTo), externalData(NULL), position(0), size(0), availableSize(0) {
   if (appendToExistingBlockContent)
     position = size = memoryBlockToWriteTo.getSize();
 }
 
 MemoryOutputStream::MemoryOutputStream(void* destBuffer, size_t destBufferSize)
-    : blockToUse(NULL),
-      externalData(destBuffer),
-      position(0),
-      size(0),
-      availableSize(destBufferSize) {}
+    : blockToUse(NULL), externalData(destBuffer), position(0), size(0), availableSize(destBufferSize) {}
 
-MemoryOutputStream::~MemoryOutputStream() { trimExternalBlockSize(); }
+MemoryOutputStream::~MemoryOutputStream() {
+  trimExternalBlockSize();
+}
 
-void MemoryOutputStream::flush() { trimExternalBlockSize(); }
+void MemoryOutputStream::flush() {
+  trimExternalBlockSize();
+}
 
 void MemoryOutputStream::trimExternalBlockSize() {
   if (blockToUse != &internalBlock && blockToUse != NULL)
@@ -54,7 +45,8 @@ void MemoryOutputStream::trimExternalBlockSize() {
 }
 
 void MemoryOutputStream::preallocate(const size_t bytesToPreallocate) {
-  if (blockToUse != NULL) blockToUse->ensureSize(bytesToPreallocate + 1);
+  if (blockToUse != NULL)
+    blockToUse->ensureSize(bytesToPreallocate + 1);
 }
 
 void MemoryOutputStream::reset() {
@@ -69,14 +61,12 @@ char* MemoryOutputStream::prepareToWrite(size_t numBytes) {
 
   if (blockToUse != NULL) {
     if (storageNeeded >= (unsigned int)(blockToUse->getSize()))
-      blockToUse->ensureSize(
-          (storageNeeded + std::min(storageNeeded / 2, (size_t)(1024 * 1024)) +
-           32) &
-          ~31u);
+      blockToUse->ensureSize((storageNeeded + std::min(storageNeeded / 2, (size_t)(1024 * 1024)) + 32) & ~31u);
 
     data = static_cast<char*>(blockToUse->getData());
   } else {
-    if (storageNeeded > availableSize) return NULL;
+    if (storageNeeded > availableSize)
+      return NULL;
 
     data = static_cast<char*>(externalData);
   }
@@ -88,7 +78,8 @@ char* MemoryOutputStream::prepareToWrite(size_t numBytes) {
 }
 
 bool MemoryOutputStream::write(const void* const buffer, size_t howMany) {
-  if (howMany == 0) return true;
+  if (howMany == 0)
+    return true;
 
   if (char* dest = prepareToWrite(howMany)) {
     memcpy(dest, buffer, howMany);
@@ -99,7 +90,8 @@ bool MemoryOutputStream::write(const void* const buffer, size_t howMany) {
 }
 
 bool MemoryOutputStream::writeRepeatedByte(uint8 byte, size_t howMany) {
-  if (howMany == 0) return true;
+  if (howMany == 0)
+    return true;
 
   if (char* dest = prepareToWrite(howMany)) {
     memset(dest, byte, howMany);
@@ -114,7 +106,8 @@ MemoryBlock MemoryOutputStream::getMemoryBlock() const {
 }
 
 const void* MemoryOutputStream::getData() const {
-  if (blockToUse == NULL) return externalData;
+  if (blockToUse == NULL)
+    return externalData;
 
   if ((unsigned int)blockToUse->getSize() > size)
     static_cast<char*>(blockToUse->getData())[size] = 0;
@@ -136,8 +129,7 @@ bool MemoryOutputStream::setPosition(int64 newPosition) {
   return false;
 }
 
-int64 MemoryOutputStream::writeFromInputStream(InputStream& source,
-                                               int64 maxNumBytesToWrite) {
+int64 MemoryOutputStream::writeFromInputStream(InputStream& source, int64 maxNumBytesToWrite) {
   // before writing from an input, see if we can preallocate to make it more
   // efficient..
   int64 availableData = source.getTotalLength() - source.getPosition();
@@ -153,11 +145,11 @@ int64 MemoryOutputStream::writeFromInputStream(InputStream& source,
   return OutputStream::writeFromInputStream(source, maxNumBytesToWrite);
 }
 
-OutputStream& operator<<(OutputStream& stream,
-                         const MemoryOutputStream& streamToRead) {
+OutputStream& operator<<(OutputStream& stream, const MemoryOutputStream& streamToRead) {
   const size_t dataSize = streamToRead.getDataSize();
 
-  if (dataSize > 0) stream.write(streamToRead.getData(), dataSize);
+  if (dataSize > 0)
+    stream.write(streamToRead.getData(), dataSize);
 
   return stream;
 }

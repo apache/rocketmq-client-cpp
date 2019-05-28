@@ -19,13 +19,12 @@
 namespace rocketmq {
 
 #ifdef WIN32
-int gettimeofdayWin(struct timeval *tp, void *tzp)
-{
+int gettimeofdayWin(struct timeval* tp, void* tzp) {
   time_t clock;
   struct tm tm;
   SYSTEMTIME wtm;
   GetLocalTime(&wtm);
-  tm.tm_year	= wtm.wYear - 1900;
+  tm.tm_year = wtm.wYear - 1900;
   tm.tm_mon = wtm.wMonth - 1;
   tm.tm_mday = wtm.wDay;
   tm.tm_hour = wtm.wHour;
@@ -111,11 +110,11 @@ uint32_t StringIdMaker::get_ip() {
 
 uint64_t StringIdMaker::get_curr_ms() {
   struct timeval time_now;
-  //windows and linux use the same function name, windows's defination as begining this file
-#ifdef  WIN32
-  gettimeofdayWin(&time_now, NULL); //  WIN32
+// windows and linux use the same function name, windows's defination as begining this file
+#ifdef WIN32
+  gettimeofdayWin(&time_now, NULL);  //  WIN32
 #else
-  gettimeofday(&time_now, NULL);    //LINUX
+  gettimeofday(&time_now, NULL);  // LINUX
 #endif
 
   uint64_t ms_time = time_now.tv_sec * 1000 + time_now.tv_usec / 1000;
@@ -124,7 +123,7 @@ uint64_t StringIdMaker::get_curr_ms() {
 
 void StringIdMaker::set_start_and_next_tm() {
   time_t tmNow = time(NULL);
-  tm *ptmNow = localtime(&tmNow);
+  tm* ptmNow = localtime(&tmNow);
   tm mon_begin;
   mon_begin.tm_year = ptmNow->tm_year;
   mon_begin.tm_mon = ptmNow->tm_mon;
@@ -154,11 +153,11 @@ void StringIdMaker::set_start_and_next_tm() {
 }
 
 int StringIdMaker::atomic_incr(int id) {
-  #ifdef WIN32
-    InterlockedIncrement((LONG*)&id);
-  #else
-    __sync_add_and_fetch(&id, 1);
-  #endif
+#ifdef WIN32
+  InterlockedIncrement((LONG*)&id);
+#else
+  __sync_add_and_fetch(&id, 1);
+#endif
   return id;
 }
 std::string StringIdMaker::get_unique_id() {
@@ -171,7 +170,7 @@ std::string StringIdMaker::get_unique_id() {
   seqid = atomic_incr(seqid) & 0xFF;
 
   std::size_t prifix_len = 10;  // 10 = prefix len
-  unsigned char *write_index = _buff + prifix_len;
+  unsigned char* write_index = _buff + prifix_len;
 
   memcpy(write_index, &tm_period, 4);
   write_index += 4;
@@ -183,7 +182,7 @@ std::string StringIdMaker::get_unique_id() {
   return std::string(_0x_buff);
 }
 
-void StringIdMaker::hexdump(unsigned char *buffer, char *out_buff, unsigned long index) {
+void StringIdMaker::hexdump(unsigned char* buffer, char* out_buff, unsigned long index) {
   for (unsigned long i = 0; i < index; i++) {
     sprintf(out_buff + 2 * i, "%02X ", buffer[i]);
   }

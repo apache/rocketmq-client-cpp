@@ -23,8 +23,7 @@ int PullSysFlag::FLAG_SUSPEND = 0x1 << 1;
 int PullSysFlag::FLAG_SUBSCRIPTION = 0x1 << 2;
 int PullSysFlag::FLAG_CLASS_FILTER = 0x1 << 3;
 
-int PullSysFlag::buildSysFlag(bool commitOffset, bool suspend,
-                              bool subscription, bool classFilter) {
+int PullSysFlag::buildSysFlag(bool commitOffset, bool suspend, bool subscription, bool classFilter) {
   int flag = 0;
 
   if (commitOffset) {

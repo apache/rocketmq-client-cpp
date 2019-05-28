@@ -156,8 +156,7 @@ class ROCKETMQCLIENT_API InputStream {
                                   will be read until the stream is exhausted.
       @returns the number of bytes that were added to the memory block
   */
-  virtual size_t readIntoMemoryBlock(MemoryBlock& destBlock,
-                                     size_t maxNumBytesToRead = -1);
+  virtual size_t readIntoMemoryBlock(MemoryBlock& destBlock, size_t maxNumBytesToRead = -1);
 
   //==============================================================================
   /** Returns the offset of the next byte that will be read from the stream.

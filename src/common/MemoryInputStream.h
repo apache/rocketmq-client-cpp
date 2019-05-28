@@ -48,8 +48,7 @@ class ROCKETMQCLIENT_API MemoryInputStream : public InputStream {
      the
                                       data and use that.
   */
-  MemoryInputStream(const void* sourceData, size_t sourceDataSize,
-                    bool keepInternalCopyOfData);
+  MemoryInputStream(const void* sourceData, size_t sourceDataSize, bool keepInternalCopyOfData);
 
   /** Creates a MemoryInputStream.
 

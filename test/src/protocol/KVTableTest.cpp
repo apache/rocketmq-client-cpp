@@ -32,20 +32,20 @@ using testing::Return;
 using rocketmq::KVTable;
 
 TEST(KVTable, init) {
-    KVTable table;
+  KVTable table;
 
-    EXPECT_EQ(table.getTable().size(), 0);
+  EXPECT_EQ(table.getTable().size(), 0);
 
-    map<string, string> maps;
-    maps["string"] = "string";
-    table.setTable(maps);
-    EXPECT_EQ(table.getTable().size(), 1);
+  map<string, string> maps;
+  maps["string"] = "string";
+  table.setTable(maps);
+  EXPECT_EQ(table.getTable().size(), 1);
 }
 
-int main(int argc, char *argv[]) {
-    InitGoogleMock(&argc, argv);
-    testing::GTEST_FLAG(throw_on_failure) = true;
-    testing::GTEST_FLAG(filter) = "KVTable.*";
-    int itestts = RUN_ALL_TESTS();
-    return itestts;
+int main(int argc, char* argv[]) {
+  InitGoogleMock(&argc, argv);
+  testing::GTEST_FLAG(throw_on_failure) = true;
+  testing::GTEST_FLAG(filter) = "KVTable.*";
+  int itestts = RUN_ALL_TESTS();
+  return itestts;
 }

@@ -52,29 +52,34 @@ const string MQMessage::KEY_SEPARATOR = " ";
 static const string EMPTY_STRING = "";
 
 //<!************************************************************************
-MQMessage::MQMessage() { Init("", "", "", 0, "", true); }
+MQMessage::MQMessage() {
+  Init("", "", "", 0, "", true);
+}
 
 MQMessage::MQMessage(const string& topic, const string& body) {
   Init(topic, "", "", 0, body, true);
 }
 
-MQMessage::MQMessage(const string& topic, const string& tags,
-                     const string& body) {
+MQMessage::MQMessage(const string& topic, const string& tags, const string& body) {
   Init(topic, tags, "", 0, body, true);
 }
 
-MQMessage::MQMessage(const string& topic, const string& tags,
-                     const string& keys, const string& body) {
+MQMessage::MQMessage(const string& topic, const string& tags, const string& keys, const string& body) {
   Init(topic, tags, keys, 0, body, true);
 }
 
-MQMessage::MQMessage(const string& topic, const string& tags,
-                     const string& keys, const int flag, const string& body,
+MQMessage::MQMessage(const string& topic,
+                     const string& tags,
+                     const string& keys,
+                     const int flag,
+                     const string& body,
                      bool waitStoreMsgOK) {
   Init(topic, tags, keys, flag, body, waitStoreMsgOK);
 }
 
-MQMessage::~MQMessage() { m_properties.clear(); }
+MQMessage::~MQMessage() {
+  m_properties.clear();
+}
 
 MQMessage::MQMessage(const MQMessage& other) {
   m_body = other.m_body;
@@ -110,7 +115,7 @@ void MQMessage::setPropertyInternal(const string& name, const string& value) {
   m_properties[name] = value;
 }
 
-const string & MQMessage::getProperty(const string& name) const {
+const string& MQMessage::getProperty(const string& name) const {
   map<string, string>::const_iterator it = m_properties.find(name);
   if (it == m_properties.end()) {
     return EMPTY_STRING;
@@ -119,22 +124,30 @@ const string & MQMessage::getProperty(const string& name) const {
   }
 }
 
-const string& MQMessage::getTopic() const { return m_topic; }
+const string& MQMessage::getTopic() const {
+  return m_topic;
+}
 
-void MQMessage::setTopic(const string& topic) { m_topic = topic; }
+void MQMessage::setTopic(const string& topic) {
+  m_topic = topic;
+}
 
 void MQMessage::setTopic(const char* body, int len) {
   m_topic.clear();
   m_topic.append(body, len);
 }
 
-const string& MQMessage::getTags() const { return getProperty(PROPERTY_TAGS); }
+const string& MQMessage::getTags() const {
+  return getProperty(PROPERTY_TAGS);
+}
 
 void MQMessage::setTags(const string& tags) {
   setPropertyInternal(PROPERTY_TAGS, tags);
 }
 
-const string& MQMessage::getKeys() const { return getProperty(PROPERTY_KEYS); }
+const string& MQMessage::getKeys() const {
+  return getProperty(PROPERTY_KEYS);
+}
 
 void MQMessage::setKeys(const string& keys) {
   setPropertyInternal(PROPERTY_KEYS, keys);
@@ -190,27 +203,39 @@ void MQMessage::setWaitStoreMsgOK(bool waitStoreMsgOK) {
   }
 }
 
-int MQMessage::getFlag() const { return m_flag; }
+int MQMessage::getFlag() const {
+  return m_flag;
+}
 
-void MQMessage::setFlag(int flag) { m_flag = flag; }
+void MQMessage::setFlag(int flag) {
+  m_flag = flag;
+}
 
-int MQMessage::getSysFlag() const { return m_sysFlag; }
+int MQMessage::getSysFlag() const {
+  return m_sysFlag;
+}
 
-void MQMessage::setSysFlag(int sysFlag) { m_sysFlag = sysFlag; }
+void MQMessage::setSysFlag(int sysFlag) {
+  m_sysFlag = sysFlag;
+}
 
-const string& MQMessage::getBody() const { return m_body; }
+const string& MQMessage::getBody() const {
+  return m_body;
+}
 
 void MQMessage::setBody(const char* body, int len) {
   m_body.clear();
   m_body.append(body, len);
 }
 
-void MQMessage::setBody(const string &body) {
+void MQMessage::setBody(const string& body) {
   m_body.clear();
   m_body.append(body);
 }
 
-map<string, string> MQMessage::getProperties() const { return m_properties; }
+map<string, string> MQMessage::getProperties() const {
+  return m_properties;
+}
 
 void MQMessage::setProperties(map<string, string>& properties) {
   m_properties = properties;
@@ -230,8 +255,11 @@ void MQMessage::setPropertiesInternal(map<string, string>& properties) {
   m_properties = properties;
 }
 
-void MQMessage::Init(const string& topic, const string& tags,
-                     const string& keys, const int flag, const string& body,
+void MQMessage::Init(const string& topic,
+                     const string& tags,
+                     const string& keys,
+                     const int flag,
+                     const string& body,
                      bool waitStoreMsgOK) {
   m_topic = topic;
   m_flag = flag;

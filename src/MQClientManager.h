@@ -27,7 +27,8 @@ namespace rocketmq {
 class MQClientManager {
  public:
   virtual ~MQClientManager();
-  MQClientFactory* getMQClientFactory(const string& clientId, int pullThreadNum,
+  MQClientFactory* getMQClientFactory(const string& clientId,
+                                      int pullThreadNum,
                                       uint64_t tcpConnectTimeout,
                                       uint64_t tcpTransportTryLockTimeout,
                                       string unitName);

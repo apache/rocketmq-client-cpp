@@ -31,8 +31,7 @@ using boost::asio::ip::tcp;
 using boost::asio::deadline_timer;
 
 namespace {
-void check_deadline(deadline_timer* deadline, tcp::socket* socket,
-                    const boost::system::error_code& ec) {
+void check_deadline(deadline_timer* deadline, tcp::socket* socket, const boost::system::error_code& ec) {
   // Check whether the deadline has passed. We compare the deadline against
   // the current time since a new asynchronous operation may have moved the
   // deadline before this actor had a chance to run.
@@ -49,8 +48,7 @@ void check_deadline(deadline_timer* deadline, tcp::socket* socket,
   }
 
   // Put the actor back to sleep.
-  deadline->async_wait(boost::bind(&check_deadline, deadline, socket,
-                                   boost::asio::placeholders::error));
+  deadline->async_wait(boost::bind(&check_deadline, deadline, socket, boost::asio::placeholders::error));
 }
 }  // namespace
 
@@ -73,8 +71,7 @@ bool SyncfetchNsAddr(const Url& url_s, std::string& body) {
     boost::system::error_code deadline_ec;
     check_deadline(&deadline, &socket, deadline_ec);
 
-    boost::asio::async_connect(socket, endpoint_iterator,
-                               boost::lambda::var(ec) = boost::lambda::_1);
+    boost::asio::async_connect(socket, endpoint_iterator, boost::lambda::var(ec) = boost::lambda::_1);
 
     do {
       io_service.run_one();
@@ -134,14 +131,12 @@ bool SyncfetchNsAddr(const Url& url_s, std::string& body) {
     if (response.size() > 0) {
       boost::asio::streambuf::const_buffers_type cbt = response.data();
       body.clear();
-      body.insert(body.begin(), boost::asio::buffers_begin(cbt),
-                  boost::asio::buffers_end(cbt));
+      body.insert(body.begin(), boost::asio::buffers_begin(cbt), boost::asio::buffers_end(cbt));
     }
 
     // Read until EOF, writing data to output as we go.
     boost::system::error_code error;
-    while (boost::asio::read(socket, response,
-                             boost::asio::transfer_at_least(1), error))
+    while (boost::asio::read(socket, response, boost::asio::transfer_at_least(1), error))
       std::cout << &response;
     if (error != boost::asio::error::eof)
       throw boost::system::system_error(error);

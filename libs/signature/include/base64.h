@@ -16,35 +16,31 @@
  */
 
 #ifndef BASE64_H
-# define BASE64_H
+#define BASE64_H
 
 /* Get size_t. */
-# include <stddef.h>
+#include <stddef.h>
 
 /* Get bool. */
-# include <stdbool.h>
-
+#include <stdbool.h>
 
 #ifdef __cplusplus
-namespace rocketmqSignature{
+namespace rocketmqSignature {
 #endif
 
-		/* This uses that the expression (n+(k-1))/k means the smallest
-			 integer >= n/k, i.e., the ceiling of n/k.  */
-# define BASE64_LENGTH(inlen) ((((inlen) + 2) / 3) * 4)
+/* This uses that the expression (n+(k-1))/k means the smallest
+   integer >= n/k, i.e., the ceiling of n/k.  */
+#define BASE64_LENGTH(inlen) ((((inlen) + 2) / 3) * 4)
 
 extern bool isbase64(char ch);
 
-extern void base64_encode(const char *in, size_t inlen,
-	char *out, size_t outlen);
+extern void base64_encode(const char* in, size_t inlen, char* out, size_t outlen);
 
-extern size_t base64_encode_alloc(const char *in, size_t inlen, char **out);
+extern size_t base64_encode_alloc(const char* in, size_t inlen, char** out);
 
-extern bool base64_decode(const char *in, size_t inlen,
-	char *out, size_t *outlen);
+extern bool base64_decode(const char* in, size_t inlen, char* out, size_t* outlen);
 
-extern bool base64_decode_alloc(const char *in, size_t inlen,
-	char **out, size_t *outlen);
+extern bool base64_decode_alloc(const char* in, size_t inlen, char** out, size_t* outlen);
 
 #ifdef __cplusplus
 }

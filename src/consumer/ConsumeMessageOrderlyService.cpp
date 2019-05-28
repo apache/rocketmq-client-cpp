@@ -26,8 +26,9 @@
 namespace rocketmq {
 
 //<!***************************************************************************
-ConsumeMessageOrderlyService::ConsumeMessageOrderlyService(
-    MQConsumer* consumer, int threadCount, MQMessageListener* msgListener)
+ConsumeMessageOrderlyService::ConsumeMessageOrderlyService(MQConsumer* consumer,
+                                                           int threadCount,
+                                                           MQMessageListener* msgListener)
     : m_pConsumer(consumer),
       m_shutdownInprogress(false),
       m_pMessageListener(msgListener),
@@ -39,8 +40,7 @@ ConsumeMessageOrderlyService::ConsumeMessageOrderlyService(
   prctl(PR_SET_NAME, "oderlyConsumeTP", 0, 0, 0);
 #endif
   for (int i = 0; i != threadCount; ++i) {
-    m_threadpool.create_thread(
-        boost::bind(&boost::asio::io_service::run, &m_ioService));
+    m_threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &m_ioService));
   }
 #if !defined(WIN32) && !defined(__APPLE__)
   prctl(PR_SET_NAME, taskName.c_str(), 0, 0, 0);
@@ -54,11 +54,8 @@ void ConsumeMessageOrderlyService::boost_asio_work() {
                                                           // first timer timeout
                                                           // callback
   boost::system::error_code ec;
-  boost::asio::deadline_timer t(
-      m_async_ioService,
-      boost::posix_time::milliseconds(PullRequest::RebalanceLockInterval));
-  t.async_wait(boost::bind(&ConsumeMessageOrderlyService::lockMQPeriodically,
-                           this, ec, &t));
+  boost::asio::deadline_timer t(m_async_ioService, boost::posix_time::milliseconds(PullRequest::RebalanceLockInterval));
+  t.async_wait(boost::bind(&ConsumeMessageOrderlyService::lockMQPeriodically, this, ec, &t));
 
   m_async_ioService.run();
 }
@@ -69,8 +66,7 @@ ConsumeMessageOrderlyService::~ConsumeMessageOrderlyService(void) {
 }
 
 void ConsumeMessageOrderlyService::start() {
-  m_async_service_thread.reset(new boost::thread(
-      boost::bind(&ConsumeMessageOrderlyService::boost_asio_work, this)));
+  m_async_service_thread.reset(new boost::thread(boost::bind(&ConsumeMessageOrderlyService::boost_asio_work, this)));
 }
 
 void ConsumeMessageOrderlyService::shutdown() {
@@ -78,16 +74,12 @@ void ConsumeMessageOrderlyService::shutdown() {
   unlockAllMQ();
 }
 
-void ConsumeMessageOrderlyService::lockMQPeriodically(
-    boost::system::error_code& ec, boost::asio::deadline_timer* t) {
+void ConsumeMessageOrderlyService::lockMQPeriodically(boost::system::error_code& ec, boost::asio::deadline_timer* t) {
   m_pConsumer->getRebalance()->lockAll();
 
   boost::system::error_code e;
-  t->expires_at(t->expires_at() + boost::posix_time::milliseconds(
-                                      PullRequest::RebalanceLockInterval),
-                e);
-  t->async_wait(boost::bind(&ConsumeMessageOrderlyService::lockMQPeriodically,
-                            this, ec, t));
+  t->expires_at(t->expires_at() + boost::posix_time::milliseconds(PullRequest::RebalanceLockInterval), e);
+  t->async_wait(boost::bind(&ConsumeMessageOrderlyService::lockMQPeriodically, this, ec, t));
 }
 
 void ConsumeMessageOrderlyService::unlockAllMQ() {
@@ -107,41 +99,35 @@ void ConsumeMessageOrderlyService::stopThreadPool() {
   m_threadpool.join_all();
 }
 
-MessageListenerType
-ConsumeMessageOrderlyService::getConsumeMsgSerivceListenerType() {
+MessageListenerType ConsumeMessageOrderlyService::getConsumeMsgSerivceListenerType() {
   return m_pMessageListener->getMessageListenerType();
 }
 
-void ConsumeMessageOrderlyService::submitConsumeRequest(
-    PullRequest* request, vector<MQMessageExt>& msgs) {
-  m_ioService.post(boost::bind(&ConsumeMessageOrderlyService::ConsumeRequest,
-                               this, request));
+void ConsumeMessageOrderlyService::submitConsumeRequest(PullRequest* request, vector<MQMessageExt>& msgs) {
+  m_ioService.post(boost::bind(&ConsumeMessageOrderlyService::ConsumeRequest, this, request));
 }
 
-void ConsumeMessageOrderlyService::static_submitConsumeRequestLater(
-    void* context, PullRequest* request, bool tryLockMQ,
-    boost::asio::deadline_timer* t) {
-  LOG_INFO("submit consumeRequest later for mq:%s",
-           request->m_messageQueue.toString().c_str());
+void ConsumeMessageOrderlyService::static_submitConsumeRequestLater(void* context,
+                                                                    PullRequest* request,
+                                                                    bool tryLockMQ,
+                                                                    boost::asio::deadline_timer* t) {
+  LOG_INFO("submit consumeRequest later for mq:%s", request->m_messageQueue.toString().c_str());
   vector<MQMessageExt> msgs;
-  ConsumeMessageOrderlyService* orderlyService =
-      (ConsumeMessageOrderlyService*)context;
+  ConsumeMessageOrderlyService* orderlyService = (ConsumeMessageOrderlyService*)context;
   orderlyService->submitConsumeRequest(request, msgs);
   if (tryLockMQ) {
     orderlyService->lockOneMQ(request->m_messageQueue);
   }
-  if (t) deleteAndZero(t);
+  if (t)
+    deleteAndZero(t);
 }
 
 void ConsumeMessageOrderlyService::ConsumeRequest(PullRequest* request) {
   bool bGetMutex = false;
-  boost::unique_lock<boost::timed_mutex> lock(
-      request->getPullRequestCriticalSection(), boost::try_to_lock);
+  boost::unique_lock<boost::timed_mutex> lock(request->getPullRequestCriticalSection(), boost::try_to_lock);
   if (!lock.owns_lock()) {
-    if (!lock.timed_lock(boost::get_system_time() +
-                         boost::posix_time::seconds(1))) {
-      LOG_ERROR("ConsumeRequest of:%s get timed_mutex timeout",
-                request->m_messageQueue.toString().c_str());
+    if (!lock.timed_lock(boost::get_system_time() + boost::posix_time::seconds(1))) {
+      LOG_ERROR("ConsumeRequest of:%s get timed_mutex timeout", request->m_messageQueue.toString().c_str());
       return;
     } else {
       bGetMutex = true;
@@ -162,14 +148,12 @@ void ConsumeMessageOrderlyService::ConsumeRequest(PullRequest* request) {
   }
 
   if (m_pMessageListener) {
-    if ((request->isLocked() && !request->isLockExpired()) ||
-        m_pConsumer->getMessageModel() == BROADCASTING) {
+    if ((request->isLocked() && !request->isLockExpired()) || m_pConsumer->getMessageModel() == BROADCASTING) {
       DefaultMQPushConsumer* pConsumer = (DefaultMQPushConsumer*)m_pConsumer;
       uint64_t beginTime = UtilAll::currentTimeMillis();
       bool continueConsume = true;
       while (continueConsume) {
-        if ((UtilAll::currentTimeMillis() - beginTime) >
-            m_MaxTimeConsumeContinuously) {
+        if ((UtilAll::currentTimeMillis() - beginTime) > m_MaxTimeConsumeContinuously) {
           LOG_INFO(
               "continuely consume message queue:%s more than 60s, consume it "
               "later",
@@ -181,15 +165,13 @@ void ConsumeMessageOrderlyService::ConsumeRequest(PullRequest* request) {
         request->takeMessages(msgs, pConsumer->getConsumeMessageBatchMaxSize());
         if (!msgs.empty()) {
           request->setLastConsumeTimestamp(UtilAll::currentTimeMillis());
-          ConsumeStatus consumeStatus =
-              m_pMessageListener->consumeMessage(msgs);
+          ConsumeStatus consumeStatus = m_pMessageListener->consumeMessage(msgs);
           if (consumeStatus == RECONSUME_LATER) {
             request->makeMessageToCosumeAgain(msgs);
             continueConsume = false;
             tryLockLaterAndReconsume(request, false);
           } else {
-            m_pConsumer->updateConsumeOffset(request->m_messageQueue,
-                                             request->commit());
+            m_pConsumer->updateConsumeOffset(request->m_messageQueue, request->commit());
           }
         } else {
           continueConsume = false;
@@ -200,22 +182,18 @@ void ConsumeMessageOrderlyService::ConsumeRequest(PullRequest* request) {
           return;
         }
       }
-      LOG_DEBUG("consume once exit of mq:%s",
-                request->m_messageQueue.toString().c_str());
+      LOG_DEBUG("consume once exit of mq:%s", request->m_messageQueue.toString().c_str());
     } else {
-      LOG_ERROR("message queue:%s was not locked",
-                request->m_messageQueue.toString().c_str());
+      LOG_ERROR("message queue:%s was not locked", request->m_messageQueue.toString().c_str());
       tryLockLaterAndReconsume(request, true);
     }
   }
 }
-void ConsumeMessageOrderlyService::tryLockLaterAndReconsume(
-    PullRequest* request, bool tryLockMQ) {
+void ConsumeMessageOrderlyService::tryLockLaterAndReconsume(PullRequest* request, bool tryLockMQ) {
   int retryTimer = tryLockMQ ? 500 : 100;
-  boost::asio::deadline_timer* t = new boost::asio::deadline_timer(
-      m_async_ioService, boost::posix_time::milliseconds(retryTimer));
-  t->async_wait(boost::bind(
-      &(ConsumeMessageOrderlyService::static_submitConsumeRequestLater), this,
-      request, tryLockMQ, t));
+  boost::asio::deadline_timer* t =
+      new boost::asio::deadline_timer(m_async_ioService, boost::posix_time::milliseconds(retryTimer));
+  t->async_wait(
+      boost::bind(&(ConsumeMessageOrderlyService::static_submitConsumeRequestLater), this, request, tryLockMQ, t));
 }
 }

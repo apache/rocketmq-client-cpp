@@ -40,7 +40,7 @@ class MyMsgListener : public MessageListenerOrderly {
   MyMsgListener() {}
   virtual ~MyMsgListener() {}
 
-  virtual ConsumeStatus consumeMessage(const vector<MQMessageExt> &msgs) {
+  virtual ConsumeStatus consumeMessage(const vector<MQMessageExt>& msgs) {
     if (g_consumedCount.load() >= g_msgCount) {
       std::unique_lock<std::mutex> lK(g_mtx);
       g_quit.store(true);
@@ -54,7 +54,7 @@ class MyMsgListener : public MessageListenerOrderly {
   }
 };
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   RocketmqSendAndConsumerArgs info;
   if (!ParseArgs(argc, argv, &info)) {
     exit(-1);
@@ -74,7 +74,8 @@ int main(int argc, char *argv[]) {
   consumer.subscribe(info.topic, "*");
   consumer.setConsumeThreadCount(info.thread_count);
   consumer.setConsumeMessageBatchMaxSize(31);
-  if (info.syncpush) consumer.setAsyncPull(false);
+  if (info.syncpush)
+    consumer.setAsyncPull(false);
 
   MyMsgListener msglistener;
   consumer.registerMessageListener(&msglistener);
@@ -82,7 +83,7 @@ int main(int argc, char *argv[]) {
 
   try {
     consumer.start();
-  } catch (MQClientException &e) {
+  } catch (MQClientException& e) {
     std::cout << e << std::endl;
   }
 
@@ -94,7 +95,7 @@ int main(int argc, char *argv[]) {
 
     try {
       producer.send(msg);
-    } catch (MQException &e) {
+    } catch (MQException& e) {
       std::cout << e << endl;  // if catch excepiton , need re-send this msg by
                                // service
     }

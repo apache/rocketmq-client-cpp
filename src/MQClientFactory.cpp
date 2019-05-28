@@ -28,7 +28,8 @@
 
 namespace rocketmq {
 //<!***************************************************************************
-MQClientFactory::MQClientFactory(const string& clientID, int pullThreadNum,
+MQClientFactory::MQClientFactory(const string& clientID,
+                                 int pullThreadNum,
                                  uint64_t tcpConnectTimeout,
                                  uint64_t tcpTransportTryLockTimeout,
                                  string unitName)
@@ -38,9 +39,8 @@ MQClientFactory::MQClientFactory(const string& clientID, int pullThreadNum,
   boost::shared_ptr<TopicPublishInfo> pDefaultTopicInfo(new TopicPublishInfo());
   m_topicPublishInfoTable[DEFAULT_TOPIC] = pDefaultTopicInfo;
   m_pClientRemotingProcessor.reset(new ClientRemotingProcessor(this));
-  m_pClientAPIImpl.reset(new MQClientAPIImpl(
-      m_clientId, m_pClientRemotingProcessor.get(), pullThreadNum,
-      tcpConnectTimeout, tcpTransportTryLockTimeout, unitName));
+  m_pClientAPIImpl.reset(new MQClientAPIImpl(m_clientId, m_pClientRemotingProcessor.get(), pullThreadNum,
+                                             tcpConnectTimeout, tcpTransportTryLockTimeout, unitName));
   m_serviceState = CREATE_JUST;
   LOG_DEBUG("MQClientFactory construct");
 }
@@ -48,8 +48,7 @@ MQClientFactory::MQClientFactory(const string& clientID, int pullThreadNum,
 MQClientFactory::~MQClientFactory() {
   LOG_INFO("MQClientFactory:%s destruct", m_clientId.c_str());
 
-  for (TRDMAP::iterator itp = m_topicRouteTable.begin();
-       itp != m_topicRouteTable.end(); ++itp) {
+  for (TRDMAP::iterator itp = m_topicRouteTable.begin(); itp != m_topicRouteTable.end(); ++itp) {
     delete itp->second;
   }
 
@@ -68,23 +67,21 @@ void MQClientFactory::start() {
       LOG_INFO("MQClientFactory:%s start", m_clientId.c_str());
       m_serviceState = START_FAILED;
       //<!start time task;
-      m_async_service_thread.reset(new boost::thread(boost::bind(
-          &MQClientFactory::startScheduledTask, this, m_bFetchNSService)));
+      m_async_service_thread.reset(
+          new boost::thread(boost::bind(&MQClientFactory::startScheduledTask, this, m_bFetchNSService)));
       m_serviceState = RUNNING;
       break;
     case RUNNING:
     case SHUTDOWN_ALREADY:
     case START_FAILED:
-      LOG_INFO("The Factory object:%s start failed with fault state:%d",
-               m_clientId.c_str(), m_serviceState);
+      LOG_INFO("The Factory object:%s start failed with fault state:%d", m_clientId.c_str(), m_serviceState);
       break;
     default:
       break;
   }
 }
 
-void MQClientFactory::updateTopicRouteInfo(boost::system::error_code& ec,
-                                           boost::asio::deadline_timer* t) {
+void MQClientFactory::updateTopicRouteInfo(boost::system::error_code& ec, boost::asio::deadline_timer* t) {
   if ((getConsumerTableSize() == 0) && (getProducerTableSize() == 0)) {
     return;
   }
@@ -107,10 +104,8 @@ void MQClientFactory::updateTopicRouteInfo(boost::system::error_code& ec,
   }
 
   boost::system::error_code e;
-  t->expires_from_now(t->expires_from_now() + boost::posix_time::seconds(30),
-                      e);
-  t->async_wait(
-      boost::bind(&MQClientFactory::updateTopicRouteInfo, this, ec, t));
+  t->expires_from_now(t->expires_from_now() + boost::posix_time::seconds(30), e);
+  t->async_wait(boost::bind(&MQClientFactory::updateTopicRouteInfo, this, ec, t));
 }
 
 TopicRouteData* MQClientFactory::getTopicRouteData(const string& topic) {
@@ -121,8 +116,7 @@ TopicRouteData* MQClientFactory::getTopicRouteData(const string& topic) {
   return NULL;
 }
 
-void MQClientFactory::addTopicRouteData(const string& topic,
-                                        TopicRouteData* pTopicRouteData) {
+void MQClientFactory::addTopicRouteData(const string& topic, TopicRouteData* pTopicRouteData) {
   boost::lock_guard<boost::mutex> lock(m_topicRouteTableMutex);
   if (m_topicRouteTable.find(topic) != m_topicRouteTable.end()) {
     delete m_topicRouteTable[topic];
@@ -132,12 +126,12 @@ void MQClientFactory::addTopicRouteData(const string& topic,
 }
 
 boost::shared_ptr<TopicPublishInfo> MQClientFactory::tryToFindTopicPublishInfo(
-    const string& topic, const SessionCredentials& session_credentials) {
-  boost::lock_guard<boost::mutex> lock(
-      m_topicPublishInfoLock);  // add topicPublishInfoLock to avoid con-current
-                                // excuting updateTopicRouteInfoFromNameServer
-                                // when producer send msg  before topicRouteInfo
-                                // was got;
+    const string& topic,
+    const SessionCredentials& session_credentials) {
+  boost::lock_guard<boost::mutex> lock(m_topicPublishInfoLock);  // add topicPublishInfoLock to avoid con-current
+                                                                 // excuting updateTopicRouteInfoFromNameServer
+                                                                 // when producer send msg  before topicRouteInfo
+                                                                 // was got;
   if (!isTopicInfoValidInTable(topic)) {
     updateTopicRouteInfoFromNameServer(topic, session_credentials);
   }
@@ -156,29 +150,28 @@ boost::shared_ptr<TopicPublishInfo> MQClientFactory::tryToFindTopicPublishInfo(
   return getTopicPublishInfoFromTable(topic);
 }
 
-bool MQClientFactory::updateTopicRouteInfoFromNameServer(
-    const string& topic, const SessionCredentials& session_credentials,
-    bool isDefault /* = false */) {
+bool MQClientFactory::updateTopicRouteInfoFromNameServer(const string& topic,
+                                                         const SessionCredentials& session_credentials,
+                                                         bool isDefault /* = false */) {
   boost::lock_guard<boost::mutex> lock(m_factoryLock);
   unique_ptr<TopicRouteData> pTopicRouteData;
   LOG_INFO("updateTopicRouteInfoFromNameServer start:%s", topic.c_str());
 
   if (isDefault) {
-    pTopicRouteData.reset(m_pClientAPIImpl->getTopicRouteInfoFromNameServer(
-        DEFAULT_TOPIC, 1000 * 5, session_credentials));
+    pTopicRouteData.reset(
+        m_pClientAPIImpl->getTopicRouteInfoFromNameServer(DEFAULT_TOPIC, 1000 * 5, session_credentials));
     if (pTopicRouteData != NULL) {
       vector<QueueData>& queueDatas = pTopicRouteData->getQueueDatas();
       vector<QueueData>::iterator it = queueDatas.begin();
       for (; it != queueDatas.end(); ++it) {
-        // ¶ÁÐ´·ÖÇø¸öÊýÊÇÒ»ÖÂ£¬¹ÊÖ»×öÒ»´ÎÅÐ¶Ï;
         int queueNums = std::min(4, it->readQueueNums);
         it->readQueueNums = queueNums;
         it->writeQueueNums = queueNums;
       }
     }
+    LOG_DEBUG("getTopicRouteInfoFromNameServer is null for topic :%s", topic.c_str());
   } else {
-    pTopicRouteData.reset(m_pClientAPIImpl->getTopicRouteInfoFromNameServer(
-        topic, 1000 * 5, session_credentials));
+    pTopicRouteData.reset(m_pClientAPIImpl->getTopicRouteInfoFromNameServer(topic, 1000 * 5, session_credentials));
   }
 
   if (pTopicRouteData != NULL) {
@@ -201,16 +194,13 @@ bool MQClientFactory::updateTopicRouteInfoFromNameServer(
       vector<BrokerData> brokerList = pTopicRouteData->getBrokerDatas();
       vector<BrokerData>::iterator it = brokerList.begin();
       for (; it != brokerList.end(); ++it) {
-        LOG_INFO(
-            "updateTopicRouteInfoFromNameServer changed with broker name:%s",
-            (*it).brokerName.c_str());
+        LOG_INFO("updateTopicRouteInfoFromNameServer changed with broker name:%s", (*it).brokerName.c_str());
         addBrokerToAddrMap((*it).brokerName, (*it).brokerAddrs);
       }
 
       //<! update publish info;
       {
-        boost::shared_ptr<TopicPublishInfo> publishInfo(
-            topicRouteData2TopicPublishInfo(topic, pTopicRouteData.get()));
+        boost::shared_ptr<TopicPublishInfo> publishInfo(topicRouteData2TopicPublishInfo(topic, pTopicRouteData.get()));
         addTopicInfoToTable(topic, publishInfo);  // erase first, then add
       }
 
@@ -224,9 +214,8 @@ bool MQClientFactory::updateTopicRouteInfoFromNameServer(
   return false;
 }
 
-boost::shared_ptr<TopicPublishInfo>
-MQClientFactory::topicRouteData2TopicPublishInfo(const string& topic,
-                                                 TopicRouteData* pRoute) {
+boost::shared_ptr<TopicPublishInfo> MQClientFactory::topicRouteData2TopicPublishInfo(const string& topic,
+                                                                                     TopicRouteData* pRoute) {
   boost::shared_ptr<TopicPublishInfo> info(new TopicPublishInfo());
   string OrderTopicConf = pRoute->getOrderTopicConf();
   //<! order msg
@@ -265,8 +254,9 @@ MQClientFactory::topicRouteData2TopicPublishInfo(const string& topic,
   return info;
 }
 
-void MQClientFactory::topicRouteData2TopicSubscribeInfo(
-    const string& topic, TopicRouteData* pRoute, vector<MQMessageQueue>& mqs) {
+void MQClientFactory::topicRouteData2TopicSubscribeInfo(const string& topic,
+                                                        TopicRouteData* pRoute,
+                                                        vector<MQMessageQueue>& mqs) {
   mqs.clear();
   vector<QueueData>& queueDatas = pRoute->getQueueDatas();
   vector<QueueData>::iterator it = queueDatas.begin();
@@ -282,13 +272,14 @@ void MQClientFactory::topicRouteData2TopicSubscribeInfo(
 }
 
 void MQClientFactory::shutdown() {
-  if (getConsumerTableSize() != 0) return;
+  if (getConsumerTableSize() != 0)
+    return;
 
-  if (getProducerTableSize() != 0) return;
+  if (getProducerTableSize() != 0)
+    return;
 
   switch (m_serviceState) {
     case RUNNING: {
-      //<! stop;
       if (m_consumer_async_service_thread) {
         m_consumer_async_ioService.stop();
         m_consumer_async_service_thread->interrupt();
@@ -313,7 +304,6 @@ void MQClientFactory::shutdown() {
       break;
   }
 
-  //<!É¾³ý×Ô¼º;
   MQClientManager::getInstance()->removeClientFactory(m_clientId);
 }
 
@@ -332,9 +322,9 @@ bool MQClientFactory::registerProducer(MQProducer* pProducer) {
   //<!set nameserver;
   if (namesrvaddr.empty()) {
     string nameSrvDomain(pProducer->getNamesrvDomain());
-    if (!nameSrvDomain.empty()) m_nameSrvDomain = nameSrvDomain;
-    pProducer->setNamesrvAddr(
-        m_pClientAPIImpl->fetchNameServerAddr(m_nameSrvDomain));
+    if (!nameSrvDomain.empty())
+      m_nameSrvDomain = nameSrvDomain;
+    pProducer->setNamesrvAddr(m_pClientAPIImpl->fetchNameServerAddr(m_nameSrvDomain));
   } else {
     m_bFetchNSService = false;
     m_pClientAPIImpl->updateNameServerAddr(namesrvaddr);
@@ -364,9 +354,9 @@ bool MQClientFactory::registerConsumer(MQConsumer* pConsumer) {
   //<!set nameserver;
   if (namesrvaddr.empty()) {
     string nameSrvDomain(pConsumer->getNamesrvDomain());
-    if (!nameSrvDomain.empty()) m_nameSrvDomain = nameSrvDomain;
-    pConsumer->setNamesrvAddr(
-        m_pClientAPIImpl->fetchNameServerAddr(m_nameSrvDomain));
+    if (!nameSrvDomain.empty())
+      m_nameSrvDomain = nameSrvDomain;
+    pConsumer->setNamesrvAddr(m_pClientAPIImpl->fetchNameServerAddr(m_nameSrvDomain));
   } else {
     m_bFetchNSService = false;
     m_pClientAPIImpl->updateNameServerAddr(namesrvaddr);
@@ -391,23 +381,23 @@ MQProducer* MQClientFactory::selectProducer(const string& producerName) {
   return NULL;
 }
 
-bool MQClientFactory::getSessionCredentialFromProducerTable(
-    SessionCredentials& sessionCredentials) {
+bool MQClientFactory::getSessionCredentialFromProducerTable(SessionCredentials& sessionCredentials) {
   boost::lock_guard<boost::mutex> lock(m_producerTableMutex);
-  for (MQPMAP::iterator it = m_producerTable.begin();
-       it != m_producerTable.end(); ++it) {
-    if (it->second) sessionCredentials = it->second->getSessionCredentials();
+  for (MQPMAP::iterator it = m_producerTable.begin(); it != m_producerTable.end(); ++it) {
+    if (it->second)
+      sessionCredentials = it->second->getSessionCredentials();
   }
 
-  if (sessionCredentials.isValid()) return true;
+  if (sessionCredentials.isValid())
+    return true;
 
   return false;
 }
 
-bool MQClientFactory::addProducerToTable(const string& producerName,
-                                         MQProducer* pMQProducer) {
+bool MQClientFactory::addProducerToTable(const string& producerName, MQProducer* pMQProducer) {
   boost::lock_guard<boost::mutex> lock(m_producerTableMutex);
-  if (m_producerTable.find(producerName) != m_producerTable.end()) return false;
+  if (m_producerTable.find(producerName) != m_producerTable.end())
+    return false;
   m_producerTable[producerName] = pMQProducer;
   return true;
 }
@@ -423,11 +413,9 @@ int MQClientFactory::getProducerTableSize() {
   return m_producerTable.size();
 }
 
-void MQClientFactory::insertProducerInfoToHeartBeatData(
-    HeartbeatData* pHeartbeatData) {
+void MQClientFactory::insertProducerInfoToHeartBeatData(HeartbeatData* pHeartbeatData) {
   boost::lock_guard<boost::mutex> lock(m_producerTableMutex);
-  for (MQPMAP::iterator it = m_producerTable.begin();
-       it != m_producerTable.end(); ++it) {
+  for (MQPMAP::iterator it = m_producerTable.begin(); it != m_producerTable.end(); ++it) {
     ProducerData producerData;
     producerData.groupName = it->first;
     pHeartbeatData->insertDataToProducerDataSet(producerData);
@@ -442,36 +430,36 @@ MQConsumer* MQClientFactory::selectConsumer(const string& group) {
   return NULL;
 }
 
-bool MQClientFactory::getSessionCredentialFromConsumerTable(
-    SessionCredentials& sessionCredentials) {
+bool MQClientFactory::getSessionCredentialFromConsumerTable(SessionCredentials& sessionCredentials) {
   boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
-  for (MQCMAP::iterator it = m_consumerTable.begin();
-       it != m_consumerTable.end(); ++it) {
-    if (it->second) sessionCredentials = it->second->getSessionCredentials();
+  for (MQCMAP::iterator it = m_consumerTable.begin(); it != m_consumerTable.end(); ++it) {
+    if (it->second)
+      sessionCredentials = it->second->getSessionCredentials();
   }
 
-  if (sessionCredentials.isValid()) return true;
+  if (sessionCredentials.isValid())
+    return true;
 
   return false;
 }
 
-bool MQClientFactory::getSessionCredentialFromConsumer(
-    const string& consumerGroup, SessionCredentials& sessionCredentials) {
+bool MQClientFactory::getSessionCredentialFromConsumer(const string& consumerGroup,
+                                                       SessionCredentials& sessionCredentials) {
   boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
   if (m_consumerTable.find(consumerGroup) != m_consumerTable.end()) {
-    sessionCredentials =
-        m_consumerTable[consumerGroup]->getSessionCredentials();
+    sessionCredentials = m_consumerTable[consumerGroup]->getSessionCredentials();
   }
 
-  if (sessionCredentials.isValid()) return true;
+  if (sessionCredentials.isValid())
+    return true;
 
   return false;
 }
 
-bool MQClientFactory::addConsumerToTable(const string& consumerName,
-                                         MQConsumer* pMQConsumer) {
+bool MQClientFactory::addConsumerToTable(const string& consumerName, MQConsumer* pMQConsumer) {
   boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
-  if (m_consumerTable.find(consumerName) != m_consumerTable.end()) return false;
+  if (m_consumerTable.find(consumerName) != m_consumerTable.end())
+    return false;
   m_consumerTable[consumerName] = pMQConsumer;
   return true;
 }
@@ -490,11 +478,9 @@ int MQClientFactory::getConsumerTableSize() {
   return m_consumerTable.size();
 }
 
-void MQClientFactory::getTopicListFromConsumerSubscription(
-    set<string>& topicList) {
+void MQClientFactory::getTopicListFromConsumerSubscription(set<string>& topicList) {
   boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
-  for (MQCMAP::iterator it = m_consumerTable.begin();
-       it != m_consumerTable.end(); ++it) {
+  for (MQCMAP::iterator it = m_consumerTable.begin(); it != m_consumerTable.end(); ++it) {
     vector<SubscriptionData> result;
     it->second->getSubscriptions(result);
 
@@ -505,20 +491,16 @@ void MQClientFactory::getTopicListFromConsumerSubscription(
   }
 }
 
-void MQClientFactory::updateConsumerSubscribeTopicInfo(
-    const string& topic, vector<MQMessageQueue> mqs) {
+void MQClientFactory::updateConsumerSubscribeTopicInfo(const string& topic, vector<MQMessageQueue> mqs) {
   boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
-  for (MQCMAP::iterator it = m_consumerTable.begin();
-       it != m_consumerTable.end(); ++it) {
+  for (MQCMAP::iterator it = m_consumerTable.begin(); it != m_consumerTable.end(); ++it) {
     it->second->updateTopicSubscribeInfo(topic, mqs);
   }
 }
 
-void MQClientFactory::insertConsumerInfoToHeartBeatData(
-    HeartbeatData* pHeartbeatData) {
+void MQClientFactory::insertConsumerInfoToHeartBeatData(HeartbeatData* pHeartbeatData) {
   boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
-  for (MQCMAP::iterator it = m_consumerTable.begin();
-       it != m_consumerTable.end(); ++it) {
+  for (MQCMAP::iterator it = m_consumerTable.begin(); it != m_consumerTable.end(); ++it) {
     MQConsumer* pConsumer = it->second;
     ConsumerData consumerData;
     consumerData.groupName = pConsumer->getGroupName();
@@ -535,9 +517,7 @@ void MQClientFactory::insertConsumerInfoToHeartBeatData(
   }
 }
 
-void MQClientFactory::addTopicInfoToTable(
-    const string& topic,
-    boost::shared_ptr<TopicPublishInfo> pTopicPublishInfo) {
+void MQClientFactory::addTopicInfoToTable(const string& topic, boost::shared_ptr<TopicPublishInfo> pTopicPublishInfo) {
   boost::lock_guard<boost::mutex> lock(m_topicPublishInfoTableMutex);
   if (m_topicPublishInfoTable.find(topic) != m_topicPublishInfoTable.end()) {
     m_topicPublishInfoTable.erase(topic);
@@ -555,13 +535,13 @@ void MQClientFactory::eraseTopicInfoFromTable(const string& topic) {
 bool MQClientFactory::isTopicInfoValidInTable(const string& topic) {
   boost::lock_guard<boost::mutex> lock(m_topicPublishInfoTableMutex);
   if (m_topicPublishInfoTable.find(topic) != m_topicPublishInfoTable.end()) {
-    if (m_topicPublishInfoTable[topic]->ok()) return true;
+    if (m_topicPublishInfoTable[topic]->ok())
+      return true;
   }
   return false;
 }
 
-boost::shared_ptr<TopicPublishInfo>
-MQClientFactory::getTopicPublishInfoFromTable(const string& topic) {
+boost::shared_ptr<TopicPublishInfo> MQClientFactory::getTopicPublishInfoFromTable(const string& topic) {
   boost::lock_guard<boost::mutex> lock(m_topicPublishInfoTableMutex);
   if (m_topicPublishInfoTable.find(topic) != m_topicPublishInfoTable.end()) {
     return m_topicPublishInfoTable[topic];
@@ -572,8 +552,7 @@ MQClientFactory::getTopicPublishInfoFromTable(const string& topic) {
 
 void MQClientFactory::getTopicListFromTopicPublishInfo(set<string>& topicList) {
   boost::lock_guard<boost::mutex> lock(m_topicPublishInfoTableMutex);
-  for (TPMap::iterator itp = m_topicPublishInfoTable.begin();
-       itp != m_topicPublishInfoTable.end(); ++itp) {
+  for (TPMap::iterator itp = m_topicPublishInfoTable.begin(); itp != m_topicPublishInfoTable.end(); ++itp) {
     topicList.insert(itp->first);
   }
 }
@@ -583,8 +562,7 @@ void MQClientFactory::clearBrokerAddrMap() {
   m_brokerAddrTable.clear();
 }
 
-void MQClientFactory::addBrokerToAddrMap(const string& brokerName,
-                                         map<int, string>& brokerAddrs) {
+void MQClientFactory::addBrokerToAddrMap(const string& brokerName, map<int, string>& brokerAddrs) {
   boost::lock_guard<boost::mutex> lock(m_brokerAddrlock);
   if (m_brokerAddrTable.find(brokerName) != m_brokerAddrTable.end()) {
     m_brokerAddrTable.erase(brokerName);
@@ -626,47 +604,47 @@ string MQClientFactory::findBrokerAddressInPublish(const string& brokerName) {
   }
 
   brokerTable.clear();
-  if (found) return brokerAddr;
+  if (found)
+    return brokerAddr;
 
   return "";
 }
 
-FindBrokerResult *MQClientFactory::findBrokerAddressInSubscribe(const string &brokerName,
+FindBrokerResult* MQClientFactory::findBrokerAddressInSubscribe(const string& brokerName,
                                                                 int brokerId,
                                                                 bool onlyThisBroker) {
-    string brokerAddr;
-    bool slave = false;
-    bool found = false;
-    BrokerAddrMAP brokerTable(getBrokerAddrMap());
+  string brokerAddr;
+  bool slave = false;
+  bool found = false;
+  BrokerAddrMAP brokerTable(getBrokerAddrMap());
 
-    if (brokerTable.find(brokerName) != brokerTable.end()) {
-        map<int, string> brokerMap(brokerTable[brokerName]);
-        if (!brokerMap.empty()) {
-            auto iter = brokerMap.find(brokerId);
-            if (iter != brokerMap.end()) {
-                brokerAddr = iter->second;
-                slave = (brokerId != MASTER_ID);
-                found = true;
-            } else if (!onlyThisBroker) {  // not only from master
-                iter = brokerMap.begin();
-                brokerAddr = iter->second;
-                slave = iter->first != MASTER_ID;
-                found = true;
-            }
-        }
+  if (brokerTable.find(brokerName) != brokerTable.end()) {
+    map<int, string> brokerMap(brokerTable[brokerName]);
+    if (!brokerMap.empty()) {
+      auto iter = brokerMap.find(brokerId);
+      if (iter != brokerMap.end()) {
+        brokerAddr = iter->second;
+        slave = (brokerId != MASTER_ID);
+        found = true;
+      } else if (!onlyThisBroker) {  // not only from master
+        iter = brokerMap.begin();
+        brokerAddr = iter->second;
+        slave = iter->first != MASTER_ID;
+        found = true;
+      }
     }
+  }
 
-    brokerTable.clear();
+  brokerTable.clear();
 
-    if (found) {
-        return new FindBrokerResult(brokerAddr, slave);
-    }
+  if (found) {
+    return new FindBrokerResult(brokerAddr, slave);
+  }
 
-    return nullptr;
+  return nullptr;
 }
 
-FindBrokerResult* MQClientFactory::findBrokerAddressInAdmin(
-    const string& brokerName) {
+FindBrokerResult* MQClientFactory::findBrokerAddressInAdmin(const string& brokerName) {
   BrokerAddrMAP brokerTable(getBrokerAddrMap());
   bool found = false;
   bool slave = false;
@@ -683,7 +661,8 @@ FindBrokerResult* MQClientFactory::findBrokerAddressInAdmin(
   }
 
   brokerTable.clear();
-  if (found) return new FindBrokerResult(brokerAddr, slave);
+  if (found)
+    return new FindBrokerResult(brokerAddr, slave);
 
   return NULL;
 }
@@ -710,17 +689,16 @@ void MQClientFactory::sendHeartbeatToAllBroker() {
 
   SessionCredentials session_credentials;
   getSessionCredentialsFromOneOfProducerOrConsumer(session_credentials);
-  for (BrokerAddrMAP::iterator it = brokerTable.begin();
-       it != brokerTable.end(); ++it) {
+  for (BrokerAddrMAP::iterator it = brokerTable.begin(); it != brokerTable.end(); ++it) {
     map<int, string> brokerMap(it->second);
     map<int, string>::iterator it1 = brokerMap.begin();
     for (; it1 != brokerMap.end(); ++it1) {
       string& addr = it1->second;
-      if (consumerEmpty && it1->first != MASTER_ID) continue;
+      if (consumerEmpty && it1->first != MASTER_ID)
+        continue;
 
       try {
-        m_pClientAPIImpl->sendHearbeat(addr, heartbeatData.get(),
-                                       session_credentials);
+        m_pClientAPIImpl->sendHearbeat(addr, heartbeatData.get(), session_credentials);
       } catch (MQException& e) {
         LOG_ERROR(e.what());
       }
@@ -729,13 +707,11 @@ void MQClientFactory::sendHeartbeatToAllBroker() {
   brokerTable.clear();
 }
 
-void MQClientFactory::persistAllConsumerOffset(boost::system::error_code& ec,
-                                               boost::asio::deadline_timer* t) {
+void MQClientFactory::persistAllConsumerOffset(boost::system::error_code& ec, boost::asio::deadline_timer* t) {
   {
     boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
     if (m_consumerTable.size() > 0) {
-      for (MQCMAP::iterator it = m_consumerTable.begin();
-           it != m_consumerTable.end(); ++it) {
+      for (MQCMAP::iterator it = m_consumerTable.begin(); it != m_consumerTable.end(); ++it) {
         LOG_DEBUG("Client factory start persistAllConsumerOffset");
         it->second->persistConsumerOffset();
       }
@@ -744,8 +720,7 @@ void MQClientFactory::persistAllConsumerOffset(boost::system::error_code& ec,
 
   boost::system::error_code e;
   t->expires_from_now(t->expires_from_now() + boost::posix_time::seconds(5), e);
-  t->async_wait(
-      boost::bind(&MQClientFactory::persistAllConsumerOffset, this, ec, t));
+  t->async_wait(boost::bind(&MQClientFactory::persistAllConsumerOffset, this, ec, t));
 }
 
 HeartbeatData* MQClientFactory::prepareHeartbeatData() {
@@ -762,26 +737,20 @@ HeartbeatData* MQClientFactory::prepareHeartbeatData() {
   return pHeartbeatData;
 }
 
-void MQClientFactory::timerCB_sendHeartbeatToAllBroker(
-    boost::system::error_code& ec, boost::asio::deadline_timer* t) {
+void MQClientFactory::timerCB_sendHeartbeatToAllBroker(boost::system::error_code& ec, boost::asio::deadline_timer* t) {
   sendHeartbeatToAllBroker();
 
   boost::system::error_code e;
-  t->expires_from_now(t->expires_from_now() + boost::posix_time::seconds(30),
-                      e);
-  t->async_wait(boost::bind(&MQClientFactory::timerCB_sendHeartbeatToAllBroker,
-                            this, ec, t));
+  t->expires_from_now(t->expires_from_now() + boost::posix_time::seconds(30), e);
+  t->async_wait(boost::bind(&MQClientFactory::timerCB_sendHeartbeatToAllBroker, this, ec, t));
 }
 
-void MQClientFactory::fetchNameServerAddr(boost::system::error_code& ec,
-                                          boost::asio::deadline_timer* t) {
+void MQClientFactory::fetchNameServerAddr(boost::system::error_code& ec, boost::asio::deadline_timer* t) {
   m_pClientAPIImpl->fetchNameServerAddr(m_nameSrvDomain);
 
   boost::system::error_code e;
-  t->expires_from_now(
-      t->expires_from_now() + boost::posix_time::seconds(60 * 2), e);
-  t->async_wait(
-      boost::bind(&MQClientFactory::fetchNameServerAddr, this, ec, t));
+  t->expires_from_now(t->expires_from_now() + boost::posix_time::seconds(60 * 2), e);
+  t->async_wait(boost::bind(&MQClientFactory::fetchNameServerAddr, this, ec, t));
 }
 
 void MQClientFactory::startScheduledTask(bool startFetchNSService) {
@@ -791,23 +760,18 @@ void MQClientFactory::startScheduledTask(bool startFetchNSService) {
                                                           // callback
 
   boost::system::error_code ec1;
-  boost::asio::deadline_timer t1(m_async_ioService,
-                                 boost::posix_time::seconds(3));
-  t1.async_wait(
-      boost::bind(&MQClientFactory::updateTopicRouteInfo, this, ec1, &t1));
+  boost::asio::deadline_timer t1(m_async_ioService, boost::posix_time::seconds(3));
+  t1.async_wait(boost::bind(&MQClientFactory::updateTopicRouteInfo, this, ec1, &t1));
 
   boost::system::error_code ec2;
-  boost::asio::deadline_timer t2(m_async_ioService,
-                                 boost::posix_time::milliseconds(10));
-  t2.async_wait(boost::bind(&MQClientFactory::timerCB_sendHeartbeatToAllBroker,
-                            this, ec2, &t2));
+  boost::asio::deadline_timer t2(m_async_ioService, boost::posix_time::milliseconds(10));
+  t2.async_wait(boost::bind(&MQClientFactory::timerCB_sendHeartbeatToAllBroker, this, ec2, &t2));
 
   if (startFetchNSService) {
     boost::system::error_code ec5;
-    boost::asio::deadline_timer* t5 = new boost::asio::deadline_timer(
-        m_async_ioService, boost::posix_time::seconds(60 * 2));
-    t5->async_wait(
-        boost::bind(&MQClientFactory::fetchNameServerAddr, this, ec5, t5));
+    boost::asio::deadline_timer* t5 =
+        new boost::asio::deadline_timer(m_async_ioService, boost::posix_time::seconds(60 * 2));
+    t5->async_wait(boost::bind(&MQClientFactory::fetchNameServerAddr, this, ec5, t5));
   }
 
   LOG_INFO("start scheduled task:%s", m_clientId.c_str());
@@ -819,54 +783,44 @@ void MQClientFactory::rebalanceImmediately() {
   // m_consumer_async_service_thread will be only started once for all consumer
   if (m_consumer_async_service_thread == NULL) {
     doRebalance();
-    m_consumer_async_service_thread.reset(new boost::thread(
-        boost::bind(&MQClientFactory::consumer_timerOperation, this)));
+    m_consumer_async_service_thread.reset(
+        new boost::thread(boost::bind(&MQClientFactory::consumer_timerOperation, this)));
   }
 }
 
 void MQClientFactory::consumer_timerOperation() {
-  LOG_INFO("clientFactory:%s start consumer_timerOperation",
-           m_clientId.c_str());
-  boost::asio::io_service::work work(
-      m_consumer_async_ioService);  // avoid async io
-                                    // service stops after
-                                    // first timer timeout
-                                    // callback
+  LOG_INFO("clientFactory:%s start consumer_timerOperation", m_clientId.c_str());
+  boost::asio::io_service::work work(m_consumer_async_ioService);  // avoid async io
+                                                                   // service stops after
+                                                                   // first timer timeout
+                                                                   // callback
 
   boost::system::error_code ec1;
-  boost::asio::deadline_timer t(m_consumer_async_ioService,
-                                boost::posix_time::seconds(10));
-  t.async_wait(
-      boost::bind(&MQClientFactory::timerCB_doRebalance, this, ec1, &t));
+  boost::asio::deadline_timer t(m_consumer_async_ioService, boost::posix_time::seconds(10));
+  t.async_wait(boost::bind(&MQClientFactory::timerCB_doRebalance, this, ec1, &t));
 
   boost::system::error_code ec2;
-  boost::asio::deadline_timer t2(m_consumer_async_ioService,
-                                 boost::posix_time::seconds(5));
-  t2.async_wait(
-      boost::bind(&MQClientFactory::persistAllConsumerOffset, this, ec2, &t2));
+  boost::asio::deadline_timer t2(m_consumer_async_ioService, boost::posix_time::seconds(5));
+  t2.async_wait(boost::bind(&MQClientFactory::persistAllConsumerOffset, this, ec2, &t2));
 
   boost::system::error_code ec;
   m_consumer_async_ioService.run(ec);
   LOG_INFO("clientFactory:%s stop consumer_timerOperation", m_clientId.c_str());
 }
 
-void MQClientFactory::timerCB_doRebalance(boost::system::error_code& ec,
-                                          boost::asio::deadline_timer* t) {
+void MQClientFactory::timerCB_doRebalance(boost::system::error_code& ec, boost::asio::deadline_timer* t) {
   doRebalance();
 
   boost::system::error_code e;
-  t->expires_from_now(t->expires_from_now() + boost::posix_time::seconds(10),
-                      e);
-  t->async_wait(
-      boost::bind(&MQClientFactory::timerCB_doRebalance, this, ec, t));
+  t->expires_from_now(t->expires_from_now() + boost::posix_time::seconds(10), e);
+  t->async_wait(boost::bind(&MQClientFactory::timerCB_doRebalance, this, ec, t));
 }
 
 void MQClientFactory::doRebalance() {
   LOG_INFO("Client factory:%s start dorebalance", m_clientId.c_str());
   if (getConsumerTableSize() > 0) {
     boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
-    for (MQCMAP::iterator it = m_consumerTable.begin();
-         it != m_consumerTable.end(); ++it) {
+    for (MQCMAP::iterator it = m_consumerTable.begin(); it != m_consumerTable.end(); ++it) {
       it->second->doRebalance();
     }
   }
@@ -876,33 +830,30 @@ void MQClientFactory::doRebalance() {
 void MQClientFactory::doRebalanceByConsumerGroup(const string& consumerGroup) {
   boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
   if (m_consumerTable.find(consumerGroup) != m_consumerTable.end()) {
-    LOG_INFO("Client factory:%s start dorebalance for consumer:%s",
-             m_clientId.c_str(), consumerGroup.c_str());
+    LOG_INFO("Client factory:%s start dorebalance for consumer:%s", m_clientId.c_str(), consumerGroup.c_str());
     MQConsumer* pMQConsumer = m_consumerTable[consumerGroup];
     pMQConsumer->doRebalance();
   }
 }
 
-void MQClientFactory::unregisterClient(
-    const string& producerGroup, const string& consumerGroup,
-    const SessionCredentials& sessionCredentials) {
+void MQClientFactory::unregisterClient(const string& producerGroup,
+                                       const string& consumerGroup,
+                                       const SessionCredentials& sessionCredentials) {
   BrokerAddrMAP brokerTable(getBrokerAddrMap());
-  for (BrokerAddrMAP::iterator it = brokerTable.begin();
-       it != brokerTable.end(); ++it) {
+  for (BrokerAddrMAP::iterator it = brokerTable.begin(); it != brokerTable.end(); ++it) {
     map<int, string> brokerMap(it->second);
     map<int, string>::iterator it1 = brokerMap.begin();
     for (; it1 != brokerMap.end(); ++it1) {
       string& addr = it1->second;
-      m_pClientAPIImpl->unregisterClient(addr, m_clientId, producerGroup,
-                                         consumerGroup, sessionCredentials);
+      m_pClientAPIImpl->unregisterClient(addr, m_clientId, producerGroup, consumerGroup, sessionCredentials);
     }
   }
 }
 
 //<!************************************************************************
-void MQClientFactory::fetchSubscribeMessageQueues(
-    const string& topic, vector<MQMessageQueue>& mqs,
-    const SessionCredentials& sessionCredentials) {
+void MQClientFactory::fetchSubscribeMessageQueues(const string& topic,
+                                                  vector<MQMessageQueue>& mqs,
+                                                  const SessionCredentials& sessionCredentials) {
   TopicRouteData* pTopicRouteData = getTopicRouteData(topic);
   if (pTopicRouteData == NULL) {
     updateTopicRouteInfoFromNameServer(topic, sessionCredentials);
@@ -919,12 +870,12 @@ void MQClientFactory::fetchSubscribeMessageQueues(
 }
 
 //<!***************************************************************************
-void MQClientFactory::createTopic(
-    const string& key, const string& newTopic, int queueNum,
-    const SessionCredentials& sessionCredentials) {}
+void MQClientFactory::createTopic(const string& key,
+                                  const string& newTopic,
+                                  int queueNum,
+                                  const SessionCredentials& sessionCredentials) {}
 
-int64 MQClientFactory::minOffset(const MQMessageQueue& mq,
-                                 const SessionCredentials& sessionCredentials) {
+int64 MQClientFactory::minOffset(const MQMessageQueue& mq, const SessionCredentials& sessionCredentials) {
   string brokerAddr = findBrokerAddressInPublish(mq.getBrokerName());
   if (brokerAddr.empty()) {
     updateTopicRouteInfoFromNameServer(mq.getTopic(), sessionCredentials);
@@ -933,9 +884,7 @@ int64 MQClientFactory::minOffset(const MQMessageQueue& mq,
 
   if (!brokerAddr.empty()) {
     try {
-      return m_pClientAPIImpl->getMinOffset(brokerAddr, mq.getTopic(),
-                                            mq.getQueueId(), 1000 * 3,
-                                            sessionCredentials);
+      return m_pClientAPIImpl->getMinOffset(brokerAddr, mq.getTopic(), mq.getQueueId(), 1000 * 3, sessionCredentials);
     } catch (MQException& e) {
       LOG_ERROR(e.what());
     }
@@ -943,8 +892,7 @@ int64 MQClientFactory::minOffset(const MQMessageQueue& mq,
   THROW_MQEXCEPTION(MQClientException, "The broker is not exist", -1);
 }
 
-int64 MQClientFactory::maxOffset(const MQMessageQueue& mq,
-                                 const SessionCredentials& sessionCredentials) {
+int64 MQClientFactory::maxOffset(const MQMessageQueue& mq, const SessionCredentials& sessionCredentials) {
   string brokerAddr = findBrokerAddressInPublish(mq.getBrokerName());
   if (brokerAddr.empty()) {
     updateTopicRouteInfoFromNameServer(mq.getTopic(), sessionCredentials);
@@ -953,8 +901,26 @@ int64 MQClientFactory::maxOffset(const MQMessageQueue& mq,
 
   if (!brokerAddr.empty()) {
     try {
-      return m_pClientAPIImpl->getMaxOffset(brokerAddr, mq.getTopic(),
-                                            mq.getQueueId(), 1000 * 3,
+      return m_pClientAPIImpl->getMaxOffset(brokerAddr, mq.getTopic(), mq.getQueueId(), 1000 * 3, sessionCredentials);
+    } catch (MQException& e) {
+      THROW_MQEXCEPTION(MQClientException, "Invoke Broker exception", -1);
+    }
+  }
+  THROW_MQEXCEPTION(MQClientException, "The broker is not exist", -1);
+}
+
+int64 MQClientFactory::searchOffset(const MQMessageQueue& mq,
+                                    int64 timestamp,
+                                    const SessionCredentials& sessionCredentials) {
+  string brokerAddr = findBrokerAddressInPublish(mq.getBrokerName());
+  if (brokerAddr.empty()) {
+    updateTopicRouteInfoFromNameServer(mq.getTopic(), sessionCredentials);
+    brokerAddr = findBrokerAddressInPublish(mq.getBrokerName());
+  }
+
+  if (!brokerAddr.empty()) {
+    try {
+      return m_pClientAPIImpl->searchOffset(brokerAddr, mq.getTopic(), mq.getQueueId(), timestamp, 1000 * 3,
                                             sessionCredentials);
     } catch (MQException& e) {
       THROW_MQEXCEPTION(MQClientException, "Invoke Broker exception", -1);
@@ -963,29 +929,7 @@ int64 MQClientFactory::maxOffset(const MQMessageQueue& mq,
   THROW_MQEXCEPTION(MQClientException, "The broker is not exist", -1);
 }
 
-int64 MQClientFactory::searchOffset(
-    const MQMessageQueue& mq, int64 timestamp,
-    const SessionCredentials& sessionCredentials) {
-  string brokerAddr = findBrokerAddressInPublish(mq.getBrokerName());
-  if (brokerAddr.empty()) {
-    updateTopicRouteInfoFromNameServer(mq.getTopic(), sessionCredentials);
-    brokerAddr = findBrokerAddressInPublish(mq.getBrokerName());
-  }
-
-  if (!brokerAddr.empty()) {
-    try {
-      return m_pClientAPIImpl->searchOffset(brokerAddr, mq.getTopic(),
-                                            mq.getQueueId(), timestamp,
-                                            1000 * 3, sessionCredentials);
-    } catch (MQException& e) {
-      THROW_MQEXCEPTION(MQClientException, "Invoke Broker exception", -1);
-    }
-  }
-  THROW_MQEXCEPTION(MQClientException, "The broker is not exist", -1);
-}
-
-MQMessageExt* MQClientFactory::viewMessage(
-    const string& msgId, const SessionCredentials& sessionCredentials) {
+MQMessageExt* MQClientFactory::viewMessage(const string& msgId, const SessionCredentials& sessionCredentials) {
   try {
     return NULL;
   } catch (MQException& e) {
@@ -993,8 +937,7 @@ MQMessageExt* MQClientFactory::viewMessage(
   }
 }
 
-int64 MQClientFactory::earliestMsgStoreTime(
-    const MQMessageQueue& mq, const SessionCredentials& sessionCredentials) {
+int64 MQClientFactory::earliestMsgStoreTime(const MQMessageQueue& mq, const SessionCredentials& sessionCredentials) {
   string brokerAddr = findBrokerAddressInPublish(mq.getBrokerName());
   if (brokerAddr.empty()) {
     updateTopicRouteInfoFromNameServer(mq.getTopic(), sessionCredentials);
@@ -1003,9 +946,8 @@ int64 MQClientFactory::earliestMsgStoreTime(
 
   if (!brokerAddr.empty()) {
     try {
-      return m_pClientAPIImpl->getEarliestMsgStoretime(
-          brokerAddr, mq.getTopic(), mq.getQueueId(), 1000 * 3,
-          sessionCredentials);
+      return m_pClientAPIImpl->getEarliestMsgStoretime(brokerAddr, mq.getTopic(), mq.getQueueId(), 1000 * 3,
+                                                       sessionCredentials);
     } catch (MQException& e) {
       THROW_MQEXCEPTION(MQClientException, "Invoke Broker exception", -1);
     }
@@ -1013,15 +955,19 @@ int64 MQClientFactory::earliestMsgStoreTime(
   THROW_MQEXCEPTION(MQClientException, "The broker is not exist", -1);
 }
 
-QueryResult MQClientFactory::queryMessage(
-    const string& topic, const string& key, int maxNum, int64 begin, int64 end,
-    const SessionCredentials& sessionCredentials) {
+QueryResult MQClientFactory::queryMessage(const string& topic,
+                                          const string& key,
+                                          int maxNum,
+                                          int64 begin,
+                                          int64 end,
+                                          const SessionCredentials& sessionCredentials) {
   THROW_MQEXCEPTION(MQClientException, "queryMessage", -1);
 }
 
-void MQClientFactory::findConsumerIds(
-    const string& topic, const string& group, vector<string>& cids,
-    const SessionCredentials& sessionCredentials) {
+void MQClientFactory::findConsumerIds(const string& topic,
+                                      const string& group,
+                                      vector<string>& cids,
+                                      const SessionCredentials& sessionCredentials) {
   string brokerAddr;
   TopicRouteData* pTopicRouteData = getTopicRouteData(topic);
   if (pTopicRouteData == NULL) {
@@ -1035,8 +981,7 @@ void MQClientFactory::findConsumerIds(
   if (!brokerAddr.empty()) {
     try {
       LOG_INFO("getConsumerIdList from broker:%s", brokerAddr.c_str());
-      return m_pClientAPIImpl->getConsumerIdListByGroup(
-          brokerAddr, group, cids, 5000, sessionCredentials);
+      return m_pClientAPIImpl->getConsumerIdListByGroup(brokerAddr, group, cids, 5000, sessionCredentials);
     } catch (MQException& e) {
       LOG_ERROR(e.what());
     }
@@ -1044,19 +989,20 @@ void MQClientFactory::findConsumerIds(
 }
 
 void MQClientFactory::removeDropedPullRequestOpaque(PullRequest* pullRequest) {
-  //delete the opaque record that's ignore the response of this pullrequest when drop pullrequest
-  if (!pullRequest) return;
+  // delete the opaque record that's ignore the response of this pullrequest when drop pullrequest
+  if (!pullRequest)
+    return;
   MQMessageQueue mq = pullRequest->m_messageQueue;
   int opaque = pullRequest->getLatestPullRequestOpaque();
   if (opaque > 0) {
-      LOG_INFO("####### need delete the pullrequest for opaque:%d, mq:%s", opaque, mq.toString().data());
-      getMQClientAPIImpl()->deleteOpaqueForDropPullRequest(mq, opaque);
+    LOG_INFO("####### need delete the pullrequest for opaque:%d, mq:%s", opaque, mq.toString().data());
+    getMQClientAPIImpl()->deleteOpaqueForDropPullRequest(mq, opaque);
   }
 }
 
-void MQClientFactory::resetOffset(
-    const string& group, const string& topic,
-    const map<MQMessageQueue, int64>& offsetTable) {
+void MQClientFactory::resetOffset(const string& group,
+                                  const string& topic,
+                                  const map<MQMessageQueue, int64>& offsetTable) {
   MQConsumer* pConsumer = selectConsumer(group);
   if (pConsumer) {
     map<MQMessageQueue, int64>::const_iterator it = offsetTable.begin();
@@ -1066,14 +1012,14 @@ void MQClientFactory::resetOffset(
       PullRequest* pullreq = pConsumer->getRebalance()->getPullRequest(mq);
       if (pullreq) {
         pullreq->setDroped(true);
-        LOG_INFO("resetOffset setDroped for opaque:%d, mq:%s", pullreq->getLatestPullRequestOpaque(), mq.toString().data());
-        //delete the opaque record that's ignore the response of this pullrequest when drop pullrequest
-        //removeDropedPullRequestOpaque(pullreq);
+        LOG_INFO("resetOffset setDroped for opaque:%d, mq:%s", pullreq->getLatestPullRequestOpaque(),
+                 mq.toString().data());
+        // delete the opaque record that's ignore the response of this pullrequest when drop pullrequest
+        // removeDropedPullRequestOpaque(pullreq);
         pullreq->clearAllMsgs();
         pullreq->updateQueueMaxOffset(it->second);
       } else {
-        LOG_ERROR("no corresponding pullRequest found for topic:%s",
-                  topic.c_str());
+        LOG_ERROR("no corresponding pullRequest found for topic:%s", topic.c_str());
       }
     }
 
@@ -1091,8 +1037,7 @@ void MQClientFactory::resetOffset(
     for (it = offsetTable.begin(); it != offsetTable.end(); ++it) {
       MQMessageQueue mq = it->first;
       if (topic == mq.getTopic()) {
-        LOG_DEBUG("resetOffset sets to:%lld for mq:%s", it->second,
-                  mq.toString().c_str());
+        LOG_DEBUG("resetOffset sets to:%lld for mq:%s", it->second, mq.toString().c_str());
         pConsumer->updateConsumeOffset(mq, it->second);
       }
     }
@@ -1113,35 +1058,28 @@ void MQClientFactory::resetOffset(
   }
 }
 
-ConsumerRunningInfo* MQClientFactory::consumerRunningInfo(
-    const string& consumerGroup) {
+ConsumerRunningInfo* MQClientFactory::consumerRunningInfo(const string& consumerGroup) {
   MQConsumer* pConsumer = selectConsumer(consumerGroup);
   if (pConsumer) {
     ConsumerRunningInfo* runningInfo = pConsumer->getConsumerRunningInfo();
     if (runningInfo) {
-      runningInfo->setProperty(ConsumerRunningInfo::PROP_NAMESERVER_ADDR,
-                               pConsumer->getNamesrvAddr());
+      runningInfo->setProperty(ConsumerRunningInfo::PROP_NAMESERVER_ADDR, pConsumer->getNamesrvAddr());
       if (pConsumer->getConsumeType() == CONSUME_PASSIVELY) {
-        runningInfo->setProperty(ConsumerRunningInfo::PROP_CONSUME_TYPE,
-                                 "CONSUME_PASSIVELY");
+        runningInfo->setProperty(ConsumerRunningInfo::PROP_CONSUME_TYPE, "CONSUME_PASSIVELY");
       } else {
-        runningInfo->setProperty(ConsumerRunningInfo::PROP_CONSUME_TYPE,
-                                 "CONSUME_ACTIVELY");
+        runningInfo->setProperty(ConsumerRunningInfo::PROP_CONSUME_TYPE, "CONSUME_ACTIVELY");
       }
-      runningInfo->setProperty(ConsumerRunningInfo::PROP_CLIENT_VERSION,
-                               "V3_1_8");  // MQVersion::s_CurrentVersion ));
+      runningInfo->setProperty(ConsumerRunningInfo::PROP_CLIENT_VERSION, "V3_1_8");  // MQVersion::s_CurrentVersion ));
 
       return runningInfo;
     }
   }
 
-  LOG_ERROR("no corresponding consumer found for group:%s",
-            consumerGroup.c_str());
+  LOG_ERROR("no corresponding consumer found for group:%s", consumerGroup.c_str());
   return NULL;
 }
 
-void MQClientFactory::getSessionCredentialsFromOneOfProducerOrConsumer(
-    SessionCredentials& session_credentials) {
+void MQClientFactory::getSessionCredentialsFromOneOfProducerOrConsumer(SessionCredentials& session_credentials) {
   // Note: on the same MQClientFactory, all producers and consumers used the
   // same
   // sessionCredentials,

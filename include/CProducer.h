@@ -26,40 +26,57 @@
 extern "C" {
 #endif
 
-//typedef struct _CProducer_ _CProducer;
+// typedef struct _CProducer_ _CProducer;
 typedef struct CProducer CProducer;
-typedef int(*QueueSelectorCallback)(int size, CMessage *msg, void *arg);
-typedef void(*CSendSuccessCallback)(CSendResult result);
-typedef void(*CSendExceptionCallback)(CMQException e);
+typedef int (*QueueSelectorCallback)(int size, CMessage* msg, void* arg);
+typedef void (*CSendSuccessCallback)(CSendResult result);
+typedef void (*CSendExceptionCallback)(CMQException e);
 
-ROCKETMQCLIENT_API CProducer *CreateProducer(const char *groupId);
-ROCKETMQCLIENT_API int DestroyProducer(CProducer *producer);
-ROCKETMQCLIENT_API int StartProducer(CProducer *producer);
-ROCKETMQCLIENT_API int ShutdownProducer(CProducer *producer);
+ROCKETMQCLIENT_API CProducer* CreateProducer(const char* groupId);
+ROCKETMQCLIENT_API int DestroyProducer(CProducer* producer);
+ROCKETMQCLIENT_API int StartProducer(CProducer* producer);
+ROCKETMQCLIENT_API int ShutdownProducer(CProducer* producer);
 
-ROCKETMQCLIENT_API int SetProducerNameServerAddress(CProducer *producer, const char *namesrv);
-ROCKETMQCLIENT_API int SetProducerNameServerDomain(CProducer *producer, const char *domain);
-ROCKETMQCLIENT_API int SetProducerGroupName(CProducer *producer, const char *groupName);
-ROCKETMQCLIENT_API int SetProducerInstanceName(CProducer *producer, const char *instanceName);
-ROCKETMQCLIENT_API int SetProducerSessionCredentials(CProducer *producer, const char *accessKey, const char *secretKey,
-                                  const char *onsChannel);
-ROCKETMQCLIENT_API int SetProducerLogPath(CProducer *producer, const char *logPath);
-ROCKETMQCLIENT_API int SetProducerLogFileNumAndSize(CProducer *producer, int fileNum, long fileSize);
-ROCKETMQCLIENT_API int SetProducerLogLevel(CProducer *producer, CLogLevel level);
-ROCKETMQCLIENT_API int SetProducerSendMsgTimeout(CProducer *producer, int timeout);
-ROCKETMQCLIENT_API int SetProducerCompressLevel(CProducer *producer, int level);
-ROCKETMQCLIENT_API int SetProducerMaxMessageSize(CProducer *producer, int size);
+ROCKETMQCLIENT_API int SetProducerNameServerAddress(CProducer* producer, const char* namesrv);
+ROCKETMQCLIENT_API int SetProducerNameServerDomain(CProducer* producer, const char* domain);
+ROCKETMQCLIENT_API int SetProducerGroupName(CProducer* producer, const char* groupName);
+ROCKETMQCLIENT_API int SetProducerInstanceName(CProducer* producer, const char* instanceName);
+ROCKETMQCLIENT_API int SetProducerSessionCredentials(CProducer* producer,
+                                                     const char* accessKey,
+                                                     const char* secretKey,
+                                                     const char* onsChannel);
+ROCKETMQCLIENT_API int SetProducerLogPath(CProducer* producer, const char* logPath);
+ROCKETMQCLIENT_API int SetProducerLogFileNumAndSize(CProducer* producer, int fileNum, long fileSize);
+ROCKETMQCLIENT_API int SetProducerLogLevel(CProducer* producer, CLogLevel level);
+ROCKETMQCLIENT_API int SetProducerSendMsgTimeout(CProducer* producer, int timeout);
+ROCKETMQCLIENT_API int SetProducerCompressLevel(CProducer* producer, int level);
+ROCKETMQCLIENT_API int SetProducerMaxMessageSize(CProducer* producer, int size);
 
-ROCKETMQCLIENT_API int SendMessageSync(CProducer *producer, CMessage *msg, CSendResult *result);
-ROCKETMQCLIENT_API int SendMessageAsync(CProducer *producer, CMessage *msg, CSendSuccessCallback cSendSuccessCallback , CSendExceptionCallback cSendExceptionCallback);
-ROCKETMQCLIENT_API int SendMessageOneway(CProducer *producer,CMessage *msg);
-ROCKETMQCLIENT_API int SendMessageOnewayOrderly(CProducer *producer,CMessage *msg, QueueSelectorCallback selector, void* arg);
-ROCKETMQCLIENT_API int SendMessageOrderly(CProducer *producer, CMessage *msg, QueueSelectorCallback callback, void *arg, int autoRetryTimes, CSendResult *result);
+ROCKETMQCLIENT_API int SendMessageSync(CProducer* producer, CMessage* msg, CSendResult* result);
+ROCKETMQCLIENT_API int SendMessageAsync(CProducer* producer,
+                                        CMessage* msg,
+                                        CSendSuccessCallback cSendSuccessCallback,
+                                        CSendExceptionCallback cSendExceptionCallback);
+ROCKETMQCLIENT_API int SendMessageOneway(CProducer* producer, CMessage* msg);
+ROCKETMQCLIENT_API int SendMessageOnewayOrderly(CProducer* producer,
+                                                CMessage* msg,
+                                                QueueSelectorCallback selector,
+                                                void* arg);
+ROCKETMQCLIENT_API int SendMessageOrderly(CProducer* producer,
+                                          CMessage* msg,
+                                          QueueSelectorCallback callback,
+                                          void* arg,
+                                          int autoRetryTimes,
+                                          CSendResult* result);
 
-
-ROCKETMQCLIENT_API int SendMessageOrderlyAsync(CProducer *producer,CMessage *msg,QueueSelectorCallback callback,void *arg,CSendSuccessCallback cSendSuccessCallback,CSendExceptionCallback cSendExceptionCallback );
+ROCKETMQCLIENT_API int SendMessageOrderlyAsync(CProducer* producer,
+                                               CMessage* msg,
+                                               QueueSelectorCallback callback,
+                                               void* arg,
+                                               CSendSuccessCallback cSendSuccessCallback,
+                                               CSendExceptionCallback cSendExceptionCallback);
 
 #ifdef __cplusplus
 };
 #endif
-#endif //__C_PRODUCER_H__
+#endif  //__C_PRODUCER_H__

@@ -39,8 +39,7 @@ class taskBatchHandler : public EventHandlerInterface<Task> {
   taskBatchHandler(int pullMsgThreadPoolNum);
   virtual ~taskBatchHandler() {}
 
-  virtual void OnEvent(const int64_t& sequence, const bool& end_of_batch,
-                       Task* event);
+  virtual void OnEvent(const int64_t& sequence, const bool& end_of_batch, Task* event);
   virtual void OnStart() {}
   virtual void OnShutdown() {}
   void runTaskEvent(Task event, int64_t sequence);
@@ -64,31 +63,27 @@ class taskEventTranslator : public EventTranslatorInterface<Task> {
 
 class taskExceptionHandler : public ExceptionHandlerInterface<Task> {
  public:
-  virtual void Handle(const std::exception& exception, const int64_t& sequence,
-                      Task* event) {}
+  virtual void Handle(const std::exception& exception, const int64_t& sequence, Task* event) {}
 };
 
 class disruptorLFQ {
  public:
   disruptorLFQ(int threadCount) {
     m_task_factory.reset(new taskEventFactory());
-    m_ring_buffer.reset(new RingBuffer<Task>(
-        m_task_factory.get(),
-        1024,  // default size is 1024, must be n power of 2
-        kSingleThreadedStrategy,
-        kBlockingStrategy));  // load normal, lowest CPU occupy, but
-                                     // largest consume latency
+    m_ring_buffer.reset(new RingBuffer<Task>(m_task_factory.get(),
+                                             1024,  // default size is 1024, must be n power of 2
+                                             kSingleThreadedStrategy,
+                                             kBlockingStrategy));  // load normal, lowest CPU occupy, but
+                                                                   // largest consume latency
 
     m_sequence_to_track.reset(new std::vector<Sequence*>(0));
-    m_sequenceBarrier.reset(
-        m_ring_buffer->NewBarrier(*(m_sequence_to_track.get())));
+    m_sequenceBarrier.reset(m_ring_buffer->NewBarrier(*(m_sequence_to_track.get())));
 
     m_task_handler.reset(new taskBatchHandler(threadCount));
     m_task_exception_handler.reset(new taskExceptionHandler());
-    m_processor.reset(new BatchEventProcessor<Task>(
-        m_ring_buffer.get(),
-        (SequenceBarrierInterface*)m_sequenceBarrier.get(),
-        m_task_handler.get(), m_task_exception_handler.get()));
+    m_processor.reset(new BatchEventProcessor<Task>(m_ring_buffer.get(),
+                                                    (SequenceBarrierInterface*)m_sequenceBarrier.get(),
+                                                    m_task_handler.get(), m_task_exception_handler.get()));
 
     /*
     Publisher will try to publish BUFFER_SIZE + 1 events.
@@ -98,9 +93,8 @@ class disruptorLFQ {
     event.
     */
     m_gating_sequences.push_back(m_processor.get()->GetSequence());
-    m_ring_buffer->set_gating_sequences(
-        m_gating_sequences);  // prevent overlap, publishEvent will be blocked
-                              // on ring_buffer_->Next();
+    m_ring_buffer->set_gating_sequences(m_gating_sequences);  // prevent overlap, publishEvent will be blocked
+                                                              // on ring_buffer_->Next();
 
     m_publisher.reset(new EventPublisher<Task>(m_ring_buffer.get()));
   }

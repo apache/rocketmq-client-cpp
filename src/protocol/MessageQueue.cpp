@@ -26,14 +26,11 @@ MessageQueue::MessageQueue() {
   m_brokerName.clear();
 }
 
-MessageQueue::MessageQueue(const string& topic, const string& brokerName,
-                           int queueId)
+MessageQueue::MessageQueue(const string& topic, const string& brokerName, int queueId)
     : m_topic(topic), m_brokerName(brokerName), m_queueId(queueId) {}
 
 MessageQueue::MessageQueue(const MessageQueue& other)
-    : m_topic(other.m_topic),
-      m_brokerName(other.m_brokerName),
-      m_queueId(other.m_queueId) {}
+    : m_topic(other.m_topic), m_brokerName(other.m_brokerName), m_queueId(other.m_queueId) {}
 
 MessageQueue& MessageQueue::operator=(const MessageQueue& other) {
   if (this != &other) {
@@ -44,19 +41,29 @@ MessageQueue& MessageQueue::operator=(const MessageQueue& other) {
   return *this;
 }
 
-string MessageQueue::getTopic() const { return m_topic; }
+string MessageQueue::getTopic() const {
+  return m_topic;
+}
 
-void MessageQueue::setTopic(const string& topic) { m_topic = topic; }
+void MessageQueue::setTopic(const string& topic) {
+  m_topic = topic;
+}
 
-string MessageQueue::getBrokerName() const { return m_brokerName; }
+string MessageQueue::getBrokerName() const {
+  return m_brokerName;
+}
 
 void MessageQueue::setBrokerName(const string& brokerName) {
   m_brokerName = brokerName;
 }
 
-int MessageQueue::getQueueId() const { return m_queueId; }
+int MessageQueue::getQueueId() const {
+  return m_queueId;
+}
 
-void MessageQueue::setQueueId(int queueId) { m_queueId = queueId; }
+void MessageQueue::setQueueId(int queueId) {
+  m_queueId = queueId;
+}
 
 bool MessageQueue::operator==(const MessageQueue& mq) const {
   if (this == &mq) {

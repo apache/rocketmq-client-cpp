@@ -31,8 +31,7 @@ class ClientRemotingProcessor {
 
   RemotingCommand* processRequest(const string& addr, RemotingCommand* request);
   RemotingCommand* resetOffset(RemotingCommand* request);
-  RemotingCommand* getConsumerRunningInfo(const string& addr,
-                                          RemotingCommand* request);
+  RemotingCommand* getConsumerRunningInfo(const string& addr, RemotingCommand* request);
   RemotingCommand* notifyConsumerIdsChanged(RemotingCommand* request);
 
  private:

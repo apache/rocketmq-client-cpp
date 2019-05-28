@@ -26,8 +26,7 @@ namespace rocketmq {
 //<!***************************************************************************
 class FilterAPI {
  public:
-  static SubscriptionData* buildSubscriptionData(const string topic,
-                                                 const string& subString) {
+  static SubscriptionData* buildSubscriptionData(const string topic, const string& subString) {
     //<!delete in balance;
     SubscriptionData* subscriptionData = new SubscriptionData(topic, subString);
 
@@ -38,8 +37,7 @@ class FilterAPI {
       UtilAll::Split(out, subString, "||");
 
       if (out.empty()) {
-        THROW_MQEXCEPTION(MQClientException, "FilterAPI subString split error",
-                          -1);
+        THROW_MQEXCEPTION(MQClientException, "FilterAPI subString split error", -1);
       }
 
       for (size_t i = 0; i < out.size(); i++) {

@@ -36,9 +36,9 @@ enum MQRequestCode {
   UPDATE_AND_CREATE_TOPIC = 17,
   // get all topic config info from broker
   GET_ALL_TOPIC_CONFIG = 21,
-  //git all topic list from broker
+  // git all topic list from broker
   GET_TOPIC_CONFIG_LIST = 22,
-  //get topic name list from broker
+  // get topic name list from broker
   GET_TOPIC_NAME_LIST = 23,
   UPDATE_BROKER_CONFIG = 25,
   GET_BROKER_CONFIG = 26,
@@ -49,23 +49,23 @@ enum MQRequestCode {
   GET_MIN_OFFSET = 31,
   GET_EARLIEST_MSG_STORETIME = 32,
   VIEW_MESSAGE_BY_ID = 33,
-  //send heartbeat to broker, and register itself
+  // send heartbeat to broker, and register itself
   HEART_BEAT = 34,
-  //unregister client to broker
+  // unregister client to broker
   UNREGISTER_CLIENT = 35,
-  //send back consume fail msg to broker
+  // send back consume fail msg to broker
   CONSUMER_SEND_MSG_BACK = 36,
-  //Commit Or Rollback transaction
+  // Commit Or Rollback transaction
   END_TRANSACTION = 37,
   // get consumer list by group from broker
   GET_CONSUMER_LIST_BY_GROUP = 38,
 
   CHECK_TRANSACTION_STATE = 39,
-  //broker send notify to consumer when consumer lists changes
+  // broker send notify to consumer when consumer lists changes
   NOTIFY_CONSUMER_IDS_CHANGED = 40,
-  //lock mq before orderly consume
+  // lock mq before orderly consume
   LOCK_BATCH_MQ = 41,
-  //unlock mq after orderly consume
+  // unlock mq after orderly consume
   UNLOCK_BATCH_MQ = 42,
   GET_ALL_CONSUMER_OFFSET = 43,
   GET_ALL_DELAY_OFFSET = 45,
@@ -101,7 +101,6 @@ enum MQRequestCode {
   DELETE_KV_CONFIG_BY_VALUE = 218,
 
   GET_KVLIST_BY_NAMESPACE = 219,
-
 
   RESET_CONSUMER_CLIENT_OFFSET = 220,
 
@@ -145,39 +144,39 @@ enum MQRequestCode {
 
 //<!***************************************************************************
 enum MQResponseCode {
-  //rcv success response from broker
+  // rcv success response from broker
   SUCCESS_VALUE = 0,
-  //rcv exception from broker
+  // rcv exception from broker
   SYSTEM_ERROR = 1,
-  //rcv symtem busy from broker
+  // rcv symtem busy from broker
   SYSTEM_BUSY = 2,
-  //broker don't support the request code
+  // broker don't support the request code
   REQUEST_CODE_NOT_SUPPORTED = 3,
-  //broker flush disk timeout error
+  // broker flush disk timeout error
   FLUSH_DISK_TIMEOUT = 10,
-  //broker sync double write, slave broker not available
+  // broker sync double write, slave broker not available
   SLAVE_NOT_AVAILABLE = 11,
-  //broker sync double write, slave broker flush msg timeout
+  // broker sync double write, slave broker flush msg timeout
   FLUSH_SLAVE_TIMEOUT = 12,
-  //broker rcv illegal mesage
+  // broker rcv illegal mesage
   MESSAGE_ILLEGAL = 13,
-  //service not available due to broker or namesrv in shutdown status
+  // service not available due to broker or namesrv in shutdown status
   SERVICE_NOT_AVAILABLE = 14,
-  //this version is not supported on broker or namesrv
+  // this version is not supported on broker or namesrv
   VERSION_NOT_SUPPORTED = 15,
-  //broker or Namesrv has no permission to do this operation
+  // broker or Namesrv has no permission to do this operation
   NO_PERMISSION = 16,
-  //topic is not exist on broker
+  // topic is not exist on broker
   TOPIC_NOT_EXIST = 17,
-  //broker already created this topic
+  // broker already created this topic
   TOPIC_EXIST_ALREADY = 18,
-  //pulled msg was not found
+  // pulled msg was not found
   PULL_NOT_FOUND = 19,
-  //retry later
+  // retry later
   PULL_RETRY_IMMEDIATELY = 20,
-  //pull msg with wrong offset
+  // pull msg with wrong offset
   PULL_OFFSET_MOVED = 21,
-  //could not find the query msg
+  // could not find the query msg
   QUERY_NOT_FOUND = 22,
 
   SUBSCRIPTION_PARSE_FAILED = 23,

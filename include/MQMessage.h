@@ -26,31 +26,33 @@
 namespace rocketmq {
 //<!***************************************************************************
 class ROCKETMQCLIENT_API MQMessage {
-
  public:
   MQMessage();
   MQMessage(const std::string& topic, const std::string& body);
   MQMessage(const std::string& topic, const std::string& tags, const std::string& body);
-  MQMessage(const std::string& topic, const std::string& tags, const std::string& keys,
-            const std::string& body);
-  MQMessage(const std::string& topic, const std::string& tags, const std::string& keys,
-            const int flag, const std::string& body, bool waitStoreMsgOK);
+  MQMessage(const std::string& topic, const std::string& tags, const std::string& keys, const std::string& body);
+  MQMessage(const std::string& topic,
+            const std::string& tags,
+            const std::string& keys,
+            const int flag,
+            const std::string& body,
+            bool waitStoreMsgOK);
 
   virtual ~MQMessage();
   MQMessage(const MQMessage& other);
   MQMessage& operator=(const MQMessage& other);
 
-  void setProperty(const std::string& name, const std::string& value) ;
-  const std::string & getProperty(const std::string& name) const;
+  void setProperty(const std::string& name, const std::string& value);
+  const std::string& getProperty(const std::string& name) const;
 
-  const std::string &getTopic() const;
+  const std::string& getTopic() const;
   void setTopic(const std::string& topic);
   void setTopic(const char* body, int len);
 
-  const std::string &getTags() const;
+  const std::string& getTags() const;
   void setTags(const std::string& tags);
 
-  const std::string &getKeys() const;
+  const std::string& getKeys() const;
   void setKeys(const std::string& keys);
   void setKeys(const std::vector<std::string>& keys);
 
@@ -66,7 +68,7 @@ class ROCKETMQCLIENT_API MQMessage {
   int getSysFlag() const;
   void setSysFlag(int sysFlag);
 
-  const std::string &getBody() const;
+  const std::string& getBody() const;
 
   void setBody(const char* body, int len);
   void setBody(const std::string& body);
@@ -77,8 +79,7 @@ class ROCKETMQCLIENT_API MQMessage {
   const std::string toString() const {
     std::stringstream ss;
     std::string tags = getTags();
-    ss << "Message [topic=" << m_topic << ", flag=" << m_flag
-       << ", tag=" << tags << "]";
+    ss << "Message [topic=" << m_topic << ", flag=" << m_flag << ", tag=" << tags << "]";
     return ss.str();
   }
 
@@ -87,8 +88,12 @@ class ROCKETMQCLIENT_API MQMessage {
   void setPropertyInternal(const std::string& name, const std::string& value);
   void setPropertiesInternal(std::map<std::string, std::string>& properties);
 
-  void Init(const std::string& topic, const std::string& tags, const std::string& keys,
-            const int flag, const std::string& body, bool waitStoreMsgOK);
+  void Init(const std::string& topic,
+            const std::string& tags,
+            const std::string& keys,
+            const int flag,
+            const std::string& body,
+            bool waitStoreMsgOK);
 
  public:
   static const std::string PROPERTY_KEYS;
@@ -102,7 +107,7 @@ class ROCKETMQCLIENT_API MQMessage {
   static const std::string PROPERTY_PRODUCER_GROUP;
   static const std::string PROPERTY_MIN_OFFSET;
   static const std::string PROPERTY_MAX_OFFSET;
-  
+
   static const std::string PROPERTY_BUYER_ID;
   static const std::string PROPERTY_ORIGIN_MESSAGE_ID;
   static const std::string PROPERTY_TRANSFER_FLAG;
