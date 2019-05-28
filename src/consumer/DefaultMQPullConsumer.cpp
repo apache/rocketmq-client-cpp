@@ -266,17 +266,35 @@ void DefaultMQPullConsumer::pullAsyncImpl(const MQMessageQueue& mq,
   arg.pPullRequest = NULL;
 
   try {
-    unique_ptr<PullResult> pullResult(m_pPullAPIWrapper->pullKernelImpl(mq,                      // 1
-                                                                        pSData->getSubString(),  // 2
-                                                                        0L,                      // 3
-                                                                        offset,                  // 4
-                                                                        maxNums,                 // 5
-                                                                        sysFlag,                 // 6
-                                                                        0,                       // 7
-                                                                        1000 * 20,               // 8
-                                                                        timeoutMillis,           // 9
-                                                                        ComMode_ASYNC,           // 10
-                                                                        pPullCallback, getSessionCredentials(), &arg));
+
+    unique_ptr<PullResult> pullResult(m_pPullAPIWrapper->pullKernelImpl(
+        mq,                      // 1
+        pSData->getSubString(),  // 2
+        0L,                      // 3
+        offset,                  // 4
+        maxNums,                 // 5
+        sysFlag,                 // 6
+        0,                       // 7
+        1000 * 20,               // 8
+        timeoutMillis,           // 9
+        ComMode_ASYNC,           // 10
+        pPullCallback, getSessionCredentials(), &arg));
+
+        if (!this.consumeMessageHookList.isEmpty()) {
+            ConsumeMessageContext consumeMessageContext = null;
+            consumeMessageContext = new ConsumeMessageContext();
+            consumeMessageContext.setNamespace(defaultMQPullConsumer.getNamespace());
+            consumeMessageContext.setConsumerGroup(this.groupName());
+            consumeMessageContext.setMq(mq);
+            consumeMessageContext.setMsgList(pullResult.getMsgFoundList());
+            consumeMessageContext.setSuccess(false);
+            this.executeHookBefore(consumeMessageContext);
+            consumeMessageContext.setStatus(ConsumeConcurrentlyStatus.CONSUME_SUCCESS.toString());
+            consumeMessageContext.setSuccess(true);
+            this.executeHookAfter(consumeMessageContext);
+        }
+
+
   } catch (MQException& e) {
     LOG_ERROR(e.what());
   }

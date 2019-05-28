@@ -110,6 +110,7 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer {
   // bool m_retryAnotherBrokerWhenNotStoreOK;
   int m_compressLevel;
   int m_retryTimes;
+
   int m_retryTimes4Async;
 };
 //<!***************************************************************************

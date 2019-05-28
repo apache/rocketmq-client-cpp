@@ -22,6 +22,8 @@
 #include "ConsumeType.h"
 #include "MQClient.h"
 #include "RocketMQClient.h"
+#include "ConsumeMessageHook.h"
+
 
 namespace rocketmq {
 class SubscriptionData;
@@ -59,6 +61,13 @@ class ROCKETMQCLIENT_API MQConsumer : public MQClient {
 
  protected:
   MessageModel m_messageModel;
+
+
+  private TraceDispatcher traceDispatcher = null;
+  protected final transient DefaultMQProducerImpl defaultMQProducerImpl;
+
+  
+  std::vector<ConsumeMessageHook> consumeMessageHookList;
 };
 
 //<!***************************************************************************

@@ -185,6 +185,7 @@ class AsyncPullCallback : public PullCallback {
 };
 
 //<!***************************************************************************
+<<<<<<< HEAD
 static boost::mutex m_asyncCallbackLock;
 
 DefaultMQPushConsumer::DefaultMQPushConsumer(const string& groupname)
@@ -285,6 +286,114 @@ void DefaultMQPushConsumer::persistConsumerOffsetByResetOffset() {
 }
 
 void DefaultMQPushConsumer::start() {
+=======
+    static boost::mutex m_asyncCallbackLock;
+
+    DefaultMQPushConsumer::DefaultMQPushConsumer(const string &groupname)
+            : m_consumeFromWhere(CONSUME_FROM_LAST_OFFSET),
+              m_pOffsetStore(NULL),
+              m_pRebalance(NULL),
+              m_pPullAPIWrapper(NULL),
+              m_consumerService(NULL),
+              m_pMessageListener(NULL),
+              m_consumeMessageBatchMaxSize(1),
+              m_maxMsgCacheSize(1000),
+              m_pullmsgQueue(NULL) {
+        //<!set default group name;
+        string gname = groupname.empty() ? DEFAULT_CONSUMER_GROUP : groupname;
+        setGroupName(gname);
+        m_asyncPull = true;
+        m_asyncPullTimeout = 30 * 1000;
+        setMessageModel(CLUSTERING);
+
+        m_startTime = UtilAll::currentTimeMillis();
+        m_consumeThreadCount = boost::thread::hardware_concurrency();
+        m_pullMsgThreadPoolNum = boost::thread::hardware_concurrency();
+        m_async_service_thread.reset(new boost::thread(
+                boost::bind(&DefaultMQPushConsumer::boost_asio_work, this)));
+
+
+
+    }
+
+    void DefaultMQPushConsumer::boost_asio_work() {
+        LOG_INFO("DefaultMQPushConsumer::boost asio async service runing");
+        boost::asio::io_service::work work(m_async_ioService);  // avoid async io
+        // service stops after
+        // first timer timeout
+        // callback
+        m_async_ioService.run();
+    }
+
+    DefaultMQPushConsumer::~DefaultMQPushConsumer() {
+        m_pMessageListener = NULL;
+        if (m_pullmsgQueue != NULL) {
+            deleteAndZero(m_pullmsgQueue);
+        }
+        if (m_pRebalance != NULL) {
+            deleteAndZero(m_pRebalance);
+        }
+        if (m_pOffsetStore != NULL) {
+            deleteAndZero(m_pOffsetStore);
+        }
+        if (m_pPullAPIWrapper != NULL) {
+            deleteAndZero(m_pPullAPIWrapper);
+        }
+        if (m_consumerService != NULL) {
+            deleteAndZero(m_consumerService);
+        }
+        PullMAP::iterator it = m_PullCallback.begin();
+        for (; it != m_PullCallback.end(); ++it) {
+            deleteAndZero(it->second);
+        }
+        m_PullCallback.clear();
+        m_subTopics.clear();
+    }
+
+    void DefaultMQPushConsumer::sendMessageBack(MQMessageExt &msg, int delayLevel) {
+        try {
+            getFactory()->getMQClientAPIImpl()->consumerSendMessageBack(
+                    msg, getGroupName(), delayLevel, 3000, getSessionCredentials());
+        } catch (MQException &e) {
+            LOG_ERROR(e.what());
+        }
+    }
+
+    void DefaultMQPushConsumer::fetchSubscribeMessageQueues(
+            const string &topic, vector<MQMessageQueue> &mqs) {
+        mqs.clear();
+        try {
+            getFactory()->fetchSubscribeMessageQueues(topic, mqs,
+                                                      getSessionCredentials());
+        } catch (MQException &e) {
+            LOG_ERROR(e.what());
+        }
+    }
+
+    void DefaultMQPushConsumer::doRebalance() {
+        if (isServiceStateOk()) {
+            try {
+                m_pRebalance->doRebalance();
+            } catch (MQException &e) {
+                LOG_ERROR(e.what());
+            }
+        }
+    }
+
+    void DefaultMQPushConsumer::persistConsumerOffset() {
+        if (isServiceStateOk()) {
+            m_pRebalance->persistConsumerOffset();
+        }
+    }
+
+    void DefaultMQPushConsumer::persistConsumerOffsetByResetOffset() {
+        if (isServiceStateOk()) {
+            m_pRebalance->persistConsumerOffsetByResetOffset();
+        }
+    }
+
+    void DefaultMQPushConsumer::start() {
+>>>>>>> 1e22016... message trace
 #ifndef WIN32
   /* Ignore the SIGPIPE */
   struct sigaction sa;
@@ -601,6 +710,8 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
                                           !subExpression.empty(),  // subscription
                                           false);                  // class filter
 
+
+
   try {
     request->setLastPullTimestamp(UtilAll::currentTimeMillis());
     unique_ptr<PullResult> result(m_pPullAPIWrapper->pullKernelImpl(messageQueue,              // 1
@@ -617,6 +728,20 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
 
     PullResult pullResult = m_pPullAPIWrapper->processPullResult(messageQueue, result.get(), pSdata);
 
+  if (!this.consumeMessageHookList.isEmpty()) {
+            ConsumeMessageContext consumeMessageContext = null;
+            consumeMessageContext = new ConsumeMessageContext();
+            consumeMessageContext.setNamespace(defaultMQPullConsumer.getNamespace());
+            consumeMessageContext.setConsumerGroup(this.groupName());
+            consumeMessageContext.setMq(mq);
+            consumeMessageContext.setMsgList(pullResult.getMsgFoundList());
+            consumeMessageContext.setSuccess(false);
+            this.executeHookBefore(consumeMessageContext);
+            consumeMessageContext.setStatus(ConsumeConcurrentlyStatus.CONSUME_SUCCESS.toString());
+            consumeMessageContext.setSuccess(true);
+            this.executeHookAfter(consumeMessageContext);
+        }
+		
     switch (pullResult.pullStatus) {
       case FOUND: {
         if (!request->isDroped())  // if request is setted to dropped, don't add
@@ -656,6 +781,113 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
           // LOG_DEBUG("maybe misMatch between broker and client happens, update
           // consumerOffset to nextBeginOffset indicated by broker");
           updateConsumeOffset(messageQueue, pullResult.nextBeginOffset);
+                    }
+                    producePullMsgTask(request);
+                    LOG_DEBUG("NO_NEW_MSG:%s,nextBeginOffset:%lld",
+                              messageQueue.toString().c_str(), pullResult.nextBeginOffset);
+                    break;
+                }
+                case NO_MATCHED_MSG: {
+                    request->setNextOffset(pullResult.nextBeginOffset);
+                    vector<MQMessageExt> msgs;
+                    request->getMessage(msgs);
+                    if ((msgs.size() == 0) && (pullResult.nextBeginOffset > 0)) {
+                        // LOG_DEBUG("maybe misMatch between broker and client happens, update
+                        // consumerOffset to nextBeginOffset indicated by broker");
+                        updateConsumeOffset(messageQueue, pullResult.nextBeginOffset);
+                    }
+                    producePullMsgTask(request);
+
+                    LOG_DEBUG("NO_MATCHED_MSG:%s,nextBeginOffset:%lld",
+                              messageQueue.toString().c_str(), pullResult.nextBeginOffset);
+                    break;
+                }
+                case OFFSET_ILLEGAL: {
+                    request->setNextOffset(pullResult.nextBeginOffset);
+                    producePullMsgTask(request);
+
+                    LOG_DEBUG("OFFSET_ILLEGAL:%s,nextBeginOffset:%lld",
+                              messageQueue.toString().c_str(), pullResult.nextBeginOffset);
+                    break;
+                }
+                case BROKER_TIMEOUT: {  // as BROKER_TIMEOUT is defined by client, broker
+                    // will not returns this status, so this case
+                    // could not be entered.
+                    LOG_ERROR("impossible BROKER_TIMEOUT Occurs");
+                    request->setNextOffset(pullResult.nextBeginOffset);
+                    producePullMsgTask(request);
+                    break;
+                }
+            }
+        } catch (MQException &e) {
+            LOG_ERROR(e.what());
+            producePullMsgTask(request);
+        }
+    }
+
+    AsyncPullCallback *DefaultMQPushConsumer::getAsyncPullCallBack(
+            PullRequest *request, MQMessageQueue msgQueue) {
+        boost::lock_guard<boost::mutex> lock(m_asyncCallbackLock);
+        if (m_asyncPull && request) {
+            PullMAP::iterator it = m_PullCallback.find(msgQueue);
+            if (it == m_PullCallback.end()) {
+                LOG_INFO("new pull callback for mq:%s", msgQueue.toString().c_str());
+                m_PullCallback[msgQueue] = new AsyncPullCallback(this, request);
+            }
+            return m_PullCallback[msgQueue];
+        }
+
+        return NULL;
+    }
+
+    void DefaultMQPushConsumer::shutdownAsyncPullCallBack() {
+        boost::lock_guard<boost::mutex> lock(m_asyncCallbackLock);
+        if (m_asyncPull) {
+            PullMAP::iterator it = m_PullCallback.begin();
+            for (; it != m_PullCallback.end(); ++it) {
+                if (it->second) {
+                    it->second->setShutdownStatus();
+                } else {
+                    LOG_ERROR("could not find asyncPullCallback for:%s",
+                              it->first.toString().c_str());
+                }
+            }
+        }
+    }
+
+    void DefaultMQPushConsumer::pullMessageAsync(PullRequest *request) {
+        if (request == NULL) {
+            LOG_ERROR("Pull request is NULL, return");
+            return;
+        }
+        if (request->isDroped()) {
+            LOG_WARN("Pull request is set drop with mq:%s, return",
+                     (request->m_messageQueue).toString().c_str());
+            request->removePullMsgEvent();
+            return;
+        }
+
+        MQMessageQueue &messageQueue = request->m_messageQueue;
+        if (m_consumerService->getConsumeMsgSerivceListenerType() ==
+            messageListenerOrderly) {
+            if (!request->isLocked() || request->isLockExpired()) {
+                if (!m_pRebalance->lock(messageQueue)) {
+                    producePullMsgTask(request);
+                    return;
+                }
+            }
+        }
+
+        if (request->getCacheMsgCount() > m_maxMsgCacheSize) {
+            // LOG_INFO("retry pullrequest for:%s after 1s, as cachMsgSize:%d is larger
+            // than:%d",  (request->m_messageQueue).toString().c_str(),
+            // request->getCacheMsgCount(), m_maxMsgCacheSize);
+            boost::asio::deadline_timer *t = new boost::asio::deadline_timer(
+                    m_async_ioService, boost::posix_time::milliseconds(1 * 1000));
+            t->async_wait(boost::bind(&DefaultMQPushConsumer::triggerNextPullRequest,
+                                      this, t, request));
+            return;
+
         }
         producePullMsgTask(request);
         LOG_DEBUG("NO_NEW_MSG:%s,nextBeginOffset:%lld", messageQueue.toString().c_str(), pullResult.nextBeginOffset);

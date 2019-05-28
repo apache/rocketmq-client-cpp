@@ -46,7 +46,61 @@ DefaultMQProducer::DefaultMQProducer(const string& groupname)
   //<!set default group name;
   string gname = groupname.empty() ? DEFAULT_PRODUCER_GROUP : groupname;
   setGroupName(gname);
+
+
+
+
+          if (enableMsgTrace) {
+            try {
+                AsyncTraceDispatcher dispatcher = new AsyncTraceDispatcher(customizedTraceTopic, rpcHook);
+                dispatcher.setHostProducer(this.defaultMQProducerImpl);
+                traceDispatcher = dispatcher;
+                this.defaultMQProducerImpl.registerSendMessageHook(
+                    new SendMessageTraceHookImpl(traceDispatcher));
+            } catch (Throwable e) {
+                log.error("system mqtrace hook init failed ,maybe can't send msg trace data");
+            }
+        }
 }
+
+
+
+    public void registerSendMessageHook(final SendMessageHook hook) {
+        this.sendMessageHookList.add(hook);
+        log.info("register sendMessage Hook, {}", hook.hookName());
+    }
+
+
+
+public boolean hasSendMessageHook() {
+        return !this.sendMessageHookList.isEmpty();
+    }
+
+    public void executeSendMessageHookBefore(final SendMessageContext context) {
+        if (!this.sendMessageHookList.isEmpty()) {
+            for (SendMessageHook hook : this.sendMessageHookList) {
+                try {
+                    hook.sendMessageBefore(context);
+                } catch (Throwable e) {
+                    log.warn("failed to executeSendMessageHookBefore", e);
+                }
+            }
+        }
+    }
+
+    public void executeSendMessageHookAfter(final SendMessageContext context) {
+        if (!this.sendMessageHookList.isEmpty()) {
+            for (SendMessageHook hook : this.sendMessageHookList) {
+                try {
+                    hook.sendMessageAfter(context);
+                } catch (Throwable e) {
+                    log.warn("failed to executeSendMessageHookAfter", e);
+                }
+            }
+        }
+    }
+
+
 
 DefaultMQProducer::~DefaultMQProducer() {}
 
@@ -343,6 +397,30 @@ SendResult DefaultMQProducer::sendDefaultImpl(MQMessage& msg,
         // invalide", -1);
         continue;
       }
+
+
+  if (this.hasSendMessageHook()) {
+                    context = new SendMessageContext();
+                    context.setProducer(this);
+                    context.setProducerGroup(this.defaultMQProducer.getProducerGroup());
+                    context.setCommunicationMode(communicationMode);
+                    context.setBornHost(this.defaultMQProducer.getClientIP());
+                    context.setBrokerAddr(brokerAddr);
+                    context.setMessage(msg);
+                    context.setMq(mq);
+                    context.setNamespace(this.defaultMQProducer.getNamespace());
+                    String isTrans = msg.getProperty(MessageConst.PROPERTY_TRANSACTION_PREPARED);
+                    if (isTrans != null && isTrans.equals("true")) {
+                        context.setMsgType(MessageType.Trans_Msg_Half);
+                    }
+
+                    if (msg.getProperty("__STARTDELIVERTIME") != null || msg.getProperty(MessageConst.PROPERTY_DELAY_TIME_LEVEL) != null) {
+                        context.setMsgType(MessageType.Delay_Msg);
+                    }
+                    this.executeSendMessageHookBefore(context);
+                }
+
+
 
       try {
         LOG_DEBUG("send to mq:%s", mq.toString().data());
