@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "MQClientFactory.h"
+#include "TransactionMQProducer.h"
 #include "ConsumerRunningInfo.h"
 #include "Logging.h"
 #include "MQClientManager.h"
@@ -667,6 +668,29 @@ FindBrokerResult* MQClientFactory::findBrokerAddressInAdmin(const string& broker
   return NULL;
 }
 
+void MQClientFactory::checkTransactionState(const std::string& addr, const MQMessageExt& messageExt,
+                                            const CheckTransactionStateRequestHeader& checkRequestHeader) {
+  string group = messageExt.getProperty(MQMessage::PROPERTY_PRODUCER_GROUP);
+  if (group != "") {
+    MQProducer* producer = selectProducer(group);
+    if (producer != nullptr) {
+      TransactionMQProducer* transProducer = dynamic_cast<TransactionMQProducer*>(producer);
+      if (transProducer != nullptr) {
+        transProducer->checkTransactionState(addr, messageExt, 
+            checkRequestHeader.m_tranStateTableOffset, checkRequestHeader.m_commitLogOffset, checkRequestHeader.m_msgId, checkRequestHeader.m_transactionId, checkRequestHeader.m_offsetMsgId);
+      } else {
+        LOG_ERROR("checkTransactionState, producer not TransactionMQProducer failed, msg:%s",
+                  messageExt.toString().data());
+      }
+    } else {
+      LOG_ERROR("checkTransactionState, pick producer by group[%s] failed, msg:%s", group.data(),
+                messageExt.toString().data());
+    }
+  } else {
+    LOG_ERROR("checkTransactionState, pick producer group failed, msg:%s", messageExt.toString().data());
+  }
+}
+
 MQClientAPIImpl* MQClientFactory::getMQClientAPIImpl() const {
   return m_pClientAPIImpl.get();
 }
@@ -833,6 +857,24 @@ void MQClientFactory::doRebalanceByConsumerGroup(const string& consumerGroup) {
     LOG_INFO("Client factory:%s start dorebalance for consumer:%s", m_clientId.c_str(), consumerGroup.c_str());
     MQConsumer* pMQConsumer = m_consumerTable[consumerGroup];
     pMQConsumer->doRebalance();
+  }
+}
+
+void MQClientFactory::endTransactionOneway(const MQMessageQueue& mq,
+                                           EndTransactionRequestHeader* requestHeader,
+                                           const SessionCredentials& sessionCredentials) {
+  
+  string brokerAddr = findBrokerAddressInPublish(mq.getBrokerName());
+  string remark = "";
+  if (!brokerAddr.empty()) {
+    try {
+      getMQClientAPIImpl()->endTransactionOneway(brokerAddr, requestHeader, remark, sessionCredentials);
+    } catch (MQException& e) {
+      LOG_ERROR("endTransactionOneway exception:%s", e.what());
+      throw e;
+    }
+  } else {
+    THROW_MQEXCEPTION(MQClientException, "The broker[" + mq.getBrokerName() + "] not exist", -1);
   }
 }
 

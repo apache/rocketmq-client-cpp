@@ -60,6 +60,107 @@ void CreateTopicRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, strin
   requestMap.insert(pair<string, string>("topicFilterType", topicFilterType));
 }
 
+void CheckTransactionStateRequestHeader::Encode(Json::Value& outData) {}
+
+CommandHeader* CheckTransactionStateRequestHeader::Decode(Json::Value& ext) {
+
+  CheckTransactionStateRequestHeader* h = new CheckTransactionStateRequestHeader();
+  Json::Value& tempValue = ext["msgId"];
+  if (tempValue.isString()) {
+    h->m_msgId = tempValue.asString();
+  }
+
+  tempValue = ext["transactionId"];
+  if (tempValue.isString()) {
+    h->m_transactionId = tempValue.asString();
+  }
+
+  tempValue = ext["offsetMsgId"];
+  if (tempValue.isString()) {
+    h->m_offsetMsgId = tempValue.asString();
+  }
+
+  tempValue = ext["tranStateTableOffset"];
+  if (tempValue.isInt64()) {
+    h->m_tranStateTableOffset = tempValue.asInt64();
+  }
+
+  tempValue = ext["commitLogOffset"];
+  if (tempValue.isInt64()) {
+    h->m_commitLogOffset = tempValue.asInt64();
+  }
+
+  return h;
+}
+
+void CheckTransactionStateRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
+  requestMap.insert(pair<string, string>("msgId", m_msgId));
+  requestMap.insert(pair<string, string>("transactionId", m_transactionId));
+  requestMap.insert(pair<string, string>("offsetMsgId", m_offsetMsgId));
+  requestMap.insert(pair<string, string>("commitLogOffset", UtilAll::to_string(m_commitLogOffset)));
+  requestMap.insert(pair<string, string>("tranStateTableOffset", UtilAll::to_string(m_tranStateTableOffset)));
+}
+
+std::string CheckTransactionStateRequestHeader::toString() {
+  stringstream ss;
+  ss << "CheckTransactionStateRequestHeader:";
+  ss << " msgId:" << m_msgId;
+  ss << " transactionId:" << m_transactionId;
+  ss << " offsetMsgId:" << m_offsetMsgId;
+  ss << " commitLogOffset:" << m_commitLogOffset;
+  ss << " tranStateTableOffset:" << m_tranStateTableOffset;
+  return ss.str();
+}
+
+void EndTransactionRequestHeader::Encode(Json::Value& outData) {
+  outData["msgId"] = m_msgId;
+  outData["transactionId"] = m_transactionId;
+  outData["producerGroup"] = m_producerGroup;
+  outData["tranStateTableOffset"] = UtilAll::to_string(m_tranStateTableOffset);
+  outData["commitLogOffset"] = UtilAll::to_string(m_commitLogOffset);
+  outData["commitOrRollback"] = UtilAll::to_string(m_commitOrRollback);
+  outData["fromTransactionCheck"] = UtilAll::to_string(m_fromTransactionCheck);
+  LOG_DEBUG(
+		"EndTransactionRequestHeader Encode msgId:%s, transactionId: %s, producerGroup is:%s, UtilAll::to_string( tranStateTableOffset) "
+		"is:%s,UtilAll::to_string( commitLogOffset):%s, UtilAll::to_string( commitOrRollback) "
+		"is:%s, UtilAll::to_string( fromTransactionCheck) is:%s",
+		m_msgId.c_str(), m_transactionId.c_str(), m_producerGroup.c_str(),
+		UtilAll::to_string(m_tranStateTableOffset).c_str(), UtilAll::to_string(m_commitLogOffset).c_str(),
+		UtilAll::to_string(m_commitOrRollback).c_str(), UtilAll::to_string(m_fromTransactionCheck).c_str());  
+}
+
+void EndTransactionRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
+  LOG_DEBUG(
+		"EndTransactionRequestHeader SetDeclaredFieldOfCommandHeader msgId:%s, transactionId:%s, producerGroup is:%s, UtilAll::to_string( tranStateTableOffset) "
+		"is:%s,UtilAll::to_string( commitLogOffset):%s, UtilAll::to_string( commitOrRollback) "
+		"is:%s, UtilAll::to_string( fromTransactionCheck) is:%s",
+		m_msgId.c_str(), m_transactionId.c_str(), m_producerGroup.c_str(),
+		UtilAll::to_string(m_tranStateTableOffset).c_str(), UtilAll::to_string(m_commitLogOffset).c_str(),
+		UtilAll::to_string(m_commitOrRollback).c_str(), UtilAll::to_string(m_fromTransactionCheck).c_str());
+
+	
+  requestMap.insert(pair<string, string>("msgId", m_msgId));
+  requestMap.insert(pair<string, string>("transactionId", m_transactionId));
+  requestMap.insert(pair<string, string>("producerGroup", m_producerGroup));
+  requestMap.insert(pair<string, string>("tranStateTableOffset", UtilAll::to_string(m_tranStateTableOffset)));
+  requestMap.insert(pair<string, string>("commitLogOffset", UtilAll::to_string(m_commitLogOffset)));
+  requestMap.insert(pair<string, string>("commitOrRollback", UtilAll::to_string(m_commitOrRollback)));
+  requestMap.insert(pair<string, string>("fromTransactionCheck", UtilAll::to_string(m_fromTransactionCheck)));
+}
+
+std::string EndTransactionRequestHeader::toString() {
+  stringstream ss;
+  ss << "EndTransactionRequestHeader:";
+  ss << " m_msgId:" << m_msgId;
+  ss << " m_transactionId:" << m_transactionId;
+  ss << " m_producerGroup:" << m_producerGroup;
+  ss << " m_tranStateTableOffset:" << m_tranStateTableOffset;
+  ss << " m_commitLogOffset:" << m_commitLogOffset;
+  ss << " m_commitOrRollback:" << m_commitOrRollback;
+  ss << " m_fromTransactionCheck:" << m_fromTransactionCheck;
+  return ss.str();
+}
+
 //<!************************************************************************
 void SendMessageRequestHeader::Encode(Json::Value& outData) {
   outData["producerGroup"] = producerGroup;

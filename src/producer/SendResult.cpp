@@ -17,6 +17,7 @@
 #include "SendResult.h"
 #include "UtilAll.h"
 #include "VirtualEnvUtil.h"
+#include <sstream>
 
 namespace rocketmq {
 //<!***************************************************************************
@@ -72,6 +73,18 @@ MQMessageQueue SendResult::getMessageQueue() const {
 
 int64 SendResult::getQueueOffset() const {
   return m_queueOffset;
+}
+
+std::string SendResult::toString() const {
+    stringstream ss;
+    ss << "SendResult: ";
+    ss << "sendStatus:" << m_sendStatus;
+    ss << ",msgId:" << m_msgId;
+    ss << ",offsetMsgId:" << m_offsetMsgId;
+    ss << ",queueOffset:" << m_queueOffset;
+    ss << ",transactionId:" << m_transactionId;   
+    ss << ",messageQueue:" << m_messageQueue.toString();
+    return ss.str();
 }
 
 //<!************************************************************************

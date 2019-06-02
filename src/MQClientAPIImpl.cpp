@@ -209,6 +209,20 @@ void MQClientAPIImpl::createTopic(const string& addr,
   THROW_MQEXCEPTION(MQBrokerException, "response is null", -1);
 }
 
+void MQClientAPIImpl::endTransactionOneway(
+  std::string addr,
+  EndTransactionRequestHeader* requestHeader,
+  std::string remark,
+  const SessionCredentials& sessionCredentials) {
+
+  RemotingCommand request(END_TRANSACTION, requestHeader);
+  request.setRemark(remark);  
+  callSignatureBeforeRequest(addr, request, sessionCredentials);
+  request.Encode();
+  m_pRemotingClient->invokeOneway(addr, request);
+  return;
+}
+
 SendResult MQClientAPIImpl::sendMessage(const string& addr,
                                         const string& brokerName,
                                         const MQMessage& msg,
@@ -373,9 +387,9 @@ SendResult MQClientAPIImpl::sendMessageSync(const string& addr,
   unique_ptr<RemotingCommand> pResponse(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
   if (pResponse != NULL) {
     try {
-      LOG_DEBUG("sendMessageSync success:%s to addr:%s,brokername:%s", msg.toString().c_str(), addr.c_str(),
-                brokerName.c_str());
       SendResult result = processSendResponse(brokerName, msg, pResponse.get());
+      LOG_DEBUG("sendMessageSync success:%s to addr:%s,brokername:%s, send status:%d", msg.toString().c_str(), addr.c_str(),
+                brokerName.c_str(), (int)result.getSendStatus());
       return result;
     } catch (...) {
       LOG_ERROR("send error");
