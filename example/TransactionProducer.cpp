@@ -36,42 +36,29 @@ TpsReportService g_tps;
 class MyTransactionListener : public TransactionListener {
   virtual LocalTransactionState executeLocalTransaction(const MQMessage& msg, void* arg) {
 
+    std::cout << "executeLocalTransaction enter msg:" << msg.toString() << endl;
 	if (!arg) {
-		std::cout << "executeLocalTransaction transactionId:" << msg.getTransactionId() << ", state: COMMIT_MESAGE " << endl;
+		std::cout << "executeLocalTransaction transactionId:" << msg.getTransactionId() << ", return state: COMMIT_MESAGE " << endl;
 		return LocalTransactionState::COMMIT_MESSAGE;
 	}
 
 	LocalTransactionState state = (LocalTransactionState)(*(int*)arg % 3);
-	m_state_map[msg.getTransactionId()] = state;
-	std::cout << "executeLocalTransaction transactionId:" << msg.getTransactionId() << ", state: " << state << endl;
+	std::cout << "executeLocalTransaction transactionId:" << msg.getTransactionId() << ", return state: " << state << endl;
 	return state;
   }
 
   virtual LocalTransactionState checkLocalTransaction(const MQMessageExt& msg) {
 
-	string transactionId = msg.getTransactionId();
-	LocalTransactionState state; 
-	if (m_state_map.find(transactionId) != m_state_map.end() && m_state_map[transactionId] == LocalTransactionState::UNKNOW) {
-		state = LocalTransactionState::COMMIT_MESSAGE;
-		m_state_map[transactionId] = state;
-	}
-	else {
-		state = LocalTransactionState::UNKNOW;
-	}
-
-	state = LocalTransactionState::COMMIT_MESSAGE;
-
-	std::cout << "checkLocalTransaction  transactionId:" << transactionId << ", state: " << state  << endl;
-    return state;
+    std::cout << "checkLocalTransaction enter msg:" << msg.toString() << endl;
+	std::cout << "checkLocalTransaction transactionId:" << msg.getTransactionId() << ", return state: COMMIT_MESSAGE" << endl;
+    return LocalTransactionState::COMMIT_MESSAGE;
   }
-  private:
-  	map<string, LocalTransactionState>  m_state_map;
 };
 
 void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, TransactionMQProducer* producer) {
   while (!g_quit.load()) {
     if (g_msgCount.load() <= 0) {
-      std::this_thread::sleep_for(std::chrono::seconds(2));
+      std::this_thread::sleep_for(std::chrono::seconds(70));
       std::unique_lock<std::mutex> lck(g_mtx);
       g_finished.notify_one();
     }
