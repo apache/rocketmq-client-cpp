@@ -61,6 +61,7 @@ void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, TransactionMQProducer
       std::this_thread::sleep_for(std::chrono::seconds(70));
       std::unique_lock<std::mutex> lck(g_mtx);
       g_finished.notify_one();
+	  break;
     }
 
     MQMessage msg(info->topic,  // topic
