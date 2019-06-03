@@ -81,13 +81,13 @@ CommandHeader* CheckTransactionStateRequestHeader::Decode(Json::Value& ext) {
   }
 
   tempValue = ext["tranStateTableOffset"];
-  if (tempValue.isInt64()) {
-    h->m_tranStateTableOffset = tempValue.asInt64();
+  if (tempValue.isString()) {
+    h->m_tranStateTableOffset = UtilAll::str2ll(tempValue.asCString());
   }
 
   tempValue = ext["commitLogOffset"];
-  if (tempValue.isInt64()) {
-    h->m_commitLogOffset = tempValue.asInt64();
+  if (tempValue.isString()) {
+    h->m_commitLogOffset = UtilAll::str2ll(tempValue.asCString());
   }
 
   return h;
@@ -120,25 +120,10 @@ void EndTransactionRequestHeader::Encode(Json::Value& outData) {
   outData["commitLogOffset"] = UtilAll::to_string(m_commitLogOffset);
   outData["commitOrRollback"] = UtilAll::to_string(m_commitOrRollback);
   outData["fromTransactionCheck"] = UtilAll::to_string(m_fromTransactionCheck);
-  LOG_DEBUG(
-		"EndTransactionRequestHeader Encode msgId:%s, transactionId: %s, producerGroup is:%s, UtilAll::to_string( tranStateTableOffset) "
-		"is:%s,UtilAll::to_string( commitLogOffset):%s, UtilAll::to_string( commitOrRollback) "
-		"is:%s, UtilAll::to_string( fromTransactionCheck) is:%s",
-		m_msgId.c_str(), m_transactionId.c_str(), m_producerGroup.c_str(),
-		UtilAll::to_string(m_tranStateTableOffset).c_str(), UtilAll::to_string(m_commitLogOffset).c_str(),
-		UtilAll::to_string(m_commitOrRollback).c_str(), UtilAll::to_string(m_fromTransactionCheck).c_str());  
 }
 
 void EndTransactionRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  LOG_DEBUG(
-		"EndTransactionRequestHeader SetDeclaredFieldOfCommandHeader msgId:%s, transactionId:%s, producerGroup is:%s, UtilAll::to_string( tranStateTableOffset) "
-		"is:%s,UtilAll::to_string( commitLogOffset):%s, UtilAll::to_string( commitOrRollback) "
-		"is:%s, UtilAll::to_string( fromTransactionCheck) is:%s",
-		m_msgId.c_str(), m_transactionId.c_str(), m_producerGroup.c_str(),
-		UtilAll::to_string(m_tranStateTableOffset).c_str(), UtilAll::to_string(m_commitLogOffset).c_str(),
-		UtilAll::to_string(m_commitOrRollback).c_str(), UtilAll::to_string(m_fromTransactionCheck).c_str());
 
-	
   requestMap.insert(pair<string, string>("msgId", m_msgId));
   requestMap.insert(pair<string, string>("transactionId", m_transactionId));
   requestMap.insert(pair<string, string>("producerGroup", m_producerGroup));
