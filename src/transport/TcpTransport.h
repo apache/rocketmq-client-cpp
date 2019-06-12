@@ -17,73 +17,77 @@
 #ifndef __TCPTRANSPORT_H__
 #define __TCPTRANSPORT_H__
 
-#include <boost/atomic.hpp>
-#include <boost/thread/condition_variable.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
+
+#include "EventLoop.h"
 #include "dataBlock.h"
 
-extern "C" {
-#include "event2/buffer.h"
-#include "event2/bufferevent.h"
-#include "event2/event.h"
-#include "event2/thread.h"
-}
-
 namespace rocketmq {
-//<!***************************************************************************
-typedef enum { e_connectInit = 0, e_connectWaitResponse = 1, e_connectSuccess = 2, e_connectFail = 3 } tcpConnectStatus;
 
-typedef void (*READ_CALLBACK)(void* context, const MemoryBlock&, const std::string&);
+//<!***************************************************************************
+typedef enum TcpConnectStatus {
+  TCP_CONNECT_STATUS_INIT = 0,
+  TCP_CONNECT_STATUS_WAIT = 1,
+  TCP_CONNECT_STATUS_SUCCESS = 2,
+  TCP_CONNECT_STATUS_FAILED = 3
+} TcpConnectStatus;
+
+using TcpTransportReadCallback = void (*)(void* context, const MemoryBlock&, const std::string&);
+
 class TcpRemotingClient;
-class TcpTransport {
+
+class TcpTransport : public std::enable_shared_from_this<TcpTransport> {
  public:
-  TcpTransport(TcpRemotingClient* pTcpRemointClient, READ_CALLBACK handle = NULL);
+  static std::shared_ptr<TcpTransport> CreateTransport(TcpRemotingClient* pTcpRemotingClient,
+                                                       TcpTransportReadCallback handle = nullptr) {
+    // transport must be managed by smart pointer
+    std::shared_ptr<TcpTransport> transport(new TcpTransport(pTcpRemotingClient, handle));
+    return transport;
+  }
+
   virtual ~TcpTransport();
 
-  tcpConnectStatus connect(const std::string& strServerURL, int timeOutMillisecs = 3000);
   void disconnect(const std::string& addr);
-  tcpConnectStatus waitTcpConnectEvent(int timeoutMillisecs = 3000);
-  void setTcpConnectStatus(tcpConnectStatus connectStatus);
-  tcpConnectStatus getTcpConnectStatus();
-  bool sendMessage(const char* pData, int len);
+  TcpConnectStatus connect(const std::string& strServerURL, int timeoutMillis = 3000);
+  TcpConnectStatus waitTcpConnectEvent(int timeoutMillis = 3000);
+  TcpConnectStatus getTcpConnectStatus();
+
+  bool sendMessage(const char* pData, size_t len);
   const std::string getPeerAddrAndPort();
   const uint64_t getStartTime() const;
 
  private:
-  void messageReceived(const MemoryBlock& mem);
-  static void readNextMessageIntCallback(struct bufferevent* bev, void* ctx);
-  static void eventcb(struct bufferevent* bev, short what, void* ctx);
-  static void timeoutcb(evutil_socket_t fd, short what, void* arg);
-  void runThread();
-  void clearBufferEventCallback();
-  void freeBufferEvent();
-  void exitBaseDispatch();
-  void setTcpConnectEvent(tcpConnectStatus connectStatus);
+  TcpTransport(TcpRemotingClient* pTcpRemotingClient, TcpTransportReadCallback handle = nullptr);
+
+  static void readNextMessageIntCallback(BufferEvent* event, TcpTransport* transport);
+  static void eventCallback(BufferEvent* event, short what, TcpTransport* transport);
+
+  void messageReceived(const MemoryBlock& mem, const std::string& addr);
+  void freeBufferEvent();  // not thread-safe
+
+  void setTcpConnectEvent(TcpConnectStatus connectStatus);
+  void setTcpConnectStatus(TcpConnectStatus connectStatus);
+
   u_long getInetAddr(std::string& hostname);
 
  private:
   uint64_t m_startTime;
-  boost::mutex m_socketLock;
-  struct event_base* m_eventBase;
-  struct bufferevent* m_bufferEvent;
-  boost::atomic<tcpConnectStatus> m_tcpConnectStatus;
-  boost::mutex m_connectEventLock;
-  boost::condition_variable_any m_connectEvent;
 
-  boost::atomic<bool> m_event_base_status;
-  boost::mutex m_event_base_mtx;
-  boost::condition_variable_any m_event_base_cv;
+  std::shared_ptr<BufferEvent> m_event;  // NOTE: use m_event in callback is unsafe.
+  std::mutex m_eventLock;
+  std::atomic<TcpConnectStatus> m_tcpConnectStatus;
 
-  //<!read data thread
-  boost::thread* m_ReadDatathread;
+  std::mutex m_connectEventLock;
+  std::condition_variable m_connectEvent;
 
   //<! read data callback
-  READ_CALLBACK m_readcallback;
+  TcpTransportReadCallback m_readCallback;
   TcpRemotingClient* m_tcpRemotingClient;
 };
 
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif
