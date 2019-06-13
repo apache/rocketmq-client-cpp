@@ -1,0 +1,94 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#ifndef __EXECUTOR_HPP__
+#define __EXECUTOR_HPP__
+
+#include <functional>
+#include <future>
+#include <utility>
+
+#include "time.hpp"
+
+namespace rocketmq {
+
+typedef std::function<void()> handler_type;
+
+struct executor_handler {
+  handler_type handler_;
+  std::shared_ptr<std::promise<void>> promise_;
+
+  explicit executor_handler(const handler_type& handler) : handler_(handler), promise_(new std::promise<void>) {}
+  explicit executor_handler(handler_type&& handler)
+      : handler_(std::forward<handler_type>(handler)), promise_(new std::promise<void>) {}
+
+  void operator()() noexcept {
+    // call handler, then set promise
+    if (promise_) {
+      try {
+        // handler that may throw
+        handler_();
+        promise_->set_value();
+      } catch (...) {
+        try {
+          // store anything thrown in the promise
+          promise_->set_exception(std::current_exception());
+        } catch (...) {
+        }  // set_exception() may throw too
+      }
+    }
+  }
+
+  template <class _Ep>
+  void abort(_Ep&& exception) noexcept {
+    if (promise_) {
+      promise_->set_exception(std::make_exception_ptr(std::forward<_Ep>(exception)));
+    }
+  }
+};
+
+class executor {
+ public:
+  virtual ~executor() = default;
+
+  virtual void execute(const executor_handler& command) {
+    // pass rvalue
+    auto copy = command;
+    execute(std::move(copy));
+  }
+  virtual void execute(executor_handler&& command) {
+    // pass lvalue;
+    execute(command);
+  }
+};
+
+class executor_service : virtual public executor {
+ public:
+  virtual void shutdown() = 0;
+  virtual bool is_shutdown() = 0;
+  virtual std::future<void> submit(const handler_type& task) = 0;
+};
+
+class scheduled_executor_service : virtual public executor_service {
+ public:
+  virtual std::future<void> schedule(const handler_type& task, long delay, time_unit unit) = 0;
+};
+
+}  // namespace rocketmq
+
+#include "executor_impl.hpp"
+
+#endif  // __EXECUTOR_HPP__
