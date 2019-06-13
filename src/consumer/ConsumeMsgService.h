@@ -14,16 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef __CONSUME_MESSAGE_SERVICE_H__
 #define __CONSUME_MESSAGE_SERVICE_H__
-
-#include <boost/asio.hpp>
-#include <boost/asio/io_service.hpp>
-#include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/thread/thread.hpp>
 
 #include "concurrent/executor.hpp"
 
@@ -73,17 +65,14 @@ class ConsumeMessageOrderlyService : public ConsumeMsgService {
   void start() override;
   void shutdown() override;
   void submitConsumeRequest(PullRequest* request, std::vector<MQMessageExt>& msgs) override;
-  void stopThreadPool();
   MessageListenerType getConsumeMsgSerivceListenerType() override;
 
-  void boost_asio_work();
+  void stopThreadPool();
+
   void tryLockLaterAndReconsume(PullRequest* request, bool tryLockMQ);
-  static void static_submitConsumeRequestLater(void* context,
-                                               PullRequest* request,
-                                               bool tryLockMQ,
-                                               boost::asio::deadline_timer* t);
+  void submitConsumeRequestLater(PullRequest* request, bool tryLockMQ);
   void ConsumeRequest(PullRequest* request);
-  void lockMQPeriodically(boost::system::error_code& ec, boost::asio::deadline_timer* t);
+  void lockMQPeriodically();
   void unlockAllMQ();
   bool lockOneMQ(const MQMessageQueue& mq);
 
@@ -92,11 +81,9 @@ class ConsumeMessageOrderlyService : public ConsumeMsgService {
   bool m_shutdownInprogress;
   MQMessageListener* m_pMessageListener;
   uint64_t m_MaxTimeConsumeContinuously;
-  boost::asio::io_service m_ioService;
-  boost::thread_group m_threadpool;
-  boost::asio::io_service::work m_ioServiceWork;
-  boost::asio::io_service m_async_ioService;
-  boost::scoped_ptr<boost::thread> m_async_service_thread;
+
+  thread_pool_executor m_consumeExecutor;
+  scheduled_thread_pool_executor m_scheduledExecutorService;
 };
 
 }  // namespace rocketmq
