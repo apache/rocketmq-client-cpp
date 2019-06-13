@@ -20,6 +20,8 @@
 #include <memory>
 #include <mutex>
 
+#include "concurrent/executor.hpp"
+
 #include "FindBrokerResult.h"
 #include "MQClientAPIImpl.h"
 #include "MQClientException.h"
@@ -127,15 +129,14 @@ class MQClientFactory {
   void startScheduledTask();
 
   // timer async callback
-  void fetchNameServerAddr(boost::system::error_code& ec, boost::asio::deadline_timer* t);
-  void updateTopicRouteInfo(boost::system::error_code& ec, boost::asio::deadline_timer* t);
-  void timerCB_sendHeartbeatToAllBroker(boost::system::error_code& ec, boost::asio::deadline_timer* t);
+  void fetchNameServerAddr();
+  void updateTopicRouteInfo();
+  void timerCB_sendHeartbeatToAllBroker();
 
   // consumer related operation
-  void consumer_timerOperation();
-  void persistAllConsumerOffset(boost::system::error_code& ec, boost::asio::deadline_timer* t);
+  void persistAllConsumerOffset();
   void doRebalance();
-  void timerCB_doRebalance(boost::system::error_code& ec, boost::asio::deadline_timer* t);
+  void timerCB_doRebalance();
   bool getSessionCredentialFromConsumerTable(SessionCredentials& sessionCredentials);
   bool addConsumerToTable(const std::string& consumerName, MQConsumer* pMQConsumer);
   void eraseConsumerFromTable(const std::string& consumerName);
@@ -197,11 +198,8 @@ class MQClientFactory {
   std::unique_ptr<MQClientAPIImpl> m_pClientAPIImpl;
   std::unique_ptr<ClientRemotingProcessor> m_pClientRemotingProcessor;
 
-  boost::asio::io_service m_async_ioService;
-  std::unique_ptr<boost::thread> m_async_service_thread;
-
-  boost::asio::io_service m_consumer_async_ioService;
-  std::unique_ptr<boost::thread> m_consumer_async_service_thread;
+  scheduled_thread_pool_executor m_scheduledExecutorService;
+  scheduled_thread_pool_executor m_rebalanceService;
 };
 
 }  // namespace rocketmq

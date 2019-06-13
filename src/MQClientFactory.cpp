@@ -35,7 +35,7 @@ MQClientFactory::MQClientFactory(const std::string& clientID,
                                  uint64_t tcpConnectTimeout,
                                  uint64_t tcpTransportTryLockTimeout,
                                  std::string unitName)
-    : m_clientId(clientID) {
+    : m_clientId(clientID), m_scheduledExecutorService(false), m_rebalanceService(false) {
   // default Topic register;
   std::shared_ptr<TopicPublishInfo> pDefaultTopicInfo(new TopicPublishInfo());
   m_topicPublishInfoTable[DEFAULT_TOPIC] = pDefaultTopicInfo;
@@ -68,8 +68,14 @@ void MQClientFactory::start() {
     case CREATE_JUST:
       LOG_INFO("MQClientFactory:%s start", m_clientId.c_str());
       m_serviceState = START_FAILED;
-      //<!start time task;
-      m_async_service_thread.reset(new boost::thread(boost::bind(&MQClientFactory::startScheduledTask, this)));
+
+      // start various schedule tasks
+      startScheduledTask();
+
+      // start rebalance service
+      m_rebalanceService.startup();
+      m_rebalanceService.schedule(std::bind(&MQClientFactory::timerCB_doRebalance, this), 10, time_unit::seconds);
+
       m_serviceState = RUNNING;
       break;
     case RUNNING:
@@ -82,7 +88,7 @@ void MQClientFactory::start() {
   }
 }
 
-void MQClientFactory::updateTopicRouteInfo(boost::system::error_code& ec, boost::asio::deadline_timer* t) {
+void MQClientFactory::updateTopicRouteInfo() {
   if ((getConsumerTableSize() == 0) && (getProducerTableSize() == 0)) {
     return;
   }
@@ -104,9 +110,7 @@ void MQClientFactory::updateTopicRouteInfo(boost::system::error_code& ec, boost:
     }
   }
 
-  boost::system::error_code e;
-  t->expires_from_now(t->expires_from_now() + boost::posix_time::seconds(30), e);
-  t->async_wait(boost::bind(&MQClientFactory::updateTopicRouteInfo, this, ec, t));
+  m_scheduledExecutorService.schedule(std::bind(&MQClientFactory::updateTopicRouteInfo, this), 30, time_unit::seconds);
 }
 
 TopicRouteData* MQClientFactory::getTopicRouteData(const std::string& topic) {
@@ -278,14 +282,9 @@ void MQClientFactory::shutdown() {
 
   switch (m_serviceState) {
     case RUNNING: {
-      if (m_consumer_async_service_thread) {
-        m_consumer_async_ioService.stop();
-        m_consumer_async_service_thread->interrupt();
-        m_consumer_async_service_thread->join();
-      }
-      m_async_ioService.stop();
-      m_async_service_thread->interrupt();
-      m_async_service_thread->join();
+      m_rebalanceService.shutdown();
+
+      m_scheduledExecutorService.shutdown();
 
       // Note: stop all TcpTransport Threads and release all responseFuture conditions
       m_pClientAPIImpl->stopAllTcpTransportThread();
@@ -716,7 +715,7 @@ void MQClientFactory::sendHeartbeatToAllBroker() {
   brokerTable.clear();
 }
 
-void MQClientFactory::persistAllConsumerOffset(boost::system::error_code& ec, boost::asio::deadline_timer* t) {
+void MQClientFactory::persistAllConsumerOffset() {
   {
     std::lock_guard<std::mutex> lock(m_consumerTableMutex);
     if (m_consumerTable.size() > 0) {
@@ -727,9 +726,7 @@ void MQClientFactory::persistAllConsumerOffset(boost::system::error_code& ec, bo
     }
   }
 
-  boost::system::error_code e;
-  t->expires_from_now(t->expires_from_now() + boost::posix_time::seconds(5), e);
-  t->async_wait(boost::bind(&MQClientFactory::persistAllConsumerOffset, this, ec, t));
+  m_rebalanceService.schedule(std::bind(&MQClientFactory::persistAllConsumerOffset, this), 5, time_unit::seconds);
 }
 
 HeartbeatData* MQClientFactory::prepareHeartbeatData() {
@@ -747,67 +744,36 @@ HeartbeatData* MQClientFactory::prepareHeartbeatData() {
   return pHeartbeatData;
 }
 
-void MQClientFactory::timerCB_sendHeartbeatToAllBroker(boost::system::error_code& ec, boost::asio::deadline_timer* t) {
+void MQClientFactory::timerCB_sendHeartbeatToAllBroker() {
   sendHeartbeatToAllBroker();
 
-  boost::system::error_code e;
-  t->expires_from_now(t->expires_from_now() + boost::posix_time::seconds(30), e);
-  t->async_wait(boost::bind(&MQClientFactory::timerCB_sendHeartbeatToAllBroker, this, ec, t));
+  m_scheduledExecutorService.schedule(std::bind(&MQClientFactory::timerCB_sendHeartbeatToAllBroker, this), 30,
+                                      time_unit::seconds);
 }
 
 void MQClientFactory::startScheduledTask() {
-  // avoid async io service stops after first timer timeout callback
-  boost::asio::io_service::work work(m_async_ioService);
-
-  boost::system::error_code ec1;
-  boost::asio::deadline_timer t1(m_async_ioService, boost::posix_time::seconds(3));
-  t1.async_wait(boost::bind(&MQClientFactory::updateTopicRouteInfo, this, ec1, &t1));
-
-  boost::system::error_code ec2;
-  boost::asio::deadline_timer t2(m_async_ioService, boost::posix_time::milliseconds(10));
-  t2.async_wait(boost::bind(&MQClientFactory::timerCB_sendHeartbeatToAllBroker, this, ec2, &t2));
+  m_scheduledExecutorService.startup();
 
   LOG_INFO("start scheduled task:%s", m_clientId.c_str());
 
-  boost::system::error_code ec;
-  m_async_ioService.run(ec);
+  m_scheduledExecutorService.schedule(std::bind(&MQClientFactory::updateTopicRouteInfo, this), 10,
+                                      time_unit::milliseconds);
+
+  m_scheduledExecutorService.schedule(std::bind(&MQClientFactory::timerCB_sendHeartbeatToAllBroker, this), 1000,
+                                      time_unit::milliseconds);
+
+  m_scheduledExecutorService.schedule(std::bind(&MQClientFactory::persistAllConsumerOffset, this), 1000 * 10,
+                                      time_unit::milliseconds);
 }
 
 void MQClientFactory::rebalanceImmediately() {
-  // m_consumer_async_service_thread will be only started once for all consumer
-  if (m_consumer_async_service_thread == NULL) {
-    doRebalance();
-    m_consumer_async_service_thread.reset(
-        new boost::thread(boost::bind(&MQClientFactory::consumer_timerOperation, this)));
-  }
+  m_rebalanceService.schedule(std::bind(&MQClientFactory::doRebalance, this), 0, time_unit::milliseconds);
 }
 
-void MQClientFactory::consumer_timerOperation() {
-  LOG_INFO("clientFactory:%s start consumer_timerOperation", m_clientId.c_str());
-  boost::asio::io_service::work work(m_consumer_async_ioService);  // avoid async io
-                                                                   // service stops after
-                                                                   // first timer timeout
-                                                                   // callback
-
-  boost::system::error_code ec1;
-  boost::asio::deadline_timer t(m_consumer_async_ioService, boost::posix_time::seconds(10));
-  t.async_wait(boost::bind(&MQClientFactory::timerCB_doRebalance, this, ec1, &t));
-
-  boost::system::error_code ec2;
-  boost::asio::deadline_timer t2(m_consumer_async_ioService, boost::posix_time::seconds(5));
-  t2.async_wait(boost::bind(&MQClientFactory::persistAllConsumerOffset, this, ec2, &t2));
-
-  boost::system::error_code ec;
-  m_consumer_async_ioService.run(ec);
-  LOG_INFO("clientFactory:%s stop consumer_timerOperation", m_clientId.c_str());
-}
-
-void MQClientFactory::timerCB_doRebalance(boost::system::error_code& ec, boost::asio::deadline_timer* t) {
+void MQClientFactory::timerCB_doRebalance() {
   doRebalance();
 
-  boost::system::error_code e;
-  t->expires_from_now(t->expires_from_now() + boost::posix_time::seconds(10), e);
-  t->async_wait(boost::bind(&MQClientFactory::timerCB_doRebalance, this, ec, t));
+  m_rebalanceService.schedule(std::bind(&MQClientFactory::timerCB_doRebalance, this), 10, time_unit::seconds);
 }
 
 void MQClientFactory::doRebalance() {
