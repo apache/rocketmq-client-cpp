@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _CONSUMEMESSAGESERVICE_H_
-#define _CONSUMEMESSAGESERVICE_H_
+#ifndef __CONSUME_MESSAGE_SERVICE_H__
+#define __CONSUME_MESSAGE_SERVICE_H__
 
 #include <boost/asio.hpp>
 #include <boost/asio/io_service.hpp>
@@ -24,35 +24,37 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread/thread.hpp>
+
+#include "concurrent/executor.hpp"
+
 #include "Logging.h"
 #include "MQMessageListener.h"
 #include "PullRequest.h"
 
 namespace rocketmq {
+
 class MQConsumer;
-//<!***************************************************************************
+
 class ConsumeMsgService {
  public:
-  ConsumeMsgService() {}
-  virtual ~ConsumeMsgService() {}
+  ConsumeMsgService() = default;
+  virtual ~ConsumeMsgService() = default;
   virtual void start() {}
   virtual void shutdown() {}
-  virtual void stopThreadPool() {}
-  virtual void submitConsumeRequest(PullRequest* request, vector<MQMessageExt>& msgs) {}
+  virtual void submitConsumeRequest(PullRequest* request, std::vector<MQMessageExt>& msgs) = 0;
   virtual MessageListenerType getConsumeMsgSerivceListenerType() { return messageListenerDefaultly; }
 };
 
 class ConsumeMessageConcurrentlyService : public ConsumeMsgService {
  public:
   ConsumeMessageConcurrentlyService(MQConsumer*, int threadCount, MQMessageListener* msgListener);
-  virtual ~ConsumeMessageConcurrentlyService();
-  virtual void start();
-  virtual void shutdown();
-  virtual void submitConsumeRequest(PullRequest* request, vector<MQMessageExt>& msgs);
-  virtual MessageListenerType getConsumeMsgSerivceListenerType();
-  virtual void stopThreadPool();
+  ~ConsumeMessageConcurrentlyService() override;
+  void start() override;
+  void shutdown() override;
+  void submitConsumeRequest(PullRequest* request, std::vector<MQMessageExt>& msgs) override;
+  MessageListenerType getConsumeMsgSerivceListenerType() override;
 
-  void ConsumeRequest(PullRequest* request, vector<MQMessageExt>& msgs);
+  void ConsumeRequest(PullRequest* request, std::vector<MQMessageExt>& msgs);
 
  private:
   void resetRetryTopic(vector<MQMessageExt>& msgs);
@@ -60,20 +62,19 @@ class ConsumeMessageConcurrentlyService : public ConsumeMsgService {
  private:
   MQConsumer* m_pConsumer;
   MQMessageListener* m_pMessageListener;
-  boost::asio::io_service m_ioService;
-  boost::thread_group m_threadpool;
-  boost::asio::io_service::work m_ioServiceWork;
+
+  thread_pool_executor m_consumeExecutor;
 };
 
 class ConsumeMessageOrderlyService : public ConsumeMsgService {
  public:
   ConsumeMessageOrderlyService(MQConsumer*, int threadCount, MQMessageListener* msgListener);
-  virtual ~ConsumeMessageOrderlyService();
-  virtual void start();
-  virtual void shutdown();
-  virtual void submitConsumeRequest(PullRequest* request, vector<MQMessageExt>& msgs);
-  virtual void stopThreadPool();
-  virtual MessageListenerType getConsumeMsgSerivceListenerType();
+  ~ConsumeMessageOrderlyService() override;
+  void start() override;
+  void shutdown() override;
+  void submitConsumeRequest(PullRequest* request, std::vector<MQMessageExt>& msgs) override;
+  void stopThreadPool();
+  MessageListenerType getConsumeMsgSerivceListenerType() override;
 
   void boost_asio_work();
   void tryLockLaterAndReconsume(PullRequest* request, bool tryLockMQ);
@@ -98,7 +99,6 @@ class ConsumeMessageOrderlyService : public ConsumeMsgService {
   boost::scoped_ptr<boost::thread> m_async_service_thread;
 };
 
-//<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
-#endif  //<! _CONSUMEMESSAGESERVICE_H_
+#endif  // __CONSUME_MESSAGE_SERVICE_H__
