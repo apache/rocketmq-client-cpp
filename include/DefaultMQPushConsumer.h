@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-#ifndef __DEFAULTMQPUSHCONSUMER_H__
-#define __DEFAULTMQPUSHCONSUMER_H__
+#ifndef __DEFAULT_MQ_PUSH_CONSUMER_H__
+#define __DEFAULT_MQ_PUSH_CONSUMER_H__
 
-#include <boost/asio.hpp>
-#include <boost/asio/io_service.hpp>
-#include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/thread/thread.hpp>
 #include <string>
+
+#include "concurrent/executor.hpp"
+
 #include "AsyncCallback.h"
 #include "MQConsumer.h"
 #include "MQMessageListener.h"
@@ -42,40 +39,39 @@ class TaskQueue;
 class TaskThread;
 class AsyncPullCallback;
 class ConsumerRunningInfo;
-//<!***************************************************************************
+
 class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
  public:
   DefaultMQPushConsumer(const std::string& groupname);
-  void boost_asio_work();
-  virtual ~DefaultMQPushConsumer();
+  ~DefaultMQPushConsumer() override;
 
   //<!begin mqadmin;
-  virtual void start();
-  virtual void shutdown();
+  void start() override;
+  void shutdown() override;
   //<!end mqadmin;
 
   //<!begin MQConsumer
-  virtual void sendMessageBack(MQMessageExt& msg, int delayLevel);
-  virtual void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs);
-  virtual void doRebalance();
-  virtual void persistConsumerOffset();
-  virtual void persistConsumerOffsetByResetOffset();
-  virtual void updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info);
-  virtual ConsumeType getConsumeType();
-  virtual ConsumeFromWhere getConsumeFromWhere();
+  void sendMessageBack(MQMessageExt& msg, int delayLevel) override;
+  void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) override;
+  void doRebalance() override;
+  void persistConsumerOffset() override;
+  void persistConsumerOffsetByResetOffset() override;
+  void updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info) override;
+  ConsumeType getConsumeType() override;
+  ConsumeFromWhere getConsumeFromWhere() override;
   void setConsumeFromWhere(ConsumeFromWhere consumeFromWhere);
-  virtual void getSubscriptions(std::vector<SubscriptionData>&);
-  virtual void updateConsumeOffset(const MQMessageQueue& mq, int64 offset);
-  virtual void removeConsumeOffset(const MQMessageQueue& mq);
-  virtual PullResult pull(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums) {
+  void getSubscriptions(std::vector<SubscriptionData>&) override;
+  void updateConsumeOffset(const MQMessageQueue& mq, int64 offset) override;
+  void removeConsumeOffset(const MQMessageQueue& mq) override;
+  PullResult pull(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums) override {
     return PullResult();
   }
-  virtual void pull(const MQMessageQueue& mq,
-                    const std::string& subExpression,
-                    int64 offset,
-                    int maxNums,
-                    PullCallback* pPullCallback) {}
-  virtual ConsumerRunningInfo* getConsumerRunningInfo();
+  void pull(const MQMessageQueue& mq,
+            const std::string& subExpression,
+            int64 offset,
+            int maxNums,
+            PullCallback* pPullCallback) override {}
+  ConsumerRunningInfo* getConsumerRunningInfo() override;
   //<!end MQConsumer;
 
   void registerMessageListener(MQMessageListener* pMessageListener);
@@ -83,11 +79,10 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
   void subscribe(const std::string& topic, const std::string& subExpression);
 
   OffsetStore* getOffsetStore() const;
-  virtual Rebalance* getRebalance() const;
+  Rebalance* getRebalance() const override;
   ConsumeMsgService* getConsumerMsgService() const;
 
-  virtual void producePullMsgTask(PullRequest*);
-  void triggerNextPullRequest(boost::asio::deadline_timer* t, PullRequest* request);
+  void producePullMsgTask(PullRequest*) override;
   void runPullMsgQueue(TaskQueue* pTaskQueue);
   void pullMessage(PullRequest* pullrequest);       // sync pullMsg
   void pullMessageAsync(PullRequest* pullrequest);  // async pullMsg
@@ -139,8 +134,6 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
   MQMessageListener* m_pMessageListener;
   int m_consumeMessageBatchMaxSize;
   int m_maxMsgCacheSize;
-  boost::asio::io_service m_async_ioService;
-  boost::scoped_ptr<boost::thread> m_async_service_thread;
 
   typedef std::map<MQMessageQueue, AsyncPullCallback*> PullMAP;
   PullMAP m_PullCallback;
@@ -149,9 +142,9 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
   int m_pullMsgThreadPoolNum;
 
  private:
-  TaskQueue* m_pullmsgQueue;
-  std::unique_ptr<boost::thread> m_pullmsgThread;
+  scheduled_thread_pool_executor* m_pullMessageService;
 };
-//<!***************************************************************************
-}  //<!end namespace;
-#endif
+
+}  // namespace rocketmq
+
+#endif  // __DEFAULT_MQ_PUSH_CONSUMER_H__

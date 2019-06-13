@@ -14,8 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "DefaultMQPushConsumer.h"
+
+#include "AsyncArg.h"
 #include "CommunicationMode.h"
 #include "ConsumeMsgService.h"
 #include "ConsumerRunningInfo.h"
@@ -40,12 +41,12 @@ class AsyncPullCallback : public PullCallback {
   AsyncPullCallback(DefaultMQPushConsumer* pushConsumer, PullRequest* request)
       : m_callbackOwner(pushConsumer), m_pullRequest(request), m_bShutdown(false) {}
 
-  virtual ~AsyncPullCallback() {
-    m_callbackOwner = NULL;
-    m_pullRequest = NULL;
+  ~AsyncPullCallback() override {
+    m_callbackOwner = nullptr;
+    m_pullRequest = nullptr;
   }
 
-  virtual void onSuccess(MQMessageQueue& mq, PullResult& result, bool bProducePullRequest) {
+  void onSuccess(MQMessageQueue& mq, PullResult& result, bool bProducePullRequest) override {
     if (m_bShutdown == true) {
       LOG_INFO("pullrequest for:%s in shutdown, return", (m_pullRequest->m_messageQueue).toString().c_str());
       m_pullRequest->removePullMsgEvent();
@@ -166,7 +167,7 @@ class AsyncPullCallback : public PullCallback {
     }
   }
 
-  virtual void onException(MQException& e) {
+  void onException(MQException& e) noexcept override {
     if (m_bShutdown == true) {
       LOG_INFO("pullrequest for:%s in shutdown, return", (m_pullRequest->m_messageQueue).toString().c_str());
       m_pullRequest->removePullMsgEvent();
@@ -196,8 +197,8 @@ DefaultMQPushConsumer::DefaultMQPushConsumer(const string& groupname)
       m_pMessageListener(NULL),
       m_consumeMessageBatchMaxSize(1),
       m_maxMsgCacheSize(1000),
-      m_pullmsgQueue(NULL) {
-  //<!set default group name;
+      m_pullMessageService(nullptr) {
+  // set default group name;
   string gname = groupname.empty() ? DEFAULT_CONSUMER_GROUP : groupname;
   setGroupName(gname);
   m_asyncPull = true;
@@ -207,38 +208,27 @@ DefaultMQPushConsumer::DefaultMQPushConsumer(const string& groupname)
   m_startTime = UtilAll::currentTimeMillis();
   m_consumeThreadCount = std::thread::hardware_concurrency();
   m_pullMsgThreadPoolNum = std::thread::hardware_concurrency();
-  m_async_service_thread.reset(new boost::thread(boost::bind(&DefaultMQPushConsumer::boost_asio_work, this)));
-}
-
-void DefaultMQPushConsumer::boost_asio_work() {
-  LOG_INFO("DefaultMQPushConsumer::boost asio async service runing");
-  boost::asio::io_service::work work(m_async_ioService);  // avoid async io
-  // service stops after
-  // first timer timeout
-  // callback
-  m_async_ioService.run();
 }
 
 DefaultMQPushConsumer::~DefaultMQPushConsumer() {
-  m_pMessageListener = NULL;
-  if (m_pullmsgQueue != NULL) {
-    deleteAndZero(m_pullmsgQueue);
+  m_pMessageListener = nullptr;
+  if (m_pullMessageService != nullptr) {
+    deleteAndZero(m_pullMessageService);
   }
-  if (m_pRebalance != NULL) {
+  if (m_pRebalance != nullptr) {
     deleteAndZero(m_pRebalance);
   }
-  if (m_pOffsetStore != NULL) {
+  if (m_pOffsetStore != nullptr) {
     deleteAndZero(m_pOffsetStore);
   }
-  if (m_pPullAPIWrapper != NULL) {
+  if (m_pPullAPIWrapper != nullptr) {
     deleteAndZero(m_pPullAPIWrapper);
   }
-  if (m_consumerService != NULL) {
+  if (m_consumerService != nullptr) {
     deleteAndZero(m_consumerService);
   }
-  PullMAP::iterator it = m_PullCallback.begin();
-  for (; it != m_PullCallback.end(); ++it) {
-    deleteAndZero(it->second);
+  for (auto& it : m_PullCallback) {
+    deleteAndZero(it.second);
   }
   m_PullCallback.clear();
   m_subTopics.clear();
@@ -293,6 +283,7 @@ void DefaultMQPushConsumer::start() {
   sa.sa_flags = 0;
   sigaction(SIGPIPE, &sa, 0);
 #endif
+
   switch (m_serviceState) {
     case CREATE_JUST: {
       m_serviceState = START_FAILED;
@@ -320,9 +311,7 @@ void DefaultMQPushConsumer::start() {
         }
       }
 
-      m_pullmsgQueue = new TaskQueue(m_pullMsgThreadPoolNum);
-      m_pullmsgThread.reset(
-          new boost::thread(boost::bind(&DefaultMQPushConsumer::runPullMsgQueue, this, m_pullmsgQueue)));
+      m_pullMessageService = new scheduled_thread_pool_executor(m_pullMsgThreadPoolNum, true);
 
       copySubscription();
 
@@ -381,17 +370,15 @@ void DefaultMQPushConsumer::shutdown() {
   switch (m_serviceState) {
     case RUNNING: {
       LOG_INFO("DefaultMQPushConsumer shutdown");
-      m_async_ioService.stop();
-      m_async_service_thread->interrupt();
-      m_async_service_thread->join();
-      m_pullmsgQueue->close();
-      m_pullmsgThread->interrupt();
-      m_pullmsgThread->join();
+
+      m_pullMessageService->shutdown();
+
       m_consumerService->shutdown();
       persistConsumerOffset();
       shutdownAsyncPullCallBack();  // delete aync pullMsg resources
       getFactory()->unregisterConsumer(this);
       getFactory()->shutdown();
+
       m_serviceState = SHUTDOWN_ALREADY;
       break;
     }
@@ -452,12 +439,10 @@ void DefaultMQPushConsumer::checkConfig() {
 }
 
 void DefaultMQPushConsumer::copySubscription() {
-  map<string, string>::iterator it = m_subTopics.begin();
-  for (; it != m_subTopics.end(); ++it) {
-    LOG_INFO("buildSubscriptionData,:%s,%s", it->first.c_str(), it->second.c_str());
-    unique_ptr<SubscriptionData> pSData(FilterAPI::buildSubscriptionData(it->first, it->second));
-
-    m_pRebalance->setSubscriptionData(it->first, pSData.release());
+  for (const auto& it : m_subTopics) {
+    LOG_INFO("buildSubscriptionData,:%s,%s", it.first.c_str(), it.second.c_str());
+    std::unique_ptr<SubscriptionData> pSData(FilterAPI::buildSubscriptionData(it.first, it.second));
+    m_pRebalance->setSubscriptionData(it.first, pSData.release());
   }
 
   switch (getMessageModel()) {
@@ -466,7 +451,7 @@ void DefaultMQPushConsumer::copySubscription() {
     case CLUSTERING: {
       string retryTopic = UtilAll::getRetryTopic(getGroupName());
 
-      //<!this sub;
+      // auto subscript retry topic
       unique_ptr<SubscriptionData> pSData(FilterAPI::buildSubscriptionData(retryTopic, SUB_ALL));
 
       m_pRebalance->setSubscriptionData(retryTopic, pSData.release());
@@ -482,12 +467,11 @@ void DefaultMQPushConsumer::updateTopicSubscribeInfo(const string& topic, vector
 }
 
 void DefaultMQPushConsumer::updateTopicSubscribeInfoWhenSubscriptionChanged() {
-  map<string, SubscriptionData*>& subTable = m_pRebalance->getSubscriptionInner();
-  map<string, SubscriptionData*>::iterator it = subTable.begin();
-  for (; it != subTable.end(); ++it) {
-    bool btopic = getFactory()->updateTopicRouteInfoFromNameServer(it->first, getSessionCredentials());
-    if (btopic == false) {
-      LOG_WARN("The topic:[%s] not exist", it->first.c_str());
+  std::map<string, SubscriptionData*>& subTable = m_pRebalance->getSubscriptionInner();
+  for (const auto& sub : subTable) {
+    bool bTopic = getFactory()->updateTopicRouteInfoFromNameServer(sub.first, getSessionCredentials());
+    if (!bTopic) {
+      LOG_WARN("The topic:[%s] not exist", sub.first.c_str());
     }
   }
 }
@@ -505,10 +489,9 @@ void DefaultMQPushConsumer::setConsumeFromWhere(ConsumeFromWhere consumeFromWher
 }
 
 void DefaultMQPushConsumer::getSubscriptions(vector<SubscriptionData>& result) {
-  map<string, SubscriptionData*>& subTable = m_pRebalance->getSubscriptionInner();
-  map<string, SubscriptionData*>::iterator it = subTable.begin();
-  for (; it != subTable.end(); ++it) {
-    result.push_back(*(it->second));
+  std::map<string, SubscriptionData*>& subTable = m_pRebalance->getSubscriptionInner();
+  for (const auto& it : subTable) {
+    result.push_back(*(it.second));
   }
 }
 
@@ -524,20 +507,13 @@ void DefaultMQPushConsumer::removeConsumeOffset(const MQMessageQueue& mq) {
   m_pOffsetStore->removeOffset(mq);
 }
 
-void DefaultMQPushConsumer::triggerNextPullRequest(boost::asio::deadline_timer* t, PullRequest* request) {
-  // LOG_INFO("trigger pullrequest for:%s",
-  // (request->m_messageQueue).toString().c_str());
-  producePullMsgTask(request);
-  deleteAndZero(t);
-}
-
 void DefaultMQPushConsumer::producePullMsgTask(PullRequest* request) {
-  if (m_pullmsgQueue->bTaskQueueStatusOK() && isServiceStateOk()) {
+  if (!m_pullMessageService->is_shutdown() && isServiceStateOk()) {
     request->addPullMsgEvent();
     if (m_asyncPull) {
-      m_pullmsgQueue->produce(TaskBinder::gen(&DefaultMQPushConsumer::pullMessageAsync, this, request));
+      m_pullMessageService->submit(std::bind(&DefaultMQPushConsumer::pullMessageAsync, this, request));
     } else {
-      m_pullmsgQueue->produce(TaskBinder::gen(&DefaultMQPushConsumer::pullMessage, this, request));
+      m_pullMessageService->submit(std::bind(&DefaultMQPushConsumer::pullMessage, this, request));
     }
   } else {
     LOG_WARN("produce pullmsg of mq:%s failed", request->m_messageQueue.toString().c_str());
@@ -549,10 +525,11 @@ void DefaultMQPushConsumer::runPullMsgQueue(TaskQueue* pTaskQueue) {
 }
 
 void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
-  if (request == NULL) {
+  if (request == nullptr) {
     LOG_ERROR("Pull request is NULL, return");
     return;
   }
+
   if (request->isDroped()) {
     LOG_WARN("Pull request is set drop with mq:%s, return", (request->m_messageQueue).toString().c_str());
     request->removePullMsgEvent();
@@ -570,12 +547,9 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
   }
 
   if (request->getCacheMsgCount() > m_maxMsgCacheSize) {
-    // LOG_INFO("retry pullrequest for:%s after 1s, as cachMsgSize:%d is larger
-    // than:%d",  (request->m_messageQueue).toString().c_str(),
-    // request->getCacheMsgCount(), m_maxMsgCacheSize);
-    boost::asio::deadline_timer* t =
-        new boost::asio::deadline_timer(m_async_ioService, boost::posix_time::milliseconds(1 * 1000));
-    t->async_wait(boost::bind(&DefaultMQPushConsumer::triggerNextPullRequest, this, t, request));
+    // too many message in cache, wait to process
+    m_pullMessageService->schedule(std::bind(&DefaultMQPushConsumer::producePullMsgTask, this, request), 1000,
+                                   time_unit::milliseconds);
     return;
   }
 
@@ -590,7 +564,7 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
 
   string subExpression;
   SubscriptionData* pSdata = m_pRebalance->getSubscriptionData(messageQueue.getTopic());
-  if (pSdata == NULL) {
+  if (pSdata == nullptr) {
     producePullMsgTask(request);
     return;
   }
@@ -613,7 +587,7 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
                                                                     1000 * 15,                 // 8
                                                                     1000 * 30,                 // 9
                                                                     ComMode_SYNC,              // 10
-                                                                    NULL, getSessionCredentials()));
+                                                                    nullptr, getSessionCredentials()));
 
     PullResult pullResult = m_pPullAPIWrapper->processPullResult(messageQueue, result.get(), pSdata);
 
@@ -731,6 +705,7 @@ void DefaultMQPushConsumer::pullMessageAsync(PullRequest* request) {
     LOG_ERROR("Pull request is NULL, return");
     return;
   }
+
   if (request->isDroped()) {
     LOG_WARN("Pull request is set drop with mq:%s, return", (request->m_messageQueue).toString().c_str());
     request->removePullMsgEvent();
@@ -748,12 +723,9 @@ void DefaultMQPushConsumer::pullMessageAsync(PullRequest* request) {
   }
 
   if (request->getCacheMsgCount() > m_maxMsgCacheSize) {
-    // LOG_INFO("retry pullrequest for:%s after 1s, as cachMsgSize:%d is larger
-    // than:%d",  (request->m_messageQueue).toString().c_str(),
-    // request->getCacheMsgCount(), m_maxMsgCacheSize);
-    boost::asio::deadline_timer* t =
-        new boost::asio::deadline_timer(m_async_ioService, boost::posix_time::milliseconds(1 * 1000));
-    t->async_wait(boost::bind(&DefaultMQPushConsumer::triggerNextPullRequest, this, t, request));
+    // too many message in cache, wait to process
+    m_pullMessageService->schedule(std::bind(&DefaultMQPushConsumer::producePullMsgTask, this, request), 1000,
+                                   time_unit::milliseconds);
     return;
   }
 
@@ -768,7 +740,7 @@ void DefaultMQPushConsumer::pullMessageAsync(PullRequest* request) {
 
   string subExpression;
   SubscriptionData* pSdata = (m_pRebalance->getSubscriptionData(messageQueue.getTopic()));
-  if (pSdata == NULL) {
+  if (pSdata == nullptr) {
     producePullMsgTask(request);
     return;
   }
@@ -783,6 +755,7 @@ void DefaultMQPushConsumer::pullMessageAsync(PullRequest* request) {
   arg.mq = messageQueue;
   arg.subData = *pSdata;
   arg.pPullWrapper = m_pPullAPIWrapper;
+
   try {
     request->setLastPullTimestamp(UtilAll::currentTimeMillis());
     m_pPullAPIWrapper->pullKernelImpl(messageQueue,                                 // 1
@@ -890,5 +863,4 @@ ConsumerRunningInfo* DefaultMQPushConsumer::getConsumerRunningInfo() {
   return info;
 }
 
-//<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
