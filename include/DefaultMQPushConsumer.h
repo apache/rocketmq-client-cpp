@@ -35,8 +35,6 @@ class OffsetStore;
 class PullAPIWrapper;
 class PullRequest;
 class ConsumeMsgService;
-class TaskQueue;
-class TaskThread;
 class AsyncPullCallback;
 class ConsumerRunningInfo;
 
@@ -83,7 +81,6 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
   ConsumeMsgService* getConsumerMsgService() const;
 
   void producePullMsgTask(PullRequest*) override;
-  void runPullMsgQueue(TaskQueue* pTaskQueue);
   void pullMessage(PullRequest* pullrequest);       // sync pullMsg
   void pullMessageAsync(PullRequest* pullrequest);  // async pullMsg
   void setAsyncPull(bool asyncFlag);

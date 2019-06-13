@@ -32,7 +32,6 @@
 #include "Rebalance.h"
 #include "UtilAll.h"
 #include "Validators.h"
-#include "task_queue.h"
 
 namespace rocketmq {
 
@@ -518,10 +517,6 @@ void DefaultMQPushConsumer::producePullMsgTask(PullRequest* request) {
   } else {
     LOG_WARN("produce pullmsg of mq:%s failed", request->m_messageQueue.toString().c_str());
   }
-}
-
-void DefaultMQPushConsumer::runPullMsgQueue(TaskQueue* pTaskQueue) {
-  pTaskQueue->run();
 }
 
 void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
