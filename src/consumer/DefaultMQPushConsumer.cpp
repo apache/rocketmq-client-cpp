@@ -185,7 +185,7 @@ class AsyncPullCallback : public PullCallback {
 };
 
 //<!***************************************************************************
-static boost::mutex m_asyncCallbackLock;
+static std::mutex m_asyncCallbackLock;
 
 DefaultMQPushConsumer::DefaultMQPushConsumer(const string& groupname)
     : m_consumeFromWhere(CONSUME_FROM_LAST_OFFSET),
@@ -700,7 +700,7 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
 }
 
 AsyncPullCallback* DefaultMQPushConsumer::getAsyncPullCallBack(PullRequest* request, MQMessageQueue msgQueue) {
-  boost::lock_guard<boost::mutex> lock(m_asyncCallbackLock);
+  std::lock_guard<std::mutex> lock(m_asyncCallbackLock);
   if (m_asyncPull && request) {
     PullMAP::iterator it = m_PullCallback.find(msgQueue);
     if (it == m_PullCallback.end()) {
@@ -709,12 +709,11 @@ AsyncPullCallback* DefaultMQPushConsumer::getAsyncPullCallBack(PullRequest* requ
     }
     return m_PullCallback[msgQueue];
   }
-
-  return NULL;
+  return nullptr;
 }
 
 void DefaultMQPushConsumer::shutdownAsyncPullCallBack() {
-  boost::lock_guard<boost::mutex> lock(m_asyncCallbackLock);
+  std::lock_guard<std::mutex> lock(m_asyncCallbackLock);
   if (m_asyncPull) {
     PullMAP::iterator it = m_PullCallback.begin();
     for (; it != m_PullCallback.end(); ++it) {

@@ -37,7 +37,7 @@ MQClientFactory::MQClientFactory(const std::string& clientID,
                                  std::string unitName)
     : m_clientId(clientID) {
   // default Topic register;
-  boost::shared_ptr<TopicPublishInfo> pDefaultTopicInfo(new TopicPublishInfo());
+  std::shared_ptr<TopicPublishInfo> pDefaultTopicInfo(new TopicPublishInfo());
   m_topicPublishInfoTable[DEFAULT_TOPIC] = pDefaultTopicInfo;
 
   m_pClientRemotingProcessor.reset(new ClientRemotingProcessor(this));
@@ -110,7 +110,7 @@ void MQClientFactory::updateTopicRouteInfo(boost::system::error_code& ec, boost:
 }
 
 TopicRouteData* MQClientFactory::getTopicRouteData(const std::string& topic) {
-  boost::lock_guard<boost::mutex> lock(m_topicRouteTableMutex);
+  std::lock_guard<std::mutex> lock(m_topicRouteTableMutex);
   if (m_topicRouteTable.find(topic) != m_topicRouteTable.end()) {
     return m_topicRouteTable[topic];
   }
@@ -118,7 +118,7 @@ TopicRouteData* MQClientFactory::getTopicRouteData(const std::string& topic) {
 }
 
 void MQClientFactory::addTopicRouteData(const std::string& topic, TopicRouteData* pTopicRouteData) {
-  boost::lock_guard<boost::mutex> lock(m_topicRouteTableMutex);
+  std::lock_guard<std::mutex> lock(m_topicRouteTableMutex);
   if (m_topicRouteTable.find(topic) != m_topicRouteTable.end()) {
     delete m_topicRouteTable[topic];
     m_topicRouteTable.erase(topic);
@@ -126,12 +126,12 @@ void MQClientFactory::addTopicRouteData(const std::string& topic, TopicRouteData
   m_topicRouteTable.emplace(topic, pTopicRouteData);
 }
 
-boost::shared_ptr<TopicPublishInfo> MQClientFactory::tryToFindTopicPublishInfo(
+std::shared_ptr<TopicPublishInfo> MQClientFactory::tryToFindTopicPublishInfo(
     const std::string& topic,
     const SessionCredentials& session_credentials) {
   // add topicPublishInfoLock to avoid con-current excuting updateTopicRouteInfoFromNameServer
   // when producer send msg  before topicRouteInfo was got;
-  boost::lock_guard<boost::mutex> lock(m_topicPublishInfoLock);
+  std::lock_guard<std::mutex> lock(m_topicPublishInfoLock);
 
   if (!isTopicInfoValidInTable(topic)) {
     updateTopicRouteInfoFromNameServer(topic, session_credentials);
@@ -145,7 +145,7 @@ boost::shared_ptr<TopicPublishInfo> MQClientFactory::tryToFindTopicPublishInfo(
 
   if (!isTopicInfoValidInTable(topic)) {
     LOG_WARN("tryToFindTopicPublishInfo null:%s", topic.c_str());
-    boost::shared_ptr<TopicPublishInfo> pTopicPublishInfo;
+    std::shared_ptr<TopicPublishInfo> pTopicPublishInfo;
     return pTopicPublishInfo;
   }
 
@@ -155,7 +155,7 @@ boost::shared_ptr<TopicPublishInfo> MQClientFactory::tryToFindTopicPublishInfo(
 bool MQClientFactory::updateTopicRouteInfoFromNameServer(const std::string& topic,
                                                          const SessionCredentials& session_credentials,
                                                          bool isDefault /* = false */) {
-  boost::lock_guard<boost::mutex> lock(m_factoryLock);
+  std::lock_guard<std::mutex> lock(m_factoryLock);
   std::unique_ptr<TopicRouteData> pTopicRouteData;
   LOG_INFO("updateTopicRouteInfoFromNameServer start:%s", topic.c_str());
 
@@ -202,7 +202,7 @@ bool MQClientFactory::updateTopicRouteInfoFromNameServer(const std::string& topi
 
       // update publish info
       {
-        boost::shared_ptr<TopicPublishInfo> publishInfo(topicRouteData2TopicPublishInfo(topic, pTopicRouteData.get()));
+        std::shared_ptr<TopicPublishInfo> publishInfo(topicRouteData2TopicPublishInfo(topic, pTopicRouteData.get()));
         addTopicInfoToTable(topic, publishInfo);  // erase first, then add
       }
 
@@ -216,9 +216,9 @@ bool MQClientFactory::updateTopicRouteInfoFromNameServer(const std::string& topi
   return false;
 }
 
-boost::shared_ptr<TopicPublishInfo> MQClientFactory::topicRouteData2TopicPublishInfo(const std::string& topic,
-                                                                                     TopicRouteData* pRoute) {
-  boost::shared_ptr<TopicPublishInfo> info(new TopicPublishInfo());
+std::shared_ptr<TopicPublishInfo> MQClientFactory::topicRouteData2TopicPublishInfo(const std::string& topic,
+                                                                                   TopicRouteData* pRoute) {
+  std::shared_ptr<TopicPublishInfo> info(new TopicPublishInfo());
   std::string OrderTopicConf = pRoute->getOrderTopicConf();
   // order msg
   if (!OrderTopicConf.empty()) {
@@ -359,7 +359,7 @@ void MQClientFactory::unregisterConsumer(MQConsumer* pConsumer) {
 }
 
 MQProducer* MQClientFactory::selectProducer(const std::string& producerName) {
-  boost::lock_guard<boost::mutex> lock(m_producerTableMutex);
+  std::lock_guard<std::mutex> lock(m_producerTableMutex);
   if (m_producerTable.find(producerName) != m_producerTable.end()) {
     return m_producerTable[producerName];
   }
@@ -367,7 +367,7 @@ MQProducer* MQClientFactory::selectProducer(const std::string& producerName) {
 }
 
 bool MQClientFactory::getSessionCredentialFromProducerTable(SessionCredentials& sessionCredentials) {
-  boost::lock_guard<boost::mutex> lock(m_producerTableMutex);
+  std::lock_guard<std::mutex> lock(m_producerTableMutex);
   for (MQPMAP::iterator it = m_producerTable.begin(); it != m_producerTable.end(); ++it) {
     if (it->second)
       sessionCredentials = it->second->getSessionCredentials();
@@ -380,7 +380,7 @@ bool MQClientFactory::getSessionCredentialFromProducerTable(SessionCredentials& 
 }
 
 bool MQClientFactory::addProducerToTable(const std::string& producerName, MQProducer* pMQProducer) {
-  boost::lock_guard<boost::mutex> lock(m_producerTableMutex);
+  std::lock_guard<std::mutex> lock(m_producerTableMutex);
   if (m_producerTable.find(producerName) != m_producerTable.end())
     return false;
   m_producerTable[producerName] = pMQProducer;
@@ -388,18 +388,18 @@ bool MQClientFactory::addProducerToTable(const std::string& producerName, MQProd
 }
 
 void MQClientFactory::eraseProducerFromTable(const std::string& producerName) {
-  boost::lock_guard<boost::mutex> lock(m_producerTableMutex);
+  std::lock_guard<std::mutex> lock(m_producerTableMutex);
   if (m_producerTable.find(producerName) != m_producerTable.end())
     m_producerTable.erase(producerName);
 }
 
 int MQClientFactory::getProducerTableSize() {
-  boost::lock_guard<boost::mutex> lock(m_producerTableMutex);
+  std::lock_guard<std::mutex> lock(m_producerTableMutex);
   return m_producerTable.size();
 }
 
 void MQClientFactory::insertProducerInfoToHeartBeatData(HeartbeatData* pHeartbeatData) {
-  boost::lock_guard<boost::mutex> lock(m_producerTableMutex);
+  std::lock_guard<std::mutex> lock(m_producerTableMutex);
   for (MQPMAP::iterator it = m_producerTable.begin(); it != m_producerTable.end(); ++it) {
     ProducerData producerData;
     producerData.groupName = it->first;
@@ -408,7 +408,7 @@ void MQClientFactory::insertProducerInfoToHeartBeatData(HeartbeatData* pHeartbea
 }
 
 MQConsumer* MQClientFactory::selectConsumer(const std::string& group) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  std::lock_guard<std::mutex> lock(m_consumerTableMutex);
   if (m_consumerTable.find(group) != m_consumerTable.end()) {
     return m_consumerTable[group];
   }
@@ -416,7 +416,7 @@ MQConsumer* MQClientFactory::selectConsumer(const std::string& group) {
 }
 
 bool MQClientFactory::getSessionCredentialFromConsumerTable(SessionCredentials& sessionCredentials) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  std::lock_guard<std::mutex> lock(m_consumerTableMutex);
   for (MQCMAP::iterator it = m_consumerTable.begin(); it != m_consumerTable.end(); ++it) {
     if (it->second)
       sessionCredentials = it->second->getSessionCredentials();
@@ -430,7 +430,7 @@ bool MQClientFactory::getSessionCredentialFromConsumerTable(SessionCredentials& 
 
 bool MQClientFactory::getSessionCredentialFromConsumer(const std::string& consumerGroup,
                                                        SessionCredentials& sessionCredentials) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  std::lock_guard<std::mutex> lock(m_consumerTableMutex);
   if (m_consumerTable.find(consumerGroup) != m_consumerTable.end()) {
     sessionCredentials = m_consumerTable[consumerGroup]->getSessionCredentials();
   }
@@ -442,7 +442,7 @@ bool MQClientFactory::getSessionCredentialFromConsumer(const std::string& consum
 }
 
 bool MQClientFactory::addConsumerToTable(const std::string& consumerName, MQConsumer* pMQConsumer) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  std::lock_guard<std::mutex> lock(m_consumerTableMutex);
   if (m_consumerTable.find(consumerName) != m_consumerTable.end())
     return false;
   m_consumerTable[consumerName] = pMQConsumer;
@@ -450,7 +450,7 @@ bool MQClientFactory::addConsumerToTable(const std::string& consumerName, MQCons
 }
 
 void MQClientFactory::eraseConsumerFromTable(const std::string& consumerName) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  std::lock_guard<std::mutex> lock(m_consumerTableMutex);
   if (m_consumerTable.find(consumerName) != m_consumerTable.end())
     m_consumerTable.erase(consumerName);  // do not need freee pConsumer, as it
                                           // was allocated by user
@@ -459,12 +459,12 @@ void MQClientFactory::eraseConsumerFromTable(const std::string& consumerName) {
 }
 
 int MQClientFactory::getConsumerTableSize() {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  std::lock_guard<std::mutex> lock(m_consumerTableMutex);
   return m_consumerTable.size();
 }
 
 void MQClientFactory::getTopicListFromConsumerSubscription(std::set<std::string>& topicList) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  std::lock_guard<std::mutex> lock(m_consumerTableMutex);
   for (auto& it : m_consumerTable) {
     std::vector<SubscriptionData> result;
     it.second->getSubscriptions(result);
@@ -475,14 +475,14 @@ void MQClientFactory::getTopicListFromConsumerSubscription(std::set<std::string>
 }
 
 void MQClientFactory::updateConsumerSubscribeTopicInfo(const std::string& topic, std::vector<MQMessageQueue> mqs) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  std::lock_guard<std::mutex> lock(m_consumerTableMutex);
   for (auto& it : m_consumerTable) {
     it.second->updateTopicSubscribeInfo(topic, mqs);
   }
 }
 
 void MQClientFactory::insertConsumerInfoToHeartBeatData(HeartbeatData* pHeartbeatData) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  std::lock_guard<std::mutex> lock(m_consumerTableMutex);
   for (MQCMAP::iterator it = m_consumerTable.begin(); it != m_consumerTable.end(); ++it) {
     MQConsumer* pConsumer = it->second;
     ConsumerData consumerData;
@@ -501,8 +501,8 @@ void MQClientFactory::insertConsumerInfoToHeartBeatData(HeartbeatData* pHeartbea
 }
 
 void MQClientFactory::addTopicInfoToTable(const std::string& topic,
-                                          boost::shared_ptr<TopicPublishInfo> pTopicPublishInfo) {
-  boost::lock_guard<boost::mutex> lock(m_topicPublishInfoTableMutex);
+                                          std::shared_ptr<TopicPublishInfo> pTopicPublishInfo) {
+  std::lock_guard<std::mutex> lock(m_topicPublishInfoTableMutex);
   if (m_topicPublishInfoTable.find(topic) != m_topicPublishInfoTable.end()) {
     m_topicPublishInfoTable.erase(topic);
   }
@@ -510,14 +510,14 @@ void MQClientFactory::addTopicInfoToTable(const std::string& topic,
 }
 
 void MQClientFactory::eraseTopicInfoFromTable(const std::string& topic) {
-  boost::lock_guard<boost::mutex> lock(m_topicPublishInfoTableMutex);
+  std::lock_guard<std::mutex> lock(m_topicPublishInfoTableMutex);
   if (m_topicPublishInfoTable.find(topic) != m_topicPublishInfoTable.end()) {
     m_topicPublishInfoTable.erase(topic);
   }
 }
 
 bool MQClientFactory::isTopicInfoValidInTable(const std::string& topic) {
-  boost::lock_guard<boost::mutex> lock(m_topicPublishInfoTableMutex);
+  std::lock_guard<std::mutex> lock(m_topicPublishInfoTableMutex);
   if (m_topicPublishInfoTable.find(topic) != m_topicPublishInfoTable.end()) {
     if (m_topicPublishInfoTable[topic]->ok())
       return true;
@@ -525,29 +525,29 @@ bool MQClientFactory::isTopicInfoValidInTable(const std::string& topic) {
   return false;
 }
 
-boost::shared_ptr<TopicPublishInfo> MQClientFactory::getTopicPublishInfoFromTable(const std::string& topic) {
-  boost::lock_guard<boost::mutex> lock(m_topicPublishInfoTableMutex);
+std::shared_ptr<TopicPublishInfo> MQClientFactory::getTopicPublishInfoFromTable(const std::string& topic) {
+  std::lock_guard<std::mutex> lock(m_topicPublishInfoTableMutex);
   if (m_topicPublishInfoTable.find(topic) != m_topicPublishInfoTable.end()) {
     return m_topicPublishInfoTable[topic];
   }
-  boost::shared_ptr<TopicPublishInfo> pTopicPublishInfo;
+  std::shared_ptr<TopicPublishInfo> pTopicPublishInfo;
   return pTopicPublishInfo;
 }
 
 void MQClientFactory::getTopicListFromTopicPublishInfo(std::set<std::string>& topicList) {
-  boost::lock_guard<boost::mutex> lock(m_topicPublishInfoTableMutex);
+  std::lock_guard<std::mutex> lock(m_topicPublishInfoTableMutex);
   for (const auto& it : m_topicPublishInfoTable) {
     topicList.insert(it.first);
   }
 }
 
 void MQClientFactory::clearBrokerAddrMap() {
-  boost::lock_guard<boost::mutex> lock(m_brokerAddrlock);
+  std::lock_guard<std::mutex> lock(m_brokerAddrlock);
   m_brokerAddrTable.clear();
 }
 
 void MQClientFactory::addBrokerToAddrMap(const std::string& brokerName, map<int, string>& brokerAddrs) {
-  boost::lock_guard<boost::mutex> lock(m_brokerAddrlock);
+  std::lock_guard<std::mutex> lock(m_brokerAddrlock);
   if (m_brokerAddrTable.find(brokerName) != m_brokerAddrTable.end()) {
     m_brokerAddrTable.erase(brokerName);
   }
@@ -555,7 +555,7 @@ void MQClientFactory::addBrokerToAddrMap(const std::string& brokerName, map<int,
 }
 
 MQClientFactory::BrokerAddrMAP MQClientFactory::getBrokerAddrMap() {
-  boost::lock_guard<boost::mutex> lock(m_brokerAddrlock);
+  std::lock_guard<std::mutex> lock(m_brokerAddrlock);
   return m_brokerAddrTable;
 }
 
@@ -718,7 +718,7 @@ void MQClientFactory::sendHeartbeatToAllBroker() {
 
 void MQClientFactory::persistAllConsumerOffset(boost::system::error_code& ec, boost::asio::deadline_timer* t) {
   {
-    boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+    std::lock_guard<std::mutex> lock(m_consumerTableMutex);
     if (m_consumerTable.size() > 0) {
       for (auto& it : m_consumerTable) {
         LOG_DEBUG("Client factory start persistAllConsumerOffset");
@@ -813,7 +813,7 @@ void MQClientFactory::timerCB_doRebalance(boost::system::error_code& ec, boost::
 void MQClientFactory::doRebalance() {
   LOG_INFO("Client factory:%s start dorebalance", m_clientId.c_str());
   if (getConsumerTableSize() > 0) {
-    boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+    std::lock_guard<std::mutex> lock(m_consumerTableMutex);
     for (auto& it : m_consumerTable) {
       it.second->doRebalance();
     }
@@ -822,7 +822,7 @@ void MQClientFactory::doRebalance() {
 }
 
 void MQClientFactory::doRebalanceByConsumerGroup(const std::string& consumerGroup) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  std::lock_guard<std::mutex> lock(m_consumerTableMutex);
   if (m_consumerTable.find(consumerGroup) != m_consumerTable.end()) {
     LOG_INFO("Client factory:%s start dorebalance for consumer:%s", m_clientId.c_str(), consumerGroup.c_str());
     MQConsumer* pMQConsumer = m_consumerTable[consumerGroup];

@@ -322,9 +322,8 @@ SendResult DefaultMQProducer::sendDefaultImpl(MQMessage& msg,
   MQMessageQueue lastmq;
   int mq_index = 0;
   for (int times = 1; times <= m_retryTimes; times++) {
-    boost::weak_ptr<TopicPublishInfo> weak_topicPublishInfo(
-        getFactory()->tryToFindTopicPublishInfo(msg.getTopic(), getSessionCredentials()));
-    boost::shared_ptr<TopicPublishInfo> topicPublishInfo(weak_topicPublishInfo.lock());
+    std::shared_ptr<TopicPublishInfo> topicPublishInfo =
+        getFactory()->tryToFindTopicPublishInfo(msg.getTopic(), getSessionCredentials());
     if (topicPublishInfo) {
       if (times == 1) {
         mq_index = topicPublishInfo->getWhichQueue();
@@ -433,11 +432,9 @@ SendResult DefaultMQProducer::sendSelectImpl(MQMessage& msg,
                                              SendCallback* sendCallback) {
   Validators::checkMessage(msg, getMaxMessageSize());
 
-  boost::weak_ptr<TopicPublishInfo> weak_topicPublishInfo(
-      getFactory()->tryToFindTopicPublishInfo(msg.getTopic(), getSessionCredentials()));
-  boost::shared_ptr<TopicPublishInfo> topicPublishInfo(weak_topicPublishInfo.lock());
-  if (topicPublishInfo)  //&& topicPublishInfo->ok())
-  {
+  std::shared_ptr<TopicPublishInfo> topicPublishInfo =
+      getFactory()->tryToFindTopicPublishInfo(msg.getTopic(), getSessionCredentials());
+  if (topicPublishInfo) {
     MQMessageQueue mq = pSelector->select(topicPublishInfo->getMessageQueueList(), msg, pArg);
     return sendKernelImpl(msg, mq, communicationMode, sendCallback);
   }
@@ -457,9 +454,8 @@ SendResult DefaultMQProducer::sendAutoRetrySelectImpl(MQMessage& msg,
   MQMessageQueue mq;
   int mq_index = 0;
   for (int times = 1; times <= autoRetryTimes + 1; times++) {
-    boost::weak_ptr<TopicPublishInfo> weak_topicPublishInfo(
-        getFactory()->tryToFindTopicPublishInfo(msg.getTopic(), getSessionCredentials()));
-    boost::shared_ptr<TopicPublishInfo> topicPublishInfo(weak_topicPublishInfo.lock());
+    std::shared_ptr<TopicPublishInfo> topicPublishInfo =
+        getFactory()->tryToFindTopicPublishInfo(msg.getTopic(), getSessionCredentials());
     if (topicPublishInfo) {
       SendResult sendResult;
       if (times == 1) {

@@ -28,6 +28,7 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/serialization/map.hpp>
+
 namespace rocketmq {
 
 //<!***************************************************************************
@@ -136,7 +137,7 @@ void LocalFileOffsetStore::load() {
 }
 
 void LocalFileOffsetStore::updateOffset(const MQMessageQueue& mq, int64 offset) {
-  boost::lock_guard<boost::mutex> lock(m_lock);
+  std::lock_guard<std::mutex> lock(m_lock);
   m_offsetTable[mq] = offset;
 }
 
@@ -146,7 +147,7 @@ int64 LocalFileOffsetStore::readOffset(const MQMessageQueue& mq,
   switch (type) {
     case MEMORY_FIRST_THEN_STORE:
     case READ_FROM_MEMORY: {
-      boost::lock_guard<boost::mutex> lock(m_lock);
+      std::lock_guard<std::mutex> lock(m_lock);
       MQ2OFFSET::iterator it = m_offsetTable.find(mq);
       if (it != m_offsetTable.end()) {
         return it->second;
@@ -161,7 +162,7 @@ int64 LocalFileOffsetStore::readOffset(const MQMessageQueue& mq,
         LOG_ERROR("catch exception when load local file");
         return -1;
       }
-      boost::lock_guard<boost::mutex> lock(m_lock);
+      std::lock_guard<std::mutex> lock(m_lock);
       MQ2OFFSET::iterator it = m_offsetTable.find(mq);
       if (it != m_offsetTable.end()) {
         return it->second;
@@ -177,7 +178,7 @@ int64 LocalFileOffsetStore::readOffset(const MQMessageQueue& mq,
 void LocalFileOffsetStore::persist(const MQMessageQueue& mq, const SessionCredentials& session_credentials) {}
 
 void LocalFileOffsetStore::persistAll(const std::vector<MQMessageQueue>& mqs) {
-  boost::lock_guard<boost::mutex> lock(m_lock);
+  std::lock_guard<std::mutex> lock(m_lock);
 
   map<string, int64> m_offsetTable_tmp;
   vector<MQMessageQueue>::const_iterator it = mqs.begin();
@@ -225,7 +226,7 @@ RemoteBrokerOffsetStore::~RemoteBrokerOffsetStore() {}
 void RemoteBrokerOffsetStore::load() {}
 
 void RemoteBrokerOffsetStore::updateOffset(const MQMessageQueue& mq, int64 offset) {
-  boost::lock_guard<boost::mutex> lock(m_lock);
+  std::lock_guard<std::mutex> lock(m_lock);
   m_offsetTable[mq] = offset;
 }
 
@@ -235,7 +236,7 @@ int64 RemoteBrokerOffsetStore::readOffset(const MQMessageQueue& mq,
   switch (type) {
     case MEMORY_FIRST_THEN_STORE:
     case READ_FROM_MEMORY: {
-      boost::lock_guard<boost::mutex> lock(m_lock);
+      std::lock_guard<std::mutex> lock(m_lock);
 
       MQ2OFFSET::iterator it = m_offsetTable.find(mq);
       if (it != m_offsetTable.end()) {
@@ -267,7 +268,7 @@ int64 RemoteBrokerOffsetStore::readOffset(const MQMessageQueue& mq,
 void RemoteBrokerOffsetStore::persist(const MQMessageQueue& mq, const SessionCredentials& session_credentials) {
   MQ2OFFSET offsetTable;
   {
-    boost::lock_guard<boost::mutex> lock(m_lock);
+    std::lock_guard<std::mutex> lock(m_lock);
     offsetTable = m_offsetTable;
   }
 
@@ -284,7 +285,7 @@ void RemoteBrokerOffsetStore::persist(const MQMessageQueue& mq, const SessionCre
 void RemoteBrokerOffsetStore::persistAll(const std::vector<MQMessageQueue>& mq) {}
 
 void RemoteBrokerOffsetStore::removeOffset(const MQMessageQueue& mq) {
-  boost::lock_guard<boost::mutex> lock(m_lock);
+  std::lock_guard<std::mutex> lock(m_lock);
   if (m_offsetTable.find(mq) != m_offsetTable.end())
     m_offsetTable.erase(mq);
 }
@@ -339,5 +340,6 @@ int64 RemoteBrokerOffsetStore::fetchConsumeOffsetFromBroker(const MQMessageQueue
     THROW_MQEXCEPTION(MQClientException, "The broker not exist", -1);
   }
 }
+
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

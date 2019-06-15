@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "Rebalance.h"
+
 #include "DefaultMQPushConsumer.h"
 #include "LockBatchBody.h"
 #include "Logging.h"
@@ -24,40 +25,35 @@
 
 namespace rocketmq {
 //<!************************************************************************
-Rebalance::Rebalance(MQConsumer* consumer, MQClientFactory* pfactory)
-    : m_pConsumer(consumer), m_pClientFactory(pfactory) {
+
+Rebalance::Rebalance(MQConsumer* consumer, MQClientFactory* pFactory)
+    : m_pConsumer(consumer), m_pClientFactory(pFactory) {
   m_pAllocateMQStrategy = new AllocateMQAveragely();
 }
 
 Rebalance::~Rebalance() {
   {
-    map<string, SubscriptionData*>::iterator it = m_subscriptionData.begin();
-    for (; it != m_subscriptionData.end(); ++it)
-      deleteAndZero(it->second);
+    for (auto& it : m_subscriptionData) {
+      deleteAndZero(it.second);
+    }
     m_subscriptionData.clear();
   }
-  {
-    MQ2PULLREQ::iterator it = m_requestQueueTable.begin();
-    for (; it != m_requestQueueTable.end(); ++it) {
-      delete it->second;
-      it->second = NULL;
-    }
-    m_requestQueueTable.clear();
-  }
+
+  m_requestQueueTable.clear();
   m_topicSubscribeInfoTable.clear();
-  m_pConsumer = NULL;
-  m_pClientFactory = NULL;
+  m_pConsumer = nullptr;
+  m_pClientFactory = nullptr;
   deleteAndZero(m_pAllocateMQStrategy);
 }
 
-void Rebalance::doRebalance() {
+void Rebalance::doRebalance() throw(MQClientException) {
   LOG_DEBUG("start doRebalance");
   try {
-    map<string, SubscriptionData*>::iterator it = m_subscriptionData.begin();
-    for (; it != m_subscriptionData.end(); ++it) {
+    for (auto it = m_subscriptionData.begin(); it != m_subscriptionData.end(); ++it) {
       string topic = (it->first);
       LOG_INFO("current topic is:%s", topic.c_str());
-      //<!topic -> mqs
+
+      // topic -> mqs
       vector<MQMessageQueue> mqAll;
       if (!getTopicSubscribeInfo(topic, mqAll)) {
         continue;
@@ -76,42 +72,26 @@ void Rebalance::doRebalance() {
           }
           break;
         }
+
         case CLUSTERING: {
           vector<string> cidAll;
           m_pClientFactory->findConsumerIds(topic, m_pConsumer->getGroupName(), cidAll,
                                             m_pConsumer->getSessionCredentials());
 
           if (cidAll.empty()) {
-            /*remove the droping pullRequest changes for recovery consume fastly
-                from network broken
-                //drop all pullRequest
-                MQ2PULLREQ::iterator it = m_requestQueueTable.begin();
-                for (; it != m_requestQueueTable.end(); ++it)
-                {
-                    if(!(it->second->isDroped()))
-                    {
-                        MQMessageQueue mqtemp = it->first;
-                        it->second->setDroped(true);
-                        removeUnnecessaryMessageQueue(mqtemp);
-                        it->second->clearAllMsgs();//add clear operation to
-            avoid bad
-                state when dropped pullRequest returns normal
-                        LOG_INFO("find consumer failed, drop undropped mq:%s",
-                mqtemp.toString().c_str());
-                    }
-            }*/
-
             THROW_MQEXCEPTION(MQClientException, "doRebalance the cidAll is empty", -1);
           }
+
           // log
-          for (int i = 0; i < (int)cidAll.size(); ++i) {
-            LOG_INFO("client id:%s of topic:%s", cidAll[i].c_str(), topic.c_str());
+          for (auto& cid : cidAll) {
+            LOG_INFO("client id:%s of topic:%s", cid.c_str(), topic.c_str());
           }
-          //<! sort;
+
+          // sort;
           sort(mqAll.begin(), mqAll.end());
           sort(cidAll.begin(), cidAll.end());
 
-          //<! allocate;
+          // allocate mqs
           vector<MQMessageQueue> allocateResult;
           try {
             m_pAllocateMQStrategy->allocate(m_pConsumer->getMQClientId(), mqAll, cidAll, allocateResult);
@@ -120,8 +100,8 @@ void Rebalance::doRebalance() {
           }
 
           // log
-          for (int i = 0; i < (int)allocateResult.size(); ++i) {
-            LOG_INFO("allocate mq:%s", allocateResult[i].toString().c_str());
+          for (auto& mq : allocateResult) {
+            LOG_INFO("allocate mq:%s", mq.toString().c_str());
           }
 
           //<!update local;
@@ -141,13 +121,13 @@ void Rebalance::doRebalance() {
 }
 
 void Rebalance::persistConsumerOffset() {
-  DefaultMQPushConsumer* pConsumer = static_cast<DefaultMQPushConsumer*>(m_pConsumer);
+  auto* pConsumer = static_cast<DefaultMQPushConsumer*>(m_pConsumer);
   OffsetStore* pOffsetStore = pConsumer->getOffsetStore();
   vector<MQMessageQueue> mqs;
+
   {
-    boost::lock_guard<boost::mutex> lock(m_requestTableMutex);
-    MQ2PULLREQ::iterator it = m_requestQueueTable.begin();
-    for (; it != m_requestQueueTable.end(); ++it) {
+    std::lock_guard<std::mutex> lock(m_requestTableMutex);
+    for (auto it = m_requestQueueTable.begin(); it != m_requestQueueTable.end(); ++it) {
       if (it->second && (!it->second->isDroped())) {
         mqs.push_back(it->first);
       }
@@ -157,29 +137,26 @@ void Rebalance::persistConsumerOffset() {
   if (pConsumer->getMessageModel() == BROADCASTING) {
     pOffsetStore->persistAll(mqs);
   } else {
-    vector<MQMessageQueue>::iterator it2 = mqs.begin();
-    for (; it2 != mqs.end(); ++it2) {
-      pOffsetStore->persist(*it2, m_pConsumer->getSessionCredentials());
+    for (const auto& mq : mqs) {
+      pOffsetStore->persist(mq, m_pConsumer->getSessionCredentials());
     }
   }
 }
 
 void Rebalance::persistConsumerOffsetByResetOffset() {
-  DefaultMQPushConsumer* pConsumer = static_cast<DefaultMQPushConsumer*>(m_pConsumer);
+  auto* pConsumer = static_cast<DefaultMQPushConsumer*>(m_pConsumer);
   OffsetStore* pOffsetStore = pConsumer->getOffsetStore();
   vector<MQMessageQueue> mqs;
   {
-    boost::lock_guard<boost::mutex> lock(m_requestTableMutex);
-    MQ2PULLREQ::iterator it = m_requestQueueTable.begin();
-    for (; it != m_requestQueueTable.end(); ++it) {
-      if (it->second) {  // even if it was dropped, also need update offset when
-                         // rcv resetOffset cmd
+    std::lock_guard<std::mutex> lock(m_requestTableMutex);
+    for (auto it = m_requestQueueTable.begin(); it != m_requestQueueTable.end(); ++it) {
+      if (it->second) {
+        // even if it was dropped, also need update offset when rcv resetOffset cmd
         mqs.push_back(it->first);
       }
     }
   }
-  vector<MQMessageQueue>::iterator it2 = mqs.begin();
-  for (; it2 != mqs.end(); ++it2) {
+  for (auto it2 = mqs.begin(); it2 != mqs.end(); ++it2) {
     pOffsetStore->persist(*it2, m_pConsumer->getSessionCredentials());
   }
 }
@@ -196,28 +173,30 @@ map<string, SubscriptionData*>& Rebalance::getSubscriptionInner() {
 }
 
 void Rebalance::setSubscriptionData(const string& topic, SubscriptionData* pdata) {
-  if (pdata != NULL && m_subscriptionData.find(topic) == m_subscriptionData.end())
+  if (pdata != nullptr && m_subscriptionData.find(topic) == m_subscriptionData.end())
     m_subscriptionData[topic] = pdata;
 }
 
 void Rebalance::setTopicSubscribeInfo(const string& topic, vector<MQMessageQueue>& mqs) {
-  if (m_subscriptionData.find(topic) != m_subscriptionData.end()) {
-    {
-      boost::lock_guard<boost::mutex> lock(m_topicSubscribeInfoTableMutex);
-      if (m_topicSubscribeInfoTable.find(topic) != m_topicSubscribeInfoTable.end())
-        m_topicSubscribeInfoTable.erase(topic);
-      m_topicSubscribeInfoTable[topic] = mqs;
-    }
-    // log
-    vector<MQMessageQueue>::iterator it = mqs.begin();
-    for (; it != mqs.end(); ++it) {
-      LOG_DEBUG("topic [%s] has :%s", topic.c_str(), (*it).toString().c_str());
-    }
+  if (m_subscriptionData.find(topic) == m_subscriptionData.end()) {
+    return;
+  }
+
+  {
+    std::lock_guard<std::mutex> lock(m_topicSubscribeInfoTableMutex);
+    if (m_topicSubscribeInfoTable.find(topic) != m_topicSubscribeInfoTable.end())
+      m_topicSubscribeInfoTable.erase(topic);
+    m_topicSubscribeInfoTable[topic] = mqs;
+  }
+
+  // log
+  for (const auto& mq : mqs) {
+    LOG_DEBUG("topic [%s] has :%s", topic.c_str(), mq.toString().c_str());
   }
 }
 
 bool Rebalance::getTopicSubscribeInfo(const string& topic, vector<MQMessageQueue>& mqs) {
-  boost::lock_guard<boost::mutex> lock(m_topicSubscribeInfoTableMutex);
+  std::lock_guard<std::mutex> lock(m_topicSubscribeInfoTableMutex);
   if (m_topicSubscribeInfoTable.find(topic) != m_topicSubscribeInfoTable.end()) {
     mqs = m_topicSubscribeInfoTable[topic];
     return true;
@@ -225,47 +204,47 @@ bool Rebalance::getTopicSubscribeInfo(const string& topic, vector<MQMessageQueue
   return false;
 }
 
-void Rebalance::addPullRequest(MQMessageQueue mq, PullRequest* pPullRequest) {
-  boost::lock_guard<boost::mutex> lock(m_requestTableMutex);
+void Rebalance::addPullRequest(const MQMessageQueue& mq, PullRequest* pPullRequest) {
+  std::lock_guard<std::mutex> lock(m_requestTableMutex);
   m_requestQueueTable[mq] = pPullRequest;
 }
 
-PullRequest* Rebalance::getPullRequest(MQMessageQueue mq) {
-  boost::lock_guard<boost::mutex> lock(m_requestTableMutex);
+PullRequest* Rebalance::getPullRequest(const MQMessageQueue& mq) {
+  std::lock_guard<std::mutex> lock(m_requestTableMutex);
   if (m_requestQueueTable.find(mq) != m_requestQueueTable.end()) {
     return m_requestQueueTable[mq];
   }
-  return NULL;
+  return nullptr;
 }
 
 map<MQMessageQueue, PullRequest*> Rebalance::getPullRequestTable() {
-  boost::lock_guard<boost::mutex> lock(m_requestTableMutex);
+  std::lock_guard<std::mutex> lock(m_requestTableMutex);
   return m_requestQueueTable;
 }
 
 void Rebalance::unlockAll(bool oneway) {
-  map<string, vector<MQMessageQueue>*> brokerMqs;
+  std::map<string, std::vector<MQMessageQueue>*> brokerMqs;
   MQ2PULLREQ requestQueueTable = getPullRequestTable();
-  for (MQ2PULLREQ::iterator it = requestQueueTable.begin(); it != requestQueueTable.end(); ++it) {
-    if (!(it->second->isDroped())) {
-      if (brokerMqs.find(it->first.getBrokerName()) == brokerMqs.end()) {
-        vector<MQMessageQueue>* mqs = new vector<MQMessageQueue>;
-        brokerMqs[it->first.getBrokerName()] = mqs;
+  for (auto& it : requestQueueTable) {
+    if (!(it.second->isDroped())) {
+      if (brokerMqs.find(it.first.getBrokerName()) == brokerMqs.end()) {
+        auto* mqs = new vector<MQMessageQueue>;
+        brokerMqs[it.first.getBrokerName()] = mqs;
       } else {
-        brokerMqs[it->first.getBrokerName()]->push_back(it->first);
+        brokerMqs[it.first.getBrokerName()]->push_back(it.first);
       }
     }
   }
   LOG_INFO("unLockAll " SIZET_FMT " broker mqs", brokerMqs.size());
-  for (map<string, vector<MQMessageQueue>*>::iterator itb = brokerMqs.begin(); itb != brokerMqs.end(); ++itb) {
-    unique_ptr<FindBrokerResult> pFindBrokerResult(
-        m_pClientFactory->findBrokerAddressInSubscribe(itb->first, MASTER_ID, true));
+  for (auto& brokerMq : brokerMqs) {
+    std::unique_ptr<FindBrokerResult> pFindBrokerResult(
+        m_pClientFactory->findBrokerAddressInSubscribe(brokerMq.first, MASTER_ID, true));
     if (!pFindBrokerResult) {
-      LOG_ERROR("unlockAll findBrokerAddressInSubscribe ret null for broker:%s", itb->first.data());
+      LOG_ERROR("unlockAll findBrokerAddressInSubscribe ret null for broker:%s", brokerMq.first.data());
       continue;
     }
     unique_ptr<UnlockBatchRequestBody> unlockBatchRequest(new UnlockBatchRequestBody());
-    vector<MQMessageQueue> mqs(*(itb->second));
+    vector<MQMessageQueue> mqs(*(brokerMq.second));
     unlockBatchRequest->setClientId(m_pConsumer->getMQClientId());
     unlockBatchRequest->setConsumerGroup(m_pConsumer->getGroupName());
     unlockBatchRequest->setMqSet(mqs);
@@ -285,7 +264,7 @@ void Rebalance::unlockAll(bool oneway) {
     } catch (MQException& e) {
       LOG_ERROR("unlockBatchMQ fails");
     }
-    deleteAndZero(itb->second);
+    deleteAndZero(brokerMq.second);
   }
   brokerMqs.clear();
 }
@@ -324,20 +303,20 @@ void Rebalance::unlock(MQMessageQueue mq) {
 void Rebalance::lockAll() {
   map<string, vector<MQMessageQueue>*> brokerMqs;
   MQ2PULLREQ requestQueueTable = getPullRequestTable();
-  for (MQ2PULLREQ::iterator it = requestQueueTable.begin(); it != requestQueueTable.end(); ++it) {
-    if (!(it->second->isDroped())) {
-      string brokerKey = it->first.getBrokerName() + it->first.getTopic();
+  for (auto& it : requestQueueTable) {
+    if (!(it.second->isDroped())) {
+      string brokerKey = it.first.getBrokerName() + it.first.getTopic();
       if (brokerMqs.find(brokerKey) == brokerMqs.end()) {
-        vector<MQMessageQueue>* mqs = new vector<MQMessageQueue>;
+        auto* mqs = new vector<MQMessageQueue>;
         brokerMqs[brokerKey] = mqs;
-        brokerMqs[brokerKey]->push_back(it->first);
+        brokerMqs[brokerKey]->push_back(it.first);
       } else {
-        brokerMqs[brokerKey]->push_back(it->first);
+        brokerMqs[brokerKey]->push_back(it.first);
       }
     }
   }
   LOG_INFO("LockAll " SIZET_FMT " broker mqs", brokerMqs.size());
-  for (map<string, vector<MQMessageQueue>*>::iterator itb = brokerMqs.begin(); itb != brokerMqs.end(); ++itb) {
+  for (auto itb = brokerMqs.begin(); itb != brokerMqs.end(); ++itb) {
     string brokerName = (*(itb->second))[0].getBrokerName();
     unique_ptr<FindBrokerResult> pFindBrokerResult(
         m_pClientFactory->findBrokerAddressInSubscribe(brokerName, MASTER_ID, true));
@@ -372,6 +351,7 @@ void Rebalance::lockAll() {
   }
   brokerMqs.clear();
 }
+
 bool Rebalance::lock(MQMessageQueue mq) {
   unique_ptr<FindBrokerResult> pFindBrokerResult(
       m_pClientFactory->findBrokerAddressInSubscribe(mq.getBrokerName(), MASTER_ID, true));
@@ -392,7 +372,7 @@ bool Rebalance::lock(MQMessageQueue mq) {
     LOG_DEBUG("try to lock mq:%s", mq.toString().c_str());
     m_pClientFactory->getMQClientAPIImpl()->lockBatchMQ(pFindBrokerResult->brokerAddr, lockBatchRequest.get(),
                                                         messageQueues, 1000, m_pConsumer->getSessionCredentials());
-    if (messageQueues.size() == 0) {
+    if (messageQueues.empty()) {
       LOG_ERROR("lock mq on broker:%s failed", pFindBrokerResult->brokerAddr.c_str());
       return false;
     }
@@ -491,7 +471,7 @@ bool RebalancePush::updateRequestTableInRebalance(const string& topic, vector<MQ
         */
         bool bPullMsgEvent = pPullRequest->addPullMsgEvent();
         while (!bPullMsgEvent) {
-          boost::this_thread::sleep_for(boost::chrono::milliseconds(50));
+          std::this_thread::sleep_for(std::chrono::milliseconds(50));
           LOG_INFO("pullRequest with mq :%s has unfinished pullMsgEvent", (it2->toString()).c_str());
           bPullMsgEvent = pPullRequest->addPullMsgEvent();
         }
@@ -542,7 +522,7 @@ bool RebalancePush::updateRequestTableInRebalance(const string& topic, vector<MQ
 
 int64 RebalancePush::computePullFromWhere(const MQMessageQueue& mq) {
   int64 result = -1;
-  DefaultMQPushConsumer* pConsumer = static_cast<DefaultMQPushConsumer*>(m_pConsumer);
+  auto* pConsumer = static_cast<DefaultMQPushConsumer*>(m_pConsumer);
   ConsumeFromWhere consumeFromWhere = pConsumer->getConsumeFromWhere();
   OffsetStore* pOffsetStore = pConsumer->getOffsetStore();
   switch (consumeFromWhere) {
@@ -623,15 +603,15 @@ void RebalancePush::messageQueueChanged(const string& topic,
                                         vector<MQMessageQueue>& mqDivided) {}
 
 void RebalancePush::removeUnnecessaryMessageQueue(const MQMessageQueue& mq) {
-  DefaultMQPushConsumer* pConsumer = static_cast<DefaultMQPushConsumer*>(m_pConsumer);
+  auto* pConsumer = static_cast<DefaultMQPushConsumer*>(m_pConsumer);
   OffsetStore* pOffsetStore = pConsumer->getOffsetStore();
 
   pOffsetStore->persist(mq, m_pConsumer->getSessionCredentials());
   pOffsetStore->removeOffset(mq);
+
   if (pConsumer->getMessageListenerType() == messageListenerOrderly) {
     unlock(mq);
   }
 }
 
-//<!************************************************************************
 }  // namespace rocketmq

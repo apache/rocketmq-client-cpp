@@ -16,9 +16,8 @@
  */
 #ifndef __REMOTINGCOMMAND_H__
 #define __REMOTINGCOMMAND_H__
-#include <boost/atomic.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
+
+#include <atomic>
 #include <memory>
 #include <sstream>
 #include "CommandHeader.h"
@@ -89,7 +88,7 @@ class RemotingCommand {
   Json::Value m_parsedJson;
   unique_ptr<CommandHeader> m_pExtHeader;
 
-  static boost::atomic<int> s_seqNumber;
+  static std::atomic<int> s_seqNumber;
 };
 
 }  //<!end namespace;

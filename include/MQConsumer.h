@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQCONSUMER_H__
-#define __MQCONSUMER_H__
+#ifndef __MQ_CONSUMER_H__
+#define __MQ_CONSUMER_H__
 
+#include <memory>
 #include <string>
+
 #include "AsyncCallback.h"
 #include "ConsumeType.h"
 #include "MQClient.h"
@@ -61,6 +63,6 @@ class ROCKETMQCLIENT_API MQConsumer : public MQClient {
   MessageModel m_messageModel;
 };
 
-//<!***************************************************************************
-}  //<!end namespace;
-#endif
+}  // namespace rocketmq
+
+#endif  // __MQ_CONSUMER_H__

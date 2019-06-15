@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 #include "RemotingCommand.h"
+
+#include <limits>
+
 #include "Logging.h"
 #include "MQProtos.h"
 #include "MQVersion.h"
@@ -22,7 +25,7 @@
 
 namespace rocketmq {
 
-boost::atomic<int> RemotingCommand::s_seqNumber;
+std::atomic<int> RemotingCommand::s_seqNumber;
 
 //<!************************************************************************
 RemotingCommand::RemotingCommand(int code, CommandHeader* pExtHeader /* = NULL */)
@@ -33,7 +36,7 @@ RemotingCommand::RemotingCommand(int code, CommandHeader* pExtHeader /* = NULL *
       m_remark(""),
       m_pExtHeader(pExtHeader) {
   // mask sign bit
-  m_opaque = s_seqNumber.fetch_add(1, boost::memory_order_relaxed) & numeric_limits<int>::max();
+  m_opaque = s_seqNumber.fetch_add(1, std::memory_order_relaxed) & std::numeric_limits<int>::max();
 }
 
 RemotingCommand::RemotingCommand(int code,
@@ -310,4 +313,4 @@ std::string RemotingCommand::ToString() const {
   return ss.str();
 }
 
-}  //<!end namespace;
+}  // namespace rocketmq

@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _PULLAPIWRAPPER_H_
-#define _PULLAPIWRAPPER_H_
+#ifndef __PULL_API_WRAPPER_H__
+#define __PULL_API_WRAPPER_H__
 
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
+#include <mutex>
+
 #include "AsyncCallback.h"
 #include "MQMessageQueue.h"
 #include "SessionCredentials.h"
@@ -56,11 +56,10 @@ class PullAPIWrapper {
  private:
   MQClientFactory* m_MQClientFactory;
   string m_consumerGroup;
-  boost::mutex m_lock;
+  std::mutex m_lock;
   map<MQMessageQueue, int /* brokerId */> m_pullFromWhichNodeTable;
 };
 
-//<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
-#endif  //<! _PULLAPIWRAPPER_H_
+#endif  // __PULL_API_WRAPPER_H__

@@ -19,8 +19,9 @@
 #include "MQClientFactory.h"
 #include "PullResultExt.h"
 #include "PullSysFlag.h"
+
 namespace rocketmq {
-//<!************************************************************************
+
 PullAPIWrapper::PullAPIWrapper(MQClientFactory* mQClientFactory, const string& consumerGroup) {
   m_MQClientFactory = mQClientFactory;
   m_consumerGroup = consumerGroup;
@@ -32,12 +33,12 @@ PullAPIWrapper::~PullAPIWrapper() {
 }
 
 void PullAPIWrapper::updatePullFromWhichNode(const MQMessageQueue& mq, int brokerId) {
-  boost::lock_guard<boost::mutex> lock(m_lock);
+  std::lock_guard<std::mutex> lock(m_lock);
   m_pullFromWhichNodeTable[mq] = brokerId;
 }
 
 int PullAPIWrapper::recalculatePullFromWhichNode(const MQMessageQueue& mq) {
-  boost::lock_guard<boost::mutex> lock(m_lock);
+  std::lock_guard<std::mutex> lock(m_lock);
   if (m_pullFromWhichNodeTable.find(mq) != m_pullFromWhichNodeTable.end()) {
     return m_pullFromWhichNodeTable[mq];
   }
@@ -130,4 +131,4 @@ PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,        // 1
   THROW_MQEXCEPTION(MQClientException, "The broker not exist", -1);
 }
 
-}  //<!end namespace;
+}  // namespace rocketmq

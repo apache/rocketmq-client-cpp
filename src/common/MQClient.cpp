@@ -19,9 +19,9 @@
 #include "Logging.h"
 #include "MQClientFactory.h"
 #include "MQClientManager.h"
+#include "NameSpaceUtil.h"
 #include "TopicPublishInfo.h"
 #include "UtilAll.h"
-#include "NameSpaceUtil.h"
 
 namespace rocketmq {
 
@@ -121,9 +121,8 @@ MQMessageExt* MQClient::viewMessage(const string& msgId) {
 }
 
 vector<MQMessageQueue> MQClient::getTopicMessageQueueInfo(const string& topic) {
-  boost::weak_ptr<TopicPublishInfo> weak_topicPublishInfo(
-      getFactory()->tryToFindTopicPublishInfo(topic, m_SessionCredentials));
-  boost::shared_ptr<TopicPublishInfo> topicPublishInfo(weak_topicPublishInfo.lock());
+  std::shared_ptr<TopicPublishInfo> topicPublishInfo =
+      getFactory()->tryToFindTopicPublishInfo(topic, m_SessionCredentials);
   if (topicPublishInfo) {
     return topicPublishInfo->getMessageQueueList();
   }

@@ -17,14 +17,17 @@
 
 #ifndef __HEARTBEATDATA_H__
 #define __HEARTBEATDATA_H__
-#include <boost/thread/thread.hpp>
+
 #include <cstdlib>
+#include <mutex>
 #include <string>
 #include <vector>
+
 #include "ConsumeType.h"
 #include "SubscriptionData.h"
 
 namespace rocketmq {
+
 //<!***************************************************************************
 class ProducerData {
  public:
@@ -80,27 +83,28 @@ class HeartbeatData {
   void Encode(string& outData) {
     Json::Value root;
 
-    //<!id;
+    // id;
     root["clientID"] = m_clientID;
 
-    //<!consumer;
+    // consumer;
     {
-      boost::lock_guard<boost::mutex> lock(m_consumerDataMutex);
+      std::lock_guard<std::mutex> lock(m_consumerDataMutex);
       vector<ConsumerData>::iterator itc = m_consumerDataSet.begin();
       for (; itc != m_consumerDataSet.end(); itc++) {
         root["consumerDataSet"].append((*itc).toJson());
       }
     }
 
-    //<!producer;
+    // producer;
     {
-      boost::lock_guard<boost::mutex> lock(m_producerDataMutex);
+      std::lock_guard<std::mutex> lock(m_producerDataMutex);
       vector<ProducerData>::iterator itp = m_producerDataSet.begin();
       for (; itp != m_producerDataSet.end(); itp++) {
         root["producerDataSet"].append((*itp).toJson());
       }
     }
-    //<!output;
+
+    // output;
     Json::FastWriter fastwrite;
     outData = fastwrite.write(root);
   }
@@ -108,22 +112,22 @@ class HeartbeatData {
   void setClientID(const string& clientID) { m_clientID = clientID; }
 
   bool isProducerDataSetEmpty() {
-    boost::lock_guard<boost::mutex> lock(m_producerDataMutex);
+    std::lock_guard<std::mutex> lock(m_producerDataMutex);
     return m_producerDataSet.empty();
   }
 
   void insertDataToProducerDataSet(ProducerData& producerData) {
-    boost::lock_guard<boost::mutex> lock(m_producerDataMutex);
+    std::lock_guard<std::mutex> lock(m_producerDataMutex);
     m_producerDataSet.push_back(producerData);
   }
 
   bool isConsumerDataSetEmpty() {
-    boost::lock_guard<boost::mutex> lock(m_consumerDataMutex);
+    std::lock_guard<std::mutex> lock(m_consumerDataMutex);
     return m_consumerDataSet.empty();
   }
 
   void insertDataToConsumerDataSet(ConsumerData& consumerData) {
-    boost::lock_guard<boost::mutex> lock(m_consumerDataMutex);
+    std::lock_guard<std::mutex> lock(m_consumerDataMutex);
     m_consumerDataSet.push_back(consumerData);
   }
 
@@ -131,9 +135,10 @@ class HeartbeatData {
   string m_clientID;
   vector<ProducerData> m_producerDataSet;
   vector<ConsumerData> m_consumerDataSet;
-  boost::mutex m_producerDataMutex;
-  boost::mutex m_consumerDataMutex;
+  std::mutex m_producerDataMutex;
+  std::mutex m_consumerDataMutex;
 };
-}  //<!end namespace;
+
+}  // namespace rocketmq
 
 #endif

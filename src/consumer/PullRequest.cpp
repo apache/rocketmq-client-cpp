@@ -18,7 +18,7 @@
 #include "Logging.h"
 
 namespace rocketmq {
-//<!***************************************************************************
+
 const uint64 PullRequest::RebalanceLockInterval = 20 * 1000;
 const uint64 PullRequest::RebalanceLockMaxLiveTime = 30 * 1000;
 
@@ -36,7 +36,7 @@ PullRequest::~PullRequest() {
 }
 
 PullRequest& PullRequest::operator=(const PullRequest& other) {
-  boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
+  std::lock_guard<std::mutex> lock(m_pullRequestLock);
   if (this != &other) {
     m_groupname = other.m_groupname;
     m_nextOffset = other.m_nextOffset;
@@ -50,31 +50,33 @@ PullRequest& PullRequest::operator=(const PullRequest& other) {
 }
 
 void PullRequest::putMessage(vector<MQMessageExt>& msgs) {
-  boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
+  std::lock_guard<std::mutex> lock(m_pullRequestLock);
 
-  vector<MQMessageExt>::iterator it = msgs.begin();
-  for (; it != msgs.end(); it++) {
-    m_msgTreeMap[it->getQueueOffset()] = *it;
-    m_queueOffsetMax = (std::max)(m_queueOffsetMax, it->getQueueOffset());
+  for (const auto& msg : msgs) {
+    int64 offset = msg.getQueueOffset();
+    m_msgTreeMap[offset] = msg;
+    if (offset > m_queueOffsetMax) {
+      m_queueOffsetMax = offset;
+    }
   }
+
   LOG_DEBUG("PullRequest: putMessage m_queueOffsetMax:%lld ", m_queueOffsetMax);
 }
 
 void PullRequest::getMessage(vector<MQMessageExt>& msgs) {
-  boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
+  std::lock_guard<std::mutex> lock(m_pullRequestLock);
 
-  map<int64, MQMessageExt>::iterator it = m_msgTreeMap.begin();
-  for (; it != m_msgTreeMap.end(); it++) {
-    msgs.push_back(it->second);
+  for (const auto& it : m_msgTreeMap) {
+    msgs.push_back(it.second);
   }
 }
 
 int64 PullRequest::getCacheMinOffset() {
-  boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
+  std::lock_guard<std::mutex> lock(m_pullRequestLock);
   if (m_msgTreeMap.empty()) {
     return 0;
   } else {
-    map<int64, MQMessageExt>::iterator it = m_msgTreeMap.begin();
+    auto it = m_msgTreeMap.begin();
     MQMessageExt msg = it->second;
     return msg.getQueueOffset();
   }
@@ -85,21 +87,21 @@ int64 PullRequest::getCacheMaxOffset() {
 }
 
 int PullRequest::getCacheMsgCount() {
-  boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
-  return m_msgTreeMap.size();
+  std::lock_guard<std::mutex> lock(m_pullRequestLock);
+  return static_cast<int>(m_msgTreeMap.size());
 }
 
 void PullRequest::getMessageByQueueOffset(vector<MQMessageExt>& msgs, int64 minQueueOffset, int64 maxQueueOffset) {
-  boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
-
-  int64 it = minQueueOffset;
-  for (; it <= maxQueueOffset; it++) {
-    msgs.push_back(m_msgTreeMap[it]);
+  std::lock_guard<std::mutex> lock(m_pullRequestLock);
+  for (int64 it = minQueueOffset; it <= maxQueueOffset; it++) {
+    if (m_msgTreeMap.find(it) != m_msgTreeMap.end()) {
+      msgs.push_back(m_msgTreeMap[it]);
+    }
   }
 }
 
 int64 PullRequest::removeMessage(vector<MQMessageExt>& msgs) {
-  boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
+  std::lock_guard<std::mutex> lock(m_pullRequestLock);
 
   int64 result = -1;
   LOG_DEBUG("m_queueOffsetMax is:%lld", m_queueOffsetMax);
@@ -107,15 +109,15 @@ int64 PullRequest::removeMessage(vector<MQMessageExt>& msgs) {
     result = m_queueOffsetMax + 1;
     LOG_DEBUG(" offset result is:%lld, m_queueOffsetMax is:%lld, msgs size:" SIZET_FMT "", result, m_queueOffsetMax,
               msgs.size());
-    vector<MQMessageExt>::iterator it = msgs.begin();
-    for (; it != msgs.end(); it++) {
-      LOG_DEBUG("remove these msg from m_msgTreeMap, its offset:%lld", it->getQueueOffset());
-      m_msgTreeMap.erase(it->getQueueOffset());
+
+    for (auto& msg : msgs) {
+      LOG_DEBUG("remove these msg from m_msgTreeMap, its offset:%lld", msg.getQueueOffset());
+      m_msgTreeMap.erase(msg.getQueueOffset());
     }
 
     if (!m_msgTreeMap.empty()) {
-      map<int64, MQMessageExt>::iterator it = m_msgTreeMap.begin();
-      result = it->first;
+      auto it2 = m_msgTreeMap.begin();
+      result = it2->first;
       LOG_INFO("cache msg size:" SIZET_FMT " of pullRequest:%s, return offset result is:%lld", m_msgTreeMap.size(),
                m_messageQueue.toString().c_str(), result);
     }
@@ -125,7 +127,7 @@ int64 PullRequest::removeMessage(vector<MQMessageExt>& msgs) {
 }
 
 void PullRequest::clearAllMsgs() {
-  boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
+  std::lock_guard<std::mutex> lock(m_pullRequestLock);
 
   if (isDroped()) {
     LOG_DEBUG("clear m_msgTreeMap as PullRequest had been dropped.");
@@ -144,8 +146,7 @@ void PullRequest::updateQueueMaxOffset(int64 queueOffset) {
 }
 
 void PullRequest::setDroped(bool droped) {
-  int temp = (droped == true ? 1 : 0);
-  m_bDroped.store(temp);
+  m_bDroped.store(droped);
   /*
   m_queueOffsetMax = 0;
   m_nextOffset = 0;
@@ -161,20 +162,20 @@ void PullRequest::setDroped(bool droped) {
 }
 
 bool PullRequest::isDroped() const {
-  return m_bDroped.load() == 1;
+  return m_bDroped.load();
 }
 
 int64 PullRequest::getNextOffset() {
-  boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
+  std::lock_guard<std::mutex> lock(m_pullRequestLock);
   return m_nextOffset;
 }
 
-void PullRequest::setLocked(bool Locked) {
-  int temp = (Locked == true ? 1 : 0);
-  m_bLocked.store(temp);
+void PullRequest::setLocked(bool locked) {
+  m_bLocked.store(locked);
 }
+
 bool PullRequest::isLocked() const {
-  return m_bLocked.load() == 1;
+  return m_bLocked.load();
 }
 
 bool PullRequest::isLockExpired() const {
@@ -214,7 +215,7 @@ int PullRequest::getTryUnlockTimes() const {
 }
 
 void PullRequest::setNextOffset(int64 nextoffset) {
-  boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
+  std::lock_guard<std::mutex> lock(m_pullRequestLock);
   m_nextOffset = nextoffset;
 }
 
@@ -222,12 +223,12 @@ string PullRequest::getGroupName() const {
   return m_groupname;
 }
 
-boost::timed_mutex& PullRequest::getPullRequestCriticalSection() {
+std::timed_mutex& PullRequest::getPullRequestCriticalSection() {
   return m_consumeLock;
 }
 
 void PullRequest::takeMessages(vector<MQMessageExt>& msgs, int batchSize) {
-  boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
+  std::lock_guard<std::mutex> lock(m_pullRequestLock);
   for (int i = 0; i != batchSize; i++) {
     map<int64, MQMessageExt>::iterator it = m_msgTreeMap.begin();
     if (it != m_msgTreeMap.end()) {
@@ -239,7 +240,7 @@ void PullRequest::takeMessages(vector<MQMessageExt>& msgs, int batchSize) {
 }
 
 void PullRequest::makeMessageToCosumeAgain(vector<MQMessageExt>& msgs) {
-  boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
+  std::lock_guard<std::mutex> lock(m_pullRequestLock);
   for (unsigned int it = 0; it != msgs.size(); ++it) {
     m_msgTreeMap[msgs[it].getQueueOffset()] = msgs[it];
     m_msgTreeMapTemp.erase(msgs[it].getQueueOffset());
@@ -247,7 +248,7 @@ void PullRequest::makeMessageToCosumeAgain(vector<MQMessageExt>& msgs) {
 }
 
 int64 PullRequest::commit() {
-  boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
+  std::lock_guard<std::mutex> lock(m_pullRequestLock);
   if (!m_msgTreeMapTemp.empty()) {
     int64 offset = (--m_msgTreeMapTemp.end())->first;
     m_msgTreeMapTemp.clear();
@@ -270,5 +271,4 @@ bool PullRequest::addPullMsgEvent() {
   return false;
 }
 
-//<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

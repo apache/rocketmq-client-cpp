@@ -17,15 +17,17 @@
 #ifndef __OFFSETSTORE_H__
 #define __OFFSETSTORE_H__
 
-#include <boost/asio.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
 #include <map>
+#include <mutex>
+#include <vector>
+
 #include "MQMessageQueue.h"
 #include "SessionCredentials.h"
 
 namespace rocketmq {
+
 class MQClientFactory;
+
 //<!***************************************************************************
 enum ReadOffsetType {
   // read offset from memory
@@ -56,7 +58,7 @@ class OffsetStore {
   typedef std::map<MQMessageQueue, int64> MQ2OFFSET;
   MQ2OFFSET m_offsetTable;
   MQClientFactory* m_pClientFactory;
-  boost::mutex m_lock;
+  std::mutex m_lock;
 };
 
 //<!***************************************************************************
@@ -100,7 +102,8 @@ class RemoteBrokerOffsetStore : public OffsetStore {
                                    const SessionCredentials& session_credentials);
   int64 fetchConsumeOffsetFromBroker(const MQMessageQueue& mq, const SessionCredentials& session_credentials);
 };
+
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif

@@ -25,7 +25,6 @@
 
 namespace rocketmq {
 
-//<!***************************************************************************
 ConsumeMessageOrderlyService::ConsumeMessageOrderlyService(MQConsumer* consumer,
                                                            int threadCount,
                                                            MQMessageListener* msgListener)
@@ -124,9 +123,9 @@ void ConsumeMessageOrderlyService::static_submitConsumeRequestLater(void* contex
 
 void ConsumeMessageOrderlyService::ConsumeRequest(PullRequest* request) {
   bool bGetMutex = false;
-  boost::unique_lock<boost::timed_mutex> lock(request->getPullRequestCriticalSection(), boost::try_to_lock);
+  std::unique_lock<std::timed_mutex> lock(request->getPullRequestCriticalSection(), std::try_to_lock);
   if (!lock.owns_lock()) {
-    if (!lock.timed_lock(boost::get_system_time() + boost::posix_time::seconds(1))) {
+    if (!lock.try_lock_for(std::chrono::seconds(1))) {
       LOG_ERROR("ConsumeRequest of:%s get timed_mutex timeout", request->m_messageQueue.toString().c_str());
       return;
     } else {

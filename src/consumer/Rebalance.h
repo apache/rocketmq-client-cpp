@@ -14,8 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __REBALANCEIMPL_H__
-#define __REBALANCEIMPL_H__
+#ifndef __REBALANCE_IMPL_H__
+#define __REBALANCE_IMPL_H__
+
+#include <mutex>
 
 #include "AllocateMQStrategy.h"
 #include "ConsumeType.h"
@@ -24,11 +26,10 @@
 #include "PullRequest.h"
 #include "SubscriptionData.h"
 
-#include <boost/thread/mutex.hpp>
-
 namespace rocketmq {
+
 class MQClientFactory;
-//<!************************************************************************
+
 class Rebalance {
  public:
   Rebalance(MQConsumer*, MQClientFactory*);
@@ -45,7 +46,7 @@ class Rebalance {
   virtual bool updateRequestTableInRebalance(const string& topic, vector<MQMessageQueue>& mqsSelf) = 0;
 
  public:
-  void doRebalance();
+  void doRebalance() throw(MQClientException);
   void persistConsumerOffset();
   void persistConsumerOffsetByResetOffset();
   //<!m_subscriptionInner;
@@ -58,9 +59,9 @@ class Rebalance {
   void setTopicSubscribeInfo(const string& topic, vector<MQMessageQueue>& mqs);
   bool getTopicSubscribeInfo(const string& topic, vector<MQMessageQueue>& mqs);
 
-  void addPullRequest(MQMessageQueue mq, PullRequest* pPullRequest);
-  PullRequest* getPullRequest(MQMessageQueue mq);
-  map<MQMessageQueue, PullRequest*> getPullRequestTable();
+  void addPullRequest(const MQMessageQueue& mq, PullRequest* pPullRequest);
+  PullRequest* getPullRequest(const MQMessageQueue& mq);
+  std::map<MQMessageQueue, PullRequest*> getPullRequestTable();
   void lockAll();
   bool lock(MQMessageQueue mq);
   void unlockAll(bool oneway = false);
@@ -69,18 +70,17 @@ class Rebalance {
  protected:
   map<string, SubscriptionData*> m_subscriptionData;
 
-  boost::mutex m_topicSubscribeInfoTableMutex;
-  map<string, vector<MQMessageQueue>> m_topicSubscribeInfoTable;
-  typedef map<MQMessageQueue, PullRequest*> MQ2PULLREQ;
+  std::mutex m_topicSubscribeInfoTableMutex;
+  std::map<string, vector<MQMessageQueue>> m_topicSubscribeInfoTable;
+  typedef std::map<MQMessageQueue, PullRequest*> MQ2PULLREQ;
   MQ2PULLREQ m_requestQueueTable;
-  boost::mutex m_requestTableMutex;
+  std::mutex m_requestTableMutex;
 
   AllocateMQStrategy* m_pAllocateMQStrategy;
   MQConsumer* m_pConsumer;
   MQClientFactory* m_pClientFactory;
 };
 
-//<!************************************************************************
 class RebalancePull : public Rebalance {
  public:
   RebalancePull(MQConsumer*, MQClientFactory*);
@@ -97,7 +97,6 @@ class RebalancePull : public Rebalance {
   virtual bool updateRequestTableInRebalance(const string& topic, vector<MQMessageQueue>& mqsSelf);
 };
 
-//<!***************************************************************************
 class RebalancePush : public Rebalance {
  public:
   RebalancePush(MQConsumer*, MQClientFactory*);
@@ -114,7 +113,6 @@ class RebalancePush : public Rebalance {
   virtual bool updateRequestTableInRebalance(const string& topic, vector<MQMessageQueue>& mqsSelf);
 };
 
-//<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
-#endif
+#endif  // __REBALANCE_IMPL_H__

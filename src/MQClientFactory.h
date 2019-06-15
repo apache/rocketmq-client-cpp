@@ -17,11 +17,8 @@
 #ifndef __MQCLIENTFACTORY_H__
 #define __MQCLIENTFACTORY_H__
 
-#include <boost/asio.hpp>
-#include <boost/asio/io_service.hpp>
-#include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/thread/thread.hpp>
+#include <memory>
+#include <mutex>
 
 #include "FindBrokerResult.h"
 #include "MQClientAPIImpl.h"
@@ -82,7 +79,7 @@ class MQClientFactory {
   MQProducer* selectProducer(const std::string& group);
   MQConsumer* selectConsumer(const std::string& group);
 
-  boost::shared_ptr<TopicPublishInfo> topicRouteData2TopicPublishInfo(const std::string& topic, TopicRouteData* pRoute);
+  std::shared_ptr<TopicPublishInfo> topicRouteData2TopicPublishInfo(const std::string& topic, TopicRouteData* pRoute);
 
   void topicRouteData2TopicSubscribeInfo(const std::string& topic,
                                          TopicRouteData* pRoute,
@@ -94,7 +91,7 @@ class MQClientFactory {
 
   std::string findBrokerAddressInPublish(const std::string& brokerName);
 
-  boost::shared_ptr<TopicPublishInfo> tryToFindTopicPublishInfo(const std::string& topic,
+  std::shared_ptr<TopicPublishInfo> tryToFindTopicPublishInfo(const std::string& topic,
                                                                 const SessionCredentials& session_credentials);
 
   void fetchSubscribeMessageQueues(const std::string& topic,
@@ -155,10 +152,10 @@ class MQClientFactory {
   void insertProducerInfoToHeartBeatData(HeartbeatData* pHeartbeatData);
 
   // topicPublishInfo related operation
-  void addTopicInfoToTable(const std::string& topic, boost::shared_ptr<TopicPublishInfo> pTopicPublishInfo);
+  void addTopicInfoToTable(const std::string& topic, std::shared_ptr<TopicPublishInfo> pTopicPublishInfo);
   void eraseTopicInfoFromTable(const std::string& topic);
   bool isTopicInfoValidInTable(const std::string& topic);
-  boost::shared_ptr<TopicPublishInfo> getTopicPublishInfoFromTable(const std::string& topic);
+  std::shared_ptr<TopicPublishInfo> getTopicPublishInfoFromTable(const std::string& topic);
   void getTopicListFromTopicPublishInfo(std::set<std::string>& topicList);
 
   void getSessionCredentialsFromOneOfProducerOrConsumer(SessionCredentials& session_credentials);
@@ -169,32 +166,32 @@ class MQClientFactory {
 
   // group -> MQProducer
   typedef std::map<std::string, MQProducer*> MQPMAP;
-  boost::mutex m_producerTableMutex;
+  std::mutex m_producerTableMutex;
   MQPMAP m_producerTable;
 
   // group -> MQConsumer
   typedef std::map<std::string, MQConsumer*> MQCMAP;
-  boost::mutex m_consumerTableMutex;
+  std::mutex m_consumerTableMutex;
   MQCMAP m_consumerTable;
 
   // Topic -> TopicRouteData
   typedef std::map<std::string, TopicRouteData*> TRDMAP;
-  boost::mutex m_topicRouteTableMutex;
+  std::mutex m_topicRouteTableMutex;
   TRDMAP m_topicRouteTable;
 
   //<!-----brokerName
   //<!     ------brokerid;
   //<!     ------add;
-  boost::mutex m_brokerAddrlock;
+  std::mutex m_brokerAddrlock;
   typedef std::map<string, std::map<int, std::string>> BrokerAddrMAP;
   BrokerAddrMAP m_brokerAddrTable;
 
   // topic -> TopicPublishInfo
-  typedef std::map<std::string, boost::shared_ptr<TopicPublishInfo>> TPMap;
-  boost::mutex m_topicPublishInfoTableMutex;
+  typedef std::map<std::string, std::shared_ptr<TopicPublishInfo>> TPMap;
+  std::mutex m_topicPublishInfoTableMutex;
   TPMap m_topicPublishInfoTable;
-  boost::mutex m_factoryLock;
-  boost::mutex m_topicPublishInfoLock;
+  std::mutex m_factoryLock;
+  std::mutex m_topicPublishInfoLock;
 
   // clientapi;
   std::unique_ptr<MQClientAPIImpl> m_pClientAPIImpl;

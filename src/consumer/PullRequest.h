@@ -17,12 +17,13 @@
 #ifndef __PULLREQUEST_H__
 #define __PULLREQUEST_H__
 
-#include <boost/atomic.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
+#include <atomic>
+#include <mutex>
+
 #include "MQMessageExt.h"
 #include "MQMessageQueue.h"
 #include "UtilAll.h"
+
 namespace rocketmq {
 //<!***************************************************************************
 class PullRequest {
@@ -51,7 +52,7 @@ class PullRequest {
 
   void updateQueueMaxOffset(int64 queueOffset);
 
-  void setLocked(bool Locked);
+  void setLocked(bool locked);
   bool isLocked() const;
   bool isLockExpired() const;
   void setLastLockTimestamp(int64 time);
@@ -62,10 +63,10 @@ class PullRequest {
   uint64 getLastConsumeTimestamp() const;
   void setTryUnlockTimes(int time);
   int getTryUnlockTimes() const;
-  void takeMessages(vector<MQMessageExt>& msgs, int batchSize);
+  void takeMessages(std::vector<MQMessageExt>& msgs, int batchSize);
   int64 commit();
   void makeMessageToCosumeAgain(vector<MQMessageExt>& msgs);
-  boost::timed_mutex& getPullRequestCriticalSection();
+  std::timed_mutex& getPullRequestCriticalSection();
   void removePullMsgEvent();
   bool addPullMsgEvent();
 
@@ -75,22 +76,22 @@ class PullRequest {
   static const uint64 RebalanceLockMaxLiveTime;  // ms
 
  private:
-  string m_groupname;
+  std::string m_groupname;
   int64 m_nextOffset;
   int64 m_queueOffsetMax;
-  boost::atomic<bool> m_bDroped;
-  boost::atomic<bool> m_bLocked;
-  map<int64, MQMessageExt> m_msgTreeMap;
-  map<int64, MQMessageExt> m_msgTreeMapTemp;
-  boost::mutex m_pullRequestLock;
+  std::atomic<bool> m_bDroped;
+  std::atomic<bool> m_bLocked;
+  std::map<int64, MQMessageExt> m_msgTreeMap;
+  std::map<int64, MQMessageExt> m_msgTreeMapTemp;
+  std::mutex m_pullRequestLock;
   uint64 m_lastLockTimestamp;  // ms
   // uint64 m_tryUnlockTimes;
   uint64 m_lastPullTimestamp;
   uint64 m_lastConsumeTimestamp;
-  boost::timed_mutex m_consumeLock;
-  boost::atomic<bool> m_bPullMsgEventInprogress;
+  std::timed_mutex m_consumeLock;
+  std::atomic<bool> m_bPullMsgEventInprogress;
 };
-//<!************************************************************************
-}  //<!end namespace;
+
+}  // namespace rocketmq
 
 #endif
