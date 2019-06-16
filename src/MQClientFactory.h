@@ -104,7 +104,7 @@ class MQClientFactory {
                                           const SessionCredentials& session_credentials,
                                           bool isDefault = false);
   void rebalanceImmediately();
-  void doRebalanceByConsumerGroup(const std::string& consumerGroup);
+  void rebalanceByConsumerGroupImmediately(const std::string& consumerGroup);
   void sendHeartbeatToAllBroker();
 
   void findConsumerIds(const std::string& topic,
@@ -135,8 +135,9 @@ class MQClientFactory {
 
   // consumer related operation
   void persistAllConsumerOffset();
-  void doRebalance();
   void timerCB_doRebalance();
+  void doRebalance();
+  void doRebalanceByConsumerGroup(const std::string& consumerGroup);
   bool getSessionCredentialFromConsumerTable(SessionCredentials& sessionCredentials);
   bool addConsumerToTable(const std::string& consumerName, MQConsumer* pMQConsumer);
   void eraseConsumerFromTable(const std::string& consumerName);

@@ -770,6 +770,11 @@ void MQClientFactory::rebalanceImmediately() {
   m_rebalanceService.schedule(std::bind(&MQClientFactory::doRebalance, this), 0, time_unit::milliseconds);
 }
 
+void MQClientFactory::rebalanceByConsumerGroupImmediately(const std::string& consumerGroup) {
+  m_rebalanceService.schedule(std::bind(&MQClientFactory::doRebalanceByConsumerGroup, this, consumerGroup), 0,
+                              time_unit::milliseconds);
+}
+
 void MQClientFactory::timerCB_doRebalance() {
   doRebalance();
 
