@@ -202,7 +202,7 @@ PullResult DefaultMQPullConsumer::pullSyncImpl(const MQMessageQueue& mq,
 
   if (maxNums <= 0)
     THROW_MQEXCEPTION(MQClientException, "maxNums <= 0", -1);
-
+  std::shared_ptr<ConsumeMessageContext> consumeMessageContext;
   //<!auto subscript,all sub;
   subscriptionAutomatically(mq.getTopic());
 
@@ -226,6 +226,22 @@ PullResult DefaultMQPullConsumer::pullSyncImpl(const MQMessageQueue& mq,
                                                                         ComMode_SYNC,            // 10
                                                                         NULL,                    //<!callback;
                                                                         getSessionCredentials(), NULL));
+
+	  if (hasConsumeMessageHook()) {
+      consumeMessageContext = std::shared_ptr<ConsumeMessageContext>(new ConsumeMessageContext());
+      //consumeMessageContext->setNamespace(defaultMQPullConsumer.getNamespace());
+      consumeMessageContext->setConsumerGroup(mq.getTopic());
+      consumeMessageContext->setMq(mq);
+      consumeMessageContext->setMsgList(pullResult -> msgFoundList);
+      consumeMessageContext->setSuccess(false);
+      executeHookBefore(*consumeMessageContext);
+      consumeMessageContext->setStatus(
+		  ConsumeStatus2str(ConsumeStatus::CONSUME_SUCCESS)
+	  );
+      consumeMessageContext->setSuccess(true);
+      executeHookAfter(*consumeMessageContext);
+    }
+
     return m_pPullAPIWrapper->processPullResult(mq, pullResult.get(), pSData.get());
   } catch (MQException& e) {
     LOG_ERROR(e.what());
@@ -248,6 +264,7 @@ void DefaultMQPullConsumer::pullAsyncImpl(const MQMessageQueue& mq,
   if (!pPullCallback)
     THROW_MQEXCEPTION(MQClientException, "pPullCallback is null", -1);
 
+  std::shared_ptr<ConsumeMessageContext> consumeMessageContext;
   //<!auto subscript,all sub;
   subscriptionAutomatically(mq.getTopic());
 
@@ -266,6 +283,16 @@ void DefaultMQPullConsumer::pullAsyncImpl(const MQMessageQueue& mq,
   arg.pPullRequest = NULL;
 
   try {
+
+
+if (hasConsumeMessageHook()) {
+      consumeMessageContext = std::shared_ptr<ConsumeMessageContext>(new ConsumeMessageContext());
+            consumeMessageContext->setNamespace("defaultMQPullConsumer.getNamespace()");
+            consumeMessageContext->setConsumerGroup("groupName()");
+            consumeMessageContext->setMq(mq);
+            executeHookBefore(*consumeMessageContext);
+        }
+
     unique_ptr<PullResult> pullResult(m_pPullAPIWrapper->pullKernelImpl(mq,                      // 1
                                                                         pSData->getSubString(),  // 2
                                                                         0L,                      // 3
@@ -277,6 +304,16 @@ void DefaultMQPullConsumer::pullAsyncImpl(const MQMessageQueue& mq,
                                                                         timeoutMillis,           // 9
                                                                         ComMode_ASYNC,           // 10
                                                                         pPullCallback, getSessionCredentials(), &arg));
+
+        if (hasConsumeMessageHook()) {
+			consumeMessageContext->setMsgList(pullResult->msgFoundList);
+            consumeMessageContext->setStatus(
+				ConsumeStatus2str(ConsumeStatus::CONSUME_SUCCESS) );
+            consumeMessageContext->setSuccess(true);
+            executeHookAfter(*consumeMessageContext);
+        }
+
+
   } catch (MQException& e) {
     LOG_ERROR(e.what());
   }

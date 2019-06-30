@@ -78,12 +78,40 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(PullRequest* request, vec
     return;
   }
 
-  ConsumeStatus status = CONSUME_SUCCESS;
+
+    std::shared_ptr<ConsumeMessageContext> consumeMessageContext;
+
+  if (m_pConsumer->hasConsumeMessageHook()) {
+      consumeMessageContext = std::shared_ptr<ConsumeMessageContext>( new ConsumeMessageContext());
+    consumeMessageContext->setNamespace(m_pConsumer->getNamesrvDomain());
+    consumeMessageContext->setConsumerGroup(m_pConsumer->getGroupName());
+    consumeMessageContext->setProps(std::map<std::string, std::string>());
+    consumeMessageContext->setMq(request->m_messageQueue);
+    consumeMessageContext->setMsgList(msgs);
+    consumeMessageContext->setSuccess(false);
+    m_pConsumer->executeHookBefore(*consumeMessageContext);
+  }
+
+	  ConsumeStatus status = CONSUME_SUCCESS;
   if (m_pMessageListener != NULL) {
     resetRetryTopic(msgs);
     request->setLastConsumeTimestamp(UtilAll::currentTimeMillis());
     status = m_pMessageListener->consumeMessage(msgs);
   }
+
+
+
+    if (m_pConsumer->hasConsumeMessageHook()) {
+    consumeMessageContext->setStatus(
+		ConsumeStatus2str(status)
+	);
+      consumeMessageContext->setSuccess(ConsumeStatus::CONSUME_SUCCESS == status);
+    m_pConsumer->executeHookAfter(*consumeMessageContext);
+  }
+
+
+
+
 
   /*LOG_DEBUG("Consumed MSG size:%d of mq:%s",
       msgs.size(), (request->m_messageQueue).toString().c_str());*/

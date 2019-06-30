@@ -23,6 +23,8 @@
 #include "UtilAll.h"
 #include "NameSpaceUtil.h"
 
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 namespace rocketmq {
 
 #define ROCKETMQCPP_VERSION "1.0.1"
@@ -121,6 +123,7 @@ MQMessageExt* MQClient::viewMessage(const string& msgId) {
 }
 
 vector<MQMessageQueue> MQClient::getTopicMessageQueueInfo(const string& topic) {
+	TopicPublishInfo  tp;
   boost::weak_ptr<TopicPublishInfo> weak_topicPublishInfo(
       getFactory()->tryToFindTopicPublishInfo(topic, m_SessionCredentials));
   boost::shared_ptr<TopicPublishInfo> topicPublishInfo(weak_topicPublishInfo.lock());

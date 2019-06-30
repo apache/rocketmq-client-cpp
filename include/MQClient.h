@@ -177,9 +177,11 @@ class ROCKETMQCLIENT_API MQClient {
  protected:
   virtual void start();
   virtual void shutdown();
-  MQClientFactory* getFactory() const;
+  //MQClientFactory* getFactory() const;
   virtual bool isServiceStateOk();
 
+ public:
+  MQClientFactory* getFactory() const;
  protected:
   std::string m_namesrvAddr;
   std::string m_namesrvDomain;

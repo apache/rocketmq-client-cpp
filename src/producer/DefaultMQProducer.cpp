@@ -32,11 +32,17 @@
 #include "BatchMessage.h"
 #include <typeinfo>
 
+
+#include "AsyncTraceDispatcher.h"
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+
 namespace rocketmq {
 
 //<!************************************************************************
-DefaultMQProducer::DefaultMQProducer(const string& groupname)
-    : m_sendMsgTimeout(3000),
+DefaultMQProducer::DefaultMQProducer(const string& groupname, bool b,void* rpcHook)
+    : MQProducer(b, rpcHook),
+      m_sendMsgTimeout(3000),
       m_compressMsgBodyOverHowmuch(4 * 1024),
       m_maxMessageSize(1024 * 128),
       // m_retryAnotherBrokerWhenNotStoreOK(false),
@@ -59,6 +65,14 @@ void DefaultMQProducer::start() {
   sa.sa_flags = 0;
   sigaction(SIGPIPE, &sa, 0);
 #endif
+  
+  LOG_INFO("DefaultMQProducer :%d,%d traceDispatcher", WithoutTrace == false ? 0 : 1,
+           traceDispatcher != nullptr ? 1 : 0);
+
+  if (WithoutTrace == false && traceDispatcher != nullptr) {
+    LOG_INFO("DefaultMQProducer :%d,%d traceDispatcherdo", WithoutTrace, traceDispatcher);
+    traceDispatcher->start(getNamesrvAddr());
+  }
 
   switch (m_serviceState) {
     case CREATE_JUST: {
@@ -363,7 +377,16 @@ SendResult DefaultMQProducer::sendDefaultImpl(MQMessage& msg,
           default:
             break;
         }
+
+
+
       } catch (...) {
+
+        /*if (hasSendMessageHook()) {
+          context->setException(e);
+          executeSendMessageHookAfter(context);
+        }*/
+
         LOG_ERROR("send failed of times:%d,brokerName:%s", times, mq.getBrokerName().c_str());
         if (bActiveMQ) {
           topicPublishInfo->updateNonServiceMessageQueue(mq, getSendMsgTimeout());
@@ -381,6 +404,7 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
                                              const MQMessageQueue& mq,
                                              int communicationMode,
                                              SendCallback* sendCallback) {
+  std::shared_ptr<SendMessageContext> sendMessageContext;
   string brokerAddr = getFactory()->findBrokerAddressInPublish(mq.getBrokerName());
 
   if (brokerAddr.empty()) {
@@ -414,9 +438,47 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
       requestHeader->batch = isBatchMsg;
       requestHeader->properties = (MQDecoder::messageProperties2String(msg.getProperties()));
 
-      return getFactory()->getMQClientAPIImpl()->sendMessage(brokerAddr, mq.getBrokerName(), msg, requestHeader,
+
+	  LOG_INFO("sendKernelImpl hasSendMessageHook:%d", 1);
+      if (hasSendMessageHook()) {
+        LOG_INFO("sendKernelImpl hasSendMessageHook YES:%d", 1);
+        sendMessageContext = std::shared_ptr<SendMessageContext>(new SendMessageContext());
+		
+		//context->setProducer(this);
+        sendMessageContext->setProducerGroup(getGroupName());
+	   
+        sendMessageContext->setCommunicationMode((CommunicationMode)communicationMode);
+        string clientIP = UtilAll::getLocalAddress();
+        sendMessageContext->setBornHost(clientIP);
+        sendMessageContext->setBrokerAddr(brokerAddr);
+       sendMessageContext->setMessage(msg);
+        sendMessageContext->setMq(mq);
+       sendMessageContext->setNamespace(getNamesrvDomain());
+        
+        std::string isTrans = msg.getProperty(MQMessage::PROPERTY_TRANSACTION_PREPARED);
+        if (isTrans != null && isTrans == ("true")) {
+          sendMessageContext->setMsgType(MessageType::Trans_Msg_Half);
+        }
+
+        if (msg.getProperty("__STARTDELIVERTIME") != null ||
+                msg.getProperty(MQMessage::PROPERTY_DELAY_TIME_LEVEL).compare("") == 0) {
+          sendMessageContext->setMsgType(MessageType::Delay_Msg);
+        }
+        executeSendMessageHookBefore(*sendMessageContext);
+      }
+
+
+      SendResult sendResult=getFactory()->getMQClientAPIImpl()->sendMessage(brokerAddr, mq.getBrokerName(), msg, requestHeader,
                                                              getSendMsgTimeout(), getRetryTimes4Async(),
                                                              communicationMode, sendCallback, getSessionCredentials());
+	  
+	if (hasSendMessageHook()) {
+        sendMessageContext->setSendResult(&sendResult);
+        executeSendMessageHookAfter(*sendMessageContext);
+      }
+
+      return sendResult;
+
     } catch (MQException& e) {
       throw e;
     }

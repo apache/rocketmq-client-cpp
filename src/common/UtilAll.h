@@ -58,6 +58,7 @@ const string DLQ_GROUP_TOPIC_PREFIX = "%DLQ%";
 const string ROCKETMQ_HOME_ENV = "ROCKETMQ_HOME";
 const string ROCKETMQ_HOME_PROPERTY = "rocketmq.home.dir";
 const string MESSAGE_COMPRESS_LEVEL = "rocketmq.message.compressLevel";
+const string RMQ_SYS_TRACE_TOPIC = "RMQ_SYS_TRACE_TOPIC";
 const int POLL_NAMESERVER_INTEVAL = 1000 * 30;
 const int HEARTBEAT_BROKER_INTERVAL = 1000 * 30;
 const int PERSIST_CONSUMER_OFFSET_INTERVAL = 1000 * 5;

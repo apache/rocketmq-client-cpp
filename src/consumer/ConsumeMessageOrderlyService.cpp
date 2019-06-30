@@ -165,7 +165,37 @@ void ConsumeMessageOrderlyService::ConsumeRequest(PullRequest* request) {
         request->takeMessages(msgs, pConsumer->getConsumeMessageBatchMaxSize());
         if (!msgs.empty()) {
           request->setLastConsumeTimestamp(UtilAll::currentTimeMillis());
+
+
+
+
+    std::shared_ptr<ConsumeMessageContext> consumeMessageContext;
+          if (m_pConsumer->hasConsumeMessageHook()) {
+            consumeMessageContext = std::shared_ptr<ConsumeMessageContext>(new ConsumeMessageContext());
+            consumeMessageContext->setNamespace(m_pConsumer ->getNamesrvDomain());
+            consumeMessageContext->setConsumerGroup(m_pConsumer->getGroupName());
+            consumeMessageContext->setProps(std::map<std::string, std::string>());
+            consumeMessageContext->setMq(request->m_messageQueue);
+            consumeMessageContext->setMsgList(msgs);
+            consumeMessageContext->setSuccess(false);
+            m_pConsumer->executeHookBefore(*consumeMessageContext);
+          }
+
+
+
           ConsumeStatus consumeStatus = m_pMessageListener->consumeMessage(msgs);
+
+
+
+		  if (m_pConsumer->hasConsumeMessageHook()) {
+            consumeMessageContext->setStatus(ConsumeStatus2str(consumeStatus));
+            consumeMessageContext->setSuccess(ConsumeStatus::CONSUME_SUCCESS == consumeStatus);
+            m_pConsumer->executeHookAfter(*consumeMessageContext);
+          }
+
+
+
+
           if (consumeStatus == RECONSUME_LATER) {
             request->makeMessageToCosumeAgain(msgs);
             continueConsume = false;

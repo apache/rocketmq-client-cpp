@@ -28,7 +28,7 @@ namespace rocketmq {
 //<!***************************************************************************
 class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer {
  public:
-  DefaultMQProducer(const std::string& groupname);
+  DefaultMQProducer(const std::string& groupname, bool Withouttrace = false, void* rpcHook = nullptr);
   virtual ~DefaultMQProducer();
 
   //<!begin mqadmin;

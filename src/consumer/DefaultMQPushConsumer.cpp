@@ -558,7 +558,7 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
     request->removePullMsgEvent();
     return;
   }
-
+    std::shared_ptr<ConsumeMessageContext> consumeMessageContext;
   MQMessageQueue& messageQueue = request->m_messageQueue;
   if (m_consumerService->getConsumeMsgSerivceListenerType() == messageListenerOrderly) {
     if (!request->isLocked() || request->isLockExpired()) {
@@ -603,6 +603,16 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
 
   try {
     request->setLastPullTimestamp(UtilAll::currentTimeMillis());
+    if (!consumeMessageHookList.empty()) {
+                consumeMessageContext =std::shared_ptr<ConsumeMessageContext>(new ConsumeMessageContext());
+                //ConsumeMessageContext* consumeMessageContext = nullptr;
+                //consumeMessageContext = new ConsumeMessageContext();
+                consumeMessageContext->setNamespace(getNamesrvDomain());
+                consumeMessageContext->setConsumerGroup(getGroupName());
+                consumeMessageContext->setMq(messageQueue);
+                consumeMessageContext->setSuccess(false);
+                executeHookBefore(*consumeMessageContext);
+            }
     unique_ptr<PullResult> result(m_pPullAPIWrapper->pullKernelImpl(messageQueue,              // 1
                                                                     subExpression,             // 2
                                                                     pSdata->getSubVersion(),   // 3
@@ -614,6 +624,14 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
                                                                     1000 * 30,                 // 9
                                                                     ComMode_SYNC,              // 10
                                                                     NULL, getSessionCredentials()));
+
+        if (!consumeMessageHookList.empty()) {
+			consumeMessageContext->setMsgList(result->msgFoundList);
+                consumeMessageContext->setStatus(
+                    ConsumeStatus2str(ConsumeStatus::CONSUME_SUCCESS));
+                consumeMessageContext->setSuccess(true);
+                executeHookAfter(*consumeMessageContext);
+            }
 
     PullResult pullResult = m_pPullAPIWrapper->processPullResult(messageQueue, result.get(), pSdata);
 

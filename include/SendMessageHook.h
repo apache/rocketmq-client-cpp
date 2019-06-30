@@ -14,34 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef __SENDMESSAGEHOOK_H__
 #define __SENDMESSAGEHOOK_H__
 
-#include "MQClientException.h"
-#include "MQMessage.h"
-#include "RocketMQClient.h"
+
+#include <string>
+#include "TraceDispatcher.h"
+#include "SendMessageContext.h"
 
 namespace rocketmq {
-//<!***************************************************************************
-class ROCKETMQCLIENT_API SendMessageContext {
+
+class SendMessageHook {
+ private:
+  TraceDispatcher* localDispatcher;
+
  public:
-  string producerGroup;
-  MQMessage msg;
-  MQMessageQueue mq;
-  string brokerAddr;
-  int communicationMode;
-  SendResult sendResult;
-  MQException* pException;
-  void* pArg;
+  SendMessageHook() { localDispatcher = nullptr; };
+  // virtual ~SendMessageHook() {}
+  virtual std::string hookName() { return ""; };
+  virtual void sendMessageBefore(SendMessageContext& context) {
+    printf("SendMessageHook::sendMessageBefore:%d", 1);
+  };
+  virtual void sendMessageAfter(SendMessageContext& context){};
 };
 
-class ROCKETMQCLIENT_API SendMessageHook {
- public:
-  virtual ~SendMessageHook() {}
-  virtual string hookName() = 0;
-  virtual void sendMessageBefore(const SendMessageContext& context) = 0;
-  virtual void sendMessageAfter(const SendMessageContext& context) = 0;
-};
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
+
 #endif
