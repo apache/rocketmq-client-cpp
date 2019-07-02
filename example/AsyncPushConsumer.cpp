@@ -62,12 +62,10 @@ int main(int argc, char* argv[]) {
 
   producer.setNamesrvAddr(info.namesrv);
   producer.setGroupName("msg-persist-group_producer_sandbox");
-  producer.setNamesrvDomain(info.namesrv_domain);
   producer.start();
 
   consumer.setNamesrvAddr(info.namesrv);
   consumer.setGroupName(info.groupname);
-  consumer.setNamesrvDomain(info.namesrv_domain);
   consumer.setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
 
   consumer.setInstanceName(info.groupname);

@@ -27,7 +27,6 @@
 extern "C" {
 #endif
 
-// typedef struct _CProducer_ _CProducer;
 typedef struct CProducer CProducer;
 typedef int (*QueueSelectorCallback)(int size, CMessage* msg, void* arg);
 typedef void (*CSendSuccessCallback)(CSendResult result);

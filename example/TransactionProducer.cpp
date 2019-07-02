@@ -92,7 +92,6 @@ int main(int argc, char* argv[]) {
   PrintRocketmqSendAndConsumerArgs(info);
   TransactionMQProducer producer("please_rename_unique_group_name");
   producer.setNamesrvAddr(info.namesrv);
-  producer.setNamesrvDomain(info.namesrv_domain);
   producer.setGroupName(info.groupname);
   producer.setInstanceName(info.groupname);
   producer.setSessionCredentials("mq acesskey", "mq secretkey", "ALIYUN");

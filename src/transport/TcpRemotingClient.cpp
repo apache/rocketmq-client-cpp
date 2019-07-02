@@ -22,7 +22,6 @@
 
 #include "Logging.h"
 #include "MemoryOutputStream.h"
-#include "TopAddressing.h"
 #include "UtilAll.h"
 
 namespace rocketmq {

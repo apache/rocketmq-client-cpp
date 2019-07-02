@@ -16,14 +16,15 @@
  */
 
 #include "CPushConsumer.h"
+
 #include <map>
+
 #include "CCommon.h"
 #include "CMessageExt.h"
 #include "DefaultMQPushConsumer.h"
 #include "MQClientErrorContainer.h"
 
 using namespace rocketmq;
-using namespace std;
 
 class MessageListenerInner : public MessageListenerConcurrently {
  public:
@@ -80,11 +81,8 @@ class MessageListenerOrderlyInner : public MessageListenerOrderly {
   CPushConsumer* m_pconsumer;
 };
 
-map<CPushConsumer*, MessageListenerInner*> g_ListenerMap;
-map<CPushConsumer*, MessageListenerOrderlyInner*> g_OrderListenerMap;
-#ifdef __cplusplus
-extern "C" {
-#endif
+std::map<CPushConsumer*, MessageListenerInner*> g_ListenerMap;
+std::map<CPushConsumer*, MessageListenerOrderlyInner*> g_OrderListenerMap;
 
 CPushConsumer* CreatePushConsumer(const char* groupId) {
   if (groupId == NULL) {
@@ -94,6 +92,7 @@ CPushConsumer* CreatePushConsumer(const char* groupId) {
   defaultMQPushConsumer->setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
   return (CPushConsumer*)defaultMQPushConsumer;
 }
+
 int DestroyPushConsumer(CPushConsumer* consumer) {
   if (consumer == NULL) {
     return NULL_POINTER;
@@ -101,6 +100,7 @@ int DestroyPushConsumer(CPushConsumer* consumer) {
   delete reinterpret_cast<DefaultMQPushConsumer*>(consumer);
   return OK;
 }
+
 int StartPushConsumer(CPushConsumer* consumer) {
   if (consumer == NULL) {
     return NULL_POINTER;
@@ -113,6 +113,7 @@ int StartPushConsumer(CPushConsumer* consumer) {
   }
   return OK;
 }
+
 int ShutdownPushConsumer(CPushConsumer* consumer) {
   if (consumer == NULL) {
     return NULL_POINTER;
@@ -120,6 +121,7 @@ int ShutdownPushConsumer(CPushConsumer* consumer) {
   ((DefaultMQPushConsumer*)consumer)->shutdown();
   return OK;
 }
+
 int SetPushConsumerGroupID(CPushConsumer* consumer, const char* groupId) {
   if (consumer == NULL || groupId == NULL) {
     return NULL_POINTER;
@@ -127,12 +129,14 @@ int SetPushConsumerGroupID(CPushConsumer* consumer, const char* groupId) {
   ((DefaultMQPushConsumer*)consumer)->setGroupName(groupId);
   return OK;
 }
+
 const char* GetPushConsumerGroupID(CPushConsumer* consumer) {
   if (consumer == NULL) {
     return NULL;
   }
   return ((DefaultMQPushConsumer*)consumer)->getGroupName().c_str();
 }
+
 int SetPushConsumerNameServerAddress(CPushConsumer* consumer, const char* namesrv) {
   if (consumer == NULL) {
     return NULL_POINTER;
@@ -140,6 +144,8 @@ int SetPushConsumerNameServerAddress(CPushConsumer* consumer, const char* namesr
   ((DefaultMQPushConsumer*)consumer)->setNamesrvAddr(namesrv);
   return OK;
 }
+
+// Deprecated
 int SetPushConsumerNameServerDomain(CPushConsumer* consumer, const char* domain) {
   if (consumer == NULL) {
     return NULL_POINTER;
@@ -147,6 +153,7 @@ int SetPushConsumerNameServerDomain(CPushConsumer* consumer, const char* domain)
   ((DefaultMQPushConsumer*)consumer)->setNamesrvDomain(domain);
   return OK;
 }
+
 int Subscribe(CPushConsumer* consumer, const char* topic, const char* expression) {
   if (consumer == NULL) {
     return NULL_POINTER;
@@ -179,7 +186,7 @@ int UnregisterMessageCallbackOrderly(CPushConsumer* consumer) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  map<CPushConsumer*, MessageListenerOrderlyInner*>::iterator iter;
+  std::map<CPushConsumer*, MessageListenerOrderlyInner*>::iterator iter;
   iter = g_OrderListenerMap.find(consumer);
   if (iter != g_OrderListenerMap.end()) {
     MessageListenerOrderlyInner* listenerInner = iter->second;
@@ -195,7 +202,7 @@ int UnregisterMessageCallback(CPushConsumer* consumer) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  map<CPushConsumer*, MessageListenerInner*>::iterator iter;
+  std::map<CPushConsumer*, MessageListenerInner*>::iterator iter;
   iter = g_ListenerMap.find(consumer);
 
   if (iter != g_ListenerMap.end()) {
@@ -215,6 +222,7 @@ int SetPushConsumerMessageModel(CPushConsumer* consumer, CMessageModel messageMo
   ((DefaultMQPushConsumer*)consumer)->setMessageModel(MessageModel((int)messageModel));
   return OK;
 }
+
 int SetPushConsumerThreadCount(CPushConsumer* consumer, int threadCount) {
   if (consumer == NULL || threadCount == 0) {
     return NULL_POINTER;
@@ -222,6 +230,7 @@ int SetPushConsumerThreadCount(CPushConsumer* consumer, int threadCount) {
   ((DefaultMQPushConsumer*)consumer)->setConsumeThreadCount(threadCount);
   return OK;
 }
+
 int SetPushConsumerMessageBatchMaxSize(CPushConsumer* consumer, int batchSize) {
   if (consumer == NULL || batchSize == 0) {
     return NULL_POINTER;
@@ -286,7 +295,3 @@ int SetPushConsumerLogLevel(CPushConsumer* consumer, CLogLevel level) {
   ((DefaultMQPushConsumer*)consumer)->setLogLevel((elogLevel)level);
   return OK;
 }
-
-#ifdef __cplusplus
-};
-#endif

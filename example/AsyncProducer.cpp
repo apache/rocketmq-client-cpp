@@ -101,7 +101,6 @@ int main(int argc, char* argv[]) {
 
   producer.setGroupName(info.groupname);
   producer.setInstanceName(info.groupname);
-  producer.setNamesrvDomain(info.namesrv_domain);
   producer.start();
   g_tps.start();
   std::vector<std::shared_ptr<std::thread>> work_pool;

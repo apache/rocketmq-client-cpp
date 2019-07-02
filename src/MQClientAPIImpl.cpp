@@ -16,24 +16,21 @@
  */
 
 #include "MQClientAPIImpl.h"
-#include <assert.h>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <fstream>
+
 #include "CommunicationMode.h"
 #include "Logging.h"
 #include "MQDecoder.h"
 #include "PullResultExt.h"
 
 namespace rocketmq {
-//<!************************************************************************
+
 MQClientAPIImpl::MQClientAPIImpl(const string& mqClientId,
                                  ClientRemotingProcessor* clientRemotingProcessor,
                                  int pullThreadNum,
                                  uint64_t tcpConnectTimeout,
                                  uint64_t tcpTransportTryLockTimeout,
                                  string unitName)
-    : m_firstFetchNameSrv(true), m_mqClientId(mqClientId) {
+    : m_mqClientId(mqClientId) {
   m_pRemotingClient.reset(new TcpRemotingClient(pullThreadNum, tcpConnectTimeout, tcpTransportTryLockTimeout));
   m_pRemotingClient->registerProcessor(CHECK_TRANSACTION_STATE, clientRemotingProcessor);
   m_pRemotingClient->registerProcessor(RESET_CONSUMER_CLIENT_OFFSET, clientRemotingProcessor);
@@ -41,127 +38,14 @@ MQClientAPIImpl::MQClientAPIImpl(const string& mqClientId,
   m_pRemotingClient->registerProcessor(GET_CONSUMER_RUNNING_INFO, clientRemotingProcessor);
   m_pRemotingClient->registerProcessor(NOTIFY_CONSUMER_IDS_CHANGED, clientRemotingProcessor);
   m_pRemotingClient->registerProcessor(CONSUME_MESSAGE_DIRECTLY, clientRemotingProcessor);
-
-  m_topAddressing.reset(new TopAddressing(unitName));
 }
 
 MQClientAPIImpl::~MQClientAPIImpl() {
   m_pRemotingClient = NULL;
-  m_topAddressing = NULL;
 }
 
 void MQClientAPIImpl::stopAllTcpTransportThread() {
   m_pRemotingClient->stopAllTcpTransportThread();
-}
-
-bool MQClientAPIImpl::writeDataToFile(string filename, string data, bool isSync) {
-  if (data.size() == 0)
-    return false;
-
-  FILE* pFd = fopen(filename.c_str(), "w+");
-  if (NULL == pFd) {
-    LOG_ERROR("fopen failed, filename:%s", filename.c_str());
-    return false;
-  }
-
-  int byte_write = 0;
-  int byte_left = data.size();
-  const char* pData = data.c_str();
-  while (byte_left > 0) {
-    byte_write = fwrite(pData, sizeof(char), byte_left, pFd);
-    if (byte_write == byte_left) {
-      if (ferror(pFd)) {
-        LOG_ERROR("write data fail, data len:" SIZET_FMT ", file:%s, msg:%s", data.size(), filename.c_str(),
-                  strerror(errno));
-        fclose(pFd);
-        return false;
-      }
-    }
-    byte_left -= byte_write;
-    pData += byte_write;
-  }
-  pData = NULL;
-
-  if (isSync) {
-    LOG_INFO("fsync with filename:%s", filename.c_str());
-    fflush(pFd);
-  }
-  fclose(pFd);
-
-  return true;
-}
-
-string MQClientAPIImpl::fetchNameServerAddr(const string& NSDomain) {
-  try {
-    string homeDir(UtilAll::getHomeDirectory());
-    string storePath = homeDir + "/logs/rocketmq-cpp/snapshot";
-
-    boost::filesystem::path dir(storePath);
-    boost::system::error_code ec;
-    if (!boost::filesystem::exists(dir, ec)) {
-      if (!boost::filesystem::create_directory(dir, ec)) {
-        LOG_ERROR("create data dir:%s error", storePath.c_str());
-        return "";
-      }
-    }
-    string file(storePath);
-    string fileBak(storePath);
-    vector<string> ret_;
-    int retSize = UtilAll::Split(ret_, m_mqClientId, "@");
-    if (retSize == 2) {
-      file.append("/nameserver_addr-").append(ret_[retSize - 1]);
-    } else {
-      LOG_ERROR("split mqClientId:%s fail", m_mqClientId.c_str());
-      file.append("/nameserver_addr-DEFAULT");
-    }
-    boost::filesystem::path snapshot_file(file);
-    fileBak.append("/nameserver_addr.bak");
-    const string addrs = m_topAddressing->fetchNSAddr(NSDomain);
-    if (addrs.empty()) {
-      if (m_nameSrvAddr.empty()) {
-        LOG_INFO("Load the name server snapshot local file:%s", file.c_str());
-        if (boost::filesystem::exists(snapshot_file)) {
-          ifstream snapshot_file(file, ios::binary);
-          istreambuf_iterator<char> beg(snapshot_file), end;
-          string filecontent(beg, end);
-          updateNameServerAddr(filecontent);
-          m_nameSrvAddr = filecontent;
-        } else {
-          LOG_WARN("The name server snapshot local file not exists");
-        }
-      }
-    } else {
-      if (m_firstFetchNameSrv == true) {
-        // it is the first time, so need to create the name server snapshot
-        // local file
-        m_firstFetchNameSrv = false;
-      }
-      if (addrs.compare(m_nameSrvAddr) != 0) {
-        LOG_INFO("name server address changed, old: %s, new: %s", m_nameSrvAddr.c_str(), addrs.c_str());
-        updateNameServerAddr(addrs);
-        m_nameSrvAddr = addrs;
-      } else {
-        if (!m_firstFetchNameSrv)
-          return m_nameSrvAddr;
-      }
-      // update the snapshot local file if nameSrv changes or
-      // m_firstFetchNameSrv==true
-      if (writeDataToFile(fileBak, addrs, true)) {
-        if (!UtilAll::ReplaceFile(fileBak, file))
-          LOG_ERROR("could not rename bak file:%s", strerror(errno));
-      }
-    }
-
-    if (!boost::filesystem::exists(snapshot_file)) {
-      // the name server snapshot local file maybe deleted by force, create it
-      if (writeDataToFile(fileBak, m_nameSrvAddr, true)) {
-        if (!UtilAll::ReplaceFile(fileBak, file))
-          LOG_ERROR("could not rename bak file:%s", strerror(errno));
-      }
-    }
-  } catch (...) {
-  }
-  return m_nameSrvAddr;
 }
 
 void MQClientAPIImpl::updateNameServerAddr(const string& addrs) {
@@ -195,7 +79,7 @@ void MQClientAPIImpl::createTopic(const string& addr,
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
 
-  unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request));
+  std::unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request));
 
   if (response) {
     switch (response->getCode()) {
@@ -279,7 +163,7 @@ void MQClientAPIImpl::unregisterClient(const string& addr,
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
 
-  unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request));
+  std::unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request));
 
   if (response) {
     switch (response->getCode()) {
@@ -301,7 +185,7 @@ TopicRouteData* MQClientAPIImpl::getTopicRouteInfoFromNameServer(const string& t
   callSignatureBeforeRequest("", request, sessionCredentials);
   request.Encode();
 
-  unique_ptr<RemotingCommand> pResponse(m_pRemotingClient->invokeSync("", request, timeoutMillis));
+  std::unique_ptr<RemotingCommand> pResponse(m_pRemotingClient->invokeSync("", request, timeoutMillis));
 
   if (pResponse != NULL) {
     if (((*(pResponse->GetBody())).getSize() == 0) || ((*(pResponse->GetBody())).getData() != NULL)) {
@@ -331,7 +215,7 @@ TopicList* MQClientAPIImpl::getTopicListFromNameServer(const SessionCredentials&
   callSignatureBeforeRequest("", request, sessionCredentials);
   request.Encode();
 
-  unique_ptr<RemotingCommand> pResponse(m_pRemotingClient->invokeSync("", request));
+  std::unique_ptr<RemotingCommand> pResponse(m_pRemotingClient->invokeSync("", request));
   if (pResponse != NULL) {
     if (((*(pResponse->GetBody())).getSize() == 0) || ((*(pResponse->GetBody())).getData() != NULL)) {
       switch (pResponse->getCode()) {
@@ -382,7 +266,7 @@ SendResult MQClientAPIImpl::sendMessageSync(const string& addr,
                                             RemotingCommand& request,
                                             int timeoutMillis) {
   //<!block util response;
-  unique_ptr<RemotingCommand> pResponse(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
+  std::unique_ptr<RemotingCommand> pResponse(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
   if (pResponse != NULL) {
     try {
       SendResult result = processSendResponse(brokerName, msg, pResponse.get());
@@ -396,8 +280,8 @@ SendResult MQClientAPIImpl::sendMessageSync(const string& addr,
   THROW_MQEXCEPTION(MQClientException, "response is null", -1);
 }
 
-void MQClientAPIImpl::sendMessageAsync(const string& addr,
-                                       const string& brokerName,
+void MQClientAPIImpl::sendMessageAsync(const std::string& addr,
+                                       const std::string& brokerName,
                                        const MQMessage& msg,
                                        RemotingCommand& request,
                                        SendCallback* pSendCallback,
@@ -405,8 +289,8 @@ void MQClientAPIImpl::sendMessageAsync(const string& addr,
                                        int maxRetryTimes,
                                        int retrySendTimes) {
   int64 begin_time = UtilAll::currentTimeMillis();
-  //<!delete in future;
-  AsyncCallbackWrap* cbw = new SendCallbackWrap(brokerName, msg, pSendCallback, this);
+  // delete in future;
+  auto* cbw = new SendCallbackWrap(brokerName, msg, pSendCallback, this);
 
   LOG_DEBUG("sendMessageAsync request:%s, timeout:%lld, maxRetryTimes:%d retrySendTimes:%d", request.ToString().data(),
             timeoutMilliseconds, maxRetryTimes, retrySendTimes);
@@ -473,9 +357,9 @@ void MQClientAPIImpl::pullMessageAsync(const string& addr,
                                        int timeoutMillis,
                                        PullCallback* pullCallback,
                                        void* pArg) {
-  //<!delete in future;
-  AsyncCallbackWrap* cbw = new PullCallbackWarp(pullCallback, this, pArg);
-  if (m_pRemotingClient->invokeAsync(addr, request, cbw, timeoutMillis) == false) {
+  // delete in future
+  auto* cbw = new PullCallbackWarp(pullCallback, this, pArg);
+  if (!m_pRemotingClient->invokeAsync(addr, request, cbw, timeoutMillis)) {
     LOG_ERROR("pullMessageAsync failed of addr:%s, mq:%s", addr.c_str(),
               static_cast<AsyncArg*>(pArg)->mq.toString().data());
     deleteAndZero(cbw);
@@ -484,7 +368,7 @@ void MQClientAPIImpl::pullMessageAsync(const string& addr,
 }
 
 PullResult* MQClientAPIImpl::pullMessageSync(const string& addr, RemotingCommand& request, int timeoutMillis) {
-  unique_ptr<RemotingCommand> pResponse(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
+  std::unique_ptr<RemotingCommand> pResponse(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
   if (pResponse != NULL) {
     if (((*(pResponse->GetBody())).getSize() == 0) || ((*(pResponse->GetBody())).getData() != NULL)) {
       try {
@@ -590,7 +474,7 @@ int64 MQClientAPIImpl::getMinOffset(const string& addr,
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
 
-  unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
+  std::unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
 
   if (response) {
     switch (response->getCode()) {
@@ -621,7 +505,7 @@ int64 MQClientAPIImpl::getMaxOffset(const string& addr,
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
 
-  unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
+  std::unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
 
   if (response) {
     switch (response->getCode()) {
@@ -654,7 +538,7 @@ int64 MQClientAPIImpl::searchOffset(const string& addr,
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
 
-  unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
+  std::unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
 
   if (response) {
     switch (response->getCode()) {
@@ -683,7 +567,7 @@ MQMessageExt* MQClientAPIImpl::viewMessage(const string& addr,
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
 
-  unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
+  std::unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
 
   if (response) {
     switch (response->getCode()) {
@@ -710,7 +594,7 @@ int64 MQClientAPIImpl::getEarliestMsgStoretime(const string& addr,
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
 
-  unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
+  std::unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
 
   if (response) {
     switch (response->getCode()) {
@@ -731,7 +615,7 @@ int64 MQClientAPIImpl::getEarliestMsgStoretime(const string& addr,
 
 void MQClientAPIImpl::getConsumerIdListByGroup(const string& addr,
                                                const string& consumerGroup,
-                                               vector<string>& cids,
+                                               std::vector<string>& cids,
                                                int timeoutMillis,
                                                const SessionCredentials& sessionCredentials) {
   GetConsumerListByGroupRequestHeader* pRequestHeader = new GetConsumerListByGroupRequestHeader();
@@ -741,7 +625,7 @@ void MQClientAPIImpl::getConsumerIdListByGroup(const string& addr,
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
 
-  unique_ptr<RemotingCommand> pResponse(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
+  std::unique_ptr<RemotingCommand> pResponse(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
 
   if (pResponse != NULL) {
     if ((pResponse->GetBody()->getSize() == 0) || (pResponse->GetBody()->getData() != NULL)) {
@@ -770,7 +654,7 @@ int64 MQClientAPIImpl::queryConsumerOffset(const string& addr,
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
 
-  unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
+  std::unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
 
   if (response) {
     switch (response->getCode()) {
@@ -797,7 +681,7 @@ void MQClientAPIImpl::updateConsumerOffset(const string& addr,
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
 
-  unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
+  std::unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
 
   if (response) {
     switch (response->getCode()) {
@@ -838,7 +722,7 @@ void MQClientAPIImpl::consumerSendMessageBack(MQMessageExt& msg,
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
 
-  unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
+  std::unique_ptr<RemotingCommand> response(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
 
   if (response) {
     switch (response->getCode()) {
@@ -855,7 +739,7 @@ void MQClientAPIImpl::consumerSendMessageBack(MQMessageExt& msg,
 
 void MQClientAPIImpl::lockBatchMQ(const string& addr,
                                   LockBatchRequestBody* requestBody,
-                                  vector<MQMessageQueue>& mqs,
+                                  std::vector<MQMessageQueue>& mqs,
                                   int timeoutMillis,
                                   const SessionCredentials& sessionCredentials) {
   RemotingCommand request(LOCK_BATCH_MQ, NULL);
@@ -866,7 +750,7 @@ void MQClientAPIImpl::lockBatchMQ(const string& addr,
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
 
-  unique_ptr<RemotingCommand> pResponse(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
+  std::unique_ptr<RemotingCommand> pResponse(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
 
   if (pResponse != NULL) {
     if (((*(pResponse->GetBody())).getSize() == 0) || ((*(pResponse->GetBody())).getData() != NULL)) {
@@ -899,7 +783,7 @@ void MQClientAPIImpl::unlockBatchMQ(const string& addr,
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
 
-  unique_ptr<RemotingCommand> pResponse(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
+  std::unique_ptr<RemotingCommand> pResponse(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
 
   if (pResponse != NULL) {
     switch (pResponse->getCode()) {
@@ -914,5 +798,4 @@ void MQClientAPIImpl::unlockBatchMQ(const string& addr,
   THROW_MQEXCEPTION(MQBrokerException, "response is null", -1);
 }
 
-//<!************************************************************************
 }  // namespace rocketmq

@@ -65,7 +65,6 @@ int main(int argc, char* argv[]) {
   producer.setSessionCredentials("AccessKey", "SecretKey", "ALIYUN");
   producer.setTcpTransportTryLockTimeout(1000);
   producer.setTcpTransportConnectTimeout(400);
-  producer.setNamesrvDomain(info.namesrv_domain);
   producer.setNamesrvAddr(info.namesrv);
   producer.setGroupName("msg-persist-group_producer_sandbox");
   producer.start();
@@ -74,7 +73,6 @@ int main(int argc, char* argv[]) {
   consumer.setGroupName(info.groupname);
   consumer.setSessionCredentials("AccessKey", "SecretKey", "ALIYUN");
   consumer.setConsumeThreadCount(info.thread_count);
-  consumer.setNamesrvDomain(info.namesrv_domain);
   consumer.setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
 
   if (info.syncpush)

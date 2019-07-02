@@ -16,12 +16,9 @@
  */
 
 #include "CMessage.h"
-#include "MQMessage.h"
-#include "CCommon.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "CCommon.h"
+#include "MQMessage.h"
 
 using namespace rocketmq;
 
@@ -32,6 +29,7 @@ CMessage* CreateMessage(const char* topic) {
   }
   return (CMessage*)mqMessage;
 }
+
 int DestroyMessage(CMessage* msg) {
   if (msg == NULL) {
     return NULL_POINTER;
@@ -39,6 +37,7 @@ int DestroyMessage(CMessage* msg) {
   delete (MQMessage*)msg;
   return OK;
 }
+
 int SetMessageTopic(CMessage* msg, const char* topic) {
   if (msg == NULL) {
     return NULL_POINTER;
@@ -46,6 +45,7 @@ int SetMessageTopic(CMessage* msg, const char* topic) {
   ((MQMessage*)msg)->setTopic(topic);
   return OK;
 }
+
 int SetMessageTags(CMessage* msg, const char* tags) {
   if (msg == NULL) {
     return NULL_POINTER;
@@ -53,6 +53,7 @@ int SetMessageTags(CMessage* msg, const char* tags) {
   ((MQMessage*)msg)->setTags(tags);
   return OK;
 }
+
 int SetMessageKeys(CMessage* msg, const char* keys) {
   if (msg == NULL) {
     return NULL_POINTER;
@@ -60,6 +61,7 @@ int SetMessageKeys(CMessage* msg, const char* keys) {
   ((MQMessage*)msg)->setKeys(keys);
   return OK;
 }
+
 int SetMessageBody(CMessage* msg, const char* body) {
   if (msg == NULL) {
     return NULL_POINTER;
@@ -67,6 +69,7 @@ int SetMessageBody(CMessage* msg, const char* body) {
   ((MQMessage*)msg)->setBody(body);
   return OK;
 }
+
 int SetByteMessageBody(CMessage* msg, const char* body, int len) {
   if (msg == NULL) {
     return NULL_POINTER;
@@ -74,6 +77,7 @@ int SetByteMessageBody(CMessage* msg, const char* body, int len) {
   ((MQMessage*)msg)->setBody(body, len);
   return OK;
 }
+
 int SetMessageProperty(CMessage* msg, const char* key, const char* value) {
   if (msg == NULL) {
     return NULL_POINTER;
@@ -81,6 +85,7 @@ int SetMessageProperty(CMessage* msg, const char* key, const char* value) {
   ((MQMessage*)msg)->setProperty(key, value);
   return OK;
 }
+
 int SetDelayTimeLevel(CMessage* msg, int level) {
   if (msg == NULL) {
     return NULL_POINTER;
@@ -88,7 +93,3 @@ int SetDelayTimeLevel(CMessage* msg, int level) {
   ((MQMessage*)msg)->setDelayTimeLevel(level);
   return OK;
 }
-
-#ifdef __cplusplus
-};
-#endif

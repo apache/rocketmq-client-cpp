@@ -77,7 +77,7 @@ const string& MQClient::getNamesrvDomain() const {
 }
 
 void MQClient::setNamesrvDomain(const string& namesrvDomain) {
-  m_namesrvDomain = namesrvDomain;
+  // m_namesrvDomain = namesrvDomain;
 }
 
 const string& MQClient::getInstanceName() const {

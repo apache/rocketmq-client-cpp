@@ -68,7 +68,6 @@ int main(int argc, char* argv[]) {
   producer.start();
 
   consumer.setNamesrvAddr(info.namesrv);
-  consumer.setNamesrvDomain(info.namesrv_domain);
   consumer.setGroupName(info.groupname);
   consumer.setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
   consumer.subscribe(info.topic, "*");

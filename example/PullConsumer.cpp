@@ -50,7 +50,6 @@ int main(int argc, char* argv[]) {
   PrintRocketmqSendAndConsumerArgs(info);
   DefaultMQPullConsumer consumer("please_rename_unique_group_name");
   consumer.setNamesrvAddr(info.namesrv);
-  consumer.setNamesrvDomain(info.namesrv_domain);
   consumer.setGroupName(info.groupname);
   consumer.setInstanceName(info.groupname);
   consumer.registerMessageQueueListener(info.topic, NULL);

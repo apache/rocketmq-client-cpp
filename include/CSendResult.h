@@ -19,6 +19,7 @@
 #define __C_SEND_RESULT_H__
 
 #include "CCommon.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

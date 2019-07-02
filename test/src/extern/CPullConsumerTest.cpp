@@ -163,9 +163,6 @@ TEST(cpullConsumer, init) {
   EXPECT_EQ(SetPullConsumerNameServerAddress(pullConsumer, "127.0.0.1:10091"), OK);
   EXPECT_EQ(defaultMQPullConsumer->getNamesrvAddr(), "127.0.0.1:10091");
 
-  EXPECT_EQ(SetPullConsumerNameServerDomain(pullConsumer, "domain"), OK);
-  EXPECT_EQ(defaultMQPullConsumer->getNamesrvDomain(), "domain");
-
   EXPECT_EQ(SetPullConsumerSessionCredentials(pullConsumer, "accessKey", "secretKey", "channel"), OK);
   SessionCredentials sessionCredentials = defaultMQPullConsumer->getSessionCredentials();
   EXPECT_EQ(sessionCredentials.getAccessKey(), "accessKey");
@@ -186,9 +183,6 @@ TEST(cpullConsumer, null) {
 
   EXPECT_EQ(SetPullConsumerNameServerAddress(pullConsumer, "127.0.0.1:10091"), OK);
   EXPECT_EQ(defaultMQPullConsumer->getNamesrvAddr(), "127.0.0.1:10091");
-
-  EXPECT_EQ(SetPullConsumerNameServerDomain(pullConsumer, "domain"), OK);
-  EXPECT_EQ(defaultMQPullConsumer->getNamesrvDomain(), "domain");
 
   EXPECT_EQ(SetPullConsumerSessionCredentials(pullConsumer, "accessKey", "secretKey", "channel"), OK);
   SessionCredentials sessionCredentials = defaultMQPullConsumer->getSessionCredentials();
