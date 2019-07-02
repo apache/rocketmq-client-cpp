@@ -1,108 +1,113 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 #include "Logging.h"
-#include <boost/date_time/gregorian/gregorian.hpp>
 #include "UtilAll.h"
-#define BOOST_DATE_TIME_SOURCE
 
 namespace rocketmq {
-logAdapter* logAdapter::alogInstance;
-boost::mutex logAdapter::m_imtx;
+    logAdapter* logAdapter::alogInstance = nullptr;
+    std::mutex logAdapter::m_imtx;
 
-logAdapter::~logAdapter() {
-  logging::core::get()->remove_all_sinks();
-}
-
-logAdapter* logAdapter::getLogInstance() {
-  if (alogInstance == NULL) {
-    boost::mutex::scoped_lock guard(m_imtx);
-    if (alogInstance == NULL) {
-      alogInstance = new logAdapter();
+    logAdapter::~logAdapter() {
+		spdlog::drop_all();
     }
-  }
-  return alogInstance;
-}
 
-logAdapter::logAdapter() : m_logLevel(eLOG_LEVEL_INFO) {
-  string homeDir(UtilAll::getHomeDirectory());
-  homeDir.append("/logs/rocketmq-cpp/");
-  m_logFile += homeDir;
-  std::string fileName = UtilAll::to_string(getpid()) + "_" + "rocketmq-cpp.log.%N";
-  m_logFile += fileName;
+    logAdapter* logAdapter::getLogInstance() {
+        if (alogInstance == nullptr) {
+            std::lock_guard<std::mutex> mtx(m_imtx);
+            if (alogInstance == NULL) {
+                alogInstance = new logAdapter();
+            }
+        }
+        return alogInstance;
+    }
 
-  // boost::log::expressions::attr<
-  // boost::log::attributes::current_thread_id::value_type>("ThreadID");
-  boost::log::register_simple_formatter_factory<boost::log::trivial::severity_level, char>("Severity");
-  m_logSink = logging::add_file_log(keywords::file_name = m_logFile, keywords::rotation_size = 100 * 1024 * 1024,
-                                    keywords::time_based_rotation = sinks::file::rotation_at_time_point(0, 0, 0),
-                                    keywords::format = "[%TimeStamp%](%Severity%):%Message%",
-                                    keywords::min_free_space = 300 * 1024 * 1024, keywords::target = homeDir,
-                                    keywords::max_size = 200 * 1024 * 1024,  // max keep 3 log file defaultly
-                                    keywords::auto_flush = true);
-  // logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::info);
-  setLogLevelInner(m_logLevel);
+    logAdapter::logAdapter() : m_logLevel(eLOG_LEVEL_INFO) {
+        string homeDir(UtilAll::getHomeDirectory());
+        homeDir.append("/logs/rocketmq-cpp/");
+        UtilAll::createDirectory(homeDir);
+        if (!UtilAll::existDirectory(homeDir)) {
+            std::cerr << "create log dir error, will exit" << std::endl;
+            exit(1);
+        }
+        m_logFile += homeDir;
+        std::string fileName = UtilAll::to_string(getpid()) + "_" + "rocketmq-cpp.log";
+        m_logFile += fileName;
 
-  logging::add_common_attributes();
-}
+#ifdef _DEBUG
+        auto console = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+        console->set_level(spdlog::level::debug);
+        console->set_pattern("[%m-%d %H:%M:%S.%e][%^%L%$][thread:%t]  %v");
+        m_logSinks.push_back(console);
+#endif
+        auto rotating = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(m_logFile, 1024 * 1024 * 1024, 5);
+        rotating->set_level(spdlog::level::debug);
+        rotating->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%5l%$][thread:%t]  %v");
+        m_logSinks.push_back(rotating);
 
-void logAdapter::setLogLevelInner(elogLevel logLevel) {
-  switch (logLevel) {
-    case eLOG_LEVEL_FATAL:
-      logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::fatal);
-      break;
-    case eLOG_LEVEL_ERROR:
-      logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::error);
+        spdlog::init_thread_pool(8192, 1);
+        m_logger = std::make_shared<spdlog::async_logger>("both", begin(m_logSinks), end(m_logSinks), spdlog::thread_pool());
+        //register it if you need to access it globally
+        spdlog::register_logger(m_logger);
 
-      break;
-    case eLOG_LEVEL_WARN:
-      logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::warning);
+        // set log level
+        /*
+#ifdef _DEBUG
+        m_logger->set_level(spdlog::level::trace);
+#else
+        m_logger->set_level(spdlog::level::info);
+#endif
+*/
+        setLogLevelInner(m_logLevel);
+        //when an error occurred, flush disk immediately
+        m_logger->flush_on(spdlog::level::err);
 
-      break;
-    case eLOG_LEVEL_INFO:
-      logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::info);
+        spdlog::flush_every(std::chrono::seconds(3));
 
-      break;
-    case eLOG_LEVEL_DEBUG:
-      logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::debug);
+    }
 
-      break;
-    case eLOG_LEVEL_TRACE:
-      logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::trace);
+    void logAdapter::setLogLevel(elogLevel logLevel) {
+        m_logLevel = logLevel;
+        setLogLevelInner(m_logLevel);
+    }
 
-      break;
-    default:
-      logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::info);
+    elogLevel logAdapter::getLogLevel() {
+        return m_logLevel;
+    }
 
-      break;
-  }
-}
-void logAdapter::setLogLevel(elogLevel logLevel) {
-  m_logLevel = logLevel;
-  setLogLevelInner(logLevel);
-}
+    void logAdapter::setLogFileNumAndSize(int logNum, int sizeOfPerFile) {
+    }
 
-elogLevel logAdapter::getLogLevel() {
-  return m_logLevel;
-}
+    void logAdapter::setLogLevelInner(elogLevel logLevel) {
+        /*
+           eLOG_LEVEL_FATAL = 1,
+           eLOG_LEVEL_ERROR = 2,
+           eLOG_LEVEL_WARN = 3,
+           eLOG_LEVEL_INFO = 4,
+           eLOG_LEVEL_DEBUG = 5,
+           eLOG_LEVEL_TRACE = 6,
+           */
+        switch (logLevel) {
+            case eLOG_LEVEL_FATAL:
+                m_logger->set_level(spdlog::level::critical);
+                break;
+            case eLOG_LEVEL_ERROR:
+                m_logger->set_level(spdlog::level::err);
+                break;
+            case eLOG_LEVEL_WARN:
+                m_logger->set_level(spdlog::level::warn);
+                break;
+            case eLOG_LEVEL_INFO:
+                m_logger->set_level(spdlog::level::info);
+                break;
+            case eLOG_LEVEL_DEBUG:
+                m_logger->set_level(spdlog::level::debug);
+                break;
+            case eLOG_LEVEL_TRACE:
+                m_logger->set_level(spdlog::level::trace);
+                break;
+            default:
+                m_logger->set_level(spdlog::level::info);
+                break;
+        }
+    }
 
-void logAdapter::setLogFileNumAndSize(int logNum, int sizeOfPerFile) {
-  string homeDir(UtilAll::getHomeDirectory());
-  homeDir.append("/logs/rocketmq-cpp/");
-  m_logSink->locked_backend()->set_file_collector(sinks::file::make_collector(
-      keywords::target = homeDir, keywords::max_size = logNum * sizeOfPerFile * 1024 * 1024));
-}
-}  // namespace rocketmq
+} // namespace rocketmq
+

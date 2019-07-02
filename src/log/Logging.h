@@ -1,106 +1,97 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+#ifndef _SPDLOG_LOGGER_
+#define _SPDLOG_LOGGER_
 
-#ifndef _ALOG_ADAPTER_H_
-#define _ALOG_ADAPTER_H_
-
-#include <string.h>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
-#include <boost/log/core.hpp>
-#include <boost/log/expressions.hpp>
-#include <boost/log/sinks/text_file_backend.hpp>
-#include <boost/log/sources/record_ostream.hpp>
-#include <boost/log/sources/severity_logger.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/utility/manipulators/add_value.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>
-#include <boost/log/utility/setup/file.hpp>
-#include <boost/scoped_array.hpp>
-#include <boost/shared_ptr.hpp>
+#ifdef _WIN32
+#include <io.h>
+#include <direct.h>
+#else 
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+#include <iostream>
+#include <mutex>
 #include "MQClient.h"
 
-namespace logging = boost::log;
-namespace src = boost::log::sources;
-namespace sinks = boost::log::sinks;
-namespace expr = boost::log::expressions;
-namespace keywords = boost::log::keywords;
-using namespace boost::log::trivial;
+#ifdef _WIN32
+#define __FILENAME__ (strrchr(__FILE__, '\\') ? (strrchr(__FILE__, '\\') + 1):__FILE__)
+#else
+#define __FILENAME__ (strrchr(__FILE__, '/') ? (strrchr(__FILE__, '/') + 1):__FILE__)
+#endif
+
+// define log SUFFIX: [filename] [function:line] macro
+#ifndef SUFFIX
+#define SUFFIX(msg)  std::string(msg).append(" [")\
+        .append(__FILENAME__).append("] [").append(__func__)\
+        .append(":").append(std::to_string(__LINE__))\
+        .append("]").c_str()
+#endif
+
+// must define before spdlog.h
+#ifndef SPDLOG_TRACE_ON
+#define SPDLOG_TRACE_ON
+#endif
+
+#ifndef SPDLOG_DEBUG_ON
+#define SPDLOG_DEBUG_ON
+#endif
+
+#include "spdlog.h"
+#include "async.h"
+#include "sinks/stdout_color_sinks.h"
+#include "sinks/basic_file_sink.h"
+#include "sinks/rotating_file_sink.h"
+
 namespace rocketmq {
 
 class logAdapter {
- public:
-  ~logAdapter();
-  static logAdapter* getLogInstance();
-  void setLogLevel(elogLevel logLevel);
-  elogLevel getLogLevel();
-  void setLogFileNumAndSize(int logNum, int sizeOfPerFile);
-  src::severity_logger<boost::log::trivial::severity_level>& getSeverityLogger() { return m_severityLogger; }
+public:
+    ~logAdapter();
+    static logAdapter* getLogInstance();
+    void setLogLevel(elogLevel logLevel);
+    elogLevel getLogLevel();
+    void setLogFileNumAndSize(int logNum, int sizeOfPerFile);
 
- private:
-  logAdapter();
-  void setLogLevelInner(elogLevel logLevel);
-  elogLevel m_logLevel;
-  std::string m_logFile;
-  src::severity_logger<boost::log::trivial::severity_level> m_severityLogger;
-  typedef sinks::synchronous_sink<sinks::text_file_backend> logSink_t;
-  boost::shared_ptr<logSink_t> m_logSink;
-  static logAdapter* alogInstance;
-  static boost::mutex m_imtx;
+	//auto getLogger() { return m_logger; } // c++14 or warning
+	std::shared_ptr<spdlog::async_logger>& getLogger() { return m_logger; }
+
+private:
+	logAdapter(const logAdapter&) = delete;
+	logAdapter& operator=(const logAdapter&) = delete;
+
+private:
+    logAdapter();
+    void setLogLevelInner(elogLevel logLevel);
+    elogLevel m_logLevel;
+    std::string m_logFile;
+	std::shared_ptr<spdlog::async_logger> m_logger;
+    std::vector<spdlog::sink_ptr> m_logSinks;
+    static logAdapter* alogInstance;
+    static std::mutex m_imtx;
 };
 
 #define ALOG_ADAPTER logAdapter::getLogInstance()
 
-#define AGENT_LOGGER ALOG_ADAPTER->getSeverityLogger()
+#define AGENT_LOGGER AGENT_LOGGER()->getLogger()
 
-class LogUtil {
- public:
-  static void LogMessage(boost::log::trivial::severity_level level, int line, const char* format, ...) {
-    va_list arg_ptr;
-    va_start(arg_ptr, format);
-    boost::scoped_array<char> formattedString(new char[1024]);
-    vsnprintf(formattedString.get(), 1024, format, arg_ptr);
-    BOOST_LOG_SEV(AGENT_LOGGER, level) << formattedString.get();
-    va_end(arg_ptr);
-  }
-  static void LogMessageFull(boost::log::trivial::severity_level level,
-                             const char* file,
-                             const char* func,
-                             int line,
-                             const char* format,
-                             ...) {
-    va_list arg_ptr;
-    va_start(arg_ptr, format);
-    boost::scoped_array<char> formattedString(new char[1024]);
-    vsnprintf(formattedString.get(), 1024, format, arg_ptr);
-    // BOOST_LOG_SEV(AGENT_LOGGER, level) << formattedString.get() << "[" << file << ":" << func << ":"<< line << "]";
-    BOOST_LOG_SEV(AGENT_LOGGER, level) << formattedString.get() << "[" << func << ":" << line << "]";
-    va_end(arg_ptr);
-  }
-};
+#define LOG_TRACE(msg, ...) logAdapter::getLogInstance()->getLogger()->trace(SUFFIX(msg), ##__VA_ARGS__)
+#define LOG_DEBUG(msg, ...) logAdapter::getLogInstance()->getLogger()->debug(SUFFIX(msg), ##__VA_ARGS__)
+#define LOG_INFO(msg, ...) logAdapter::getLogInstance()->getLogger()->info(SUFFIX(msg), ##__VA_ARGS__)
+#define LOG_WARN(msg, ...) logAdapter::getLogInstance()->getLogger()->warn(SUFFIX(msg), ##__VA_ARGS__)
+#define LOG_ERROR(msg, ...) logAdapter::getLogInstance()->getLogger()->error(SUFFIX(msg), ##__VA_ARGS__)
+#define LOG_CRITICAL(msg, ...) logAdapter::getLogInstance()->getLogger()->critical(SUFFIX(msg), ##__VA_ARGS__)
 
-#define LOG_FATAL(...) \
-  LogUtil::LogMessageFull(boost::log::trivial::fatal, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
-#define LOG_ERROR(...) \
-  LogUtil::LogMessageFull(boost::log::trivial::error, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
-#define LOG_WARN(...) \
-  LogUtil::LogMessageFull(boost::log::trivial::warning, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
-//#define LOG_INFO(...) LogUtil::LogMessage(boost::log::trivial::info, __LINE__, __VA_ARGS__)
-#define LOG_INFO(...) LogUtil::LogMessageFull(boost::log::trivial::info, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
-#define LOG_DEBUG(...) \
-  LogUtil::LogMessageFull(boost::log::trivial::debug, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
-}  // namespace rocketmq
+#define criticalif(b, ...)                        \
+    do {                                       \
+        if ((b)) {                             \
+           logAdapter::getLogInstance()->getLogger()->critical(__VA_ARGS__); \
+        }                                      \
+    } while (0)
+
+#ifdef WIN32  
+#define errcode WSAGetLastError()
+#endif
+} // namespace rocketmq
 #endif

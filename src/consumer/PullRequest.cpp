@@ -59,7 +59,7 @@ void PullRequest::putMessage(vector<MQMessageExt>& msgs) {
     m_msgTreeMap[it->getQueueOffset()] = *it;
     m_queueOffsetMax = (std::max)(m_queueOffsetMax, it->getQueueOffset());
   }
-  LOG_DEBUG("PullRequest: putMessage m_queueOffsetMax:%lld ", m_queueOffsetMax);
+  LOG_DEBUG("PullRequest: putMessage m_queueOffsetMax:{} ", m_queueOffsetMax);
 }
 
 void PullRequest::getMessage(vector<MQMessageExt>& msgs) {
@@ -104,21 +104,21 @@ int64 PullRequest::removeMessage(vector<MQMessageExt>& msgs) {
   boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
 
   int64 result = -1;
-  LOG_DEBUG("m_queueOffsetMax is:%lld", m_queueOffsetMax);
+  LOG_DEBUG("m_queueOffsetMax is:{}", m_queueOffsetMax);
   if (!m_msgTreeMap.empty()) {
     result = m_queueOffsetMax + 1;
-    LOG_DEBUG(" offset result is:%lld, m_queueOffsetMax is:%lld, msgs size:" SIZET_FMT "", result, m_queueOffsetMax,
+    LOG_DEBUG(" offset result is:{}, m_queueOffsetMax is:{}, msgs size:" SIZET_FMT "", result, m_queueOffsetMax,
               msgs.size());
     vector<MQMessageExt>::iterator it = msgs.begin();
     for (; it != msgs.end(); it++) {
-      LOG_DEBUG("remove these msg from m_msgTreeMap, its offset:%lld", it->getQueueOffset());
+      LOG_DEBUG("remove these msg from m_msgTreeMap, its offset:{}", it->getQueueOffset());
       m_msgTreeMap.erase(it->getQueueOffset());
     }
 
     if (!m_msgTreeMap.empty()) {
       map<int64, MQMessageExt>::iterator it = m_msgTreeMap.begin();
       result = it->first;
-      LOG_INFO("cache msg size:" SIZET_FMT " of pullRequest:%s, return offset result is:%lld", m_msgTreeMap.size(),
+      LOG_INFO("cache msg size:" SIZET_FMT " of pullRequest:{}, return offset result is:{}", m_msgTreeMap.size(),
                m_messageQueue.toString().c_str(), result);
     }
   }
@@ -266,7 +266,7 @@ void PullRequest::removePullMsgEvent() {
 bool PullRequest::addPullMsgEvent() {
   if (m_bPullMsgEventInprogress == false) {
     m_bPullMsgEventInprogress = true;
-    LOG_INFO("pullRequest with mq :%s set pullMsgEvent", m_messageQueue.toString().c_str());
+    LOG_INFO("pullRequest with mq :{} set pullMsgEvent", m_messageQueue.toString().c_str());
     return true;
   }
   return false;

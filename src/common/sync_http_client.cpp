@@ -110,12 +110,12 @@ bool SyncfetchNsAddr(const Url& url_s, std::string& body) {
     std::string status_message;
     std::getline(response_stream, status_message);
     if (!response_stream || http_version.substr(0, 5) != "HTTP/") {
-      LOG_INFO("Invalid response %s\n", status_message.c_str());
+      LOG_INFO("Invalid response {}\n", status_message.c_str());
       return false;
     }
 
     if (status_code != 200) {
-      LOG_INFO("Response returned with status code %d ", status_code);
+      LOG_INFO("Response returned with status code {} ", status_code);
       return false;
     }
 
@@ -142,7 +142,7 @@ bool SyncfetchNsAddr(const Url& url_s, std::string& body) {
       throw boost::system::system_error(error);
 
   } catch (std::exception& e) {
-    LOG_ERROR("Exception:  %s", e.what());
+    LOG_ERROR("Exception:  {}", e.what());
     ret = false;
   }
 

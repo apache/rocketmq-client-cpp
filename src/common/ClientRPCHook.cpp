@@ -51,12 +51,12 @@ void ClientRPCHook::doBeforeRequest(const string& remoteAddr, RemotingCommand& r
     totalMsg.append(it->second);
   }
   if (request.getMsgBody().length() > 0) {
-    LOG_DEBUG("msgBody is:%s, msgBody length is:" SIZET_FMT "", request.getMsgBody().c_str(),
+    LOG_DEBUG("msgBody is:{}, msgBody length is:" SIZET_FMT "", request.getMsgBody().c_str(),
               request.getMsgBody().length());
 
     totalMsg.append(request.getMsgBody());
   }
-  LOG_DEBUG("total msg info are:%s, size is:" SIZET_FMT "", totalMsg.c_str(), totalMsg.size());
+  LOG_DEBUG("total msg info are:{}, size is:" SIZET_FMT "", totalMsg.c_str(), totalMsg.size());
   char* pSignature =
       rocketmqSignature::spas_sign(totalMsg.c_str(), totalMsg.size(), sessionCredentials.getSecretKey().c_str());
   // char *pSignature = spas_sign(totalMsg.c_str(),

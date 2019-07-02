@@ -60,7 +60,7 @@ bool MQClientAPIImpl::writeDataToFile(string filename, string data, bool isSync)
 
   FILE* pFd = fopen(filename.c_str(), "w+");
   if (NULL == pFd) {
-    LOG_ERROR("fopen failed, filename:%s", filename.c_str());
+    LOG_ERROR("fopen failed, filename:{}", filename.c_str());
     return false;
   }
 
@@ -71,7 +71,7 @@ bool MQClientAPIImpl::writeDataToFile(string filename, string data, bool isSync)
     byte_write = fwrite(pData, sizeof(char), byte_left, pFd);
     if (byte_write == byte_left) {
       if (ferror(pFd)) {
-        LOG_ERROR("write data fail, data len:" SIZET_FMT ", file:%s, msg:%s", data.size(), filename.c_str(),
+        LOG_ERROR("write data fail, data len:" SIZET_FMT ", file:{}, msg:{}", data.size(), filename.c_str(),
                   strerror(errno));
         fclose(pFd);
         return false;
@@ -83,7 +83,7 @@ bool MQClientAPIImpl::writeDataToFile(string filename, string data, bool isSync)
   pData = NULL;
 
   if (isSync) {
-    LOG_INFO("fsync with filename:%s", filename.c_str());
+    LOG_INFO("fsync with filename:{}", filename.c_str());
     fflush(pFd);
   }
   fclose(pFd);
@@ -100,7 +100,7 @@ string MQClientAPIImpl::fetchNameServerAddr(const string& NSDomain) {
     boost::system::error_code ec;
     if (!boost::filesystem::exists(dir, ec)) {
       if (!boost::filesystem::create_directory(dir, ec)) {
-        LOG_ERROR("create data dir:%s error", storePath.c_str());
+        LOG_ERROR("create data dir:{} error", storePath.c_str());
         return "";
       }
     }
@@ -111,7 +111,7 @@ string MQClientAPIImpl::fetchNameServerAddr(const string& NSDomain) {
     if (retSize == 2) {
       file.append("/nameserver_addr-").append(ret_[retSize - 1]);
     } else {
-      LOG_ERROR("split mqClientId:%s fail", m_mqClientId.c_str());
+      LOG_ERROR("split mqClientId:{} fail", m_mqClientId.c_str());
       file.append("/nameserver_addr-DEFAULT");
     }
     boost::filesystem::path snapshot_file(file);
@@ -119,7 +119,7 @@ string MQClientAPIImpl::fetchNameServerAddr(const string& NSDomain) {
     const string addrs = m_topAddressing->fetchNSAddr(NSDomain);
     if (addrs.empty()) {
       if (m_nameSrvAddr.empty()) {
-        LOG_INFO("Load the name server snapshot local file:%s", file.c_str());
+        LOG_INFO("Load the name server snapshot local file:{}", file.c_str());
         if (boost::filesystem::exists(snapshot_file)) {
           ifstream snapshot_file(file, ios::binary);
           istreambuf_iterator<char> beg(snapshot_file), end;
@@ -137,7 +137,7 @@ string MQClientAPIImpl::fetchNameServerAddr(const string& NSDomain) {
         m_firstFetchNameSrv = false;
       }
       if (addrs.compare(m_nameSrvAddr) != 0) {
-        LOG_INFO("name server address changed, old: %s, new: %s", m_nameSrvAddr.c_str(), addrs.c_str());
+        LOG_INFO("name server address changed, old: {}, new: {}", m_nameSrvAddr.c_str(), addrs.c_str());
         updateNameServerAddr(addrs);
         m_nameSrvAddr = addrs;
       } else {
@@ -148,7 +148,7 @@ string MQClientAPIImpl::fetchNameServerAddr(const string& NSDomain) {
       // m_firstFetchNameSrv==true
       if (writeDataToFile(fileBak, addrs, true)) {
         if (!UtilAll::ReplaceFile(fileBak, file))
-          LOG_ERROR("could not rename bak file:%s", strerror(errno));
+          LOG_ERROR("could not rename bak file:{}", strerror(errno));
       }
     }
 
@@ -156,7 +156,7 @@ string MQClientAPIImpl::fetchNameServerAddr(const string& NSDomain) {
       // the name server snapshot local file maybe deleted by force, create it
       if (writeDataToFile(fileBak, m_nameSrvAddr, true)) {
         if (!UtilAll::ReplaceFile(fileBak, file))
-          LOG_ERROR("could not rename bak file:%s", strerror(errno));
+          LOG_ERROR("could not rename bak file:{}", strerror(errno));
       }
     }
   } catch (...) {
@@ -253,7 +253,7 @@ void MQClientAPIImpl::sendHearbeat(const string& addr,
   request.Encode();
 
   if (m_pRemotingClient->invokeHeartBeat(addr, request)) {
-    LOG_INFO("sendheartbeat to broker:%s success", addr.c_str());
+    LOG_INFO("sendheartbeat to broker:{} success", addr.c_str());
   }
 }
 
@@ -262,7 +262,7 @@ void MQClientAPIImpl::unregisterClient(const string& addr,
                                        const string& producerGroup,
                                        const string& consumerGroup,
                                        const SessionCredentials& sessionCredentials) {
-  LOG_INFO("unregisterClient to broker:%s", addr.c_str());
+  LOG_INFO("unregisterClient to broker:{}", addr.c_str());
   RemotingCommand request(UNREGISTER_CLIENT, new UnregisterClientRequestHeader(clientID, producerGroup, consumerGroup));
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
@@ -272,12 +272,12 @@ void MQClientAPIImpl::unregisterClient(const string& addr,
   if (response) {
     switch (response->getCode()) {
       case SUCCESS_VALUE:
-        LOG_INFO("unregisterClient to:%s success", addr.c_str());
+        LOG_INFO("unregisterClient to:{} success", addr.c_str());
         return;
       default:
         break;
     }
-    LOG_WARN("unregisterClient fail:%s,%d", response->getRemark().c_str(), response->getCode());
+    LOG_WARN("unregisterClient fail:{},{}", response->getRemark().c_str(), response->getCode());
   }
 }
 
@@ -307,7 +307,7 @@ TopicRouteData* MQClientAPIImpl::getTopicRouteInfoFromNameServer(const string& t
         default:
           break;
       }
-      LOG_WARN("%s,%d", pResponse->getRemark().c_str(), pResponse->getCode());
+      LOG_WARN("{},{}", pResponse->getRemark().c_str(), pResponse->getCode());
       return NULL;
     }
   }
@@ -373,7 +373,7 @@ SendResult MQClientAPIImpl::sendMessageSync(const string& addr,
   unique_ptr<RemotingCommand> pResponse(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
   if (pResponse != NULL) {
     try {
-      LOG_DEBUG("sendMessageSync success:%s to addr:%s,brokername:%s", msg.toString().c_str(), addr.c_str(),
+      LOG_DEBUG("sendMessageSync success:{} to addr:{},brokername:{}", msg.toString().c_str(), addr.c_str(),
                 brokerName.c_str());
       SendResult result = processSendResponse(brokerName, msg, pResponse.get());
       return result;
@@ -396,11 +396,11 @@ void MQClientAPIImpl::sendMessageAsync(const string& addr,
   //<!delete in future;
   AsyncCallbackWrap* cbw = new SendCallbackWrap(brokerName, msg, pSendCallback, this);
 
-  LOG_DEBUG("sendMessageAsync request:%s, timeout:%lld, maxRetryTimes:%d retrySendTimes:%d", request.ToString().data(),
+  LOG_DEBUG("sendMessageAsync request:{}, timeout:{}, maxRetryTimes:{} retrySendTimes:{}", request.ToString().data(),
             timeoutMilliseconds, maxRetryTimes, retrySendTimes);
 
   if (m_pRemotingClient->invokeAsync(addr, request, cbw, timeoutMilliseconds, maxRetryTimes, retrySendTimes) == false) {
-    LOG_WARN("invokeAsync failed to addr:%s,topic:%s, timeout:%lld, maxRetryTimes:%d, retrySendTimes:%d", addr.c_str(),
+    LOG_WARN("invokeAsync failed to addr:{},topic:{}, timeout:{}, maxRetryTimes:{}, retrySendTimes:{}", addr.c_str(),
              msg.getTopic().data(), timeoutMilliseconds, maxRetryTimes, retrySendTimes);
     // when getTcp return false, need consider retrySendTimes
     int retry_time = retrySendTimes + 1;
@@ -410,7 +410,7 @@ void MQClientAPIImpl::sendMessageAsync(const string& addr,
       if (m_pRemotingClient->invokeAsync(addr, request, cbw, time_out, maxRetryTimes, retry_time) == false) {
         retry_time += 1;
         time_out = time_out - (UtilAll::currentTimeMillis() - begin_time);
-        LOG_WARN("invokeAsync retry failed to addr:%s,topic:%s, timeout:%lld, maxRetryTimes:%d, retrySendTimes:%d",
+        LOG_WARN("invokeAsync retry failed to addr:{},topic:{}, timeout:{}, maxRetryTimes:{}, retrySendTimes:{}",
                  addr.c_str(), msg.getTopic().data(), time_out, maxRetryTimes, retry_time);
         continue;
       } else {
@@ -418,7 +418,7 @@ void MQClientAPIImpl::sendMessageAsync(const string& addr,
       }
     }
 
-    LOG_ERROR("sendMessageAsync failed to addr:%s,topic:%s, timeout:%lld, maxRetryTimes:%d, retrySendTimes:%d",
+    LOG_ERROR("sendMessageAsync failed to addr:{},topic:{}, timeout:{}, maxRetryTimes:{}, retrySendTimes:{}",
               addr.c_str(), msg.getTopic().data(), time_out, maxRetryTimes, retrySendTimes);
 
     if (cbw) {
@@ -472,12 +472,12 @@ void MQClientAPIImpl::pullMessageAsync(const string& addr,
   if (pAsyncArg && pAsyncArg->pPullRequest) {
     mq = pAsyncArg->mq;
     pAsyncArg->pPullRequest->setLatestPullRequestOpaque(request.getOpaque());
-    LOG_DEBUG("pullMessageAsync set opaque:%d, mq:%s", pAsyncArg->pPullRequest->getLatestPullRequestOpaque(),
+    LOG_DEBUG("pullMessageAsync set opaque:{}, mq:{}", pAsyncArg->pPullRequest->getLatestPullRequestOpaque(),
               mq.toString().c_str());
   }
 
   if (m_pRemotingClient->invokeAsync(addr, request, cbw, timeoutMillis) == false) {
-    LOG_ERROR("pullMessageAsync failed of addr:%s, opaque:%d, mq:%s", addr.c_str(), request.getOpaque(),
+    LOG_ERROR("pullMessageAsync failed of addr:{}, opaque:{}, mq:{}", addr.c_str(), request.getOpaque(),
               mq.toString().data());
     if (pAsyncArg && pAsyncArg->pPullRequest) {
       pAsyncArg->pPullRequest->setLatestPullRequestOpaque(0);
@@ -533,7 +533,7 @@ SendResult MQClientAPIImpl::processSendResponse(const string& brokerName,
     string unique_msgId = msg.getProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);
     return SendResult(sendStatus, unique_msgId, responseHeader->msgId, messageQueue, responseHeader->queueOffset);
   }
-  LOG_ERROR("processSendResponse error remark:%s, error code:%d", (pResponse->getRemark()).c_str(),
+  LOG_ERROR("processSendResponse error remark:{}, error code:{}", (pResponse->getRemark()).c_str(),
             pResponse->getCode());
   THROW_MQEXCEPTION(MQClientException, pResponse->getRemark(), pResponse->getCode());
 }

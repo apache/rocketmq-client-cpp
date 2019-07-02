@@ -52,7 +52,7 @@ void TopAddressing::updateNameServerAddressList(const string& adds) {
       string hostName;
       short portNumber;
       if (UtilAll::SplitURL(addr, hostName, portNumber)) {
-        LOG_INFO("updateNameServerAddressList:%s", addr.c_str());
+        LOG_INFO("updateNameServerAddressList:{}", addr.c_str());
         m_addrs.push_back(addr);
       }
     }
@@ -64,13 +64,13 @@ string TopAddressing::fetchNSAddr(const string& NSDomain) {
   string nsAddr = NSDomain.empty() ? WS_ADDR : NSDomain;
   if (!m_unitName.empty()) {
     nsAddr = nsAddr + "-" + m_unitName + "?nofix=1";
-    LOG_INFO("NSAddr is:%s", nsAddr.c_str());
+    LOG_INFO("NSAddr is:{}", nsAddr.c_str());
   }
 
   std::string tmp_nameservers;
   std::string nameservers;
   Url url_s(nsAddr);
-  LOG_INFO("fetchNSAddr protocol: %s, port: %s, host:%s, path:%s, ", url_s.protocol_.c_str(), url_s.port_.c_str(),
+  LOG_INFO("fetchNSAddr protocol: {}, port: {}, host:{}, path:{}, ", url_s.protocol_.c_str(), url_s.port_.c_str(),
            url_s.host_.c_str(), url_s.path_.c_str());
 
   bool ret = SyncfetchNsAddr(url_s, tmp_nameservers);

@@ -37,7 +37,9 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/locale/conversion.hpp>
 #include <boost/locale/encoding.hpp>
+#include <boost/filesystem.hpp>
 #include <sstream>
+#include <iostream>
 #include "RocketMQClient.h"
 
 using namespace std;
@@ -82,9 +84,9 @@ inline void deleteAndZero(Type& pointer) {
 }
 #define EMPTY_STR_PTR(ptr) (ptr == NULL || ptr[0] == '\0')
 #ifdef WIN32
-#define SIZET_FMT "%lu"
+#define SIZET_FMT "{}"
 #else
-#define SIZET_FMT "%zu"
+#define SIZET_FMT "{}"
 #endif
 
 //<!************************************************************************
@@ -118,6 +120,8 @@ class UtilAll {
   static string getLocalHostName();
   static string getLocalAddress();
   static string getHomeDirectory();
+  static void createDirectory(std::string const& dir);
+  static bool existDirectory(std::string const& dir);
 
   static string getProcessName();
 

@@ -97,7 +97,7 @@ ResetOffsetBody* ResetOffsetBody::Decode(const MemoryBlock* mem) {
     mq.setQueueId(qd["queueId"].asInt());
     mq.setTopic(qd["topic"].asString());
     int64 offset = qd["offset"].asInt64();
-    LOG_INFO("ResetOffsetBody brokerName:%s, queueID:%d, topic:%s, offset:%lld", mq.getBrokerName().c_str(),
+    LOG_INFO("ResetOffsetBody brokerName:{}, queueID:{}, topic:{}, offset:{}", mq.getBrokerName().c_str(),
              mq.getQueueId(), mq.getTopic().c_str(), offset);
     rfb->setOffsetTable(mq, offset);
   }
@@ -108,7 +108,7 @@ RemotingCommand* ClientRemotingProcessor::getConsumerRunningInfo(const string& a
   request->SetExtHeader(request->getCode());
   GetConsumerRunningInfoRequestHeader* requestHeader =
       (GetConsumerRunningInfoRequestHeader*)request->getCommandHeader();
-  LOG_INFO("getConsumerRunningInfo:%s", requestHeader->getConsumerGroup().c_str());
+  LOG_INFO("getConsumerRunningInfo:{}", requestHeader->getConsumerGroup().c_str());
 
   RemotingCommand* pResponse =
       new RemotingCommand(request->getCode(), "CPP", request->getVersion(), request->getOpaque(), request->getFlag(),
@@ -142,7 +142,7 @@ RemotingCommand* ClientRemotingProcessor::notifyConsumerIdsChanged(RemotingComma
   request->SetExtHeader(request->getCode());
   NotifyConsumerIdsChangedRequestHeader* requestHeader =
       (NotifyConsumerIdsChangedRequestHeader*)request->getCommandHeader();
-  LOG_INFO("notifyConsumerIdsChanged:%s", requestHeader->getGroup().c_str());
+  LOG_INFO("notifyConsumerIdsChanged:{}", requestHeader->getGroup().c_str());
   m_mqClientFactory->doRebalanceByConsumerGroup(requestHeader->getGroup());
   return NULL;
 }

@@ -106,6 +106,11 @@ endif()
 message(STATUS "** JSONCPP_INCLUDE_DIRS: ${JSONCPP_INCLUDE_DIRS}")
 message(STATUS "** JSONCPP_LIBRARIES: ${JSONCPP_LIBRARIES}")
 
+message (STATUS "** use spdlog header-only")
+set(SPDLOG_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/bin/include/spdlog)
+include_directories(${SPDLOG_INCLUDE_DIRS})
+message (STATUS "** SPDLOG_INCLUDE_DIRS:" ${SPDLOG_INCLUDE_DIRS})
+
 # put binaries in a different dir to make them easier to find.
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)

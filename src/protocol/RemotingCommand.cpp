@@ -172,8 +172,8 @@ RemotingCommand* RemotingCommand::Decode(const MemoryBlock& mem) {
     remark = object["remark"].asString();
   }
   LOG_DEBUG(
-      "code:%d, remark:%s, version:%d, opaque:%d, flag:%d, remark:%s, "
-      "headLen:%d, bodyLen:%d ",
+      "code:{}, remark:{}, version:{}, opaque:{}, flag:{}, remark:{}, "
+      "headLen:{}, bodyLen:{} ",
       code, language.c_str(), version, opaque, flag, remark.c_str(), headLen, bodyLen);
   RemotingCommand* cmd = new RemotingCommand(code, language, version, opaque, flag, remark, NULL);
   cmd->setParsedJson(object);

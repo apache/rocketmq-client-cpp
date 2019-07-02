@@ -208,7 +208,7 @@ static std::string buildPeerAddrPort(socket_t fd) {
 
   getpeername(fd, (struct sockaddr*)&addr, &len);
 
-  LOG_DEBUG("socket: %d, addr: %s, port: %d", fd, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+  LOG_DEBUG("socket: {}, addr: {}, port: {}", fd, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
   std::string addrPort(inet_ntoa(addr.sin_addr));
   addrPort.append(":");
   addrPort.append(UtilAll::to_string(ntohs(addr.sin_port)));

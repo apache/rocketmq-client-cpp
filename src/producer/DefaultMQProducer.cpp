@@ -64,7 +64,7 @@ void DefaultMQProducer::start() {
     case CREATE_JUST: {
       m_serviceState = START_FAILED;
       MQClient::start();
-      LOG_INFO("DefaultMQProducer:%s start", m_GroupName.c_str());
+      LOG_INFO("DefaultMQProducer:{} start", m_GroupName.c_str());
 
       bool registerOK = getFactory()->registerProducer(this);
       if (!registerOK) {
@@ -345,7 +345,7 @@ SendResult DefaultMQProducer::sendDefaultImpl(MQMessage& msg,
       }
 
       try {
-        LOG_DEBUG("send to mq:%s", mq.toString().data());
+        LOG_DEBUG("send to mq:{}", mq.toString().data());
         sendResult = sendKernelImpl(msg, mq, communicationMode, pSendCallback);
         switch (communicationMode) {
           case ComMode_ASYNC:
@@ -364,7 +364,7 @@ SendResult DefaultMQProducer::sendDefaultImpl(MQMessage& msg,
             break;
         }
       } catch (...) {
-        LOG_ERROR("send failed of times:%d,brokerName:%s", times, mq.getBrokerName().c_str());
+        LOG_ERROR("send failed of times:{},brokerName:{}", times, mq.getBrokerName().c_str());
         if (bActiveMQ) {
           topicPublishInfo->updateNonServiceMessageQueue(mq, getSendMsgTimeout());
         }
@@ -398,7 +398,7 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
         msg.setProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX, unique_id);
       }
 
-      LOG_DEBUG("produce before:%s to %s", msg.toString().c_str(), mq.toString().c_str());
+      LOG_DEBUG("produce before:{} to {}", msg.toString().c_str(), mq.toString().c_str());
 
       tryToCompressMessage(msg);
 
@@ -465,7 +465,7 @@ SendResult DefaultMQProducer::sendAutoRetrySelectImpl(MQMessage& msg,
         mq = pSelector->select(topicPublishInfo->getMessageQueueList(), msg, pArg);
         lastmq = mq;
       } else {
-        LOG_INFO("sendAutoRetrySelectImpl with times:%d", times);
+        LOG_INFO("sendAutoRetrySelectImpl with times:{}", times);
         vector<MQMessageQueue> mqs(topicPublishInfo->getMessageQueueList());
         for (size_t i = 0; i < mqs.size(); i++) {
           if (mqs[i] == lastmq)
@@ -484,7 +484,7 @@ SendResult DefaultMQProducer::sendAutoRetrySelectImpl(MQMessage& msg,
       }
 
       try {
-        LOG_DEBUG("send to broker:%s", mq.toString().c_str());
+        LOG_DEBUG("send to broker:{}", mq.toString().c_str());
         sendResult = sendKernelImpl(msg, mq, communicationMode, pSendCallback);
         switch (communicationMode) {
           case ComMode_ASYNC:
@@ -503,7 +503,7 @@ SendResult DefaultMQProducer::sendAutoRetrySelectImpl(MQMessage& msg,
             break;
         }
       } catch (...) {
-        LOG_ERROR("send failed of times:%d,mq:%s", times, mq.toString().c_str());
+        LOG_ERROR("send failed of times:{},mq:{}", times, mq.toString().c_str());
         if (bActiveMQ) {
           topicPublishInfo->updateNonServiceMessageQueue(mq, getSendMsgTimeout());
         }
@@ -547,7 +547,7 @@ void DefaultMQProducer::setRetryTimes(int times) {
     m_retryTimes = 15;
     return;
   }
-  LOG_WARN("set retry times to:%d", times);
+  LOG_WARN("set retry times to:{}", times);
   m_retryTimes = times;
 }
 
@@ -566,7 +566,7 @@ void DefaultMQProducer::setRetryTimes4Async(int times) {
     m_retryTimes4Async = 15;
     return;
   }
-  LOG_INFO("set retry times to:%d", times);
+  LOG_INFO("set retry times to:{}", times);
   m_retryTimes4Async = times;
 }
 

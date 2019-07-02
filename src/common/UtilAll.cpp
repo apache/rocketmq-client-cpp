@@ -267,6 +267,51 @@ string UtilAll::getHomeDirectory() {
   return homeDir;
 }
 
+static bool createDirectoryInner(const char *dir)
+{
+    if (dir == nullptr)  {
+        std::cout << "directory is nullptr" << std::endl;
+        return false;
+    }
+    if (access(dir, 0) == -1) {
+#ifdef _WIN32
+        int flag = mkdir(dir);
+#else
+        int flag = mkdir(dir, 0755);
+#endif
+        if (flag == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+	return true;
+}
+
+void UtilAll::createDirectory(std::string const& dir) {
+    const char* ptr = dir.c_str();
+    if (access(ptr, 0) == 0) {
+        return;
+    }
+    char buff[2048] = {0};
+    for (unsigned int i = 0; i < dir.size(); i++) {
+        if (i != 0 && (*(ptr + i) == '/' || *(ptr + i) == '\\')) {
+            memcpy(buff, ptr, i);
+            createDirectoryInner(buff);
+            memset(buff, 0, 1024);
+        }
+    }
+    return;
+}
+
+bool UtilAll::existDirectory(std::string const& dir) {
+    if (access(dir.c_str(), 0) == 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 string UtilAll::getProcessName() {
 #ifndef WIN32
   char buf[PATH_MAX + 1] = {0};

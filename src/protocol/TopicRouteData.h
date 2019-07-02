@@ -75,7 +75,7 @@ class TopicRouteData {
     string errs;
 
     if (!pCharReaderPtr->parse(begin, end, &root, &errs)) {
-      LOG_ERROR("parse json error:%s, value isArray:%d, isObject:%d", errs.c_str(), root.isArray(), root.isObject());
+      LOG_ERROR("parse json error:{}, value isArray:{}, isObject:{}", errs.c_str(), root.isArray(), root.isObject());
       return nullptr;
     }
 
@@ -97,14 +97,14 @@ class TopicRouteData {
     for (auto bd : bds) {
       BrokerData d;
       d.brokerName = bd["brokerName"].asString();
-      LOG_DEBUG("brokerName:%s", d.brokerName.c_str());
+      LOG_DEBUG("brokerName:{}", d.brokerName.c_str());
       Json::Value bas = bd["brokerAddrs"];
       Json::Value::Members mbs = bas.getMemberNames();
       for (const auto& key : mbs) {
         int id = atoi(key.c_str());
         string addr = bas[key].asString();
         d.brokerAddrs[id] = addr;
-        LOG_DEBUG("brokerId:%d, brokerAddr:%s", id, addr.c_str());
+        LOG_DEBUG("brokerId:{}, brokerAddr:{}", id, addr.c_str());
       }
       trd->getBrokerDatas().push_back(d);
     }

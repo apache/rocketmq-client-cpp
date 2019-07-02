@@ -74,7 +74,7 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(PullRequest* request, vec
 
   //<!¶ÁÈ¡Êý¾Ý;
   if (msgs.empty()) {
-    LOG_WARN("the msg of pull result is NULL,its mq:%s", (request->m_messageQueue).toString().c_str());
+    LOG_WARN("the msg of pull result is NULL,its mq:{}", (request->m_messageQueue).toString().c_str());
     return;
   }
 
@@ -85,7 +85,7 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(PullRequest* request, vec
     status = m_pMessageListener->consumeMessage(msgs);
   }
 
-  /*LOG_DEBUG("Consumed MSG size:%d of mq:%s",
+  /*LOG_DEBUG("Consumed MSG size:{} of mq:{}",
       msgs.size(), (request->m_messageQueue).toString().c_str());*/
   int ackIndex = -1;
   switch (status) {
@@ -104,14 +104,14 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(PullRequest* request, vec
       // Note: broadcasting reconsume should do by application, as it has big
       // affect to broker cluster
       if (ackIndex != (int)msgs.size())
-        LOG_WARN("BROADCASTING, the message consume failed, drop it:%s", (request->m_messageQueue).toString().c_str());
+        LOG_WARN("BROADCASTING, the message consume failed, drop it:{}", (request->m_messageQueue).toString().c_str());
       break;
     case CLUSTERING:
       // send back msg to broker;
       for (size_t i = ackIndex + 1; i < msgs.size(); i++) {
-        LOG_WARN("consume fail, MQ is:%s, its msgId is:%s, index is:" SIZET_FMT
+        LOG_WARN("consume fail, MQ is:{}, its msgId is:{}, index is:" SIZET_FMT
                  ", reconsume "
-                 "times is:%d",
+                 "times is:{}",
                  (request->m_messageQueue).toString().c_str(), msgs[i].getMsgId().c_str(), i,
                  msgs[i].getReconsumeTimes());
         m_pConsumer->sendMessageBack(msgs[i], 0);
@@ -123,12 +123,12 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(PullRequest* request, vec
 
   // update offset
   int64 offset = request->removeMessage(msgs);
-  // LOG_DEBUG("update offset:%lld of mq: %s",
+  // LOG_DEBUG("update offset:%lld of mq: {}",
   // offset,(request->m_messageQueue).toString().c_str());
   if (offset >= 0) {
     m_pConsumer->updateConsumeOffset(request->m_messageQueue, offset);
   } else {
-    LOG_WARN("Note: accumulation consume occurs on mq:%s", (request->m_messageQueue).toString().c_str());
+    LOG_WARN("Note: accumulation consume occurs on mq:{}", (request->m_messageQueue).toString().c_str());
   }
 }
 

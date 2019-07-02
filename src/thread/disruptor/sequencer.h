@@ -184,7 +184,7 @@ class Sequencer: public boost::noncopyable {
  private:
     // Helpers
     void Publish(const int64_t& sequence, const int64_t& batch_size) {
-        //LOG_DEBUG("publish sequence:%d", sequence);
+        //LOG_DEBUG("publish sequence:{}", sequence);
         claim_strategy_->SerialisePublishing(sequence, cursor_, batch_size);
         cursor_.set_sequence(sequence);
         wait_strategy_->SignalAllWhenBlocking();

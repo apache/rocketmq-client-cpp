@@ -30,7 +30,7 @@ bool NameSpaceUtil::isEndPointURL(string nameServerAddr) {
 string NameSpaceUtil::formatNameServerURL(string nameServerAddr) {
   auto index = nameServerAddr.find(ENDPOINT_PREFIX);
   if (index != string::npos) {
-    LOG_DEBUG("Get Name Server from endpoint [%s]",
+    LOG_DEBUG("Get Name Server from endpoint [{}]",
               nameServerAddr.substr(ENDPOINT_PREFIX_LENGTH, nameServerAddr.length() - ENDPOINT_PREFIX_LENGTH).c_str());
     return nameServerAddr.substr(ENDPOINT_PREFIX_LENGTH, nameServerAddr.length() - ENDPOINT_PREFIX_LENGTH);
   }

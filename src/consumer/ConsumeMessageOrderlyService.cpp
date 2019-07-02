@@ -111,7 +111,7 @@ void ConsumeMessageOrderlyService::static_submitConsumeRequestLater(void* contex
                                                                     PullRequest* request,
                                                                     bool tryLockMQ,
                                                                     boost::asio::deadline_timer* t) {
-  LOG_INFO("submit consumeRequest later for mq:%s", request->m_messageQueue.toString().c_str());
+  LOG_INFO("submit consumeRequest later for mq:{}", request->m_messageQueue.toString().c_str());
   vector<MQMessageExt> msgs;
   ConsumeMessageOrderlyService* orderlyService = (ConsumeMessageOrderlyService*)context;
   orderlyService->submitConsumeRequest(request, msgs);
@@ -127,7 +127,7 @@ void ConsumeMessageOrderlyService::ConsumeRequest(PullRequest* request) {
   boost::unique_lock<boost::timed_mutex> lock(request->getPullRequestCriticalSection(), boost::try_to_lock);
   if (!lock.owns_lock()) {
     if (!lock.timed_lock(boost::get_system_time() + boost::posix_time::seconds(1))) {
-      LOG_ERROR("ConsumeRequest of:%s get timed_mutex timeout", request->m_messageQueue.toString().c_str());
+      LOG_ERROR("ConsumeRequest of:{} get timed_mutex timeout", request->m_messageQueue.toString().c_str());
       return;
     } else {
       bGetMutex = true;
@@ -136,7 +136,7 @@ void ConsumeMessageOrderlyService::ConsumeRequest(PullRequest* request) {
     bGetMutex = true;
   }
   if (!bGetMutex) {
-    // LOG_INFO("pullrequest of mq:%s consume inprogress",
+    // LOG_INFO("pullrequest of mq:{} consume inprogress",
     // request->m_messageQueue.toString().c_str());
     return;
   }
@@ -155,7 +155,7 @@ void ConsumeMessageOrderlyService::ConsumeRequest(PullRequest* request) {
       while (continueConsume) {
         if ((UtilAll::currentTimeMillis() - beginTime) > m_MaxTimeConsumeContinuously) {
           LOG_INFO(
-              "continuely consume message queue:%s more than 60s, consume it "
+              "continuely consume message queue:{} more than 60s, consume it "
               "later",
               request->m_messageQueue.toString().c_str());
           tryLockLaterAndReconsume(request, false);
@@ -182,9 +182,9 @@ void ConsumeMessageOrderlyService::ConsumeRequest(PullRequest* request) {
           return;
         }
       }
-      LOG_DEBUG("consume once exit of mq:%s", request->m_messageQueue.toString().c_str());
+      LOG_DEBUG("consume once exit of mq:{}", request->m_messageQueue.toString().c_str());
     } else {
-      LOG_ERROR("message queue:%s was not locked", request->m_messageQueue.toString().c_str());
+      LOG_ERROR("message queue:{} was not locked", request->m_messageQueue.toString().c_str());
       tryLockLaterAndReconsume(request, true);
     }
   }
