@@ -187,9 +187,6 @@ TEST(cProducer, info) {
   EXPECT_EQ(SetProducerNameServerAddress(cProducer, "127.0.0.1:9876"), OK);
   EXPECT_EQ(defaultMQProducer->getNamesrvAddr(), "127.0.0.1:9876");
 
-  EXPECT_EQ(SetProducerNameServerDomain(cProducer, "domain"), OK);
-  EXPECT_EQ(defaultMQProducer->getNamesrvDomain(), "domain");
-
   EXPECT_EQ(SetProducerGroupName(cProducer, "testGroup"), OK);
   EXPECT_EQ(defaultMQProducer->getGroupName(), "testGroup");
 
@@ -217,7 +214,6 @@ TEST(cProducer, null) {
   EXPECT_EQ(StartProducer(NULL), NULL_POINTER);
   EXPECT_EQ(ShutdownProducer(NULL), NULL_POINTER);
   EXPECT_EQ(SetProducerNameServerAddress(NULL, NULL), NULL_POINTER);
-  EXPECT_EQ(SetProducerNameServerDomain(NULL, NULL), NULL_POINTER);
   EXPECT_EQ(SetProducerGroupName(NULL, NULL), NULL_POINTER);
   EXPECT_EQ(SetProducerInstanceName(NULL, NULL), NULL_POINTER);
   EXPECT_EQ(SetProducerSessionCredentials(NULL, NULL, NULL, NULL), NULL_POINTER);

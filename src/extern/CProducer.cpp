@@ -16,10 +16,10 @@
  */
 
 #include "CProducer.h"
+
 #include <string.h>
 #include <typeindex>
-#include <string.h>
-#include <typeinfo>
+
 #include "AsyncCallback.h"
 #include "CBatchMessage.h"
 #include "CCommon.h"
@@ -29,11 +29,7 @@
 #include "DefaultMQProducer.h"
 #include "MQClientErrorContainer.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 using namespace rocketmq;
-using namespace std;
 
 class SelectMessageQueue : public MessageQueueSelector {
  public:
@@ -86,6 +82,7 @@ CProducer* CreateProducer(const char* groupId) {
   DefaultMQProducer* defaultMQProducer = new DefaultMQProducer(groupId);
   return (CProducer*)defaultMQProducer;
 }
+
 int DestroyProducer(CProducer* pProducer) {
   if (pProducer == NULL) {
     return NULL_POINTER;
@@ -93,18 +90,20 @@ int DestroyProducer(CProducer* pProducer) {
   delete reinterpret_cast<DefaultMQProducer*>(pProducer);
   return OK;
 }
+
 int StartProducer(CProducer* producer) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
   try {
     ((DefaultMQProducer*)producer)->start();
-  } catch (exception& e) {
-    MQClientErrorContainer::setErr(string(e.what()));
+  } catch (std::exception& e) {
+    MQClientErrorContainer::setErr(std::string(e.what()));
     return PRODUCER_START_FAILED;
   }
   return OK;
 }
+
 int ShutdownProducer(CProducer* producer) {
   if (producer == NULL) {
     return NULL_POINTER;
@@ -112,6 +111,7 @@ int ShutdownProducer(CProducer* producer) {
   ((DefaultMQProducer*)producer)->shutdown();
   return OK;
 }
+
 int SetProducerNameServerAddress(CProducer* producer, const char* namesrv) {
   if (producer == NULL) {
     return NULL_POINTER;
@@ -119,6 +119,8 @@ int SetProducerNameServerAddress(CProducer* producer, const char* namesrv) {
   ((DefaultMQProducer*)producer)->setNamesrvAddr(namesrv);
   return OK;
 }
+
+// Deprecated
 int SetProducerNameServerDomain(CProducer* producer, const char* domain) {
   if (producer == NULL) {
     return NULL_POINTER;
@@ -126,6 +128,7 @@ int SetProducerNameServerDomain(CProducer* producer, const char* domain) {
   ((DefaultMQProducer*)producer)->setNamesrvDomain(domain);
   return OK;
 }
+
 int SendMessageSync(CProducer* producer, CMessage* msg, CSendResult* result) {
   // CSendResult sendResult;
   if (producer == NULL || msg == NULL || result == NULL) {
@@ -155,8 +158,8 @@ int SendMessageSync(CProducer* producer, CMessage* msg, CSendResult* result) {
     result->offset = sendResult.getQueueOffset();
     strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
-  } catch (exception& e) {
-    MQClientErrorContainer::setErr(string(e.what()));
+  } catch (std::exception& e) {
+    MQClientErrorContainer::setErr(std::string(e.what()));
     return PRODUCER_SEND_SYNC_FAILED;
   }
   return OK;
@@ -169,7 +172,7 @@ int SendBatchMessage(CProducer* producer, CBatchMessage* batcMsg, CSendResult* r
   }
   try {
     DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
-    vector<MQMessage>* message = (vector<MQMessage>*)batcMsg;
+    std::vector<MQMessage>* message = (std::vector<MQMessage>*)batcMsg;
     SendResult sendResult = defaultMQProducer->send(*message);
     switch (sendResult.getSendStatus()) {
       case SEND_OK:
@@ -191,7 +194,7 @@ int SendBatchMessage(CProducer* producer, CBatchMessage* batcMsg, CSendResult* r
     result->offset = sendResult.getQueueOffset();
     strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
-  } catch (exception& e) {
+  } catch (std::exception& e) {
     return PRODUCER_SEND_SYNC_FAILED;
   }
   return OK;
@@ -210,7 +213,7 @@ int SendMessageAsync(CProducer* producer,
 
   try {
     defaultMQProducer->send(*message, cSendCallback);
-  } catch (exception& e) {
+  } catch (std::exception& e) {
     if (cSendCallback != NULL) {
       if (std::type_index(typeid(e)) == std::type_index(typeid(MQException))) {
         MQException& mqe = (MQException&)e;
@@ -219,7 +222,7 @@ int SendMessageAsync(CProducer* producer,
       delete cSendCallback;
       cSendCallback = NULL;
     }
-    MQClientErrorContainer::setErr(string(e.what()));
+    MQClientErrorContainer::setErr(std::string(e.what()));
     return PRODUCER_SEND_ASYNC_FAILED;
   }
   return OK;
@@ -233,7 +236,7 @@ int SendMessageOneway(CProducer* producer, CMessage* msg) {
   MQMessage* message = (MQMessage*)msg;
   try {
     defaultMQProducer->sendOneway(*message);
-  } catch (exception& e) {
+  } catch (std::exception& e) {
     return PRODUCER_SEND_ONEWAY_FAILED;
   }
   return OK;
@@ -248,8 +251,8 @@ int SendMessageOnewayOrderly(CProducer* producer, CMessage* msg, QueueSelectorCa
   try {
     SelectMessageQueue selectMessageQueue(selector);
     defaultMQProducer->sendOneway(*message, &selectMessageQueue, arg);
-  } catch (exception& e) {
-    MQClientErrorContainer::setErr(string(e.what()));
+  } catch (std::exception& e) {
+    MQClientErrorContainer::setErr(std::string(e.what()));
     return PRODUCER_SEND_ONEWAY_FAILED;
   }
   return OK;
@@ -273,10 +276,10 @@ int SendMessageOrderlyAsync(CProducer* producer,
     // Constructing SelectMessageQueue objects through function pointer callback
     SelectMessageQueue selectMessageQueue(callback);
     defaultMQProducer->send(*message, &selectMessageQueue, arg, cSendCallback);
-  } catch (exception& e) {
+  } catch (std::exception& e) {
     printf("%s\n", e.what());
     // std::count<<e.what( )<<std::endl;
-    MQClientErrorContainer::setErr(string(e.what()));
+    MQClientErrorContainer::setErr(std::string(e.what()));
     return PRODUCER_SEND_ORDERLYASYNC_FAILED;
   }
   return OK;
@@ -302,8 +305,8 @@ int SendMessageOrderly(CProducer* producer,
     result->offset = sendResult.getQueueOffset();
     strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
-  } catch (exception& e) {
-    MQClientErrorContainer::setErr(string(e.what()));
+  } catch (std::exception& e) {
+    MQClientErrorContainer::setErr(std::string(e.what()));
     return PRODUCER_SEND_ORDERLY_FAILED;
   }
   return OK;
@@ -316,6 +319,7 @@ int SetProducerGroupName(CProducer* producer, const char* groupName) {
   ((DefaultMQProducer*)producer)->setGroupName(groupName);
   return OK;
 }
+
 int SetProducerInstanceName(CProducer* producer, const char* instanceName) {
   if (producer == NULL) {
     return NULL_POINTER;
@@ -323,6 +327,7 @@ int SetProducerInstanceName(CProducer* producer, const char* instanceName) {
   ((DefaultMQProducer*)producer)->setInstanceName(instanceName);
   return OK;
 }
+
 int SetProducerSessionCredentials(CProducer* producer,
                                   const char* accessKey,
                                   const char* secretKey,
@@ -333,6 +338,7 @@ int SetProducerSessionCredentials(CProducer* producer,
   ((DefaultMQProducer*)producer)->setSessionCredentials(accessKey, secretKey, onsChannel);
   return OK;
 }
+
 int SetProducerLogPath(CProducer* producer, const char* logPath) {
   if (producer == NULL) {
     return NULL_POINTER;
@@ -389,6 +395,3 @@ int SetProducerMaxMessageSize(CProducer* producer, int size) {
   ((DefaultMQProducer*)producer)->setMaxMessageSize(size);
   return OK;
 }
-#ifdef __cplusplus
-};
-#endif

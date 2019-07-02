@@ -25,6 +25,7 @@ extern "C" {
 #define MAX_MESSAGE_ID_LENGTH 256
 #define MAX_TOPIC_LENGTH 512
 #define MAX_BROKER_NAME_ID_LENGTH 256
+
 typedef enum _CStatus_ {
   // Success
   OK = 0,

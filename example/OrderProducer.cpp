@@ -70,7 +70,6 @@ int main(int argc, char* argv[]) {
   PrintRocketmqSendAndConsumerArgs(info);
 
   producer.setNamesrvAddr(info.namesrv);
-  producer.setNamesrvDomain(info.namesrv_domain);
   producer.setGroupName(info.groupname);
   producer.setInstanceName(info.groupname);
 

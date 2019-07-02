@@ -19,15 +19,14 @@
 #define __C_PRODUCER_H__
 
 #include "CBatchMessage.h"
+#include "CMQException.h"
 #include "CMessage.h"
 #include "CSendResult.h"
-#include "CMQException.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// typedef struct _CProducer_ _CProducer;
 typedef struct CProducer CProducer;
 typedef int (*QueueSelectorCallback)(int size, CMessage* msg, void* arg);
 typedef void (*CSendSuccessCallback)(CSendResult result);

@@ -17,6 +17,7 @@
 
 #ifndef __MQCLIENTAPIIMPL_H__
 #define __MQCLIENTAPIIMPL_H__
+
 #include "AsyncCallback.h"
 #include "ClientRPCHook.h"
 #include "ClientRemotingProcessor.h"
@@ -30,7 +31,6 @@
 #include "SendResult.h"
 #include "SocketUtil.h"
 #include "TcpRemotingClient.h"
-#include "TopAddressing.h"
 #include "TopicConfig.h"
 #include "TopicList.h"
 #include "TopicRouteData.h"
@@ -38,8 +38,8 @@
 #include "VirtualEnvUtil.h"
 
 namespace rocketmq {
-//<!wrap all API to net ;
-//<!************************************************************************
+
+// wrap all API to net ;
 class MQClientAPIImpl {
  public:
   MQClientAPIImpl(const string& mqClientId,
@@ -49,9 +49,9 @@ class MQClientAPIImpl {
                   uint64_t tcpTransportTryLockTimeout,
                   string unitName);
   virtual ~MQClientAPIImpl();
+
   void stopAllTcpTransportThread();
-  bool writeDataToFile(string filename, string data, bool isSync);
-  string fetchNameServerAddr(const string& NSDomain);
+
   void updateNameServerAddr(const string& addrs);
 
   void callSignatureBeforeRequest(const string& addr,
@@ -148,7 +148,7 @@ class MQClientAPIImpl {
 
   void getConsumerIdListByGroup(const string& addr,
                                 const string& consumerGroup,
-                                vector<string>& cids,
+                                std::vector<string>& cids,
                                 int timeoutMillis,
                                 const SessionCredentials& sessionCredentials);
 
@@ -175,7 +175,7 @@ class MQClientAPIImpl {
 
   void lockBatchMQ(const string& addr,
                    LockBatchRequestBody* requestBody,
-                   vector<MQMessageQueue>& mqs,
+                   std::vector<MQMessageQueue>& mqs,
                    int timeoutMillis,
                    const SessionCredentials& sessionCredentials);
 
@@ -213,12 +213,11 @@ class MQClientAPIImpl {
                         void* pArg);
 
  private:
-  unique_ptr<TcpRemotingClient> m_pRemotingClient;
-  unique_ptr<TopAddressing> m_topAddressing;
+  std::unique_ptr<TcpRemotingClient> m_pRemotingClient;
   string m_nameSrvAddr;
-  bool m_firstFetchNameSrv;
   string m_mqClientId;
 };
+
 }  // namespace rocketmq
-//<!***************************************************************************
+
 #endif

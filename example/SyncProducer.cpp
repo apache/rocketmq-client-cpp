@@ -17,11 +17,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <condition_variable>
 #include <iomanip>
-#include <iomanip>
-#include <iostream>
 #include <iostream>
 #include <mutex>
 #include <thread>
@@ -68,7 +65,6 @@ int main(int argc, char* argv[]) {
   PrintRocketmqSendAndConsumerArgs(info);
   DefaultMQProducer producer("please_rename_unique_group_name");
   producer.setNamesrvAddr(info.namesrv);
-  producer.setNamesrvDomain(info.namesrv_domain);
   producer.setGroupName(info.groupname);
   producer.setInstanceName(info.groupname);
   producer.setSessionCredentials("mq acesskey", "mq secretkey", "ALIYUN");
