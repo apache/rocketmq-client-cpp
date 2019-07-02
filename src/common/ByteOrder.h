@@ -1,28 +1,29 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-#ifndef BYTEORDER_H_INCLUDED
-#define BYTEORDER_H_INCLUDED
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#ifndef __BYTE_ORDER_H__
+#define __BYTE_ORDER_H__
 
 #include <stddef.h>
 #include <stdint.h>
 #include <algorithm>
-#include <boost/detail/endian.hpp>
+
 #include "RocketMQClient.h"
 #include "UtilAll.h"
+
 //==============================================================================
 /** Contains static methods for converting the byte order between different
     endiannesses.
@@ -213,5 +214,7 @@ inline void ByteOrder::bigEndian24BitToChars(const int value, void* const destBy
   static_cast<uint8*>(destBytes)[1] = (uint8)(value >> 8);
   static_cast<uint8*>(destBytes)[2] = (uint8)value;
 }
-}
-#endif  // BYTEORDER_H_INCLUDED
+
+}  // namespace rocketmq
+
+#endif  // __BYTE_ORDER_H__
