@@ -395,7 +395,7 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
       bool isBatchMsg = std::type_index(typeid(msg)) == std::type_index(typeid(BatchMessage));
       // msgId is produced by client, offsetMsgId produced by broker. (same with java sdk)
       if (!isBatchMsg) {
-        string unique_id = StringIdMaker::get_mutable_instance().get_unique_id();
+        string unique_id = StringIdMaker::getInstance().createUniqID();
         msg.setProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX, unique_id);
 
         // batch does not support compressing right now,

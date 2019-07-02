@@ -14,61 +14,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-/*
-        ip: 4
-        pid: 4
-        随机数 :2
-        时间：4
-        自增数:2
-*/
 #ifndef __STRINGID_MAKER_H__
 #define __STRINGID_MAKER_H__
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <boost/serialization/singleton.hpp>
+#include <atomic>
+#include <cstdint>
 #include <string>
-#include <boost/asio.hpp>
-
-#ifdef WIN32
-#include <windows.h>
-#else
-#include <unistd.h>
-#include <sys/time.h>
-#endif
-
-#ifdef WIN32
-#include <windows.h>
-#else
-#include <unistd.h>
-#include <sys/time.h>
-#endif
 
 namespace rocketmq {
-class StringIdMaker : public boost::serialization::singleton<StringIdMaker> {
- public:
+
+class StringIdMaker {
+ private:
   StringIdMaker();
   ~StringIdMaker();
-  std::string get_unique_id();
+
+ public:
+  static StringIdMaker& getInstance() {
+    // After c++11, the initialization occurs exactly once
+    static StringIdMaker singleton_;
+    return singleton_;
+  }
+
+  /* ID format:
+   *   ip: 4 bytes
+   *   pid: 2 bytes
+   *   random: 4 bytes
+   *   time: 4 bytes
+   *   auto num: 2 bytes
+   */
+  std::string createUniqID();
 
  private:
-  uint32_t get_ip();
-  void init_prefix();
-  uint64_t get_curr_ms();
-  int atomic_incr(int id);
-  void set_start_and_next_tm();
+  void setStartTime(uint64_t millis);
 
-  void hexdump(unsigned char* buffer, char* out_buff, unsigned long index);
+  static uint32_t getIP();
+  static void hexdump(unsigned char* buffer, char* out_buff, unsigned long index);
 
  private:
-  uint64_t _start_tm;
-  uint64_t _next_start_tm;
-  unsigned char _buff[16];
-  char _0x_buff[33];
-  int16_t seqid;
+  uint64_t mStartTime;
+  uint64_t mNextStartTime;
+  std::atomic<uint16_t> mCounter;
+
+  char kFixString[21];
+
+  static const char sHexAlphabet[16];
 };
-}
+
+}  // namespace rocketmq
 #endif
