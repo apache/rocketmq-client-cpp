@@ -1,15 +1,30 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include "SendMessageTraceHookImpl.h"
 #include "SendMessageHook.h"
 
-#include "Logging.h"
-#include <mutex>
 #include <chrono>
-
+#include <mutex>
+#include "Logging.h"
 
 namespace rocketmq {
 
 SendMessageTraceHookImpl::SendMessageTraceHookImpl(std::shared_ptr<TraceDispatcher>& localDispatcherv) {
-  localDispatcher = std::shared_ptr<TraceDispatcher> (localDispatcherv);
+  m_localDispatcher = std::shared_ptr<TraceDispatcher>(localDispatcherv);
 }
 
 std::string SendMessageTraceHookImpl::hookName() {
@@ -17,15 +32,14 @@ std::string SendMessageTraceHookImpl::hookName() {
 }
 
 void SendMessageTraceHookImpl::sendMessageBefore(SendMessageContext& context) {
-
   // if it is message trace data,then it doesn't recorded
-   /*if (nullptr||
+  /*if (nullptr||
 context->getMessage().getTopic().startsWith(
 ((AsyncTraceDispatcher) localDispatcher).getTraceTopicName())
 
-  ) {
-    return;
-  }*/
+ ) {
+   return;
+ }*/
   // build the context content of TuxeTraceContext
   TraceContext* tuxeContext = new TraceContext();
   // tuxeContext->setTraceBeans(std::list<TraceBean>(1));
@@ -44,7 +58,6 @@ context->getMessage().getTopic().startsWith(
 }
 
 void SendMessageTraceHookImpl::sendMessageAfter(SendMessageContext& context) {
-  
   // if it is message trace data,then it doesn't recorded
   /*if (nullptr ||
   //|| context->getMessage().getTopic().startsWith(((AsyncTraceDispatcher) localDispatcher).getTraceTopicName()) ||
@@ -52,8 +65,8 @@ void SendMessageTraceHookImpl::sendMessageAfter(SendMessageContext& context) {
         return;
     }*/
   if (context.getSendResult() == nullptr) {
-        return;
-    }
+    return;
+  }
 
   /*
     if (context.getSendResult()->getRegionId().compare("")==0 || !context.getSendResult()->isTraceOn()) {
@@ -63,13 +76,13 @@ void SendMessageTraceHookImpl::sendMessageAfter(SendMessageContext& context) {
 
   TraceContext* tuxeContext = (TraceContext*)context.getMqTraceContext();
   TraceBean traceBean = tuxeContext->getTraceBeans().front();
-  int costTime = 0;  //        (int)((System.currentTimeMillis() - tuxeContext.getTimeStamp()) /
-                     //        tuxeContext.getTraceBeans().size());
+  // int costTime = 0;  //        (int)((System.currentTimeMillis() - tuxeContext.getTimeStamp()) /
+  //        tuxeContext.getTraceBeans().size());
   /*
   std::chrono::steady_clock::duration d = std::chrono::steady_clock::now().time_since_epoch();
   std::chrono::milliseconds mil = std::chrono::duration_cast<std::chrono::milliseconds>(d);
   costTime = mil.count() - tuxeContext->getTimeStamp();*/
-  costTime = time(0) - tuxeContext->getTimeStamp();
+  int costTime = time(0) - tuxeContext->getTimeStamp();
   tuxeContext->setCostTime(costTime);
   if (context.getSendResult()->getSendStatus() == (SendStatus::SEND_OK)) {
     tuxeContext->setSuccess(true);
@@ -84,10 +97,10 @@ void SendMessageTraceHookImpl::sendMessageAfter(SendMessageContext& context) {
   traceBean.setOffsetMsgId(context.getSendResult()->getOffsetMsgId());
   traceBean.setStoreTime(tuxeContext->getTimeStamp() + costTime / 2);
 
-	{
-	  localDispatcher->append(tuxeContext);
+  {
+    m_localDispatcher->append(tuxeContext);
     LOG_INFO("SendMessageTraceHookImpl::sendMessageAfter append");
-	}
+  }
 }
 
 }  // namespace rocketmq

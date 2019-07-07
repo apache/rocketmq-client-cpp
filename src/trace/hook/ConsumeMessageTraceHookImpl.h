@@ -22,34 +22,18 @@
 #include "TraceDispatcher.h"
 #include "TraceHelper.h"
 namespace rocketmq {
-	class ConsumeMessageTraceHookImpl:public ConsumeMessageHook {
-	private:
-		//TraceDispatcher* localDispatcher;
-   std::shared_ptr<TraceDispatcher> localDispatcher;
-	public:
-   ConsumeMessageTraceHookImpl(std::shared_ptr<TraceDispatcher>& localDispatcherv);
-   virtual std::string hookName();
-    virtual void consumeMessageBefore(ConsumeMessageContext* context);
-    virtual void consumeMessageAfter(ConsumeMessageContext* context);
-	};
+class ConsumeMessageTraceHookImpl : public ConsumeMessageHook {
+ private:
+  // TraceDispatcher* localDispatcher;
+  std::shared_ptr<TraceDispatcher> m_localDispatcher;
 
+ public:
+  ConsumeMessageTraceHookImpl(std::shared_ptr<TraceDispatcher>& localDispatcherv);
+  virtual std::string hookName();
+  virtual void consumeMessageBefore(ConsumeMessageContext& context);
+  virtual void consumeMessageAfter(ConsumeMessageContext& context);
+};
 
-
-
-
-
-
-
-
-
-}
-
-
-
-
-
-
-
-
+}  // namespace rocketmq
 
 #endif

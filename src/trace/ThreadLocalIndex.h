@@ -14,20 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//package org.apache.rocketmq.client.trace.hook;
-
-/*
-import java.util.ArrayList;
-import org.apache.rocketmq.client.hook.SendMessageContext;
-import org.apache.rocketmq.client.hook.SendMessageHook;
-import org.apache.rocketmq.client.producer.SendStatus;
-import org.apache.rocketmq.client.trace.AsyncTraceDispatcher;
-import org.apache.rocketmq.client.trace.TraceBean;
-import org.apache.rocketmq.client.trace.TraceContext;
-import org.apache.rocketmq.client.trace.TraceDispatcher;
-import org.apache.rocketmq.client.trace.TraceType;
-import org.apache.rocketmq.common.protocol.NamespaceUtil;
-*/
 #ifndef __ThreadLocalIndex_H__
 #define __ThreadLocalIndex_H__
 #include<string>
@@ -36,8 +22,8 @@ import org.apache.rocketmq.common.protocol.NamespaceUtil;
 namespace rocketmq {
 class ThreadLocalIndex {
 	private:
-	thread_local static long threadLocalIndex;
-	thread_local static std::default_random_engine dre;
+	thread_local static long m_threadLocalIndex;
+   thread_local static std::default_random_engine m_dre;
 
 	public:
 	//ThreadLocalIndex();
@@ -48,14 +34,7 @@ class ThreadLocalIndex {
 };
 
 
-
-
-
 }
-
-
-
-
 
 
 #endif

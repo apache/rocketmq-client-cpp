@@ -603,7 +603,7 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
 
   try {
     request->setLastPullTimestamp(UtilAll::currentTimeMillis());
-    if (!consumeMessageHookList.empty()) {
+    if (!m_consumeMessageHookList.empty()) {
                 consumeMessageContext =std::shared_ptr<ConsumeMessageContext>(new ConsumeMessageContext());
                 //ConsumeMessageContext* consumeMessageContext = nullptr;
                 //consumeMessageContext = new ConsumeMessageContext();
@@ -625,7 +625,7 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
                                                                     ComMode_SYNC,              // 10
                                                                     NULL, getSessionCredentials()));
 
-        if (!consumeMessageHookList.empty()) {
+        if (!m_consumeMessageHookList.empty()) {
 			consumeMessageContext->setMsgList(result->msgFoundList);
                 consumeMessageContext->setStatus(
                     ConsumeStatus2str(ConsumeStatus::CONSUME_SUCCESS));

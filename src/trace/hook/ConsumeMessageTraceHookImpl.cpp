@@ -14,112 +14,84 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-/*
-package org.apache.rocketmq.client.trace.hook;
-
-import org.apache.rocketmq.client.consumer.listener.ConsumeReturnType;
-import org.apache.rocketmq.client.hook.ConsumeMessageContext;
-import org.apache.rocketmq.client.hook.ConsumeMessageHook;
-import org.apache.rocketmq.client.trace.TraceContext;
-import org.apache.rocketmq.client.trace.TraceDispatcher;
-import org.apache.rocketmq.client.trace.TraceBean;
-import org.apache.rocketmq.client.trace.TraceType;
-import org.apache.rocketmq.common.MixAll;
-import org.apache.rocketmq.common.message.MessageConst;
-import org.apache.rocketmq.common.message.MessageExt;
-
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.rocketmq.common.protocol.NamespaceUtil;
-*/
-
 #include "ConsumeMessageTraceHookImpl.h"
 #include "MQMessageExt.h"
 
 namespace rocketmq {
 
-		ConsumeMessageTraceHookImpl::ConsumeMessageTraceHookImpl(std::shared_ptr<TraceDispatcher>& localDispatcherv) {
-  localDispatcher = std::shared_ptr<TraceDispatcher>(localDispatcherv);
-		}
+ConsumeMessageTraceHookImpl::ConsumeMessageTraceHookImpl(std::shared_ptr<TraceDispatcher>& localDispatcherv) {
+  m_localDispatcher = std::shared_ptr<TraceDispatcher>(localDispatcherv);
+}
 
-		std::string ConsumeMessageTraceHookImpl::hookName() {
-			return "ConsumeMessageTraceHook";
-		}
+std::string ConsumeMessageTraceHookImpl::hookName() {
+  return "ConsumeMessageTraceHook";
+}
 
-		void ConsumeMessageTraceHookImpl::consumeMessageBefore(ConsumeMessageContext* context) {
-			if (context == nullptr || context->getMsgList().empty()) {
-				return;
-			}
-			TraceContext traceContext;
-			context->setMqTraceContext(&traceContext);
-			traceContext.setTraceType(TraceType::SubBefore);//
-			traceContext.setGroupName("NamespaceUtil.withoutNamespace(context.getConsumerGroup())");//
-			std::list<TraceBean> beans;
-			for (MQMessageExt& msg : context->getMsgList()) {
-				/*if (msg == nullptr) {
-					continue;
-				}*/
-				std::string regionId = msg.getProperty(MQMessage::PROPERTY_MSG_REGION);
-        std::string traceOn = msg.getProperty(MQMessage::PROPERTY_TRACE_SWITCH);
+void ConsumeMessageTraceHookImpl::consumeMessageBefore(ConsumeMessageContext& context) {
+  if (context.getMsgList().empty()) {
+    return;
+  }
+  TraceContext traceContext;
+  context.setMqTraceContext(&traceContext);
+  traceContext.setTraceType(TraceType::SubBefore);  //
+  traceContext.setGroupName(context.getConsumerGroup());
+  std::list<TraceBean> beans;
+  for (MQMessageExt& msg : context.getMsgList()) {
+    /*if (msg == nullptr) {
+      continue;
+    }
+    }*/
+    std::string regionId = msg.getProperty(MQMessage::PROPERTY_MSG_REGION);
+    std::string traceOn = msg.getProperty(MQMessage::PROPERTY_TRACE_SWITCH);
 
-				if (traceOn ==("false")) {
-					// If trace switch is false ,skip it
-					continue;
-				}
-				TraceBean traceBean;
-				traceBean.setTopic("NamespaceUtil.withoutNamespace(msg.getTopic())");//
-				traceBean.setMsgId(msg.getMsgId());//
-				traceBean.setTags(msg.getTags());//
-				traceBean.setKeys(msg.getKeys());//
-				traceBean.setStoreTime(msg.getStoreTimestamp());//
-				traceBean.setBodyLength(msg.getStoreSize());//
-				traceBean.setRetryTimes(msg.getReconsumeTimes());//
-				traceContext.setRegionId(regionId);//
-				beans.push_back(traceBean);
-			}
-			if (beans.size() > 0) {
-				traceContext.setTraceBeans(beans);
-        traceContext.setTimeStamp(time(0));
-				localDispatcher->append(&traceContext);
-			}
-		}
+    if (traceOn == ("false")) {
+      // If trace switch is false ,skip it
+      continue;
+    }
+    TraceBean traceBean;
+    traceBean.setTopic(msg.getTopic());                //
+    traceBean.setMsgId(msg.getMsgId());                //
+    traceBean.setTags(msg.getTags());                  //
+    traceBean.setKeys(msg.getKeys());                  //
+    traceBean.setStoreTime(msg.getStoreTimestamp());   //
+    traceBean.setBodyLength(msg.getStoreSize());       //
+    traceBean.setRetryTimes(msg.getReconsumeTimes());  //
+    traceContext.setRegionId(regionId);                //
+    beans.push_back(traceBean);
+  }
+  if (beans.size() > 0) {
+    traceContext.setTraceBeans(beans);
+    traceContext.setTimeStamp(time(0));
+    m_localDispatcher->append(&traceContext);
+  }
+}
 
-		void ConsumeMessageTraceHookImpl::consumeMessageAfter(ConsumeMessageContext* context) {
-			if (context == nullptr || context->getMsgList().empty()) {
-				return;
-			}
-			TraceContext* subBeforeContext = (TraceContext*)context->getMqTraceContext();
+void ConsumeMessageTraceHookImpl::consumeMessageAfter(ConsumeMessageContext& context) {
+  if (context.getMsgList().empty()) {
+    return;
+  }
+  TraceContext* subBeforeContext = (TraceContext*)context.getMqTraceContext();
 
-			if (subBeforeContext->getTraceBeans().empty() || subBeforeContext->getTraceBeans().size() < 1) {
-				// If subbefore bean is nullptr ,skip it
-				return;
-			}
-			TraceContext subAfterContext;
-			subAfterContext.setTraceType(TraceType::SubAfter);//
-			subAfterContext.setRegionId(subBeforeContext->getRegionId());//
-			subAfterContext.setGroupName("NamespaceUtil.withoutNamespace(subBeforeContext.getGroupName())");//
-			subAfterContext.setRequestId(subBeforeContext->getRequestId());//
-      subAfterContext.setSuccess(context ->isSuccess());                                              //
+  if (subBeforeContext->getTraceBeans().empty() || subBeforeContext->getTraceBeans().size() < 1) {
+    // If subbefore bean is nullptr ,skip it
+    return;
+  }
+  TraceContext subAfterContext;
+  subAfterContext.setTraceType(TraceType::SubAfter);               //
+  subAfterContext.setRegionId(subBeforeContext->getRegionId());    //
+  subAfterContext.setGroupName(subBeforeContext->getGroupName());  //
+  subAfterContext.setRequestId(subBeforeContext->getRequestId());  //
+  subAfterContext.setSuccess(context.isSuccess());                 //
 
-			// Caculate the cost time for processing messages
-			int costTime = 0;//(int)((System.currentTimeMillis() - subBeforeContext.getTimeStamp()) / context.getMsgList().size());
-			subAfterContext.setCostTime(costTime);//
-			subAfterContext.setTraceBeans(subBeforeContext->getTraceBeans());
-			std::string contextType = context->getProps().at("MixAll::CONSUME_CONTEXT_TYPE");
-			if (contextType.empty()) {
-				//subAfterContext.setContextCode(ConsumeReturnType.valueOf(contextType).ordinal());
-			}
-			localDispatcher->append(&subAfterContext);
-		}
+  // Caculate the cost time for processing messages
+  int costTime = time(0) - subBeforeContext->getTimeStamp();
+  subBeforeContext->setCostTime(costTime);
+  subAfterContext.setTraceBeans(subBeforeContext->getTraceBeans());
+  std::string contextType = context.getProps().at(MQMessage::CONSUME_CONTEXT_TYPE);
+  if (contextType.empty()) {
+    // subAfterContext.setContextCode(ConsumeReturnType.valueOf(contextType).ordinal());
+  }
+  m_localDispatcher->append(&subAfterContext);
+}
 
-
-
-
-
-
-
-
-
-
-}//ns
+}  // namespace rocketmq

@@ -1,141 +1,98 @@
 #ifndef __AsyncTraceDispatcher_H__
 #define __AsyncTraceDispatcher_H__
 
-
+#include <atomic>
+#include <condition_variable>
+#include <memory>
 #include <string>
 #include <thread>
-#include <atomic>
-#include <memory>
-#include <condition_variable>
 
 #include "DefaultMQProducer.h"
 
-
 #include "TraceHelper.h"
 
-
-#include "TraceDispatcher.h"
-#include "ClientRPCHook.h"
 #include <memory>
+#include "ClientRPCHook.h"
+#include "TraceDispatcher.h"
 namespace rocketmq {
 
-	
-
-class AsyncTraceDispatcher : public TraceDispatcher,public enable_shared_from_this<AsyncTraceDispatcher> {
+class AsyncTraceDispatcher : public TraceDispatcher, public enable_shared_from_this<AsyncTraceDispatcher> {
  private:
-  //static InternalLogger log;  //= ClientLogger.getLog();
-  int queueSize;
-  int batchSize;
-  int maxMsgSize;
- // trace message Producer
-  //ThreadPoolExecutor traceExecutor;
-  std::atomic<long> discardCount;
-  //std::thread* worker;
-  std::shared_ptr<std::thread> worker; 
+  // static InternalLogger log;  //= ClientLogger.getLog();
+  int m_queueSize;
+  int m_batchSize;
+  int m_maxMsgSize;
+  // trace message Producer
+  // ThreadPoolExecutor traceExecutor;
+  std::atomic<long> m_discardCount;
+  // std::thread* worker;
+  std::shared_ptr<std::thread> m_worker;
+
  public:
-  std::shared_ptr<DefaultMQProducer> traceProducer; 
+  std::shared_ptr<DefaultMQProducer> m_traceProducer;
   // private ArrayBlockingQueue<TraceContext> traceContextQueue;
 
-
-public:
+ public:
   std::mutex m_traceContextQueuenotEmpty_mutex;
   std::condition_variable m_traceContextQueuenotEmpty;
   std::list<TraceContext> traceContextQueue;
 
-  //ArrayBlockingQueue<Runnable> appenderQueue;
+  // ArrayBlockingQueue<Runnable> appenderQueue;
   std::list<TraceContext> appenderQueue;
 
   std::mutex m_appenderQueuenotEmpty_mutex;
   std::condition_variable m_appenderQueuenotEmpty;
 
-  std::thread* shutDownHook;
-  bool stopped = false; /*
-  DefaultMQProducerImpl hostProducer;
-  DefaultMQPushConsumerImpl hostConsumer;
-  ThreadLocalIndex sendWhichQueue = new ThreadLocalIndex();*/
-  std::string dispatcherId;// = UUID.randomUUID().toString(
-  std::string traceTopicName;
-  std::atomic<bool> isStarted;  //= new Atomicbool(false);
-  AccessChannel accessChannel;//  = AccessChannel.LOCAL;
-  std::atomic<bool> delydelflag;
+  std::thread* m_shutDownHook;
+  bool m_stopped = false;
+  std::string m_dispatcherId;  // = UUID.randomUUID().toString(
+  std::string m_traceTopicName;
+  std::atomic<bool> m_isStarted;  //= new Atomicbool(false);
+  AccessChannel m_accessChannel;  //  = AccessChannel.LOCAL;
+  std::atomic<bool> m_delydelflag;
 
-  public:
+ public:
   AsyncTraceDispatcher(std::string traceTopicName, RPCHook* rpcHook);
-   DefaultMQProducer* getAndCreateTraceProducer(/*RPCHook* rpcHook*/);
+  DefaultMQProducer* getAndCreateTraceProducer(/*RPCHook* rpcHook*/);
 
-   virtual bool append(TraceContext* ctx);
-   virtual void flush();
-   virtual void shutdown();
-   virtual void registerShutDownHook();
-   virtual void removeShutdownHook();
-   virtual void start(std::string nameSrvAddr, AccessChannel accessChannel = AccessChannel::LOCAL);
-     
-   virtual void setdelydelflag(bool v) { delydelflag = v; }
-   bool getdelydelflag() { return delydelflag; }
+  virtual bool append(TraceContext* ctx);
+  virtual void flush();
+  virtual void shutdown();
+  virtual void registerShutDownHook();
+  virtual void removeShutdownHook();
+  virtual void start(std::string nameSrvAddr, AccessChannel accessChannel = AccessChannel::LOCAL);
 
-  AccessChannel getAccessChannel() { return accessChannel; }
+  virtual void setdelydelflag(bool v) { m_delydelflag = v; }
+  bool getdelydelflag() { return m_delydelflag; }
 
-  void setAccessChannel(AccessChannel accessChannelv) { accessChannel = accessChannelv; }
+  AccessChannel getAccessChannel() { return m_accessChannel; }
 
+  void setAccessChannel(AccessChannel accessChannelv) { m_accessChannel = accessChannelv; }
 
-  std::string& getTraceTopicName() { return traceTopicName; }
+  std::string& getTraceTopicName() { return m_traceTopicName; }
 
- 
-  void setTraceTopicName(std::string traceTopicNamev) { traceTopicName = traceTopicNamev; }
-  bool getisStarted() { return isStarted.load();};
- 
-  DefaultMQProducer* getTraceProducer() { return traceProducer.get(); } /*
+  void setTraceTopicName(std::string traceTopicNamev) { m_traceTopicName = traceTopicNamev; }
+  bool getisStarted() { return m_isStarted.load(); };
 
-
-  DefaultMQProducerImpl getHostProducer() { return hostProducer; }
-
- 
-  void setHostProducer(DefaultMQProducerImpl hostProducer) { this.hostProducer = hostProducer; }
-
- 
-  DefaultMQPushConsumerImpl getHostConsumer() { return hostConsumer; }
-
- 
-  void setHostConsumer(DefaultMQPushConsumerImpl hostConsumer) { this.hostConsumer = hostConsumer; }*/
+  DefaultMQProducer* getTraceProducer() { return m_traceProducer.get(); }
 };
-
-
-
-
-
-
 
 struct AsyncRunnable_run_context {
-  //bool stopped;
   int batchSize;
-  //AsyncTraceDispatcher* atd;
   std::shared_ptr<AsyncTraceDispatcher> atd;
-  //DefaultMQProducer* traceProducer;
   std::string TraceTopicName;
-  AsyncRunnable_run_context(bool stoppedv, int batchSizev,
-	  //AsyncTraceDispatcher* atdv,
-	  const std::shared_ptr<AsyncTraceDispatcher>& atdv,
-	  const std::string& TraceTopicNamev
-	  //, DefaultMQProducer* traceProducerv
-  )
-      : //stopped(stoppedv),
-        batchSize(batchSizev),
-        atd(atdv),
-        TraceTopicName(TraceTopicNamev)  //, traceProducer(traceProducerv)
-  {};
-
+  AsyncRunnable_run_context(bool stoppedv,
+                            int batchSizev,
+                            const std::shared_ptr<AsyncTraceDispatcher>& atdv,
+                            const std::string& TraceTopicNamev)
+      : batchSize(batchSizev), atd(atdv), TraceTopicName(TraceTopicNamev){};
 };
 
-
-
-
-
-
-class AsyncAppenderRequest /*:public Runnable*/ {
+class AsyncAppenderRequest {
  private:
-	std::vector<TraceContext> contextList;
-	DefaultMQProducer* traceProducer;
-	AccessChannel accessChannel;
+  std::vector<TraceContext> contextList;
+  DefaultMQProducer* traceProducer;
+  AccessChannel accessChannel;
   std::string traceTopicName;
 
  public:
@@ -143,23 +100,19 @@ class AsyncAppenderRequest /*:public Runnable*/ {
                        DefaultMQProducer* traceProducer,
                        AccessChannel accessChannel,
                        std::string& traceTopicName);
-	void run();
+  void run();
   void sendTraceData(std::vector<TraceContext>& contextList);
 
-private:
+ private:
   void flushData(std::vector<TraceTransferBean> transBeanList, std::string dataTopic, std::string regionId);
-  void sendTraceDataByMQ(std::vector<std::string> keySet, std::string data,
-		std::string dataTopic, std::string regionId);
-  std::set<std::string> tryGetMessageQueueBrokerSet(DefaultMQProducer* clientFactory,
-     std::string topic);
+  void sendTraceDataByMQ(std::vector<std::string> keySet,
+                         std::string data,
+                         std::string dataTopic,
+                         std::string regionId);
+  std::set<std::string> tryGetMessageQueueBrokerSet(DefaultMQProducer* clientFactory, std::string topic);
 };
 
-
-
-
-	//std::set<std::string> tryGetMessageQueueBrokerSet(DefaultMQProducerImpl producer, std::string topic);
+// std::set<std::string> tryGetMessageQueueBrokerSet(DefaultMQProducerImpl producer, std::string topic);
 }  // namespace rocketmq
-
-
 
 #endif

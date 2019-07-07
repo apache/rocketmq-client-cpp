@@ -5,31 +5,26 @@
 #include <ctime>
 namespace rocketmq {
 
-	thread_local long ThreadLocalIndex::threadLocalIndex = 0;
-	thread_local std::default_random_engine ThreadLocalIndex::dre;
-/*
-	ThreadLocalIndex::ThreadLocalIndex() {
-		
-		//threadLocalIndex=0;
-	}*/
+	thread_local long ThreadLocalIndex::m_threadLocalIndex = 0;
+	thread_local std::default_random_engine ThreadLocalIndex::m_dre;
 
 	long ThreadLocalIndex::getAndIncrement() {
-		long index = threadLocalIndex;
+		long index = m_threadLocalIndex;
 		if (0 == index) {
-			dre.seed(time(0));
-			long rand = dre();
+			m_dre.seed(time(0));
+			long rand = m_dre();
 			index = std::abs(rand);
 		}
         if (index < 0) {
           index = 0;
         }
-        threadLocalIndex=index;
+        m_threadLocalIndex=index;
 
         index = std::abs(index + 1);
         if (index < 0)
             index = 0;
 
-        threadLocalIndex=index;
+        m_threadLocalIndex=index;
         return index;
     }
 

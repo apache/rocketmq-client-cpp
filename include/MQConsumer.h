@@ -34,16 +34,6 @@
 
 namespace rocketmq {
 
-	/*
-	//MQMessageListener.h(28)
-	enum ConsumeConcurrentlyStatus {
-		//Success consumption		
-		CONSUME_SUCCESS,
-		//Failure consumption,later try to consume		
-		RECONSUME_LATER
-	};*/
-
-
 class SubscriptionData;
 class PullRequest;
 class Rebalance;
@@ -51,8 +41,7 @@ class ConsumerRunningInfo;
 //<!************************************************************************
 class ROCKETMQCLIENT_API MQConsumer : public MQClient {
  public:
-  MQConsumer(){};
-  MQConsumer(PullRequest* request);
+  MQConsumer();
   virtual ~MQConsumer();
 
   virtual void sendMessageBack(MQMessageExt& msg, int delayLevel) = 0;
@@ -85,16 +74,13 @@ class ROCKETMQCLIENT_API MQConsumer : public MQClient {
 
 
   private:
-  std::shared_ptr<TraceDispatcher> traceDispatcher;
+  std::shared_ptr<TraceDispatcher> m_traceDispatcher;
   protected:
-   //DefaultMQProducerImpl defaultMQProducerImpl;
-
-  
-  std::vector<std::shared_ptr<ConsumeMessageHook> > consumeMessageHookList;
+  std::vector<std::shared_ptr<ConsumeMessageHook> > m_consumeMessageHookList;
 
   public:
-	//bool hasHook();
-	bool hasConsumeMessageHook() { return !consumeMessageHookList.empty(); }
+
+	bool hasConsumeMessageHook() { return !m_consumeMessageHookList.empty(); }
  void registerConsumeMessageHook(std::shared_ptr<ConsumeMessageHook>& hook);
 	void  executeHookBefore(ConsumeMessageContext& context);
 	void  executeHookAfter(ConsumeMessageContext& context);
