@@ -17,6 +17,7 @@
 
 #include "DefaultMQProducer.h"
 #include "AsyncCallback.h"
+#include "CBatchMessage.h"
 #include "CProducer.h"
 #include "CCommon.h"
 #include "CSendResult.h"
@@ -129,6 +130,41 @@ int SendMessageSync(CProducer* producer, CMessage* msg, CSendResult* result) {
   try {
     DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
     MQMessage* message = (MQMessage*)msg;
+    SendResult sendResult = defaultMQProducer->send(*message);
+    switch (sendResult.getSendStatus()) {
+      case SEND_OK:
+        result->sendStatus = E_SEND_OK;
+        break;
+      case SEND_FLUSH_DISK_TIMEOUT:
+        result->sendStatus = E_SEND_FLUSH_DISK_TIMEOUT;
+        break;
+      case SEND_FLUSH_SLAVE_TIMEOUT:
+        result->sendStatus = E_SEND_FLUSH_SLAVE_TIMEOUT;
+        break;
+      case SEND_SLAVE_NOT_AVAILABLE:
+        result->sendStatus = E_SEND_SLAVE_NOT_AVAILABLE;
+        break;
+      default:
+        result->sendStatus = E_SEND_OK;
+        break;
+    }
+    result->offset = sendResult.getQueueOffset();
+    strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+    result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
+  } catch (exception& e) {
+    return PRODUCER_SEND_SYNC_FAILED;
+  }
+  return OK;
+}
+
+int SendBatchMessage(CProducer* producer, CBatchMessage* batcMsg, CSendResult* result) {
+  // CSendResult sendResult;
+  if (producer == NULL || batcMsg == NULL || result == NULL) {
+    return NULL_POINTER;
+  }
+  try {
+    DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
+    vector<MQMessage>* message = (vector<MQMessage>*)batcMsg;
     SendResult sendResult = defaultMQProducer->send(*message);
     switch (sendResult.getSendStatus()) {
       case SEND_OK:

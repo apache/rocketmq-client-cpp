@@ -18,6 +18,7 @@
 #ifndef __C_PRODUCER_H__
 #define __C_PRODUCER_H__
 
+#include "CBatchMessage.h"
 #include "CMessage.h"
 #include "CSendResult.h"
 #include "CMQException.h"
@@ -53,6 +54,7 @@ ROCKETMQCLIENT_API int SetProducerCompressLevel(CProducer* producer, int level);
 ROCKETMQCLIENT_API int SetProducerMaxMessageSize(CProducer* producer, int size);
 
 ROCKETMQCLIENT_API int SendMessageSync(CProducer* producer, CMessage* msg, CSendResult* result);
+ROCKETMQCLIENT_API int SendBatchMessage(CProducer* producer, CBatchMessage* msg, CSendResult* result);
 ROCKETMQCLIENT_API int SendMessageAsync(CProducer* producer,
                                         CMessage* msg,
                                         CSendSuccessCallback cSendSuccessCallback,
