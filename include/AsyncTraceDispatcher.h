@@ -1,5 +1,21 @@
-#ifndef __AsyncTraceDispatcher_H__
-#define __AsyncTraceDispatcher_H__
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#ifndef __ASYNCTRACEDISPATCHER_H__
+#define __ASYNCTRACEDISPATCHER_H__
 
 #include <atomic>
 #include <condition_variable>
@@ -18,42 +34,36 @@ namespace rocketmq {
 
 class AsyncTraceDispatcher : public TraceDispatcher, public enable_shared_from_this<AsyncTraceDispatcher> {
  private:
-  // static InternalLogger log;  //= ClientLogger.getLog();
   int m_queueSize;
   int m_batchSize;
   int m_maxMsgSize;
-  // trace message Producer
-  // ThreadPoolExecutor traceExecutor;
   std::atomic<long> m_discardCount;
-  // std::thread* worker;
   std::shared_ptr<std::thread> m_worker;
 
  public:
   std::shared_ptr<DefaultMQProducer> m_traceProducer;
-  // private ArrayBlockingQueue<TraceContext> traceContextQueue;
 
  public:
   std::mutex m_traceContextQueuenotEmpty_mutex;
   std::condition_variable m_traceContextQueuenotEmpty;
-  std::list<TraceContext> traceContextQueue;
+  std::list<TraceContext> m_traceContextQueue;
 
-  // ArrayBlockingQueue<Runnable> appenderQueue;
-  std::list<TraceContext> appenderQueue;
+  std::list<TraceContext> m_appenderQueue;
 
   std::mutex m_appenderQueuenotEmpty_mutex;
   std::condition_variable m_appenderQueuenotEmpty;
 
   std::thread* m_shutDownHook;
-  bool m_stopped = false;
-  std::string m_dispatcherId;  // = UUID.randomUUID().toString(
+  bool m_stopped;
+  std::string m_dispatcherId;
   std::string m_traceTopicName;
-  std::atomic<bool> m_isStarted;  //= new Atomicbool(false);
-  AccessChannel m_accessChannel;  //  = AccessChannel.LOCAL;
+  std::atomic<bool> m_isStarted;
+  AccessChannel m_accessChannel;
   std::atomic<bool> m_delydelflag;
 
  public:
   AsyncTraceDispatcher(std::string traceTopicName, RPCHook* rpcHook);
-  DefaultMQProducer* getAndCreateTraceProducer(/*RPCHook* rpcHook*/);
+  DefaultMQProducer* getAndCreateTraceProducer();
 
   virtual bool append(TraceContext* ctx);
   virtual void flush();
@@ -112,7 +122,6 @@ class AsyncAppenderRequest {
   std::set<std::string> tryGetMessageQueueBrokerSet(DefaultMQProducer* clientFactory, std::string topic);
 };
 
-// std::set<std::string> tryGetMessageQueueBrokerSet(DefaultMQProducerImpl producer, std::string topic);
 }  // namespace rocketmq
 
 #endif

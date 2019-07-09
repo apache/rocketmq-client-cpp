@@ -87,7 +87,7 @@ void ConsumeMessageTraceHookImpl::consumeMessageAfter(ConsumeMessageContext& con
   int costTime = time(0) - subBeforeContext->getTimeStamp();
   subBeforeContext->setCostTime(costTime);
   subAfterContext.setTraceBeans(subBeforeContext->getTraceBeans());
-  std::string contextType = context.getProps().at(MQMessage::CONSUME_CONTEXT_TYPE);
+  std::string contextType = context.getProps().at(MQMessage::PROPERTY_CONSUME_CONTEXT_TYPE);
   if (contextType.empty()) {
     // subAfterContext.setContextCode(ConsumeReturnType.valueOf(contextType).ordinal());
   }

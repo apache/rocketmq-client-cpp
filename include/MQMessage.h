@@ -122,7 +122,7 @@ class ROCKETMQCLIENT_API MQMessage {
   static const std::string PROPERTY_TRANSACTION_PREPARED_QUEUE_OFFSET;
   static const std::string PROPERTY_TRANSACTION_CHECK_TIMES;
   static const std::string PROPERTY_CHECK_IMMUNITY_TIME_IN_SECONDS;
-  static const std::string CONSUME_CONTEXT_TYPE;
+  static const std::string PROPERTY_CONSUME_CONTEXT_TYPE;
   static const std::string KEY_SEPARATOR;
 
  protected:

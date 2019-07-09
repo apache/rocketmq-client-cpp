@@ -31,8 +31,9 @@ class SendMessageHook {
 
  public:
   SendMessageHook() { localDispatcher = nullptr; };
-  // virtual ~SendMessageHook() {}
-  virtual std::string hookName() { return ""; };
+  virtual std::string hookName() {
+      return "";
+      };
   virtual void sendMessageBefore(SendMessageContext& context) {
     printf("SendMessageHook::sendMessageBefore:%d", 1);
   };

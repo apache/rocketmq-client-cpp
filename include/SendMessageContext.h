@@ -13,19 +13,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *//*
-package org.apache.rocketmq.client.hook;
+ */
+#ifndef __SENDMESSAGECONTEXT_H__
+#define __SENDMESSAGECONTEXT_H__
 
-import java.util.Map;
-import org.apache.rocketmq.client.impl.CommunicationMode;
-import org.apache.rocketmq.client.impl.producer.DefaultMQProducerImpl;
-import org.apache.rocketmq.client.producer.SendResult;
-import org.apache.rocketmq.common.message.Message;
-import org.apache.rocketmq.common.message.MessageQueue;
-import org.apache.rocketmq.common.message.MessageType;
-*/
-#ifndef __SENDMESSAGEcontext_H__
-#define __SENDMESSAGEcontext_H__
+
 #include "MQClientException.h"
 #include "MQMessage.h"
 #include "MQMessageQueue.h"

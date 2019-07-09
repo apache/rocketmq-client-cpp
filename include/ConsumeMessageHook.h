@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef __ConsumeMessageHook_H__
-#define __ConsumeMessageHook_H__
+#ifndef __CONSUMEMESSAGEHOOK_H__
+#define __CONSUMEMESSAGEHOOK_H__
 
 #include <string>
 #include "ConsumeMessageContext.h"

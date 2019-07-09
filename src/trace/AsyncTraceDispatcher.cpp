@@ -123,7 +123,7 @@ bool AsyncTraceDispatcher::append(TraceContext* ctx) {
     // printf("AsyncTraceDispatcher append\n");
     // TLock lock(m_mutex);
     std::unique_lock<std::mutex> lock(m_traceContextQueuenotEmpty_mutex);
-    traceContextQueue.push_back(*ctx);
+    m_traceContextQueue.push_back(*ctx);
   }
   bool result = true;
   return result;
@@ -138,7 +138,7 @@ void AsyncTraceDispatcher::flush() {
   // long end = 0;  //    System.currentTimeMillis() + 500;
   auto end = std::chrono::system_clock::now() + std::chrono::milliseconds(500);
 
-  while (traceContextQueue.size() > 0 || appenderQueue.size() > 0 && std::chrono::system_clock::now() <= end) {
+  while (m_traceContextQueue.size() > 0 || m_appenderQueue.size() > 0 && std::chrono::system_clock::now() <= end) {
     try {
       // Thread.sleep(1);
       sleep(1);
@@ -146,7 +146,7 @@ void AsyncTraceDispatcher::flush() {
       break;
     }
   }
-  LOG_INFO("------end trace send  traceContextQueue.size() appenderQueue.size()");
+  LOG_INFO("------end trace send  m_traceContextQueue.size() m_appenderQueue.size()");
 }
 
 void AsyncTraceDispatcher::shutdown() {
@@ -183,17 +183,17 @@ void AsyncTraceDispatcher::removeShutdownHook() {
 void AsyncRunnable_run(AsyncRunnable_run_context* ctx) {
   while (!ctx->atd->m_stopped) {
     std::vector<TraceContext> contexts;
-    LOG_INFO("AsyncRunnable_run:TraceContext fetch ctx->atd->traceContextQueue %d", ctx->atd->traceContextQueue.size());
+    LOG_INFO("AsyncRunnable_run:TraceContext fetch ctx->atd->m_traceContextQueue %d", ctx->atd->m_traceContextQueue.size());
     for (int i = 0; i < ctx->batchSize; i++) {
       try {
         {
           std::unique_lock<std::mutex> lock(ctx->atd->m_traceContextQueuenotEmpty_mutex);
-          if (ctx->atd->traceContextQueue.empty()) {
+          if (ctx->atd->m_traceContextQueue.empty()) {
             ctx->atd->m_traceContextQueuenotEmpty.wait_for(lock, std::chrono::seconds(5));
           }
-          if (!ctx->atd->traceContextQueue.empty()) {
-            contexts.push_back(ctx->atd->traceContextQueue.front());
-            ctx->atd->traceContextQueue.pop_front();
+          if (!ctx->atd->m_traceContextQueue.empty()) {
+            contexts.push_back(ctx->atd->m_traceContextQueue.front());
+            ctx->atd->m_traceContextQueue.pop_front();
           }
         }  // lock scope
 

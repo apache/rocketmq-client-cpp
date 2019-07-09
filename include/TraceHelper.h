@@ -1,13 +1,27 @@
-#ifndef __Tracehelper_H__
-#define __Tracehelper_H__
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#ifndef __TRACEHELPER_H__
+#define __TRACEHELPER_H__
 #include <set>
 #include <string>
 #include <list>
 
 
 namespace rocketmq {
-
-//typedef int CommunicationMode;
 
 enum MessageType {
   Normal_Msg,
@@ -27,16 +41,16 @@ enum TraceType {
 
 class TraceBean {
  public:
-  static std::string LOCAL_ADDRESS;  //= "/*UtilAll.ipToIPv4Str(UtilAll.getIP())*/";
+  static std::string LOCAL_ADDRESS;
   
  private:
-  std::string m_topic = "";
-  std::string m_msgId = "";
-  std::string m_offsetMsgId = "";
-  std::string m_tags = "";
-  std::string m_keys = "";
-  std::string m_storeHost;  //  = LOCAL_ADDRESS;
-  std::string m_clientHost;  //  = LOCAL_ADDRESS;
+  std::string m_topic;
+  std::string m_msgId;
+  std::string m_offsetMsgId;
+  std::string m_tags;
+  std::string m_keys;
+  std::string m_storeHost;
+  std::string m_clientHost;
   long m_storeTime;
   int m_retryTimes;
   int m_bodyLength;
@@ -90,24 +104,24 @@ class TraceBean {
 
 class TraceConstants {
  public:
-  static std::string TraceConstants_GROUP_NAME;  // = "_INNER_TRACE_PRODUCER";
-  static char CONTENT_SPLITOR;//  = (char)1;
-  static char FIELD_SPLITOR;  // = (char)2;
-  static std::string TRACE_INSTANCE_NAME;  // = "PID_CLIENT_INNER_TRACE_PRODUCER";
-  static std::string TRACE_TOPIC_PREFIX;  // = MixAll.SYSTEM_TOPIC_PREFIX + "TRACE_DATA_";
+  static std::string TraceConstants_GROUP_NAME;
+  static char CONTENT_SPLITOR;
+  static char FIELD_SPLITOR;
+  static std::string TRACE_INSTANCE_NAME;
+  static std::string TRACE_TOPIC_PREFIX;
 };
 
-class TraceContext /*: public Comparable<TraceContext>*/ {
+class TraceContext{
  private:
   TraceType m_traceType;
-  long m_timeStamp;  //= System.currentTimeMillis();
-  std::string m_regionId = "";
-  std::string m_regionName = "";
-  std::string m_groupName = "";
-  int m_costTime = 0;
-  bool m_misSuccess = true;
-  std::string m_requestId;  //= MessageClientIDSetter.createUniqID();
-  int m_contextCode = 0;
+  long m_timeStamp;
+  std::string m_regionId;
+  std::string m_regionName;
+  std::string m_groupName;
+  int m_costTime;
+  bool m_misSuccess;
+  std::string m_requestId;
+  int m_contextCode;
   std::list<TraceBean> m_traceBeans;
 
  public:
@@ -155,16 +169,8 @@ class TraceContext /*: public Comparable<TraceContext>*/ {
   };
 
   std::string tostring() {
-    std::string sb;//    = new std::stringBuilder(1024);
-    /*sb.append( ((char)traceType) )
-        .append("_")
-        .append(groupName)
-        .append("_")
-        .append(regionId)
-        .append("_")
-        .append(misSuccess)
-        .append("_");*/
-    if (/*traceBeans != nullptr &&*/ m_traceBeans.size() > 0) {
+    std::string sb;
+    if ( m_traceBeans.size() > 0) {
       for (TraceBean bean : m_traceBeans) {
         sb.append(bean.getMsgId() + "_" + bean.getTopic() + "_");
       }
@@ -178,7 +184,7 @@ class TraceContext /*: public Comparable<TraceContext>*/ {
 class TraceTransferBean {
  private:
   std::string m_transData;
-  std::set<std::string> m_transKey;  //  = new std::set<std::string>();
+  std::set<std::string> m_transKey;
 
  public:
   std::string getTransData() { return m_transData; }
