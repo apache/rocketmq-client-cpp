@@ -41,7 +41,9 @@ class TraceDispatcher {
 public:
   virtual void start(std::string nameSrvAddr, AccessChannel accessChannel = AccessChannel::LOCAL){};
 
-  virtual bool append(TraceContext* ctx) { return true; };
+  virtual bool append(TraceContext* ctx) {
+      return true;
+      };
 
   virtual void flush(){};
 

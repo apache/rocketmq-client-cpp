@@ -25,7 +25,9 @@ namespace rocketmq {
 
 class ConsumeMessageHook {
 public:
-	virtual std::string hookName() { return ""; }
+	virtual std::string hookName() {
+        return "";
+        }
 
   virtual void consumeMessageBefore(ConsumeMessageContext& context){};
 

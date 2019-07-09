@@ -27,16 +27,16 @@ namespace rocketmq {
 
 class SendMessageHook {
  private:
-  TraceDispatcher* localDispatcher;
+  TraceDispatcher* m_localDispatcher;
 
  public:
-  SendMessageHook() { localDispatcher = nullptr; };
+  SendMessageHook() {
+      m_localDispatcher = nullptr;
+      };
   virtual std::string hookName() {
       return "";
       };
-  virtual void sendMessageBefore(SendMessageContext& context) {
-    printf("SendMessageHook::sendMessageBefore:%d", 1);
-  };
+  virtual void sendMessageBefore(SendMessageContext& context) {};
   virtual void sendMessageAfter(SendMessageContext& context){};
 };
 
