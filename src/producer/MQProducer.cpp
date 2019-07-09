@@ -23,28 +23,14 @@
 #include "ClientRPCHook.h"
 
 namespace rocketmq {
-/*
-MQProducer::MQProducer(const string& groupname)
-    : m_sendMsgTimeout(3000),
-      m_compressMsgBodyOverHowmuch(4 * 1024),
-      m_maxMessageSize(1024 * 128),
-      //m_retryAnotherBrokerWhenNotStoreOK(false),
-      m_compressLevel(5),
-      m_retryTimes(5),
-      m_retryTimes4Async(1) {
-  //<!set default group name;
-  string gname = groupname.empty() ? DEFAULT_PRODUCER_GROUP : groupname;
-  setGroupName(gname);
 
-  */
-MQProducer::MQProducer(bool b, void* rpcHookv) {
-  LOG_INFO("MQProducer::MQProducer(bool WithoutTrace) %d", b);
+MQProducer::MQProducer(bool withoutTrace, void* rpcHookv) {
+  LOG_INFO("MQProducer::MQProducer(bool WithoutTrace) %d", m_withoutTrace);
   std::string customizedTraceTopic;
   // char* rpcHook = nullptr;
   bool enableMsgTrace = true;
-  WithoutTrace = b;
-  traceDispatcher = nullptr;
-  // const SessionCredentials& MQClient::getSessionCredentials() const {
+  m_withoutTrace = withoutTrace;
+  m_traceDispatcher = nullptr;
   RPCHook* rpcHook = nullptr;
   if (rpcHookv != nullptr) {
     rpcHook = (RPCHook*)rpcHookv;
@@ -52,12 +38,12 @@ MQProducer::MQProducer(bool b, void* rpcHookv) {
     rpcHook=new ClientRPCHook(getSessionCredentials());
   }
 
-  if (WithoutTrace == false && enableMsgTrace == true) {
+  if (m_withoutTrace == false && enableMsgTrace == true) {
     try {
       std::shared_ptr<TraceDispatcher>  ptraceDispatcher =
           std::shared_ptr<TraceDispatcher>(new AsyncTraceDispatcher(customizedTraceTopic, rpcHook));
-      // dispatcher.setHostProducer(this.defaultMQProducerImpl);
-      traceDispatcher = std::shared_ptr<TraceDispatcher>(ptraceDispatcher);
+
+      m_traceDispatcher = std::shared_ptr<TraceDispatcher>(ptraceDispatcher);
       std::shared_ptr<SendMessageHook> pSendMessageTraceHookImpl =
           std::shared_ptr<SendMessageHook>(new SendMessageTraceHookImpl(ptraceDispatcher));
       registerSendMessageHook(pSendMessageTraceHookImpl);
@@ -73,24 +59,24 @@ MQProducer::MQProducer(bool b, void* rpcHookv) {
 
 
 MQProducer::~MQProducer() {
-  if (traceDispatcher.use_count()>0) {
-    traceDispatcher->shutdown();
-    traceDispatcher->setdelydelflag(true);
+  if (m_traceDispatcher.use_count()>0) {
+    m_traceDispatcher->shutdown();
+    m_traceDispatcher->setdelydelflag(true);
   }
 }
 void MQProducer::registerSendMessageHook(
         std::shared_ptr<SendMessageHook>& hook) {
-  sendMessageHookList.push_back(hook);
+  m_sendMessageHookList.push_back(hook);
   LOG_INFO("register sendMessage Hook, {}, hook.hookName()");
 }
 
 bool MQProducer::hasSendMessageHook() {
-  return !sendMessageHookList.empty();
+  return !m_sendMessageHookList.empty();
 }
 
 void MQProducer::executeSendMessageHookBefore(SendMessageContext& context) {
-  if (!sendMessageHookList.empty()) {
-    for (auto& hook : sendMessageHookList) {
+  if (!m_sendMessageHookList.empty()) {
+    for (auto& hook : m_sendMessageHookList) {
       try {
         LOG_INFO("hook->sendMessageBefore YES:%d", 1);
         hook->sendMessageBefore(context);
@@ -102,8 +88,8 @@ void MQProducer::executeSendMessageHookBefore(SendMessageContext& context) {
 }
 
 void MQProducer::executeSendMessageHookAfter(SendMessageContext& context) {
-  if (!sendMessageHookList.empty()) {
-    for (auto& hook : sendMessageHookList) {
+  if (!m_sendMessageHookList.empty()) {
+    for (auto& hook : m_sendMessageHookList) {
       try {
         LOG_INFO("hook->executeSendMessageHookAfter YES:%d", 1);
         hook->sendMessageAfter(context);

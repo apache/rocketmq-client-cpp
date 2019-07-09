@@ -14,9 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef __ConsumeMessageTraceHookImpl_H__
-#define __ConsumeMessageTraceHookImpl_H__
+#ifndef __CONSUMEMESSAGETRACEHOOKIMPL_H__
+#define __CONSUMEMESSAGETRACEHOOKIMPL_H__
 #include <memory>
 #include "ConsumeMessageHook.h"
 #include "TraceDispatcher.h"
@@ -24,7 +23,6 @@
 namespace rocketmq {
 class ConsumeMessageTraceHookImpl : public ConsumeMessageHook {
  private:
-  // TraceDispatcher* localDispatcher;
   std::shared_ptr<TraceDispatcher> m_localDispatcher;
 
  public:

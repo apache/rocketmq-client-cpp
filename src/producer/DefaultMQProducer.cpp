@@ -66,12 +66,12 @@ void DefaultMQProducer::start() {
   sigaction(SIGPIPE, &sa, 0);
 #endif
   
-  LOG_INFO("DefaultMQProducer :%d,%d traceDispatcher", WithoutTrace == false ? 0 : 1,
-           traceDispatcher != nullptr ? 1 : 0);
+  LOG_INFO("DefaultMQProducer :%d,%d m_traceDispatcher", m_withoutTrace == false ? 0 : 1,
+           m_traceDispatcher != nullptr ? 1 : 0);
 
-  if (WithoutTrace == false && traceDispatcher != nullptr) {
-    LOG_INFO("DefaultMQProducer :%d,%d traceDispatcherdo", WithoutTrace, traceDispatcher);
-    traceDispatcher->start(getNamesrvAddr());
+  if (m_withoutTrace == false && m_traceDispatcher != nullptr) {
+    LOG_INFO("DefaultMQProducer :%d,%d traceDispatcherdo", m_withoutTrace, m_traceDispatcher);
+    m_traceDispatcher->start(getNamesrvAddr());
   }
 
   switch (m_serviceState) {

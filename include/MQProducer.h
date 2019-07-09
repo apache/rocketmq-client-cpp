@@ -64,9 +64,9 @@ class ROCKETMQCLIENT_API MQProducer : public MQClient {
   virtual void sendOneway(MQMessage& msg, MessageQueueSelector* selector, void* arg) = 0;
 
 protected:
- std::shared_ptr<TraceDispatcher> traceDispatcher;
- std::vector<std::shared_ptr<SendMessageHook> > sendMessageHookList;
- bool WithoutTrace;
+ std::shared_ptr<TraceDispatcher> m_traceDispatcher;
+ std::vector<std::shared_ptr<SendMessageHook> > m_sendMessageHookList;
+ bool m_withoutTrace;
 
 public:
 	bool hasSendMessageHook();

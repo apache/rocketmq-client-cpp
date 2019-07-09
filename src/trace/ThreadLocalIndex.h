@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __ThreadLocalIndex_H__
-#define __ThreadLocalIndex_H__
+#ifndef __THREADLOCALINDEX_H__
+#define __THREADLOCALINDEX_H__
 #include<string>
 #include <random>
 
@@ -26,7 +26,6 @@ class ThreadLocalIndex {
    thread_local static std::default_random_engine m_dre;
 
 	public:
-	//ThreadLocalIndex();
    static long getAndIncrement();
    static std::string toString();
 		  
