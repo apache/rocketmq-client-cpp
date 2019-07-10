@@ -183,7 +183,8 @@ void AsyncTraceDispatcher::removeShutdownHook() {
 void AsyncRunnable_run(AsyncRunnable_run_context* ctx) {
   while (!ctx->atd->m_stopped) {
     std::vector<TraceContext> contexts;
-    LOG_INFO("AsyncRunnable_run:TraceContext fetch ctx->atd->m_traceContextQueue %d", ctx->atd->m_traceContextQueue.size());
+    LOG_INFO("AsyncRunnable_run:TraceContext fetch ctx->atd->m_traceContextQueue %d",
+             ctx->atd->m_traceContextQueue.size());
     for (int i = 0; i < ctx->batchSize; i++) {
       try {
         {

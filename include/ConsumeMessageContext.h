@@ -16,10 +16,9 @@
  */
 #ifndef __CONSUMEMESSAGECONTEXT_H__
 #define __CONSUMEMESSAGECONTEXT_H__
-#include <string>
 #include <list>
 #include <map>
-
+#include <string>
 
 #include "MQMessageExt.h"
 #include "MQMessageQueue.h"
@@ -46,8 +45,7 @@ class ConsumeMessageContext {
   std::list<MQMessageExt> getMsgList() { return msgList; };
 
   void setMsgList(std::list<MQMessageExt> msgList) { msgList = msgList; };
-  void setMsgList(std::vector<MQMessageExt> pmsgList) { msgList.assign(pmsgList.begin(), pmsgList.end());
-  };
+  void setMsgList(std::vector<MQMessageExt> pmsgList) { msgList.assign(pmsgList.begin(), pmsgList.end()); };
   MQMessageQueue getMq() { return mq; };
 
   void setMq(MQMessageQueue mq) { mq = mq; };

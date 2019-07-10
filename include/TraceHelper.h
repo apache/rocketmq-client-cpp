@@ -16,10 +16,9 @@
  */
 #ifndef __TRACEHELPER_H__
 #define __TRACEHELPER_H__
+#include <list>
 #include <set>
 #include <string>
-#include <list>
-
 
 namespace rocketmq {
 
@@ -38,11 +37,10 @@ enum TraceType {
   SubAfter,
 };
 
-
 class TraceBean {
  public:
   static std::string LOCAL_ADDRESS;
-  
+
  private:
   std::string m_topic;
   std::string m_msgId;
@@ -111,7 +109,7 @@ class TraceConstants {
   static std::string TRACE_TOPIC_PREFIX;
 };
 
-class TraceContext{
+class TraceContext {
  private:
   TraceType m_traceType;
   long m_timeStamp;
@@ -165,12 +163,11 @@ class TraceContext{
 
   void setRegionName(std::string regionName) { m_regionName = regionName; };
 
-  int compareTo(TraceContext o) { return (int)(m_timeStamp - o.getTimeStamp());
-  };
+  int compareTo(TraceContext o) { return (int)(m_timeStamp - o.getTimeStamp()); };
 
   std::string tostring() {
     std::string sb;
-    if ( m_traceBeans.size() > 0) {
+    if (m_traceBeans.size() > 0) {
       for (TraceBean bean : m_traceBeans) {
         sb.append(bean.getMsgId() + "_" + bean.getTopic() + "_");
       }
@@ -178,8 +175,6 @@ class TraceContext{
     return "TraceContext{" + sb + '}';
   }
 };
-
-
 
 class TraceTransferBean {
  private:
@@ -196,25 +191,12 @@ class TraceTransferBean {
   void setTransKey(std::set<std::string> transKeyv) { m_transKey = transKeyv; }
 };
 
-
-
-
-
-
-
-class TraceDataEncoder{
-public:
-	static std::list<TraceContext> decoderFromTraceDatastring(const std::string& traceData);
-	static TraceTransferBean encoderFromContextBean(TraceContext* ctx);
-
+class TraceDataEncoder {
+ public:
+  static std::list<TraceContext> decoderFromTraceDatastring(const std::string& traceData);
+  static TraceTransferBean encoderFromContextBean(TraceContext* ctx);
 };
 
-
-
-
-
 }  // namespace rocketmq
-
-
 
 #endif
