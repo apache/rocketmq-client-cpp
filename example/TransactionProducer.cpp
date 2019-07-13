@@ -37,20 +37,20 @@ class MyTransactionListener : public TransactionListener {
   virtual LocalTransactionState executeLocalTransaction(const MQMessage& msg, void* arg) {
 
     std::cout << "executeLocalTransaction enter msg:" << msg.toString() << endl;
-	if (!arg) {
-		std::cout << "executeLocalTransaction transactionId:" << msg.getTransactionId() << ", return state: COMMIT_MESAGE " << endl;
-		return LocalTransactionState::COMMIT_MESSAGE;
-	}
+    if (!arg) {
+      std::cout << "executeLocalTransaction transactionId:" << msg.getTransactionId() << ", return state: COMMIT_MESAGE " << endl;
+      return LocalTransactionState::COMMIT_MESSAGE;
+    }
 
-	LocalTransactionState state = (LocalTransactionState)(*(int*)arg % 3);
-	std::cout << "executeLocalTransaction transactionId:" << msg.getTransactionId() << ", return state: " << state << endl;
-	return state;
+    LocalTransactionState state = (LocalTransactionState)(*(int*)arg % 3);
+    std::cout << "executeLocalTransaction transactionId:" << msg.getTransactionId() << ", return state: " << state << endl;
+    return state;
   }
 
   virtual LocalTransactionState checkLocalTransaction(const MQMessageExt& msg) {
 
     std::cout << "checkLocalTransaction enter msg:" << msg.toString() << endl;
-	std::cout << "checkLocalTransaction transactionId:" << msg.getTransactionId() << ", return state: COMMIT_MESSAGE" << endl;
+    std::cout << "checkLocalTransaction transactionId:" << msg.getTransactionId() << ", return state: COMMIT_MESSAGE" << endl;
     return LocalTransactionState::COMMIT_MESSAGE;
   }
 };
@@ -61,7 +61,7 @@ void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, TransactionMQProducer
       std::this_thread::sleep_for(std::chrono::seconds(70));
       std::unique_lock<std::mutex> lck(g_mtx);
       g_finished.notify_one();
-	  break;
+      break;
     }
 
     MQMessage msg(info->topic,  // topic
@@ -70,7 +70,7 @@ void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, TransactionMQProducer
     try {
       auto start = std::chrono::system_clock::now();
       std::cout << "before sendMessageInTransaction" << endl;
-	  LocalTransactionState state = LocalTransactionState::UNKNOW;
+      LocalTransactionState state = LocalTransactionState::UNKNOW;
       TransactionSendResult sendResult = producer->sendMessageInTransaction(msg, &state);
       std::cout << "sendMessageInTransaction  msgId: " << sendResult.getMsgId() << endl;
       g_tps.Increment();

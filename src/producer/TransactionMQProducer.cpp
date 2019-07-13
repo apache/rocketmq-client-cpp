@@ -49,7 +49,7 @@ TransactionSendResult TransactionMQProducer::sendMessageInTransaction(MQMessage&
   LOG_DEBUG("sendMessageInTransaction result:%s", sendResult.toString().data());
   LocalTransactionState localTransactionState = LocalTransactionState::UNKNOW;
   switch (sendResult.getSendStatus()) {
-    case SendStatus::SEND_OK: {
+    case SendStatus::SEND_OK:
       try {
         if (sendResult.getTransactionId() != "") {
           msg.setProperty("__transactionId__", sendResult.getTransactionId());
@@ -67,7 +67,7 @@ TransactionSendResult TransactionMQProducer::sendMessageInTransaction(MQMessage&
       } catch (MQException& e) {
         THROW_MQEXCEPTION(MQClientException, e.what(), -1);
       }
-    } break;
+      break;
     case SendStatus::SEND_FLUSH_DISK_TIMEOUT:
     case SendStatus::SEND_FLUSH_SLAVE_TIMEOUT:
     case SendStatus::SEND_SLAVE_NOT_AVAILABLE:
@@ -125,25 +125,32 @@ void TransactionMQProducer::endTransaction(SendResult& sendResult, LocalTransact
 }
 
 void TransactionMQProducer::checkTransactionState(const std::string& addr, const MQMessageExt& message,
-                                                  long m_tranStateTableOffset,
-                                                  long m_commitLogOffset,
-                                                  std::string m_msgId,
-                                                  std::string m_transactionId,
-                                                  std::string m_offsetMsgId) {
-  LocalTransactionState localTransactionState = m_transactionListener->checkLocalTransaction(message);
+                                                  long tranStateTableOffset,
+                                                  long commitLogOffset,
+                                                  const std::string& msgId,
+                                                  const std::string& transactionId,
+                                                  const std::string& offsetMsgId) {
+  LocalTransactionState localTransactionState = UNKNOW;
 
+  try {
+    m_transactionListener->checkLocalTransaction(message);
+  } catch (MQException& e) {
+    LOG_INFO("checkTransactionState, checkLocalTransaction exception: %s", e.what());
+  }
+  
   EndTransactionRequestHeader* endHeader = new EndTransactionRequestHeader();
-  endHeader->m_commitLogOffset = m_commitLogOffset;
+  endHeader->m_commitLogOffset = commitLogOffset;
   endHeader->m_producerGroup = getGroupName();
-  endHeader->m_tranStateTableOffset = m_tranStateTableOffset;
+  endHeader->m_tranStateTableOffset = tranStateTableOffset;
   endHeader->m_fromTransactionCheck = true;
 
-  string uniqueKey = m_transactionId;
-  if (m_transactionId == "")
-  	uniqueKey = message.getMsgId();
+  string uniqueKey = transactionId;
+  if (transactionId.empty()) {
+    uniqueKey = message.getMsgId();
+  }
   
   endHeader->m_msgId = uniqueKey;
-  endHeader->m_transactionId = m_transactionId;
+  endHeader->m_transactionId = transactionId;
   switch (localTransactionState) {
     case COMMIT_MESSAGE:
       endHeader->m_commitOrRollback = MessageSysFlag::TransactionCommitType;

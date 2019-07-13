@@ -671,7 +671,7 @@ FindBrokerResult* MQClientFactory::findBrokerAddressInAdmin(const string& broker
 void MQClientFactory::checkTransactionState(const std::string& addr, const MQMessageExt& messageExt,
                                             const CheckTransactionStateRequestHeader& checkRequestHeader) {
   string group = messageExt.getProperty(MQMessage::PROPERTY_PRODUCER_GROUP);
-  if (group != "") {
+  if (!group.empty()) {
     MQProducer* producer = selectProducer(group);
     if (producer != nullptr) {
       TransactionMQProducer* transProducer = dynamic_cast<TransactionMQProducer*>(producer);

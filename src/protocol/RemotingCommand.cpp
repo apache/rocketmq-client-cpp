@@ -245,6 +245,7 @@ void RemotingCommand::SetExtHeader(int code) {
           break;
         case CHECK_TRANSACTION_STATE:
           m_pExtHeader.reset(CheckTransactionStateRequestHeader::Decode(ext));
+          break;
         default:
           break;
       }

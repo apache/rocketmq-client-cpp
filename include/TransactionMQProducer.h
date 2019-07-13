@@ -33,15 +33,15 @@ class ROCKETMQCLIENT_API TransactionMQProducer : public DefaultMQProducer {
   virtual ~TransactionMQProducer() {}
   void start();
   void shutdown();
-  std::shared_ptr<TransactionListener> getCheckListener() { return m_transactionListener; }
+  std::shared_ptr<TransactionListener> getTransactionListener() { return m_transactionListener; }
   void setTransactionListener(TransactionListener* listener) { m_transactionListener.reset(listener); }
   TransactionSendResult sendMessageInTransaction(MQMessage& msg, void* arg);
   void checkTransactionState(const std::string& addr, const MQMessageExt& message,
-                             long m_tranStateTableOffset,
-                             long m_commitLogOffset,
-                             std::string m_msgId,
-                             std::string m_transactionId,
-                             std::string m_offsetMsgId);
+                             long tranStateTableOffset,
+                             long commitLogOffset,
+                             const std::string& msgId,
+                             const std::string& transactionId,
+                             const std::string& offsetMsgId);
 
  private:
   void initTransactionEnv();
