@@ -36,7 +36,6 @@ TpsReportService g_tps;
 class MyTransactionListener : public TransactionListener {
   virtual LocalTransactionState executeLocalTransaction(const MQMessage& msg, void* arg) {
 
-    std::cout << "executeLocalTransaction enter msg:" << msg.toString() << endl;
     if (!arg) {
       std::cout << "executeLocalTransaction transactionId:" << msg.getTransactionId() << ", return state: COMMIT_MESAGE " << endl;
       return LocalTransactionState::COMMIT_MESSAGE;
@@ -50,7 +49,6 @@ class MyTransactionListener : public TransactionListener {
   virtual LocalTransactionState checkLocalTransaction(const MQMessageExt& msg) {
 
     std::cout << "checkLocalTransaction enter msg:" << msg.toString() << endl;
-    std::cout << "checkLocalTransaction transactionId:" << msg.getTransactionId() << ", return state: COMMIT_MESSAGE" << endl;
     return LocalTransactionState::COMMIT_MESSAGE;
   }
 };
@@ -58,7 +56,7 @@ class MyTransactionListener : public TransactionListener {
 void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, TransactionMQProducer* producer) {
   while (!g_quit.load()) {
     if (g_msgCount.load() <= 0) {
-      std::this_thread::sleep_for(std::chrono::seconds(70));
+      std::this_thread::sleep_for(std::chrono::seconds(60));
       std::unique_lock<std::mutex> lck(g_mtx);
       g_finished.notify_one();
       break;
@@ -72,7 +70,7 @@ void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, TransactionMQProducer
       std::cout << "before sendMessageInTransaction" << endl;
       LocalTransactionState state = LocalTransactionState::UNKNOW;
       TransactionSendResult sendResult = producer->sendMessageInTransaction(msg, &state);
-      std::cout << "sendMessageInTransaction  msgId: " << sendResult.getMsgId() << endl;
+      std::cout << "after sendMessageInTransaction msgId: " << sendResult.getMsgId() << endl;
       g_tps.Increment();
       --g_msgCount;
       auto end = std::chrono::system_clock::now();
@@ -81,7 +79,7 @@ void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, TransactionMQProducer
         std::cout << "send RT more than: " << duration.count() << " ms with msgid: " << sendResult.getMsgId() << endl;
       }
     } catch (const MQException& e) {
-      std::cout << "send failed: " << std::endl;
+      std::cout << "send failed: " << e.what() << std::endl;
     }
   }
 }

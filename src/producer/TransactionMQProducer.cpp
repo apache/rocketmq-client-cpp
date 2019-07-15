@@ -28,12 +28,19 @@
 using namespace std;
 namespace rocketmq {
 
-void TransactionMQProducer::initTransactionEnv() {}
+void TransactionMQProducer::initTransactionEnv() {
+  for (int i = 0; i < m_thread_num; ++i) {
+    m_threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &m_ioService));
+  }
+}
 
-void TransactionMQProducer::destroyTransactionEnv() {}
+void TransactionMQProducer::destroyTransactionEnv() {
+  m_ioService.stop();
+  m_threadpool.join_all();
+}
 
 TransactionSendResult TransactionMQProducer::sendMessageInTransaction(MQMessage& msg, void* arg) {
-  if (nullptr == m_transactionListener) {
+  if (!m_transactionListener) {
     THROW_MQEXCEPTION(MQClientException, "transactionListener is null", -1);
   }
 
@@ -46,7 +53,6 @@ TransactionSendResult TransactionMQProducer::sendMessageInTransaction(MQMessage&
     THROW_MQEXCEPTION(MQClientException, e.what(), -1);
   }
 
-  LOG_DEBUG("sendMessageInTransaction result:%s", sendResult.toString().data());
   LocalTransactionState localTransactionState = LocalTransactionState::UNKNOW;
   switch (sendResult.getSendStatus()) {
     case SendStatus::SEND_OK:
@@ -58,8 +64,8 @@ TransactionSendResult TransactionMQProducer::sendMessageInTransaction(MQMessage&
         if (transactionId != "") {
           msg.setTransactionId(transactionId);
         }
-        LOG_DEBUG("sendMessageInTransaction, msgId:%s, transactionId:%s",
-                  sendResult.getMsgId().data(), transactionId.data());
+        LOG_DEBUG("sendMessageInTransaction, msgId:%s, transactionId:%s", sendResult.getMsgId().data(),
+                  transactionId.data());
         localTransactionState = m_transactionListener->executeLocalTransaction(msg, arg);
         if (localTransactionState != LocalTransactionState::COMMIT_MESSAGE) {
           LOG_WARN("executeLocalTransaction ret not LocalTransactionState::commit, msg:%s", msg.toString().data());
@@ -72,6 +78,7 @@ TransactionSendResult TransactionMQProducer::sendMessageInTransaction(MQMessage&
     case SendStatus::SEND_FLUSH_SLAVE_TIMEOUT:
     case SendStatus::SEND_SLAVE_NOT_AVAILABLE:
       localTransactionState = LocalTransactionState::ROLLBACK_MESSAGE;
+      LOG_WARN("sendMessageInTransaction, send not ok, rollback, result:%s", sendResult.toString().data());
       break;
     default:
       break;
@@ -124,20 +131,39 @@ void TransactionMQProducer::endTransaction(SendResult& sendResult, LocalTransact
   getFactory()->endTransactionOneway(sendResult.getMessageQueue(), requestHeader, getSessionCredentials());
 }
 
-void TransactionMQProducer::checkTransactionState(const std::string& addr, const MQMessageExt& message,
+void TransactionMQProducer::checkTransactionState(const std::string& addr,
+                                                  const MQMessageExt& message,
                                                   long tranStateTableOffset,
                                                   long commitLogOffset,
                                                   const std::string& msgId,
                                                   const std::string& transactionId,
                                                   const std::string& offsetMsgId) {
-  LocalTransactionState localTransactionState = UNKNOW;
+                                                  
+  LOG_DEBUG("checkTransactionState: msgId:%s, transactionId:%s", msgId.data(), transactionId.data());
+  if (!m_transactionListener) {
+    LOG_WARN("checkTransactionState, transactionListener null");
+    THROW_MQEXCEPTION(MQClientException, "checkTransactionState, transactionListener null", -1);
+  }
 
+  m_ioService.post(boost::bind(&TransactionMQProducer::checkTransactionStateImpl, this, addr, message,
+                               tranStateTableOffset, commitLogOffset, msgId, transactionId, offsetMsgId));
+}
+
+void TransactionMQProducer::checkTransactionStateImpl(const std::string& addr,
+                                                      const MQMessageExt& message,
+                                                      long tranStateTableOffset,
+                                                      long commitLogOffset,
+                                                      const std::string& msgId,
+                                                      const std::string& transactionId,
+                                                      const std::string& offsetMsgId) {
+  LOG_DEBUG("checkTransactionStateImpl: msgId:%s, transactionId:%s", msgId.data(), transactionId.data());
+  LocalTransactionState localTransactionState = UNKNOW;
   try {
-    m_transactionListener->checkLocalTransaction(message);
+    localTransactionState = m_transactionListener->checkLocalTransaction(message);
   } catch (MQException& e) {
     LOG_INFO("checkTransactionState, checkLocalTransaction exception: %s", e.what());
   }
-  
+
   EndTransactionRequestHeader* endHeader = new EndTransactionRequestHeader();
   endHeader->m_commitLogOffset = commitLogOffset;
   endHeader->m_producerGroup = getGroupName();
@@ -148,7 +174,7 @@ void TransactionMQProducer::checkTransactionState(const std::string& addr, const
   if (transactionId.empty()) {
     uniqueKey = message.getMsgId();
   }
-  
+
   endHeader->m_msgId = uniqueKey;
   endHeader->m_transactionId = transactionId;
   switch (localTransactionState) {
@@ -167,8 +193,8 @@ void TransactionMQProducer::checkTransactionState(const std::string& addr, const
       break;
   }
 
-  LOG_INFO("checkTransactionState, endTransactionOneway: uniqueKey:%s, client state:%d, end header: %s", uniqueKey.data(), localTransactionState,
-    endHeader->toString().data());
+  LOG_INFO("checkTransactionState, endTransactionOneway: uniqueKey:%s, client state:%d, end header: %s",
+           uniqueKey.data(), localTransactionState, endHeader->toString().data());
 
   string remark;
   try {
