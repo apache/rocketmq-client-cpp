@@ -17,15 +17,14 @@
 #ifndef __SENDMESSAGECONTEXT_H__
 #define __SENDMESSAGECONTEXT_H__
 
-
 #include "MQClientException.h"
 #include "MQMessage.h"
 #include "MQMessageQueue.h"
 #include "RocketMQClient.h"
-#include "TraceHelper.h"
 #include "SendResult.h"
+#include "TraceHelper.h"
 
-namespace rocketmq{
+namespace rocketmq {
 /*
 class SendMessageContext {
  public:
@@ -39,35 +38,35 @@ class SendMessageContext {
   void* pArg;
 };*/
 
-
 class SendMessageContext {
  private:
   std::string producerGroup;
   MQMessage message;
   MQMessageQueue mq;
   std::string brokerAddr;
-  std::string bornHost; 
+  std::string bornHost;
   int communicationMode;
   /*
   Exception exception;*/
-  //unique_ptr<SendResult> sendResult;
+  // unique_ptr<SendResult> sendResult;
   SendResult* sendResult;
   TraceContext* mqTraceContext;
   std::map<std::string, std::string> props;
-  //DefaultMQProducerImpl producer;
+  // DefaultMQProducerImpl producer;
   MessageType msgType;
 
   std::string msgnamespace;
 
  public:
-  
   MessageType getMsgType() { return msgType; };
 
-  void setMsgType( MessageType msgTypev) {    msgType = msgTypev;  };/*
+  void setMsgType(MessageType msgTypev) {
+    msgType = msgTypev;
+  }; /*
 
-  DefaultMQProducerImpl getProducer() { return producer; };
+DefaultMQProducerImpl getProducer() { return producer; };
 
-  void setProducer(final DefaultMQProducerImpl producer) { producer = producer; };*/
+void setProducer(final DefaultMQProducerImpl producer) { producer = producer; };*/
 
   std::string getProducerGroup() { return producerGroup; };
 
@@ -83,7 +82,7 @@ class SendMessageContext {
 
   std::string getBrokerAddr() { return brokerAddr; };
 
-  void setBrokerAddr(std::string brokerAddrv) { brokerAddr = brokerAddrv; }; 
+  void setBrokerAddr(std::string brokerAddrv) { brokerAddr = brokerAddrv; };
 
   int getCommunicationMode() { return communicationMode; };
 
@@ -116,9 +115,6 @@ class SendMessageContext {
   void setNamespace(std::string msgnamespacev) { msgnamespace = msgnamespacev; };
 };
 
-
-
-
-}
+}  // namespace rocketmq
 
 #endif

@@ -8,14 +8,12 @@ class SendMessageTraceHookImpl : public SendMessageHook {
  private:
   std::shared_ptr<TraceDispatcher> m_localDispatcher;
 
-  public:
+ public:
   SendMessageTraceHookImpl(std::shared_ptr<TraceDispatcher>& localDispatcher);
   virtual std::string hookName();
-  //virtual void sendMessageBefore(SendMessageContext* context);
   virtual void sendMessageBefore(SendMessageContext& context);
   virtual void sendMessageAfter(SendMessageContext& context);
-  //virtual void sendMessageAfter(SendMessageContext* context);
 };
-}
+}  // namespace rocketmq
 
 #endif

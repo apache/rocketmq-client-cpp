@@ -17,7 +17,6 @@
 #ifndef __TRACEDISPATCHER_H__
 #define __TRACEDISPATCHER_H__
 
-
 #include <string>
 #include "TraceHelper.h"
 
@@ -34,29 +33,20 @@ enum AccessChannel {
    */
   CLOUD,
 };
-	
-
 
 class TraceDispatcher {
-public:
+ public:
   virtual void start(std::string nameSrvAddr, AccessChannel accessChannel = AccessChannel::LOCAL){};
 
-  virtual bool append(TraceContext* ctx) {
-      return true;
-      };
+  virtual bool append(TraceContext* ctx) { return true; };
 
   virtual void flush(){};
 
   virtual void shutdown(){};
 
   virtual void setdelydelflag(bool v){};
-
 };
 
-
-
 }  // namespace rocketmq
-
-
 
 #endif

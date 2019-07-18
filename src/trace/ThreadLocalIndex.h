@@ -16,24 +16,20 @@
  */
 #ifndef __THREADLOCALINDEX_H__
 #define __THREADLOCALINDEX_H__
-#include<string>
 #include <random>
+#include <string>
 
 namespace rocketmq {
 class ThreadLocalIndex {
-	private:
-	thread_local static long m_threadLocalIndex;
-   thread_local static std::default_random_engine m_dre;
+ private:
+  thread_local static long m_threadLocalIndex;
+  thread_local static std::default_random_engine m_dre;
 
-	public:
-   static long getAndIncrement();
-   static std::string toString();
-		  
-		  
+ public:
+  static long getAndIncrement();
+  static std::string toString();
 };
 
-
-}
-
+}  // namespace rocketmq
 
 #endif

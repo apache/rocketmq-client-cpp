@@ -32,7 +32,6 @@ std::string SendMessageTraceHookImpl::hookName() {
 }
 
 void SendMessageTraceHookImpl::sendMessageBefore(SendMessageContext& context) {
-
   TraceContext* tuxeContext = new TraceContext();
   context.setMqTraceContext(tuxeContext);
   tuxeContext->setTraceType(TraceType::Pub);
@@ -49,7 +48,6 @@ void SendMessageTraceHookImpl::sendMessageBefore(SendMessageContext& context) {
 }
 
 void SendMessageTraceHookImpl::sendMessageAfter(SendMessageContext& context) {
-
   if (context.getSendResult() == nullptr) {
     return;
   }

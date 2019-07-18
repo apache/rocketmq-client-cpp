@@ -18,10 +18,10 @@
 #ifndef __SENDMESSAGEHOOK_H__
 #define __SENDMESSAGEHOOK_H__
 
-
 #include <string>
-#include "TraceDispatcher.h"
 #include "SendMessageContext.h"
+#include "TraceDispatcher.h"
+
 
 namespace rocketmq {
 
@@ -30,13 +30,9 @@ class SendMessageHook {
   TraceDispatcher* m_localDispatcher;
 
  public:
-  SendMessageHook() {
-      m_localDispatcher = nullptr;
-      };
-  virtual std::string hookName() {
-      return "";
-      };
-  virtual void sendMessageBefore(SendMessageContext& context) {};
+  SendMessageHook() { m_localDispatcher = nullptr; };
+  virtual std::string hookName() { return ""; };
+  virtual void sendMessageBefore(SendMessageContext& context){};
   virtual void sendMessageAfter(SendMessageContext& context){};
 };
 

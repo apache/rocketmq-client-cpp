@@ -180,23 +180,14 @@ void AsyncTraceDispatcher::removeShutdownHook() {
 void AsyncRunnable_run(AsyncRunnable_run_context* ctx) {
   while (!ctx->atd->get_stopped()) {
     std::vector<TraceContext> contexts;
+
     for (int i = 0; i < ctx->batchSize; i++) {
       try {
 		TraceContext conext;
 		bool b = ctx->atd->tryPopFrontContext(conext);
 		if (b) {
 			contexts.push_back(conext);
-		} 
-          /*
-              std::unique_lock<std::mutex> lock(ctx->atd->m_traceContextQueuenotEmpty_mutex);
-              if (ctx->atd->m_traceContextQueue.empty()) {
-                ctx->atd->m_traceContextQueuenotEmpty.wait_for(lock, std::chrono::seconds(5));
-              }
-              if (!ctx->atd->m_traceContextQueue.empty()) {
-                contexts.push_back(ctx->atd->m_traceContextQueue.front());
-                ctx->atd->m_traceContextQueue.pop_front();
-              }*/
-
+		}
       }  // try
       catch (InterruptedException e) {
         ;
