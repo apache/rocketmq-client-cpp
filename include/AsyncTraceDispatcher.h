@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -40,10 +40,10 @@ class AsyncTraceDispatcher : public TraceDispatcher, public enable_shared_from_t
   std::atomic<long> m_discardCount;
   std::shared_ptr<std::thread> m_worker;
 
- public:
+  // public:
   std::shared_ptr<DefaultMQProducer> m_traceProducer;
 
- public:
+  // public:
   std::mutex m_traceContextQueuenotEmpty_mutex;
   std::condition_variable m_traceContextQueuenotEmpty;
   std::list<TraceContext> m_traceContextQueue;
@@ -62,6 +62,8 @@ class AsyncTraceDispatcher : public TraceDispatcher, public enable_shared_from_t
   std::atomic<bool> m_delydelflag;
 
  public:
+  bool get_stopped() { return m_stopped; }
+  bool tryPopFrontContext(TraceContext& context);
   AsyncTraceDispatcher(std::string traceTopicName, RPCHook* rpcHook);
   DefaultMQProducer* getAndCreateTraceProducer();
 
@@ -84,7 +86,7 @@ class AsyncTraceDispatcher : public TraceDispatcher, public enable_shared_from_t
   void setTraceTopicName(std::string traceTopicNamev) { m_traceTopicName = traceTopicNamev; }
   bool getisStarted() { return m_isStarted.load(); };
 
-  DefaultMQProducer* getTraceProducer() { return m_traceProducer.get(); }
+ std::shared_ptr<DefaultMQProducer> getTraceProducer() { return m_traceProducer; }
 };
 
 struct AsyncRunnable_run_context {
@@ -101,13 +103,15 @@ struct AsyncRunnable_run_context {
 class AsyncAppenderRequest {
  private:
   std::vector<TraceContext> contextList;
-  DefaultMQProducer* traceProducer;
+  //DefaultMQProducer* traceProducer;
+  std::shared_ptr<DefaultMQProducer> traceProducer;
   AccessChannel accessChannel;
   std::string traceTopicName;
 
  public:
   AsyncAppenderRequest(std::vector<TraceContext>& contextList,
-                       DefaultMQProducer* traceProducer,
+                       //DefaultMQProducer* traceProducer,
+                       std::shared_ptr<DefaultMQProducer> traceProducerv,
                        AccessChannel accessChannel,
                        std::string& traceTopicName);
   void run();
@@ -119,7 +123,7 @@ class AsyncAppenderRequest {
                          std::string data,
                          std::string dataTopic,
                          std::string regionId);
-  std::set<std::string> tryGetMessageQueueBrokerSet(DefaultMQProducer* clientFactory, std::string topic);
+  std::set<std::string> tryGetMessageQueueBrokerSet(std::shared_ptr<DefaultMQProducer> producer, std::string topic);
 };
 
 }  // namespace rocketmq

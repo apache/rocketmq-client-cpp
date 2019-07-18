@@ -118,6 +118,20 @@ DefaultMQProducer* AsyncTraceDispatcher::getAndCreateTraceProducer(/*RPCHook* rp
   return traceProducerInstance;
 }
 
+bool AsyncTraceDispatcher::tryPopFrontContext(TraceContext& context) {
+  std::unique_lock<std::mutex> lock(m_traceContextQueuenotEmpty_mutex);
+  if (m_traceContextQueue.empty()) {
+    m_traceContextQueuenotEmpty.wait_for(lock, std::chrono::seconds(5));
+  }
+  if (!m_traceContextQueue.empty()) {
+    // contexts.push_back(ctx->atd->m_traceContextQueue.front());
+    context = m_traceContextQueue.front();
+    m_traceContextQueue.pop_front();
+    return true;
+  }
+  return false;
+}
+
 bool AsyncTraceDispatcher::append(TraceContext* ctx) {
   {
     // printf("AsyncTraceDispatcher append\n");
@@ -155,23 +169,6 @@ void AsyncTraceDispatcher::shutdown() {
 
 void AsyncTraceDispatcher::registerShutDownHook() {
   if (m_shutDownHook == nullptr) {
-    /*shutDownHook = new Thread(new Runnable() {
-      private volatile boolean hasShutdown = false;
-
-      @Override
-      public void run() {
-        synchronized (this) {
-          if (!hasShutdown) {
-            try {
-              flush();
-            } catch (IOException e) {
-              log.error("system MQTrace hook shutdown failed ,maybe loss some trace data");
-            }
-          }
-        }
-      }
-    }, "ShutdownHookMQTrace");
-    Runtime.getRuntime().addShutdownHook(shutDownHook);*/
   }
 }
 
@@ -181,21 +178,24 @@ void AsyncTraceDispatcher::removeShutdownHook() {
 }
 
 void AsyncRunnable_run(AsyncRunnable_run_context* ctx) {
-  while (!ctx->atd->m_stopped) {
+  while (!ctx->atd->get_stopped()) {
     std::vector<TraceContext> contexts;
-    LOG_INFO("AsyncRunnable_run:TraceContext fetch ctx->atd->m_traceContextQueue %d", ctx->atd->m_traceContextQueue.size());
     for (int i = 0; i < ctx->batchSize; i++) {
       try {
-        {
-          std::unique_lock<std::mutex> lock(ctx->atd->m_traceContextQueuenotEmpty_mutex);
-          if (ctx->atd->m_traceContextQueue.empty()) {
-            ctx->atd->m_traceContextQueuenotEmpty.wait_for(lock, std::chrono::seconds(5));
-          }
-          if (!ctx->atd->m_traceContextQueue.empty()) {
-            contexts.push_back(ctx->atd->m_traceContextQueue.front());
-            ctx->atd->m_traceContextQueue.pop_front();
-          }
-        }  // lock scope
+		TraceContext conext;
+		bool b = ctx->atd->tryPopFrontContext(conext);
+		if (b) {
+			contexts.push_back(conext);
+		} 
+          /*
+              std::unique_lock<std::mutex> lock(ctx->atd->m_traceContextQueuenotEmpty_mutex);
+              if (ctx->atd->m_traceContextQueue.empty()) {
+                ctx->atd->m_traceContextQueuenotEmpty.wait_for(lock, std::chrono::seconds(5));
+              }
+              if (!ctx->atd->m_traceContextQueue.empty()) {
+                contexts.push_back(ctx->atd->m_traceContextQueue.front());
+                ctx->atd->m_traceContextQueue.pop_front();
+              }*/
 
       }  // try
       catch (InterruptedException e) {
@@ -207,10 +207,10 @@ void AsyncRunnable_run(AsyncRunnable_run_context* ctx) {
     LOG_INFO("AsyncRunnable_run:TraceContext fetchs end %d", contexts.size());
     if (contexts.size() > 0) {
       std::shared_ptr<AsyncAppenderRequest> request = std::shared_ptr<AsyncAppenderRequest>(new AsyncAppenderRequest(
-          contexts, ctx->atd->m_traceProducer.get(), ctx->atd->m_accessChannel, ctx->TraceTopicName));
+          contexts, ctx->atd->getTraceProducer(), ctx->atd->getAccessChannel(), ctx->TraceTopicName));
       // traceExecutor.submit(request);
       request->run();
-    } else if (ctx->atd->m_stopped) {
+    } else if (ctx->atd->get_stopped()) {
       if (ctx->atd->getdelydelflag() == true) {
         delete ctx;
       }
@@ -219,7 +219,8 @@ void AsyncRunnable_run(AsyncRunnable_run_context* ctx) {
 }  // foo
 
 AsyncAppenderRequest::AsyncAppenderRequest(std::vector<TraceContext>& contextListv,
-                                           DefaultMQProducer* traceProducerv,
+                                           // DefaultMQProducer* traceProducerv,
+                                           std::shared_ptr<DefaultMQProducer> traceProducerv,
                                            AccessChannel accessChannelv,
                                            std::string& traceTopicNamev) {
   if (!contextListv.empty()) {
@@ -360,10 +361,9 @@ void AsyncAppenderRequest::sendTraceDataByMQ(std::vector<std::string> keySet,
   }
 }
 
-std::set<std::string> AsyncAppenderRequest::tryGetMessageQueueBrokerSet(DefaultMQProducer* producer,
+std::set<std::string> AsyncAppenderRequest::tryGetMessageQueueBrokerSet(std::shared_ptr<DefaultMQProducer> producer,
                                                                         std::string topic) {
   MQClientFactory* clientFactory = producer->getFactory();
-
   std::set<std::string> brokerSet;
   auto topicPublishInfo = clientFactory->getTopicPublishInfoFromTable(topic);
   if (topicPublishInfo != nullptr) {
