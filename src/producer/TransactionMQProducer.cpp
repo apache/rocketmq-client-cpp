@@ -53,7 +53,7 @@ TransactionSendResult TransactionMQProducer::sendMessageInTransaction(MQMessage&
     THROW_MQEXCEPTION(MQClientException, e.what(), -1);
   }
 
-  LocalTransactionState localTransactionState = LocalTransactionState::UNKNOW;
+  LocalTransactionState localTransactionState = LocalTransactionState::UNKNOWN;
   switch (sendResult.getSendStatus()) {
     case SendStatus::SEND_OK:
       try {
