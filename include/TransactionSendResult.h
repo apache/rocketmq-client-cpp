@@ -25,7 +25,7 @@ namespace rocketmq {
 enum LocalTransactionState {
   COMMIT_MESSAGE,
   ROLLBACK_MESSAGE,
-  UNKNOW,
+  UNKNOWN
 };
 
 class ROCKETMQCLIENT_API TransactionSendResult : public SendResult {

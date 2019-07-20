@@ -107,7 +107,7 @@ void TransactionMQProducer::endTransaction(SendResult& sendResult, LocalTransact
   }
   string transId = sendResult.getTransactionId();
 
-  int commitOrRollback = 0;
+  int commitOrRollback = MessageSysFlag::TransactionNotType;
   switch (localTransactionState) {
     case COMMIT_MESSAGE:
       commitOrRollback = MessageSysFlag::TransactionCommitType;
@@ -115,11 +115,10 @@ void TransactionMQProducer::endTransaction(SendResult& sendResult, LocalTransact
     case ROLLBACK_MESSAGE:
       commitOrRollback = MessageSysFlag::TransactionRollbackType;
       break;
-    case UNKNOW:
+    case UNKNOWN:
       commitOrRollback = MessageSysFlag::TransactionNotType;
       break;
     default:
-      commitOrRollback = MessageSysFlag::TransactionNotType;
       break;
   }
 
@@ -157,7 +156,7 @@ void TransactionMQProducer::checkTransactionStateImpl(const std::string& addr,
                                                       const std::string& transactionId,
                                                       const std::string& offsetMsgId) {
   LOG_DEBUG("checkTransactionStateImpl: msgId:%s, transactionId:%s", msgId.data(), transactionId.data());
-  LocalTransactionState localTransactionState = UNKNOW;
+  LocalTransactionState localTransactionState = UNKNOWN;
   try {
     localTransactionState = m_transactionListener->checkLocalTransaction(message);
   } catch (MQException& e) {
@@ -185,7 +184,7 @@ void TransactionMQProducer::checkTransactionStateImpl(const std::string& addr,
       endHeader->m_commitOrRollback = MessageSysFlag::TransactionRollbackType;
       LOG_WARN("when broker check, client rollback this transaction, %s", endHeader->toString().data());
       break;
-    case UNKNOW:
+    case UNKNOWN:
       endHeader->m_commitOrRollback = MessageSysFlag::TransactionNotType;
       LOG_WARN("when broker check, client does not know this transaction state, %s", endHeader->toString().data());
       break;

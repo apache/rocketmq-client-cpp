@@ -68,7 +68,7 @@ void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, TransactionMQProducer
     try {
       auto start = std::chrono::system_clock::now();
       std::cout << "before sendMessageInTransaction" << endl;
-      LocalTransactionState state = LocalTransactionState::UNKNOW;
+      LocalTransactionState state = LocalTransactionState::UNKNOWN;
       TransactionSendResult sendResult = producer->sendMessageInTransaction(msg, &state);
       std::cout << "after sendMessageInTransaction msgId: " << sendResult.getMsgId() << endl;
       g_tps.Increment();
