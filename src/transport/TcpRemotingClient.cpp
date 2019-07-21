@@ -79,7 +79,6 @@ void TcpRemotingClient::boost_asio_work() {
 TcpRemotingClient::~TcpRemotingClient() {
   m_tcpTable.clear();
   m_futureTable.clear();
-  m_asyncFutureTable.clear();
   m_namesrvAddrList.clear();
   removeAllTimerCallback();
 }
@@ -109,8 +108,11 @@ void TcpRemotingClient::stopAllTcpTransportThread() {
   {
     std::lock_guard<std::mutex> lock(m_futureTableLock);
     for (const auto& future : m_futureTable) {
-      if (future.second)
-        future.second->releaseThreadCondition();
+      if (future.second) {
+        if (!future.second->getAsyncFlag()) {
+          future.second->releaseThreadCondition();
+        }
+      }
     }
   }
 
@@ -238,7 +240,7 @@ bool TcpRemotingClient::invokeAsync(const string& addr,
     responseFuture->setRetrySendTimes(retrySendTimes);
     responseFuture->setBrokerAddr(addr);
     responseFuture->setRequestCommand(request);
-    addAsyncResponseFuture(opaque, responseFuture);
+    addResponseFuture(opaque, responseFuture);
 
     if (callback) {
       boost::asio::deadline_timer* t =
@@ -485,14 +487,11 @@ void TcpRemotingClient::ProcessData(const MemoryBlock& mem, const string& addr) 
 
   //<!process self;
   if (pRespondCmd->isResponseType()) {
-    std::shared_ptr<ResponseFuture> pFuture = findAndDeleteAsyncResponseFuture(opaque);
+    std::shared_ptr<ResponseFuture> pFuture = findAndDeleteResponseFuture(opaque);
     if (!pFuture) {
-      pFuture = findAndDeleteResponseFuture(opaque);
-      if (!pFuture) {
-        LOG_DEBUG("responseFuture was deleted by timeout of opaque:%d", opaque);
-        deleteAndZero(pRespondCmd);
-        return;
-      }
+      LOG_DEBUG("responseFuture was deleted by timeout of opaque:%d", opaque);
+      deleteAndZero(pRespondCmd);
+      return;
     }
 
     LOG_DEBUG("find_response opaque:%d", opaque);
@@ -532,7 +531,7 @@ void TcpRemotingClient::handleAsyncRequestTimeout(const boost::system::error_cod
 
   LOG_DEBUG("handleAsyncRequestTimeout opaque:%d, e_code:%d, msg:%s", opaque, e.value(), e.message().data());
 
-  std::shared_ptr<ResponseFuture> pFuture(findAndDeleteAsyncResponseFuture(opaque));
+  std::shared_ptr<ResponseFuture> pFuture(findAndDeleteResponseFuture(opaque));
   if (pFuture) {
     LOG_ERROR("no response got for opaque:%d", opaque);
     eraseTimerCallback(opaque);
@@ -574,23 +573,6 @@ std::shared_ptr<ResponseFuture> TcpRemotingClient::findAndDeleteResponseFuture(i
   if (m_futureTable.find(opaque) != m_futureTable.end()) {
     pResponseFuture = m_futureTable[opaque];
     m_futureTable.erase(opaque);
-  }
-  return pResponseFuture;
-}
-
-void TcpRemotingClient::addAsyncResponseFuture(int opaque, std::shared_ptr<ResponseFuture> pFuture) {
-  std::lock_guard<std::mutex> lock(m_asyncFutureTableLock);
-  m_asyncFutureTable[opaque] = pFuture;
-}
-
-// Note: after call this function, shared_ptr of m_asyncFutureTable[opaque] will
-// be erased, so caller must ensure the life cycle of returned shared_ptr;
-std::shared_ptr<ResponseFuture> TcpRemotingClient::findAndDeleteAsyncResponseFuture(int opaque) {
-  std::lock_guard<std::mutex> lock(m_asyncFutureTableLock);
-  std::shared_ptr<ResponseFuture> pResponseFuture;
-  if (m_asyncFutureTable.find(opaque) != m_asyncFutureTable.end()) {
-    pResponseFuture = m_asyncFutureTable[opaque];
-    m_asyncFutureTable.erase(opaque);
   }
   return pResponseFuture;
 }
