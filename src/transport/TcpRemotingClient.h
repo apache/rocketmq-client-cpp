@@ -58,8 +58,6 @@ class TcpRemotingClient {
 
   void registerProcessor(MQRequestCode requestCode, ClientRemotingProcessor* clientRemotingProcessor);
 
-  void deleteOpaqueForDropPullRequest(const MQMessageQueue& mq, int opaque);
-
  private:
   static void static_messageReceived(void* context, const MemoryBlock& mem, const string& addr);
 
@@ -80,9 +78,6 @@ class TcpRemotingClient {
 
   void addResponseFuture(int opaque, std::shared_ptr<ResponseFuture> pFuture);
   std::shared_ptr<ResponseFuture> findAndDeleteResponseFuture(int opaque);
-
-  void addAsyncResponseFuture(int opaque, std::shared_ptr<ResponseFuture> pFuture);
-  std::shared_ptr<ResponseFuture> findAndDeleteAsyncResponseFuture(int opaque);
 
   void addTimerCallback(boost::asio::deadline_timer* t, int opaque);
   void eraseTimerCallback(int opaque);
@@ -105,12 +100,10 @@ class TcpRemotingClient {
   ResMap m_futureTable;  //<! id->future;
   std::mutex m_futureTableLock;
 
-  ResMap m_asyncFutureTable;
-  std::mutex m_asyncFutureTableLock;
-
   AsyncTimerMap m_asyncTimerTable;
   std::mutex m_asyncTimerTableLock;
 
+  int m_dispatchThreadNum;
   int m_pullThreadNum;
   uint64_t m_tcpConnectTimeout;           // ms
   uint64_t m_tcpTransportTryLockTimeout;  // s
@@ -121,12 +114,16 @@ class TcpRemotingClient {
   string m_namesrvAddrChoosed;
   unsigned int m_namesrvIndex;
 
-  boost::asio::io_service m_ioService;
-  boost::asio::io_service::work m_ioServiceWork;
-  boost::thread_group m_threadpool;
+  boost::asio::io_service m_dispatchService;
+  boost::asio::io_service::work m_dispatchServiceWork;
+  boost::thread_group m_dispatchThreadPool;
 
-  boost::asio::io_service m_async_ioService;
-  unique_ptr<boost::thread> m_async_service_thread;
+  boost::asio::io_service m_handleService;
+  boost::asio::io_service::work m_handleServiceWork;
+  boost::thread_group m_handleThreadPool;
+
+  boost::asio::io_service m_timerService;
+  unique_ptr<boost::thread> m_timerServiceThread;
 };
 
 //<!************************************************************************

@@ -784,7 +784,6 @@ void DefaultMQPushConsumer::pullMessageAsync(PullRequest* request) {
   arg.mq = messageQueue;
   arg.subData = *pSdata;
   arg.pPullWrapper = m_pPullAPIWrapper;
-  arg.pPullRequest = request;
   try {
     request->setLastPullTimestamp(UtilAll::currentTimeMillis());
     m_pPullAPIWrapper->pullKernelImpl(messageQueue,                                 // 1
