@@ -35,19 +35,19 @@ TpsReportService g_tps;
 
 class MyTransactionListener : public TransactionListener {
   virtual LocalTransactionState executeLocalTransaction(const MQMessage& msg, void* arg) {
-
     if (!arg) {
-      std::cout << "executeLocalTransaction transactionId:" << msg.getTransactionId() << ", return state: COMMIT_MESAGE " << endl;
+      std::cout << "executeLocalTransaction transactionId:" << msg.getTransactionId()
+                << ", return state: COMMIT_MESAGE " << endl;
       return LocalTransactionState::COMMIT_MESSAGE;
     }
 
     LocalTransactionState state = (LocalTransactionState)(*(int*)arg % 3);
-    std::cout << "executeLocalTransaction transactionId:" << msg.getTransactionId() << ", return state: " << state << endl;
+    std::cout << "executeLocalTransaction transactionId:" << msg.getTransactionId() << ", return state: " << state
+              << endl;
     return state;
   }
 
   virtual LocalTransactionState checkLocalTransaction(const MQMessageExt& msg) {
-
     std::cout << "checkLocalTransaction enter msg:" << msg.toString() << endl;
     return LocalTransactionState::COMMIT_MESSAGE;
   }

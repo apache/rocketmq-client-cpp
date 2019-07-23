@@ -209,14 +209,12 @@ void MQClientAPIImpl::createTopic(const string& addr,
   THROW_MQEXCEPTION(MQBrokerException, "response is null", -1);
 }
 
-void MQClientAPIImpl::endTransactionOneway(
-  std::string addr,
-  EndTransactionRequestHeader* requestHeader,
-  std::string remark,
-  const SessionCredentials& sessionCredentials) {
-
+void MQClientAPIImpl::endTransactionOneway(std::string addr,
+                                           EndTransactionRequestHeader* requestHeader,
+                                           std::string remark,
+                                           const SessionCredentials& sessionCredentials) {
   RemotingCommand request(END_TRANSACTION, requestHeader);
-  request.setRemark(remark);  
+  request.setRemark(remark);
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
   m_pRemotingClient->invokeOneway(addr, request);
@@ -388,8 +386,8 @@ SendResult MQClientAPIImpl::sendMessageSync(const string& addr,
   if (pResponse != NULL) {
     try {
       SendResult result = processSendResponse(brokerName, msg, pResponse.get());
-      LOG_DEBUG("sendMessageSync success:%s to addr:%s,brokername:%s, send status:%d", msg.toString().c_str(), addr.c_str(),
-                brokerName.c_str(), (int)result.getSendStatus());
+      LOG_DEBUG("sendMessageSync success:%s to addr:%s,brokername:%s, send status:%d", msg.toString().c_str(),
+                addr.c_str(), brokerName.c_str(), (int)result.getSendStatus());
       return result;
     } catch (...) {
       LOG_ERROR("send error");
@@ -933,4 +931,4 @@ void MQClientAPIImpl::unlockBatchMQ(const string& addr,
 }
 
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

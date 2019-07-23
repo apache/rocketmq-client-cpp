@@ -74,7 +74,7 @@ class ROCKETMQCLIENT_API MQMessage {
   void setBody(const std::string& body);
 
   void setTransactionId(const std::string& id) { m_transactionId = id; }
-  std::string getTransactionId() const     { return m_transactionId; }
+  std::string getTransactionId() const { return m_transactionId; }
 
   std::map<std::string, std::string> getProperties() const;
   void setProperties(std::map<std::string, std::string>& properties);

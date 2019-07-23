@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #ifndef __MQCLIENTAPIIMPL_H__
 #define __MQCLIENTAPIIMPL_H__
 #include "AsyncCallback.h"
@@ -61,11 +61,10 @@ class MQClientAPIImpl {
                    const string& defaultTopic,
                    TopicConfig topicConfig,
                    const SessionCredentials& sessionCredentials);
-  void endTransactionOneway(
-    std::string addr,
-    EndTransactionRequestHeader* requestHeader,
-    std::string remark,
-    const SessionCredentials& sessionCredentials);
+  void endTransactionOneway(std::string addr,
+                            EndTransactionRequestHeader* requestHeader,
+                            std::string remark,
+                            const SessionCredentials& sessionCredentials);
 
   SendResult sendMessage(const string& addr,
                          const string& brokerName,
@@ -221,6 +220,6 @@ class MQClientAPIImpl {
   bool m_firstFetchNameSrv;
   string m_mqClientId;
 };
-}  //<!end namespace;
+}  // namespace rocketmq
 //<!***************************************************************************
 #endif

@@ -63,7 +63,6 @@ void CreateTopicRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, strin
 void CheckTransactionStateRequestHeader::Encode(Json::Value& outData) {}
 
 CommandHeader* CheckTransactionStateRequestHeader::Decode(Json::Value& ext) {
-
   CheckTransactionStateRequestHeader* h = new CheckTransactionStateRequestHeader();
   Json::Value& tempValue = ext["msgId"];
   if (tempValue.isString()) {
@@ -123,7 +122,6 @@ void EndTransactionRequestHeader::Encode(Json::Value& outData) {
 }
 
 void EndTransactionRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-
   requestMap.insert(pair<string, string>("msgId", m_msgId));
   requestMap.insert(pair<string, string>("transactionId", m_transactionId));
   requestMap.insert(pair<string, string>("producerGroup", m_producerGroup));
@@ -618,4 +616,4 @@ const string NotifyConsumerIdsChangedRequestHeader::getGroup() const {
 }
 
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

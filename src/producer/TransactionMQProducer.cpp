@@ -137,7 +137,6 @@ void TransactionMQProducer::checkTransactionState(const std::string& addr,
                                                   const std::string& msgId,
                                                   const std::string& transactionId,
                                                   const std::string& offsetMsgId) {
-                                                  
   LOG_DEBUG("checkTransactionState: msgId:%s, transactionId:%s", msgId.data(), transactionId.data());
   if (!m_transactionListener) {
     LOG_WARN("checkTransactionState, transactionListener null");

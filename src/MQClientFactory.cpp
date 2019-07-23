@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 #include "MQClientFactory.h"
-#include "TransactionMQProducer.h"
 #include "ConsumerRunningInfo.h"
 #include "Logging.h"
 #include "MQClientManager.h"
 #include "PullRequest.h"
 #include "Rebalance.h"
 #include "TopicPublishInfo.h"
+#include "TransactionMQProducer.h"
 
 #define MAX_BUFF_SIZE 8192
 #define SAFE_BUFF_SIZE 7936  // 8192 - 256 = 7936
@@ -668,7 +668,8 @@ FindBrokerResult* MQClientFactory::findBrokerAddressInAdmin(const string& broker
   return NULL;
 }
 
-void MQClientFactory::checkTransactionState(const std::string& addr, const MQMessageExt& messageExt,
+void MQClientFactory::checkTransactionState(const std::string& addr,
+                                            const MQMessageExt& messageExt,
                                             const CheckTransactionStateRequestHeader& checkRequestHeader) {
   string group = messageExt.getProperty(MQMessage::PROPERTY_PRODUCER_GROUP);
   if (!group.empty()) {
@@ -676,8 +677,9 @@ void MQClientFactory::checkTransactionState(const std::string& addr, const MQMes
     if (producer != nullptr) {
       TransactionMQProducer* transProducer = dynamic_cast<TransactionMQProducer*>(producer);
       if (transProducer != nullptr) {
-        transProducer->checkTransactionState(addr, messageExt, 
-            checkRequestHeader.m_tranStateTableOffset, checkRequestHeader.m_commitLogOffset, checkRequestHeader.m_msgId, checkRequestHeader.m_transactionId, checkRequestHeader.m_offsetMsgId);
+        transProducer->checkTransactionState(addr, messageExt, checkRequestHeader.m_tranStateTableOffset,
+                                             checkRequestHeader.m_commitLogOffset, checkRequestHeader.m_msgId,
+                                             checkRequestHeader.m_transactionId, checkRequestHeader.m_offsetMsgId);
       } else {
         LOG_ERROR("checkTransactionState, producer not TransactionMQProducer failed, msg:%s",
                   messageExt.toString().data());
@@ -863,7 +865,6 @@ void MQClientFactory::doRebalanceByConsumerGroup(const string& consumerGroup) {
 void MQClientFactory::endTransactionOneway(const MQMessageQueue& mq,
                                            EndTransactionRequestHeader* requestHeader,
                                            const SessionCredentials& sessionCredentials) {
-  
   string brokerAddr = findBrokerAddressInPublish(mq.getBrokerName());
   string remark = "";
   if (!brokerAddr.empty()) {
@@ -1144,4 +1145,4 @@ void MQClientFactory::getSessionCredentialsFromOneOfProducerOrConsumer(SessionCr
 }
 
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

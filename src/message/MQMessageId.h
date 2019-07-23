@@ -24,12 +24,11 @@ namespace rocketmq {
 //<!***************************************************************************
 class MQMessageId {
  public:
-    
-  MQMessageId(){}
+  MQMessageId() {}
   MQMessageId(sockaddr address, int64 offset) : m_address(address), m_offset(offset) {}
   MQMessageId& operator=(const MQMessageId& id) {
     if (&id == this) {
-        return *this;
+      return *this;
     }
     this->m_address = id.m_address;
     this->m_offset = id.m_offset;
@@ -49,6 +48,6 @@ class MQMessageId {
   int64 m_offset;
 };
 
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif

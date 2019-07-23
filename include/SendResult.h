@@ -39,9 +39,7 @@ class ROCKETMQCLIENT_API SendResult {
   SendResult(const SendResult& other);
   SendResult& operator=(const SendResult& other);
 
-  void setTransactionId(const std::string& id) { 
-      m_transactionId = id;
-  }
+  void setTransactionId(const std::string& id) { m_transactionId = id; }
 
   std::string getTransactionId() { return m_transactionId; }
 
@@ -51,7 +49,7 @@ class ROCKETMQCLIENT_API SendResult {
   MQMessageQueue getMessageQueue() const;
   int64 getQueueOffset() const;
   std::string toString() const;
-  
+
  private:
   SendStatus m_sendStatus;
   std::string m_msgId;
@@ -62,5 +60,5 @@ class ROCKETMQCLIENT_API SendResult {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif
