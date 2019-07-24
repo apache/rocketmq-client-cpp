@@ -177,6 +177,7 @@ RemotingCommand* ClientRemotingProcessor::checkTransactionState(const std::strin
       return nullptr;
     }
 
+    MQMessageExt& messageExt = mqvec[0];
     string transactionId = messageExt.getProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);
     if (transactionId != "") {
       messageExt.setTransactionId(transactionId);
