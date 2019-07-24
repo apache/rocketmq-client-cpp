@@ -15,16 +15,18 @@
  * limitations under the License.
  */
 
-#include "DefaultMQProducer.h"
+#include "CProducer.h"
+
+#include <string.h>
+#include <typeindex>
+
 #include "AsyncCallback.h"
 #include "CBatchMessage.h"
-#include "CProducer.h"
 #include "CCommon.h"
-#include "CSendResult.h"
-#include "CMessage.h"
 #include "CMQException.h"
-#include <string.h>
-#include <typeinfo>
+#include "CMessage.h"
+#include "CSendResult.h"
+#include "DefaultMQProducer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -207,7 +209,7 @@ int SendMessageAsync(CProducer* producer,
     defaultMQProducer->send(*message, cSendCallback);
   } catch (exception& e) {
     if (cSendCallback != NULL) {
-      if (typeid(e) == typeid(MQException)) {
+      if (std::type_index(typeid(e)) == std::type_index(typeid(MQException))) {
         MQException& mqe = (MQException&)e;
         cSendCallback->onException(mqe);
       }
