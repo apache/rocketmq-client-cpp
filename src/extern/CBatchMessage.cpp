@@ -15,22 +15,45 @@
  * limitations under the License.
  */
 
-#ifndef __NAMESPACEUTIL_H__
-#define __NAMESPACEUTIL_H__
+#include <vector>
 
-#include <string>
+#include "CBatchMessage.h"
+#include "CCommon.h"
+#include "CMessage.h"
+#include "MQMessage.h"
 
-using namespace std;
+using std::vector;
 
-static const string ENDPOINT_PREFIX = "http://";
-static const unsigned int ENDPOINT_PREFIX_LENGTH = ENDPOINT_PREFIX.length();
-namespace rocketmq {
-class NameSpaceUtil {
- public:
-  static bool isEndPointURL(string nameServerAddr);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-  static string formatNameServerURL(string nameServerAddr);
+using namespace rocketmq;
+
+CBatchMessage* CreateBatchMessage() {
+  vector<MQMessage>* msgs = new vector<MQMessage>();
+  return (CBatchMessage*)msgs;
+}
+
+int AddMessage(CBatchMessage* batchMsg, CMessage* msg) {
+  if (msg == NULL) {
+    return NULL_POINTER;
+  }
+  if (batchMsg == NULL) {
+    return NULL_POINTER;
+  }
+  MQMessage* message = (MQMessage*)msg;
+  ((vector<MQMessage>*)batchMsg)->push_back(*message);
+  return OK;
+}
+int DestroyBatchMessage(CBatchMessage* batchMsg) {
+  if (batchMsg == NULL) {
+    return NULL_POINTER;
+  }
+  delete (vector<MQMessage>*)batchMsg;
+  return OK;
+}
+
+#ifdef __cplusplus
 };
-
-}  // namespace rocketmq
-#endif  //__NAMESPACEUTIL_H__
+#endif

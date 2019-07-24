@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "SendResult.h"
+#include <sstream>
 #include "UtilAll.h"
 #include "VirtualEnvUtil.h"
 
@@ -74,5 +75,17 @@ int64 SendResult::getQueueOffset() const {
   return m_queueOffset;
 }
 
+std::string SendResult::toString() const {
+  stringstream ss;
+  ss << "SendResult: ";
+  ss << "sendStatus:" << m_sendStatus;
+  ss << ",msgId:" << m_msgId;
+  ss << ",offsetMsgId:" << m_offsetMsgId;
+  ss << ",queueOffset:" << m_queueOffset;
+  ss << ",transactionId:" << m_transactionId;
+  ss << ",messageQueue:" << m_messageQueue.toString();
+  return ss.str();
+}
+
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

@@ -21,6 +21,7 @@
 #include "PullRequest.h"
 #include "Rebalance.h"
 #include "TopicPublishInfo.h"
+#include "TransactionMQProducer.h"
 
 #define MAX_BUFF_SIZE 8192
 #define SAFE_BUFF_SIZE 7936  // 8192 - 256 = 7936
@@ -667,6 +668,31 @@ FindBrokerResult* MQClientFactory::findBrokerAddressInAdmin(const string& broker
   return NULL;
 }
 
+void MQClientFactory::checkTransactionState(const std::string& addr,
+                                            const MQMessageExt& messageExt,
+                                            const CheckTransactionStateRequestHeader& checkRequestHeader) {
+  string group = messageExt.getProperty(MQMessage::PROPERTY_PRODUCER_GROUP);
+  if (!group.empty()) {
+    MQProducer* producer = selectProducer(group);
+    if (producer != nullptr) {
+      TransactionMQProducer* transProducer = dynamic_cast<TransactionMQProducer*>(producer);
+      if (transProducer != nullptr) {
+        transProducer->checkTransactionState(addr, messageExt, checkRequestHeader.m_tranStateTableOffset,
+                                             checkRequestHeader.m_commitLogOffset, checkRequestHeader.m_msgId,
+                                             checkRequestHeader.m_transactionId, checkRequestHeader.m_offsetMsgId);
+      } else {
+        LOG_ERROR("checkTransactionState, producer not TransactionMQProducer failed, msg:%s",
+                  messageExt.toString().data());
+      }
+    } else {
+      LOG_ERROR("checkTransactionState, pick producer by group[%s] failed, msg:%s", group.data(),
+                messageExt.toString().data());
+    }
+  } else {
+    LOG_ERROR("checkTransactionState, pick producer group failed, msg:%s", messageExt.toString().data());
+  }
+}
+
 MQClientAPIImpl* MQClientFactory::getMQClientAPIImpl() const {
   return m_pClientAPIImpl.get();
 }
@@ -836,6 +862,23 @@ void MQClientFactory::doRebalanceByConsumerGroup(const string& consumerGroup) {
   }
 }
 
+void MQClientFactory::endTransactionOneway(const MQMessageQueue& mq,
+                                           EndTransactionRequestHeader* requestHeader,
+                                           const SessionCredentials& sessionCredentials) {
+  string brokerAddr = findBrokerAddressInPublish(mq.getBrokerName());
+  string remark = "";
+  if (!brokerAddr.empty()) {
+    try {
+      getMQClientAPIImpl()->endTransactionOneway(brokerAddr, requestHeader, remark, sessionCredentials);
+    } catch (MQException& e) {
+      LOG_ERROR("endTransactionOneway exception:%s", e.what());
+      throw e;
+    }
+  } else {
+    THROW_MQEXCEPTION(MQClientException, "The broker[" + mq.getBrokerName() + "] not exist", -1);
+  }
+}
+
 void MQClientFactory::unregisterClient(const string& producerGroup,
                                        const string& consumerGroup,
                                        const SessionCredentials& sessionCredentials) {
@@ -988,18 +1031,6 @@ void MQClientFactory::findConsumerIds(const string& topic,
   }
 }
 
-void MQClientFactory::removeDropedPullRequestOpaque(PullRequest* pullRequest) {
-  // delete the opaque record that's ignore the response of this pullrequest when drop pullrequest
-  if (!pullRequest)
-    return;
-  MQMessageQueue mq = pullRequest->m_messageQueue;
-  int opaque = pullRequest->getLatestPullRequestOpaque();
-  if (opaque > 0) {
-    LOG_INFO("####### need delete the pullrequest for opaque:%d, mq:%s", opaque, mq.toString().data());
-    getMQClientAPIImpl()->deleteOpaqueForDropPullRequest(mq, opaque);
-  }
-}
-
 void MQClientFactory::resetOffset(const string& group,
                                   const string& topic,
                                   const map<MQMessageQueue, int64>& offsetTable) {
@@ -1012,10 +1043,7 @@ void MQClientFactory::resetOffset(const string& group,
       PullRequest* pullreq = pConsumer->getRebalance()->getPullRequest(mq);
       if (pullreq) {
         pullreq->setDroped(true);
-        LOG_INFO("resetOffset setDroped for opaque:%d, mq:%s", pullreq->getLatestPullRequestOpaque(),
-                 mq.toString().data());
-        // delete the opaque record that's ignore the response of this pullrequest when drop pullrequest
-        // removeDropedPullRequestOpaque(pullreq);
+        LOG_INFO("resetOffset setDroped for mq:%s", mq.toString().data());
         pullreq->clearAllMsgs();
         pullreq->updateQueueMaxOffset(it->second);
       } else {
@@ -1102,4 +1130,4 @@ void MQClientFactory::getSessionCredentialsFromOneOfProducerOrConsumer(SessionCr
 }
 
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

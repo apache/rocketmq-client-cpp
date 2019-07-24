@@ -32,7 +32,7 @@ using ::testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::AsyncCallback;
-using rocketmq::asyncCallBackStatus;
+using rocketmq::AsyncCallbackStatus;
 using rocketmq::asyncCallBackType;
 using rocketmq::AsyncCallbackWrap;
 using rocketmq::MQClientAPIImpl;
@@ -64,25 +64,18 @@ TEST(responseFuture, init) {
   EXPECT_EQ(responseFuture.getRetrySendTimes(), 1);
   EXPECT_EQ(responseFuture.getBrokerAddr(), "");
 
-  EXPECT_FALSE(responseFuture.getASyncFlag());
-  EXPECT_TRUE(responseFuture.getAsyncResponseFlag());
-  EXPECT_FALSE(responseFuture.getSyncResponseFlag());
+  EXPECT_FALSE(responseFuture.getAsyncFlag());
   EXPECT_TRUE(responseFuture.getAsyncCallbackWrap() == nullptr);
 
   // ~ResponseFuture  delete pcall
   SendCallbackWrap* pcall = new SendCallbackWrap("", MQMessage(), nullptr, nullptr);
   ResponseFuture twoResponseFuture(13, 4, nullptr, 1000, true, pcall);
-  EXPECT_TRUE(twoResponseFuture.getASyncFlag());
-  EXPECT_FALSE(twoResponseFuture.getAsyncResponseFlag());
-  EXPECT_TRUE(twoResponseFuture.getSyncResponseFlag());
+  EXPECT_TRUE(twoResponseFuture.getAsyncFlag());
   EXPECT_FALSE(twoResponseFuture.getAsyncCallbackWrap() == nullptr);
 }
 
 TEST(responseFuture, info) {
   ResponseFuture responseFuture(13, 4, NULL, 1000);
-
-  responseFuture.setAsyncResponseFlag();
-  EXPECT_TRUE(responseFuture.getAsyncResponseFlag());
 
   responseFuture.setBrokerAddr("127.0.0.1:9876");
   EXPECT_EQ(responseFuture.getBrokerAddr(), "127.0.0.1:9876");
@@ -101,25 +94,15 @@ TEST(responseFuture, response) {
   // m_bAsync = false  m_syncResponse
   ResponseFuture responseFuture(13, 4, NULL, 1000);
 
-  EXPECT_FALSE(responseFuture.getASyncFlag());
-  EXPECT_FALSE(responseFuture.getSyncResponseFlag());
-  EXPECT_TRUE(responseFuture.getAsyncResponseFlag());
+  EXPECT_FALSE(responseFuture.getAsyncFlag());
 
   RemotingCommand* pResponseCommand = NULL;
   responseFuture.setResponse(pResponseCommand);
   EXPECT_EQ(responseFuture.getRequestCommand().getCode(), 0);
 
-  EXPECT_TRUE(responseFuture.getSyncResponseFlag());
-
   // m_bAsync = true  m_syncResponse
   ResponseFuture twoResponseFuture(13, 4, NULL, 1000, true);
-
-  EXPECT_TRUE(twoResponseFuture.getASyncFlag());
-  EXPECT_TRUE(twoResponseFuture.getSyncResponseFlag());
-  EXPECT_FALSE(twoResponseFuture.getAsyncResponseFlag());
-
-  twoResponseFuture.setResponse(pResponseCommand);
-  EXPECT_TRUE(twoResponseFuture.getSyncResponseFlag());
+  EXPECT_TRUE(twoResponseFuture.getAsyncFlag());
 
   ResponseFuture threeSesponseFuture(13, 4, NULL, 1000);
 
@@ -128,47 +111,7 @@ TEST(responseFuture, response) {
   uint64_t useTime = UtilAll::currentTimeMillis() - millis;
   EXPECT_LT(useTime, 30);
 
-  EXPECT_TRUE(responseFuture.getSyncResponseFlag());
   EXPECT_EQ(NULL, remotingCommand);
-}
-
-TEST(responseFuture, executeInvokeCallback) {
-  //  executeInvokeCallback delete wrap
-  MockAsyncCallbackWrap* wrap = new MockAsyncCallbackWrap(nullptr, nullptr);
-  ResponseFuture responseFuture(13, 4, nullptr, 1000, false, wrap);
-
-  RemotingCommand* pResponseCommand = new RemotingCommand();
-  responseFuture.setResponse(pResponseCommand);
-  responseFuture.executeInvokeCallback();
-  EXPECT_EQ(NULL, responseFuture.getCommand());
-
-  EXPECT_CALL(*wrap, operationComplete(_, _)).Times(1);
-  pResponseCommand = new RemotingCommand();
-  responseFuture.setResponse(pResponseCommand);
-  responseFuture.setAsyncCallBackStatus(asyncCallBackStatus::asyncCallBackStatus_response);
-  responseFuture.executeInvokeCallback();
-  EXPECT_EQ(pResponseCommand->getCode(), 0);
-
-  ResponseFuture twoResponseFuture(13, 4, nullptr, 1000, false, NULL);
-  pResponseCommand = new RemotingCommand();
-  twoResponseFuture.executeInvokeCallback();
-  EXPECT_EQ(NULL, twoResponseFuture.getCommand());
-}
-
-TEST(responseFuture, executeInvokeCallbackException) {
-  //  executeInvokeCallbackException delete wrap
-  MockAsyncCallbackWrap* wrap = new MockAsyncCallbackWrap(nullptr, nullptr);
-
-  ResponseFuture responseFuture(13, 4, nullptr, 1000, false, wrap);
-
-  EXPECT_CALL(*wrap, onException()).Times(1);
-  responseFuture.executeInvokeCallbackException();
-
-  responseFuture.setAsyncCallBackStatus(asyncCallBackStatus::asyncCallBackStatus_timeout);
-  responseFuture.executeInvokeCallbackException();
-
-  ResponseFuture twoRresponseFuture(13, 4, nullptr, 1000, false, NULL);
-  twoRresponseFuture.executeInvokeCallbackException();
 }
 
 int main(int argc, char* argv[]) {

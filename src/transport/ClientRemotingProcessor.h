@@ -33,6 +33,7 @@ class ClientRemotingProcessor {
   RemotingCommand* resetOffset(RemotingCommand* request);
   RemotingCommand* getConsumerRunningInfo(const string& addr, RemotingCommand* request);
   RemotingCommand* notifyConsumerIdsChanged(RemotingCommand* request);
+  RemotingCommand* checkTransactionState(const string& addr, RemotingCommand* request);
 
  private:
   MQClientFactory* m_mqClientFactory;
@@ -42,6 +43,18 @@ class ResetOffsetBody {
  public:
   ResetOffsetBody() {}
   virtual ~ResetOffsetBody() { m_offsetTable.clear(); }
+  void setOffsetTable(MQMessageQueue mq, int64 offset);
+  std::map<MQMessageQueue, int64> getOffsetTable();
+  static ResetOffsetBody* Decode(const MemoryBlock* mem);
+
+ private:
+  std::map<MQMessageQueue, int64> m_offsetTable;
+};
+
+class CheckTransactionStateBody {
+ public:
+  CheckTransactionStateBody() {}
+  virtual ~CheckTransactionStateBody() { m_offsetTable.clear(); }
   void setOffsetTable(MQMessageQueue mq, int64 offset);
   std::map<MQMessageQueue, int64> getOffsetTable();
   static ResetOffsetBody* Decode(const MemoryBlock* mem);

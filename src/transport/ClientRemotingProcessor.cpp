@@ -28,10 +28,10 @@ ClientRemotingProcessor::ClientRemotingProcessor(MQClientFactory* mqClientFactor
 ClientRemotingProcessor::~ClientRemotingProcessor() {}
 
 RemotingCommand* ClientRemotingProcessor::processRequest(const string& addr, RemotingCommand* request) {
-  LOG_DEBUG("request Command received:processRequest");
+  LOG_INFO("request Command received:processRequest, addr:%s, code:%d", addr.data(), request->getCode());
   switch (request->getCode()) {
     case CHECK_TRANSACTION_STATE:
-      //  return checkTransactionState( request);
+      return checkTransactionState(addr, request);
       break;
     case NOTIFY_CONSUMER_IDS_CHANGED:
       return notifyConsumerIdsChanged(request);
@@ -142,8 +142,52 @@ RemotingCommand* ClientRemotingProcessor::notifyConsumerIdsChanged(RemotingComma
   request->SetExtHeader(request->getCode());
   NotifyConsumerIdsChangedRequestHeader* requestHeader =
       (NotifyConsumerIdsChangedRequestHeader*)request->getCommandHeader();
-  LOG_INFO("notifyConsumerIdsChanged:%s", requestHeader->getGroup().c_str());
+  if (requestHeader == nullptr) {
+    LOG_ERROR("notifyConsumerIdsChanged requestHeader null");
+    return NULL;
+  }
+  string group = requestHeader->getGroup();
+  LOG_INFO("notifyConsumerIdsChanged:%s", group.c_str());
   m_mqClientFactory->doRebalanceByConsumerGroup(requestHeader->getGroup());
   return NULL;
 }
+
+RemotingCommand* ClientRemotingProcessor::checkTransactionState(const std::string& addr, RemotingCommand* request) {
+  if (!request) {
+    LOG_ERROR("checkTransactionState request null");
+    return nullptr;
+  }
+
+  LOG_INFO("checkTransactionState addr:%s, request: %s", addr.data(), request->ToString().data());
+
+  request->SetExtHeader(request->getCode());
+  CheckTransactionStateRequestHeader* requestHeader = (CheckTransactionStateRequestHeader*)request->getCommandHeader();
+  if (!requestHeader) {
+    LOG_ERROR("checkTransactionState CheckTransactionStateRequestHeader requestHeader null");
+    return nullptr;
+  }
+  LOG_INFO("checkTransactionState request: %s", requestHeader->toString().data());
+
+  const MemoryBlock* block = request->GetBody();
+  if (block && block->getSize() > 0) {
+    std::vector<MQMessageExt> mqvec;
+    MQDecoder::decodes(block, mqvec);
+    if (mqvec.size() == 0) {
+      LOG_ERROR("checkTransactionState decodes MQMessageExt fail, request:%s", requestHeader->toString().data());
+      return nullptr;
+    }
+
+    MQMessageExt& messageExt = mqvec[0];
+    string transactionId = messageExt.getProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);
+    if (transactionId != "") {
+      messageExt.setTransactionId(transactionId);
+    }
+
+    m_mqClientFactory->checkTransactionState(addr, messageExt, *requestHeader);
+  } else {
+    LOG_ERROR("checkTransactionState getbody null or size 0, request Header:%s", requestHeader->toString().data());
+  }
+  return nullptr;
 }
+
+}  // namespace rocketmq

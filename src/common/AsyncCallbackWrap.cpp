@@ -94,7 +94,7 @@ void SendCallbackWrap::operationComplete(ResponseFuture* pResponseFuture, bool b
       // broker may return exception, need consider retry send
       int maxRetryTimes = pResponseFuture->getMaxRetrySendTimes();
       int retryTimes = pResponseFuture->getRetrySendTimes();
-      if (pResponseFuture->getASyncFlag() && retryTimes < maxRetryTimes && maxRetryTimes > 1) {
+      if (pResponseFuture->getAsyncFlag() && retryTimes < maxRetryTimes && maxRetryTimes > 1) {
         int64 left_timeout_ms = pResponseFuture->leftTime();
         string brokerAddr = pResponseFuture->getBrokerAddr();
         const RemotingCommand& requestCommand = pResponseFuture->getRequestCommand();
@@ -190,4 +190,4 @@ void PullCallbackWarp::operationComplete(ResponseFuture* pResponseFuture, bool b
 }
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

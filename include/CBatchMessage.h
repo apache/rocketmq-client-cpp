@@ -15,22 +15,22 @@
  * limitations under the License.
  */
 
-#ifndef __NAMESPACEUTIL_H__
-#define __NAMESPACEUTIL_H__
+#ifndef __C_BATCHMESSAGE_H__
+#define __C_BATCHMESSAGE_H__
+#include "CCommon.h"
+#include "CMessage.h"
 
-#include <string>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-using namespace std;
+typedef struct CBatchMessage CBatchMessage;
 
-static const string ENDPOINT_PREFIX = "http://";
-static const unsigned int ENDPOINT_PREFIX_LENGTH = ENDPOINT_PREFIX.length();
-namespace rocketmq {
-class NameSpaceUtil {
- public:
-  static bool isEndPointURL(string nameServerAddr);
+ROCKETMQCLIENT_API CBatchMessage* CreateBatchMessage();
+ROCKETMQCLIENT_API int AddMessage(CBatchMessage* batchMsg, CMessage* msg);
+ROCKETMQCLIENT_API int DestroyBatchMessage(CBatchMessage* batchMsg);
 
-  static string formatNameServerURL(string nameServerAddr);
+#ifdef __cplusplus
 };
-
-}  // namespace rocketmq
-#endif  //__NAMESPACEUTIL_H__
+#endif
+#endif  //__C_BATCHMESSAGE_H__

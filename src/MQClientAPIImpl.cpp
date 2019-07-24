@@ -209,6 +209,18 @@ void MQClientAPIImpl::createTopic(const string& addr,
   THROW_MQEXCEPTION(MQBrokerException, "response is null", -1);
 }
 
+void MQClientAPIImpl::endTransactionOneway(std::string addr,
+                                           EndTransactionRequestHeader* requestHeader,
+                                           std::string remark,
+                                           const SessionCredentials& sessionCredentials) {
+  RemotingCommand request(END_TRANSACTION, requestHeader);
+  request.setRemark(remark);
+  callSignatureBeforeRequest(addr, request, sessionCredentials);
+  request.Encode();
+  m_pRemotingClient->invokeOneway(addr, request);
+  return;
+}
+
 SendResult MQClientAPIImpl::sendMessage(const string& addr,
                                         const string& brokerName,
                                         const MQMessage& msg,
@@ -373,9 +385,9 @@ SendResult MQClientAPIImpl::sendMessageSync(const string& addr,
   unique_ptr<RemotingCommand> pResponse(m_pRemotingClient->invokeSync(addr, request, timeoutMillis));
   if (pResponse != NULL) {
     try {
-      LOG_DEBUG("sendMessageSync success:%s to addr:%s,brokername:%s", msg.toString().c_str(), addr.c_str(),
-                brokerName.c_str());
       SendResult result = processSendResponse(brokerName, msg, pResponse.get());
+      LOG_DEBUG("sendMessageSync success:%s to addr:%s,brokername:%s, send status:%d", msg.toString().c_str(),
+                addr.c_str(), brokerName.c_str(), (int)result.getSendStatus());
       return result;
     } catch (...) {
       LOG_ERROR("send error");
@@ -430,10 +442,6 @@ void MQClientAPIImpl::sendMessageAsync(const string& addr,
   }
 }
 
-void MQClientAPIImpl::deleteOpaqueForDropPullRequest(const MQMessageQueue& mq, int opaque) {
-  m_pRemotingClient->deleteOpaqueForDropPullRequest(mq, opaque);
-}
-
 PullResult* MQClientAPIImpl::pullMessage(const string& addr,
                                          PullMessageRequestHeader* pRequestHeader,
                                          int timeoutMillis,
@@ -467,21 +475,9 @@ void MQClientAPIImpl::pullMessageAsync(const string& addr,
                                        void* pArg) {
   //<!delete in future;
   AsyncCallbackWrap* cbw = new PullCallbackWarp(pullCallback, this, pArg);
-  MQMessageQueue mq;
-  AsyncArg* pAsyncArg = static_cast<AsyncArg*>(pArg);
-  if (pAsyncArg && pAsyncArg->pPullRequest) {
-    mq = pAsyncArg->mq;
-    pAsyncArg->pPullRequest->setLatestPullRequestOpaque(request.getOpaque());
-    LOG_DEBUG("pullMessageAsync set opaque:%d, mq:%s", pAsyncArg->pPullRequest->getLatestPullRequestOpaque(),
-              mq.toString().c_str());
-  }
-
   if (m_pRemotingClient->invokeAsync(addr, request, cbw, timeoutMillis) == false) {
-    LOG_ERROR("pullMessageAsync failed of addr:%s, opaque:%d, mq:%s", addr.c_str(), request.getOpaque(),
-              mq.toString().data());
-    if (pAsyncArg && pAsyncArg->pPullRequest) {
-      pAsyncArg->pPullRequest->setLatestPullRequestOpaque(0);
-    }
+    LOG_ERROR("pullMessageAsync failed of addr:%s, mq:%s", addr.c_str(),
+              static_cast<AsyncArg*>(pArg)->mq.toString().data());
     deleteAndZero(cbw);
     THROW_MQEXCEPTION(MQClientException, "pullMessageAsync failed", -1);
   }
@@ -919,4 +915,4 @@ void MQClientAPIImpl::unlockBatchMQ(const string& addr,
 }
 
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

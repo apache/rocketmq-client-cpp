@@ -14,23 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __NONCOPYABLE_H__
+#define __NONCOPYABLE_H__
 
-#ifndef __NAMESPACEUTIL_H__
-#define __NAMESPACEUTIL_H__
-
-#include <string>
-
-using namespace std;
-
-static const string ENDPOINT_PREFIX = "http://";
-static const unsigned int ENDPOINT_PREFIX_LENGTH = ENDPOINT_PREFIX.length();
 namespace rocketmq {
-class NameSpaceUtil {
- public:
-  static bool isEndPointURL(string nameServerAddr);
 
-  static string formatNameServerURL(string nameServerAddr);
+class noncopyable {
+ protected:
+  noncopyable() = default;
+  ~noncopyable() = default;
+
+  noncopyable(const noncopyable&) = delete;
+  noncopyable& operator=(const noncopyable&) = delete;
 };
 
 }  // namespace rocketmq
-#endif  //__NAMESPACEUTIL_H__
+
+#endif  //__NONCOPYABLE_H__
