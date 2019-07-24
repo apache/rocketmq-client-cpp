@@ -18,6 +18,7 @@
 #ifndef __COMMANDCUSTOMHEADER_H__
 #define __COMMANDCUSTOMHEADER_H__
 
+#include <map>
 #include <string>
 #include "MQClientException.h"
 #include "MessageSysFlag.h"
@@ -33,6 +34,65 @@ class CommandHeader {
   virtual ~CommandHeader() {}
   virtual void Encode(Json::Value& outData) {}
   virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {}
+};
+
+class CheckTransactionStateRequestHeader : public CommandHeader {
+ public:
+  CheckTransactionStateRequestHeader() {}
+  CheckTransactionStateRequestHeader(long tableOffset,
+                                     long commLogOffset,
+                                     const std::string& msgid,
+                                     const std::string& transactionId,
+                                     const std::string& offsetMsgId)
+      : m_tranStateTableOffset(tableOffset),
+        m_commitLogOffset(commLogOffset),
+        m_msgId(msgid),
+        m_transactionId(transactionId),
+        m_offsetMsgId(offsetMsgId) {}
+  virtual ~CheckTransactionStateRequestHeader() {}
+  virtual void Encode(Json::Value& outData);
+  static CommandHeader* Decode(Json::Value& ext);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
+  std::string toString();
+
+ public:
+  long m_tranStateTableOffset;
+  long m_commitLogOffset;
+  std::string m_msgId;
+  std::string m_transactionId;
+  std::string m_offsetMsgId;
+};
+
+class EndTransactionRequestHeader : public CommandHeader {
+ public:
+  EndTransactionRequestHeader() {}
+  EndTransactionRequestHeader(const std::string& groupName,
+                              long tableOffset,
+                              long commLogOffset,
+                              int commitOrRoll,
+                              bool fromTransCheck,
+                              const std::string& msgid,
+                              const std::string& transId)
+      : m_producerGroup(groupName),
+        m_tranStateTableOffset(tableOffset),
+        m_commitLogOffset(commLogOffset),
+        m_commitOrRollback(commitOrRoll),
+        m_fromTransactionCheck(fromTransCheck),
+        m_msgId(msgid),
+        m_transactionId(transId) {}
+  virtual ~EndTransactionRequestHeader() {}
+  virtual void Encode(Json::Value& outData);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<string, string>& requestMap);
+  std::string toString();
+
+ public:
+  std::string m_producerGroup;
+  long m_tranStateTableOffset;
+  long m_commitLogOffset;
+  int m_commitOrRollback;
+  bool m_fromTransactionCheck;
+  std::string m_msgId;
+  std::string m_transactionId;
 };
 
 //<!************************************************************************
@@ -423,6 +483,6 @@ class NotifyConsumerIdsChangedRequestHeader : public CommandHeader {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif
