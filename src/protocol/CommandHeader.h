@@ -54,6 +54,7 @@ class CheckTransactionStateRequestHeader : public CommandHeader {
   static CommandHeader* Decode(Json::Value& ext);
   virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
   std::string toString();
+
  public:
   long m_tranStateTableOffset;
   long m_commitLogOffset;
@@ -482,6 +483,6 @@ class NotifyConsumerIdsChangedRequestHeader : public CommandHeader {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif
