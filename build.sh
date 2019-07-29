@@ -176,7 +176,7 @@ BuildLibevent()
     if [ $? -ne 0 ];then
         exit 1
     fi    
-    make -j
+    make -j4
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -214,7 +214,7 @@ BuildJsonCPP()
     if [ $? -ne 0 ];then
         exit 1
     fi    
-    make -j
+    make -j4
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -269,7 +269,7 @@ BuildRocketMQClient()
     else
         cmake .. -DRUN_UNIT_TEST=ON
     fi
-    make -j
+    make -j4
     if [ $? -ne 0 ];then
         exit 1
     fi        
@@ -307,7 +307,7 @@ BuildGoogleTest()
     if [ $? -ne 0 ];then
         exit 1
     fi    
-    make -j
+    make -j4
     if [ $? -ne 0 ];then
         exit 1
     fi
