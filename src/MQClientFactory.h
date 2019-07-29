@@ -69,7 +69,12 @@ class MQClientFactory {
                            int64 begin,
                            int64 end,
                            const SessionCredentials& session_credentials);
-
+  void endTransactionOneway(const MQMessageQueue& mq,
+                            EndTransactionRequestHeader* requestHeader,
+                            const SessionCredentials& sessionCredentials);
+  void checkTransactionState(const std::string& addr,
+                             const MQMessageExt& message,
+                             const CheckTransactionStateRequestHeader& checkRequestHeader);
   MQClientAPIImpl* getMQClientAPIImpl() const;
   MQProducer* selectProducer(const string& group);
   MQConsumer* selectConsumer(const string& group);
@@ -198,6 +203,6 @@ class MQClientFactory {
   unique_ptr<boost::thread> m_consumer_async_service_thread;
 };
 
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif

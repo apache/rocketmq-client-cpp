@@ -20,6 +20,7 @@
 #include "CPushConsumer.h"
 #include "CCommon.h"
 #include <map>
+#include "MQClientErrorContainer.h"
 
 using namespace rocketmq;
 using namespace std;
@@ -107,6 +108,7 @@ int StartPushConsumer(CPushConsumer* consumer) {
   try {
     ((DefaultMQPushConsumer*)consumer)->start();
   } catch (exception& e) {
+	MQClientErrorContainer::instance()->setErr(string(e.what()));
     return PUSHCONSUMER_START_FAILED;
   }
   return OK;

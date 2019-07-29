@@ -14,40 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MESSAGEID_H__
-#define __MESSAGEID_H__
 
-#include "SocketUtil.h"
-#include "UtilAll.h"
 
-namespace rocketmq {
-//<!***************************************************************************
-class MQMessageId {
- public:
-  MQMessageId() {}
-  MQMessageId(sockaddr address, int64 offset) : m_address(address), m_offset(offset) {}
-  MQMessageId& operator=(const MQMessageId& id) {
-    if (&id == this) {
-      return *this;
-    }
-    this->m_address = id.m_address;
-    this->m_offset = id.m_offset;
-    return *this;
-  }
+#ifndef __C_CLIENT_ERROR_H__
+#define __C_CLIENT_ERROR_H__
 
-  sockaddr getAddress() const { return m_address; }
+#include "CCommon.h"
 
-  void setAddress(sockaddr address) { m_address = address; }
-
-  int64 getOffset() const { return m_offset; }
-
-  void setOffset(int64 offset) { m_offset = offset; }
-
- private:
-  sockaddr m_address;
-  int64 m_offset;
-};
-
-}  // namespace rocketmq
-
+#ifdef __cplusplus
+extern "C" {
 #endif
+	 
+	ROCKETMQCLIENT_API const char *GetLatestErrorMessage();  // Return the last error message
+
+#ifdef __cplusplus
+};
+#endif
+#endif //__C_CLIENT_ERROR_H__

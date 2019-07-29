@@ -242,6 +242,10 @@ void RemotingCommand::SetExtHeader(int code) {
           break;
         case NOTIFY_CONSUMER_IDS_CHANGED:
           m_pExtHeader.reset(NotifyConsumerIdsChangedRequestHeader::Decode(ext));
+          break;
+        case CHECK_TRANSACTION_STATE:
+          m_pExtHeader.reset(CheckTransactionStateRequestHeader::Decode(ext));
+          break;
         default:
           break;
       }

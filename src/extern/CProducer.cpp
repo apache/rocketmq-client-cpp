@@ -15,16 +15,21 @@
  * limitations under the License.
  */
 
-#include "DefaultMQProducer.h"
+#include "CProducer.h"
+
+#include <string.h>
+#include <typeindex>
+
 #include "AsyncCallback.h"
 #include "CBatchMessage.h"
-#include "CProducer.h"
 #include "CCommon.h"
-#include "CSendResult.h"
-#include "CMessage.h"
 #include "CMQException.h"
 #include <string.h>
 #include <typeinfo>
+#include "MQClientErrorContainer.h"
+#include "CMessage.h"
+#include "CSendResult.h"
+#include "DefaultMQProducer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -97,6 +102,7 @@ int StartProducer(CProducer* producer) {
   try {
     ((DefaultMQProducer*)producer)->start();
   } catch (exception& e) {
+	MQClientErrorContainer::instance()->setErr(string(e.what()));
     return PRODUCER_START_FAILED;
   }
   return OK;
@@ -152,6 +158,7 @@ int SendMessageSync(CProducer* producer, CMessage* msg, CSendResult* result) {
     strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
   } catch (exception& e) {
+	MQClientErrorContainer::instance()->setErr(string(e.what()));
     return PRODUCER_SEND_SYNC_FAILED;
   }
   return OK;
@@ -207,13 +214,14 @@ int SendMessageAsync(CProducer* producer,
     defaultMQProducer->send(*message, cSendCallback);
   } catch (exception& e) {
     if (cSendCallback != NULL) {
-      if (typeid(e) == typeid(MQException)) {
+      if (std::type_index(typeid(e)) == std::type_index(typeid(MQException))) {
         MQException& mqe = (MQException&)e;
         cSendCallback->onException(mqe);
       }
       delete cSendCallback;
       cSendCallback = NULL;
     }
+	MQClientErrorContainer::instance()->setErr(string(e.what()));
     return PRODUCER_SEND_ASYNC_FAILED;
   }
   return OK;
@@ -243,6 +251,7 @@ int SendMessageOnewayOrderly(CProducer* producer, CMessage* msg, QueueSelectorCa
     SelectMessageQueue selectMessageQueue(selector);
     defaultMQProducer->sendOneway(*message, &selectMessageQueue, arg);
   } catch (exception& e) {
+	MQClientErrorContainer::instance()->setErr(string(e.what()));
     return PRODUCER_SEND_ONEWAY_FAILED;
   }
   return OK;
@@ -269,6 +278,7 @@ int SendMessageOrderlyAsync(CProducer* producer,
   } catch (exception& e) {
     printf("%s\n", e.what());
     // std::count<<e.what( )<<std::endl;
+	MQClientErrorContainer::instance()->setErr(string(e.what()));
     return PRODUCER_SEND_ORDERLYASYNC_FAILED;
   }
   return OK;
@@ -295,6 +305,7 @@ int SendMessageOrderly(CProducer* producer,
     strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
   } catch (exception& e) {
+	MQClientErrorContainer::instance()->setErr(string(e.what()));
     return PRODUCER_SEND_ORDERLY_FAILED;
   }
   return OK;

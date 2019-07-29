@@ -16,7 +16,11 @@
  */
 
 #include "DefaultMQProducer.h"
+
 #include <assert.h>
+#include <typeindex>
+
+#include "BatchMessage.h"
 #include "CommandHeader.h"
 #include "CommunicationMode.h"
 #include "Logging.h"
@@ -26,11 +30,9 @@
 #include "MQClientManager.h"
 #include "MQDecoder.h"
 #include "MQProtos.h"
+#include "StringIdMaker.h"
 #include "TopicPublishInfo.h"
 #include "Validators.h"
-#include "StringIdMaker.h"
-#include "BatchMessage.h"
-#include <typeinfo>
 
 namespace rocketmq {
 
@@ -390,8 +392,7 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
 
   if (!brokerAddr.empty()) {
     try {
-      BatchMessage batchMessage;
-      bool isBatchMsg = (typeid(msg).name() == typeid(batchMessage).name());
+      bool isBatchMsg = std::type_index(typeid(msg)) == std::type_index(typeid(BatchMessage));
       // msgId is produced by client, offsetMsgId produced by broker. (same with java sdk)
       if (!isBatchMsg) {
         string unique_id = StringIdMaker::get_mutable_instance().get_unique_id();
@@ -466,7 +467,7 @@ SendResult DefaultMQProducer::sendAutoRetrySelectImpl(MQMessage& msg,
         lastmq = mq;
       } else {
         LOG_INFO("sendAutoRetrySelectImpl with times:{}", times);
-        vector<MQMessageQueue> mqs(topicPublishInfo->getMessageQueueList());
+        std::vector<MQMessageQueue> mqs(topicPublishInfo->getMessageQueueList());
         for (size_t i = 0; i < mqs.size(); i++) {
           if (mqs[i] == lastmq)
             mq_index = i;
@@ -571,4 +572,4 @@ void DefaultMQProducer::setRetryTimes4Async(int times) {
 }
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
