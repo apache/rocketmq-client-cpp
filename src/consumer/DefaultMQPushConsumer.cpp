@@ -205,8 +205,8 @@ DefaultMQPushConsumer::DefaultMQPushConsumer(const string& groupname)
   setMessageModel(CLUSTERING);
 
   m_startTime = UtilAll::currentTimeMillis();
-  m_consumeThreadCount = boost::thread::hardware_concurrency();
-  m_pullMsgThreadPoolNum = boost::thread::hardware_concurrency();
+  m_consumeThreadCount = std::thread::hardware_concurrency();
+  m_pullMsgThreadPoolNum = std::thread::hardware_concurrency();
   m_async_service_thread.reset(new boost::thread(boost::bind(&DefaultMQPushConsumer::boost_asio_work, this)));
 }
 
