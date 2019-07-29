@@ -41,7 +41,7 @@ MQClient::MQClient() {
   m_instanceName = "DEFAULT";
   m_clientFactory = NULL;
   m_serviceState = CREATE_JUST;
-  m_pullThreadNum = boost::thread::hardware_concurrency();
+  m_pullThreadNum = std::thread::hardware_concurrency();
   m_tcpConnectTimeout = 3000;        // 3s
   m_tcpTransportTryLockTimeout = 3;  // 3s
   m_unitName = "";
