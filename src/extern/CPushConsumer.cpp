@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-#include "DefaultMQPushConsumer.h"
-#include "CMessageExt.h"
 #include "CPushConsumer.h"
-#include "CCommon.h"
 #include <map>
+#include "CCommon.h"
+#include "CMessageExt.h"
+#include "DefaultMQPushConsumer.h"
 #include "MQClientErrorContainer.h"
 
 using namespace rocketmq;
@@ -108,7 +108,7 @@ int StartPushConsumer(CPushConsumer* consumer) {
   try {
     ((DefaultMQPushConsumer*)consumer)->start();
   } catch (exception& e) {
-	MQClientErrorContainer::instance()->setErr(string(e.what()));
+    MQClientErrorContainer::instance()->setErr(string(e.what()));
     return PUSHCONSUMER_START_FAILED;
   }
   return OK;

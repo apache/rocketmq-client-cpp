@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 #ifndef __C_CLIENT_ERROR_H__
 #define __C_CLIENT_ERROR_H__
 
@@ -24,10 +23,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-	 
-	ROCKETMQCLIENT_API const char *GetLatestErrorMessage();  // Return the last error message
+
+ROCKETMQCLIENT_API const char* GetLatestErrorMessage();  // Return the last error message
 
 #ifdef __cplusplus
 };
 #endif
-#endif //__C_CLIENT_ERROR_H__
+#endif  //__C_CLIENT_ERROR_H__
