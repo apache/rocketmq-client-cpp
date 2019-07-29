@@ -16,7 +16,9 @@
  */
 
 #include "TransactionMQProducer.h"
+
 #include <string>
+
 #include "CommandHeader.h"
 #include "Logging.h"
 #include "MQClientFactory.h"
@@ -26,17 +28,15 @@
 #include "TransactionSendResult.h"
 
 using namespace std;
+
 namespace rocketmq {
 
 void TransactionMQProducer::initTransactionEnv() {
-  for (int i = 0; i < m_thread_num; ++i) {
-    m_threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &m_ioService));
-  }
+  m_checkTransactionExecutor.startup();
 }
 
 void TransactionMQProducer::destroyTransactionEnv() {
-  m_ioService.stop();
-  m_threadpool.join_all();
+  m_checkTransactionExecutor.shutdown();
 }
 
 TransactionSendResult TransactionMQProducer::sendMessageInTransaction(MQMessage& msg, void* arg) {
@@ -143,8 +143,9 @@ void TransactionMQProducer::checkTransactionState(const std::string& addr,
     THROW_MQEXCEPTION(MQClientException, "checkTransactionState, transactionListener null", -1);
   }
 
-  m_ioService.post(boost::bind(&TransactionMQProducer::checkTransactionStateImpl, this, addr, message,
-                               tranStateTableOffset, commitLogOffset, msgId, transactionId, offsetMsgId));
+  m_checkTransactionExecutor.submit(std::bind(&TransactionMQProducer::checkTransactionStateImpl, this, addr, message,
+                                              tranStateTableOffset, commitLogOffset, msgId, transactionId,
+                                              offsetMsgId));
 }
 
 void TransactionMQProducer::checkTransactionStateImpl(const std::string& addr,

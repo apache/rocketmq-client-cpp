@@ -18,13 +18,11 @@
 #ifndef __TRANSACTIONMQPRODUCER_H__
 #define __TRANSACTIONMQPRODUCER_H__
 
-#include <boost/asio.hpp>
-#include <boost/asio/io_service.hpp>
-#include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/weak_ptr.hpp>
 #include <memory>
 #include <string>
+
+#include "concurrent/executor.hpp"
+
 #include "DefaultMQProducer.h"
 #include "MQMessageExt.h"
 #include "TransactionListener.h"
@@ -35,7 +33,7 @@ namespace rocketmq {
 class ROCKETMQCLIENT_API TransactionMQProducer : public DefaultMQProducer {
  public:
   TransactionMQProducer(const std::string& producerGroup)
-      : DefaultMQProducer(producerGroup), m_thread_num(1), m_ioServiceWork(m_ioService) {}
+      : DefaultMQProducer(producerGroup), m_thread_num(1), m_checkTransactionExecutor(m_thread_num, false) {}
   virtual ~TransactionMQProducer() {}
   void start();
   void shutdown();
@@ -65,10 +63,10 @@ class ROCKETMQCLIENT_API TransactionMQProducer : public DefaultMQProducer {
  private:
   std::shared_ptr<TransactionListener> m_transactionListener;
   int m_thread_num;
-  boost::thread_group m_threadpool;
-  boost::asio::io_service m_ioService;
-  boost::asio::io_service::work m_ioServiceWork;
+
+  thread_pool_executor m_checkTransactionExecutor;
 };
+
 }  // namespace rocketmq
 
 #endif
