@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef __C_CLIENT_ERROR_H__
-#define __C_CLIENT_ERROR_H__
+#ifndef __CERROR_MESSAGE_H__
+#define __CERROR_MESSAGE_H__
 
 #include "CCommon.h"
 
@@ -29,4 +29,4 @@ ROCKETMQCLIENT_API const char* GetLatestErrorMessage();  // Return the last erro
 #ifdef __cplusplus
 };
 #endif
-#endif  //__C_CLIENT_ERROR_H__
+#endif  //__CERROR_MESSAGE_H__
