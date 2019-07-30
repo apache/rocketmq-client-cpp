@@ -16,6 +16,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include "CBatchMessage.h"
 #include "CCommon.h"
 #include "CMessage.h"
@@ -38,8 +39,8 @@ void StartSendMessage(CProducer* producer) {
     AddMessage(batchMessage, msg);
   }
   CSendResult result;
-  int ok = SendBatchMessage(producer, batchMessage, &result);
-  printf("SendBatchMessage is %s .....\n", ok == 0 ? "Success" : ok == 11 ? "FAILED" : " It is null value");
+  ret_code = SendBatchMessage(producer, batchMessage, &result);
+  printf("SendBatchMessage is %s .....\n", ret_code == 0 ? "Success" : ret_code == 11 ? "FAILED" : " It is null value");
   DestroyBatchMessage(batchMessage);
 }
 
