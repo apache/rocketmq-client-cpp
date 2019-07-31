@@ -40,7 +40,7 @@ void StartSendMessage(CProducer* producer) {
   }
   CSendResult result;
   ret_code = SendBatchMessage(producer, batchMessage, &result);
-  printf("SendBatchMessage is %s .....\n", ret_code == 0 ? "Success" : ret_code == 11 ? "FAILED" : " It is null value");
+  printf("SendBatchMessage %s .....\n", ret_code == 0 ? "Success" : ret_code == 11 ? "FAILED" : " It is null value");
   DestroyBatchMessage(batchMessage);
 }
 
