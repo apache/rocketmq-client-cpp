@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -41,6 +40,7 @@ need_build_jsoncpp=1
 need_build_libevent=1
 need_build_boost=1
 test=0
+cpu_num=4
 
 pasres_arguments(){
     for var in "$@"
@@ -176,7 +176,7 @@ BuildLibevent()
     if [ $? -ne 0 ];then
         exit 1
     fi    
-    make -j4
+    make -j $cpu_num
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -214,7 +214,7 @@ BuildJsonCPP()
     if [ $? -ne 0 ];then
         exit 1
     fi    
-    make -j4
+    make -j $cpu_num
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -225,8 +225,6 @@ BuildJsonCPP()
         echo " ./bin/lib directory is not libjsoncpp.a"
         cp ${install_lib_dir}/lib/x86_64-linux-gnu/libjsoncpp.a ${install_lib_dir}/lib/
     fi
-
-
 }
 
 BuildBoost()
@@ -255,7 +253,7 @@ BuildBoost()
     fi    
     echo "build boost static #####################"
     pwd
-    ./b2 -j10 cflags=-fPIC cxxflags=-fPIC   --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static  release install --prefix=${install_lib_dir}
+    ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC   --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static  release install --prefix=${install_lib_dir}
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -269,7 +267,7 @@ BuildRocketMQClient()
     else
         cmake .. -DRUN_UNIT_TEST=ON
     fi
-    make -j4
+    make -j $cpu_num
     if [ $? -ne 0 ];then
         exit 1
     fi        
@@ -307,7 +305,7 @@ BuildGoogleTest()
     if [ $? -ne 0 ];then
         exit 1
     fi    
-    make -j4
+    make -j $cpu_num
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -355,7 +353,6 @@ ExecutionTesting()
     echo "##################  test  end  ###########"
 }
 
-
 PackageRocketMQStatic()
 {
     #packet libevent,jsoncpp,boost,rocketmq,Signature to one librocketmq.a
@@ -363,7 +360,6 @@ PackageRocketMQStatic()
     ar -M < ${basepath}/package_rocketmq.mri
     cp -f librocketmq.a ${install_lib_dir}
 }
-
 
 PrintParams
 Prepare
