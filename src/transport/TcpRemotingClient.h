@@ -20,10 +20,7 @@
 #include <map>
 #include <mutex>
 
-#include <boost/asio.hpp>
-#include <boost/asio/io_service.hpp>
-#include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include "concurrent/executor.hpp"
 
 #include "ClientRemotingProcessor.h"
 #include "RemotingCommand.h"
@@ -50,7 +47,7 @@ class TcpRemotingClient {
   bool invokeAsync(const string& addr,
                    RemotingCommand& request,
                    AsyncCallbackWrap* cbw,
-                   int64 timeoutMilliseconds,
+                   int64 timeoutMillis,
                    int maxRetrySendTimes = 1,
                    int retrySendTimes = 1);
 
@@ -65,7 +62,7 @@ class TcpRemotingClient {
   void ProcessData(const MemoryBlock& mem, const string& addr);
   void processRequestCommand(RemotingCommand* pCmd, const string& addr);
   void processResponseCommand(RemotingCommand* pCmd, std::shared_ptr<ResponseFuture> pFuture);
-  void handleAsyncRequestTimeout(const boost::system::error_code& e, int opaque);
+  void checkAsyncRequestTimeout(int opaque);
 
   std::shared_ptr<TcpTransport> GetTransport(const string& addr, bool needResponse);
   std::shared_ptr<TcpTransport> CreateTransport(const string& addr, bool needResponse);
@@ -79,18 +76,10 @@ class TcpRemotingClient {
   void addResponseFuture(int opaque, std::shared_ptr<ResponseFuture> pFuture);
   std::shared_ptr<ResponseFuture> findAndDeleteResponseFuture(int opaque);
 
-  void addTimerCallback(boost::asio::deadline_timer* t, int opaque);
-  void eraseTimerCallback(int opaque);
-  void cancelTimerCallback(int opaque);
-  void removeAllTimerCallback();
-
-  void boost_asio_work();
-
  private:
   using RequestMap = map<int, ClientRemotingProcessor*>;
   using TcpMap = map<string, std::shared_ptr<TcpTransport>>;
   using ResMap = map<int, std::shared_ptr<ResponseFuture>>;
-  using AsyncTimerMap = map<int, boost::asio::deadline_timer*>;
 
   RequestMap m_requestTable;
 
@@ -99,9 +88,6 @@ class TcpRemotingClient {
 
   ResMap m_futureTable;  //<! id->future;
   std::mutex m_futureTableLock;
-
-  AsyncTimerMap m_asyncTimerTable;
-  std::mutex m_asyncTimerTableLock;
 
   int m_dispatchThreadNum;
   int m_pullThreadNum;
@@ -114,16 +100,9 @@ class TcpRemotingClient {
   string m_namesrvAddrChoosed;
   unsigned int m_namesrvIndex;
 
-  boost::asio::io_service m_dispatchService;
-  boost::asio::io_service::work m_dispatchServiceWork;
-  boost::thread_group m_dispatchThreadPool;
-
-  boost::asio::io_service m_handleService;
-  boost::asio::io_service::work m_handleServiceWork;
-  boost::thread_group m_handleThreadPool;
-
-  boost::asio::io_service m_timerService;
-  unique_ptr<boost::thread> m_timerServiceThread;
+  thread_pool_executor m_dispatchExecutor;
+  thread_pool_executor m_handleExecutor;
+  scheduled_thread_pool_executor m_timeoutExecutor;
 };
 
 //<!************************************************************************

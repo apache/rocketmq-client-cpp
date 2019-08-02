@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "TcpRemotingClient.h"
+
 #include <stddef.h>
 #if !defined(WIN32) && !defined(__APPLE__)
 #include <sys/prctl.h>
@@ -33,15 +34,14 @@ TcpRemotingClient::TcpRemotingClient(int pullThreadNum, uint64_t tcpConnectTimeo
       m_tcpConnectTimeout(tcpConnectTimeout),
       m_tcpTransportTryLockTimeout(tcpTransportTryLockTimeout),
       m_namesrvIndex(0),
-      m_dispatchServiceWork(m_dispatchService),
-      m_handleServiceWork(m_handleService) {
+      m_dispatchExecutor(m_dispatchThreadNum, false),
+      m_handleExecutor(pullThreadNum, false),
+      m_timeoutExecutor(false) {
 #if !defined(WIN32) && !defined(__APPLE__)
   string taskName = UtilAll::getProcessName();
   prctl(PR_SET_NAME, "DispatchTP", 0, 0, 0);
 #endif
-  for (int i = 0; i != m_dispatchThreadNum; ++i) {
-    m_dispatchThreadPool.create_thread(boost::bind(&boost::asio::io_service::run, &m_dispatchService));
-  }
+  m_dispatchExecutor.startup();
 #if !defined(WIN32) && !defined(__APPLE__)
   prctl(PR_SET_NAME, taskName.c_str(), 0, 0, 0);
 #endif
@@ -49,9 +49,7 @@ TcpRemotingClient::TcpRemotingClient(int pullThreadNum, uint64_t tcpConnectTimeo
 #if !defined(WIN32) && !defined(__APPLE__)
   prctl(PR_SET_NAME, "NetworkTP", 0, 0, 0);
 #endif
-  for (int i = 0; i != m_pullThreadNum; ++i) {
-    m_handleThreadPool.create_thread(boost::bind(&boost::asio::io_service::run, &m_handleService));
-  }
+  m_handleExecutor.startup();
 #if !defined(WIN32) && !defined(__APPLE__)
   prctl(PR_SET_NAME, taskName.c_str(), 0, 0, 0);
 #endif
@@ -59,36 +57,25 @@ TcpRemotingClient::TcpRemotingClient(int pullThreadNum, uint64_t tcpConnectTimeo
   LOG_INFO("m_tcpConnectTimeout:%ju, m_tcpTransportTryLockTimeout:%ju, m_pullThreadNum:%d", m_tcpConnectTimeout,
            m_tcpTransportTryLockTimeout, m_pullThreadNum);
 
-  m_timerServiceThread.reset(new boost::thread(boost::bind(&TcpRemotingClient::boost_asio_work, this)));
-}
-
-void TcpRemotingClient::boost_asio_work() {
-  LOG_INFO("TcpRemotingClient::boost asio async service running");
-
 #if !defined(WIN32) && !defined(__APPLE__)
   prctl(PR_SET_NAME, "RemotingAsioT", 0, 0, 0);
 #endif
-
-  // avoid async io service stops after first timer timeout callback
-  boost::asio::io_service::work work(m_timerService);
-
-  m_timerService.run();
+  m_timeoutExecutor.startup();
+#if !defined(WIN32) && !defined(__APPLE__)
+  prctl(PR_SET_NAME, taskName.c_str(), 0, 0, 0);
+#endif
 }
 
 TcpRemotingClient::~TcpRemotingClient() {
   m_tcpTable.clear();
   m_futureTable.clear();
   m_namesrvAddrList.clear();
-  removeAllTimerCallback();
 }
 
 void TcpRemotingClient::stopAllTcpTransportThread() {
   LOG_DEBUG("TcpRemotingClient::stopAllTcpTransportThread Begin");
 
-  m_timerService.stop();
-  m_timerServiceThread->interrupt();
-  m_timerServiceThread->join();
-  removeAllTimerCallback();
+  m_timeoutExecutor.shutdown();
 
   {
     std::lock_guard<std::timed_mutex> lock(m_tcpTableLock);
@@ -98,11 +85,9 @@ void TcpRemotingClient::stopAllTcpTransportThread() {
     m_tcpTable.clear();
   }
 
-  m_handleService.stop();
-  m_handleThreadPool.join_all();
+  m_handleExecutor.shutdown();
 
-  m_dispatchService.stop();
-  m_dispatchThreadPool.join_all();
+  m_dispatchExecutor.shutdown();
 
   {
     std::lock_guard<std::mutex> lock(m_futureTableLock);
@@ -242,11 +227,8 @@ bool TcpRemotingClient::invokeAsync(const string& addr,
     addResponseFuture(opaque, responseFuture);
 
     // timeout monitor
-    boost::asio::deadline_timer* t =
-        new boost::asio::deadline_timer(m_timerService, boost::posix_time::milliseconds(timeoutMillis));
-    addTimerCallback(t, opaque);
-    t->async_wait(
-        boost::bind(&TcpRemotingClient::handleAsyncRequestTimeout, this, boost::asio::placeholders::error, opaque));
+    m_timeoutExecutor.schedule(std::bind(&TcpRemotingClient::checkAsyncRequestTimeout, this, opaque), timeoutMillis,
+                             time_unit::milliseconds);
 
     // even if send failed, asyncTimerThread will trigger next pull request or report send msg failed
     if (SendCommand(pTcp, request)) {
@@ -261,7 +243,7 @@ bool TcpRemotingClient::invokeAsync(const string& addr,
 }
 
 void TcpRemotingClient::invokeOneway(const string& addr, RemotingCommand& request) {
-  //<!not need callback;
+  // not need callback;
   std::shared_ptr<TcpTransport> pTcp = GetTransport(addr, true);
   if (pTcp != nullptr) {
     request.markOnewayRPC();
@@ -469,7 +451,7 @@ void TcpRemotingClient::static_messageReceived(void* context, const MemoryBlock&
 }
 
 void TcpRemotingClient::messageReceived(const MemoryBlock& mem, const string& addr) {
-  m_dispatchService.post(boost::bind(&TcpRemotingClient::ProcessData, this, mem, addr));
+  m_dispatchExecutor.submit(std::bind(&TcpRemotingClient::ProcessData, this, mem, addr));
 }
 
 void TcpRemotingClient::ProcessData(const MemoryBlock& mem, const string& addr) {
@@ -495,7 +477,7 @@ void TcpRemotingClient::ProcessData(const MemoryBlock& mem, const string& addr) 
     LOG_DEBUG("find_response opaque:%d", opaque);
     processResponseCommand(pRespondCmd, pFuture);
   } else {
-    m_handleService.post(boost::bind(&TcpRemotingClient::processRequestCommand, this, pRespondCmd, addr));
+    m_handleExecutor.submit(std::bind(&TcpRemotingClient::processRequestCommand, this, pRespondCmd, addr));
   }
 }
 
@@ -515,26 +497,18 @@ void TcpRemotingClient::processResponseCommand(RemotingCommand* pCmd, std::share
   }
 
   if (pFuture->getAsyncFlag()) {
-    cancelTimerCallback(opaque);
-
-    m_handleService.post(boost::bind(&ResponseFuture::invokeCompleteCallback, pFuture));
+    m_handleExecutor.submit(std::bind(&ResponseFuture::invokeCompleteCallback, pFuture));
   }
 }
 
-void TcpRemotingClient::handleAsyncRequestTimeout(const boost::system::error_code& e, int opaque) {
-  if (e == boost::asio::error::operation_aborted) {
-    LOG_DEBUG("handleAsyncRequestTimeout aborted opaque:%d, e_code:%d, msg:%s", opaque, e.value(), e.message().data());
-    return;
-  }
-
-  LOG_DEBUG("handleAsyncRequestTimeout opaque:%d, e_code:%d, msg:%s", opaque, e.value(), e.message().data());
+void TcpRemotingClient::checkAsyncRequestTimeout(int opaque) {
+  LOG_DEBUG("checkAsyncRequestTimeout opaque:%d", opaque);
 
   std::shared_ptr<ResponseFuture> pFuture(findAndDeleteResponseFuture(opaque));
   if (pFuture) {
     LOG_ERROR("no response got for opaque:%d", opaque);
-    eraseTimerCallback(opaque);
     if (pFuture->getAsyncCallbackWrap()) {
-      m_handleService.post(boost::bind(&ResponseFuture::invokeExceptionCallback, pFuture));
+      m_handleExecutor.submit(std::bind(&ResponseFuture::invokeExceptionCallback, pFuture));
     }
   }
 }
@@ -579,61 +553,6 @@ void TcpRemotingClient::registerProcessor(MQRequestCode requestCode, ClientRemot
   if (m_requestTable.find(requestCode) != m_requestTable.end())
     m_requestTable.erase(requestCode);
   m_requestTable[requestCode] = clientRemotingProcessor;
-}
-
-void TcpRemotingClient::addTimerCallback(boost::asio::deadline_timer* t, int opaque) {
-  std::lock_guard<std::mutex> lock(m_asyncTimerTableLock);
-  if (m_asyncTimerTable.find(opaque) != m_asyncTimerTable.end()) {
-    LOG_DEBUG("addTimerCallback:erase timerCallback opaque:%lld", opaque);
-    boost::asio::deadline_timer* old_t = m_asyncTimerTable[opaque];
-    m_asyncTimerTable.erase(opaque);
-    try {
-      old_t->cancel();
-    } catch (const std::exception& ec) {
-      LOG_WARN("encounter exception when cancel old timer: %s", ec.what());
-    }
-    delete old_t;
-  }
-  m_asyncTimerTable[opaque] = t;
-}
-
-void TcpRemotingClient::eraseTimerCallback(int opaque) {
-  std::lock_guard<std::mutex> lock(m_asyncTimerTableLock);
-  if (m_asyncTimerTable.find(opaque) != m_asyncTimerTable.end()) {
-    LOG_DEBUG("eraseTimerCallback: opaque:%lld", opaque);
-    boost::asio::deadline_timer* t = m_asyncTimerTable[opaque];
-    m_asyncTimerTable.erase(opaque);
-    delete t;
-  }
-}
-
-void TcpRemotingClient::cancelTimerCallback(int opaque) {
-  std::lock_guard<std::mutex> lock(m_asyncTimerTableLock);
-  if (m_asyncTimerTable.find(opaque) != m_asyncTimerTable.end()) {
-    LOG_DEBUG("cancelTimerCallback: opaque:%lld", opaque);
-    boost::asio::deadline_timer* t = m_asyncTimerTable[opaque];
-    m_asyncTimerTable.erase(opaque);
-    try {
-      t->cancel();
-    } catch (const std::exception& ec) {
-      LOG_WARN("encounter exception when cancel timer: %s", ec.what());
-    }
-    delete t;
-  }
-}
-
-void TcpRemotingClient::removeAllTimerCallback() {
-  std::lock_guard<std::mutex> lock(m_asyncTimerTableLock);
-  for (const auto& timer : m_asyncTimerTable) {
-    boost::asio::deadline_timer* t = timer.second;
-    try {
-      t->cancel();
-    } catch (const std::exception& ec) {
-      LOG_WARN("encounter exception when cancel timer: %s", ec.what());
-    }
-    delete t;
-  }
-  m_asyncTimerTable.clear();
 }
 
 //<!************************************************************************
