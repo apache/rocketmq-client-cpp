@@ -45,22 +45,21 @@ class TcpRemotingClient {
 
   bool invokeAsync(const std::string& addr,
                    RemotingCommand& request,
-                   AsyncCallbackWrap* cbw,
-                   int64 timeoutMillis,
-                   int maxRetrySendTimes = 1,
-                   int retrySendTimes = 1);
+                   InvokeCallback* invokeCallback,
+                   int64 timeoutMillis);
 
   void invokeOneway(const std::string& addr, RemotingCommand& request);
 
   void registerProcessor(MQRequestCode requestCode, ClientRemotingProcessor* clientRemotingProcessor);
 
  private:
-  static void static_messageReceived(void* context, const MemoryBlock& mem, const std::string& addr);
+  static void MessageReceived(void* context, const MemoryBlock& mem, const std::string& addr);
 
   void messageReceived(const MemoryBlock& mem, const std::string& addr);
-  void ProcessData(const MemoryBlock& mem, const std::string& addr);
-  void processRequestCommand(RemotingCommand* pCmd, const std::string& addr);
-  void processResponseCommand(RemotingCommand* pCmd, std::shared_ptr<ResponseFuture> pFuture);
+  void processMessageReceived(const MemoryBlock& mem, const std::string& addr);
+  void processRequestCommand(RemotingCommand* cmd, const std::string& addr);
+  void processResponseCommand(RemotingCommand* cmd);
+
   void checkAsyncRequestTimeout(int opaque);
 
   std::shared_ptr<TcpTransport> GetTransport(const std::string& addr, bool needResponse);
@@ -76,20 +75,18 @@ class TcpRemotingClient {
   std::shared_ptr<ResponseFuture> findAndDeleteResponseFuture(int opaque);
 
  private:
-  using RequestMap = std::map<int, ClientRemotingProcessor*>;
-  using TcpMap = std::map<std::string, std::shared_ptr<TcpTransport>>;
-  using ResMap = std::map<int, std::shared_ptr<ResponseFuture>>;
+  using ProcessorMap = std::map<int, ClientRemotingProcessor*>;
+  using TransportMap = std::map<std::string, std::shared_ptr<TcpTransport>>;
+  using FutureMap = std::map<int, std::shared_ptr<ResponseFuture>>;
 
-  RequestMap m_requestTable;
+  ProcessorMap m_processorTable;  // code -> processor
 
-  TcpMap m_tcpTable;  // addr->tcp;
-  std::timed_mutex m_tcpTableLock;
+  TransportMap m_transportTable;  // addr -> transport
+  std::timed_mutex m_transportTableMutex;
 
-  ResMap m_futureTable;  // id->future;
-  std::mutex m_futureTableLock;
+  FutureMap m_futureTable;  // opaque -> future
+  std::mutex m_futureTableMutex;
 
-  int m_dispatchThreadNum;
-  int m_pullThreadNum;
   uint64_t m_tcpConnectTimeout;           // ms
   uint64_t m_tcpTransportTryLockTimeout;  // s
 

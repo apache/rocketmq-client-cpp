@@ -1,19 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,7 +36,7 @@ SendCallback* g_callback = NULL;
 TpsReportService g_tps;
 
 class MySendCallback : public SendCallback {
-  virtual void onSuccess(SendResult& sendResult) {
+  void onSuccess(SendResult& sendResult) override {
     g_msgCount--;
     g_tps.Increment();
     if (g_msgCount.load() <= 0) {
@@ -44,20 +44,23 @@ class MySendCallback : public SendCallback {
       g_finished.notify_one();
     }
   }
-  virtual void onException(MQException& e) { cout << "send Exception\n"; }
+
+  void onException(MQException& e) noexcept override { cout << "send Exception\n"; }
 };
 
-class MyAutoDeleteSendCallback : public AutoDeleteSendCallBack {
+class MyAutoDeleteSendCallback : public AutoDeleteSendCallback {
  public:
   virtual ~MyAutoDeleteSendCallback() {}
-  virtual void onSuccess(SendResult& sendResult) {
+
+  void onSuccess(SendResult& sendResult) override {
     g_msgCount--;
     if (g_msgCount.load() <= 0) {
       std::unique_lock<std::mutex> lck(g_mtx);
       g_finished.notify_one();
     }
   }
-  virtual void onException(MQException& e) { std::cout << "send Exception" << e << "\n"; }
+
+  void onException(MQException& e) noexcept override { std::cout << "send Exception" << e << "\n"; }
 };
 
 void AsyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* producer) {

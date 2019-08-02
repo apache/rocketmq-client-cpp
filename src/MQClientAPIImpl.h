@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef __MQCLIENTAPIIMPL_H__
-#define __MQCLIENTAPIIMPL_H__
+#ifndef __MQ_CLIENT_API_IMPL_H__
+#define __MQ_CLIENT_API_IMPL_H__
 
 #include "AsyncCallback.h"
 #include "ClientRPCHook.h"
@@ -190,8 +190,7 @@ class MQClientAPIImpl {
                         RemotingCommand& request,
                         SendCallback* pSendCallback,
                         int64 timeoutMilliseconds,
-                        int maxRetryTimes = 1,
-                        int retrySendTimes = 1);
+                        int maxRetryTimes = 1);
 
  private:
   SendResult sendMessageSync(const string& addr,
@@ -220,4 +219,4 @@ class MQClientAPIImpl {
 
 }  // namespace rocketmq
 
-#endif
+#endif  // __MQ_CLIENT_API_IMPL_H__

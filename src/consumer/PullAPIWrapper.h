@@ -25,8 +25,9 @@
 #include "SubscriptionData.h"
 
 namespace rocketmq {
+
 class MQClientFactory;
-//<!***************************************************************************
+
 class PullAPIWrapper {
  public:
   PullAPIWrapper(MQClientFactory* mqClientFactory, const std::string& consumerGroup);
@@ -46,7 +47,7 @@ class PullAPIWrapper {
                              int communicationMode,           // 10
                              PullCallback* pullCallback,
                              const SessionCredentials& session_credentials,
-                             void* pArg = NULL);
+                             void* pArg = nullptr);
 
  private:
   void updatePullFromWhichNode(const MQMessageQueue& mq, int brokerId);

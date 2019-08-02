@@ -17,6 +17,7 @@
 
 #include "MQClientAPIImpl.h"
 
+#include "AsyncCallbackWrap.h"
 #include "CommunicationMode.h"
 #include "Logging.h"
 #include "MQDecoder.h"
@@ -126,7 +127,7 @@ SendResult MQClientAPIImpl::sendMessage(const string& addr,
       m_pRemotingClient->invokeOneway(addr, request);
       break;
     case ComMode_ASYNC:
-      sendMessageAsync(addr, brokerName, msg, request, pSendCallback, timeoutMillis, maxRetrySendTimes, 1);
+      sendMessageAsync(addr, brokerName, msg, request, pSendCallback, timeoutMillis, maxRetrySendTimes);
       break;
     case ComMode_SYNC:
       return sendMessageSync(addr, brokerName, msg, request, timeoutMillis);
@@ -280,50 +281,66 @@ SendResult MQClientAPIImpl::sendMessageSync(const string& addr,
   THROW_MQEXCEPTION(MQClientException, "response is null", -1);
 }
 
-void MQClientAPIImpl::sendMessageAsync(const std::string& addr,
-                                       const std::string& brokerName,
+static void SendMessageAsyncImpl(TcpRemotingClient* client,
+                                 SendCallbackWrap* cbw,
+                                 int64 timeoutMillis) throw(MQClientException) {
+  auto addr = cbw->getAddr();
+  auto msg = cbw->getMessage();
+  auto request = const_cast<RemotingCommand&>(cbw->getRemotingCommand());
+
+  int curRetrySendTimes = cbw->getRetrySendTimes() + 1;
+  int maxRetrySendTimes = cbw->getMaxRetrySendTimes();
+
+  int64 time_out = timeoutMillis;
+  int64 begin_time = UtilAll::currentTimeMillis();
+  while (curRetrySendTimes <= maxRetrySendTimes && time_out > 0) {
+    LOG_DEBUG("sendMessageAsync request:%s, timeout:%lld, maxRetryTimes:%d retrySendTimes:%d",
+              request.ToString().data(), time_out, maxRetrySendTimes, curRetrySendTimes);
+
+    cbw->setRetrySendTimes(curRetrySendTimes);
+    if (client->invokeAsync(addr, request, cbw, time_out)) {
+      return;  // invokeAsync success
+    }
+
+    time_out = timeoutMillis - (UtilAll::currentTimeMillis() - begin_time);
+
+    if (curRetrySendTimes > 1) {
+      LOG_WARN("invokeAsync retry failed to addr:%s, topic:%s, timeout:%lld, maxRetryTimes:%d, retrySendTimes:%d",
+               addr.c_str(), msg.getTopic().data(), time_out, maxRetrySendTimes, curRetrySendTimes);
+    } else {
+      LOG_WARN("invokeAsync failed to addr:%s, topic:%s, timeout:%lld, maxRetryTimes:%d, retrySendTimes:%d",
+               addr.c_str(), msg.getTopic().data(), time_out, maxRetrySendTimes, curRetrySendTimes);
+    }
+
+    curRetrySendTimes += 1;
+  }
+
+  LOG_ERROR("sendMessageAsync failed to addr:%s, topic:%s, timeout:%lld, maxRetryTimes:%d, retrySendTimes:%d",
+            addr.c_str(), msg.getTopic().data(), time_out, maxRetrySendTimes, curRetrySendTimes);
+
+  if (cbw) {
+    cbw->operationComplete(nullptr);
+    deleteAndZero(cbw);
+  } else {
+    THROW_MQEXCEPTION(MQClientException, "sendMessageAsync failed", -1);
+  }
+}
+
+void MQClientAPIImpl::sendMessageAsync(const string& addr,
+                                       const string& brokerName,
                                        const MQMessage& msg,
                                        RemotingCommand& request,
                                        SendCallback* pSendCallback,
-                                       int64 timeoutMilliseconds,
-                                       int maxRetryTimes,
-                                       int retrySendTimes) {
-  int64 begin_time = UtilAll::currentTimeMillis();
+                                       int64 timeoutMillis,
+                                       int maxRetryTimes) {
+  TcpRemotingClient* client = m_pRemotingClient.get();
+
   // delete in future;
-  auto* cbw = new SendCallbackWrap(brokerName, msg, pSendCallback, this);
+  auto cbw = new SendCallbackWrap(
+      addr, brokerName, msg, request, maxRetryTimes, 0, pSendCallback, this,
+      [client](SendCallbackWrap* cbw, int64 timeout) { SendMessageAsyncImpl(client, cbw, timeout); });
 
-  LOG_DEBUG("sendMessageAsync request:%s, timeout:%lld, maxRetryTimes:%d retrySendTimes:%d", request.ToString().data(),
-            timeoutMilliseconds, maxRetryTimes, retrySendTimes);
-
-  if (m_pRemotingClient->invokeAsync(addr, request, cbw, timeoutMilliseconds, maxRetryTimes, retrySendTimes) == false) {
-    LOG_WARN("invokeAsync failed to addr:%s,topic:%s, timeout:%lld, maxRetryTimes:%d, retrySendTimes:%d", addr.c_str(),
-             msg.getTopic().data(), timeoutMilliseconds, maxRetryTimes, retrySendTimes);
-    // when getTcp return false, need consider retrySendTimes
-    int retry_time = retrySendTimes + 1;
-    int64 time_out = timeoutMilliseconds - (UtilAll::currentTimeMillis() - begin_time);
-    while (retry_time < maxRetryTimes && time_out > 0) {
-      begin_time = UtilAll::currentTimeMillis();
-      if (m_pRemotingClient->invokeAsync(addr, request, cbw, time_out, maxRetryTimes, retry_time) == false) {
-        retry_time += 1;
-        time_out = time_out - (UtilAll::currentTimeMillis() - begin_time);
-        LOG_WARN("invokeAsync retry failed to addr:%s,topic:%s, timeout:%lld, maxRetryTimes:%d, retrySendTimes:%d",
-                 addr.c_str(), msg.getTopic().data(), time_out, maxRetryTimes, retry_time);
-        continue;
-      } else {
-        return;  // invokeAsync success
-      }
-    }
-
-    LOG_ERROR("sendMessageAsync failed to addr:%s,topic:%s, timeout:%lld, maxRetryTimes:%d, retrySendTimes:%d",
-              addr.c_str(), msg.getTopic().data(), time_out, maxRetryTimes, retrySendTimes);
-
-    if (cbw) {
-      cbw->onException();
-      deleteAndZero(cbw);
-    } else {
-      THROW_MQEXCEPTION(MQClientException, "sendMessageAsync failed", -1);
-    }
-  }
+  SendMessageAsyncImpl(client, cbw, timeoutMillis);
 }
 
 PullResult* MQClientAPIImpl::pullMessage(const string& addr,
@@ -357,8 +374,8 @@ void MQClientAPIImpl::pullMessageAsync(const string& addr,
                                        int timeoutMillis,
                                        PullCallback* pullCallback,
                                        void* pArg) {
-  // delete in future
-  auto* cbw = new PullCallbackWarp(pullCallback, this, pArg);
+  //<!delete in future;
+  auto* cbw = new PullCallbackWrap(pullCallback, this, pArg);
   if (!m_pRemotingClient->invokeAsync(addr, request, cbw, timeoutMillis)) {
     LOG_ERROR("pullMessageAsync failed of addr:%s, mq:%s", addr.c_str(),
               static_cast<AsyncArg*>(pArg)->mq.toString().data());
@@ -444,9 +461,10 @@ PullResult* MQClientAPIImpl::processPullResponse(RemotingCommand* pResponse) {
     LOG_ERROR("processPullResponse:responseHeader is NULL");
     THROW_MQEXCEPTION(MQClientException, "processPullResponse:responseHeader is NULL", -1);
   }
-  //<!get body,delete outsite;
-  MemoryBlock bodyFromResponse = *(pResponse->GetBody());  // response data judgement had been done outside
-                                                           // of processPullResponse
+
+  // get body, delete outsite;
+  // response data judgement had been done outside of processPullResponse
+  MemoryBlock bodyFromResponse = std::move(*(pResponse->GetBody()));
   if (bodyFromResponse.getSize() == 0) {
     if (pullStatus != FOUND) {
       return new PullResultExt(pullStatus, responseHeader->nextBeginOffset, responseHeader->minOffset,
@@ -456,7 +474,8 @@ PullResult* MQClientAPIImpl::processPullResponse(RemotingCommand* pResponse) {
     }
   } else {
     return new PullResultExt(pullStatus, responseHeader->nextBeginOffset, responseHeader->minOffset,
-                             responseHeader->maxOffset, (int)responseHeader->suggestWhichBrokerId, bodyFromResponse);
+                             responseHeader->maxOffset, (int)responseHeader->suggestWhichBrokerId,
+                             std::move(bodyFromResponse));
   }
 }
 

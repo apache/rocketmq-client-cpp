@@ -26,7 +26,6 @@
 
 namespace rocketmq {
 
-//<!***************************************************************************
 typedef enum TcpConnectStatus {
   TCP_CONNECT_STATUS_INIT = 0,
   TCP_CONNECT_STATUS_WAIT = 1,
@@ -59,10 +58,12 @@ class TcpTransport : public std::enable_shared_from_this<TcpTransport> {
   const uint64_t getStartTime() const;
 
  private:
-  TcpTransport(TcpRemotingClient* pTcpRemotingClient, TcpTransportReadCallback handle = nullptr);
+  // don't instance object directly.
+  TcpTransport(TcpRemotingClient* client, TcpTransportReadCallback callback = nullptr);
 
-  static void readNextMessageIntCallback(BufferEvent* event, TcpTransport* transport);
-  static void eventCallback(BufferEvent* event, short what, TcpTransport* transport);
+  // buffer
+  static void ReadCallback(BufferEvent* event, TcpTransport* transport);
+  static void EventCallback(BufferEvent* event, short what, TcpTransport* transport);
 
   void messageReceived(const MemoryBlock& mem, const std::string& addr);
   void freeBufferEvent();  // not thread-safe
@@ -70,24 +71,24 @@ class TcpTransport : public std::enable_shared_from_this<TcpTransport> {
   void setTcpConnectEvent(TcpConnectStatus connectStatus);
   void setTcpConnectStatus(TcpConnectStatus connectStatus);
 
-  u_long getInetAddr(std::string& hostname);
+  // convert host to binary
+  u_long resolveInetAddr(std::string& hostname);
 
  private:
   uint64_t m_startTime;
 
   std::shared_ptr<BufferEvent> m_event;  // NOTE: use m_event in callback is unsafe.
-  std::mutex m_eventLock;
+  std::mutex m_eventMutex;
+
   std::atomic<TcpConnectStatus> m_tcpConnectStatus;
+  std::mutex m_statusMutex;
+  std::condition_variable m_statusEvent;
 
-  std::mutex m_connectEventLock;
-  std::condition_variable m_connectEvent;
-
-  //<! read data callback
+  // read data callback
   TcpTransportReadCallback m_readCallback;
   TcpRemotingClient* m_tcpRemotingClient;
 };
 
-//<!************************************************************************
 }  // namespace rocketmq
 
 #endif

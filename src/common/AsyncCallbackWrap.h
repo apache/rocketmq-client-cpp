@@ -17,63 +17,69 @@
 #ifndef __ASYNC_CALLBACK_WRAP_H__
 #define __ASYNC_CALLBACK_WRAP_H__
 
+#include <functional>
+
 #include "AsyncArg.h"
 #include "AsyncCallback.h"
+#include "InvokeCallback.h"
+#include "MQClientAPIImpl.h"
 #include "MQMessage.h"
 #include "RemotingCommand.h"
-#include "UtilAll.h"
+#include "ResponseFuture.h"
 
 namespace rocketmq {
 
-class ResponseFuture;
-class MQClientAPIImpl;
-class DefaultMQProducer;
-class SendMessageRequestHeader;
-
-//<!***************************************************************************
-enum asyncCallBackType { asyncCallbackWrap = 0, sendCallbackWrap = 1, pullCallbackWarp = 2 };
-
-struct AsyncCallbackWrap {
+class SendCallbackWrap : public InvokeCallback {
  public:
-  AsyncCallbackWrap(AsyncCallback* pAsyncCallback, MQClientAPIImpl* pclientAPI);
-  virtual ~AsyncCallbackWrap();
-  virtual void operationComplete(ResponseFuture* pResponseFuture, bool bProducePullRequest) = 0;
-  virtual void onException() = 0;
-  virtual asyncCallBackType getCallbackType() = 0;
+  typedef std::function<void(SendCallbackWrap*, int64)> SendMessageDelegate;  // throw(MQClientException)
 
- protected:
-  AsyncCallback* m_pAsyncCallBack;
-  MQClientAPIImpl* m_pClientAPI;
-};
-
-//<!************************************************************************
-class SendCallbackWrap : public AsyncCallbackWrap {
- public:
-  SendCallbackWrap(const std::string& brokerName,
+  SendCallbackWrap(const std::string& addr,
+                   const std::string& brokerName,
                    const MQMessage& msg,
-                   AsyncCallback* pAsyncCallback,
-                   MQClientAPIImpl* pclientAPI);
+                   const RemotingCommand& requestCommand,
+                   int maxRetrySendTimes,
+                   int retrySendTimes,
+                   SendCallback* pSendCallback,
+                   MQClientAPIImpl* pClientAPI,
+                   SendMessageDelegate retrySendDelegate);
 
-  virtual ~SendCallbackWrap(){};
-  virtual void operationComplete(ResponseFuture* pResponseFuture, bool bProducePullRequest);
-  virtual void onException();
-  virtual asyncCallBackType getCallbackType() { return sendCallbackWrap; }
+  void operationComplete(ResponseFuture* responseFuture) noexcept override;
+  void onExceptionImpl(ResponseFuture* responseFuture);
+
+  const std::string& getAddr() { return m_addr; }
+  const MQMessage& getMessage() { return m_msg; }
+  const RemotingCommand& getRemotingCommand() { return m_requestCommand; }
+
+  void setRetrySendTimes(int retrySendTimes) { m_retrySendTimes = retrySendTimes; }
+  int getRetrySendTimes() { return m_retrySendTimes; }
+  int getMaxRetrySendTimes() { return m_maxRetrySendTimes; }
 
  private:
-  MQMessage m_msg;
+  SendCallback* m_pSendCallback;
+  MQClientAPIImpl* m_pClientAPI;
+
+  std::string m_addr;
   std::string m_brokerName;
+
+  MQMessage m_msg;
+  RemotingCommand m_requestCommand;
+
+  int m_retrySendTimes;
+  int m_maxRetrySendTimes;
+
+  SendMessageDelegate m_retrySendDelegate;
 };
 
-//<!***************************************************************************
-class PullCallbackWarp : public AsyncCallbackWrap {
+class PullCallbackWrap : public InvokeCallback {
  public:
-  PullCallbackWarp(AsyncCallback* pAsyncCallback, MQClientAPIImpl* pclientAPI, void* pArg);
-  virtual ~PullCallbackWarp();
-  virtual void operationComplete(ResponseFuture* pResponseFuture, bool bProducePullRequest);
-  virtual void onException();
-  virtual asyncCallBackType getCallbackType() { return pullCallbackWarp; }
+  PullCallbackWrap(PullCallback* pPullCallback, MQClientAPIImpl* pClientAPI, void* pArg);
+
+  void operationComplete(ResponseFuture* responseFuture) noexcept override;
 
  private:
+  PullCallback* m_pPullCallback;
+  MQClientAPIImpl* m_pClientAPI;
+
   AsyncArg m_pArg;
 };
 

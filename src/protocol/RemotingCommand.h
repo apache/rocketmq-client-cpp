@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __REMOTINGCOMMAND_H__
-#define __REMOTINGCOMMAND_H__
+#ifndef __REMOTING_COMMAND_H__
+#define __REMOTING_COMMAND_H__
 
 #include <atomic>
 #include <memory>
@@ -85,7 +85,7 @@ class RemotingCommand {
   MemoryBlock m_head;
   MemoryBlock m_body;
 
-  //<!save here
+  // save here
   Json::Value m_parsedJson;
   std::unique_ptr<CommandHeader> m_pExtHeader;
 
@@ -94,4 +94,4 @@ class RemotingCommand {
 
 }  // namespace rocketmq
 
-#endif
+#endif  // __REMOTING_COMMAND_H__

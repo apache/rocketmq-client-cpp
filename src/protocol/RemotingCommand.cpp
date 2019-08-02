@@ -78,7 +78,7 @@ void RemotingCommand::Assign(const RemotingCommand& command) {
   m_remark = command.m_remark;
   m_msgBody = command.m_msgBody;
 
-  for (auto& it : command.m_extFields) {
+  for (const auto& it : command.m_extFields) {
     m_extFields[it.first] = it.second;
   }
 

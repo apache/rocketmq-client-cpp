@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "CProducer.h"
 
 #include <string.h>
@@ -58,7 +57,8 @@ class SelectMessageQueue : public MessageQueueSelector {
  private:
   QueueSelectorCallback m_pCallback;
 };
-class COnSendCallback : public AutoDeleteSendCallBack {
+
+class COnSendCallback : public AutoDeleteSendCallback {
  public:
   COnSendCallback(COnSendSuccessCallback cSendSuccessCallback,
                   COnSendExceptionCallback cSendExceptionCallback,
@@ -70,9 +70,9 @@ class COnSendCallback : public AutoDeleteSendCallBack {
     m_userData = userData;
   }
 
-  virtual ~COnSendCallback() {}
+  virtual ~CSendCallback() = default;
 
-  virtual void onSuccess(SendResult& sendResult) {
+  void onSuccess(SendResult& sendResult) override {
     CSendResult result;
     result.sendStatus = CSendStatus((int)sendResult.getSendStatus());
     result.offset = sendResult.getQueueOffset();
@@ -81,7 +81,7 @@ class COnSendCallback : public AutoDeleteSendCallBack {
     m_cSendSuccessCallback(result, (CMessage*)m_message, m_userData);
   }
 
-  virtual void onException(MQException& e) {
+  void onException(MQException& e) noexcept override {
     CMQException exception;
     exception.error = e.GetError();
     exception.line = e.GetLine();
@@ -97,16 +97,16 @@ class COnSendCallback : public AutoDeleteSendCallBack {
   void* m_userData;
 };
 
-class CSendCallback : public AutoDeleteSendCallBack {
+class CSendCallback : public AutoDeleteSendCallback {
  public:
   CSendCallback(CSendSuccessCallback cSendSuccessCallback, CSendExceptionCallback cSendExceptionCallback) {
     m_cSendSuccessCallback = cSendSuccessCallback;
     m_cSendExceptionCallback = cSendExceptionCallback;
   }
 
-  virtual ~CSendCallback() {}
+  virtual ~CSendCallback() = default;
 
-  virtual void onSuccess(SendResult& sendResult) {
+  void onSuccess(SendResult& sendResult) override {
     CSendResult result;
     result.sendStatus = CSendStatus((int)sendResult.getSendStatus());
     result.offset = sendResult.getQueueOffset();
@@ -115,7 +115,7 @@ class CSendCallback : public AutoDeleteSendCallBack {
     m_cSendSuccessCallback(result);
   }
 
-  virtual void onException(MQException& e) {
+  void onException(MQException& e) noexcept override {
     CMQException exception;
     exception.error = e.GetError();
     exception.line = e.GetLine();

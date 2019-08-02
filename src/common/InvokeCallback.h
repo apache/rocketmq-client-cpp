@@ -14,21 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __ASYNC_ARG_H__
-#define __ASYNC_ARG_H__
-
-#include "MQMessageQueue.h"
-#include "PullAPIWrapper.h"
-#include "SubscriptionData.h"
+#ifndef __INVOKE_CALLBACK_H__
+#define __INVOKE_CALLBACK_H__
 
 namespace rocketmq {
 
-struct AsyncArg {
-  MQMessageQueue mq;
-  SubscriptionData subData;
-  PullAPIWrapper* pPullWrapper;
+class ResponseFuture;
+
+class InvokeCallback {
+ public:
+  virtual ~InvokeCallback() = default;
+  virtual void operationComplete(ResponseFuture* responseFuture) noexcept = 0;
 };
 
 }  // namespace rocketmq
 
-#endif  // __ASYNC_ARG_H__
+#endif  // __INVOKE_CALLBACK_H__

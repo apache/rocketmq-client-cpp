@@ -55,23 +55,22 @@ PullResult PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
     THROW_MQEXCEPTION(MQClientException, errMsg, -1);
   }
 
-  //<!update;
+  // update
   updatePullFromWhichNode(mq, pResultExt->suggestWhichBrokerId);
 
   std::vector<MQMessageExt> msgFilterList;
   if (pResultExt->pullStatus == FOUND) {
-    //<!decode all msg list;
+    // decode all msg list
     std::vector<MQMessageExt> msgAllList;
     MQDecoder::decodes(&pResultExt->msgMemBlock, msgAllList);
 
-    //<!filter msg list again;
-    if (subscriptionData != NULL && !subscriptionData->getTagsSet().empty()) {
+    // filter msg list again
+    if (subscriptionData != nullptr && !subscriptionData->getTagsSet().empty()) {
       msgFilterList.reserve(msgAllList.size());
-      std::vector<MQMessageExt>::iterator it = msgAllList.begin();
-      for (; it != msgAllList.end(); ++it) {
-        string msgTag = (*it).getTags();
+      for (const auto& msg : msgAllList) {
+        const auto& msgTag = msg.getTags();
         if (subscriptionData->containTag(msgTag)) {
-          msgFilterList.push_back(*it);
+          msgFilterList.push_back(msg);
         }
       }
     } else {
@@ -98,7 +97,6 @@ PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,        // 1
                                            void* pArg /*= NULL*/) {
   std::unique_ptr<FindBrokerResult> pFindBrokerResult(
       m_MQClientFactory->findBrokerAddressInSubscribe(mq.getBrokerName(), recalculatePullFromWhichNode(mq), false));
-  //<!goto nameserver;
   if (pFindBrokerResult == nullptr) {
     m_MQClientFactory->updateTopicRouteInfoFromNameServer(mq.getTopic(), session_credentials);
     pFindBrokerResult.reset(
