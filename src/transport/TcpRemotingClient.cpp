@@ -373,7 +373,7 @@ std::shared_ptr<TcpTransport> TcpRemotingClient::CreateNameServerTransport(bool 
       m_namesrvAddrChoosed.clear();
   }
 
-  for (int i = 0; i < m_namesrvAddrList.size(); i++) {
+  for (unsigned i = 0; i < m_namesrvAddrList.size(); i++) {
     unsigned int index = m_namesrvIndex++ % m_namesrvAddrList.size();
     LOG_INFO("namesrvIndex is:%d, index:%d, namesrvaddrlist size:" SIZET_FMT "", m_namesrvIndex, index,
              m_namesrvAddrList.size());

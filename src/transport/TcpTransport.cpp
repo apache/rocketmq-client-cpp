@@ -256,7 +256,7 @@ void TcpTransport::readNextMessageIntCallback(BufferEvent* event, TcpTransport* 
       MemoryBlock msg(msgLen, true);
 
       event->read(hdr, 4);  // skip length field
-      size_t bytesRead = event->read(msg.getData(), msgLen);
+      event->read(msg.getData(), msgLen);
 
       transport->messageReceived(msg, event->getPeerAddrPort());
     }
