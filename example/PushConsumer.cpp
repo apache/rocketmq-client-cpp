@@ -1,56 +1,48 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-#include <stdlib.h>
-#include <string.h>
-
-#include <chrono>
-#include <condition_variable>
-#include <iomanip>
-#include <iostream>
-#include <map>
-#include <mutex>
-#include <string>
-#include <vector>
-
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include "common.h"
 
-std::mutex g_mtx;
-std::condition_variable g_finished;
-TpsReportService g_tps;
+#include "concurrent/latch.hpp"
 
 using namespace rocketmq;
+
+TpsReportService g_tps;
+latch g_finished(1);
 
 class MyMsgListener : public MessageListenerConcurrently {
  public:
   MyMsgListener() {}
   virtual ~MyMsgListener() {}
 
-  virtual ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) {
-    g_msgCount.store(g_msgCount.load() - msgs.size());
-    for (size_t i = 0; i < msgs.size(); ++i) {
-      g_tps.Increment();
-      // cout << "msg body: "<<  msgs[i].getBody() << endl;
+  virtual ConsumeStatus consumeMessage(const std::vector<MQMessageExt*>& msgs) {
+    auto old = g_msgCount.fetch_sub(msgs.size());
+    if (old > 0) {
+      for (size_t i = 0; i < msgs.size(); ++i) {
+        g_tps.Increment();
+        // std::cout << msgs[i]->getMsgId() << std::endl;
+        // std::cout << "msg body: " << msgs[i].getBody() << std::endl;
+      }
+      if (old <= msgs.size()) {
+        g_finished.count_down();
+      }
+      return CONSUME_SUCCESS;
+    } else {
+      return RECONSUME_LATER;
     }
-
-    if (g_msgCount.load() <= 0) {
-      std::unique_lock<std::mutex> lck(g_mtx);
-      g_finished.notify_one();
-    }
-    return CONSUME_SUCCESS;
   }
 };
 
@@ -60,64 +52,35 @@ int main(int argc, char* argv[]) {
     exit(-1);
   }
   PrintRocketmqSendAndConsumerArgs(info);
-  DefaultMQPushConsumer consumer("please_rename_unique_group_name");
-  DefaultMQProducer producer("please_rename_unique_group_name");
-  producer.setSessionCredentials("AccessKey", "SecretKey", "ALIYUN");
-  producer.setTcpTransportTryLockTimeout(1000);
-  producer.setTcpTransportConnectTimeout(400);
-  producer.setNamesrvAddr(info.namesrv);
-  producer.setGroupName("msg-persist-group_producer_sandbox");
-  producer.start();
 
+  DefaultMQPushConsumer consumer("please_rename_unique_group_name");
   consumer.setNamesrvAddr(info.namesrv);
   consumer.setGroupName(info.groupname);
-  consumer.setSessionCredentials("AccessKey", "SecretKey", "ALIYUN");
+  consumer.setTcpTransportTryLockTimeout(1000);
+  consumer.setTcpTransportConnectTimeout(400);
   consumer.setConsumeThreadCount(info.thread_count);
   consumer.setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
 
-  if (info.syncpush)
-    consumer.setAsyncPull(false);  // set sync pull
   if (info.broadcasting) {
     consumer.setMessageModel(rocketmq::BROADCASTING);
   }
 
-  consumer.setInstanceName(info.groupname);
-
   consumer.subscribe(info.topic, "*");
-  consumer.setConsumeThreadCount(15);
-  consumer.setTcpTransportTryLockTimeout(1000);
-  consumer.setTcpTransportConnectTimeout(400);
 
   MyMsgListener msglistener;
   consumer.registerMessageListener(&msglistener);
 
+  g_tps.start();
+
   try {
     consumer.start();
   } catch (MQClientException& e) {
-    cout << e << endl;
-  }
-  g_tps.start();
-
-  int msgcount = g_msgCount.load();
-  for (int i = 0; i < msgcount; ++i) {
-    MQMessage msg(info.topic,  // topic
-                  "*",         // tag
-                  info.body);  // body
-
-    //    std::this_thread::sleep_for(std::chrono::seconds(100000));
-    try {
-      producer.send(msg);
-    } catch (MQException& e) {
-      std::cout << e << endl;  // if catch excepiton , need re-send this msg by
-                               // service
-    }
+    std::cout << e << std::endl;
   }
 
-  {
-    std::unique_lock<std::mutex> lck(g_mtx);
-    g_finished.wait(lck);
-  }
-  producer.shutdown();
+  g_finished.wait();
+
   consumer.shutdown();
+
   return 0;
 }

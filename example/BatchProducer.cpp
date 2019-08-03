@@ -1,75 +1,55 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <condition_variable>
-#include <iomanip>
-#include <iomanip>
-#include <iostream>
-#include <iostream>
-#include <mutex>
-#include <thread>
-#include <vector>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include "common.h"
 
 using namespace rocketmq;
-using namespace std;
-boost::atomic<bool> g_quit;
-std::mutex g_mtx;
-std::condition_variable g_finished;
+
 TpsReportService g_tps;
 
 void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* producer) {
-  while (!g_quit.load()) {
-    if (g_msgCount.load() <= 0) {
-      std::unique_lock<std::mutex> lck(g_mtx);
-      g_finished.notify_one();
-      break;
-    }
-
-    vector<MQMessage> msgs;
+  while (g_msgCount.fetch_sub(1) > 0) {
+    std::vector<MQMessage*> msgs;
     MQMessage msg1(info->topic, "*", info->body);
-    msg1.setProperty("property1", "value1");
+    msg1.putProperty("property1", "value1");
     MQMessage msg2(info->topic, "*", info->body);
-    msg2.setProperty("property1", "value1");
-    msg2.setProperty("property2", "value2");
+    msg2.putProperty("property1", "value1");
+    msg2.putProperty("property2", "value2");
     MQMessage msg3(info->topic, "*", info->body);
-    msg3.setProperty("property1", "value1");
-    msg3.setProperty("property2", "value2");
-    msg3.setProperty("property3", "value3");
-    msgs.push_back(msg1);
-    msgs.push_back(msg2);
-    msgs.push_back(msg3);
+    msg3.putProperty("property1", "value1");
+    msg3.putProperty("property2", "value2");
+    msg3.putProperty("property3", "value3");
+    msgs.push_back(&msg1);
+    msgs.push_back(&msg2);
+    msgs.push_back(&msg3);
+
     try {
       auto start = std::chrono::system_clock::now();
       SendResult sendResult = producer->send(msgs);
-      g_tps.Increment();
-      --g_msgCount;
       auto end = std::chrono::system_clock::now();
+
+      g_tps.Increment();
+
       auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
       if (duration.count() >= 500) {
-        std::cout << "send RT more than: " << duration.count() << " ms with msgid: " << sendResult.getMsgId() << endl;
+        std::cout << "send RT more than: " << duration.count() << "ms with msgid: " << sendResult.getMsgId()
+                  << std::endl;
       }
     } catch (const MQException& e) {
       std::cout << "send failed: " << e.what() << std::endl;
-      std::unique_lock<std::mutex> lck(g_mtx);
-      g_finished.notify_one();
-      return;
     }
   }
 }
@@ -80,20 +60,23 @@ int main(int argc, char* argv[]) {
     exit(-1);
   }
   PrintRocketmqSendAndConsumerArgs(info);
+
   DefaultMQProducer producer("please_rename_unique_group_name");
   producer.setNamesrvAddr(info.namesrv);
   producer.setGroupName(info.groupname);
-  producer.setInstanceName(info.groupname);
-  producer.setSessionCredentials("mq acesskey", "mq secretkey", "ALIYUN");
-  producer.setSendMsgTimeout(500);
+  producer.setSendMsgTimeout(3000);
+  producer.setRetryTimes(info.retrytimes);
+  producer.setRetryTimes4Async(info.retrytimes);
+  producer.setSendLatencyFaultEnable(!info.selectUnactiveBroker);
   producer.setTcpTransportTryLockTimeout(1000);
   producer.setTcpTransportConnectTimeout(400);
-
   producer.start();
+
   std::vector<std::shared_ptr<std::thread>> work_pool;
-  auto start = std::chrono::system_clock::now();
   int msgcount = g_msgCount.load();
   g_tps.start();
+
+  auto start = std::chrono::system_clock::now();
 
   int threadCount = info.thread_count;
   for (int j = 0; j < threadCount; j++) {
@@ -101,21 +84,15 @@ int main(int argc, char* argv[]) {
     work_pool.push_back(th);
   }
 
-  {
-    std::unique_lock<std::mutex> lck(g_mtx);
-    g_finished.wait(lck);
-    g_quit.store(true);
+  for (size_t th = 0; th != work_pool.size(); ++th) {
+    work_pool[th]->join();
   }
 
   auto end = std::chrono::system_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-  std::cout << "per msg time: " << duration.count() / (double)msgcount << "ms \n"
-            << "========================finished==============================\n";
-
-  for (size_t th = 0; th != work_pool.size(); ++th) {
-    work_pool[th]->join();
-  }
+  std::cout << "per msg time: " << duration.count() / (double)msgcount << "ms" << std::endl
+            << "========================finished=============================" << std::endl;
 
   producer.shutdown();
 

@@ -18,15 +18,9 @@ project(example)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
-include_directories(${Boost_INCLUDE_DIRS})
 
-link_directories(${Boost_LIBRARY_DIRS})
 link_directories(${LIBEVENT_LIBRARY})
 link_directories(${JSONCPP_LIBRARY})
-
-#if (BUILD_ROCKETMQ_SHARED)
-#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_ALL_DYN_LINK -shared ")
-#endif()
 
 file(GLOB files "*.c*")
 foreach(file ${files})
@@ -42,11 +36,9 @@ foreach(file ${files})
 
     if (MSVC)
         if (BUILD_ROCKETMQ_SHARED)
-            target_link_libraries (${basename}  rocketmq_shared ${deplibs}
-            ${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES})
+            target_link_libraries (${basename}  rocketmq_shared ${deplibs} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES})
         else()
-            target_link_libraries (${basename}  rocketmq_static ${deplibs}
-            ${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES})
+            target_link_libraries (${basename}  rocketmq_static ${deplibs} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES})
         endif()
     else()
         if (BUILD_ROCKETMQ_SHARED)

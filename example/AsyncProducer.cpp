@@ -14,74 +14,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <chrono>
-#include <condition_variable>
-#include <iomanip>
-#include <iostream>
-#include <mutex>
-#include <thread>
-
 #include "common.h"
+
+#include "concurrent/latch.hpp"
 
 using namespace rocketmq;
 
-boost::atomic<bool> g_quit;
-std::mutex g_mtx;
-std::condition_variable g_finished;
-SendCallback* g_callback = NULL;
 TpsReportService g_tps;
+latch* g_finish = nullptr;
 
-class MySendCallback : public SendCallback {
-  void onSuccess(SendResult& sendResult) override {
-    g_msgCount--;
-    g_tps.Increment();
-    if (g_msgCount.load() <= 0) {
-      std::unique_lock<std::mutex> lck(g_mtx);
-      g_finished.notify_one();
-    }
-  }
-
-  void onException(MQException& e) noexcept override { cout << "send Exception\n"; }
-};
+std::atomic<int> g_success(0);
+std::atomic<int> g_failed(0);
 
 class MyAutoDeleteSendCallback : public AutoDeleteSendCallback {
  public:
-  virtual ~MyAutoDeleteSendCallback() {}
+  MyAutoDeleteSendCallback(MQMessage* msg) : m_msg(msg) {}
+  virtual ~MyAutoDeleteSendCallback() { delete m_msg; }
 
   void onSuccess(SendResult& sendResult) override {
-    g_msgCount--;
-    if (g_msgCount.load() <= 0) {
-      std::unique_lock<std::mutex> lck(g_mtx);
-      g_finished.notify_one();
-    }
+    g_success++;
+    g_finish->count_down();
+    g_tps.Increment();
   }
 
-  void onException(MQException& e) noexcept override { std::cout << "send Exception" << e << "\n"; }
+  void onException(MQException& e) noexcept override {
+    g_failed++;
+    g_finish->count_down();
+    // std::cout << "send Exception: " << e << std::endl;
+  }
+
+ private:
+  MQMessage* m_msg;
 };
 
 void AsyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* producer) {
-  while (!g_quit.load()) {
-    if (g_msgCount.load() <= 0) {
-      std::unique_lock<std::mutex> lck(g_mtx);
-      g_finished.notify_one();
-    }
-    MQMessage msg(info->topic,  // topic
-                  "*",          // tag
-                  info->body);  // body
+  while (g_msgCount.fetch_sub(1) > 0) {
+    auto* msg = new MQMessage(info->topic,  // topic
+                              "*",          // tag
+                              info->body);  // body
 
-    if (info->IsAutoDeleteSendCallback) {
-      g_callback = new MyAutoDeleteSendCallback();  // auto delete
-    }
+    SendCallback* callback = new MyAutoDeleteSendCallback(msg);
 
     try {
-      producer->send(msg, g_callback);
-    } catch (MQException& e) {
-      std::cout << e << endl;  // if catch excepiton , need re-send this msg by
-                               // service
+      producer->send(msg, callback);  // auto delete
+    } catch (std::exception& e) {
+      std::cout << "[BUG]:" << e.what() << std::endl;
+      throw e;
     }
   }
 }
@@ -91,47 +69,51 @@ int main(int argc, char* argv[]) {
   if (!ParseArgs(argc, argv, &info)) {
     exit(-1);
   }
-
-  DefaultMQProducer producer("please_rename_unique_group_name");
-  if (!info.IsAutoDeleteSendCallback) {
-    g_callback = new MySendCallback();
-  }
-
   PrintRocketmqSendAndConsumerArgs(info);
 
-  if (!info.namesrv.empty())
-    producer.setNamesrvAddr(info.namesrv);
-
+  DefaultMQProducer producer("please_rename_unique_group_name");
+  producer.setNamesrvAddr(info.namesrv);
   producer.setGroupName(info.groupname);
-  producer.setInstanceName(info.groupname);
+  producer.setSendMsgTimeout(3000);
+  producer.setRetryTimes(info.retrytimes);
+  producer.setRetryTimes4Async(info.retrytimes);
+  producer.setSendLatencyFaultEnable(!info.selectUnactiveBroker);
+  producer.setTcpTransportTryLockTimeout(1000);
+  producer.setTcpTransportConnectTimeout(400);
   producer.start();
-  g_tps.start();
+
   std::vector<std::shared_ptr<std::thread>> work_pool;
-  auto start = std::chrono::system_clock::now();
   int msgcount = g_msgCount.load();
-  for (int j = 0; j < info.thread_count; j++) {
+  g_finish = new latch(msgcount);
+  g_tps.start();
+
+  auto start = std::chrono::system_clock::now();
+
+  int threadCount = info.thread_count;
+  for (int j = 0; j < threadCount; j++) {
     std::shared_ptr<std::thread> th = std::make_shared<std::thread>(AsyncProducerWorker, &info, &producer);
     work_pool.push_back(th);
   }
 
-  {
-    std::unique_lock<std::mutex> lck(g_mtx);
-    g_finished.wait(lck);
-    g_quit.store(true);
+  for (size_t th = 0; th != work_pool.size(); ++th) {
+    work_pool[th]->join();
   }
+
+  g_finish->wait();
 
   auto end = std::chrono::system_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-  std::cout << "per msg time: " << duration.count() / (double)msgcount << "ms \n"
-            << "========================finished==============================\n";
+  std::cout << "per msg time: " << duration.count() / (double)msgcount << "ms" << std::endl
+            << "========================finished=============================" << std::endl
+            << "success: " << g_success << ", failed: " << g_failed << std::endl;
 
-  producer.shutdown();
-  for (size_t th = 0; th != work_pool.size(); ++th) {
-    work_pool[th]->join();
+  try {
+    producer.shutdown();
+  } catch (std::exception& e) {
+    std::cout << "encounter exception: " << e.what() << std::endl;
   }
-  if (!info.IsAutoDeleteSendCallback) {
-    delete g_callback;
-  }
+
+  delete g_finish;
   return 0;
 }

@@ -20,30 +20,26 @@ using namespace rocketmq;
 
 TpsReportService g_tps;
 
-class MyTransactionListener : public TransactionListener {
-  virtual LocalTransactionState executeLocalTransaction(const MQMessage& msg, void* arg) {
-    LocalTransactionState state = (LocalTransactionState)(((intptr_t)arg) % 3);
-    std::cout << "executeLocalTransaction transactionId:" << msg.getTransactionId() << ", return state: " << state
-              << std::endl;
-    return state;
-  }
-
-  virtual LocalTransactionState checkLocalTransaction(const MQMessageExt& msg) {
-    std::cout << "checkLocalTransaction enter msg:" << msg.toString() << std::endl;
-    return LocalTransactionState::COMMIT_MESSAGE;
+class SelectMessageQueueByHash : public MessageQueueSelector {
+ public:
+  MQMessageQueue select(const std::vector<MQMessageQueue>& mqs, const MQMessage& msg, void* arg) {
+    int orderId = *static_cast<int*>(arg);
+    int index = orderId % mqs.size();
+    return mqs[index];
   }
 };
 
-void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* producer) {
-  int old = g_msgCount.fetch_sub(1);
-  while (old > 0) {
+SelectMessageQueueByHash g_mySelector;
+
+void ProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* producer) {
+  while (g_msgCount.fetch_sub(1) > 0) {
     MQMessage msg(info->topic,  // topic
                   "*",          // tag
                   info->body);  // body
     try {
       auto start = std::chrono::system_clock::now();
-      intptr_t arg = old - 1;
-      TransactionSendResult sendResult = producer->sendMessageInTransaction(&msg, (void*)arg);
+      int orderId = 1;
+      SendResult sendResult = producer->send(&msg, &g_mySelector, static_cast<void*>(&orderId), info->retrytimes);
       auto end = std::chrono::system_clock::now();
 
       g_tps.Increment();
@@ -56,7 +52,6 @@ void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* pr
     } catch (const MQException& e) {
       std::cout << "send failed: " << e.what() << std::endl;
     }
-    old = g_msgCount.fetch_sub(1);
   }
 }
 
@@ -76,11 +71,6 @@ int main(int argc, char* argv[]) {
   producer.setSendLatencyFaultEnable(!info.selectUnactiveBroker);
   producer.setTcpTransportTryLockTimeout(1000);
   producer.setTcpTransportConnectTimeout(400);
-
-  MyTransactionListener myListener;
-  producer.setTransactionListener(&myListener);
-  producer.setSendMessageInTransactionEnable(true);
-
   producer.start();
 
   std::vector<std::shared_ptr<std::thread>> work_pool;
@@ -91,7 +81,7 @@ int main(int argc, char* argv[]) {
 
   int threadCount = info.thread_count;
   for (int j = 0; j < threadCount; j++) {
-    std::shared_ptr<std::thread> th = std::make_shared<std::thread>(SyncProducerWorker, &info, &producer);
+    std::shared_ptr<std::thread> th = std::make_shared<std::thread>(ProducerWorker, &info, &producer);
     work_pool.push_back(th);
   }
 
@@ -105,7 +95,6 @@ int main(int argc, char* argv[]) {
   std::cout << "per msg time: " << duration.count() / (double)msgcount << "ms" << std::endl
             << "========================finished=============================" << std::endl;
 
-  std::this_thread::sleep_for(std::chrono::seconds(30));
   producer.shutdown();
 
   return 0;
