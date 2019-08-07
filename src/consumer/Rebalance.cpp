@@ -311,7 +311,7 @@ void Rebalance::unlock(MQMessageQueue mq) {
       PullRequest* pullreq = getPullRequest(mqs[i]);
       if (pullreq) {
         LOG_INFO("unlock success of mq:%s", mqs[i].toString().c_str());
-        pullreq->setLocked(true);
+        pullreq->setLocked(false);
       } else {
         LOG_ERROR("unlock fails of mq:%s", mqs[i].toString().c_str());
       }
