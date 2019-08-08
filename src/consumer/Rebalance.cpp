@@ -277,7 +277,7 @@ void Rebalance::unlockAll(bool oneway) {
         PullRequest* pullreq = getPullRequest(mqs[i]);
         if (pullreq) {
           LOG_INFO("unlockBatchMQ success of mq:%s", mqs[i].toString().c_str());
-          pullreq->setLocked(true);
+          pullreq->setLocked(false);
         } else {
           LOG_ERROR("unlockBatchMQ fails of mq:%s", mqs[i].toString().c_str());
         }
