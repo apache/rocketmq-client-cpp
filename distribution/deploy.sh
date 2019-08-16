@@ -16,9 +16,10 @@
 # limitations under the License.
 
 
-VERSION="rocketmq-client-cpp"
+VERSION="1.2.3"
+PKG_NAME="rocketmq-client-cpp"
 CWD_DIR=$(cd "$(dirname "$0")"; pwd)
-DEPLOY_BUILD_HOME=${CWD_DIR}/${VERSION}
+DEPLOY_BUILD_HOME=${CWD_DIR}/${PKG_NAME}
 
 # ##====================================================================
 #make
@@ -26,13 +27,20 @@ DEPLOY_BUILD_HOME=${CWD_DIR}/${VERSION}
 # # deploy
 rm -rf   ${DEPLOY_BUILD_HOME}
 mkdir -p ${DEPLOY_BUILD_HOME}/lib
-cp -rf ${CWD_DIR}/bin/*.a    ${DEPLOY_BUILD_HOME}/lib/
-cp -rf ${CWD_DIR}/bin/*.so   ${DEPLOY_BUILD_HOME}/lib/
-cp -rf ${CWD_DIR}/include    ${DEPLOY_BUILD_HOME}/
-cp -rf ${CWD_DIR}/example    ${DEPLOY_BUILD_HOME}/
-cp -rf ${CWD_DIR}/README.md  ${DEPLOY_BUILD_HOME}/
+cp -rf ${CWD_DIR}/../bin/*.a    ${DEPLOY_BUILD_HOME}/lib/
+if test "$(uname)" = "Linux"; then
+cp -rf ${CWD_DIR}/../bin/*.so   ${DEPLOY_BUILD_HOME}/lib/
+fi
+if test "$(uname)" = "Darwin"; then
+cp -rf ${CWD_DIR}/../bin/*.dylib   ${DEPLOY_BUILD_HOME}/lib/
+fi
+cp -rf ${CWD_DIR}/../include    ${DEPLOY_BUILD_HOME}/
+cp -rf ${CWD_DIR}/../example    ${DEPLOY_BUILD_HOME}/
+cp -rf ${CWD_DIR}/../README.md  ${DEPLOY_BUILD_HOME}/
+cp -rf ${CWD_DIR}/LICENSE-BIN  ${DEPLOY_BUILD_HOME}/LICENSE
+cp -rf ${CWD_DIR}/NOTICE-BIN  ${DEPLOY_BUILD_HOME}/NOTICE
 
-cd ${CWD_DIR} && tar -cvzf ./${VERSION}.tar.gz ./${VERSION}  >/dev/null 2>&1
+cd ${CWD_DIR} && tar -cvzf ./${PKG_NAME}-${VERSION}-bin-release.tar.gz ./${PKG_NAME}  >/dev/null 2>&1
 rm -rf ${DEPLOY_BUILD_HOME}
 # # ##====================================================================
 #make clean
