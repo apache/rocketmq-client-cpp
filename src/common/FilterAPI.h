@@ -14,26 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef __FILTERAPI_H__
-#define __FILTERAPI_H__
+#ifndef __FILTER_API_H__
+#define __FILTER_API_H__
 
 #include <string>
+
 #include "MQClientException.h"
 #include "SubscriptionData.h"
 #include "UtilAll.h"
+
 namespace rocketmq {
-//<!***************************************************************************
+
 class FilterAPI {
  public:
-  static SubscriptionData* buildSubscriptionData(const string topic, const string& subString) {
-    //<!delete in balance;
+  static SubscriptionData* buildSubscriptionData(const std::string topic, const std::string& subString) {
+    // delete in balance
     SubscriptionData* subscriptionData = new SubscriptionData(topic, subString);
 
     if (subString.empty() || !subString.compare(SUB_ALL)) {
       subscriptionData->setSubString(SUB_ALL);
     } else {
-      vector<string> out;
+      std::vector<std::string> out;
       UtilAll::Split(out, subString, "||");
 
       if (out.empty()) {
@@ -41,7 +42,7 @@ class FilterAPI {
       }
 
       for (size_t i = 0; i < out.size(); i++) {
-        string tag = out[i];
+        std::string tag = out[i];
         if (!tag.empty()) {
           UtilAll::Trim(tag);
           if (!tag.empty()) {
@@ -56,6 +57,6 @@ class FilterAPI {
   }
 };
 
-//<!***************************************************************************
-}  //<!end namespace;
-#endif
+}  // namespace rocketmq
+
+#endif  // __FILTER_API_H__

@@ -114,7 +114,7 @@ RemotingCommand* ClientRemotingProcessor::getConsumerRunningInfo(const string& a
       new RemotingCommand(request->getCode(), "CPP", request->getVersion(), request->getOpaque(), request->getFlag(),
                           request->getRemark(), NULL);
 
-  unique_ptr<ConsumerRunningInfo> runningInfo(
+  std::unique_ptr<ConsumerRunningInfo> runningInfo(
       m_mqClientFactory->consumerRunningInfo(requestHeader->getConsumerGroup()));
   if (runningInfo) {
     if (requestHeader->isJstackEnable()) {

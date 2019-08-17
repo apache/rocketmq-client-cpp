@@ -19,60 +19,61 @@
 #include "UtilAll.h"
 
 namespace rocketmq {
-//<!***************************************************************************
 
-const string MQMessage::PROPERTY_KEYS = "KEYS";
-const string MQMessage::PROPERTY_TAGS = "TAGS";
-const string MQMessage::PROPERTY_WAIT_STORE_MSG_OK = "WAIT";
-const string MQMessage::PROPERTY_DELAY_TIME_LEVEL = "DELAY";
-const string MQMessage::PROPERTY_RETRY_TOPIC = "RETRY_TOPIC";
-const string MQMessage::PROPERTY_REAL_TOPIC = "REAL_TOPIC";
-const string MQMessage::PROPERTY_REAL_QUEUE_ID = "REAL_QID";
-const string MQMessage::PROPERTY_TRANSACTION_PREPARED = "TRAN_MSG";
-const string MQMessage::PROPERTY_PRODUCER_GROUP = "PGROUP";
-const string MQMessage::PROPERTY_MIN_OFFSET = "MIN_OFFSET";
-const string MQMessage::PROPERTY_MAX_OFFSET = "MAX_OFFSET";
-const string MQMessage::PROPERTY_BUYER_ID = "BUYER_ID";
-const string MQMessage::PROPERTY_ORIGIN_MESSAGE_ID = "ORIGIN_MESSAGE_ID";
-const string MQMessage::PROPERTY_TRANSFER_FLAG = "TRANSFER_FLAG";
-const string MQMessage::PROPERTY_CORRECTION_FLAG = "CORRECTION_FLAG";
-const string MQMessage::PROPERTY_MQ2_FLAG = "MQ2_FLAG";
-const string MQMessage::PROPERTY_RECONSUME_TIME = "RECONSUME_TIME";
-const string MQMessage::PROPERTY_MSG_REGION = "MSG_REGION";
-const string MQMessage::PROPERTY_TRACE_SWITCH = "TRACE_ON";
-const string MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX = "UNIQ_KEY";
-const string MQMessage::PROPERTY_MAX_RECONSUME_TIMES = "MAX_RECONSUME_TIMES";
-const string MQMessage::PROPERTY_CONSUME_START_TIMESTAMP = "CONSUME_START_TIME";
-const string MQMessage::PROPERTY_TRANSACTION_PREPARED_QUEUE_OFFSET = "TRAN_PREPARED_QUEUE_OFFSET";
-const string MQMessage::PROPERTY_TRANSACTION_CHECK_TIMES = "TRANSACTION_CHECK_TIMES";
-const string MQMessage::PROPERTY_CHECK_IMMUNITY_TIME_IN_SECONDS = "CHECK_IMMUNITY_TIME_IN_SECONDS";
+const std::string MQMessage::PROPERTY_KEYS = "KEYS";
+const std::string MQMessage::PROPERTY_TAGS = "TAGS";
+const std::string MQMessage::PROPERTY_WAIT_STORE_MSG_OK = "WAIT";
+const std::string MQMessage::PROPERTY_DELAY_TIME_LEVEL = "DELAY";
+const std::string MQMessage::PROPERTY_RETRY_TOPIC = "RETRY_TOPIC";
+const std::string MQMessage::PROPERTY_REAL_TOPIC = "REAL_TOPIC";
+const std::string MQMessage::PROPERTY_REAL_QUEUE_ID = "REAL_QID";
+const std::string MQMessage::PROPERTY_TRANSACTION_PREPARED = "TRAN_MSG";
+const std::string MQMessage::PROPERTY_PRODUCER_GROUP = "PGROUP";
+const std::string MQMessage::PROPERTY_MIN_OFFSET = "MIN_OFFSET";
+const std::string MQMessage::PROPERTY_MAX_OFFSET = "MAX_OFFSET";
+const std::string MQMessage::PROPERTY_BUYER_ID = "BUYER_ID";
+const std::string MQMessage::PROPERTY_ORIGIN_MESSAGE_ID = "ORIGIN_MESSAGE_ID";
+const std::string MQMessage::PROPERTY_TRANSFER_FLAG = "TRANSFER_FLAG";
+const std::string MQMessage::PROPERTY_CORRECTION_FLAG = "CORRECTION_FLAG";
+const std::string MQMessage::PROPERTY_MQ2_FLAG = "MQ2_FLAG";
+const std::string MQMessage::PROPERTY_RECONSUME_TIME = "RECONSUME_TIME";
+const std::string MQMessage::PROPERTY_MSG_REGION = "MSG_REGION";
+const std::string MQMessage::PROPERTY_TRACE_SWITCH = "TRACE_ON";
+const std::string MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX = "UNIQ_KEY";
+const std::string MQMessage::PROPERTY_MAX_RECONSUME_TIMES = "MAX_RECONSUME_TIMES";
+const std::string MQMessage::PROPERTY_CONSUME_START_TIMESTAMP = "CONSUME_START_TIME";
+const std::string MQMessage::PROPERTY_TRANSACTION_PREPARED_QUEUE_OFFSET = "TRAN_PREPARED_QUEUE_OFFSET";
+const std::string MQMessage::PROPERTY_TRANSACTION_CHECK_TIMES = "TRANSACTION_CHECK_TIMES";
+const std::string MQMessage::PROPERTY_CHECK_IMMUNITY_TIME_IN_SECONDS = "CHECK_IMMUNITY_TIME_IN_SECONDS";
 
-const string MQMessage::KEY_SEPARATOR = " ";
+const std::string MQMessage::KEY_SEPARATOR = " ";
 
-static const string EMPTY_STRING = "";
+static const std::string EMPTY_STRING = "";
 
-//<!************************************************************************
 MQMessage::MQMessage() {
   Init("", "", "", 0, "", true);
 }
 
-MQMessage::MQMessage(const string& topic, const string& body) {
+MQMessage::MQMessage(const std::string& topic, const std::string& body) {
   Init(topic, "", "", 0, body, true);
 }
 
-MQMessage::MQMessage(const string& topic, const string& tags, const string& body) {
+MQMessage::MQMessage(const std::string& topic, const std::string& tags, const std::string& body) {
   Init(topic, tags, "", 0, body, true);
 }
 
-MQMessage::MQMessage(const string& topic, const string& tags, const string& keys, const string& body) {
+MQMessage::MQMessage(const std::string& topic,
+                     const std::string& tags,
+                     const std::string& keys,
+                     const std::string& body) {
   Init(topic, tags, keys, 0, body, true);
 }
 
-MQMessage::MQMessage(const string& topic,
-                     const string& tags,
-                     const string& keys,
+MQMessage::MQMessage(const std::string& topic,
+                     const std::string& tags,
+                     const std::string& keys,
                      const int flag,
-                     const string& body,
+                     const std::string& body,
                      bool waitStoreMsgOK) {
   Init(topic, tags, keys, flag, body, waitStoreMsgOK);
 }
@@ -100,7 +101,7 @@ MQMessage& MQMessage::operator=(const MQMessage& other) {
   return *this;
 }
 
-void MQMessage::setProperty(const string& name, const string& value) {
+void MQMessage::setProperty(const std::string& name, const std::string& value) {
   if (PROPERTY_TRANSACTION_PREPARED == name) {
     if (!value.empty() && value == "true") {
       m_sysFlag |= MessageSysFlag::TransactionPreparedType;
@@ -111,12 +112,12 @@ void MQMessage::setProperty(const string& name, const string& value) {
   m_properties[name] = value;
 }
 
-void MQMessage::setPropertyInternal(const string& name, const string& value) {
+void MQMessage::setPropertyInternal(const std::string& name, const std::string& value) {
   m_properties[name] = value;
 }
 
-const string& MQMessage::getProperty(const string& name) const {
-  map<string, string>::const_iterator it = m_properties.find(name);
+const std::string& MQMessage::getProperty(const std::string& name) const {
+  std::map<std::string, std::string>::const_iterator it = m_properties.find(name);
   if (it == m_properties.end()) {
     return EMPTY_STRING;
   } else {
@@ -124,11 +125,11 @@ const string& MQMessage::getProperty(const string& name) const {
   }
 }
 
-const string& MQMessage::getTopic() const {
+const std::string& MQMessage::getTopic() const {
   return m_topic;
 }
 
-void MQMessage::setTopic(const string& topic) {
+void MQMessage::setTopic(const std::string& topic) {
   m_topic = topic;
 }
 
@@ -137,29 +138,29 @@ void MQMessage::setTopic(const char* body, int len) {
   m_topic.append(body, len);
 }
 
-const string& MQMessage::getTags() const {
+const std::string& MQMessage::getTags() const {
   return getProperty(PROPERTY_TAGS);
 }
 
-void MQMessage::setTags(const string& tags) {
+void MQMessage::setTags(const std::string& tags) {
   setPropertyInternal(PROPERTY_TAGS, tags);
 }
 
-const string& MQMessage::getKeys() const {
+const std::string& MQMessage::getKeys() const {
   return getProperty(PROPERTY_KEYS);
 }
 
-void MQMessage::setKeys(const string& keys) {
+void MQMessage::setKeys(const std::string& keys) {
   setPropertyInternal(PROPERTY_KEYS, keys);
 }
 
-void MQMessage::setKeys(const vector<string>& keys) {
+void MQMessage::setKeys(const std::vector<std::string>& keys) {
   if (keys.empty()) {
     return;
   }
 
-  vector<string>::const_iterator it = keys.begin();
-  string str;
+  std::vector<std::string>::const_iterator it = keys.begin();
+  std::string str;
   str += *it;
   it++;
 
@@ -172,7 +173,7 @@ void MQMessage::setKeys(const vector<string>& keys) {
 }
 
 int MQMessage::getDelayTimeLevel() const {
-  string tmp = getProperty(PROPERTY_DELAY_TIME_LEVEL);
+  std::string tmp = getProperty(PROPERTY_DELAY_TIME_LEVEL);
   if (!tmp.empty()) {
     return atoi(tmp.c_str());
   }
@@ -187,7 +188,7 @@ void MQMessage::setDelayTimeLevel(int level) {
 }
 
 bool MQMessage::isWaitStoreMsgOK() const {
-  string tmp = getProperty(PROPERTY_WAIT_STORE_MSG_OK);
+  std::string tmp = getProperty(PROPERTY_WAIT_STORE_MSG_OK);
   if (tmp.empty()) {
     return true;
   } else {
@@ -219,7 +220,7 @@ void MQMessage::setSysFlag(int sysFlag) {
   m_sysFlag = sysFlag;
 }
 
-const string& MQMessage::getBody() const {
+const std::string& MQMessage::getBody() const {
   return m_body;
 }
 
@@ -228,21 +229,21 @@ void MQMessage::setBody(const char* body, int len) {
   m_body.append(body, len);
 }
 
-void MQMessage::setBody(const string& body) {
+void MQMessage::setBody(const std::string& body) {
   m_body.clear();
   m_body.append(body);
 }
 
-map<string, string> MQMessage::getProperties() const {
+std::map<std::string, std::string> MQMessage::getProperties() const {
   return m_properties;
 }
 
-void MQMessage::setProperties(map<string, string>& properties) {
+void MQMessage::setProperties(std::map<std::string, std::string>& properties) {
   m_properties = properties;
 
-  map<string, string>::const_iterator it = m_properties.find(PROPERTY_TRANSACTION_PREPARED);
+  std::map<std::string, std::string>::const_iterator it = m_properties.find(PROPERTY_TRANSACTION_PREPARED);
   if (it != m_properties.end()) {
-    string tranMsg = it->second;
+    std::string tranMsg = it->second;
     if (!tranMsg.empty() && tranMsg == "true") {
       m_sysFlag |= MessageSysFlag::TransactionPreparedType;
     } else {
@@ -251,15 +252,15 @@ void MQMessage::setProperties(map<string, string>& properties) {
   }
 }
 
-void MQMessage::setPropertiesInternal(map<string, string>& properties) {
+void MQMessage::setPropertiesInternal(std::map<std::string, std::string>& properties) {
   m_properties = properties;
 }
 
-void MQMessage::Init(const string& topic,
-                     const string& tags,
-                     const string& keys,
+void MQMessage::Init(const std::string& topic,
+                     const std::string& tags,
+                     const std::string& keys,
                      const int flag,
-                     const string& body,
+                     const std::string& body,
                      bool waitStoreMsgOK) {
   m_topic = topic;
   m_flag = flag;
@@ -276,4 +277,5 @@ void MQMessage::Init(const string& topic,
 
   setWaitStoreMsgOK(waitStoreMsgOK);
 }
-}  //<!end namespace;
+
+}  // namespace rocketmq

@@ -86,7 +86,7 @@ void TcpTransport::setTcpConnectEvent(TcpConnectStatus connectStatus) {
   }
 }
 
-u_long TcpTransport::getInetAddr(string& hostname) {
+u_long TcpTransport::getInetAddr(std::string& hostname) {
   u_long addr = inet_addr(hostname.c_str());
 
   if (INADDR_NONE == addr) {
@@ -99,7 +99,7 @@ u_long TcpTransport::getInetAddr(string& hostname) {
     // Look up the hostname.
     int err = evutil_getaddrinfo(hostname.c_str(), NULL, &hints, &answer);
     if (err != 0) {
-      string info = "Failed to resolve  host name(" + hostname + "): " + evutil_gai_strerror(err);
+      std::string info = "Failed to resolve  host name(" + hostname + "): " + evutil_gai_strerror(err);
       THROW_MQEXCEPTION(MQClientException, info, -1);
     }
 
@@ -126,7 +126,7 @@ u_long TcpTransport::getInetAddr(string& hostname) {
   return addr;
 }
 
-void TcpTransport::disconnect(const string& addr) {
+void TcpTransport::disconnect(const std::string& addr) {
   // disconnect is idempotent.
   std::lock_guard<std::mutex> lock(m_eventLock);
   if (getTcpConnectStatus() != TCP_CONNECT_STATUS_INIT) {
@@ -137,8 +137,8 @@ void TcpTransport::disconnect(const string& addr) {
   }
 }
 
-TcpConnectStatus TcpTransport::connect(const string& strServerURL, int timeoutMillis) {
-  string hostname;
+TcpConnectStatus TcpTransport::connect(const std::string& strServerURL, int timeoutMillis) {
+  std::string hostname;
   short port;
   LOG_DEBUG("connect to [%s].", strServerURL.c_str());
   if (!UtilAll::SplitURL(strServerURL, hostname, port)) {
@@ -283,7 +283,7 @@ bool TcpTransport::sendMessage(const char* pData, size_t len) {
   return m_event != nullptr && m_event->write(pData, len) == 0;
 }
 
-const string TcpTransport::getPeerAddrAndPort() {
+const std::string TcpTransport::getPeerAddrAndPort() {
   std::lock_guard<std::mutex> lock(m_eventLock);
   return m_event ? m_event->getPeerAddrPort() : "";
 }

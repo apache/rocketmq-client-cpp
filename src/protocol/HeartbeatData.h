@@ -40,7 +40,7 @@ class ProducerData {
   }
 
  public:
-  string groupName;
+  std::string groupName;
 };
 
 //<!***************************************************************************
@@ -57,20 +57,19 @@ class ConsumerData {
     outJson["consumeType"] = consumeType;
     outJson["messageModel"] = messageModel;
 
-    vector<SubscriptionData>::const_iterator it = subscriptionDataSet.begin();
-    for (; it != subscriptionDataSet.end(); it++) {
-      outJson["subscriptionDataSet"].append((*it).toJson());
+    for (const auto& sd : subscriptionDataSet) {
+      outJson["subscriptionDataSet"].append(sd.toJson());
     }
 
     return outJson;
   }
 
  public:
-  string groupName;
+  std::string groupName;
   ConsumeType consumeType;
   MessageModel messageModel;
   ConsumeFromWhere consumeFromWhere;
-  vector<SubscriptionData> subscriptionDataSet;
+  std::vector<SubscriptionData> subscriptionDataSet;
 };
 
 //<!***************************************************************************
@@ -80,7 +79,7 @@ class HeartbeatData {
     m_producerDataSet.clear();
     m_consumerDataSet.clear();
   }
-  void Encode(string& outData) {
+  void Encode(std::string& outData) {
     Json::Value root;
 
     // id;
@@ -89,18 +88,16 @@ class HeartbeatData {
     // consumer;
     {
       std::lock_guard<std::mutex> lock(m_consumerDataMutex);
-      vector<ConsumerData>::iterator itc = m_consumerDataSet.begin();
-      for (; itc != m_consumerDataSet.end(); itc++) {
-        root["consumerDataSet"].append((*itc).toJson());
+      for (const auto& cd : m_consumerDataSet) {
+        root["consumerDataSet"].append(cd.toJson());
       }
     }
 
     // producer;
     {
       std::lock_guard<std::mutex> lock(m_producerDataMutex);
-      vector<ProducerData>::iterator itp = m_producerDataSet.begin();
-      for (; itp != m_producerDataSet.end(); itp++) {
-        root["producerDataSet"].append((*itp).toJson());
+      for (const auto& pd : m_producerDataSet) {
+        root["producerDataSet"].append(pd.toJson());
       }
     }
 
@@ -109,7 +106,7 @@ class HeartbeatData {
     outData = fastwrite.write(root);
   }
 
-  void setClientID(const string& clientID) { m_clientID = clientID; }
+  void setClientID(const std::string& clientID) { m_clientID = clientID; }
 
   bool isProducerDataSetEmpty() {
     std::lock_guard<std::mutex> lock(m_producerDataMutex);
@@ -132,9 +129,9 @@ class HeartbeatData {
   }
 
  private:
-  string m_clientID;
-  vector<ProducerData> m_producerDataSet;
-  vector<ConsumerData> m_consumerDataSet;
+  std::string m_clientID;
+  std::vector<ProducerData> m_producerDataSet;
+  std::vector<ConsumerData> m_consumerDataSet;
   std::mutex m_producerDataMutex;
   std::mutex m_consumerDataMutex;
 };

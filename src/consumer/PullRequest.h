@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PULLREQUEST_H__
-#define __PULLREQUEST_H__
+#ifndef __PULL_REQUEST_H__
+#define __PULL_REQUEST_H__
 
 #include <atomic>
 #include <mutex>
@@ -25,19 +25,19 @@
 #include "UtilAll.h"
 
 namespace rocketmq {
-//<!***************************************************************************
+
 class PullRequest {
  public:
-  PullRequest(const string& groupname);
+  PullRequest(const std::string& groupname);
   virtual ~PullRequest();
 
-  void putMessage(vector<MQMessageExt>& msgs);
-  void getMessage(vector<MQMessageExt>& msgs);
+  void putMessage(std::vector<MQMessageExt>& msgs);
+  void getMessage(std::vector<MQMessageExt>& msgs);
   int64 getCacheMinOffset();
   int64 getCacheMaxOffset();
   int getCacheMsgCount();
-  void getMessageByQueueOffset(vector<MQMessageExt>& msgs, int64 minQueueOffset, int64 maxQueueOffset);
-  int64 removeMessage(vector<MQMessageExt>& msgs);
+  void getMessageByQueueOffset(std::vector<MQMessageExt>& msgs, int64 minQueueOffset, int64 maxQueueOffset);
+  int64 removeMessage(std::vector<MQMessageExt>& msgs);
   void clearAllMsgs();
 
   PullRequest& operator=(const PullRequest& other);
@@ -48,7 +48,7 @@ class PullRequest {
   int64 getNextOffset();
   void setNextOffset(int64 nextoffset);
 
-  string getGroupName() const;
+  std::string getGroupName() const;
 
   void updateQueueMaxOffset(int64 queueOffset);
 
@@ -65,7 +65,7 @@ class PullRequest {
   int getTryUnlockTimes() const;
   void takeMessages(std::vector<MQMessageExt>& msgs, int batchSize);
   int64 commit();
-  void makeMessageToCosumeAgain(vector<MQMessageExt>& msgs);
+  void makeMessageToCosumeAgain(std::vector<MQMessageExt>& msgs);
   std::timed_mutex& getPullRequestCriticalSection();
   void removePullMsgEvent();
   bool addPullMsgEvent();
@@ -94,4 +94,4 @@ class PullRequest {
 
 }  // namespace rocketmq
 
-#endif
+#endif  // __PULL_REQUEST_H__

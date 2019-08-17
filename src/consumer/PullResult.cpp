@@ -30,7 +30,7 @@ PullResult::PullResult(PullStatus pullStatus,
                        int64 nextBeginOffset,
                        int64 minOffset,
                        int64 maxOffset,
-                       const vector<MQMessageExt>& src)
+                       const std::vector<MQMessageExt>& src)
     : pullStatus(pullStatus), nextBeginOffset(nextBeginOffset), minOffset(minOffset), maxOffset(maxOffset) {
   msgFoundList.reserve(src.size());
   for (size_t i = 0; i < src.size(); i++) {
@@ -43,4 +43,4 @@ PullResult::~PullResult() {
 }
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

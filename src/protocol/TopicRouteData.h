@@ -67,12 +67,12 @@ class TopicRouteData {
 
     Json::CharReaderBuilder charReaderBuilder;
     charReaderBuilder.settings_["allowNumericKeys"] = true;
-    unique_ptr<Json::CharReader> pCharReaderPtr(charReaderBuilder.newCharReader());
+    std::unique_ptr<Json::CharReader> pCharReaderPtr(charReaderBuilder.newCharReader());
 
     const char* begin = pData;
     const char* end = pData + mem->getSize();
     Json::Value root;
-    string errs;
+    std::string errs;
 
     if (!pCharReaderPtr->parse(begin, end, &root, &errs)) {
       LOG_ERROR("parse json error:%s, value isArray:%d, isObject:%d", errs.c_str(), root.isArray(), root.isObject());

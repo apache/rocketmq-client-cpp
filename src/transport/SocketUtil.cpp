@@ -29,14 +29,14 @@ sockaddr IPPort2socketAddress(int host, int port) {
   return bornAddr;
 }
 
-string socketAddress2IPPort(sockaddr addr) {
+std::string socketAddress2IPPort(sockaddr addr) {
   sockaddr_in sa;
   memcpy(&sa, &addr, sizeof(sockaddr));
 
   char tmp[32];
   sprintf(tmp, "%s:%d", inet_ntoa(sa.sin_addr), ntohs(sa.sin_port));
 
-  string ipport = tmp;
+  std::string ipport = tmp;
   return ipport;
 }
 
@@ -48,14 +48,14 @@ void socketAddress2IPPort(sockaddr addr, int& host, int& port) {
   port = ntohs(sa.sin_port);
 }
 
-string socketAddress2String(sockaddr addr) {
+std::string socketAddress2String(sockaddr addr) {
   sockaddr_in in;
   memcpy(&in, &addr, sizeof(sockaddr));
 
   return inet_ntoa(in.sin_addr);
 }
 
-string getHostName(sockaddr addr) {
+std::string getHostName(sockaddr addr) {
   sockaddr_in in;
   memcpy(&in, &addr, sizeof(sockaddr));
 

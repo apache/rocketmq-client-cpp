@@ -38,7 +38,7 @@ MQMessageExt::MQMessageExt(int queueId,
                            sockaddr bornHost,
                            int64 storeTimestamp,
                            sockaddr storeHost,
-                           string msgId)
+                           std::string msgId)
     : m_queueOffset(0),
       m_commitLogOffset(0),
       m_bornTimestamp(bornTimestamp),
@@ -74,11 +74,11 @@ sockaddr MQMessageExt::getBornHost() const {
   return m_bornHost;
 }
 
-string MQMessageExt::getBornHostString() const {
+std::string MQMessageExt::getBornHostString() const {
   return socketAddress2String(m_bornHost);
 }
 
-string MQMessageExt::getBornHostNameString() const {
+std::string MQMessageExt::getBornHostNameString() const {
   return getHostName(m_bornHost);
 }
 
@@ -98,7 +98,7 @@ sockaddr MQMessageExt::getStoreHost() const {
   return m_storeHost;
 }
 
-string MQMessageExt::getStoreHostString() const {
+std::string MQMessageExt::getStoreHostString() const {
   return socketAddress2String(m_storeHost);
 }
 
@@ -106,19 +106,19 @@ void MQMessageExt::setStoreHost(const sockaddr& storeHost) {
   m_storeHost = storeHost;
 }
 
-const string& MQMessageExt::getMsgId() const {
+const std::string& MQMessageExt::getMsgId() const {
   return m_msgId;
 }
 
-void MQMessageExt::setMsgId(const string& msgId) {
+void MQMessageExt::setMsgId(const std::string& msgId) {
   m_msgId = msgId;
 }
 
-const string& MQMessageExt::getOffsetMsgId() const {
+const std::string& MQMessageExt::getOffsetMsgId() const {
   return m_offsetMsgId;
 }
 
-void MQMessageExt::setOffsetMsgId(const string& offsetMsgId) {
+void MQMessageExt::setOffsetMsgId(const std::string& offsetMsgId) {
   m_offsetMsgId = offsetMsgId;
 }
 

@@ -116,11 +116,11 @@ int64 MQClient::searchOffset(const MQMessageQueue& mq, uint64_t timestamp) {
   return getFactory()->searchOffset(mq, timestamp, m_SessionCredentials);
 }
 
-MQMessageExt* MQClient::viewMessage(const string& msgId) {
+MQMessageExt* MQClient::viewMessage(const std::string& msgId) {
   return getFactory()->viewMessage(msgId, m_SessionCredentials);
 }
 
-vector<MQMessageQueue> MQClient::getTopicMessageQueueInfo(const string& topic) {
+std::vector<MQMessageQueue> MQClient::getTopicMessageQueueInfo(const std::string& topic) {
   std::shared_ptr<TopicPublishInfo> topicPublishInfo =
       getFactory()->tryToFindTopicPublishInfo(topic, m_SessionCredentials);
   if (topicPublishInfo) {

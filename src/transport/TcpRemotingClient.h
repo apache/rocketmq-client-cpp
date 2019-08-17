@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TCPREMOTINGCLIENT_H__
-#define __TCPREMOTINGCLIENT_H__
+#ifndef __TCP_REMOTING_CLIENT_H__
+#define __TCP_REMOTING_CLIENT_H__
 
 #include <map>
 #include <mutex>
@@ -29,7 +29,6 @@
 #include "TcpTransport.h"
 
 namespace rocketmq {
-//<!************************************************************************
 
 class TcpRemotingClient {
  public:
@@ -37,38 +36,38 @@ class TcpRemotingClient {
   virtual ~TcpRemotingClient();
 
   void stopAllTcpTransportThread();
-  void updateNameServerAddressList(const string& addrs);
+  void updateNameServerAddressList(const std::string& addrs);
 
-  bool invokeHeartBeat(const string& addr, RemotingCommand& request, int timeoutMillis = 3000);
+  bool invokeHeartBeat(const std::string& addr, RemotingCommand& request, int timeoutMillis = 3000);
 
-  // delete outsite;
-  RemotingCommand* invokeSync(const string& addr, RemotingCommand& request, int timeoutMillis = 3000);
+  // delete outsite
+  RemotingCommand* invokeSync(const std::string& addr, RemotingCommand& request, int timeoutMillis = 3000);
 
-  bool invokeAsync(const string& addr,
+  bool invokeAsync(const std::string& addr,
                    RemotingCommand& request,
                    AsyncCallbackWrap* cbw,
                    int64 timeoutMillis,
                    int maxRetrySendTimes = 1,
                    int retrySendTimes = 1);
 
-  void invokeOneway(const string& addr, RemotingCommand& request);
+  void invokeOneway(const std::string& addr, RemotingCommand& request);
 
   void registerProcessor(MQRequestCode requestCode, ClientRemotingProcessor* clientRemotingProcessor);
 
  private:
-  static void static_messageReceived(void* context, const MemoryBlock& mem, const string& addr);
+  static void static_messageReceived(void* context, const MemoryBlock& mem, const std::string& addr);
 
-  void messageReceived(const MemoryBlock& mem, const string& addr);
-  void ProcessData(const MemoryBlock& mem, const string& addr);
-  void processRequestCommand(RemotingCommand* pCmd, const string& addr);
+  void messageReceived(const MemoryBlock& mem, const std::string& addr);
+  void ProcessData(const MemoryBlock& mem, const std::string& addr);
+  void processRequestCommand(RemotingCommand* pCmd, const std::string& addr);
   void processResponseCommand(RemotingCommand* pCmd, std::shared_ptr<ResponseFuture> pFuture);
   void checkAsyncRequestTimeout(int opaque);
 
-  std::shared_ptr<TcpTransport> GetTransport(const string& addr, bool needResponse);
-  std::shared_ptr<TcpTransport> CreateTransport(const string& addr, bool needResponse);
+  std::shared_ptr<TcpTransport> GetTransport(const std::string& addr, bool needResponse);
+  std::shared_ptr<TcpTransport> CreateTransport(const std::string& addr, bool needResponse);
   std::shared_ptr<TcpTransport> CreateNameServerTransport(bool needResponse);
 
-  bool CloseTransport(const string& addr, std::shared_ptr<TcpTransport> pTcp);
+  bool CloseTransport(const std::string& addr, std::shared_ptr<TcpTransport> pTcp);
   bool CloseNameServerTransport(std::shared_ptr<TcpTransport> pTcp);
 
   bool SendCommand(std::shared_ptr<TcpTransport> pTts, RemotingCommand& msg);
@@ -77,16 +76,16 @@ class TcpRemotingClient {
   std::shared_ptr<ResponseFuture> findAndDeleteResponseFuture(int opaque);
 
  private:
-  using RequestMap = map<int, ClientRemotingProcessor*>;
-  using TcpMap = map<string, std::shared_ptr<TcpTransport>>;
-  using ResMap = map<int, std::shared_ptr<ResponseFuture>>;
+  using RequestMap = std::map<int, ClientRemotingProcessor*>;
+  using TcpMap = std::map<std::string, std::shared_ptr<TcpTransport>>;
+  using ResMap = std::map<int, std::shared_ptr<ResponseFuture>>;
 
   RequestMap m_requestTable;
 
-  TcpMap m_tcpTable;  //<! addr->tcp;
+  TcpMap m_tcpTable;  // addr->tcp;
   std::timed_mutex m_tcpTableLock;
 
-  ResMap m_futureTable;  //<! id->future;
+  ResMap m_futureTable;  // id->future;
   std::mutex m_futureTableLock;
 
   int m_dispatchThreadNum;
@@ -94,10 +93,10 @@ class TcpRemotingClient {
   uint64_t m_tcpConnectTimeout;           // ms
   uint64_t m_tcpTransportTryLockTimeout;  // s
 
-  //<! NameServer
+  // NameServer
   std::timed_mutex m_namesrvLock;
-  vector<string> m_namesrvAddrList;
-  string m_namesrvAddrChoosed;
+  std::vector<std::string> m_namesrvAddrList;
+  std::string m_namesrvAddrChoosed;
   unsigned int m_namesrvIndex;
 
   thread_pool_executor m_dispatchExecutor;
@@ -105,7 +104,6 @@ class TcpRemotingClient {
   scheduled_thread_pool_executor m_timeoutExecutor;
 };
 
-//<!************************************************************************
 }  // namespace rocketmq
 
-#endif
+#endif  // __TCP_REMOTING_CLIENT_H__

@@ -15,65 +15,67 @@
  * limitations under the License.
  */
 
-#ifndef __LOCKBATCHBODY_H__
-#define __LOCKBATCHBODY_H__
+#ifndef __LOCK_BATCH_BODY_H__
+#define __LOCK_BATCH_BODY_H__
+
 #include <set>
 #include <string>
+
 #include "MQMessageQueue.h"
 #include "RemotingSerializable.h"
+#include "UtilAll.h"
 #include "dataBlock.h"
 #include "json/json.h"
-#include "UtilAll.h"
 
 namespace rocketmq {
-//<!***************************************************************************
 
 class LockBatchRequestBody {
  public:
   virtual ~LockBatchRequestBody() { mqSet.clear(); }
-  string getConsumerGroup();
-  void setConsumerGroup(string consumerGroup);
-  string getClientId();
-  void setClientId(string clientId);
-  vector<MQMessageQueue> getMqSet();
-  void setMqSet(vector<MQMessageQueue> mqSet);
-  void Encode(string& outData);
+  std::string getConsumerGroup();
+  void setConsumerGroup(std::string consumerGroup);
+  std::string getClientId();
+  void setClientId(std::string clientId);
+  std::vector<MQMessageQueue> getMqSet();
+  void setMqSet(std::vector<MQMessageQueue> mqSet);
+  void Encode(std::string& outData);
   Json::Value toJson(const MQMessageQueue& mq) const;
 
  private:
-  string consumerGroup;
-  string clientId;
-  vector<MQMessageQueue> mqSet;
+  std::string consumerGroup;
+  std::string clientId;
+  std::vector<MQMessageQueue> mqSet;
 };
 
 class LockBatchResponseBody {
  public:
   virtual ~LockBatchResponseBody() { lockOKMQSet.clear(); }
-  vector<MQMessageQueue> getLockOKMQSet();
-  void setLockOKMQSet(vector<MQMessageQueue> lockOKMQSet);
-  static void Decode(const MemoryBlock* mem, vector<MQMessageQueue>& messageQueues);
+  std::vector<MQMessageQueue> getLockOKMQSet();
+  void setLockOKMQSet(std::vector<MQMessageQueue> lockOKMQSet);
+  static void Decode(const MemoryBlock* mem, std::vector<MQMessageQueue>& messageQueues);
 
  private:
-  vector<MQMessageQueue> lockOKMQSet;
+  std::vector<MQMessageQueue> lockOKMQSet;
 };
 
 class UnlockBatchRequestBody {
  public:
   virtual ~UnlockBatchRequestBody() { mqSet.clear(); }
-  string getConsumerGroup();
-  void setConsumerGroup(string consumerGroup);
-  string getClientId();
-  void setClientId(string clientId);
-  vector<MQMessageQueue> getMqSet();
-  void setMqSet(vector<MQMessageQueue> mqSet);
-  void Encode(string& outData);
+  std::string getConsumerGroup();
+  void setConsumerGroup(std::string consumerGroup);
+  std::string getClientId();
+  void setClientId(std::string clientId);
+  std::vector<MQMessageQueue> getMqSet();
+  void setMqSet(std::vector<MQMessageQueue> mqSet);
+  void Encode(std::string& outData);
   Json::Value toJson(const MQMessageQueue& mq) const;
 
  private:
-  string consumerGroup;
-  string clientId;
-  vector<MQMessageQueue> mqSet;
+  std::string consumerGroup;
+  std::string clientId;
+  std::vector<MQMessageQueue> mqSet;
 };
 
-}  //<!end namespace;
-#endif
+}  // namespace rocketmq
+
+#endif  // __LOCK_BATCH_BODY_H__

@@ -27,31 +27,31 @@
 #endif
 
 namespace rocketmq {
-//<!************************************************************************
+
 std::string UtilAll::s_localHostName;
 std::string UtilAll::s_localIpAddress;
 
-bool UtilAll::startsWith_retry(const string& topic) {
+bool UtilAll::startsWith_retry(const std::string& topic) {
   return topic.find(RETRY_GROUP_TOPIC_PREFIX) == 0;
 }
 
-string UtilAll::getRetryTopic(const string& consumerGroup) {
+std::string UtilAll::getRetryTopic(const std::string& consumerGroup) {
   return RETRY_GROUP_TOPIC_PREFIX + consumerGroup;
 }
 
-void UtilAll::Trim(string& str) {
+void UtilAll::Trim(std::string& str) {
   str.erase(0, str.find_first_not_of(' '));  // prefixing spaces
   str.erase(str.find_last_not_of(' ') + 1);  // surfixing spaces
 }
 
-bool UtilAll::isBlank(const string& str) {
+bool UtilAll::isBlank(const std::string& str) {
   if (str.empty()) {
     return true;
   }
 
-  string::size_type left = str.find_first_not_of(WHITESPACE);
+  std::string::size_type left = str.find_first_not_of(WHITESPACE);
 
-  if (left == string::npos) {
+  if (left == std::string::npos) {
     return true;
   }
 
@@ -83,13 +83,13 @@ int64 UtilAll::str2ll(const char* str) {
   return boost::lexical_cast<int64>(str);
 }
 
-string UtilAll::bytes2string(const char* bytes, int len) {
-  if (bytes == NULL || len <= 0) {
-    return string();
+std::string UtilAll::bytes2string(const char* bytes, int len) {
+  if (bytes == nullptr || len <= 0) {
+    return std::string();
   }
 
 #ifdef WIN32
-  string buffer;
+  std::string buffer;
   for (int i = 0; i < len; i++) {
     char tmp[3];
     sprintf(tmp, "%02X", (unsigned char)bytes[i]);
@@ -108,14 +108,14 @@ string UtilAll::bytes2string(const char* bytes, int len) {
     result[i * 2 + 1] = hex_str[(bytes[i]) & 0x0F];
   }
 
-  string buffer(result);
+  std::string buffer(result);
   return buffer;
 #endif
 }
 
-bool UtilAll::SplitURL(const string& serverURL, string& addr, short& nPort) {
+bool UtilAll::SplitURL(const std::string& serverURL, std::string& addr, short& nPort) {
   size_t pos = serverURL.find(':');
-  if (pos == string::npos) {
+  if (pos == std::string::npos) {
     return false;
   }
 
@@ -125,7 +125,7 @@ bool UtilAll::SplitURL(const string& serverURL, string& addr, short& nPort) {
   }
 
   pos++;
-  string port = serverURL.substr(pos, serverURL.length() - pos);
+  std::string port = serverURL.substr(pos, serverURL.length() - pos);
   nPort = atoi(port.c_str());
   if (nPort == 0) {
     return false;
@@ -133,17 +133,17 @@ bool UtilAll::SplitURL(const string& serverURL, string& addr, short& nPort) {
   return true;
 }
 
-int UtilAll::Split(vector<string>& ret_, const string& strIn, const char sep) {
+int UtilAll::Split(std::vector<std::string>& ret_, const std::string& strIn, const char sep) {
   if (strIn.empty())
     return 0;
 
-  string tmp;
-  string::size_type pos_begin = strIn.find_first_not_of(sep);
-  string::size_type comma_pos = 0;
+  std::string tmp;
+  std::string::size_type pos_begin = strIn.find_first_not_of(sep);
+  std::string::size_type comma_pos = 0;
 
-  while (pos_begin != string::npos) {
+  while (pos_begin != std::string::npos) {
     comma_pos = strIn.find(sep, pos_begin);
-    if (comma_pos != string::npos) {
+    if (comma_pos != std::string::npos) {
       tmp = strIn.substr(pos_begin, comma_pos - pos_begin);
       pos_begin = comma_pos + 1;
     } else {
@@ -158,17 +158,18 @@ int UtilAll::Split(vector<string>& ret_, const string& strIn, const char sep) {
   }
   return ret_.size();
 }
-int UtilAll::Split(vector<string>& ret_, const string& strIn, const string& sep) {
+
+int UtilAll::Split(std::vector<std::string>& ret_, const std::string& strIn, const std::string& sep) {
   if (strIn.empty())
     return 0;
 
-  string tmp;
-  string::size_type pos_begin = strIn.find_first_not_of(sep);
-  string::size_type comma_pos = 0;
+  std::string tmp;
+  std::string::size_type pos_begin = strIn.find_first_not_of(sep);
+  std::string::size_type comma_pos = 0;
 
-  while (pos_begin != string::npos) {
+  while (pos_begin != std::string::npos) {
     comma_pos = strIn.find(sep, pos_begin);
-    if (comma_pos != string::npos) {
+    if (comma_pos != std::string::npos) {
       tmp = strIn.substr(pos_begin, comma_pos - pos_begin);
       pos_begin = comma_pos + sep.length();
     } else {
@@ -225,7 +226,7 @@ int64_t UtilAll::StringToInt64(const std::string& str, int64_t& val) {
   return true;
 }
 
-string UtilAll::getLocalHostName() {
+std::string UtilAll::getLocalHostName() {
   if (s_localHostName.empty()) {
     // boost::system::error_code error;
     // s_localHostName = boost::asio::ip::host_name(error);
@@ -240,7 +241,7 @@ string UtilAll::getLocalHostName() {
   return s_localHostName;
 }
 
-string UtilAll::getLocalAddress() {
+std::string UtilAll::getLocalAddress() {
   if (s_localIpAddress.empty()) {
     boost::asio::io_service io_service;
     boost::asio::ip::tcp::resolver resolver(io_service);
@@ -260,17 +261,17 @@ string UtilAll::getLocalAddress() {
   return s_localIpAddress;
 }
 
-string UtilAll::getHomeDirectory() {
+std::string UtilAll::getHomeDirectory() {
 #ifndef WIN32
   char* homeEnv = getenv("HOME");
-  string homeDir;
+  std::string homeDir;
   if (homeEnv == NULL) {
     homeDir.append(getpwuid(getuid())->pw_dir);
   } else {
     homeDir.append(homeEnv);
   }
 #else
-  string homeDir(getenv("USERPROFILE"));
+  std::string homeDir(getenv("USERPROFILE"));
 #endif
   return homeDir;
 }

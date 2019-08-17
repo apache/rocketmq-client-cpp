@@ -17,34 +17,34 @@
 
 #include "LockBatchBody.h"
 #include "Logging.h"
-namespace rocketmq {  //<!end namespace;
 
-string LockBatchRequestBody::getConsumerGroup() {
+namespace rocketmq {
+
+std::string LockBatchRequestBody::getConsumerGroup() {
   return consumerGroup;
 }
-void LockBatchRequestBody::setConsumerGroup(string in_consumerGroup) {
+void LockBatchRequestBody::setConsumerGroup(std::string in_consumerGroup) {
   consumerGroup = in_consumerGroup;
 }
-string LockBatchRequestBody::getClientId() {
+std::string LockBatchRequestBody::getClientId() {
   return clientId;
 }
-void LockBatchRequestBody::setClientId(string in_clientId) {
+void LockBatchRequestBody::setClientId(std::string in_clientId) {
   clientId = in_clientId;
 }
-vector<MQMessageQueue> LockBatchRequestBody::getMqSet() {
+std::vector<MQMessageQueue> LockBatchRequestBody::getMqSet() {
   return mqSet;
 }
-void LockBatchRequestBody::setMqSet(vector<MQMessageQueue> in_mqSet) {
+void LockBatchRequestBody::setMqSet(std::vector<MQMessageQueue> in_mqSet) {
   mqSet.swap(in_mqSet);
 }
-void LockBatchRequestBody::Encode(string& outData) {
+void LockBatchRequestBody::Encode(std::string& outData) {
   Json::Value root;
   root["consumerGroup"] = consumerGroup;
   root["clientId"] = clientId;
 
-  vector<MQMessageQueue>::const_iterator it = mqSet.begin();
-  for (; it != mqSet.end(); it++) {
-    root["mqSet"].append(toJson(*it));
+  for (const auto& mq : mqSet) {
+    root["mqSet"].append(toJson(mq));
   }
 
   Json::FastWriter fastwrite;
@@ -59,14 +59,14 @@ Json::Value LockBatchRequestBody::toJson(const MQMessageQueue& mq) const {
   return outJson;
 }
 
-vector<MQMessageQueue> LockBatchResponseBody::getLockOKMQSet() {
+std::vector<MQMessageQueue> LockBatchResponseBody::getLockOKMQSet() {
   return lockOKMQSet;
 }
-void LockBatchResponseBody::setLockOKMQSet(vector<MQMessageQueue> in_lockOKMQSet) {
+void LockBatchResponseBody::setLockOKMQSet(std::vector<MQMessageQueue> in_lockOKMQSet) {
   lockOKMQSet.swap(in_lockOKMQSet);
 }
 
-void LockBatchResponseBody::Decode(const MemoryBlock* mem, vector<MQMessageQueue>& messageQueues) {
+void LockBatchResponseBody::Decode(const MemoryBlock* mem, std::vector<MQMessageQueue>& messageQueues) {
   messageQueues.clear();
   //<! decode;
   const char* const pData = static_cast<const char*>(mem->getData());
@@ -91,32 +91,31 @@ void LockBatchResponseBody::Decode(const MemoryBlock* mem, vector<MQMessageQueue
   }
 }
 
-string UnlockBatchRequestBody::getConsumerGroup() {
+std::string UnlockBatchRequestBody::getConsumerGroup() {
   return consumerGroup;
 }
-void UnlockBatchRequestBody::setConsumerGroup(string in_consumerGroup) {
+void UnlockBatchRequestBody::setConsumerGroup(std::string in_consumerGroup) {
   consumerGroup = in_consumerGroup;
 }
-string UnlockBatchRequestBody::getClientId() {
+std::string UnlockBatchRequestBody::getClientId() {
   return clientId;
 }
-void UnlockBatchRequestBody::setClientId(string in_clientId) {
+void UnlockBatchRequestBody::setClientId(std::string in_clientId) {
   clientId = in_clientId;
 }
-vector<MQMessageQueue> UnlockBatchRequestBody::getMqSet() {
+std::vector<MQMessageQueue> UnlockBatchRequestBody::getMqSet() {
   return mqSet;
 }
-void UnlockBatchRequestBody::setMqSet(vector<MQMessageQueue> in_mqSet) {
+void UnlockBatchRequestBody::setMqSet(std::vector<MQMessageQueue> in_mqSet) {
   mqSet.swap(in_mqSet);
 }
-void UnlockBatchRequestBody::Encode(string& outData) {
+void UnlockBatchRequestBody::Encode(std::string& outData) {
   Json::Value root;
   root["consumerGroup"] = consumerGroup;
   root["clientId"] = clientId;
 
-  vector<MQMessageQueue>::const_iterator it = mqSet.begin();
-  for (; it != mqSet.end(); it++) {
-    root["mqSet"].append(toJson(*it));
+  for (const auto& mq : mqSet) {
+    root["mqSet"].append(toJson(mq));
   }
 
   Json::FastWriter fastwrite;
@@ -130,4 +129,5 @@ Json::Value UnlockBatchRequestBody::toJson(const MQMessageQueue& mq) const {
   outJson["queueId"] = mq.getQueueId();
   return outJson;
 }
-}
+
+}  // namespace rocketmq

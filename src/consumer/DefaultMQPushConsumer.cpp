@@ -82,7 +82,7 @@ class AsyncPullCallback : public PullCallback {
       case NO_NEW_MSG: {
         m_pullRequest->setNextOffset(result.nextBeginOffset);
 
-        vector<MQMessageExt> msgs;
+        std::vector<MQMessageExt> msgs;
         m_pullRequest->getMessage(msgs);
         if ((msgs.size() == 0) && (result.nextBeginOffset > 0)) {
           /*if broker losted/cleared msgs of one msgQueue, but the brokerOffset
@@ -113,7 +113,7 @@ class AsyncPullCallback : public PullCallback {
       case NO_MATCHED_MSG: {
         m_pullRequest->setNextOffset(result.nextBeginOffset);
 
-        vector<MQMessageExt> msgs;
+        std::vector<MQMessageExt> msgs;
         m_pullRequest->getMessage(msgs);
         if ((msgs.size() == 0) && (result.nextBeginOffset > 0)) {
           /*if broker losted/cleared msgs of one msgQueue, but the brokerOffset
@@ -242,7 +242,7 @@ void DefaultMQPushConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {
   }
 }
 
-void DefaultMQPushConsumer::fetchSubscribeMessageQueues(const string& topic, vector<MQMessageQueue>& mqs) {
+void DefaultMQPushConsumer::fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) {
   mqs.clear();
   try {
     getFactory()->fetchSubscribeMessageQueues(topic, mqs, getSessionCredentials());
@@ -451,7 +451,7 @@ void DefaultMQPushConsumer::copySubscription() {
       string retryTopic = UtilAll::getRetryTopic(getGroupName());
 
       // auto subscript retry topic
-      unique_ptr<SubscriptionData> pSData(FilterAPI::buildSubscriptionData(retryTopic, SUB_ALL));
+      std::unique_ptr<SubscriptionData> pSData(FilterAPI::buildSubscriptionData(retryTopic, SUB_ALL));
 
       m_pRebalance->setSubscriptionData(retryTopic, pSData.release());
       break;
@@ -461,7 +461,7 @@ void DefaultMQPushConsumer::copySubscription() {
   }
 }
 
-void DefaultMQPushConsumer::updateTopicSubscribeInfo(const string& topic, vector<MQMessageQueue>& info) {
+void DefaultMQPushConsumer::updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info) {
   m_pRebalance->setTopicSubscribeInfo(topic, info);
 }
 
@@ -487,7 +487,7 @@ void DefaultMQPushConsumer::setConsumeFromWhere(ConsumeFromWhere consumeFromWher
   m_consumeFromWhere = consumeFromWhere;
 }
 
-void DefaultMQPushConsumer::getSubscriptions(vector<SubscriptionData>& result) {
+void DefaultMQPushConsumer::getSubscriptions(std::vector<SubscriptionData>& result) {
   std::map<string, SubscriptionData*>& subTable = m_pRebalance->getSubscriptionInner();
   for (const auto& it : subTable) {
     result.push_back(*(it.second));
@@ -572,17 +572,17 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
 
   try {
     request->setLastPullTimestamp(UtilAll::currentTimeMillis());
-    unique_ptr<PullResult> result(m_pPullAPIWrapper->pullKernelImpl(messageQueue,              // 1
-                                                                    subExpression,             // 2
-                                                                    pSdata->getSubVersion(),   // 3
-                                                                    request->getNextOffset(),  // 4
-                                                                    32,                        // 5
-                                                                    sysFlag,                   // 6
-                                                                    commitOffsetValue,         // 7
-                                                                    1000 * 15,                 // 8
-                                                                    1000 * 30,                 // 9
-                                                                    ComMode_SYNC,              // 10
-                                                                    nullptr, getSessionCredentials()));
+    std::unique_ptr<PullResult> result(m_pPullAPIWrapper->pullKernelImpl(messageQueue,              // 1
+                                                                         subExpression,             // 2
+                                                                         pSdata->getSubVersion(),   // 3
+                                                                         request->getNextOffset(),  // 4
+                                                                         32,                        // 5
+                                                                         sysFlag,                   // 6
+                                                                         commitOffsetValue,         // 7
+                                                                         1000 * 15,                 // 8
+                                                                         1000 * 30,                 // 9
+                                                                         ComMode_SYNC,              // 10
+                                                                         nullptr, getSessionCredentials()));
 
     PullResult pullResult = m_pPullAPIWrapper->processPullResult(messageQueue, result.get(), pSdata);
 
@@ -608,7 +608,7 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
       }
       case NO_NEW_MSG: {
         request->setNextOffset(pullResult.nextBeginOffset);
-        vector<MQMessageExt> msgs;
+        std::vector<MQMessageExt> msgs;
         request->getMessage(msgs);
         if ((msgs.size() == 0) && (pullResult.nextBeginOffset > 0)) {
           /*if broker losted/cleared msgs of one msgQueue, but the brokerOffset
@@ -632,7 +632,7 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
       }
       case NO_MATCHED_MSG: {
         request->setNextOffset(pullResult.nextBeginOffset);
-        vector<MQMessageExt> msgs;
+        std::vector<MQMessageExt> msgs;
         request->getMessage(msgs);
         if ((msgs.size() == 0) && (pullResult.nextBeginOffset > 0)) {
           // LOG_DEBUG("maybe misMatch between broker and client happens, update

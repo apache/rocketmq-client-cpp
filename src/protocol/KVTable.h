@@ -32,12 +32,12 @@ class KVTable : public RemotingSerializable {
 
   void Encode(string& outData) {}
 
-  const map<string, string>& getTable() { return m_table; }
+  const std::map<std::string, std::string>& getTable() { return m_table; }
 
-  void setTable(const map<string, string>& table) { m_table = table; }
+  void setTable(const std::map<std::string, std::string>& table) { m_table = table; }
 
  private:
-  map<string, string> m_table;
+  std::map<std::string, std::string> m_table;
 };
 }  // namespace rocketmq
 

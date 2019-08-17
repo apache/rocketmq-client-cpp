@@ -54,7 +54,7 @@ void Rebalance::doRebalance() throw(MQClientException) {
       LOG_INFO("current topic is:%s", topic.c_str());
 
       // topic -> mqs
-      vector<MQMessageQueue> mqAll;
+      std::vector<MQMessageQueue> mqAll;
       if (!getTopicSubscribeInfo(topic, mqAll)) {
         continue;
       }
@@ -74,7 +74,7 @@ void Rebalance::doRebalance() throw(MQClientException) {
         }
 
         case CLUSTERING: {
-          vector<string> cidAll;
+          std::vector<string> cidAll;
           m_pClientFactory->findConsumerIds(topic, m_pConsumer->getGroupName(), cidAll,
                                             m_pConsumer->getSessionCredentials());
 
@@ -92,7 +92,7 @@ void Rebalance::doRebalance() throw(MQClientException) {
           sort(cidAll.begin(), cidAll.end());
 
           // allocate mqs
-          vector<MQMessageQueue> allocateResult;
+          std::vector<MQMessageQueue> allocateResult;
           try {
             m_pAllocateMQStrategy->allocate(m_pConsumer->getMQClientId(), mqAll, cidAll, allocateResult);
           } catch (MQException& e) {
@@ -123,7 +123,7 @@ void Rebalance::doRebalance() throw(MQClientException) {
 void Rebalance::persistConsumerOffset() {
   auto* pConsumer = static_cast<DefaultMQPushConsumer*>(m_pConsumer);
   OffsetStore* pOffsetStore = pConsumer->getOffsetStore();
-  vector<MQMessageQueue> mqs;
+  std::vector<MQMessageQueue> mqs;
 
   {
     std::lock_guard<std::mutex> lock(m_requestTableMutex);
@@ -146,7 +146,7 @@ void Rebalance::persistConsumerOffset() {
 void Rebalance::persistConsumerOffsetByResetOffset() {
   auto* pConsumer = static_cast<DefaultMQPushConsumer*>(m_pConsumer);
   OffsetStore* pOffsetStore = pConsumer->getOffsetStore();
-  vector<MQMessageQueue> mqs;
+  std::vector<MQMessageQueue> mqs;
   {
     std::lock_guard<std::mutex> lock(m_requestTableMutex);
     for (auto it = m_requestQueueTable.begin(); it != m_requestQueueTable.end(); ++it) {
@@ -172,12 +172,12 @@ map<string, SubscriptionData*>& Rebalance::getSubscriptionInner() {
   return m_subscriptionData;
 }
 
-void Rebalance::setSubscriptionData(const string& topic, SubscriptionData* pdata) {
+void Rebalance::setSubscriptionData(const std::string& topic, SubscriptionData* pdata) {
   if (pdata != nullptr && m_subscriptionData.find(topic) == m_subscriptionData.end())
     m_subscriptionData[topic] = pdata;
 }
 
-void Rebalance::setTopicSubscribeInfo(const string& topic, vector<MQMessageQueue>& mqs) {
+void Rebalance::setTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& mqs) {
   if (m_subscriptionData.find(topic) == m_subscriptionData.end()) {
     return;
   }
@@ -195,7 +195,7 @@ void Rebalance::setTopicSubscribeInfo(const string& topic, vector<MQMessageQueue
   }
 }
 
-bool Rebalance::getTopicSubscribeInfo(const string& topic, vector<MQMessageQueue>& mqs) {
+bool Rebalance::getTopicSubscribeInfo(const string& topic, std::vector<MQMessageQueue>& mqs) {
   std::lock_guard<std::mutex> lock(m_topicSubscribeInfoTableMutex);
   if (m_topicSubscribeInfoTable.find(topic) != m_topicSubscribeInfoTable.end()) {
     mqs = m_topicSubscribeInfoTable[topic];
@@ -228,7 +228,7 @@ void Rebalance::unlockAll(bool oneway) {
   for (auto& it : requestQueueTable) {
     if (!(it.second->isDroped())) {
       if (brokerMqs.find(it.first.getBrokerName()) == brokerMqs.end()) {
-        auto* mqs = new vector<MQMessageQueue>;
+        auto* mqs = new std::vector<MQMessageQueue>;
         brokerMqs[it.first.getBrokerName()] = mqs;
       } else {
         brokerMqs[it.first.getBrokerName()]->push_back(it.first);
@@ -243,8 +243,8 @@ void Rebalance::unlockAll(bool oneway) {
       LOG_ERROR("unlockAll findBrokerAddressInSubscribe ret null for broker:%s", brokerMq.first.data());
       continue;
     }
-    unique_ptr<UnlockBatchRequestBody> unlockBatchRequest(new UnlockBatchRequestBody());
-    vector<MQMessageQueue> mqs(*(brokerMq.second));
+    std::unique_ptr<UnlockBatchRequestBody> unlockBatchRequest(new UnlockBatchRequestBody());
+    std::vector<MQMessageQueue> mqs(*(brokerMq.second));
     unlockBatchRequest->setClientId(m_pConsumer->getMQClientId());
     unlockBatchRequest->setConsumerGroup(m_pConsumer->getGroupName());
     unlockBatchRequest->setMqSet(mqs);
@@ -270,14 +270,14 @@ void Rebalance::unlockAll(bool oneway) {
 }
 
 void Rebalance::unlock(MQMessageQueue mq) {
-  unique_ptr<FindBrokerResult> pFindBrokerResult(
+  std::unique_ptr<FindBrokerResult> pFindBrokerResult(
       m_pClientFactory->findBrokerAddressInSubscribe(mq.getBrokerName(), MASTER_ID, true));
   if (!pFindBrokerResult) {
     LOG_ERROR("unlock findBrokerAddressInSubscribe ret null for broker:%s", mq.getBrokerName().data());
     return;
   }
-  unique_ptr<UnlockBatchRequestBody> unlockBatchRequest(new UnlockBatchRequestBody());
-  vector<MQMessageQueue> mqs;
+  std::unique_ptr<UnlockBatchRequestBody> unlockBatchRequest(new UnlockBatchRequestBody());
+  std::vector<MQMessageQueue> mqs;
   mqs.push_back(mq);
   unlockBatchRequest->setClientId(m_pConsumer->getMQClientId());
   unlockBatchRequest->setConsumerGroup(m_pConsumer->getGroupName());
@@ -301,13 +301,13 @@ void Rebalance::unlock(MQMessageQueue mq) {
 }
 
 void Rebalance::lockAll() {
-  map<string, vector<MQMessageQueue>*> brokerMqs;
+  std::map<std::string, std::vector<MQMessageQueue>*> brokerMqs;
   MQ2PULLREQ requestQueueTable = getPullRequestTable();
   for (auto& it : requestQueueTable) {
     if (!(it.second->isDroped())) {
       string brokerKey = it.first.getBrokerName() + it.first.getTopic();
       if (brokerMqs.find(brokerKey) == brokerMqs.end()) {
-        auto* mqs = new vector<MQMessageQueue>;
+        auto* mqs = new std::vector<MQMessageQueue>;
         brokerMqs[brokerKey] = mqs;
         brokerMqs[brokerKey]->push_back(it.first);
       } else {
@@ -317,20 +317,20 @@ void Rebalance::lockAll() {
   }
   LOG_INFO("LockAll " SIZET_FMT " broker mqs", brokerMqs.size());
   for (auto itb = brokerMqs.begin(); itb != brokerMqs.end(); ++itb) {
-    string brokerName = (*(itb->second))[0].getBrokerName();
-    unique_ptr<FindBrokerResult> pFindBrokerResult(
+    std::string brokerName = (*(itb->second))[0].getBrokerName();
+    std::unique_ptr<FindBrokerResult> pFindBrokerResult(
         m_pClientFactory->findBrokerAddressInSubscribe(brokerName, MASTER_ID, true));
     if (!pFindBrokerResult) {
       LOG_ERROR("lockAll findBrokerAddressInSubscribe ret null for broker:%s", brokerName.data());
       continue;
     }
-    unique_ptr<LockBatchRequestBody> lockBatchRequest(new LockBatchRequestBody());
+    std::unique_ptr<LockBatchRequestBody> lockBatchRequest(new LockBatchRequestBody());
     lockBatchRequest->setClientId(m_pConsumer->getMQClientId());
     lockBatchRequest->setConsumerGroup(m_pConsumer->getGroupName());
     lockBatchRequest->setMqSet(*(itb->second));
     LOG_INFO("try to lock:" SIZET_FMT " mqs of broker:%s", itb->second->size(), itb->first.c_str());
     try {
-      vector<MQMessageQueue> messageQueues;
+      std::vector<MQMessageQueue> messageQueues;
       m_pClientFactory->getMQClientAPIImpl()->lockBatchMQ(pFindBrokerResult->brokerAddr, lockBatchRequest.get(),
                                                           messageQueues, 1000, m_pConsumer->getSessionCredentials());
       for (unsigned int i = 0; i != messageQueues.size(); ++i) {
@@ -353,22 +353,22 @@ void Rebalance::lockAll() {
 }
 
 bool Rebalance::lock(MQMessageQueue mq) {
-  unique_ptr<FindBrokerResult> pFindBrokerResult(
+  std::unique_ptr<FindBrokerResult> pFindBrokerResult(
       m_pClientFactory->findBrokerAddressInSubscribe(mq.getBrokerName(), MASTER_ID, true));
   if (!pFindBrokerResult) {
     LOG_ERROR("lock findBrokerAddressInSubscribe ret null for broker:%s", mq.getBrokerName().data());
     return false;
   }
-  unique_ptr<LockBatchRequestBody> lockBatchRequest(new LockBatchRequestBody());
+  std::unique_ptr<LockBatchRequestBody> lockBatchRequest(new LockBatchRequestBody());
   lockBatchRequest->setClientId(m_pConsumer->getMQClientId());
   lockBatchRequest->setConsumerGroup(m_pConsumer->getGroupName());
-  vector<MQMessageQueue> in_mqSet;
+  std::vector<MQMessageQueue> in_mqSet;
   in_mqSet.push_back(mq);
   lockBatchRequest->setMqSet(in_mqSet);
   bool lockResult = false;
 
   try {
-    vector<MQMessageQueue> messageQueues;
+    std::vector<MQMessageQueue> messageQueues;
     LOG_DEBUG("try to lock mq:%s", mq.toString().c_str());
     m_pClientFactory->getMQClientAPIImpl()->lockBatchMQ(pFindBrokerResult->brokerAddr, lockBatchRequest.get(),
                                                         messageQueues, 1000, m_pConsumer->getSessionCredentials());
@@ -398,7 +398,7 @@ bool Rebalance::lock(MQMessageQueue mq) {
 //<!************************************************************************
 RebalancePull::RebalancePull(MQConsumer* consumer, MQClientFactory* pfactory) : Rebalance(consumer, pfactory) {}
 
-bool RebalancePull::updateRequestTableInRebalance(const string& topic, vector<MQMessageQueue>& mqsSelf) {
+bool RebalancePull::updateRequestTableInRebalance(const string& topic, std::vector<MQMessageQueue>& mqsSelf) {
   return false;
 }
 
@@ -406,16 +406,16 @@ int64 RebalancePull::computePullFromWhere(const MQMessageQueue& mq) {
   return 0;
 }
 
-void RebalancePull::messageQueueChanged(const string& topic,
-                                        vector<MQMessageQueue>& mqAll,
-                                        vector<MQMessageQueue>& mqDivided) {}
+void RebalancePull::messageQueueChanged(const std::string& topic,
+                                        std::vector<MQMessageQueue>& mqAll,
+                                        std::vector<MQMessageQueue>& mqDivided) {}
 
 void RebalancePull::removeUnnecessaryMessageQueue(const MQMessageQueue& mq) {}
 
 //<!***************************************************************************
 RebalancePush::RebalancePush(MQConsumer* consumer, MQClientFactory* pfactory) : Rebalance(consumer, pfactory) {}
 
-bool RebalancePush::updateRequestTableInRebalance(const string& topic, vector<MQMessageQueue>& mqsSelf) {
+bool RebalancePush::updateRequestTableInRebalance(const std::string& topic, std::vector<MQMessageQueue>& mqsSelf) {
   LOG_DEBUG("updateRequestTableInRebalance Enter");
   if (mqsSelf.empty()) {
     LOG_WARN("allocated queue is empty for topic:%s", topic.c_str());
@@ -446,9 +446,9 @@ bool RebalancePush::updateRequestTableInRebalance(const string& topic, vector<MQ
   }
 
   //<!add
-  vector<PullRequest*> pullrequestAdd;
+  std::vector<PullRequest*> pullrequestAdd;
   DefaultMQPushConsumer* pConsumer = static_cast<DefaultMQPushConsumer*>(m_pConsumer);
-  vector<MQMessageQueue>::iterator it2 = mqsSelf.begin();
+  std::vector<MQMessageQueue>::iterator it2 = mqsSelf.begin();
   for (; it2 != mqsSelf.end(); ++it2) {
     PullRequest* pPullRequest(getPullRequest(*it2));
     if (pPullRequest && pPullRequest->isDroped()) {
@@ -510,7 +510,7 @@ bool RebalancePush::updateRequestTableInRebalance(const string& topic, vector<MQ
     }
   }
 
-  vector<PullRequest*>::iterator it3 = pullrequestAdd.begin();
+  std::vector<PullRequest*>::iterator it3 = pullrequestAdd.begin();
   for (; it3 != pullrequestAdd.end(); ++it3) {
     LOG_DEBUG("start pull request");
     pConsumer->producePullMsgTask(*it3);
@@ -599,8 +599,8 @@ int64 RebalancePush::computePullFromWhere(const MQMessageQueue& mq) {
 }
 
 void RebalancePush::messageQueueChanged(const string& topic,
-                                        vector<MQMessageQueue>& mqAll,
-                                        vector<MQMessageQueue>& mqDivided) {}
+                                        std::vector<MQMessageQueue>& mqAll,
+                                        std::vector<MQMessageQueue>& mqDivided) {}
 
 void RebalancePush::removeUnnecessaryMessageQueue(const MQMessageQueue& mq) {
   auto* pConsumer = static_cast<DefaultMQPushConsumer*>(m_pConsumer);

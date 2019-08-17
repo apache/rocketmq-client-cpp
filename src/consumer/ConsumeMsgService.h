@@ -49,7 +49,7 @@ class ConsumeMessageConcurrentlyService : public ConsumeMsgService {
   void ConsumeRequest(PullRequest* request, std::vector<MQMessageExt>& msgs);
 
  private:
-  void resetRetryTopic(vector<MQMessageExt>& msgs);
+  void resetRetryTopic(std::vector<MQMessageExt>& msgs);
 
  private:
   MQConsumer* m_pConsumer;

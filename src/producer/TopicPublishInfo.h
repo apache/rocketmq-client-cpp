@@ -98,7 +98,7 @@ class TopicPublishInfo {
     }
   }
 
-  vector<MQMessageQueue>& getMessageQueueList() {
+  std::vector<MQMessageQueue>& getMessageQueueList() {
     std::lock_guard<std::mutex> lock(m_queuelock);
     return m_queues;
   }
@@ -119,7 +119,7 @@ class TopicPublishInfo {
       }
       if (!lastmq.getBrokerName().empty()) {
         for (size_t i = 0; i < m_queues.size(); i++) {
-          if (m_sendWhichQueue.load(std::memory_order_acquire) == (numeric_limits<int>::max)()) {
+          if (m_sendWhichQueue.load(std::memory_order_acquire) == (std::numeric_limits<int>::max)()) {
             m_sendWhichQueue.store(0, std::memory_order_release);
           }
 
@@ -139,7 +139,7 @@ class TopicPublishInfo {
         LOG_ERROR("could not find property mq");
         return MQMessageQueue();
       } else {
-        if (m_sendWhichQueue.load(std::memory_order_acquire) == (numeric_limits<int>::max)()) {
+        if (m_sendWhichQueue.load(std::memory_order_acquire) == (std::numeric_limits<int>::max)()) {
           m_sendWhichQueue.store(0, std::memory_order_release);
         }
 
@@ -168,7 +168,7 @@ class TopicPublishInfo {
       }
       if (!lastmq.getBrokerName().empty()) {
         for (size_t i = 0; i < m_queues.size(); i++) {
-          if (m_sendWhichQueue.load(std::memory_order_acquire) == (numeric_limits<int>::max)()) {
+          if (m_sendWhichQueue.load(std::memory_order_acquire) == (std::numeric_limits<int>::max)()) {
             m_sendWhichQueue.store(0, std::memory_order_release);
           }
 
@@ -196,7 +196,7 @@ class TopicPublishInfo {
         return MQMessageQueue();
       } else {
         for (size_t i = 0; i < m_queues.size(); i++) {
-          if (m_sendWhichQueue.load(std::memory_order_acquire) == (numeric_limits<int>::max)()) {
+          if (m_sendWhichQueue.load(std::memory_order_acquire) == (std::numeric_limits<int>::max)()) {
             m_sendWhichQueue.store(0, std::memory_order_release);
           }
           if (pos >= m_queues.size())
@@ -232,13 +232,13 @@ class TopicPublishInfo {
 
  private:
   std::mutex m_queuelock;
-  typedef vector<MQMessageQueue> QueuesVec;
+  typedef std::vector<MQMessageQueue> QueuesVec;
   QueuesVec m_queues;
-  typedef map<string, MQMessageQueue> MQMAP;
+  typedef std::map<string, MQMessageQueue> MQMAP;
   MQMAP m_onSerivceQueues;
   MQMAP m_nonSerivceQueues;
   std::atomic<int> m_sendWhichQueue;
-  map<MQMessageQueue, int64> m_brokerTimerMap;
+  std::map<MQMessageQueue, int64> m_brokerTimerMap;
 
   scheduled_thread_pool_executor m_scheduledExecutorService;
 };

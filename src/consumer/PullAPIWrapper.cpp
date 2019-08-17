@@ -58,16 +58,16 @@ PullResult PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
   //<!update;
   updatePullFromWhichNode(mq, pResultExt->suggestWhichBrokerId);
 
-  vector<MQMessageExt> msgFilterList;
+  std::vector<MQMessageExt> msgFilterList;
   if (pResultExt->pullStatus == FOUND) {
     //<!decode all msg list;
-    vector<MQMessageExt> msgAllList;
+    std::vector<MQMessageExt> msgAllList;
     MQDecoder::decodes(&pResultExt->msgMemBlock, msgAllList);
 
     //<!filter msg list again;
     if (subscriptionData != NULL && !subscriptionData->getTagsSet().empty()) {
       msgFilterList.reserve(msgAllList.size());
-      vector<MQMessageExt>::iterator it = msgAllList.begin();
+      std::vector<MQMessageExt>::iterator it = msgAllList.begin();
       for (; it != msgAllList.end(); ++it) {
         string msgTag = (*it).getTags();
         if (subscriptionData->containTag(msgTag)) {
@@ -96,10 +96,10 @@ PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,        // 1
                                            PullCallback* pullCallback,
                                            const SessionCredentials& session_credentials,
                                            void* pArg /*= NULL*/) {
-  unique_ptr<FindBrokerResult> pFindBrokerResult(
+  std::unique_ptr<FindBrokerResult> pFindBrokerResult(
       m_MQClientFactory->findBrokerAddressInSubscribe(mq.getBrokerName(), recalculatePullFromWhichNode(mq), false));
   //<!goto nameserver;
-  if (pFindBrokerResult == NULL) {
+  if (pFindBrokerResult == nullptr) {
     m_MQClientFactory->updateTopicRouteInfoFromNameServer(mq.getTopic(), session_credentials);
     pFindBrokerResult.reset(
         m_MQClientFactory->findBrokerAddressInSubscribe(mq.getBrokerName(), recalculatePullFromWhichNode(mq), false));

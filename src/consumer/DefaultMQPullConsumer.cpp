@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "DefaultMQPullConsumer.h"
+
 #include "AsyncArg.h"
 #include "CommunicationMode.h"
 #include "FilterAPI.h"
@@ -31,7 +31,7 @@
 #include "Validators.h"
 
 namespace rocketmq {
-//<!***************************************************************************
+
 DefaultMQPullConsumer::DefaultMQPullConsumer(const string& groupname)
     : m_pMessageQueueListener(NULL),
       m_pOffsetStore(NULL),
@@ -144,7 +144,7 @@ void DefaultMQPullConsumer::shutdown() {
 
 void DefaultMQPullConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {}
 
-void DefaultMQPullConsumer::fetchSubscribeMessageQueues(const string& topic, vector<MQMessageQueue>& mqs) {
+void DefaultMQPullConsumer::fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) {
   mqs.clear();
   try {
     getFactory()->fetchSubscribeMessageQueues(topic, mqs, getSessionCredentials());
@@ -153,9 +153,9 @@ void DefaultMQPullConsumer::fetchSubscribeMessageQueues(const string& topic, vec
   }
 }
 
-void DefaultMQPullConsumer::updateTopicSubscribeInfo(const string& topic, vector<MQMessageQueue>& info) {}
+void DefaultMQPullConsumer::updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info) {}
 
-void DefaultMQPullConsumer::registerMessageQueueListener(const string& topic, MQueueListener* pListener) {
+void DefaultMQPullConsumer::registerMessageQueueListener(const std::string& topic, MQueueListener* pListener) {
   m_registerTopics.insert(topic);
   if (pListener) {
     m_pMessageQueueListener = pListener;
@@ -163,14 +163,14 @@ void DefaultMQPullConsumer::registerMessageQueueListener(const string& topic, MQ
 }
 
 PullResult DefaultMQPullConsumer::pull(const MQMessageQueue& mq,
-                                       const string& subExpression,
+                                       const std::string& subExpression,
                                        int64 offset,
                                        int maxNums) {
   return pullSyncImpl(mq, subExpression, offset, maxNums, false);
 }
 
 void DefaultMQPullConsumer::pull(const MQMessageQueue& mq,
-                                 const string& subExpression,
+                                 const std::string& subExpression,
                                  int64 offset,
                                  int maxNums,
                                  PullCallback* pPullCallback) {
@@ -178,14 +178,14 @@ void DefaultMQPullConsumer::pull(const MQMessageQueue& mq,
 }
 
 PullResult DefaultMQPullConsumer::pullBlockIfNotFound(const MQMessageQueue& mq,
-                                                      const string& subExpression,
+                                                      const std::string& subExpression,
                                                       int64 offset,
                                                       int maxNums) {
   return pullSyncImpl(mq, subExpression, offset, maxNums, true);
 }
 
 void DefaultMQPullConsumer::pullBlockIfNotFound(const MQMessageQueue& mq,
-                                                const string& subExpression,
+                                                const std::string& subExpression,
                                                 int64 offset,
                                                 int maxNums,
                                                 PullCallback* pPullCallback) {
@@ -193,7 +193,7 @@ void DefaultMQPullConsumer::pullBlockIfNotFound(const MQMessageQueue& mq,
 }
 
 PullResult DefaultMQPullConsumer::pullSyncImpl(const MQMessageQueue& mq,
-                                               const string& subExpression,
+                                               const std::string& subExpression,
                                                int64 offset,
                                                int maxNums,
                                                bool block) {
@@ -209,23 +209,23 @@ PullResult DefaultMQPullConsumer::pullSyncImpl(const MQMessageQueue& mq,
   int sysFlag = PullSysFlag::buildSysFlag(false, block, true, false);
 
   //<!this sub;
-  unique_ptr<SubscriptionData> pSData(FilterAPI::buildSubscriptionData(mq.getTopic(), subExpression));
+  std::unique_ptr<SubscriptionData> pSData(FilterAPI::buildSubscriptionData(mq.getTopic(), subExpression));
 
   int timeoutMillis = block ? 1000 * 30 : 1000 * 10;
 
   try {
-    unique_ptr<PullResult> pullResult(m_pPullAPIWrapper->pullKernelImpl(mq,                      // 1
-                                                                        pSData->getSubString(),  // 2
-                                                                        0L,                      // 3
-                                                                        offset,                  // 4
-                                                                        maxNums,                 // 5
-                                                                        sysFlag,                 // 6
-                                                                        0,                       // 7
-                                                                        1000 * 20,               // 8
-                                                                        timeoutMillis,           // 9
-                                                                        ComMode_SYNC,            // 10
-                                                                        NULL,                    //<!callback;
-                                                                        getSessionCredentials(), NULL));
+    std::unique_ptr<PullResult> pullResult(m_pPullAPIWrapper->pullKernelImpl(mq,                      // 1
+                                                                             pSData->getSubString(),  // 2
+                                                                             0L,                      // 3
+                                                                             offset,                  // 4
+                                                                             maxNums,                 // 5
+                                                                             sysFlag,                 // 6
+                                                                             0,                       // 7
+                                                                             1000 * 20,               // 8
+                                                                             timeoutMillis,           // 9
+                                                                             ComMode_SYNC,            // 10
+                                                                             NULL,                    //<!callback;
+                                                                             getSessionCredentials(), NULL));
     return m_pPullAPIWrapper->processPullResult(mq, pullResult.get(), pSData.get());
   } catch (MQException& e) {
     LOG_ERROR(e.what());
@@ -234,7 +234,7 @@ PullResult DefaultMQPullConsumer::pullSyncImpl(const MQMessageQueue& mq,
 }
 
 void DefaultMQPullConsumer::pullAsyncImpl(const MQMessageQueue& mq,
-                                          const string& subExpression,
+                                          const std::string& subExpression,
                                           int64 offset,
                                           int maxNums,
                                           bool block,
@@ -254,7 +254,7 @@ void DefaultMQPullConsumer::pullAsyncImpl(const MQMessageQueue& mq,
   int sysFlag = PullSysFlag::buildSysFlag(false, block, true, false);
 
   //<!this sub;
-  unique_ptr<SubscriptionData> pSData(FilterAPI::buildSubscriptionData(mq.getTopic(), subExpression));
+  std::unique_ptr<SubscriptionData> pSData(FilterAPI::buildSubscriptionData(mq.getTopic(), subExpression));
 
   int timeoutMillis = block ? 1000 * 30 : 1000 * 10;
 
@@ -265,26 +265,27 @@ void DefaultMQPullConsumer::pullAsyncImpl(const MQMessageQueue& mq,
   arg.pPullWrapper = m_pPullAPIWrapper;
 
   try {
-    unique_ptr<PullResult> pullResult(m_pPullAPIWrapper->pullKernelImpl(mq,                      // 1
-                                                                        pSData->getSubString(),  // 2
-                                                                        0L,                      // 3
-                                                                        offset,                  // 4
-                                                                        maxNums,                 // 5
-                                                                        sysFlag,                 // 6
-                                                                        0,                       // 7
-                                                                        1000 * 20,               // 8
-                                                                        timeoutMillis,           // 9
-                                                                        ComMode_ASYNC,           // 10
-                                                                        pPullCallback, getSessionCredentials(), &arg));
+    std::unique_ptr<PullResult> pullResult(m_pPullAPIWrapper->pullKernelImpl(mq,                      // 1
+                                                                             pSData->getSubString(),  // 2
+                                                                             0L,                      // 3
+                                                                             offset,                  // 4
+                                                                             maxNums,                 // 5
+                                                                             sysFlag,                 // 6
+                                                                             0,                       // 7
+                                                                             1000 * 20,               // 8
+                                                                             timeoutMillis,           // 9
+                                                                             ComMode_ASYNC,           // 10
+                                                                             pPullCallback, getSessionCredentials(),
+                                                                             &arg));
   } catch (MQException& e) {
     LOG_ERROR(e.what());
   }
 }
 
-void DefaultMQPullConsumer::subscriptionAutomatically(const string& topic) {
+void DefaultMQPullConsumer::subscriptionAutomatically(const std::string& topic) {
   SubscriptionData* pSdata = m_pRebalance->getSubscriptionData(topic);
-  if (pSdata == NULL) {
-    unique_ptr<SubscriptionData> subscriptionData(FilterAPI::buildSubscriptionData(topic, SUB_ALL));
+  if (pSdata == nullptr) {
+    std::unique_ptr<SubscriptionData> subscriptionData(FilterAPI::buildSubscriptionData(topic, SUB_ALL));
     m_pRebalance->setSubscriptionData(topic, subscriptionData.release());
   }
 }
@@ -326,7 +327,7 @@ void DefaultMQPullConsumer::persistConsumerOffset4PullConsumer(const MQMessageQu
   }
 }
 
-void DefaultMQPullConsumer::fetchMessageQueuesInBalance(const string& topic, vector<MQMessageQueue> mqs) {}
+void DefaultMQPullConsumer::fetchMessageQueuesInBalance(const std::string& topic, std::vector<MQMessageQueue> mqs) {}
 
 void DefaultMQPullConsumer::checkConfig() {
   string groupname = getGroupName();
@@ -346,9 +347,9 @@ void DefaultMQPullConsumer::checkConfig() {
 void DefaultMQPullConsumer::doRebalance() {}
 
 void DefaultMQPullConsumer::copySubscription() {
-  set<string>::iterator it = m_registerTopics.begin();
+  std::set<string>::iterator it = m_registerTopics.begin();
   for (; it != m_registerTopics.end(); ++it) {
-    unique_ptr<SubscriptionData> subscriptionData(FilterAPI::buildSubscriptionData((*it), SUB_ALL));
+    std::unique_ptr<SubscriptionData> subscriptionData(FilterAPI::buildSubscriptionData((*it), SUB_ALL));
     m_pRebalance->setSubscriptionData((*it), subscriptionData.release());
   }
 }
@@ -361,8 +362,8 @@ ConsumeFromWhere DefaultMQPullConsumer::getConsumeFromWhere() {
   return CONSUME_FROM_LAST_OFFSET;
 }
 
-void DefaultMQPullConsumer::getSubscriptions(vector<SubscriptionData>& result) {
-  set<string>::iterator it = m_registerTopics.begin();
+void DefaultMQPullConsumer::getSubscriptions(std::vector<SubscriptionData>& result) {
+  std::set<string>::iterator it = m_registerTopics.begin();
   for (; it != m_registerTopics.end(); ++it) {
     SubscriptionData ms(*it, SUB_ALL);
     result.push_back(ms);
@@ -375,5 +376,4 @@ Rebalance* DefaultMQPullConsumer::getRebalance() const {
   return NULL;
 }
 
-//<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

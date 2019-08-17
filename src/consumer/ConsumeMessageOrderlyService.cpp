@@ -94,7 +94,7 @@ void ConsumeMessageOrderlyService::submitConsumeRequest(PullRequest* request, st
 
 void ConsumeMessageOrderlyService::submitConsumeRequestLater(PullRequest* request, bool tryLockMQ) {
   LOG_INFO("submit consumeRequest later for mq:%s", request->m_messageQueue.toString().c_str());
-  vector<MQMessageExt> msgs;
+  std::vector<MQMessageExt> msgs;
   submitConsumeRequest(request, msgs);
   if (tryLockMQ) {
     lockOneMQ(request->m_messageQueue);
@@ -138,7 +138,7 @@ void ConsumeMessageOrderlyService::ConsumeRequest(PullRequest* request) {
           tryLockLaterAndReconsume(request, false);
           break;
         }
-        vector<MQMessageExt> msgs;
+        std::vector<MQMessageExt> msgs;
         request->takeMessages(msgs, pConsumer->getConsumeMessageBatchMaxSize());
         if (!msgs.empty()) {
           request->setLastConsumeTimestamp(UtilAll::currentTimeMillis());

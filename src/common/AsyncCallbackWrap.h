@@ -14,14 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __ASYNCCALLBACKWRAP_H__
-#define __ASYNCCALLBACKWRAP_H__
+#ifndef __ASYNC_CALLBACK_WRAP_H__
+#define __ASYNC_CALLBACK_WRAP_H__
 
 #include "AsyncArg.h"
 #include "AsyncCallback.h"
 #include "MQMessage.h"
-#include "UtilAll.h"
 #include "RemotingCommand.h"
+#include "UtilAll.h"
 
 namespace rocketmq {
 
@@ -29,6 +29,7 @@ class ResponseFuture;
 class MQClientAPIImpl;
 class DefaultMQProducer;
 class SendMessageRequestHeader;
+
 //<!***************************************************************************
 enum asyncCallBackType { asyncCallbackWrap = 0, sendCallbackWrap = 1, pullCallbackWarp = 2 };
 
@@ -48,7 +49,7 @@ struct AsyncCallbackWrap {
 //<!************************************************************************
 class SendCallbackWrap : public AsyncCallbackWrap {
  public:
-  SendCallbackWrap(const string& brokerName,
+  SendCallbackWrap(const std::string& brokerName,
                    const MQMessage& msg,
                    AsyncCallback* pAsyncCallback,
                    MQClientAPIImpl* pclientAPI);
@@ -60,7 +61,7 @@ class SendCallbackWrap : public AsyncCallbackWrap {
 
  private:
   MQMessage m_msg;
-  string m_brokerName;
+  std::string m_brokerName;
 };
 
 //<!***************************************************************************
@@ -76,6 +77,6 @@ class PullCallbackWarp : public AsyncCallbackWrap {
   AsyncArg m_pArg;
 };
 
-//<!***************************************************************************
-}  //<!end namespace;
-#endif  //<! _AsyncCallbackWrap_H_
+}  // namespace rocketmq
+
+#endif  // __ASYNC_CALLBACK_WRAP_H__

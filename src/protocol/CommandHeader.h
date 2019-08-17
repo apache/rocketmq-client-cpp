@@ -20,6 +20,7 @@
 
 #include <map>
 #include <string>
+
 #include "MQClientException.h"
 #include "MessageSysFlag.h"
 #include "UtilAll.h"
@@ -33,7 +34,7 @@ class CommandHeader {
  public:
   virtual ~CommandHeader() {}
   virtual void Encode(Json::Value& outData) {}
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {}
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {}
 };
 
 class CheckTransactionStateRequestHeader : public CommandHeader {
@@ -82,7 +83,7 @@ class EndTransactionRequestHeader : public CommandHeader {
         m_transactionId(transId) {}
   virtual ~EndTransactionRequestHeader() {}
   virtual void Encode(Json::Value& outData);
-  virtual void SetDeclaredFieldOfCommandHeader(std::map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
   std::string toString();
 
  public:
@@ -98,28 +99,28 @@ class EndTransactionRequestHeader : public CommandHeader {
 //<!************************************************************************
 class GetRouteInfoRequestHeader : public CommandHeader {
  public:
-  GetRouteInfoRequestHeader(const string& top) : topic(top) {}
+  GetRouteInfoRequestHeader(const std::string& top) : topic(top) {}
   virtual ~GetRouteInfoRequestHeader() {}
   virtual void Encode(Json::Value& outData);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  private:
-  string topic;
+  std::string topic;
 };
 
 //<!************************************************************************
 class UnregisterClientRequestHeader : public CommandHeader {
  public:
-  UnregisterClientRequestHeader(string cID, string proGroup, string conGroup)
+  UnregisterClientRequestHeader(std::string cID, std::string proGroup, std::string conGroup)
       : clientID(cID), producerGroup(proGroup), consumerGroup(conGroup) {}
   virtual ~UnregisterClientRequestHeader() {}
   virtual void Encode(Json::Value& outData);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  private:
-  string clientID;
-  string producerGroup;
-  string consumerGroup;
+  std::string clientID;
+  std::string producerGroup;
+  std::string consumerGroup;
 };
 
 //<!************************************************************************
@@ -128,15 +129,15 @@ class CreateTopicRequestHeader : public CommandHeader {
   CreateTopicRequestHeader() : readQueueNums(0), writeQueueNums(0), perm(0) {}
   virtual ~CreateTopicRequestHeader() {}
   virtual void Encode(Json::Value& outData);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
-  string topic;
-  string defaultTopic;
+  std::string topic;
+  std::string defaultTopic;
   int readQueueNums;
   int writeQueueNums;
   int perm;
-  string topicFilterType;
+  std::string topicFilterType;
 };
 
 //<!************************************************************************
@@ -153,20 +154,20 @@ class SendMessageRequestHeader : public CommandHeader {
         batch(false) {}
   virtual ~SendMessageRequestHeader() {}
   virtual void Encode(Json::Value& outData);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
   int getReconsumeTimes();
   void setReconsumeTimes(int input_reconsumeTimes);
 
  public:
-  string producerGroup;
-  string topic;
-  string defaultTopic;
+  std::string producerGroup;
+  std::string topic;
+  std::string defaultTopic;
   int defaultTopicQueueNums;
   int queueId;
   int sysFlag;
   int64 bornTimestamp;
   int flag;
-  string properties;
+  std::string properties;
   int reconsumeTimes;
   bool unitMode;
   bool batch;
@@ -178,10 +179,10 @@ class SendMessageResponseHeader : public CommandHeader {
   SendMessageResponseHeader() : queueId(0), queueOffset(0) { msgId.clear(); }
   virtual ~SendMessageResponseHeader() {}
   static CommandHeader* Decode(Json::Value& ext);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
-  string msgId;
+  std::string msgId;
   int queueId;
   int64 queueOffset;
 };
@@ -199,15 +200,15 @@ class PullMessageRequestHeader : public CommandHeader {
         subVersion(0) {}
   virtual ~PullMessageRequestHeader() {}
   virtual void Encode(Json::Value& outData);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
-  string consumerGroup;
-  string topic;
+  std::string consumerGroup;
+  std::string topic;
   int queueId;
   int maxMsgNums;
   int sysFlag;
-  string subscription;
+  std::string subscription;
   int64 queueOffset;
   int64 commitOffset;
   int64 suspendTimeoutMillis;
@@ -220,7 +221,7 @@ class PullMessageResponseHeader : public CommandHeader {
   PullMessageResponseHeader() : suggestWhichBrokerId(0), nextBeginOffset(0), minOffset(0), maxOffset(0) {}
   virtual ~PullMessageResponseHeader() {}
   static CommandHeader* Decode(Json::Value& ext);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
   int64 suggestWhichBrokerId;
@@ -235,7 +236,7 @@ class GetConsumerListByGroupResponseHeader : public CommandHeader {
   GetConsumerListByGroupResponseHeader() {}
   virtual ~GetConsumerListByGroupResponseHeader() {}
   virtual void Encode(Json::Value& outData);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 };
 
 //<!***************************************************************************
@@ -244,10 +245,10 @@ class GetMinOffsetRequestHeader : public CommandHeader {
   GetMinOffsetRequestHeader() : queueId(0){};
   virtual ~GetMinOffsetRequestHeader() {}
   virtual void Encode(Json::Value& outData);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
-  string topic;
+  std::string topic;
   int queueId;
 };
 
@@ -257,7 +258,7 @@ class GetMinOffsetResponseHeader : public CommandHeader {
   GetMinOffsetResponseHeader() : offset(0){};
   virtual ~GetMinOffsetResponseHeader() {}
   static CommandHeader* Decode(Json::Value& ext);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
   int64 offset;
@@ -269,10 +270,10 @@ class GetMaxOffsetRequestHeader : public CommandHeader {
   GetMaxOffsetRequestHeader() : queueId(0){};
   virtual ~GetMaxOffsetRequestHeader() {}
   virtual void Encode(Json::Value& outData);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
-  string topic;
+  std::string topic;
   int queueId;
 };
 
@@ -282,7 +283,7 @@ class GetMaxOffsetResponseHeader : public CommandHeader {
   GetMaxOffsetResponseHeader() : offset(0){};
   virtual ~GetMaxOffsetResponseHeader() {}
   static CommandHeader* Decode(Json::Value& ext);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
   int64 offset;
@@ -294,10 +295,10 @@ class SearchOffsetRequestHeader : public CommandHeader {
   SearchOffsetRequestHeader() : queueId(0), timestamp(0){};
   virtual ~SearchOffsetRequestHeader() {}
   virtual void Encode(Json::Value& outData);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
-  string topic;
+  std::string topic;
   int queueId;
   int64 timestamp;
 };
@@ -308,7 +309,7 @@ class SearchOffsetResponseHeader : public CommandHeader {
   SearchOffsetResponseHeader() : offset(0){};
   virtual ~SearchOffsetResponseHeader() {}
   static CommandHeader* Decode(Json::Value& ext);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
   int64 offset;
@@ -320,7 +321,7 @@ class ViewMessageRequestHeader : public CommandHeader {
   ViewMessageRequestHeader() : offset(0){};
   virtual ~ViewMessageRequestHeader() {}
   virtual void Encode(Json::Value& outData);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
   int64 offset;
@@ -332,10 +333,10 @@ class GetEarliestMsgStoretimeRequestHeader : public CommandHeader {
   GetEarliestMsgStoretimeRequestHeader() : queueId(0){};
   virtual ~GetEarliestMsgStoretimeRequestHeader() {}
   virtual void Encode(Json::Value& outData);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
-  string topic;
+  std::string topic;
   int queueId;
 };
 
@@ -345,7 +346,7 @@ class GetEarliestMsgStoretimeResponseHeader : public CommandHeader {
   GetEarliestMsgStoretimeResponseHeader() : timestamp(0){};
   virtual ~GetEarliestMsgStoretimeResponseHeader() {}
   static CommandHeader* Decode(Json::Value& ext);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
   int64 timestamp;
@@ -357,10 +358,10 @@ class GetConsumerListByGroupRequestHeader : public CommandHeader {
   GetConsumerListByGroupRequestHeader(){};
   virtual ~GetConsumerListByGroupRequestHeader() {}
   virtual void Encode(Json::Value& outData);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
-  string consumerGroup;
+  std::string consumerGroup;
 };
 
 //<!************************************************************************
@@ -369,11 +370,11 @@ class QueryConsumerOffsetRequestHeader : public CommandHeader {
   QueryConsumerOffsetRequestHeader() : queueId(0){};
   virtual ~QueryConsumerOffsetRequestHeader() {}
   virtual void Encode(Json::Value& outData);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
-  string consumerGroup;
-  string topic;
+  std::string consumerGroup;
+  std::string topic;
   int queueId;
 };
 
@@ -383,7 +384,7 @@ class QueryConsumerOffsetResponseHeader : public CommandHeader {
   QueryConsumerOffsetResponseHeader() : offset(0){};
   virtual ~QueryConsumerOffsetResponseHeader() {}
   static CommandHeader* Decode(Json::Value& ext);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
   int64 offset;
@@ -395,11 +396,11 @@ class UpdateConsumerOffsetRequestHeader : public CommandHeader {
   UpdateConsumerOffsetRequestHeader() : queueId(0), commitOffset(0){};
   virtual ~UpdateConsumerOffsetRequestHeader() {}
   virtual void Encode(Json::Value& outData);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
-  string consumerGroup;
-  string topic;
+  std::string consumerGroup;
+  std::string topic;
   int queueId;
   int64 commitOffset;
 };
@@ -410,10 +411,10 @@ class ConsumerSendMsgBackRequestHeader : public CommandHeader {
   ConsumerSendMsgBackRequestHeader() : delayLevel(0), offset(0){};
   virtual ~ConsumerSendMsgBackRequestHeader() {}
   virtual void Encode(Json::Value& outData);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
-  string group;
+  std::string group;
   int delayLevel;
   int64 offset;
 };
@@ -423,10 +424,10 @@ class GetConsumerListByGroupResponseBody {
  public:
   GetConsumerListByGroupResponseBody(){};
   virtual ~GetConsumerListByGroupResponseBody() {}
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
 
  public:
-  static void Decode(const MemoryBlock* mem, vector<string>& cids);
+  static void Decode(const MemoryBlock* mem, std::vector<std::string>& cids);
 };
 
 class ResetOffsetRequestHeader : public CommandHeader {
@@ -434,18 +435,18 @@ class ResetOffsetRequestHeader : public CommandHeader {
   ResetOffsetRequestHeader() {}
   ~ResetOffsetRequestHeader() {}
   static CommandHeader* Decode(Json::Value& ext);
-  void setTopic(const string& tmp);
-  void setGroup(const string& tmp);
+  void setTopic(const std::string& tmp);
+  void setGroup(const std::string& tmp);
   void setTimeStamp(const int64& tmp);
   void setForceFlag(const bool& tmp);
-  const string getTopic() const;
-  const string getGroup() const;
+  const std::string getTopic() const;
+  const std::string getGroup() const;
   const int64 getTimeStamp() const;
   const bool getForceFlag() const;
 
  private:
-  string topic;
-  string group;
+  std::string topic;
+  std::string group;
   int64 timestamp;
   bool isForce;
 };
@@ -455,18 +456,18 @@ class GetConsumerRunningInfoRequestHeader : public CommandHeader {
   GetConsumerRunningInfoRequestHeader() {}
   virtual ~GetConsumerRunningInfoRequestHeader() {}
   virtual void Encode(Json::Value& outData);
-  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap);
   static CommandHeader* Decode(Json::Value& ext);
-  const string getConsumerGroup() const;
-  void setConsumerGroup(const string& consumerGroup);
-  const string getClientId() const;
-  void setClientId(const string& clientId);
+  const std::string getConsumerGroup() const;
+  void setConsumerGroup(const std::string& consumerGroup);
+  const std::string getClientId() const;
+  void setClientId(const std::string& clientId);
   const bool isJstackEnable() const;
   void setJstackEnable(const bool& jstackEnable);
 
  private:
-  string consumerGroup;
-  string clientId;
+  std::string consumerGroup;
+  std::string clientId;
   bool jstackEnable;
 };
 
@@ -475,11 +476,11 @@ class NotifyConsumerIdsChangedRequestHeader : public CommandHeader {
   NotifyConsumerIdsChangedRequestHeader() {}
   virtual ~NotifyConsumerIdsChangedRequestHeader() {}
   static CommandHeader* Decode(Json::Value& ext);
-  void setGroup(const string& tmp);
-  const string getGroup() const;
+  void setGroup(const std::string& tmp);
+  const std::string getGroup() const;
 
  private:
-  string consumerGroup;
+  std::string consumerGroup;
 };
 
 //<!***************************************************************************

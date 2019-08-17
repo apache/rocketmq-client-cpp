@@ -14,19 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "MessageQueue.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
-//<!************************************************************************
+
 MessageQueue::MessageQueue() {
   m_queueId = -1;  // invalide mq
   m_topic.clear();
   m_brokerName.clear();
 }
 
-MessageQueue::MessageQueue(const string& topic, const string& brokerName, int queueId)
+MessageQueue::MessageQueue(const std::string& topic, const std::string& brokerName, int queueId)
     : m_topic(topic), m_brokerName(brokerName), m_queueId(queueId) {}
 
 MessageQueue::MessageQueue(const MessageQueue& other)
@@ -41,19 +40,19 @@ MessageQueue& MessageQueue::operator=(const MessageQueue& other) {
   return *this;
 }
 
-string MessageQueue::getTopic() const {
+std::string MessageQueue::getTopic() const {
   return m_topic;
 }
 
-void MessageQueue::setTopic(const string& topic) {
+void MessageQueue::setTopic(const std::string& topic) {
   m_topic = topic;
 }
 
-string MessageQueue::getBrokerName() const {
+std::string MessageQueue::getBrokerName() const {
   return m_brokerName;
 }
 
-void MessageQueue::setBrokerName(const string& brokerName) {
+void MessageQueue::setBrokerName(const std::string& brokerName) {
   m_brokerName = brokerName;
 }
 
@@ -111,5 +110,4 @@ Json::Value MessageQueue::toJson() const {
   return outJson;
 }
 
-//<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 #include "Validators.h"
+
 #include <stdio.h>
 #include <stdlib.h>
+
 namespace rocketmq {
 
-const string Validators::validPatternStr = "^[a-zA-Z0-9_-]+$";
+const std::string Validators::validPatternStr = "^[a-zA-Z0-9_-]+$";
 const int Validators::CHARACTER_MAX_LENGTH = 255;
-//<!***************************************************************************
-bool Validators::regularExpressionMatcher(const string& origin, const string& patternStr) {
+
+bool Validators::regularExpressionMatcher(const std::string& origin, const std::string& patternStr) {
   if (UtilAll::isBlank(origin)) {
     return false;
   }
@@ -38,7 +40,7 @@ bool Validators::regularExpressionMatcher(const string& origin, const string& pa
   return true;
 }
 
-string Validators::getGroupWithRegularExpression(const string& origin, const string& patternStr) {
+std::string Validators::getGroupWithRegularExpression(const std::string& origin, const std::string& patternStr) {
   /*Pattern pattern = Pattern.compile(patternStr);
   Matcher matcher = pattern.matcher(origin);
   while (matcher.find()) {
@@ -47,7 +49,7 @@ string Validators::getGroupWithRegularExpression(const string& origin, const str
   return "";
 }
 
-void Validators::checkTopic(const string& topic) {
+void Validators::checkTopic(const std::string& topic) {
   if (UtilAll::isBlank(topic)) {
     THROW_MQEXCEPTION(MQClientException, "the specified topic is blank", -1);
   }
@@ -61,20 +63,20 @@ void Validators::checkTopic(const string& topic) {
   }
 
   if (!regularExpressionMatcher(topic, validPatternStr)) {
-    string str;
+    std::string str;
     str = "the specified topic[" + topic + "] contains illegal characters, allowing only" + validPatternStr;
 
     THROW_MQEXCEPTION(MQClientException, str.c_str(), -1);
   }
 }
 
-void Validators::checkGroup(const string& group) {
+void Validators::checkGroup(const std::string& group) {
   if (UtilAll::isBlank(group)) {
     THROW_MQEXCEPTION(MQClientException, "the specified group is blank", -1);
   }
 
   if (!regularExpressionMatcher(group, validPatternStr)) {
-    string str;
+    std::string str;
     str = "the specified group[" + group + "] contains illegal characters, allowing only" + validPatternStr;
 
     THROW_MQEXCEPTION(MQClientException, str.c_str(), -1);
@@ -87,7 +89,7 @@ void Validators::checkGroup(const string& group) {
 void Validators::checkMessage(const MQMessage& msg, int maxMessageSize) {
   checkTopic(msg.getTopic());
 
-  string body = msg.getBody();
+  std::string body = msg.getBody();
   //<!body;
   if (body.empty()) {
     THROW_MQEXCEPTION(MQClientException, "the message body is empty", -1);

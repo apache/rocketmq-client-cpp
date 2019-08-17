@@ -48,7 +48,7 @@ void SendCallbackWrap::onException() {
 
   SendCallback* pCallback = static_cast<SendCallback*>(m_pAsyncCallBack);
   if (pCallback) {
-    unique_ptr<MQException> exception(
+    std::unique_ptr<MQException> exception(
         new MQException("send msg failed due to wait response timeout or network error", -1, __FILE__, __LINE__));
     pCallback->onException(*exception);
     if (pCallback->getSendCallbackType() == autoDeleteSendCallback) {
@@ -58,7 +58,7 @@ void SendCallbackWrap::onException() {
 }
 
 void SendCallbackWrap::operationComplete(ResponseFuture* pResponseFuture, bool bProducePullRequest) {
-  unique_ptr<RemotingCommand> pResponse(pResponseFuture->getCommand());
+  std::unique_ptr<RemotingCommand> pResponse(pResponseFuture->getCommand());
 
   if (m_pAsyncCallBack == NULL) {
     return;
@@ -151,7 +151,7 @@ void PullCallbackWarp::onException() {
 }
 
 void PullCallbackWarp::operationComplete(ResponseFuture* pResponseFuture, bool bProducePullRequest) {
-  unique_ptr<RemotingCommand> pResponse(pResponseFuture->getCommand());
+  std::unique_ptr<RemotingCommand> pResponse(pResponseFuture->getCommand());
   if (m_pAsyncCallBack == NULL) {
     LOG_ERROR("m_pAsyncCallBack is NULL, AsyncPull could not continue");
     return;
@@ -173,7 +173,7 @@ void PullCallbackWarp::operationComplete(ResponseFuture* pResponseFuture, bool b
   } else {
     try {
       if (m_pArg.pPullWrapper) {
-        unique_ptr<PullResult> pullResult(m_pClientAPI->processPullResponse(pResponse.get()));
+        std::unique_ptr<PullResult> pullResult(m_pClientAPI->processPullResponse(pResponse.get()));
         PullResult result = m_pArg.pPullWrapper->processPullResult(m_pArg.mq, pullResult.get(), &m_pArg.subData);
         if (pCallback)
           pCallback->onSuccess(m_pArg.mq, result, bProducePullRequest);

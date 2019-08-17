@@ -29,13 +29,13 @@ class MQClientFactory;
 //<!***************************************************************************
 class PullAPIWrapper {
  public:
-  PullAPIWrapper(MQClientFactory* mQClientFactory, const string& consumerGroup);
+  PullAPIWrapper(MQClientFactory* mqClientFactory, const std::string& consumerGroup);
   ~PullAPIWrapper();
 
   PullResult processPullResult(const MQMessageQueue& mq, PullResult* pullResult, SubscriptionData* subscriptionData);
 
   PullResult* pullKernelImpl(const MQMessageQueue& mq,        // 1
-                             string subExpression,            // 2
+                             std::string subExpression,       // 2
                              int64 subVersion,                // 3
                              int64 offset,                    // 4
                              int maxNums,                     // 5
@@ -55,9 +55,9 @@ class PullAPIWrapper {
 
  private:
   MQClientFactory* m_MQClientFactory;
-  string m_consumerGroup;
+  std::string m_consumerGroup;
   std::mutex m_lock;
-  map<MQMessageQueue, int /* brokerId */> m_pullFromWhichNodeTable;
+  std::map<MQMessageQueue, int /* brokerId */> m_pullFromWhichNodeTable;
 };
 
 }  // namespace rocketmq

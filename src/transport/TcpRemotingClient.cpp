@@ -103,7 +103,7 @@ void TcpRemotingClient::stopAllTcpTransportThread() {
   LOG_ERROR("TcpRemotingClient::stopAllTcpTransportThread End, m_tcpTable:%lu", m_tcpTable.size());
 }
 
-void TcpRemotingClient::updateNameServerAddressList(const string& addrs) {
+void TcpRemotingClient::updateNameServerAddressList(const std::string& addrs) {
   LOG_INFO("updateNameServerAddressList: [%s]", addrs.c_str());
 
   if (addrs.empty()) {
@@ -121,12 +121,12 @@ void TcpRemotingClient::updateNameServerAddressList(const string& addrs) {
   // clear first;
   m_namesrvAddrList.clear();
 
-  vector<string> out;
+  std::vector<std::string> out;
   UtilAll::Split(out, addrs, ";");
   for (auto addr : out) {
     UtilAll::Trim(addr);
 
-    string hostName;
+    std::string hostName;
     short portNumber;
     if (UtilAll::SplitURL(addr, hostName, portNumber)) {
       LOG_INFO("update Namesrv:%s", addr.c_str());
@@ -138,7 +138,7 @@ void TcpRemotingClient::updateNameServerAddressList(const string& addrs) {
   out.clear();
 }
 
-bool TcpRemotingClient::invokeHeartBeat(const string& addr, RemotingCommand& request, int timeoutMillis) {
+bool TcpRemotingClient::invokeHeartBeat(const std::string& addr, RemotingCommand& request, int timeoutMillis) {
   std::shared_ptr<TcpTransport> pTcp = GetTransport(addr, true);
   if (pTcp != nullptr) {
     int code = request.getCode();
@@ -149,7 +149,7 @@ bool TcpRemotingClient::invokeHeartBeat(const string& addr, RemotingCommand& req
 
     if (SendCommand(pTcp, request)) {
       responseFuture->setSendRequestOK(true);
-      unique_ptr<RemotingCommand> pRsp(responseFuture->waitResponse());
+      std::unique_ptr<RemotingCommand> pRsp(responseFuture->waitResponse());
       if (pRsp == nullptr) {
         LOG_ERROR("wait response timeout of heartbeat, so closeTransport of addr:%s", addr.c_str());
         // avoid responseFuture leak;
@@ -171,7 +171,7 @@ bool TcpRemotingClient::invokeHeartBeat(const string& addr, RemotingCommand& req
   return false;
 }
 
-RemotingCommand* TcpRemotingClient::invokeSync(const string& addr, RemotingCommand& request, int timeoutMillis) {
+RemotingCommand* TcpRemotingClient::invokeSync(const std::string& addr, RemotingCommand& request, int timeoutMillis) {
   LOG_DEBUG("InvokeSync:", addr.c_str());
   std::shared_ptr<TcpTransport> pTcp = GetTransport(addr, true);
   if (pTcp != nullptr) {
@@ -206,7 +206,7 @@ RemotingCommand* TcpRemotingClient::invokeSync(const string& addr, RemotingComma
   return nullptr;
 }
 
-bool TcpRemotingClient::invokeAsync(const string& addr,
+bool TcpRemotingClient::invokeAsync(const std::string& addr,
                                     RemotingCommand& request,
                                     AsyncCallbackWrap* callback,
                                     int64 timeoutMillis,
@@ -228,7 +228,7 @@ bool TcpRemotingClient::invokeAsync(const string& addr,
 
     // timeout monitor
     m_timeoutExecutor.schedule(std::bind(&TcpRemotingClient::checkAsyncRequestTimeout, this, opaque), timeoutMillis,
-                             time_unit::milliseconds);
+                               time_unit::milliseconds);
 
     // even if send failed, asyncTimerThread will trigger next pull request or report send msg failed
     if (SendCommand(pTcp, request)) {
@@ -242,7 +242,7 @@ bool TcpRemotingClient::invokeAsync(const string& addr,
   return false;
 }
 
-void TcpRemotingClient::invokeOneway(const string& addr, RemotingCommand& request) {
+void TcpRemotingClient::invokeOneway(const std::string& addr, RemotingCommand& request) {
   // not need callback;
   std::shared_ptr<TcpTransport> pTcp = GetTransport(addr, true);
   if (pTcp != nullptr) {
@@ -257,7 +257,7 @@ void TcpRemotingClient::invokeOneway(const string& addr, RemotingCommand& reques
   }
 }
 
-std::shared_ptr<TcpTransport> TcpRemotingClient::GetTransport(const string& addr, bool needResponse) {
+std::shared_ptr<TcpTransport> TcpRemotingClient::GetTransport(const std::string& addr, bool needResponse) {
   if (addr.empty()) {
     LOG_DEBUG("GetTransport of NameServer");
     return CreateNameServerTransport(needResponse);
@@ -265,7 +265,7 @@ std::shared_ptr<TcpTransport> TcpRemotingClient::GetTransport(const string& addr
   return CreateTransport(addr, needResponse);
 }
 
-std::shared_ptr<TcpTransport> TcpRemotingClient::CreateTransport(const string& addr, bool needResponse) {
+std::shared_ptr<TcpTransport> TcpRemotingClient::CreateTransport(const std::string& addr, bool needResponse) {
   std::shared_ptr<TcpTransport> tts;
 
   {
@@ -368,7 +368,7 @@ std::shared_ptr<TcpTransport> TcpRemotingClient::CreateNameServerTransport(bool 
   return pTcp;
 }
 
-bool TcpRemotingClient::CloseTransport(const string& addr, std::shared_ptr<TcpTransport> pTcp) {
+bool TcpRemotingClient::CloseTransport(const std::string& addr, std::shared_ptr<TcpTransport> pTcp) {
   if (addr.empty()) {
     return CloseNameServerTransport(pTcp);
   }
@@ -417,7 +417,7 @@ bool TcpRemotingClient::CloseNameServerTransport(std::shared_ptr<TcpTransport> p
     }
   }
 
-  string addr = m_namesrvAddrChoosed;
+  std::string addr = m_namesrvAddrChoosed;
 
   bool removeItemFromTable = CloseTransport(addr, pTcp);
   if (removeItemFromTable) {
@@ -431,7 +431,7 @@ bool TcpRemotingClient::SendCommand(std::shared_ptr<TcpTransport> pTts, Remoting
   const MemoryBlock* pHead = msg.GetHead();
   const MemoryBlock* pBody = msg.GetBody();
 
-  unique_ptr<MemoryOutputStream> buffer(new MemoryOutputStream(1024));
+  std::unique_ptr<MemoryOutputStream> buffer(new MemoryOutputStream(1024));
   if (pHead->getSize() > 0) {
     buffer->write(pHead->getData(), static_cast<size_t>(pHead->getSize()));
   }
@@ -444,17 +444,17 @@ bool TcpRemotingClient::SendCommand(std::shared_ptr<TcpTransport> pTts, Remoting
   return pTts->sendMessage(pData, len);
 }
 
-void TcpRemotingClient::static_messageReceived(void* context, const MemoryBlock& mem, const string& addr) {
+void TcpRemotingClient::static_messageReceived(void* context, const MemoryBlock& mem, const std::string& addr) {
   auto* pTcpRemotingClient = reinterpret_cast<TcpRemotingClient*>(context);
   if (pTcpRemotingClient)
     pTcpRemotingClient->messageReceived(mem, addr);
 }
 
-void TcpRemotingClient::messageReceived(const MemoryBlock& mem, const string& addr) {
+void TcpRemotingClient::messageReceived(const MemoryBlock& mem, const std::string& addr) {
   m_dispatchExecutor.submit(std::bind(&TcpRemotingClient::ProcessData, this, mem, addr));
 }
 
-void TcpRemotingClient::ProcessData(const MemoryBlock& mem, const string& addr) {
+void TcpRemotingClient::ProcessData(const MemoryBlock& mem, const std::string& addr) {
   RemotingCommand* pRespondCmd = nullptr;
   try {
     pRespondCmd = RemotingCommand::Decode(mem);
@@ -513,13 +513,14 @@ void TcpRemotingClient::checkAsyncRequestTimeout(int opaque) {
   }
 }
 
-void TcpRemotingClient::processRequestCommand(RemotingCommand* pCmd, const string& addr) {
-  unique_ptr<RemotingCommand> pRequestCommand(pCmd);
+void TcpRemotingClient::processRequestCommand(RemotingCommand* pCmd, const std::string& addr) {
+  std::unique_ptr<RemotingCommand> pRequestCommand(pCmd);
   int requestCode = pRequestCommand->getCode();
   if (m_requestTable.find(requestCode) == m_requestTable.end()) {
     LOG_ERROR("can_not_find request:%d processor", requestCode);
   } else {
-    unique_ptr<RemotingCommand> pResponse(m_requestTable[requestCode]->processRequest(addr, pRequestCommand.get()));
+    std::unique_ptr<RemotingCommand> pResponse(
+        m_requestTable[requestCode]->processRequest(addr, pRequestCommand.get()));
     if (!pRequestCommand->isOnewayRPC()) {
       if (pResponse) {
         pResponse->setOpaque(pRequestCommand->getOpaque());

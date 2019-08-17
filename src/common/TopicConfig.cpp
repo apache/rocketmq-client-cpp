@@ -15,15 +15,17 @@
  * limitations under the License.
  */
 #include "TopicConfig.h"
+
 #include <stdlib.h>
 #include <sstream>
+
 #include "PermName.h"
 
 namespace rocketmq {
-//<!***************************************************************************
+
 int TopicConfig::DefaultReadQueueNums = 16;
 int TopicConfig::DefaultWriteQueueNums = 16;
-string TopicConfig::SEPARATOR = " ";
+std::string TopicConfig::SEPARATOR = " ";
 
 TopicConfig::TopicConfig()
     : m_topicName(""),
@@ -32,14 +34,14 @@ TopicConfig::TopicConfig()
       m_perm(PermName::PERM_READ | PermName::PERM_WRITE),
       m_topicFilterType(SINGLE_TAG) {}
 
-TopicConfig::TopicConfig(const string& topicName)
+TopicConfig::TopicConfig(const std::string& topicName)
     : m_topicName(topicName),
       m_readQueueNums(DefaultReadQueueNums),
       m_writeQueueNums(DefaultWriteQueueNums),
       m_perm(PermName::PERM_READ | PermName::PERM_WRITE),
       m_topicFilterType(SINGLE_TAG) {}
 
-TopicConfig::TopicConfig(const string& topicName, int readQueueNums, int writeQueueNums, int perm)
+TopicConfig::TopicConfig(const std::string& topicName, int readQueueNums, int writeQueueNums, int perm)
     : m_topicName(topicName),
       m_readQueueNums(readQueueNums),
       m_writeQueueNums(writeQueueNums),
@@ -48,16 +50,16 @@ TopicConfig::TopicConfig(const string& topicName, int readQueueNums, int writeQu
 
 TopicConfig::~TopicConfig() {}
 
-string TopicConfig::encode() {
-  stringstream ss;
+std::string TopicConfig::encode() {
+  std::stringstream ss;
   ss << m_topicName << SEPARATOR << m_readQueueNums << SEPARATOR << m_writeQueueNums << SEPARATOR << m_perm << SEPARATOR
      << m_topicFilterType;
 
   return ss.str();
 }
 
-bool TopicConfig::decode(const string& in) {
-  stringstream ss(in);
+bool TopicConfig::decode(const std::string& in) {
+  std::stringstream ss(in);
 
   ss >> m_topicName;
   ss >> m_readQueueNums;
@@ -71,11 +73,11 @@ bool TopicConfig::decode(const string& in) {
   return true;
 }
 
-const string& TopicConfig::getTopicName() {
+const std::string& TopicConfig::getTopicName() {
   return m_topicName;
 }
 
-void TopicConfig::setTopicName(const string& topicName) {
+void TopicConfig::setTopicName(const std::string& topicName) {
   m_topicName = topicName;
 }
 
@@ -110,5 +112,5 @@ TopicFilterType TopicConfig::getTopicFilterType() {
 void TopicConfig::setTopicFilterType(TopicFilterType topicFilterType) {
   m_topicFilterType = topicFilterType;
 }
-//<!***************************************************************************
-}  //<!end namespace;
+
+}  // namespace rocketmq

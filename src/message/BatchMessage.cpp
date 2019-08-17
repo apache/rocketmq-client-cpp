@@ -32,10 +32,10 @@ std::string BatchMessage::encode(std::vector<MQMessage>& msgs) {
 }
 
 std::string BatchMessage::encode(MQMessage& message) {
-  string encodeMsg;
-  const string& body = message.getBody();
+  std::string encodeMsg;
+  const std::string& body = message.getBody();
   int bodyLen = body.length();
-  string properties = MQDecoder::messageProperties2String(message.getProperties());
+  std::string properties = MQDecoder::messageProperties2String(message.getProperties());
   short propertiesLength = (short)properties.length();
   int storeSize = 20 + bodyLen + 2 + propertiesLength;
   // TOTALSIZE|MAGICCOD|BODYCRC|FLAG|BODYLen|Body|propertiesLength|properties

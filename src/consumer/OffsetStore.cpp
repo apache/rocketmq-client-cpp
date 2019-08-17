@@ -180,12 +180,11 @@ void LocalFileOffsetStore::persist(const MQMessageQueue& mq, const SessionCreden
 void LocalFileOffsetStore::persistAll(const std::vector<MQMessageQueue>& mqs) {
   std::lock_guard<std::mutex> lock(m_lock);
 
-  map<string, int64> m_offsetTable_tmp;
-  vector<MQMessageQueue>::const_iterator it = mqs.begin();
-  for (; it != mqs.end(); ++it) {
-    MessageQueue mq_tmp((*it).getTopic(), (*it).getBrokerName(), (*it).getQueueId());
+  std::map<std::string, int64> m_offsetTable_tmp;
+  for (const auto& mq : mqs) {
+    MessageQueue mq_tmp(mq.getTopic(), mq.getBrokerName(), mq.getQueueId());
     string mqKey = mq_tmp.toJson().toStyledString();
-    m_offsetTable_tmp[mqKey] = m_offsetTable[*it];
+    m_offsetTable_tmp[mqKey] = m_offsetTable[mq];
   }
 
   std::ofstream s;
@@ -293,7 +292,7 @@ void RemoteBrokerOffsetStore::removeOffset(const MQMessageQueue& mq) {
 void RemoteBrokerOffsetStore::updateConsumeOffsetToBroker(const MQMessageQueue& mq,
                                                           int64 offset,
                                                           const SessionCredentials& session_credentials) {
-  unique_ptr<FindBrokerResult> pFindBrokerResult(m_pClientFactory->findBrokerAddressInAdmin(mq.getBrokerName()));
+  std::unique_ptr<FindBrokerResult> pFindBrokerResult(m_pClientFactory->findBrokerAddressInAdmin(mq.getBrokerName()));
 
   if (pFindBrokerResult == NULL) {
     m_pClientFactory->updateTopicRouteInfoFromNameServer(mq.getTopic(), session_credentials);
@@ -320,7 +319,7 @@ void RemoteBrokerOffsetStore::updateConsumeOffsetToBroker(const MQMessageQueue& 
 
 int64 RemoteBrokerOffsetStore::fetchConsumeOffsetFromBroker(const MQMessageQueue& mq,
                                                             const SessionCredentials& session_credentials) {
-  unique_ptr<FindBrokerResult> pFindBrokerResult(m_pClientFactory->findBrokerAddressInAdmin(mq.getBrokerName()));
+  std::unique_ptr<FindBrokerResult> pFindBrokerResult(m_pClientFactory->findBrokerAddressInAdmin(mq.getBrokerName()));
 
   if (pFindBrokerResult == NULL) {
     m_pClientFactory->updateTopicRouteInfoFromNameServer(mq.getTopic(), session_credentials);

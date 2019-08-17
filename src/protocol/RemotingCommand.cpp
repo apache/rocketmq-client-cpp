@@ -40,11 +40,11 @@ RemotingCommand::RemotingCommand(int code, CommandHeader* pExtHeader /* = NULL *
 }
 
 RemotingCommand::RemotingCommand(int code,
-                                 string language,
+                                 std::string language,
                                  int version,
                                  int opaque,
                                  int flag,
-                                 string remark,
+                                 std::string remark,
                                  CommandHeader* pExtHeader)
     : m_code(code),
       m_language(language),
@@ -115,7 +115,7 @@ void RemotingCommand::Encode() {
   }
 
   Json::FastWriter fastwrite;
-  string data = fastwrite.write(root);
+  std::string data = fastwrite.write(root);
 
   uint32 headLen = data.size();
   uint32 totalLen = 4 + headLen + m_body.getSize();
@@ -165,19 +165,17 @@ RemotingCommand* RemotingCommand::Decode(const MemoryBlock& mem) {
 
   int code = object["code"].asInt();
 
-  string language = object["language"].asString();
+  std::string language = object["language"].asString();
   int version = object["version"].asInt();
   int opaque = object["opaque"].asInt();
   int flag = object["flag"].asInt();
   Json::Value v = object["remark"];
-  string remark = "";
+  std::string remark = "";
   if (!v.isNull()) {
     remark = object["remark"].asString();
   }
-  LOG_DEBUG(
-      "code:%d, remark:%s, version:%d, opaque:%d, flag:%d, remark:%s, "
-      "headLen:%d, bodyLen:%d ",
-      code, language.c_str(), version, opaque, flag, remark.c_str(), headLen, bodyLen);
+  LOG_DEBUG("code:%d, remark:%s, version:%d, opaque:%d, flag:%d, remark:%s, headLen:%d, bodyLen:%d ", code,
+            language.c_str(), version, opaque, flag, remark.c_str(), headLen, bodyLen);
   RemotingCommand* cmd = new RemotingCommand(code, language, version, opaque, flag, remark, NULL);
   cmd->setParsedJson(object);
   if (bodyLen > 0) {
@@ -270,11 +268,11 @@ int RemotingCommand::getOpaque() const {
   return m_opaque;
 }
 
-string RemotingCommand::getRemark() const {
+std::string RemotingCommand::getRemark() const {
   return m_remark;
 }
 
-void RemotingCommand::setRemark(string mark) {
+void RemotingCommand::setRemark(std::string mark) {
   m_remark = mark;
 }
 
@@ -294,15 +292,15 @@ const int RemotingCommand::getVersion() const {
   return m_version;
 }
 
-void RemotingCommand::setMsgBody(const string& body) {
+void RemotingCommand::setMsgBody(const std::string& body) {
   m_msgBody = body;
 }
 
-string RemotingCommand::getMsgBody() const {
+std::string RemotingCommand::getMsgBody() const {
   return m_msgBody;
 }
 
-void RemotingCommand::addExtField(const string& key, const string& value) {
+void RemotingCommand::addExtField(const std::string& key, const std::string& value) {
   m_extFields[key] = value;
 }
 

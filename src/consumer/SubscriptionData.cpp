@@ -15,18 +15,21 @@
  * limitations under the License.
  */
 #include "SubscriptionData.h"
+
 #include <algorithm>
 #include <sstream>
 #include <vector>
-#include "UtilAll.h"
+
 #include "Logging.h"
+#include "UtilAll.h"
+
 namespace rocketmq {
-//<!************************************************************************
+
 SubscriptionData::SubscriptionData() {
   m_subVersion = UtilAll::currentTimeMillis();
 }
 
-SubscriptionData::SubscriptionData(const string& topic, const string& subString)
+SubscriptionData::SubscriptionData(const std::string& topic, const std::string& subString)
     : m_topic(topic), m_subString(subString) {
   m_subVersion = UtilAll::currentTimeMillis();
 }
@@ -39,15 +42,15 @@ SubscriptionData::SubscriptionData(const SubscriptionData& other) {
   m_codeSet = other.m_codeSet;
 }
 
-const string& SubscriptionData::getTopic() const {
+const std::string& SubscriptionData::getTopic() const {
   return m_topic;
 }
 
-const string& SubscriptionData::getSubString() const {
+const std::string& SubscriptionData::getSubString() const {
   return m_subString;
 }
 
-void SubscriptionData::setSubString(const string& sub) {
+void SubscriptionData::setSubString(const std::string& sub) {
   m_subString = sub;
 }
 
@@ -55,15 +58,15 @@ int64 SubscriptionData::getSubVersion() const {
   return m_subVersion;
 }
 
-void SubscriptionData::putTagsSet(const string& tag) {
+void SubscriptionData::putTagsSet(const std::string& tag) {
   m_tagSet.push_back(tag);
 }
 
-bool SubscriptionData::containTag(const string& tag) {
+bool SubscriptionData::containTag(const std::string& tag) {
   return std::find(m_tagSet.begin(), m_tagSet.end(), tag) != m_tagSet.end();
 }
 
-vector<string>& SubscriptionData::getTagsSet() {
+std::vector<std::string>& SubscriptionData::getTagsSet() {
   return m_tagSet;
 }
 
@@ -99,7 +102,7 @@ bool SubscriptionData::operator<(const SubscriptionData& other) const {
   }
 }
 
-void SubscriptionData::putCodeSet(const string& tag) {
+void SubscriptionData::putCodeSet(const std::string& tag) {
   int value = atoi(tag.c_str());
   m_codeSet.push_back(value);
 }
@@ -110,21 +113,15 @@ Json::Value SubscriptionData::toJson() const {
   outJson["subVersion"] = UtilAll::to_string(m_subVersion);
   outJson["topic"] = m_topic;
 
-  {
-    vector<string>::const_iterator it = m_tagSet.begin();
-    for (; it != m_tagSet.end(); it++) {
-      outJson["tagsSet"].append(*it);
-    }
+  for (const auto& tag : m_tagSet) {
+    outJson["tagsSet"].append(tag);
   }
 
-  {
-    vector<int>::const_iterator it = m_codeSet.begin();
-    for (; it != m_codeSet.end(); it++) {
-      outJson["codeSet"].append(*it);
-    }
+  for (const auto& code : m_codeSet) {
+    outJson["codeSet"].append(code);
   }
+
   return outJson;
 }
 
-//<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

@@ -22,7 +22,7 @@ namespace rocketmq {
 const uint64 PullRequest::RebalanceLockInterval = 20 * 1000;
 const uint64 PullRequest::RebalanceLockMaxLiveTime = 30 * 1000;
 
-PullRequest::PullRequest(const string& groupname)
+PullRequest::PullRequest(const std::string& groupname)
     : m_groupname(groupname),
       m_nextOffset(0),
       m_queueOffsetMax(0),
@@ -49,7 +49,7 @@ PullRequest& PullRequest::operator=(const PullRequest& other) {
   return *this;
 }
 
-void PullRequest::putMessage(vector<MQMessageExt>& msgs) {
+void PullRequest::putMessage(std::vector<MQMessageExt>& msgs) {
   std::lock_guard<std::mutex> lock(m_pullRequestLock);
 
   for (const auto& msg : msgs) {
@@ -63,7 +63,7 @@ void PullRequest::putMessage(vector<MQMessageExt>& msgs) {
   LOG_DEBUG("PullRequest: putMessage m_queueOffsetMax:%lld ", m_queueOffsetMax);
 }
 
-void PullRequest::getMessage(vector<MQMessageExt>& msgs) {
+void PullRequest::getMessage(std::vector<MQMessageExt>& msgs) {
   std::lock_guard<std::mutex> lock(m_pullRequestLock);
 
   for (const auto& it : m_msgTreeMap) {
@@ -91,7 +91,7 @@ int PullRequest::getCacheMsgCount() {
   return static_cast<int>(m_msgTreeMap.size());
 }
 
-void PullRequest::getMessageByQueueOffset(vector<MQMessageExt>& msgs, int64 minQueueOffset, int64 maxQueueOffset) {
+void PullRequest::getMessageByQueueOffset(std::vector<MQMessageExt>& msgs, int64 minQueueOffset, int64 maxQueueOffset) {
   std::lock_guard<std::mutex> lock(m_pullRequestLock);
   for (int64 it = minQueueOffset; it <= maxQueueOffset; it++) {
     if (m_msgTreeMap.find(it) != m_msgTreeMap.end()) {
@@ -100,7 +100,7 @@ void PullRequest::getMessageByQueueOffset(vector<MQMessageExt>& msgs, int64 minQ
   }
 }
 
-int64 PullRequest::removeMessage(vector<MQMessageExt>& msgs) {
+int64 PullRequest::removeMessage(std::vector<MQMessageExt>& msgs) {
   std::lock_guard<std::mutex> lock(m_pullRequestLock);
 
   int64 result = -1;
@@ -219,7 +219,7 @@ void PullRequest::setNextOffset(int64 nextoffset) {
   m_nextOffset = nextoffset;
 }
 
-string PullRequest::getGroupName() const {
+std::string PullRequest::getGroupName() const {
   return m_groupname;
 }
 
@@ -227,10 +227,10 @@ std::timed_mutex& PullRequest::getPullRequestCriticalSection() {
   return m_consumeLock;
 }
 
-void PullRequest::takeMessages(vector<MQMessageExt>& msgs, int batchSize) {
+void PullRequest::takeMessages(std::vector<MQMessageExt>& msgs, int batchSize) {
   std::lock_guard<std::mutex> lock(m_pullRequestLock);
   for (int i = 0; i != batchSize; i++) {
-    map<int64, MQMessageExt>::iterator it = m_msgTreeMap.begin();
+    std::map<int64, MQMessageExt>::iterator it = m_msgTreeMap.begin();
     if (it != m_msgTreeMap.end()) {
       msgs.push_back(it->second);
       m_msgTreeMapTemp[it->first] = it->second;
@@ -239,7 +239,7 @@ void PullRequest::takeMessages(vector<MQMessageExt>& msgs, int batchSize) {
   }
 }
 
-void PullRequest::makeMessageToCosumeAgain(vector<MQMessageExt>& msgs) {
+void PullRequest::makeMessageToCosumeAgain(std::vector<MQMessageExt>& msgs) {
   std::lock_guard<std::mutex> lock(m_pullRequestLock);
   for (unsigned int it = 0; it != msgs.size(); ++it) {
     m_msgTreeMap[msgs[it].getQueueOffset()] = msgs[it];

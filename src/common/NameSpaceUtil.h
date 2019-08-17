@@ -14,23 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef __NAMESPACEUTIL_H__
-#define __NAMESPACEUTIL_H__
+#ifndef __NAMESPACE_UTIL_H__
+#define __NAMESPACE_UTIL_H__
 
 #include <string>
 
-using namespace std;
-
-static const string ENDPOINT_PREFIX = "http://";
-static const unsigned int ENDPOINT_PREFIX_LENGTH = ENDPOINT_PREFIX.length();
 namespace rocketmq {
+
+static const std::string ENDPOINT_PREFIX = "http://";
+static const unsigned int ENDPOINT_PREFIX_LENGTH = ENDPOINT_PREFIX.length();
+
 class NameSpaceUtil {
  public:
-  static bool isEndPointURL(string nameServerAddr);
+  static bool isEndPointURL(std::string nameServerAddr);
 
-  static string formatNameServerURL(string nameServerAddr);
+  static std::string formatNameServerURL(std::string nameServerAddr);
 };
 
 }  // namespace rocketmq
-#endif  //__NAMESPACEUTIL_H__
+
+#endif  // __NAMESPACE_UTIL_H__

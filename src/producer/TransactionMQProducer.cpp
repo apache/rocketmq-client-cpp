@@ -27,8 +27,6 @@
 #include "TransactionListener.h"
 #include "TransactionSendResult.h"
 
-using namespace std;
-
 namespace rocketmq {
 
 void TransactionMQProducer::initTransactionEnv() {

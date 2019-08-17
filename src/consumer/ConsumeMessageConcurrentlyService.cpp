@@ -122,10 +122,10 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(PullRequest* request, std
   }
 }
 
-void ConsumeMessageConcurrentlyService::resetRetryTopic(vector<MQMessageExt>& msgs) {
-  string groupTopic = UtilAll::getRetryTopic(m_pConsumer->getGroupName());
+void ConsumeMessageConcurrentlyService::resetRetryTopic(std::vector<MQMessageExt>& msgs) {
+  std::string groupTopic = UtilAll::getRetryTopic(m_pConsumer->getGroupName());
   for (auto& msg : msgs) {
-    string retryTopic = msg.getProperty(MQMessage::PROPERTY_RETRY_TOPIC);
+    std::string retryTopic = msg.getProperty(MQMessage::PROPERTY_RETRY_TOPIC);
     if (!retryTopic.empty() && groupTopic == msg.getTopic()) {
       msg.setTopic(retryTopic);
     }

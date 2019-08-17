@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SOCKETUTIL_H__
-#define __SOCKETUTIL_H__
+#ifndef __SOCKET_UTIL_H__
+#define __SOCKET_UTIL_H__
 
 #ifdef WIN32
 #include <WS2tcpip.h>
-#include <Winsock2.h>
 #include <Windows.h>
+#include <Winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
 #else
 #include <arpa/inet.h>
@@ -34,7 +34,6 @@
 #include <sys/ioctl.h>
 #include <sys/select.h>
 #include <sys/socket.h>
-#include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -43,21 +42,20 @@
 #include "UtilAll.h"
 
 namespace rocketmq {
-//<!************************************************************************
+
 /**
-* IP:PORT
-*/
+ * IP:PORT
+ */
 sockaddr IPPort2socketAddress(int host, int port);
-string socketAddress2IPPort(sockaddr addr);
+std::string socketAddress2IPPort(sockaddr addr);
 void socketAddress2IPPort(sockaddr addr, int& host, int& port);
 
-string socketAddress2String(sockaddr addr);
-string getHostName(sockaddr addr);
+std::string socketAddress2String(sockaddr addr);
+std::string getHostName(sockaddr addr);
 
 uint64 h2nll(uint64 v);
 uint64 n2hll(uint64 v);
 
-//<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
-#endif
+#endif  // __SOCKET_UTIL_H__

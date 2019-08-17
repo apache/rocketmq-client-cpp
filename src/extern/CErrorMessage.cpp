@@ -22,6 +22,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 using namespace rocketmq;
 
 const char* GetLatestErrorMessage() {

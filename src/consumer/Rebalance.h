@@ -35,29 +35,29 @@ class Rebalance {
   Rebalance(MQConsumer*, MQClientFactory*);
   virtual ~Rebalance();
 
-  virtual void messageQueueChanged(const string& topic,
-                                   vector<MQMessageQueue>& mqAll,
-                                   vector<MQMessageQueue>& mqDivided) = 0;
+  virtual void messageQueueChanged(const std::string& topic,
+                                   std::vector<MQMessageQueue>& mqAll,
+                                   std::vector<MQMessageQueue>& mqDivided) = 0;
 
   virtual void removeUnnecessaryMessageQueue(const MQMessageQueue& mq) = 0;
 
   virtual int64 computePullFromWhere(const MQMessageQueue& mq) = 0;
 
-  virtual bool updateRequestTableInRebalance(const string& topic, vector<MQMessageQueue>& mqsSelf) = 0;
+  virtual bool updateRequestTableInRebalance(const std::string& topic, std::vector<MQMessageQueue>& mqsSelf) = 0;
 
  public:
   void doRebalance() throw(MQClientException);
   void persistConsumerOffset();
   void persistConsumerOffsetByResetOffset();
   //<!m_subscriptionInner;
-  SubscriptionData* getSubscriptionData(const string& topic);
-  void setSubscriptionData(const string& topic, SubscriptionData* pdata);
+  SubscriptionData* getSubscriptionData(const std::string& topic);
+  void setSubscriptionData(const std::string& topic, SubscriptionData* pdata);
 
-  map<string, SubscriptionData*>& getSubscriptionInner();
+  std::map<std::string, SubscriptionData*>& getSubscriptionInner();
 
   //<!m_topicSubscribeInfoTable;
-  void setTopicSubscribeInfo(const string& topic, vector<MQMessageQueue>& mqs);
-  bool getTopicSubscribeInfo(const string& topic, vector<MQMessageQueue>& mqs);
+  void setTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& mqs);
+  bool getTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& mqs);
 
   void addPullRequest(const MQMessageQueue& mq, PullRequest* pPullRequest);
   PullRequest* getPullRequest(const MQMessageQueue& mq);
@@ -68,10 +68,10 @@ class Rebalance {
   void unlock(MQMessageQueue mq);
 
  protected:
-  map<string, SubscriptionData*> m_subscriptionData;
+  std::map<std::string, SubscriptionData*> m_subscriptionData;
 
   std::mutex m_topicSubscribeInfoTableMutex;
-  std::map<string, vector<MQMessageQueue>> m_topicSubscribeInfoTable;
+  std::map<std::string, std::vector<MQMessageQueue>> m_topicSubscribeInfoTable;
   typedef std::map<MQMessageQueue, PullRequest*> MQ2PULLREQ;
   MQ2PULLREQ m_requestQueueTable;
   std::mutex m_requestTableMutex;
@@ -86,15 +86,15 @@ class RebalancePull : public Rebalance {
   RebalancePull(MQConsumer*, MQClientFactory*);
   virtual ~RebalancePull(){};
 
-  virtual void messageQueueChanged(const string& topic,
-                                   vector<MQMessageQueue>& mqAll,
-                                   vector<MQMessageQueue>& mqDivided);
+  virtual void messageQueueChanged(const std::string& topic,
+                                   std::vector<MQMessageQueue>& mqAll,
+                                   std::vector<MQMessageQueue>& mqDivided);
 
   virtual void removeUnnecessaryMessageQueue(const MQMessageQueue& mq);
 
   virtual int64 computePullFromWhere(const MQMessageQueue& mq);
 
-  virtual bool updateRequestTableInRebalance(const string& topic, vector<MQMessageQueue>& mqsSelf);
+  virtual bool updateRequestTableInRebalance(const std::string& topic, std::vector<MQMessageQueue>& mqsSelf);
 };
 
 class RebalancePush : public Rebalance {
@@ -102,15 +102,15 @@ class RebalancePush : public Rebalance {
   RebalancePush(MQConsumer*, MQClientFactory*);
   virtual ~RebalancePush(){};
 
-  virtual void messageQueueChanged(const string& topic,
-                                   vector<MQMessageQueue>& mqAll,
-                                   vector<MQMessageQueue>& mqDivided);
+  virtual void messageQueueChanged(const std::string& topic,
+                                   std::vector<MQMessageQueue>& mqAll,
+                                   std::vector<MQMessageQueue>& mqDivided);
 
   virtual void removeUnnecessaryMessageQueue(const MQMessageQueue& mq);
 
   virtual int64 computePullFromWhere(const MQMessageQueue& mq);
 
-  virtual bool updateRequestTableInRebalance(const string& topic, vector<MQMessageQueue>& mqsSelf);
+  virtual bool updateRequestTableInRebalance(const std::string& topic, std::vector<MQMessageQueue>& mqsSelf);
 };
 
 }  // namespace rocketmq

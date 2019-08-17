@@ -14,10 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SUBSCRIPTIONDATA_H__
-#define __SUBSCRIPTIONDATA_H__
+#ifndef __SUB_SCRIPTION_DATA_H__
+#define __SUB_SCRIPTION_DATA_H__
 
 #include <string>
+
 #include "UtilAll.h"
 #include "json/json.h"
 
@@ -30,19 +31,19 @@ class SubscriptionData {
     m_tagSet.clear();
     m_codeSet.clear();
   }
-  SubscriptionData(const string& topic, const string& subString);
+  SubscriptionData(const std::string& topic, const std::string& subString);
   SubscriptionData(const SubscriptionData& other);
 
-  const string& getTopic() const;
-  const string& getSubString() const;
-  void setSubString(const string& sub);
+  const std::string& getTopic() const;
+  const std::string& getSubString() const;
+  void setSubString(const std::string& sub);
   int64 getSubVersion() const;
 
-  void putTagsSet(const string& tag);
-  bool containTag(const string& tag);
-  vector<string>& getTagsSet();
+  void putTagsSet(const std::string& tag);
+  bool containTag(const std::string& tag);
+  std::vector<std::string>& getTagsSet();
 
-  void putCodeSet(const string& tag);
+  void putCodeSet(const std::string& tag);
 
   bool operator==(const SubscriptionData& other) const;
   bool operator<(const SubscriptionData& other) const;
@@ -50,13 +51,13 @@ class SubscriptionData {
   Json::Value toJson() const;
 
  private:
-  string m_topic;
-  string m_subString;
+  std::string m_topic;
+  std::string m_subString;
   int64 m_subVersion;
-  vector<string> m_tagSet;
-  vector<int> m_codeSet;
+  std::vector<std::string> m_tagSet;
+  std::vector<int> m_codeSet;
 };
-//<!***************************************************************************
-}  //<!end namespace;
 
-#endif
+}  // namespace rocketmq
+
+#endif  // __SUB_SCRIPTION_DATA_H__

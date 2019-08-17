@@ -35,7 +35,7 @@ logAdapter* logAdapter::getLogInstance() {
 }
 
 logAdapter::logAdapter() : m_logLevel(eLOG_LEVEL_INFO) {
-  string homeDir(UtilAll::getHomeDirectory());
+  std::string homeDir(UtilAll::getHomeDirectory());
   homeDir.append("/logs/rocketmq-cpp/");
   if (!UtilAll::existDirectory(homeDir)) {
     UtilAll::createDirectory(homeDir);
