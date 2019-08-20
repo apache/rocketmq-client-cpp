@@ -85,7 +85,7 @@ set  ZLIB_INCLUDE="%cd%\zlib-1.2.3-src\src\zlib\1.2.3\zlib-1.2.3\"
 ::cd boost_1_58_0
 call bootstrap.bat
 @echo build start.....
-bjam.exe address-model=64 --with-serialization --with-atomic --with-log --with-locale --with-iostreams --with-system --with-regex --with-thread --with-date_time --with-chrono --with-filesystem  link=static  threading=multi variant=release runtime-link=shared
+.\b2 -j8 --with-serialization --with-atomic --with-log --with-locale --with-iostreams --with-system --with-regex --with-thread --with-date_time --with-chrono --with-filesystem --build-type=complete address-model=64 
 cd ../jsoncpp-0.10.6
 devenv ./jsoncpp_lib_static.vcxproj  /Build "Release|x64" /out log.txt
 cd ../libevent-release-2.0.22

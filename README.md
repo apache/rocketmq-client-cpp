@@ -61,8 +61,12 @@ If your host is not available to internet to download the four library source fi
 
 [jsoncpp-0.10.6](https://codeload.github.com/jsj020122/jsoncpp-0.10.6/zip/master "jsoncpp-0.10.6") Extract to  $(rocketmq-client-cpp root dir)/thirdparty/jsoncpp-0.10.6 
 
-And then run following command to build rocketmq-client:
+And then run following command to build x86 rocketmq-client:
 
     win32_build.bat build
+
+to build x64 rocketmq-client:
+
+    win32_build.bat build64
 
 
