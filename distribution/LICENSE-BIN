@@ -201,7 +201,7 @@
    limitations under the License.
 
  ------
- This product has a bundle disruptor--, which is available under its own License.
+ This product has a bundle disruptor--, which is available under BSD License.
  The source code of disruptor-- can be found at https://github.com/fsaintjacques/disruptor--.
 
  Copyright (c) 2011, François Saint-Jacques
