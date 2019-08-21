@@ -14,25 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "MQClientErrorContainer.h"
 
 namespace rocketmq {
-MQClientErrorContainer* MQClientErrorContainer::s_instance = nullptr;
 
-MQClientErrorContainer* MQClientErrorContainer::instance() {
-  if (!s_instance)
-    s_instance = new MQClientErrorContainer();
-  return s_instance;
+thread_local std::string MQClientErrorContainer::t_err;
+
+void MQClientErrorContainer::setErr(const std::string& str) {
+  t_err = str;
 }
 
-void MQClientErrorContainer::setErr(std::string str) {
-  boost::lock_guard<boost::mutex> lock(this->mutex);
-  this->m_err = str;
+const std::string& MQClientErrorContainer::getErr() {
+  return t_err;
 }
 
-std::string MQClientErrorContainer::getErr() {
-  boost::lock_guard<boost::mutex> lock(this->mutex);
-  return this->m_err;
-}
 }  // namespace rocketmq

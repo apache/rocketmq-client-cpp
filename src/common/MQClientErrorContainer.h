@@ -14,28 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __MQ_CLIENT_ERROR_CONTAINER_H__
+#define __MQ_CLIENT_ERROR_CONTAINER_H__
 
-#ifndef __MQCLIENTERRORCONTAINER_H_INCLUDE__
-#define __MQCLIENTERRORCONTAINER_H_INCLUDE__
-#include <boost/thread/lock_guard.hpp>
-#include <boost/thread/mutex.hpp>
-#include <exception>
+#include <mutex>
 #include <string>
 
 namespace rocketmq {
+
 class MQClientErrorContainer {
  public:
-  static MQClientErrorContainer* instance();
-
-  void setErr(std::string str);
-
-  std::string getErr();
+  static void setErr(const std::string& str);
+  static const std::string& getErr();
 
  private:
-  std::string m_err;
-  static MQClientErrorContainer* s_instance;
-  boost::mutex mutex;
+  static thread_local std::string t_err;
 };
+
 }  // namespace rocketmq
 
-#endif
+#endif  // __MQ_CLIENT_ERROR_CONTAINER_H__
