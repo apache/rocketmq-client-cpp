@@ -18,11 +18,15 @@
 #define __TCP_REMOTING_CLIENT_H__
 
 #include <map>
+#include <memory>
 #include <mutex>
+#include <string>
+#include <vector>
 
 #include "concurrent/executor.hpp"
 
 #include "ClientRemotingProcessor.h"
+#include "RPCHook.h"
 #include "RemotingCommand.h"
 #include "ResponseFuture.h"
 #include "SocketUtil.h"
@@ -36,6 +40,9 @@ class TcpRemotingClient {
   virtual ~TcpRemotingClient();
 
   void stopAllTcpTransportThread();
+
+  void registerRPCHook(std::shared_ptr<RPCHook> rpcHook);
+
   void updateNameServerAddressList(const std::string& addrs);
 
   bool invokeHeartBeat(const std::string& addr, RemotingCommand& request, int timeoutMillis = 3000);
@@ -53,6 +60,7 @@ class TcpRemotingClient {
   void registerProcessor(MQRequestCode requestCode, ClientRemotingProcessor* clientRemotingProcessor);
 
  private:
+  static bool SendCommand(std::shared_ptr<TcpTransport> pTts, RemotingCommand& msg);
   static void MessageReceived(void* context, const MemoryBlock& mem, const std::string& addr);
 
   void messageReceived(const MemoryBlock& mem, const std::string& addr);
@@ -69,7 +77,18 @@ class TcpRemotingClient {
   bool CloseTransport(const std::string& addr, std::shared_ptr<TcpTransport> pTcp);
   bool CloseNameServerTransport(std::shared_ptr<TcpTransport> pTcp);
 
-  bool SendCommand(std::shared_ptr<TcpTransport> pTts, RemotingCommand& msg);
+  RemotingCommand* invokeSyncImpl(std::shared_ptr<TcpTransport> pTcp,
+                                  RemotingCommand& request,
+                                  int64 timeoutMillis) throw(RemotingTimeoutException, RemotingSendRequestException);
+  void invokeAsyncImpl(std::shared_ptr<TcpTransport> pTcp,
+                       RemotingCommand& request,
+                       int64 timeoutMillis,
+                       InvokeCallback* invokeCallback) throw(RemotingSendRequestException);
+  void invokeOnewayImpl(std::shared_ptr<TcpTransport> pTcp, RemotingCommand& request);
+
+  // rpc hook
+  void doBeforeRpcHooks(const std::string& addr, RemotingCommand& request, bool toSent);
+  void doAfterRpcHooks(const std::string& addr, RemotingCommand& request, RemotingCommand* response, bool toSent);
 
   void addResponseFuture(int opaque, std::shared_ptr<ResponseFuture> pFuture);
   std::shared_ptr<ResponseFuture> findAndDeleteResponseFuture(int opaque);
@@ -86,6 +105,9 @@ class TcpRemotingClient {
 
   FutureMap m_futureTable;  // opaque -> future
   std::mutex m_futureTableMutex;
+
+  // FIXME: not strict thread-safe in abnormal scence
+  std::vector<std::shared_ptr<RPCHook>> m_rpcHooks;  // for Acl / ONS
 
   uint64_t m_tcpConnectTimeout;           // ms
   uint64_t m_tcpTransportTryLockTimeout;  // s

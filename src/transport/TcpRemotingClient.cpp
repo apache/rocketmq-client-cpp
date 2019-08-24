@@ -101,6 +101,18 @@ void TcpRemotingClient::stopAllTcpTransportThread() {
   LOG_ERROR("TcpRemotingClient::stopAllTcpTransportThread End, m_transportTable:%lu", m_transportTable.size());
 }
 
+void TcpRemotingClient::registerRPCHook(std::shared_ptr<RPCHook> rpcHook) {
+  if (rpcHook != nullptr) {
+    for (auto& hook : m_rpcHooks) {
+      if (hook == rpcHook) {
+        return;
+      }
+    }
+
+    m_rpcHooks.push_back(rpcHook);
+  }
+}
+
 void TcpRemotingClient::updateNameServerAddressList(const std::string& addrs) {
   LOG_INFO("updateNameServerAddressList: [%s]", addrs.c_str());
 
@@ -173,35 +185,56 @@ RemotingCommand* TcpRemotingClient::invokeSync(const std::string& addr, Remoting
   LOG_DEBUG("InvokeSync:", addr.c_str());
   std::shared_ptr<TcpTransport> pTcp = GetTransport(addr, true);
   if (pTcp != nullptr) {
-    int code = request.getCode();
-    int opaque = request.getOpaque();
-
-    std::shared_ptr<ResponseFuture> responseFuture(new ResponseFuture(code, opaque, timeoutMillis));
-    addResponseFuture(opaque, responseFuture);
-
-    if (SendCommand(pTcp, request)) {
-      responseFuture->setSendRequestOK(true);
-      RemotingCommand* pRsp = responseFuture->waitResponse();
-      if (pRsp == nullptr) {
-        if (code != GET_CONSUMER_LIST_BY_GROUP) {
-          LOG_WARN("wait response timeout or get NULL response of code:%d, so closeTransport of addr:%s", code,
-                   addr.c_str());
-          CloseTransport(addr, pTcp);
-        }
-        // avoid responseFuture leak;
-        findAndDeleteResponseFuture(opaque);
-        return nullptr;
-      } else {
-        return pRsp;
+    try {
+      doBeforeRpcHooks(addr, request, true);
+      RemotingCommand* response = invokeSyncImpl(pTcp, request, timeoutMillis);
+      doAfterRpcHooks(addr, request, response, false);
+      return response;
+    } catch (const RemotingTimeoutException& e) {
+      LOG_WARN("invokeSync: wait response timeout exception, the channel[{}]", pTcp->getPeerAddrAndPort().c_str());
+      int code = request.getCode();
+      if (code != GET_CONSUMER_LIST_BY_GROUP) {
+        LOG_WARN("invokeSync: close socket because of timeout, {}ms, {}", timeoutMillis,
+                 pTcp->getPeerAddrAndPort().c_str());
+        CloseTransport(addr, pTcp);
       }
-    } else {
-      // avoid responseFuture leak;
-      findAndDeleteResponseFuture(opaque);
+    } catch (const RemotingSendRequestException& e) {
+      LOG_WARN("invokeSync: send request exception, so close the channel[%s]", pTcp->getPeerAddrAndPort().c_str());
       CloseTransport(addr, pTcp);
     }
+  } else {
+    LOG_DEBUG("InvokeSync [%s] Failed: Cannot Get Transport.", addr.c_str());
   }
-  LOG_DEBUG("InvokeSync [%s] Failed: Cannot Get Transport.", addr.c_str());
   return nullptr;
+}
+
+RemotingCommand* TcpRemotingClient::invokeSyncImpl(std::shared_ptr<TcpTransport> pTcp,
+                                                   RemotingCommand& request,
+                                                   int64 timeoutMillis) throw(RemotingTimeoutException,
+                                                                              RemotingSendRequestException) {
+  int code = request.getCode();
+  int opaque = request.getOpaque();
+
+  std::shared_ptr<ResponseFuture> responseFuture(new ResponseFuture(code, opaque, timeoutMillis));
+  addResponseFuture(opaque, responseFuture);
+
+  if (SendCommand(pTcp, request)) {
+    responseFuture->setSendRequestOK(true);
+    RemotingCommand* response = responseFuture->waitResponse();
+    if (response != nullptr) {
+      return response;
+    }
+  }
+
+  // avoid responseFuture leak;
+  findAndDeleteResponseFuture(opaque);
+
+  if (responseFuture->isSendRequestOK()) {
+    THROW_MQEXCEPTION(RemotingTimeoutException,
+                      "wait response on the addr <" + pTcp->getPeerAddrAndPort() + "> timeout", -1);
+  } else {
+    THROW_MQEXCEPTION(RemotingSendRequestException, "send request to <" + pTcp->getPeerAddrAndPort() + "> failed", -1);
+  }
 }
 
 bool TcpRemotingClient::invokeAsync(const std::string& addr,
@@ -210,41 +243,81 @@ bool TcpRemotingClient::invokeAsync(const std::string& addr,
                                     int64 timeoutMillis) {
   std::shared_ptr<TcpTransport> pTcp = GetTransport(addr, true);
   if (pTcp != nullptr) {
-    int code = request.getCode();
-    int opaque = request.getOpaque();
-
-    // delete in callback
-    std::shared_ptr<ResponseFuture> responseFuture(new ResponseFuture(code, opaque, timeoutMillis, invokeCallback));
-    addResponseFuture(opaque, responseFuture);
-
-    // timeout monitor
-    m_timeoutExecutor.schedule(std::bind(&TcpRemotingClient::checkAsyncRequestTimeout, this, opaque), timeoutMillis,
-                               time_unit::milliseconds);
-
-    // even if send failed, asyncTimerThread will trigger next pull request or report send msg failed
-    if (SendCommand(pTcp, request)) {
-      LOG_DEBUG("invokeAsync success, addr:%s, code:%d, opaque:%d", addr.c_str(), code, opaque);
-      responseFuture->setSendRequestOK(true);
+    try {
+      doBeforeRpcHooks(addr, request, true);
+      invokeAsyncImpl(pTcp, request, timeoutMillis, invokeCallback);
+      return true;
+    } catch (const RemotingSendRequestException& e) {
+      LOG_WARN("invokeAsync: send request exception, so close the channel[%s]", pTcp->getPeerAddrAndPort().c_str());
+      CloseTransport(addr, pTcp);
     }
-    return true;
   }
 
   LOG_ERROR("invokeAsync failed of addr:%s", addr.c_str());
   return false;
 }
 
+void TcpRemotingClient::invokeAsyncImpl(std::shared_ptr<TcpTransport> pTcp,
+                                        RemotingCommand& request,
+                                        int64 timeoutMillis,
+                                        InvokeCallback* invokeCallback) throw(RemotingSendRequestException) {
+  int code = request.getCode();
+  int opaque = request.getOpaque();
+
+  // delete in callback
+  std::shared_ptr<ResponseFuture> responseFuture(new ResponseFuture(code, opaque, timeoutMillis, invokeCallback));
+  addResponseFuture(opaque, responseFuture);
+
+  // timeout monitor
+  m_timeoutExecutor.schedule(std::bind(&TcpRemotingClient::checkAsyncRequestTimeout, this, opaque), timeoutMillis,
+                             time_unit::milliseconds);
+
+  if (SendCommand(pTcp, request)) {
+    responseFuture->setSendRequestOK(true);
+  } else {
+    THROW_MQEXCEPTION(RemotingSendRequestException, "send request to <" + pTcp->getPeerAddrAndPort() + "> failed", -1);
+  }
+}
+
 void TcpRemotingClient::invokeOneway(const std::string& addr, RemotingCommand& request) {
   // not need callback;
   std::shared_ptr<TcpTransport> pTcp = GetTransport(addr, true);
   if (pTcp != nullptr) {
-    request.markOnewayRPC();
-    if (SendCommand(pTcp, request)) {
-      LOG_DEBUG("invokeOneway success. addr:%s, code:%d", addr.c_str(), request.getCode());
-    } else {
-      LOG_WARN("invokeOneway failed. addr:%s, code:%d", addr.c_str(), request.getCode());
+    try {
+      doBeforeRpcHooks(addr, request, true);
+      invokeOnewayImpl(pTcp, request);
+    } catch (const RemotingSendRequestException& e) {
+      LOG_WARN("invokeOneway: send request exception, so close the channel[%s]", pTcp->getPeerAddrAndPort().c_str());
+      CloseTransport(addr, pTcp);
     }
   } else {
     LOG_WARN("invokeOneway failed: NULL transport. addr:%s, code:%d", addr.c_str(), request.getCode());
+  }
+}
+
+void TcpRemotingClient::invokeOnewayImpl(std::shared_ptr<TcpTransport> pTcp, RemotingCommand& request) {
+  request.markOnewayRPC();
+  if (!SendCommand(pTcp, request)) {
+    THROW_MQEXCEPTION(RemotingSendRequestException, "send request to <" + pTcp->getPeerAddrAndPort() + "> failed", -1);
+  }
+}
+
+void TcpRemotingClient::doBeforeRpcHooks(const std::string& addr, RemotingCommand& request, bool toSent) {
+  if (m_rpcHooks.size() > 0) {
+    for (auto& rpcHook : m_rpcHooks) {
+      rpcHook->doBeforeRequest(addr, request, toSent);
+    }
+  }
+}
+
+void TcpRemotingClient::doAfterRpcHooks(const std::string& addr,
+                                        RemotingCommand& request,
+                                        RemotingCommand* response,
+                                        bool toSent) {
+  if (m_rpcHooks.size() > 0) {
+    for (auto& rpcHook : m_rpcHooks) {
+      rpcHook->doAfterResponse(addr, request, response, toSent);
+    }
   }
 }
 
@@ -504,9 +577,12 @@ void TcpRemotingClient::processRequestCommand(RemotingCommand* cmd, const std::s
     LOG_ERROR("can_not_find request:%d processor", requestCode);
   } else {
     try {
-      // TODO: doBeforeRpcHooks and doAfterRpcHooks
-      std::unique_ptr<RemotingCommand> response(
-          m_processorTable[requestCode]->processRequest(addr, requestCommand.get()));
+      auto& processor = iter->second;
+
+      doBeforeRpcHooks(addr, *requestCommand, false);
+      std::unique_ptr<RemotingCommand> response(processor->processRequest(addr, requestCommand.get()));
+      doAfterRpcHooks(addr, *requestCommand, response.get(), true);
+
       if (!requestCommand->isOnewayRPC()) {
         if (response) {
           response->setOpaque(requestCommand->getOpaque());

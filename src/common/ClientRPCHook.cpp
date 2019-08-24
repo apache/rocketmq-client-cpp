@@ -21,9 +21,7 @@
 #include "CommandHeader.h"
 #include "Logging.h"
 
-extern "C" {
 #include "spas_client.h"
-}
 
 namespace rocketmq {
 
@@ -33,41 +31,53 @@ const std::string SessionCredentials::Signature = "Signature";
 const std::string SessionCredentials::SignatureMethod = "SignatureMethod";
 const std::string SessionCredentials::ONSChannelKey = "OnsChannel";
 
-void ClientRPCHook::doBeforeRequest(const std::string& remoteAddr, RemotingCommand& request) {
-  CommandHeader* header = request.getCommandHeader();
-
-  std::map<std::string, std::string> requestMap;
-  std::string totalMsg;
-
-  requestMap.insert(std::make_pair(SessionCredentials::AccessKey, sessionCredentials.getAccessKey()));
-  requestMap.insert(std::make_pair(SessionCredentials::ONSChannelKey, sessionCredentials.getAuthChannel()));
-
-  LOG_DEBUG("before insert declared filed,MAP SIZE is:" SIZET_FMT "", requestMap.size());
-  if (header != NULL) {
-    header->SetDeclaredFieldOfCommandHeader(requestMap);
+void ClientRPCHook::doBeforeRequest(const std::string& remoteAddr, RemotingCommand& request, bool toSent) {
+  if (toSent) {
+    // sign request
+    signCommand(request);
   }
-  LOG_DEBUG("after insert declared filed, MAP SIZE is:" SIZET_FMT "", requestMap.size());
+}
 
-  for (const auto& it : requestMap) {
+void ClientRPCHook::doAfterResponse(const std::string& remoteAddr,
+                                    RemotingCommand& request,
+                                    RemotingCommand* response,
+                                    bool toSent) {
+  if (toSent && response != nullptr) {
+    // sign response
+    signCommand(*response);
+  }
+}
+
+void ClientRPCHook::signCommand(RemotingCommand& command) {
+  std::map<std::string, std::string> headerMap;
+  headerMap.insert(std::make_pair(SessionCredentials::AccessKey, sessionCredentials.getAccessKey()));
+  headerMap.insert(std::make_pair(SessionCredentials::ONSChannelKey, sessionCredentials.getAuthChannel()));
+
+  LOG_DEBUG("before insert declared filed, MAP SIZE is:" SIZET_FMT "", headerMap.size());
+  auto* header = command.getCommandHeader();
+  if (header != nullptr) {
+    header->SetDeclaredFieldOfCommandHeader(headerMap);
+  }
+  LOG_DEBUG("after insert declared filed, MAP SIZE is:" SIZET_FMT "", headerMap.size());
+
+  std::string totalMsg;
+  for (const auto& it : headerMap) {
     totalMsg.append(it.second);
   }
-  if (request.getMsgBody().length() > 0) {
-    LOG_DEBUG("msgBody is:%s, msgBody length is:" SIZET_FMT "", request.getMsgBody().c_str(),
-              request.getMsgBody().length());
+  if (command.getBody().getSize() > 0) {
+    LOG_DEBUG_NEW("request have msgBody, length is:{}", command.getBody().getSize());
 
-    totalMsg.append(request.getMsgBody());
+    totalMsg.append(command.getBody().getData(), command.getBody().getSize());
   }
   LOG_DEBUG("total msg info are:%s, size is:" SIZET_FMT "", totalMsg.c_str(), totalMsg.size());
+
   char* pSignature =
       rocketmqSignature::spas_sign(totalMsg.c_str(), totalMsg.size(), sessionCredentials.getSecretKey().c_str());
-  // char *pSignature = spas_sign(totalMsg.c_str(),
-  // sessionCredentials.getSecretKey().c_str());
-
   if (pSignature != nullptr) {
     std::string signature(static_cast<const char*>(pSignature));
-    request.addExtField(SessionCredentials::Signature, signature);
-    request.addExtField(SessionCredentials::AccessKey, sessionCredentials.getAccessKey());
-    request.addExtField(SessionCredentials::ONSChannelKey, sessionCredentials.getAuthChannel());
+    command.addExtField(SessionCredentials::Signature, signature);
+    command.addExtField(SessionCredentials::AccessKey, sessionCredentials.getAccessKey());
+    command.addExtField(SessionCredentials::ONSChannelKey, sessionCredentials.getAuthChannel());
     rocketmqSignature::spas_mem_free(pSignature);
   } else {
     LOG_ERROR("signature for request failed");

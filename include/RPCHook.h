@@ -14,32 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __CLIENT_RPC_HOOK_H__
-#define __CLIENT_RPC_HOOK_H__
+#ifndef __RPC_HOOK_H__
+#define __RPC_HOOK_H__
 
-#include "RPCHook.h"
-#include "SessionCredentials.h"
+#include <string>
+
+#include "RemotingCommand.h"
 
 namespace rocketmq {
 
-class ClientRPCHook : public RPCHook {
+class RPCHook {
  public:
-  ClientRPCHook(const SessionCredentials& session_credentials) : sessionCredentials(session_credentials) {}
-  ~ClientRPCHook() override = default;
+  RPCHook() = default;
+  virtual ~RPCHook() = default;
 
-  void doBeforeRequest(const std::string& remoteAddr, RemotingCommand& request, bool toSent) override;
-  void doAfterResponse(const std::string& remoteAddr,
-                       RemotingCommand& request,
-                       RemotingCommand* response,
-                       bool toSent) override;
-
- private:
-  void signCommand(RemotingCommand& command);
-
- private:
-  SessionCredentials sessionCredentials;
+  virtual void doBeforeRequest(const std::string& remoteAddr, RemotingCommand& request, bool toSent) = 0;
+  virtual void doAfterResponse(const std::string& remoteAddr,
+                               RemotingCommand& request,
+                               RemotingCommand* response,
+                               bool toSent) = 0;
 };
 
 }  // namespace rocketmq
 
-#endif  // __CLIENT_RPC_HOOK_H__
+#endif  // __RPC_HOOK_H__
