@@ -49,7 +49,7 @@ int StartPullConsumer(CPullConsumer* consumer) {
   try {
     ((DefaultMQPullConsumer*)consumer)->start();
   } catch (exception& e) {
-    MQClientErrorContainer::instance()->setErr(string(e.what()));
+    MQClientErrorContainer::setErr(string(e.what()));
     return PULLCONSUMER_START_FAILED;
   }
   return OK;
@@ -152,7 +152,7 @@ int FetchSubscriptionMessageQueues(CPullConsumer* consumer, const char* topic, C
   } catch (MQException& e) {
     *size = 0;
     *mqs = NULL;
-    MQClientErrorContainer::instance()->setErr(string(e.what()));
+    MQClientErrorContainer::setErr(string(e.what()));
     return PULLCONSUMER_FETCH_MQ_FAILED;
   }
   return OK;
@@ -177,7 +177,7 @@ CPullResult Pull(CPullConsumer* consumer,
   try {
     cppPullResult = ((DefaultMQPullConsumer*)consumer)->pull(messageQueue, subExpression, offset, maxNums);
   } catch (exception& e) {
-    MQClientErrorContainer::instance()->setErr(string(e.what()));
+    MQClientErrorContainer::setErr(string(e.what()));
     cppPullResult.pullStatus = BROKER_TIMEOUT;
   }
 
@@ -232,7 +232,7 @@ int ReleasePullResult(CPullResult pullResult) {
     try {
       delete ((PullResult*)pullResult.pData);
     } catch (exception& e) {
-      MQClientErrorContainer::instance()->setErr(string(e.what()));
+      MQClientErrorContainer::setErr(string(e.what()));
       return NULL_POINTER;
     }
   }

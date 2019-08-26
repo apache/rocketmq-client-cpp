@@ -25,7 +25,7 @@ extern "C" {
 using namespace rocketmq;
 
 const char* GetLatestErrorMessage() {
-  return MQClientErrorContainer::instance()->getErr().c_str();
+  return MQClientErrorContainer::getErr().c_str();
 }
 
 #ifdef __cplusplus

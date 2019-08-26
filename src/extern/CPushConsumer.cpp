@@ -108,7 +108,7 @@ int StartPushConsumer(CPushConsumer* consumer) {
   try {
     ((DefaultMQPushConsumer*)consumer)->start();
   } catch (exception& e) {
-    MQClientErrorContainer::instance()->setErr(string(e.what()));
+    MQClientErrorContainer::setErr(string(e.what()));
     return PUSHCONSUMER_START_FAILED;
   }
   return OK;
