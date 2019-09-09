@@ -17,6 +17,14 @@
 #include "UtilAll.h"
 
 #include <chrono>
+#include <iostream>
+
+#ifndef WIN32
+#include <unistd.h>
+#else
+#include <direct.h>
+#include <io.h>
+#endif
 
 namespace rocketmq {
 //<!************************************************************************
@@ -267,7 +275,43 @@ string UtilAll::getHomeDirectory() {
   return homeDir;
 }
 
-string UtilAll::getProcessName() {
+static bool createDirectoryInner(const char* dir) {
+  if (dir == nullptr) {
+    std::cerr << "directory is nullptr" << std::endl;
+    return false;
+  }
+  if (access(dir, 0) == -1) {
+#ifdef _WIN32
+    int flag = mkdir(dir);
+#else
+    int flag = mkdir(dir, 0755);
+#endif
+    return flag == 0;
+  }
+  return true;
+}
+
+void UtilAll::createDirectory(std::string const& dir) {
+  const char* ptr = dir.c_str();
+  if (access(ptr, 0) == 0) {
+    return;
+  }
+  char buff[2048] = {0};
+  for (unsigned int i = 0; i < dir.size(); i++) {
+    if (i != 0 && (*(ptr + i) == '/' || *(ptr + i) == '\\')) {
+      memcpy(buff, ptr, i);
+      createDirectoryInner(buff);
+      memset(buff, 0, 1024);
+    }
+  }
+  return;
+}
+
+bool UtilAll::existDirectory(std::string const& dir) {
+  return access(dir.c_str(), 0) == 0;
+}
+
+std::string UtilAll::getProcessName() {
 #ifndef WIN32
   char buf[PATH_MAX + 1] = {0};
   int count = PATH_MAX + 1;
@@ -353,4 +397,5 @@ bool UtilAll::ReplaceFile(const std::string& from_path, const std::string& to_pa
   return false;
 #endif
 }
-}
+
+}  // namespace rocketmq

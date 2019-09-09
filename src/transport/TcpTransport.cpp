@@ -130,7 +130,7 @@ void TcpTransport::disconnect(const string& addr) {
   // disconnect is idempotent.
   std::lock_guard<std::mutex> lock(m_eventLock);
   if (getTcpConnectStatus() != TCP_CONNECT_STATUS_INIT) {
-    LOG_INFO("disconnect:%s start. event:%p", addr.c_str(), m_event.get());
+    LOG_INFO("disconnect:%s start. event:%p", addr.c_str(), (void*)m_event.get());
     freeBufferEvent();
     setTcpConnectEvent(TCP_CONNECT_STATUS_INIT);
     LOG_INFO("disconnect:%s completely", addr.c_str());
