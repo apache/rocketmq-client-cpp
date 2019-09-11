@@ -17,11 +17,17 @@
 #ifndef __RPC_HOOK_H__
 #define __RPC_HOOK_H__
 
+#include <memory>
 #include <string>
 
 #include "RemotingCommand.h"
 
 namespace rocketmq {
+
+class RemotingCommand;
+
+class RPCHook;
+typedef std::shared_ptr<RPCHook> RPCHookPtr;
 
 class RPCHook {
  public:

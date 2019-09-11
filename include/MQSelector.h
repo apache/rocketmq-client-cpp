@@ -14,19 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _MQSELECTOR_H_
-#define _MQSELECTOR_H_
+#ifndef __MQ_SELECTOR_H__
+#define __MQ_SELECTOR_H__
+
 #include "MQMessage.h"
 #include "MQMessageQueue.h"
-#include "RocketMQClient.h"
 
 namespace rocketmq {
-//<!***************************************************************************
+
+/**
+ * MQ Selector Interface
+ */
 class ROCKETMQCLIENT_API MessageQueueSelector {
  public:
-  virtual ~MessageQueueSelector() {}
+  virtual ~MessageQueueSelector() = default;
+
   virtual MQMessageQueue select(const std::vector<MQMessageQueue>& mqs, const MQMessage& msg, void* arg) = 0;
 };
-//<!***************************************************************************
-}  //<!end namespace;
-#endif  //<! _MQSELECTOR_H_
+
+}  // namespace rocketmq
+
+#endif  // __MQ_SELECTOR_H__

@@ -18,8 +18,12 @@
 
 #include <iostream>
 
+#if SPDLOG_VER_MAJOR >= 1
 #include <spdlog/async.h>
 #include <spdlog/sinks/rotating_file_sink.h>
+#else
+#include <spdlog/async_logger.h>
+#endif
 
 #include "UtilAll.h"
 
@@ -35,20 +39,31 @@ logAdapter* logAdapter::getLogInstance() {
 }
 
 logAdapter::logAdapter() : m_logLevel(eLOG_LEVEL_INFO) {
-  std::string homeDir(UtilAll::getHomeDirectory());
-  homeDir.append("/logs/rocketmq-cpp/");
-  if (!UtilAll::existDirectory(homeDir)) {
-    UtilAll::createDirectory(homeDir);
+  std::string logDir;
+  const char* dir = std::getenv(ROCKETMQ_CPP_LOG_DIR_ENV.c_str());
+  if (dir != nullptr && dir[0] != '\0') {
+    // FIXME: replace '~' by home directory.
+    logDir = dir;
+  } else {
+    logDir = UtilAll::getHomeDirectory();
+    logDir.append("/logs/rocketmq-cpp/");
   }
-  if (!UtilAll::existDirectory(homeDir)) {
+  if (logDir[logDir.size() - 1] != '/') {
+    logDir.append("/");
+  }
+
+  if (!UtilAll::existDirectory(logDir)) {
+    UtilAll::createDirectory(logDir);
+  }
+  if (!UtilAll::existDirectory(logDir)) {
     std::cerr << "create log dir error, will exit" << std::endl;
     exit(1);
   }
 
-  m_logFile += homeDir;
-  std::string fileName = UtilAll::to_string(getpid()) + "_" + "rocketmq-cpp.log";
-  m_logFile += fileName;
+  std::string fileName = UtilAll::to_string(UtilAll::getProcessId()) + "_" + "rocketmq-cpp.log";
+  m_logFile = logDir + fileName;
 
+#if SPDLOG_VER_MAJOR >= 1
   spdlog::init_thread_pool(8192, 1);
 
   auto rotating_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(m_logFile, 1024 * 1024 * 100, 3);
@@ -66,6 +81,12 @@ logAdapter::logAdapter() : m_logLevel(eLOG_LEVEL_INFO) {
   m_logger->flush_on(spdlog::level::err);
 
   spdlog::flush_every(std::chrono::seconds(3));
+#else
+  size_t q_size = 4096;
+  spdlog::set_async_mode(q_size);
+  m_logger = spdlog::rotating_logger_mt("default", m_logFile, 1024 * 1024 * 100, 3);
+  m_logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [thread@%t] - %v");
+#endif
 
   setLogLevelInner(m_logLevel);
 }

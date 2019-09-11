@@ -16,59 +16,112 @@
  */
 #include "SocketUtil.h"
 
+#include <sstream>
+#include <stdexcept>
+
+#include <event2/event.h>
+
+#ifndef WIN32
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
+#endif
+
 #include "ByteOrder.h"
 #include "MQClientException.h"
 
 namespace rocketmq {
-//<!***************************************************************************
-sockaddr IPPort2socketAddress(int host, int port) {
-  struct sockaddr_in sa;
-  sa.sin_family = AF_INET;
-  sa.sin_port = htons((uint16)port);
-  sa.sin_addr.s_addr = htonl(host);
 
-  sockaddr bornAddr;
-  memcpy(&bornAddr, &sa, sizeof(sockaddr));
-  return bornAddr;
+struct sockaddr IPPort2socketAddress(int host, int port) {
+  struct sockaddr_in sin;
+  sin.sin_family = AF_INET;
+  sin.sin_port = htons((uint16_t)port);
+  sin.sin_addr.s_addr = htonl(host);
+  return *(struct sockaddr*)&sin;
 }
 
-std::string socketAddress2IPPort(sockaddr addr) {
-  sockaddr_in sa;
-  memcpy(&sa, &addr, sizeof(sockaddr));
-
-  char tmp[32];
-  sprintf(tmp, "%s:%d", inet_ntoa(sa.sin_addr), ntohs(sa.sin_port));
-
-  std::string ipport = tmp;
-  return ipport;
-}
-
-void socketAddress2IPPort(sockaddr addr, int& host, int& port) {
-  struct sockaddr_in sa;
-  memcpy(&sa, &addr, sizeof(sockaddr));
-
-  host = ntohl(sa.sin_addr.s_addr);
-  port = ntohs(sa.sin_port);
-}
-
-std::string socketAddress2String(sockaddr addr) {
-  sockaddr_in in;
-  memcpy(&in, &addr, sizeof(sockaddr));
-
-  return inet_ntoa(in.sin_addr);
-}
-
-std::string getHostName(sockaddr addr) {
-  sockaddr_in in;
-  memcpy(&in, &addr, sizeof(sockaddr));
-
-  struct hostent* remoteHost = gethostbyaddr((char*)&(in.sin_addr), 4, AF_INET);
-  char** alias = remoteHost->h_aliases;
-  if (*alias != 0) {
-    return *alias;
-  } else {
-    return inet_ntoa(in.sin_addr);
+std::string socketAddress2IPPort(const struct sockaddr* addr) {
+  if (NULL == addr) {
+    return std::string();
   }
+
+  if (addr->sa_family == AF_INET) {
+    struct sockaddr_in* sin = (struct sockaddr_in*)addr;
+    std::ostringstream ipport;
+    ipport << socketAddress2String(addr) << ":" << ntohs(sin->sin_port);
+    return ipport.str();
+  } else if (addr->sa_family == AF_INET6) {
+    // struct sockaddr_in6* sin6 = (struct sockaddr_in6*)addr;
+    throw std::runtime_error("don't support ipv6.");
+  } else {
+    throw std::runtime_error("don't support non-inet Address families.");
+  }
+}
+
+void socketAddress2IPPort(const struct sockaddr* addr, int& host, int& port) {
+  if (addr->sa_family == AF_INET) {
+    struct sockaddr_in* sin = (struct sockaddr_in*)addr;
+    host = ntohl(sin->sin_addr.s_addr);
+    port = ntohs(sin->sin_port);
+  } else if (addr->sa_family == AF_INET6) {
+    // struct sockaddr_in6* sin6 = (struct sockaddr_in6*)addr;
+    throw std::runtime_error("don't support ipv6.");
+  } else {
+    throw std::runtime_error("don't support non-inet Address families.");
+  }
+}
+
+/**
+ * converts an address from network format to presentation format (a.b.c.d)
+ */
+std::string socketAddress2String(const struct sockaddr* addr) {
+  if (NULL == addr) {
+    return std::string();
+  }
+
+  char buf[128];
+  const char* address = NULL;
+
+  if (addr->sa_family == AF_INET) {
+    struct sockaddr_in* sin = (struct sockaddr_in*)addr;
+    address = evutil_inet_ntop(AF_INET, &sin->sin_addr, buf, sizeof(buf));
+  } else if (addr->sa_family == AF_INET6) {
+    struct sockaddr_in6* sin6 = (struct sockaddr_in6*)addr;
+    address = evutil_inet_ntop(AF_INET6, &sin6->sin6_addr, buf, sizeof(buf));
+  }
+
+  if (address != NULL) {
+    return address;
+  }
+
+  return std::string();
+}
+
+/**
+ * get the hostname of address
+ */
+std::string getHostName(const struct sockaddr* addr) {
+  if (NULL == addr) {
+    return std::string();
+  }
+
+  struct hostent* host = NULL;
+  if (addr->sa_family == AF_INET) {
+    struct sockaddr_in* sin = (struct sockaddr_in*)addr;
+    host = ::gethostbyaddr((char*)&sin->sin_addr, sizeof(sin->sin_addr), AF_INET);
+  } else if (addr->sa_family == AF_INET6) {
+    struct sockaddr_in6* sin6 = (struct sockaddr_in6*)addr;
+    host = ::gethostbyaddr((char*)&sin6->sin6_addr, sizeof(sin6->sin6_addr), AF_INET6);
+  }
+
+  if (host != NULL) {
+    char** alias = host->h_aliases;
+    if (*alias != NULL) {
+      return *alias;
+    }
+  }
+
+  return socketAddress2String(addr);
 }
 
 std::string lookupNameServers(const std::string& hostname) {

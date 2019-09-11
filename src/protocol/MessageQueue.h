@@ -17,8 +17,6 @@
 #ifndef __MESSAGE_QUEUE_H__
 #define __MESSAGE_QUEUE_H__
 
-#include <string>
-
 #include <json/json.h>
 
 #include "MQMessageQueue.h"

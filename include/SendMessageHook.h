@@ -14,15 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SENDMESSAGEHOOK_H__
-#define __SENDMESSAGEHOOK_H__
+#ifndef __SEND_MESSAGE_HOOK_H__
+#define __SEND_MESSAGE_HOOK_H__
 
-#include "MQClientException.h"
 #include "MQMessage.h"
-#include "RocketMQClient.h"
 
 namespace rocketmq {
-//<!***************************************************************************
+
 class ROCKETMQCLIENT_API SendMessageContext {
  public:
   string producerGroup;
@@ -42,6 +40,7 @@ class ROCKETMQCLIENT_API SendMessageHook {
   virtual void sendMessageBefore(const SendMessageContext& context) = 0;
   virtual void sendMessageAfter(const SendMessageContext& context) = 0;
 };
-//<!***************************************************************************
-}  //<!end namespace;
-#endif
+
+}  // namespace rocketmq
+
+#endif  // __SEND_MESSAGE_HOOK_H__

@@ -26,7 +26,7 @@ namespace rocketmq {
 
 class ResponseFuture {
  public:
-  ResponseFuture(int requestCode, int opaque, int64 timeoutMillis, InvokeCallback* invokeCallback = nullptr);
+  ResponseFuture(int requestCode, int opaque, int64_t timeoutMillis, InvokeCallback* invokeCallback = nullptr);
   virtual ~ResponseFuture();
 
   void releaseThreadCondition();
@@ -42,10 +42,10 @@ class ResponseFuture {
   RemotingCommand* getResponseCommand() const;
   void setResponseCommand(RemotingCommand* responseCommand);
 
-  int64 getBeginTimestamp();
-  int64 getTimeoutMillis();
+  int64_t getBeginTimestamp();
+  int64_t getTimeoutMillis();
   bool isTimeout() const;
-  int64 leftTime() const;
+  int64_t leftTime() const;
 
   bool isSendRequestOK() const;
   void setSendRequestOK(bool sendRequestOK = true);
@@ -56,12 +56,12 @@ class ResponseFuture {
  private:
   int m_requestCode;
   int m_opaque;
-  int64 m_timeoutMillis;
+  int64_t m_timeoutMillis;
   InvokeCallback* m_invokeCallback;
 
   RemotingCommand* volatile m_responseCommand;  // delete outside
 
-  int64 m_beginTimestamp;
+  int64_t m_beginTimestamp;
   bool m_sendRequestOK;
 
   latch* m_countDownLatch;  // use for synchronization rpc

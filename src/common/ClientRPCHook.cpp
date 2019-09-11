@@ -19,7 +19,9 @@
 #include <string>
 
 #include "CommandHeader.h"
+#include "DataBlock.h"
 #include "Logging.h"
+#include "RemotingCommand.h"
 
 #include "spas_client.h"
 
@@ -54,7 +56,7 @@ void ClientRPCHook::signCommand(RemotingCommand& command) {
   headerMap.insert(std::make_pair(SessionCredentials::ONSChannelKey, sessionCredentials.getAuthChannel()));
 
   LOG_DEBUG("before insert declared filed, MAP SIZE is:" SIZET_FMT "", headerMap.size());
-  auto* header = command.getCommandHeader();
+  auto* header = command.readCustomHeader();
   if (header != nullptr) {
     header->SetDeclaredFieldOfCommandHeader(headerMap);
   }
@@ -64,10 +66,10 @@ void ClientRPCHook::signCommand(RemotingCommand& command) {
   for (const auto& it : headerMap) {
     totalMsg.append(it.second);
   }
-  if (command.getBody().getSize() > 0) {
-    LOG_DEBUG_NEW("request have msgBody, length is:{}", command.getBody().getSize());
+  if (command.getBody()->getSize() > 0) {
+    LOG_DEBUG_NEW("request have msgBody, length is:{}", command.getBody()->getSize());
 
-    totalMsg.append(command.getBody().getData(), command.getBody().getSize());
+    totalMsg.append(command.getBody()->getData(), command.getBody()->getSize());
   }
   LOG_DEBUG("total msg info are:%s, size is:" SIZET_FMT "", totalMsg.c_str(), totalMsg.size());
 

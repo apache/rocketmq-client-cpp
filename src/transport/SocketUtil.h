@@ -17,41 +17,27 @@
 #ifndef __SOCKET_UTIL_H__
 #define __SOCKET_UTIL_H__
 
-#ifdef WIN32
-#include <WS2tcpip.h>
-#include <Windows.h>
+#include <cstdint>
+#include <string>
+
+#ifndef WIN32
+#include <sys/socket.h>
+#else
 #include <Winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
-#else
-#include <arpa/inet.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <net/if.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <signal.h>
-#include <sys/ioctl.h>
-#include <sys/select.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
 #endif
-
-#include "UtilAll.h"
 
 namespace rocketmq {
 
-/**
- * IP:PORT
- */
-sockaddr IPPort2socketAddress(int host, int port);
-std::string socketAddress2IPPort(sockaddr addr);
-void socketAddress2IPPort(sockaddr addr, int& host, int& port);
+struct sockaddr IPPort2socketAddress(int host, int port);
 
-std::string socketAddress2String(sockaddr addr);
-std::string getHostName(sockaddr addr);
+std::string socketAddress2IPPort(const struct sockaddr* addr);
+void socketAddress2IPPort(const struct sockaddr*, int& host, int& port);
+
+std::string socketAddress2String(const struct sockaddr* addr);
+
+std::string getHostName(const struct sockaddr* addr);
+
 std::string lookupNameServers(const std::string& hostname);
 
 uint64_t h2nll(uint64_t v);

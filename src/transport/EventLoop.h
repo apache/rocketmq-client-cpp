@@ -18,11 +18,12 @@
 #define __EVENTLOOP_H__
 
 #include <memory>
-#include <thread>
 
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <event2/event.h>
+
+#include "concurrent/thread.hpp"
 
 #include "noncopyable.h"
 
@@ -50,7 +51,7 @@ class EventLoop : public noncopyable {
 
  private:
   struct event_base* m_eventBase;
-  std::thread* m_loopThread;
+  thread m_loopThread;
 
   bool _is_running;  // aotmic is unnecessary
 };

@@ -19,7 +19,6 @@
 
 #include "MQClientException.h"
 #include "PullResult.h"
-#include "RocketMQClient.h"
 #include "SendResult.h"
 
 namespace rocketmq {
@@ -39,7 +38,7 @@ class ROCKETMQCLIENT_API SendCallback {
 // async SendCallback will be deleted automatically by rocketmq cpp after invoke callback interface
 class ROCKETMQCLIENT_API AutoDeleteSendCallback : public SendCallback {
  public:
-  SendCallbackType getSendCallbackType() const override { return SEND_CALLBACK_TYPE_ATUO_DELETE; }
+  SendCallbackType getSendCallbackType() const override final { return SEND_CALLBACK_TYPE_ATUO_DELETE; }
 };
 
 enum PullCallbackType { PULL_CALLBACK_TYPE_SIMPLE = 0, PULL_CALLBACK_TYPE_AUTO_DELETE = 1 };
@@ -48,7 +47,7 @@ class ROCKETMQCLIENT_API PullCallback {
  public:
   virtual ~PullCallback() = default;
 
-  virtual void onSuccess(MQMessageQueue& mq, PullResult& result, bool bProducePullRequest) = 0;
+  virtual void onSuccess(PullResult& pullResult) = 0;
   virtual void onException(MQException& e) noexcept = 0;
 
   virtual PullCallbackType getPullCallbackType() const { return PULL_CALLBACK_TYPE_SIMPLE; }
@@ -56,7 +55,7 @@ class ROCKETMQCLIENT_API PullCallback {
 
 class ROCKETMQCLIENT_API AutoDeletePullCallback : public PullCallback {
  public:
-  PullCallbackType getPullCallbackType() const override { return PULL_CALLBACK_TYPE_AUTO_DELETE; }
+  PullCallbackType getPullCallbackType() const override final { return PULL_CALLBACK_TYPE_AUTO_DELETE; }
 };
 
 }  // namespace rocketmq

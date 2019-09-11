@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
-#ifndef __SESSIONCREDENTIALS_H__
-#define __SESSIONCREDENTIALS_H__
+#ifndef __SESSION_CREDENTIALS_H__
+#define __SESSION_CREDENTIALS_H__
+
+#include <string>
 
 #include "RocketMQClient.h"
 
@@ -69,5 +71,7 @@ class SessionCredentials {
   std::string signatureMethod;
   std::string authChannel;
 };
-}
-#endif
+
+}  // namespace rocketmq
+
+#endif  // __SESSION_CREDENTIALS_H__

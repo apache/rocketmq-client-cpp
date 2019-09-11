@@ -37,16 +37,16 @@ class MessageListenerInner : public MessageListenerConcurrently {
 
   ~MessageListenerInner() {}
 
-  ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) {
+  ConsumeStatus consumeMessage(const std::vector<MQMessageExt*>& msgs) {
     // to do user call back
-    if (m_pMsgReceiveCallback == NULL) {
+    if (m_pMsgReceiveCallback == nullptr) {
       return RECONSUME_LATER;
     }
     for (size_t i = 0; i < msgs.size(); ++i) {
-      MQMessageExt* msg = const_cast<MQMessageExt*>(&msgs[i]);
-      CMessageExt* message = (CMessageExt*)(msg);
-      if (m_pMsgReceiveCallback(m_pconsumer, message) != E_CONSUME_SUCCESS)
+      CMessageExt* message = (CMessageExt*)msgs[i];
+      if (m_pMsgReceiveCallback(m_pconsumer, message) != E_CONSUME_SUCCESS) {
         return RECONSUME_LATER;
+      }
     }
     return CONSUME_SUCCESS;
   }
@@ -63,15 +63,15 @@ class MessageListenerOrderlyInner : public MessageListenerOrderly {
     m_pMsgReceiveCallback = pCallback;
   }
 
-  ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) {
-    if (m_pMsgReceiveCallback == NULL) {
+  ConsumeStatus consumeMessage(const std::vector<MQMessageExt*>& msgs) {
+    if (m_pMsgReceiveCallback == nullptr) {
       return RECONSUME_LATER;
     }
     for (size_t i = 0; i < msgs.size(); ++i) {
-      MQMessageExt* msg = const_cast<MQMessageExt*>(&msgs[i]);
-      CMessageExt* message = (CMessageExt*)(msg);
-      if (m_pMsgReceiveCallback(m_pconsumer, message) != E_CONSUME_SUCCESS)
+      CMessageExt* message = (CMessageExt*)msgs[i];
+      if (m_pMsgReceiveCallback(m_pconsumer, message) != E_CONSUME_SUCCESS) {
         return RECONSUME_LATER;
+      }
     }
     return CONSUME_SUCCESS;
   }
@@ -150,8 +150,7 @@ int SetPushConsumerNameServerDomain(CPushConsumer* consumer, const char* domain)
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPushConsumer*)consumer)->setNamesrvDomain(domain);
-  return OK;
+  return Not_Support;
 }
 
 int Subscribe(CPushConsumer* consumer, const char* topic, const char* expression) {
@@ -238,6 +237,7 @@ int SetPushConsumerMessageBatchMaxSize(CPushConsumer* consumer, int batchSize) {
   ((DefaultMQPushConsumer*)consumer)->setConsumeMessageBatchMaxSize(batchSize);
   return OK;
 }
+
 int SetPushConsumerMaxCacheMessageSize(CPushConsumer* consumer, int maxCacheSize) {
   if (consumer == NULL || maxCacheSize <= 0) {
     return NULL_POINTER;
@@ -267,7 +267,7 @@ int SetPushConsumerSessionCredentials(CPushConsumer* consumer,
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPushConsumer*)consumer)->setSessionCredentials(accessKey, secretKey, channel);
+  // ((DefaultMQPushConsumer*)consumer)->setSessionCredentials(accessKey, secretKey, channel);
   return OK;
 }
 

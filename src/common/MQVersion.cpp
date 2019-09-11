@@ -17,9 +17,9 @@
 #include "MQVersion.h"
 
 namespace rocketmq {
+
 int MQVersion::s_CurrentVersion = MQVersion::V3_1_8;
 
-//<!************************************************************************
 const char* MQVersion::getVersionDesc(int value) {
   switch (value) {
     // case V1_0_0:
@@ -27,5 +27,5 @@ const char* MQVersion::getVersionDesc(int value) {
   }
   return "";
 }
-//<!***************************************************************************
-}  //<!end namespace;
+
+}  // namespace rocketmq

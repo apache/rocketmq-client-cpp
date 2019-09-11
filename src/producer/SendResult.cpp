@@ -29,7 +29,7 @@ SendResult::SendResult(const SendStatus& sendStatus,
                        const std::string& msgId,
                        const std::string& offsetMsgId,
                        const MQMessageQueue& messageQueue,
-                       int64 queueOffset)
+                       int64_t queueOffset)
     : m_sendStatus(sendStatus),
       m_msgId(msgId),
       m_offsetMsgId(offsetMsgId),
@@ -55,7 +55,7 @@ SendResult& SendResult::operator=(const SendResult& other) {
   return *this;
 }
 
-SendResult::~SendResult() {}
+SendResult::~SendResult() = default;
 
 const std::string& SendResult::getMsgId() const {
   return m_msgId;
@@ -73,7 +73,7 @@ MQMessageQueue SendResult::getMessageQueue() const {
   return m_messageQueue;
 }
 
-int64 SendResult::getQueueOffset() const {
+int64_t SendResult::getQueueOffset() const {
   return m_queueOffset;
 }
 
@@ -81,11 +81,11 @@ std::string SendResult::toString() const {
   std::stringstream ss;
   ss << "SendResult: ";
   ss << "sendStatus:" << m_sendStatus;
-  ss << ",msgId:" << m_msgId;
-  ss << ",offsetMsgId:" << m_offsetMsgId;
-  ss << ",queueOffset:" << m_queueOffset;
-  ss << ",transactionId:" << m_transactionId;
-  ss << ",messageQueue:" << m_messageQueue.toString();
+  ss << ", msgId:" << m_msgId;
+  ss << ", offsetMsgId:" << m_offsetMsgId;
+  ss << ", queueOffset:" << m_queueOffset;
+  ss << ", transactionId:" << m_transactionId;
+  ss << ", messageQueue:" << m_messageQueue.toString();
   return ss.str();
 }
 

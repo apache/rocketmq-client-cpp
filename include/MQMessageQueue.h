@@ -14,18 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQMESSAGEQUEUE_H__
-#define __MQMESSAGEQUEUE_H__
+#ifndef __MQ_MESSAGE_QUEUE_H__
+#define __MQ_MESSAGE_QUEUE_H__
 
-#include <iomanip>
 #include <sstream>
 #include <string>
+
 #include "RocketMQClient.h"
 
 namespace rocketmq {
-//<!************************************************************************/
-//<!* MQ(T,B,ID);
-//<!************************************************************************/
+
+/**
+ * MQ(T,B,ID)
+ */
 class ROCKETMQCLIENT_API MQMessageQueue {
  public:
   MQMessageQueue();
@@ -36,7 +37,7 @@ class ROCKETMQCLIENT_API MQMessageQueue {
   std::string getTopic() const;
   void setTopic(const std::string& topic);
 
-  std::string getBrokerName() const;
+  const std::string& getBrokerName() const;
   void setBrokerName(const std::string& brokerName);
 
   int getQueueId() const;
@@ -46,10 +47,9 @@ class ROCKETMQCLIENT_API MQMessageQueue {
   bool operator<(const MQMessageQueue& mq) const;
   int compareTo(const MQMessageQueue& mq) const;
 
-  const std::string toString() const {
+  std::string toString() const {
     std::stringstream ss;
     ss << "MessageQueue [topic=" << m_topic << ", brokerName=" << m_brokerName << ", queueId=" << m_queueId << "]";
-
     return ss.str();
   }
 
@@ -58,6 +58,7 @@ class ROCKETMQCLIENT_API MQMessageQueue {
   std::string m_brokerName;
   int m_queueId;
 };
-//<!***************************************************************************
-}  //<!end namespace;
-#endif
+
+}  // namespace rocketmq
+
+#endif  // __MQ_MESSAGE_QUEUE_H__

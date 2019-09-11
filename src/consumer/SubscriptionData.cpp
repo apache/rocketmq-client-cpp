@@ -54,7 +54,7 @@ void SubscriptionData::setSubString(const std::string& sub) {
   m_subString = sub;
 }
 
-int64 SubscriptionData::getSubVersion() const {
+int64_t SubscriptionData::getSubVersion() const {
   return m_subVersion;
 }
 
@@ -70,7 +70,14 @@ std::vector<std::string>& SubscriptionData::getTagsSet() {
   return m_tagSet;
 }
 
+void SubscriptionData::putCodeSet(const int32 code) {
+  m_codeSet.push_back(code);
+}
+
 bool SubscriptionData::operator==(const SubscriptionData& other) const {
+  if (!m_topic.compare(other.m_topic)) {
+    return false;
+  }
   if (!m_subString.compare(other.m_subString)) {
     return false;
   }
@@ -80,38 +87,23 @@ bool SubscriptionData::operator==(const SubscriptionData& other) const {
   if (m_tagSet.size() != other.m_tagSet.size()) {
     return false;
   }
-  if (!m_topic.compare(other.m_topic)) {
-    return false;
-  }
   return true;
 }
 
 bool SubscriptionData::operator<(const SubscriptionData& other) const {
   int ret = m_topic.compare(other.m_topic);
-  if (ret < 0) {
-    return true;
-  } else if (ret == 0) {
-    ret = m_subString.compare(other.m_subString);
-    if (ret < 0) {
-      return true;
-    } else {
-      return false;
-    }
+  if (ret == 0) {
+    return m_subString.compare(other.m_subString) < 0;
   } else {
-    return false;
+    return ret < 0;
   }
-}
-
-void SubscriptionData::putCodeSet(const std::string& tag) {
-  int value = atoi(tag.c_str());
-  m_codeSet.push_back(value);
 }
 
 Json::Value SubscriptionData::toJson() const {
   Json::Value outJson;
+  outJson["topic"] = m_topic;
   outJson["subString"] = m_subString;
   outJson["subVersion"] = UtilAll::to_string(m_subVersion);
-  outJson["topic"] = m_topic;
 
   for (const auto& tag : m_tagSet) {
     outJson["tagsSet"].append(tag);

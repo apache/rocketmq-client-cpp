@@ -14,25 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __HEARTBEAT_DATA_H__
+#define __HEARTBEAT_DATA_H__
 
-#ifndef __HEARTBEATDATA_H__
-#define __HEARTBEATDATA_H__
-
-#include <cstdlib>
-#include <mutex>
 #include <string>
 #include <vector>
 
 #include "ConsumeType.h"
+#include "RemotingSerializable.h"
 #include "SubscriptionData.h"
 
 namespace rocketmq {
 
-//<!***************************************************************************
 class ProducerData {
  public:
-  ProducerData(){};
   bool operator<(const ProducerData& pd) const { return groupName < pd.groupName; }
+
   Json::Value toJson() const {
     Json::Value outJson;
     outJson["groupName"] = groupName;
@@ -43,11 +40,8 @@ class ProducerData {
   std::string groupName;
 };
 
-//<!***************************************************************************
 class ConsumerData {
  public:
-  ConsumerData(){};
-  virtual ~ConsumerData() { subscriptionDataSet.clear(); }
   bool operator<(const ConsumerData& cd) const { return groupName < cd.groupName; }
 
   Json::Value toJson() const {
@@ -72,70 +66,44 @@ class ConsumerData {
   std::vector<SubscriptionData> subscriptionDataSet;
 };
 
-//<!***************************************************************************
-class HeartbeatData {
+class HeartbeatData : public RemotingSerializable {
  public:
-  virtual ~HeartbeatData() {
-    m_producerDataSet.clear();
-    m_consumerDataSet.clear();
-  }
-  void Encode(std::string& outData) {
+  std::string encode() {
     Json::Value root;
 
-    // id;
+    // id
     root["clientID"] = m_clientID;
 
-    // consumer;
-    {
-      std::lock_guard<std::mutex> lock(m_consumerDataMutex);
-      for (const auto& cd : m_consumerDataSet) {
-        root["consumerDataSet"].append(cd.toJson());
-      }
+    // consumer
+    for (const auto& cd : m_consumerDataSet) {
+      root["consumerDataSet"].append(cd.toJson());
     }
 
-    // producer;
-    {
-      std::lock_guard<std::mutex> lock(m_producerDataMutex);
-      for (const auto& pd : m_producerDataSet) {
-        root["producerDataSet"].append(pd.toJson());
-      }
+    // producer
+    for (const auto& pd : m_producerDataSet) {
+      root["producerDataSet"].append(pd.toJson());
     }
 
-    // output;
-    Json::FastWriter fastwrite;
-    outData = fastwrite.write(root);
+    // output
+    return RemotingSerializable::toJson(root);
   }
 
   void setClientID(const std::string& clientID) { m_clientID = clientID; }
 
-  bool isProducerDataSetEmpty() {
-    std::lock_guard<std::mutex> lock(m_producerDataMutex);
-    return m_producerDataSet.empty();
-  }
+  bool isProducerDataSetEmpty() { return m_producerDataSet.empty(); }
 
-  void insertDataToProducerDataSet(ProducerData& producerData) {
-    std::lock_guard<std::mutex> lock(m_producerDataMutex);
-    m_producerDataSet.push_back(producerData);
-  }
+  void insertDataToProducerDataSet(ProducerData& producerData) { m_producerDataSet.push_back(producerData); }
 
-  bool isConsumerDataSetEmpty() {
-    std::lock_guard<std::mutex> lock(m_consumerDataMutex);
-    return m_consumerDataSet.empty();
-  }
+  bool isConsumerDataSetEmpty() { return m_consumerDataSet.empty(); }
 
-  void insertDataToConsumerDataSet(ConsumerData& consumerData) {
-    std::lock_guard<std::mutex> lock(m_consumerDataMutex);
-    m_consumerDataSet.push_back(consumerData);
-  }
+  void insertDataToConsumerDataSet(ConsumerData& consumerData) { m_consumerDataSet.push_back(consumerData); }
 
  private:
   std::string m_clientID;
   std::vector<ProducerData> m_producerDataSet;
   std::vector<ConsumerData> m_consumerDataSet;
-  std::mutex m_producerDataMutex;
-  std::mutex m_consumerDataMutex;
 };
 
 }  // namespace rocketmq
 
-#endif
+#endif  // __HEARTBEAT_DATA_H__

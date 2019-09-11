@@ -19,7 +19,6 @@
 
 #include <functional>
 
-#include "AsyncArg.h"
 #include "AsyncCallback.h"
 #include "InvokeCallback.h"
 #include "MQClientAPIImpl.h"
@@ -29,58 +28,56 @@
 
 namespace rocketmq {
 
+class MQClientInstance;
+class DefaultMQProducer;
+class TopicPublishInfo;
+
 class SendCallbackWrap : public InvokeCallback {
  public:
-  typedef std::function<void(SendCallbackWrap*, int64)> SendMessageDelegate;  // throw(MQClientException)
-
-  SendCallbackWrap(const std::string& addr,
-                   const std::string& brokerName,
-                   const MQMessage& msg,
-                   const RemotingCommand& requestCommand,
-                   int maxRetrySendTimes,
-                   int retrySendTimes,
-                   SendCallback* pSendCallback,
-                   MQClientAPIImpl* pClientAPI,
-                   SendMessageDelegate retrySendDelegate);
+  SendCallbackWrap(const string& addr,
+                   const string& brokerName,
+                   const MQMessagePtr msg,
+                   RemotingCommand&& request,
+                   SendCallback* sendCallback,
+                   TopicPublishInfoPtr topicPublishInfo,
+                   MQClientInstance* instance,
+                   int retryTimesWhenSendFailed,
+                   int times,
+                   DefaultMQProducer* producer);
 
   void operationComplete(ResponseFuture* responseFuture) noexcept override;
-  void onExceptionImpl(ResponseFuture* responseFuture);
+  void onExceptionImpl(ResponseFuture* responseFuture, long timeoutMillis, MQException& e, bool needRetry);
 
   const std::string& getAddr() { return m_addr; }
-  const MQMessage& getMessage() { return m_msg; }
-  const RemotingCommand& getRemotingCommand() { return m_requestCommand; }
+  const MQMessagePtr getMessage() { return m_msg; }
+  RemotingCommand& getRemotingCommand() { return m_request; }
 
-  void setRetrySendTimes(int retrySendTimes) { m_retrySendTimes = retrySendTimes; }
-  int getRetrySendTimes() { return m_retrySendTimes; }
-  int getMaxRetrySendTimes() { return m_maxRetrySendTimes; }
+  void setRetrySendTimes(int retrySendTimes) { m_times = retrySendTimes; }
+  int getRetrySendTimes() { return m_times; }
+  int getMaxRetrySendTimes() { return m_timesTotal; }
 
  private:
-  SendCallback* m_pSendCallback;
-  MQClientAPIImpl* m_pClientAPI;
-
   std::string m_addr;
   std::string m_brokerName;
-
-  MQMessage m_msg;
-  RemotingCommand m_requestCommand;
-
-  int m_retrySendTimes;
-  int m_maxRetrySendTimes;
-
-  SendMessageDelegate m_retrySendDelegate;
+  const MQMessagePtr m_msg;
+  RemotingCommand m_request;
+  SendCallback* m_sendCallback;
+  TopicPublishInfoPtr m_topicPublishInfo;
+  MQClientInstance* m_instance;
+  int m_timesTotal;
+  int m_times;
+  DefaultMQProducer* m_producer;  // FIXME: ensure object is live.
 };
 
 class PullCallbackWrap : public InvokeCallback {
  public:
-  PullCallbackWrap(PullCallback* pPullCallback, MQClientAPIImpl* pClientAPI, void* pArg);
+  PullCallbackWrap(PullCallback* pullCallback, MQClientAPIImpl* pClientAPI);
 
   void operationComplete(ResponseFuture* responseFuture) noexcept override;
 
  private:
-  PullCallback* m_pPullCallback;
+  PullCallback* m_pullCallback;
   MQClientAPIImpl* m_pClientAPI;
-
-  AsyncArg m_pArg;
 };
 
 }  // namespace rocketmq

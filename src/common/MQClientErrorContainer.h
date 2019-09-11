@@ -17,7 +17,6 @@
 #ifndef __MQ_CLIENT_ERROR_CONTAINER_H__
 #define __MQ_CLIENT_ERROR_CONTAINER_H__
 
-#include <mutex>
 #include <string>
 
 namespace rocketmq {

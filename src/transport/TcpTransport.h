@@ -21,8 +21,8 @@
 #include <condition_variable>
 #include <mutex>
 
+#include "DataBlock.h"
 #include "EventLoop.h"
-#include "dataBlock.h"
 
 namespace rocketmq {
 
@@ -33,17 +33,18 @@ typedef enum TcpConnectStatus {
   TCP_CONNECT_STATUS_FAILED = 3
 } TcpConnectStatus;
 
-using TcpTransportReadCallback = void (*)(void* context, const MemoryBlock&, const std::string&);
+using TcpTransportReadCallback = void (*)(void* context, MemoryBlockPtr3&, const std::string&);
 
 class TcpRemotingClient;
+class TcpTransport;
+
+typedef std::shared_ptr<TcpTransport> TcpTransportPtr;
 
 class TcpTransport : public std::enable_shared_from_this<TcpTransport> {
  public:
-  static std::shared_ptr<TcpTransport> CreateTransport(TcpRemotingClient* pTcpRemotingClient,
-                                                       TcpTransportReadCallback handle = nullptr) {
+  static TcpTransportPtr CreateTransport(TcpRemotingClient* client, TcpTransportReadCallback handle = nullptr) {
     // transport must be managed by smart pointer
-    std::shared_ptr<TcpTransport> transport(new TcpTransport(pTcpRemotingClient, handle));
-    return transport;
+    return TcpTransportPtr(new TcpTransport(client, handle));
   }
 
   virtual ~TcpTransport();
@@ -65,7 +66,7 @@ class TcpTransport : public std::enable_shared_from_this<TcpTransport> {
   static void ReadCallback(BufferEvent* event, TcpTransport* transport);
   static void EventCallback(BufferEvent* event, short what, TcpTransport* transport);
 
-  void messageReceived(const MemoryBlock& mem, const std::string& addr);
+  void messageReceived(MemoryBlockPtr3& mem, const std::string& addr);
   void freeBufferEvent();  // not thread-safe
 
   void setTcpConnectEvent(TcpConnectStatus connectStatus);

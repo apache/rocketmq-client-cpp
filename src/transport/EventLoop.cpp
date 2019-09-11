@@ -16,11 +16,13 @@
  */
 #include "EventLoop.h"
 
-#if !defined(WIN32) && !defined(__APPLE__)
-#include <sys/prctl.h>
-#endif
-
 #include <event2/thread.h>
+
+#ifndef WIN32
+#include <arpa/inet.h>
+#else
+#include <Winsock2.h>
+#endif
 
 #include "Logging.h"
 #include "UtilAll.h"
@@ -33,7 +35,7 @@ EventLoop* EventLoop::GetDefaultEventLoop() {
 }
 
 EventLoop::EventLoop(const struct event_config* config, bool run_immediately)
-    : m_eventBase(nullptr), m_loopThread(nullptr), _is_running(false) {
+    : m_eventBase(nullptr), m_loopThread("EventLoop"), _is_running(false) {
   // tell libevent support multi-threads
 #ifdef WIN32
   evthread_use_windows_threads();
@@ -48,12 +50,14 @@ EventLoop::EventLoop(const struct event_config* config, bool run_immediately)
   }
 
   if (m_eventBase == nullptr) {
-    // failure...
+    // FIXME: failure...
     LOG_ERROR("Failed to create event base!");
-    return;
+    exit(-1);
   }
 
   evthread_make_base_notifiable(m_eventBase);
+
+  m_loopThread.set_target(&EventLoop::runLoop, this);
 
   if (run_immediately) {
     start();
@@ -70,37 +74,25 @@ EventLoop::~EventLoop() {
 }
 
 void EventLoop::start() {
-  if (m_loopThread == nullptr) {
-    // start event loop
-#if !defined(WIN32) && !defined(__APPLE__)
-    string taskName = UtilAll::getProcessName();
-    prctl(PR_SET_NAME, "EventLoop", 0, 0, 0);
-#endif
-    m_loopThread = new std::thread(&EventLoop::runLoop, this);
-#if !defined(WIN32) && !defined(__APPLE__)
-    prctl(PR_SET_NAME, taskName.c_str(), 0, 0, 0);
-#endif
+  if (!_is_running) {
+    _is_running = true;
+    m_loopThread.start();
   }
 }
 
 void EventLoop::stop() {
-  if (m_loopThread != nullptr /*&& m_loopThread.joinable()*/) {
+  if (_is_running) {
     _is_running = false;
-    m_loopThread->join();
-
-    delete m_loopThread;
-    m_loopThread = nullptr;
+    m_loopThread.join();
   }
 }
 
 void EventLoop::runLoop() {
-  _is_running = true;
-
   while (_is_running) {
     int ret;
 
     ret = event_base_dispatch(m_eventBase);
-    //    ret = event_base_loop(m_eventBase, EVLOOP_NONBLOCK);
+    // ret = event_base_loop(m_eventBase, EVLOOP_NONBLOCK);
 
     if (ret == 1) {
       // no event

@@ -21,59 +21,60 @@
 #include <set>
 #include <string>
 
+#include "DataBlock.h"
 #include "MQMessageQueue.h"
 #include "RemotingSerializable.h"
 #include "UtilAll.h"
-#include "dataBlock.h"
-#include "json/json.h"
 
 namespace rocketmq {
 
-class LockBatchRequestBody {
+class LockBatchRequestBody : public RemotingSerializable {
  public:
-  virtual ~LockBatchRequestBody() { mqSet.clear(); }
   std::string getConsumerGroup();
   void setConsumerGroup(std::string consumerGroup);
+
   std::string getClientId();
   void setClientId(std::string clientId);
-  std::vector<MQMessageQueue> getMqSet();
+
+  std::vector<MQMessageQueue>& getMqSet();
   void setMqSet(std::vector<MQMessageQueue> mqSet);
-  void Encode(std::string& outData);
-  Json::Value toJson(const MQMessageQueue& mq) const;
+
+  std::string encode() override;
 
  private:
-  std::string consumerGroup;
-  std::string clientId;
-  std::vector<MQMessageQueue> mqSet;
+  std::string m_consumerGroup;
+  std::string m_clientId;
+  std::vector<MQMessageQueue> m_mqSet;
 };
 
 class LockBatchResponseBody {
  public:
-  virtual ~LockBatchResponseBody() { lockOKMQSet.clear(); }
-  std::vector<MQMessageQueue> getLockOKMQSet();
+  static LockBatchResponseBody* Decode(MemoryBlock& mem);
+
+  const std::vector<MQMessageQueue>& getLockOKMQSet();
   void setLockOKMQSet(std::vector<MQMessageQueue> lockOKMQSet);
-  static void Decode(const MemoryBlock* mem, std::vector<MQMessageQueue>& messageQueues);
 
  private:
-  std::vector<MQMessageQueue> lockOKMQSet;
+  std::vector<MQMessageQueue> m_lockOKMQSet;
 };
 
-class UnlockBatchRequestBody {
+class UnlockBatchRequestBody : public RemotingSerializable {
  public:
-  virtual ~UnlockBatchRequestBody() { mqSet.clear(); }
   std::string getConsumerGroup();
   void setConsumerGroup(std::string consumerGroup);
+
   std::string getClientId();
   void setClientId(std::string clientId);
-  std::vector<MQMessageQueue> getMqSet();
+
+  std::vector<MQMessageQueue>& getMqSet();
   void setMqSet(std::vector<MQMessageQueue> mqSet);
-  void Encode(std::string& outData);
-  Json::Value toJson(const MQMessageQueue& mq) const;
+
+  std::string encode() override;
 
  private:
-  std::string consumerGroup;
-  std::string clientId;
-  std::vector<MQMessageQueue> mqSet;
+  std::string m_consumerGroup;
+  std::string m_clientId;
+  std::vector<MQMessageQueue> m_mqSet;
 };
 
 }  // namespace rocketmq

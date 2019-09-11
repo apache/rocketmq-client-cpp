@@ -17,68 +17,62 @@
 #ifndef __BYTE_ORDER_H__
 #define __BYTE_ORDER_H__
 
-#include <stddef.h>
-#include <stdint.h>
-#include <algorithm>
+#include <RocketMQClient.h>
 
-#include "RocketMQClient.h"
-#include "UtilAll.h"
-
-//==============================================================================
-/** Contains static methods for converting the byte order between different
-    endiannesses.
-*/
 namespace rocketmq {
 
+/**
+ * Contains static methods for converting the byte order between different endiannesses.
+ */
 class ROCKETMQCLIENT_API ByteOrder {
  public:
   //==============================================================================
   /** Swaps the upper and lower bytes of a 16-bit integer. */
-  static uint16 swap(uint16 value);
+  static uint16_t swap(uint16_t value);
 
   /** Reverses the order of the 4 bytes in a 32-bit integer. */
-  static uint32 swap(uint32 value);
+  static uint32_t swap(uint32_t value);
 
   /** Reverses the order of the 8 bytes in a 64-bit integer. */
-  static uint64 swap(uint64 value);
+  static uint64_t swap(uint64_t value);
 
   //==============================================================================
   /** Swaps the byte order of a 16-bit int if the CPU is big-endian */
-  static uint16 swapIfBigEndian(uint16 value);
+  static uint16_t swapIfBigEndian(uint16_t value);
 
   /** Swaps the byte order of a 32-bit int if the CPU is big-endian */
-  static uint32 swapIfBigEndian(uint32 value);
+  static uint32_t swapIfBigEndian(uint32_t value);
 
   /** Swaps the byte order of a 64-bit int if the CPU is big-endian */
-  static uint64 swapIfBigEndian(uint64 value);
+  static uint64_t swapIfBigEndian(uint64_t value);
 
   /** Swaps the byte order of a 16-bit int if the CPU is little-endian */
-  static uint16 swapIfLittleEndian(uint16 value);
+  static uint16_t swapIfLittleEndian(uint16_t value);
 
   /** Swaps the byte order of a 32-bit int if the CPU is little-endian */
-  static uint32 swapIfLittleEndian(uint32 value);
+  static uint32_t swapIfLittleEndian(uint32_t value);
 
   /** Swaps the byte order of a 64-bit int if the CPU is little-endian */
-  static uint64 swapIfLittleEndian(uint64 value);
+  static uint64_t swapIfLittleEndian(uint64_t value);
 
   //==============================================================================
   /** Turns 4 bytes into a little-endian integer. */
-  static uint32 littleEndianInt(const void* bytes);
+  static uint32_t littleEndianInt(const void* bytes);
 
   /** Turns 8 bytes into a little-endian integer. */
-  static uint64 littleEndianInt64(const void* bytes);
+  static uint64_t littleEndianInt64(const void* bytes);
 
   /** Turns 2 bytes into a little-endian integer. */
-  static uint16 littleEndianShort(const void* bytes);
+  static uint16_t littleEndianShort(const void* bytes);
 
   /** Turns 4 bytes into a big-endian integer. */
-  static uint32 bigEndianInt(const void* bytes);
+  static uint32_t bigEndianInt(const void* bytes);
 
   /** Turns 8 bytes into a big-endian integer. */
-  static uint64 bigEndianInt64(const void* bytes);
+  static uint64_t bigEndianInt64(const void* bytes);
 
   /** Turns 2 bytes into a big-endian integer. */
-  static uint16 bigEndianShort(const void* bytes);
+  static uint16_t bigEndianShort(const void* bytes);
 
   //==============================================================================
   /** Converts 3 little-endian bytes into a signed 24-bit value (which is
@@ -102,117 +96,144 @@ class ROCKETMQCLIENT_API ByteOrder {
 
 //==============================================================================
 
-inline uint16 ByteOrder::swap(uint16 n) {
-  return static_cast<uint16>((n << 8) | (n >> 8));
+inline uint16_t ByteOrder::swap(uint16_t n) {
+  return static_cast<uint16_t>((n << 8) | (n >> 8));
 }
 
-inline uint32 ByteOrder::swap(uint32 n) {
+inline uint32_t ByteOrder::swap(uint32_t n) {
   return (n << 24) | (n >> 24) | ((n & 0xff00) << 8) | ((n & 0xff0000) >> 8);
 }
 
-inline uint64 ByteOrder::swap(uint64 value) {
-  return (((uint64)swap((uint32)value)) << 32) | swap((uint32)(value >> 32));
+inline uint64_t ByteOrder::swap(uint64_t value) {
+  return (((uint64_t)swap((uint32_t)value)) << 32) | swap((uint32_t)(value >> 32));
 }
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__  //__BYTE_ORDER__ is defined by GCC
-inline uint16 ByteOrder::swapIfBigEndian(const uint16 v) {
+inline uint16_t ByteOrder::swapIfBigEndian(const uint16_t v) {
   return v;
 }
-inline uint32 ByteOrder::swapIfBigEndian(const uint32 v) {
+
+inline uint32_t ByteOrder::swapIfBigEndian(const uint32_t v) {
   return v;
 }
-inline uint64 ByteOrder::swapIfBigEndian(const uint64 v) {
+
+inline uint64_t ByteOrder::swapIfBigEndian(const uint64_t v) {
   return v;
 }
-inline uint16 ByteOrder::swapIfLittleEndian(const uint16 v) {
+
+inline uint16_t ByteOrder::swapIfLittleEndian(const uint16_t v) {
   return swap(v);
 }
-inline uint32 ByteOrder::swapIfLittleEndian(const uint32 v) {
+
+inline uint32_t ByteOrder::swapIfLittleEndian(const uint32_t v) {
   return swap(v);
 }
-inline uint64 ByteOrder::swapIfLittleEndian(const uint64 v) {
+
+inline uint64_t ByteOrder::swapIfLittleEndian(const uint64_t v) {
   return swap(v);
 }
-inline uint32 ByteOrder::littleEndianInt(const void* const bytes) {
-  return *static_cast<const uint32*>(bytes);
+
+inline uint32_t ByteOrder::littleEndianInt(const void* const bytes) {
+  return *static_cast<const uint32_t*>(bytes);
 }
-inline uint64 ByteOrder::littleEndianInt64(const void* const bytes) {
-  return *static_cast<const uint64*>(bytes);
+
+inline uint64_t ByteOrder::littleEndianInt64(const void* const bytes) {
+  return *static_cast<const uint64_t*>(bytes);
 }
-inline uint16 ByteOrder::littleEndianShort(const void* const bytes) {
-  return *static_cast<const uint16*>(bytes);
+
+inline uint16_t ByteOrder::littleEndianShort(const void* const bytes) {
+  return *static_cast<const uint16_t*>(bytes);
 }
-inline uint32 ByteOrder::bigEndianInt(const void* const bytes) {
-  return swap(*static_cast<const uint32*>(bytes));
+
+inline uint32_t ByteOrder::bigEndianInt(const void* const bytes) {
+  return swap(*static_cast<const uint32_t*>(bytes));
 }
-inline uint64 ByteOrder::bigEndianInt64(const void* const bytes) {
-  return swap(*static_cast<const uint64*>(bytes));
+
+inline uint64_t ByteOrder::bigEndianInt64(const void* const bytes) {
+  return swap(*static_cast<const uint64_t*>(bytes));
 }
-inline uint16 ByteOrder::bigEndianShort(const void* const bytes) {
-  return swap(*static_cast<const uint16*>(bytes));
+
+inline uint16_t ByteOrder::bigEndianShort(const void* const bytes) {
+  return swap(*static_cast<const uint16_t*>(bytes));
 }
+
 inline bool ByteOrder::isBigEndian() {
   return false;
 }
 #else
-inline uint16 ByteOrder::swapIfBigEndian(const uint16 v) {
+inline uint16_t ByteOrder::swapIfBigEndian(const uint16_t v) {
   return swap(v);
 }
-inline uint32 ByteOrder::swapIfBigEndian(const uint32 v) {
+
+inline uint32_t ByteOrder::swapIfBigEndian(const uint32_t v) {
   return swap(v);
 }
-inline uint64 ByteOrder::swapIfBigEndian(const uint64 v) {
+
+inline uint64_t ByteOrder::swapIfBigEndian(const uint64_t v) {
   return swap(v);
 }
-inline uint16 ByteOrder::swapIfLittleEndian(const uint16 v) {
+
+inline uint16_t ByteOrder::swapIfLittleEndian(const uint16_t v) {
   return v;
 }
-inline uint32 ByteOrder::swapIfLittleEndian(const uint32 v) {
+
+inline uint32_t ByteOrder::swapIfLittleEndian(const uint32_t v) {
   return v;
 }
-inline uint64 ByteOrder::swapIfLittleEndian(const uint64 v) {
+
+inline uint64_t ByteOrder::swapIfLittleEndian(const uint64_t v) {
   return v;
 }
-inline uint32 ByteOrder::littleEndianInt(const void* const bytes) {
-  return swap(*static_cast<const uint32*>(bytes));
+
+inline uint32_t ByteOrder::littleEndianInt(const void* const bytes) {
+  return swap(*static_cast<const uint32_t*>(bytes));
 }
-inline uint64 ByteOrder::littleEndianInt64(const void* const bytes) {
-  return swap(*static_cast<const uint64*>(bytes));
+
+inline uint64_t ByteOrder::littleEndianInt64(const void* const bytes) {
+  return swap(*static_cast<const uint64_t*>(bytes));
 }
-inline uint16 ByteOrder::littleEndianShort(const void* const bytes) {
-  return swap(*static_cast<const uint16*>(bytes));
+
+inline uint16_t ByteOrder::littleEndianShort(const void* const bytes) {
+  return swap(*static_cast<const uint16_t*>(bytes));
 }
-inline uint32 ByteOrder::bigEndianInt(const void* const bytes) {
-  return *static_cast<const uint32*>(bytes);
+
+inline uint32_t ByteOrder::bigEndianInt(const void* const bytes) {
+  return *static_cast<const uint32_t*>(bytes);
 }
-inline uint64 ByteOrder::bigEndianInt64(const void* const bytes) {
-  return *static_cast<const uint64*>(bytes);
+
+inline uint64_t ByteOrder::bigEndianInt64(const void* const bytes) {
+  return *static_cast<const uint64_t*>(bytes);
 }
-inline uint16 ByteOrder::bigEndianShort(const void* const bytes) {
-  return *static_cast<const uint16*>(bytes);
+
+inline uint16_t ByteOrder::bigEndianShort(const void* const bytes) {
+  return *static_cast<const uint16_t*>(bytes);
 }
+
 inline bool ByteOrder::isBigEndian() {
   return true;
 }
 #endif
 
 inline int ByteOrder::littleEndian24Bit(const void* const bytes) {
-  return (((int)static_cast<const int8*>(bytes)[2]) << 16) | (((int)static_cast<const uint8*>(bytes)[1]) << 8) |
-         ((int)static_cast<const uint8*>(bytes)[0]);
+  return (((int)static_cast<const int8_t*>(bytes)[2]) << 16) | (((int)static_cast<const uint8_t*>(bytes)[1]) << 8) |
+         ((int)static_cast<const uint8_t*>(bytes)[0]);
 }
+
 inline int ByteOrder::bigEndian24Bit(const void* const bytes) {
-  return (((int)static_cast<const int8*>(bytes)[0]) << 16) | (((int)static_cast<const uint8*>(bytes)[1]) << 8) |
-         ((int)static_cast<const uint8*>(bytes)[2]);
+  return (((int)static_cast<const int8_t*>(bytes)[0]) << 16) | (((int)static_cast<const uint8_t*>(bytes)[1]) << 8) |
+         ((int)static_cast<const uint8_t*>(bytes)[2]);
 }
+
 inline void ByteOrder::littleEndian24BitToChars(const int value, void* const destBytes) {
-  static_cast<uint8*>(destBytes)[0] = (uint8)value;
-  static_cast<uint8*>(destBytes)[1] = (uint8)(value >> 8);
-  static_cast<uint8*>(destBytes)[2] = (uint8)(value >> 16);
+  static_cast<uint8_t*>(destBytes)[0] = (uint8_t)value;
+  static_cast<uint8_t*>(destBytes)[1] = (uint8_t)(value >> 8);
+  static_cast<uint8_t*>(destBytes)[2] = (uint8_t)(value >> 16);
 }
+
 inline void ByteOrder::bigEndian24BitToChars(const int value, void* const destBytes) {
-  static_cast<uint8*>(destBytes)[0] = (uint8)(value >> 16);
-  static_cast<uint8*>(destBytes)[1] = (uint8)(value >> 8);
-  static_cast<uint8*>(destBytes)[2] = (uint8)value;
+  static_cast<uint8_t*>(destBytes)[0] = (uint8_t)(value >> 16);
+  static_cast<uint8_t*>(destBytes)[1] = (uint8_t)(value >> 8);
+  static_cast<uint8_t*>(destBytes)[2] = (uint8_t)value;
 }
 
 }  // namespace rocketmq

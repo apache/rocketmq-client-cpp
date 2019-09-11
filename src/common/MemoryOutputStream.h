@@ -1,19 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef MEMORYOUTPUTSTREAM_H_INCLUDED
 #define MEMORYOUTPUTSTREAM_H_INCLUDED
@@ -57,7 +57,7 @@ class ROCKETMQCLIENT_API MemoryOutputStream : public OutputStream {
                                               the block will be cleared before
      use
   */
-  MemoryOutputStream(MemoryBlock& memoryBlockToWriteTo, bool appendToExistingBlockContent);
+  MemoryOutputStream(MemoryPool& memoryBlockToWriteTo, bool appendToExistingBlockContent);
 
   /** Creates a MemoryOutputStream that will write into a user-supplied,
      fixed-size
@@ -95,7 +95,7 @@ class ROCKETMQCLIENT_API MemoryOutputStream : public OutputStream {
   void preallocate(size_t bytesToPreallocate);
 
   /** Returns a copy of the stream's data as a memory block. */
-  MemoryBlock getMemoryBlock() const;
+  MemoryPool getMemoryBlock() const;
 
   //==============================================================================
   /** If the stream is writing to a user-supplied MemoryBlock, this will trim
@@ -107,15 +107,15 @@ class ROCKETMQCLIENT_API MemoryOutputStream : public OutputStream {
   void flush();
 
   bool write(const void*, size_t);
-  int64 getPosition() { return (int64)position; }
-  bool setPosition(int64);
-  int64 writeFromInputStream(InputStream&, int64 maxNumBytesToWrite);
+  int64_t getPosition() { return (int64_t)position; }
+  bool setPosition(int64_t);
+  int64_t writeFromInputStream(InputStream&, int64_t maxNumBytesToWrite);
   bool writeRepeatedByte(uint8 byte, size_t numTimesToRepeat);
 
  private:
   //==============================================================================
-  MemoryBlock* const blockToUse;
-  MemoryBlock internalBlock;
+  MemoryPool* const poolToUse;
+  MemoryPool internalPool;
   void* externalData;
   size_t position, size, availableSize;
 
@@ -126,5 +126,5 @@ class ROCKETMQCLIENT_API MemoryOutputStream : public OutputStream {
 /** Copies all the data that has been written to a MemoryOutputStream into
  * another stream. */
 OutputStream& operator<<(OutputStream& stream, const MemoryOutputStream& streamToRead);
-}
+}  // namespace rocketmq
 #endif  // MEMORYOUTPUTSTREAM_H_INCLUDED

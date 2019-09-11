@@ -45,9 +45,14 @@ if (BUILD_ROCKETMQ_STATIC)
     add_library(rocketmq_static STATIC
             ${SRC_FILES})
     target_include_directories(rocketmq_static
-            PBULIC ${PROJECT_SOURCE_DIR}/../include)
-    target_link_libraries(rocketmq_static
-            PUBLIC ${deplibs} Signature ${JSONCPP_LIBRARIES} ${LIBEVENT_LIBRARIES} ${Boost_LIBRARIES})
+            PUBLIC ${PROJECT_SOURCE_DIR}/../include)
+    if (spdlog_FOUND)
+        target_link_libraries(rocketmq_static
+                PUBLIC ${deplibs} Signature ${JSONCPP_LIBRARIES} ${LIBEVENT_LIBRARIES} spdlog::spdlog)
+    else (spdlog_FOUND)
+        target_link_libraries(rocketmq_static
+                PUBLIC ${deplibs} Signature ${JSONCPP_LIBRARIES} ${LIBEVENT_LIBRARIES})
+    endif (spdlog_FOUND)
     set_target_properties(rocketmq_static
             PROPERTIES OUTPUT_NAME "rocketmq")
 endif ()
@@ -58,14 +63,13 @@ if (BUILD_ROCKETMQ_SHARED)
             ${SRC_FILES})
     target_include_directories(rocketmq_shared
             PUBLIC ${PROJECT_SOURCE_DIR}/../include)
-    target_link_libraries(rocketmq_shared
-            PUBLIC ${deplibs} Signature ${JSONCPP_LIBRARIES} ${LIBEVENT_LIBRARIES} ${Boost_LIBRARIES})
-    target_compile_definitions(rocketmq_shared
-            PUBLIC -DBOOST_ALL_DYN_LINK)
-#    target_link_options(rocketmq_shared
-#            PUBLIC -DBOOST_ALL_DYN_LINK)
-    set_target_properties(rocketmq_shared
-            PROPERTIES LINK_FLAGS -DBOOST_ALL_DYN_LIN)
+    if (spdlog_FOUND)
+        target_link_libraries(rocketmq_shared
+                PUBLIC ${deplibs} Signature ${JSONCPP_LIBRARIES} ${LIBEVENT_LIBRARIES} spdlog::spdlog)
+    else (spdlog_FOUND)
+        target_link_libraries(rocketmq_shared
+                PUBLIC ${deplibs} Signature ${JSONCPP_LIBRARIES} ${LIBEVENT_LIBRARIES})
+    endif (spdlog_FOUND)
     set_target_properties(rocketmq_shared
             PROPERTIES OUTPUT_NAME "rocketmq")
 endif ()

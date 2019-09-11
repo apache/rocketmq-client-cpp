@@ -15,43 +15,49 @@
  * limitations under the License.
  */
 #include "MQClientManager.h"
+
 #include "Logging.h"
 
 namespace rocketmq {
-//<!************************************************************************
-MQClientManager::MQClientManager() {}
-
-MQClientManager::~MQClientManager() {
-  m_factoryTable.clear();
-}
 
 MQClientManager* MQClientManager::getInstance() {
-  static MQClientManager instance;
-  return &instance;
+  static MQClientManager singleton_;
+  return &singleton_;
 }
 
-MQClientFactory* MQClientManager::getMQClientFactory(const string& clientId,
-                                                     int pullThreadNum,
-                                                     uint64_t tcpConnectTimeout,
-                                                     uint64_t tcpTransportTryLockTimeout,
-                                                     string unitName) {
-  FTMAP::iterator it = m_factoryTable.find(clientId);
+MQClientManager::MQClientManager() = default;
+MQClientManager::~MQClientManager() = default;
+
+MQClientInstance* MQClientManager::getAndCreateMQClientInstance(MQClient* clientConfig) {
+  return getAndCreateMQClientInstance(clientConfig, nullptr);
+}
+
+MQClientInstance* MQClientManager::getAndCreateMQClientInstance(MQClient* clientConfig,
+                                                                std::shared_ptr<RPCHook> rpcHook) {
+  std::string clientId = clientConfig->buildMQClientId();
+  std::lock_guard<std::mutex> lock(m_mutex);
+  auto it = m_factoryTable.find(clientId);
   if (it != m_factoryTable.end()) {
     return it->second;
   } else {
-    MQClientFactory* factory =
-        new MQClientFactory(clientId, pullThreadNum, tcpConnectTimeout, tcpTransportTryLockTimeout, unitName);
+    auto* factory = new MQClientInstance(clientConfig, clientId, rpcHook);
     m_factoryTable[clientId] = factory;
+    LOG_INFO_NEW("Created new MQClientInstance for clientId:[{}]", clientId);
     return factory;
   }
 }
 
-void MQClientManager::removeClientFactory(const string& clientId) {
-  FTMAP::iterator it = m_factoryTable.find(clientId);
-  if (it != m_factoryTable.end()) {
-    deleteAndZero(it->second);
-    m_factoryTable.erase(it);
+void MQClientManager::removeMQClientInstance(const std::string& clientId) {
+  MQClientInstance* instance = nullptr;
+  {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    FTMAP::iterator it = m_factoryTable.find(clientId);
+    if (it != m_factoryTable.end()) {
+      instance = it->second;
+      m_factoryTable.erase(it);
+    }
   }
+  delete instance;
 }
-//<!************************************************************************
-}  //<!end namespace;
+
+}  // namespace rocketmq

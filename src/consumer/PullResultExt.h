@@ -15,48 +15,39 @@
  * limitations under the License.
  */
 #include "PullResult.h"
+
+#include "DataBlock.h"
 #include "UtilAll.h"
-#include "dataBlock.h"
 
 namespace rocketmq {
+
 /**
  * use internal only
  */
-//<!***************************************************************************
 class PullResultExt : public PullResult {
  public:
   PullResultExt(PullStatus pullStatus,
-                int64 nextBeginOffset,
-                int64 minOffset,
-                int64 maxOffset,
+                int64_t nextBeginOffset,
+                int64_t minOffset,
+                int64_t maxOffset,
+                int suggestWhichBrokerId)
+      : PullResultExt(pullStatus, nextBeginOffset, minOffset, maxOffset, suggestWhichBrokerId, nullptr) {}
+
+  PullResultExt(PullStatus pullStatus,
+                int64_t nextBeginOffset,
+                int64_t minOffset,
+                int64_t maxOffset,
                 int suggestWhichBrokerId,
-                const MemoryBlock& messageBinary)
+                const MemoryBlockPtr2& messageBinary)
       : PullResult(pullStatus, nextBeginOffset, minOffset, maxOffset),
         suggestWhichBrokerId(suggestWhichBrokerId),
         msgMemBlock(messageBinary) {}
 
-  PullResultExt(PullStatus pullStatus,
-                int64 nextBeginOffset,
-                int64 minOffset,
-                int64 maxOffset,
-                int suggestWhichBrokerId,
-                MemoryBlock&& messageBinary)
-      : PullResult(pullStatus, nextBeginOffset, minOffset, maxOffset),
-        suggestWhichBrokerId(suggestWhichBrokerId),
-        msgMemBlock(std::forward<MemoryBlock>(messageBinary)) {}
-
-  PullResultExt(PullStatus pullStatus,
-                int64 nextBeginOffset,
-                int64 minOffset,
-                int64 maxOffset,
-                int suggestWhichBrokerId)
-      : PullResult(pullStatus, nextBeginOffset, minOffset, maxOffset), suggestWhichBrokerId(suggestWhichBrokerId) {}
-
-  virtual ~PullResultExt() {}
+  ~PullResultExt() override = default;
 
  public:
   int suggestWhichBrokerId;
-  MemoryBlock msgMemBlock;
+  MemoryBlockPtr2 msgMemBlock;
 };
 
-}  //<!end namespace;
+}  // namespace rocketmq

@@ -14,19 +14,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __REMOTINGSERIALIZABLE_H__
-#define __REMOTINGSERIALIZABLE_H__
-#include "json/json.h"
+#ifndef __REMOTING_SERIALIZABLE_H__
+#define __REMOTING_SERIALIZABLE_H__
+
+#include <json/json.h>
+
+#include "DataBlock.h"
 
 namespace rocketmq {
-//<!***************************************************************************
+
 class RemotingSerializable {
  public:
-  virtual ~RemotingSerializable(){};
-  virtual void Encode(std::string& outData) = 0;
+  virtual ~RemotingSerializable() = default;
+
+  virtual std::string encode() { return ""; }
+
+  static std::string toJson(Json::Value root);
+  static std::string toJson(Json::Value root, bool prettyFormat);
+  static void toJson(Json::Value root, std::ostream& sout, bool prettyFormat);
+
+  static Json::Value fromJson(std::istream& sin);
+  static Json::Value fromJson(const std::string& json);
+  static Json::Value fromJson(const MemoryBlock& data);
+  static Json::Value fromJson(const char* begin, const char* end);
+
+ private:
+  class PlainStreamWriterBuilder : public Json::StreamWriterBuilder {
+   public:
+    PlainStreamWriterBuilder() : StreamWriterBuilder() { (*this)["indentation"] = ""; }
+  };
+
+  class PowerCharReaderBuilder : public Json::CharReaderBuilder {
+   public:
+    PowerCharReaderBuilder() : CharReaderBuilder() { (*this)["allowNumericKeys"] = true; }
+  };
+
+  static Json::StreamWriterBuilder& getPrettyWriterBuilder();
+  static Json::StreamWriterBuilder& getPlainWriterBuilder();
+  static Json::CharReaderBuilder& getPowerReaderBuilder();
 };
 
-//<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
-#endif
+#endif  // __REMOTING_SERIALIZABLE_H__

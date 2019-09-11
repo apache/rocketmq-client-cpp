@@ -23,15 +23,10 @@
 #include "MQMessage.h"
 
 using std::vector;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 using namespace rocketmq;
 
 CBatchMessage* CreateBatchMessage() {
-  vector<MQMessage>* msgs = new vector<MQMessage>();
+  vector<MQMessage*>* msgs = new vector<MQMessage*>();
   return (CBatchMessage*)msgs;
 }
 
@@ -43,17 +38,17 @@ int AddMessage(CBatchMessage* batchMsg, CMessage* msg) {
     return NULL_POINTER;
   }
   MQMessage* message = (MQMessage*)msg;
-  ((vector<MQMessage>*)batchMsg)->push_back(*message);
+  ((vector<MQMessage*>*)batchMsg)->push_back(message);
   return OK;
 }
+
 int DestroyBatchMessage(CBatchMessage* batchMsg) {
   if (batchMsg == NULL) {
     return NULL_POINTER;
   }
-  delete (vector<MQMessage>*)batchMsg;
+  for (auto* msg : *(vector<MQMessage*>*)batchMsg) {
+    delete msg;
+  }
+  delete (vector<MQMessage*>*)batchMsg;
   return OK;
 }
-
-#ifdef __cplusplus
-};
-#endif

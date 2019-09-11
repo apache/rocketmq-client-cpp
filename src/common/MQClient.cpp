@@ -14,10 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "MQClient.h"
+
 #include "Logging.h"
-#include "MQClientFactory.h"
+#include "MQAdminImpl.h"
+#include "MQClientInstance.h"
 #include "MQClientManager.h"
 #include "NameSpaceUtil.h"
 #include "TopicPublishInfo.h"
@@ -27,124 +28,67 @@ namespace rocketmq {
 
 #define ROCKETMQCPP_VERSION "1.0.1"
 #define BUILD_DATE "03-14-2018"
+
 // display version: strings bin/librocketmq.so |grep VERSION
-const char* rocketmq_build_time = "VERSION: " ROCKETMQCPP_VERSION ", BUILD DATE: " BUILD_DATE " ";
+const char* rocketmq_build_time = "VERSION: " ROCKETMQCPP_VERSION ", BUILD DATE: " BUILD_DATE;
 
-//<!************************************************************************
-MQClient::MQClient() {
-  string NAMESRV_ADDR_ENV = "NAMESRV_ADDR";
-  if (const char* addr = getenv(NAMESRV_ADDR_ENV.c_str()))
-    m_namesrvAddr = addr;
-  else
-    m_namesrvAddr = "";
-
-  m_instanceName = "DEFAULT";
-  m_clientFactory = NULL;
-  m_serviceState = CREATE_JUST;
-  m_pullThreadNum = std::thread::hardware_concurrency();
-  m_tcpConnectTimeout = 3000;        // 3s
-  m_tcpTransportTryLockTimeout = 3;  // 3s
-  m_unitName = "";
-}
-
-MQClient::~MQClient() {}
-
-string MQClient::getMQClientId() const {
-  string clientIP = UtilAll::getLocalAddress();
-  string processId = UtilAll::to_string(getpid());
-  return processId + "-" + clientIP + "@" + m_instanceName;
-}
-
-//<!groupName;
-const string& MQClient::getGroupName() const {
-  return m_GroupName;
-}
-
-void MQClient::setGroupName(const string& groupname) {
-  m_GroupName = groupname;
-}
-
-const string& MQClient::getNamesrvAddr() const {
-  return m_namesrvAddr;
-}
-
-void MQClient::setNamesrvAddr(const string& namesrvAddr) {
-  m_namesrvAddr = NameSpaceUtil::formatNameServerURL(namesrvAddr);
-}
-
-const string& MQClient::getNamesrvDomain() const {
-  return m_namesrvDomain;
-}
-
-void MQClient::setNamesrvDomain(const string& namesrvDomain) {
-  // m_namesrvDomain = namesrvDomain;
-}
-
-const string& MQClient::getInstanceName() const {
-  return m_instanceName;
-}
-
-void MQClient::setInstanceName(const string& instanceName) {
-  m_instanceName = instanceName;
-}
-
-void MQClient::createTopic(const string& key, const string& newTopic, int queueNum) {
-  try {
-    getFactory()->createTopic(key, newTopic, queueNum, m_SessionCredentials);
-  } catch (MQException& e) {
-    LOG_ERROR(e.what());
+void MQClient::start() {
+  if (getFactory() == nullptr) {
+    m_clientFactory = MQClientManager::getInstance()->getAndCreateMQClientInstance(this, m_rpcHook);
   }
+  LOG_INFO_NEW("MQClient start, nameserveraddr:{}, instanceName:{}, groupName:{}, clientId:{}", getNamesrvAddr(),
+               getInstanceName(), getGroupName(), m_clientFactory->getClientId());
 }
 
-int64 MQClient::earliestMsgStoreTime(const MQMessageQueue& mq) {
-  return getFactory()->earliestMsgStoreTime(mq, m_SessionCredentials);
-}
-
-QueryResult MQClient::queryMessage(const string& topic, const string& key, int maxNum, int64 begin, int64 end) {
-  return getFactory()->queryMessage(topic, key, maxNum, begin, end, m_SessionCredentials);
-}
-
-int64 MQClient::minOffset(const MQMessageQueue& mq) {
-  return getFactory()->minOffset(mq, m_SessionCredentials);
-}
-
-int64 MQClient::maxOffset(const MQMessageQueue& mq) {
-  return getFactory()->maxOffset(mq, m_SessionCredentials);
-}
-
-int64 MQClient::searchOffset(const MQMessageQueue& mq, uint64_t timestamp) {
-  return getFactory()->searchOffset(mq, timestamp, m_SessionCredentials);
-}
-
-MQMessageExt* MQClient::viewMessage(const std::string& msgId) {
-  return getFactory()->viewMessage(msgId, m_SessionCredentials);
+void MQClient::shutdown() {
+  m_clientFactory = nullptr;
 }
 
 std::vector<MQMessageQueue> MQClient::getTopicMessageQueueInfo(const std::string& topic) {
-  std::shared_ptr<TopicPublishInfo> topicPublishInfo =
-      getFactory()->tryToFindTopicPublishInfo(topic, m_SessionCredentials);
+  TopicPublishInfoPtr topicPublishInfo = getFactory()->tryToFindTopicPublishInfo(topic);
   if (topicPublishInfo) {
     return topicPublishInfo->getMessageQueueList();
   }
   THROW_MQEXCEPTION(MQClientException, "could not find MessageQueue Info of topic: [" + topic + "].", -1);
 }
 
-void MQClient::start() {
-  if (getFactory() == NULL) {
-    m_clientFactory = MQClientManager::getInstance()->getMQClientFactory(
-        getMQClientId(), m_pullThreadNum, m_tcpConnectTimeout, m_tcpTransportTryLockTimeout, m_unitName);
+void MQClient::createTopic(const std::string& key, const std::string& newTopic, int queueNum) {
+  try {
+    getFactory()->getMQAdminImpl()->createTopic(key, newTopic, queueNum);
+  } catch (MQException& e) {
+    LOG_ERROR(e.what());
   }
-  LOG_INFO(
-      "MQClient "
-      "start,groupname:%s,clientID:%s,instanceName:%s,nameserveraddr:%s",
-      getGroupName().c_str(), getMQClientId().c_str(), getInstanceName().c_str(), getNamesrvAddr().c_str());
 }
 
-void MQClient::shutdown() {
-  m_clientFactory = NULL;
+int64_t MQClient::searchOffset(const MQMessageQueue& mq, uint64_t timestamp) {
+  return getFactory()->getMQAdminImpl()->searchOffset(mq, timestamp);
 }
 
-MQClientFactory* MQClient::getFactory() const {
+int64_t MQClient::maxOffset(const MQMessageQueue& mq) {
+  return getFactory()->getMQAdminImpl()->maxOffset(mq);
+}
+
+int64_t MQClient::minOffset(const MQMessageQueue& mq) {
+  return getFactory()->getMQAdminImpl()->minOffset(mq);
+}
+
+int64_t MQClient::earliestMsgStoreTime(const MQMessageQueue& mq) {
+  return getFactory()->getMQAdminImpl()->earliestMsgStoreTime(mq);
+}
+
+MQMessageExtPtr MQClient::viewMessage(const std::string& msgId) {
+  return getFactory()->getMQAdminImpl()->viewMessage(msgId);
+}
+
+QueryResult MQClient::queryMessage(const std::string& topic,
+                                   const std::string& key,
+                                   int maxNum,
+                                   int64_t begin,
+                                   int64_t end) {
+  return getFactory()->getMQAdminImpl()->queryMessage(topic, key, maxNum, begin, end);
+}
+
+MQClientInstance* MQClient::getFactory() const {
   return m_clientFactory;
 }
 
@@ -164,51 +108,4 @@ void MQClient::setLogFileSizeAndNum(int fileNum, long perFileSize) {
   ALOG_ADAPTER->setLogFileNumAndSize(fileNum, perFileSize);
 }
 
-void MQClient::setTcpTransportPullThreadNum(int num) {
-  if (num > m_pullThreadNum) {
-    m_pullThreadNum = num;
-  }
-}
-
-const int MQClient::getTcpTransportPullThreadNum() const {
-  return m_pullThreadNum;
-}
-
-void MQClient::setTcpTransportConnectTimeout(uint64_t timeout) {
-  m_tcpConnectTimeout = timeout;
-}
-const uint64_t MQClient::getTcpTransportConnectTimeout() const {
-  return m_tcpConnectTimeout;
-}
-
-void MQClient::setTcpTransportTryLockTimeout(uint64_t timeout) {
-  if (timeout < 1000) {
-    timeout = 1000;
-  }
-  m_tcpTransportTryLockTimeout = timeout / 1000;
-}
-const uint64_t MQClient::getTcpTransportTryLockTimeout() const {
-  return m_tcpTransportTryLockTimeout;
-}
-
-void MQClient::setUnitName(string unitName) {
-  m_unitName = unitName;
-}
-const string& MQClient::getUnitName() {
-  return m_unitName;
-}
-
-void MQClient::setSessionCredentials(const string& input_accessKey,
-                                     const string& input_secretKey,
-                                     const string& input_onsChannel) {
-  m_SessionCredentials.setAccessKey(input_accessKey);
-  m_SessionCredentials.setSecretKey(input_secretKey);
-  m_SessionCredentials.setAuthChannel(input_onsChannel);
-}
-
-const SessionCredentials& MQClient::getSessionCredentials() const {
-  return m_SessionCredentials;
-}
-
-//<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

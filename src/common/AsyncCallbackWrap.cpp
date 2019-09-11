@@ -17,13 +17,19 @@
 
 #include "AsyncCallbackWrap.h"
 
+#include <typeindex>
+
+#include "CommandHeader.h"
+#include "DefaultMQProducer.h"
 #include "Logging.h"
 #include "MQClientAPIImpl.h"
+#include "MQClientInstance.h"
 #include "MQDecoder.h"
 #include "MQMessageQueue.h"
 #include "MQProtos.h"
 #include "PullAPIWrapper.h"
 #include "PullResultExt.h"
+#include "TopicPublishInfo.h"
 
 namespace rocketmq {
 
@@ -33,152 +39,179 @@ namespace rocketmq {
 
 SendCallbackWrap::SendCallbackWrap(const string& addr,
                                    const string& brokerName,
-                                   const MQMessage& msg,
-                                   const RemotingCommand& requestCommand,
-                                   int maxRetrySendTimes,
-                                   int retrySendTimes,
-                                   SendCallback* pSendCallback,
-                                   MQClientAPIImpl* pClientAPI,
-                                   SendMessageDelegate retrySendDelegate)
-    : m_pSendCallback(pSendCallback),
-      m_pClientAPI(pClientAPI),
-      m_addr(addr),
+                                   const MQMessagePtr msg,
+                                   RemotingCommand&& request,
+                                   SendCallback* sendCallback,
+                                   TopicPublishInfoPtr topicPublishInfo,
+                                   MQClientInstance* instance,
+                                   int retryTimesWhenSendFailed,
+                                   int times,
+                                   DefaultMQProducer* producer)
+    : m_addr(addr),
       m_brokerName(brokerName),
       m_msg(msg),
-      m_requestCommand(requestCommand),
-      m_retrySendTimes(retrySendTimes),
-      m_maxRetrySendTimes(maxRetrySendTimes),
-      m_retrySendDelegate(retrySendDelegate) {}
+      m_request(std::forward<RemotingCommand>(request)),
+      m_sendCallback(sendCallback),
+      m_topicPublishInfo(topicPublishInfo),
+      m_instance(instance),
+      m_timesTotal(retryTimesWhenSendFailed),
+      m_times(times),
+      m_producer(producer) {}
 
 void SendCallbackWrap::operationComplete(ResponseFuture* responseFuture) noexcept {
-  if (responseFuture != nullptr) {
-    std::unique_ptr<RemotingCommand> response(responseFuture->getResponseCommand());  // avoid RemotingCommand leak
-    if (m_pSendCallback == nullptr) {
-      return;
-    }
+  std::unique_ptr<RemotingCommand> response(responseFuture->getResponseCommand());  // avoid RemotingCommand leak
+  if (nullptr == m_sendCallback && response != nullptr) {
+    // TODO: executeSendMessageHookAfter
+    // try {
+    //   std::unique_ptr<SendResult> sendResult(m_pClientAPI->processSendResponse(m_brokerName, m_msg, response.get()));
+    //   if (context != null && sendResult != nullptr) {
+    //     context.setSendResult(sendResult);
+    //     context.getProducer().executeSendMessageHookAfter(context);
+    //   }
+    // } catch (...) {
+    // }
 
-    if (response) {
-      int opaque = responseFuture->getOpaque();
-      try {
-        SendResult sendResult = m_pClientAPI->processSendResponse(m_brokerName, m_msg, response.get());
-        LOG_DEBUG("operationComplete: processSendResponse success, opaque:%d, maxRetryTime:%d, retrySendTimes:%d",
-                  opaque, m_maxRetrySendTimes, m_retrySendTimes);
-        try {
-          m_pSendCallback->onSuccess(sendResult);
-        } catch (...) {
-        }
-      } catch (MQException& e) {
-        LOG_ERROR("operationComplete: processSendResponse exception: %s", e.what());
-        // broker may return exception, need consider retry send
-        onExceptionImpl(responseFuture);
-      }
-    } else {
-      std::string err;
-      if (!responseFuture->isSendRequestOK()) {
-        err = "send request failed";
-      } else if (responseFuture->isTimeout()) {
-        err = "wait response timeout";
-      } else {
-        err = "unknown reason";
-      }
-      MQException exception(err, -1, __FILE__, __LINE__);
-      m_pSendCallback->onException(exception);
-    }
-  } else {
-    if (m_pSendCallback == nullptr) {
-      return;
-    }
-
-    std::string err = "send request failed";
-    MQException exception(err, -1, __FILE__, __LINE__);
-    m_pSendCallback->onException(exception);
+    m_producer->updateFaultItem(m_brokerName, UtilAll::currentTimeMillis() - responseFuture->getBeginTimestamp(),
+                                false);
+    return;
   }
 
-  if (m_pSendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_ATUO_DELETE) {
-    deleteAndZero(m_pSendCallback);
-    m_pSendCallback = nullptr;
+  if (response != nullptr) {
+    int opaque = responseFuture->getOpaque();
+    try {
+      std::unique_ptr<SendResult> sendResult(
+          m_instance->getMQClientAPIImpl()->processSendResponse(m_brokerName, m_msg, response.get()));
+      assert(sendResult != nullptr);
+
+      LOG_DEBUG("operationComplete: processSendResponse success, opaque:%d, maxRetryTime:%d, retrySendTimes:%d", opaque,
+                m_timesTotal, m_times);
+
+      // TODO: executeSendMessageHookAfter
+      // if (context != null) {
+      //   context.setSendResult(sendResult);
+      //   context.getProducer().executeSendMessageHookAfter(context);
+      // }
+
+      try {
+        m_sendCallback->onSuccess(*sendResult);
+      } catch (...) {
+      }
+
+      m_producer->updateFaultItem(m_brokerName, UtilAll::currentTimeMillis() - responseFuture->getBeginTimestamp(),
+                                  false);
+
+      // auto delete callback
+      if (m_sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_ATUO_DELETE) {
+        deleteAndZero(m_sendCallback);
+      }
+    } catch (MQException& e) {
+      m_producer->updateFaultItem(m_brokerName, UtilAll::currentTimeMillis() - responseFuture->getBeginTimestamp(),
+                                  true);
+      LOG_ERROR("operationComplete: processSendResponse exception: %s", e.what());
+      return onExceptionImpl(responseFuture, responseFuture->leftTime(), e, false);
+    }
+  } else {
+    m_producer->updateFaultItem(m_brokerName, UtilAll::currentTimeMillis() - responseFuture->getBeginTimestamp(), true);
+    std::string err;
+    if (!responseFuture->isSendRequestOK()) {
+      err = "send request failed";
+    } else if (responseFuture->isTimeout()) {
+      err = "wait response timeout";
+    } else {
+      err = "unknown reason";
+    }
+    MQException exception(err, -1, __FILE__, __LINE__);
+    return onExceptionImpl(responseFuture, responseFuture->leftTime(), exception, true);
   }
 }
 
-void SendCallbackWrap::onExceptionImpl(ResponseFuture* responseFuture) {
-  if (m_retrySendTimes < m_maxRetrySendTimes && m_maxRetrySendTimes > 1) {
-    int64 left_timeout_ms = responseFuture->leftTime();
-    m_retrySendTimes += 1;
-    LOG_WARN("retry send, opaque:%d, sendTimes:%d, maxRetryTimes:%d, left_timeout:%lld, brokerAddr:%s, msg:%s",
-             responseFuture->getOpaque(), m_retrySendTimes, m_maxRetrySendTimes, left_timeout_ms, m_addr.data(),
-             m_msg.toString().data());
+void SendCallbackWrap::onExceptionImpl(ResponseFuture* responseFuture,
+                                       long timeoutMillis,
+                                       MQException& e,
+                                       bool needRetry) {
+  m_times++;
+  if (needRetry && m_times <= m_timesTotal) {
+    std::string retryBrokerName = m_brokerName;  // by default, it will send to the same broker
+    if (m_topicPublishInfo != nullptr) {
+      // select one message queue accordingly, in order to determine which broker to send
+      const auto& mqChosen = m_producer->selectOneMessageQueue(m_topicPublishInfo.get(), m_brokerName);
+      retryBrokerName = mqChosen.getBrokerName();
 
+      // set queueId to requestHeader
+      auto* requestHeader = m_request.readCustomHeader();
+      if (std::type_index(typeid(*requestHeader)) == std::type_index(typeid(SendMessageRequestHeaderV2))) {
+        static_cast<SendMessageRequestHeaderV2*>(requestHeader)->e = mqChosen.getQueueId();
+      } else {
+        static_cast<SendMessageRequestHeader*>(requestHeader)->queueId = mqChosen.getQueueId();
+      }
+    }
+    std::string addr = m_instance->findBrokerAddressInPublish(retryBrokerName);
+    LOG_INFO_NEW("async send msg by retry {} times. topic={}, brokerAddr={}, brokerName={}", m_times, m_msg->getTopic(),
+                 addr, retryBrokerName);
     try {
-      m_retrySendDelegate(this, left_timeout_ms);
-      return;  // send retry again, here need return
-    } catch (MQClientException& e) {
-      LOG_ERROR("retry send exception:%s, opaque:%d, retryTimes:%d, msg:%s, not retry send again", e.what(),
-                responseFuture->getOpaque(), m_retrySendTimes, m_msg.toString().data());
+      // new request
+      m_request.setOpaque(RemotingCommand::createNewRequestId());
+
+      // resend
+      m_addr = std::move(addr);
+      m_brokerName = std::move(retryBrokerName);
+      m_instance->getMQClientAPIImpl()->sendMessageAsyncImpl(this, timeoutMillis);
+
+      responseFuture->releaseInvokeCallback();  // for avoid delete this SendCallbackWrap
+      return;
+    } catch (MQException& e1) {
+      m_producer->updateFaultItem(m_brokerName, 3000, true);
+      return onExceptionImpl(responseFuture, responseFuture->leftTime(), e1, true);
+    }
+  } else {
+    m_sendCallback->onException(e);
+
+    // auto delete callback
+    if (m_sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_ATUO_DELETE) {
+      deleteAndZero(m_sendCallback);
     }
   }
-
-  MQException exception("process send response error", -1, __FILE__, __LINE__);
-  m_pSendCallback->onException(exception);
 }
 
 //######################################
 // PullCallbackWrap
 //######################################
 
-PullCallbackWrap::PullCallbackWrap(PullCallback* pPullCallback, MQClientAPIImpl* pClientAPI, void* pArg)
-    : m_pPullCallback(pPullCallback), m_pClientAPI(pClientAPI) {
-  m_pArg = *static_cast<AsyncArg*>(pArg);
-}
+PullCallbackWrap::PullCallbackWrap(PullCallback* pullCallback, MQClientAPIImpl* pClientAPI)
+    : m_pullCallback(pullCallback), m_pClientAPI(pClientAPI) {}
 
 void PullCallbackWrap::operationComplete(ResponseFuture* responseFuture) noexcept {
-  if (responseFuture != nullptr) {
-    std::unique_ptr<RemotingCommand> response(responseFuture->getResponseCommand());  // avoid RemotingCommand leak
+  std::unique_ptr<RemotingCommand> response(responseFuture->getResponseCommand());  // avoid RemotingCommand leak
 
-    if (m_pPullCallback == nullptr) {
-      LOG_ERROR("m_pPullCallback is NULL, AsyncPull could not continue");
-      return;
-    }
-
-    if (response) {
-      try {
-        if (m_pArg.pPullWrapper) {
-          std::unique_ptr<PullResult> pullResult(m_pClientAPI->processPullResponse(response.get()));
-          PullResult result = m_pArg.pPullWrapper->processPullResult(m_pArg.mq, pullResult.get(), &m_pArg.subData);
-          m_pPullCallback->onSuccess(m_pArg.mq, result, true);
-        } else {
-          LOG_ERROR("pPullWrapper had been destroyed with consumer");
-        }
-      } catch (MQException& e) {
-        LOG_ERROR(e.what());
-        MQException exception("pullResult error", -1, __FILE__, __LINE__);
-        m_pPullCallback->onException(exception);
-      }
-    } else {
-      std::string err;
-      if (!responseFuture->isSendRequestOK()) {
-        err = "send request failed";
-      } else if (responseFuture->isTimeout()) {
-        err = "wait response timeout";
-      } else {
-        err = "unknown reason";
-      }
-      MQException exception(err, -1, __FILE__, __LINE__);
-      m_pPullCallback->onException(exception);
-    }
-  } else {
-    if (m_pPullCallback == nullptr) {
-      LOG_ERROR("m_pPullCallback is NULL, AsyncPull could not continue");
-      return;
-    }
-
-    std::string err = "send request failed";
-    MQException exception(err, -1, __FILE__, __LINE__);
-    m_pPullCallback->onException(exception);
+  if (m_pullCallback == nullptr) {
+    LOG_ERROR("m_pullCallback is NULL, AsyncPull could not continue");
+    return;
   }
 
-  if (m_pPullCallback->getPullCallbackType() == PULL_CALLBACK_TYPE_AUTO_DELETE) {
-    deleteAndZero(m_pPullCallback);
-    m_pPullCallback = nullptr;
+  if (response != nullptr) {
+    try {
+      std::unique_ptr<PullResult> pullResult(m_pClientAPI->processPullResponse(response.get()));
+      assert(pullResult != nullptr);
+      m_pullCallback->onSuccess(*pullResult);
+    } catch (MQException& e) {
+      m_pullCallback->onException(e);
+    }
+  } else {
+    std::string err;
+    if (!responseFuture->isSendRequestOK()) {
+      err = "send request failed";
+    } else if (responseFuture->isTimeout()) {
+      err = "wait response timeout";
+    } else {
+      err = "unknown reason";
+    }
+    MQException exception(err, -1, __FILE__, __LINE__);
+    m_pullCallback->onException(exception);
+  }
+
+  // auto delete callback
+  if (m_pullCallback->getPullCallbackType() == PULL_CALLBACK_TYPE_AUTO_DELETE) {
+    deleteAndZero(m_pullCallback);
   }
 }
 

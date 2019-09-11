@@ -1,24 +1,24 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef INPUTSTREAM_H_INCLUDED
 #define INPUTSTREAM_H_INCLUDED
 
-#include "dataBlock.h"
+#include "DataBlock.h"
 //==============================================================================
 /** The base class for streams that read data.
 
@@ -44,13 +44,13 @@ class ROCKETMQCLIENT_API InputStream {
 
       @see getNumBytesRemaining
   */
-  virtual int64 getTotalLength() = 0;
+  virtual int64_t getTotalLength() = 0;
 
   /** Returns the number of bytes available for reading, or a negative value if
       the remaining length is not known.
       @see getTotalLength
   */
-  int64 getNumBytesRemaining();
+  int64_t getNumBytesRemaining();
 
   /** Returns true if the stream has no more data to read. */
   virtual bool isExhausted() = 0;
@@ -124,7 +124,7 @@ class ROCKETMQCLIENT_API InputStream {
 
       @see OutputStream::writeInt64BigEndian, readInt64
   */
-  virtual int64 readInt64BigEndian();
+  virtual int64_t readInt64BigEndian();
 
   /** Reads four bytes as a 32-bit floating point value.
       The raw 32-bit encoding of the float is read from the stream as a
@@ -137,7 +137,7 @@ class ROCKETMQCLIENT_API InputStream {
 
   /** Reads eight bytes as a 64-bit floating point value.
       The raw 64-bit encoding of the double is read from the stream as a
-     big-endian int64.
+     big-endian int64_t.
       If the stream is exhausted partway through reading the bytes, this will
      return zero.
       @see OutputStream::writeDoubleBigEndian, readFloatBigEndian
@@ -156,13 +156,13 @@ class ROCKETMQCLIENT_API InputStream {
                                   will be read until the stream is exhausted.
       @returns the number of bytes that were added to the memory block
   */
-  virtual size_t readIntoMemoryBlock(MemoryBlock& destBlock, size_t maxNumBytesToRead = -1);
+  virtual size_t readIntoMemoryBlock(MemoryPool& destBlock, size_t maxNumBytesToRead = -1);
 
   //==============================================================================
   /** Returns the offset of the next byte that will be read from the stream.
       @see setPosition
   */
-  virtual int64 getPosition() = 0;
+  virtual int64_t getPosition() = 0;
 
   /** Tries to move the current read position of the stream.
 
@@ -176,7 +176,7 @@ class ROCKETMQCLIENT_API InputStream {
       @returns  true if the stream manages to reposition itself correctly
       @see getPosition
   */
-  virtual bool setPosition(int64 newPosition) = 0;
+  virtual bool setPosition(int64_t newPosition) = 0;
 
   /** Reads and discards a number of bytes from the stream.
 
@@ -184,11 +184,11 @@ class ROCKETMQCLIENT_API InputStream {
       class will just keep reading data until the requisite number of bytes
       have been done.
   */
-  virtual void skipNextBytes(int64 numBytesToSkip);
+  virtual void skipNextBytes(int64_t numBytesToSkip);
 
  protected:
   //==============================================================================
   InputStream() {}
 };
-}
+}  // namespace rocketmq
 #endif  // INPUTSTREAM_H_INCLUDED

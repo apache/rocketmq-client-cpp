@@ -16,13 +16,13 @@
  */
 #include "OffsetStore.h"
 
+#include <fstream>
+
 #include "Logging.h"
-#include "MQClientFactory.h"
+#include "MQClientAPIImpl.h"
+#include "MQClientInstance.h"
 #include "MessageQueue.h"
 #include "UtilAll.h"
-
-#include <fstream>
-#include <sstream>
 
 namespace rocketmq {
 
@@ -30,11 +30,11 @@ namespace rocketmq {
 // SendCallbackWrap
 //######################################
 
-OffsetStore::OffsetStore(const string& groupName, MQClientFactory* pfactory)
-    : m_groupName(groupName), m_pClientFactory(pfactory) {}
+OffsetStore::OffsetStore(const std::string& groupName, MQClientInstance* factory)
+    : m_groupName(groupName), m_clientFactory(factory) {}
 
 OffsetStore::~OffsetStore() {
-  m_pClientFactory = nullptr;
+  m_clientFactory = nullptr;
   m_offsetTable.clear();
 }
 
@@ -42,35 +42,23 @@ OffsetStore::~OffsetStore() {
 // LocalFileOffsetStore
 //######################################
 
-class PlainStreamWriterBuilder : public Json::StreamWriterBuilder {
- public:
-  PlainStreamWriterBuilder() : StreamWriterBuilder() { (*this)["indentation"] = ""; }
-};
-
-static Json::CharReaderBuilder sReaderBuilder;
-static Json::StreamWriterBuilder sWriterBuilder;
-static PlainStreamWriterBuilder sPlainWriterBuilder;
-
-LocalFileOffsetStore::LocalFileOffsetStore(const string& groupName, MQClientFactory* factory)
+LocalFileOffsetStore::LocalFileOffsetStore(const std::string& groupName, MQClientInstance* factory)
     : OffsetStore(groupName, factory) {
-  MQConsumer* consumer = factory->selectConsumer(groupName);
-  if (consumer != nullptr) {
-    LOG_INFO("new LocalFileOffsetStore");
+  LOG_INFO("new LocalFileOffsetStore");
 
-    std::string clientId = UtilAll::getLocalAddress() + "@" + consumer->getInstanceName();
-    std::string homeDir(UtilAll::getHomeDirectory());
-    std::string storeDir =
-        homeDir + FILE_SEPARATOR + ".rocketmq_offsets" + FILE_SEPARATOR + clientId + FILE_SEPARATOR + groupName;
-    m_storePath = storeDir + FILE_SEPARATOR + "offsets.json";
+  std::string clientId = factory->getClientId();
+  std::string homeDir(UtilAll::getHomeDirectory());
+  std::string storeDir =
+      homeDir + FILE_SEPARATOR + ".rocketmq_offsets" + FILE_SEPARATOR + clientId + FILE_SEPARATOR + groupName;
+  m_storePath = storeDir + FILE_SEPARATOR + "offsets.json";
 
+  if (!UtilAll::existDirectory(storeDir)) {
+    UtilAll::createDirectory(storeDir);
     if (!UtilAll::existDirectory(storeDir)) {
-      UtilAll::createDirectory(storeDir);
-      if (!UtilAll::existDirectory(storeDir)) {
-        LOG_ERROR("create offset store dir:%s error", storeDir.c_str());
-        std::string errorMsg("create offset store dir failed: ");
-        errorMsg.append(storeDir);
-        THROW_MQEXCEPTION(MQClientException, errorMsg, -1);
-      }
+      LOG_ERROR("create offset store dir:%s error", storeDir.c_str());
+      std::string errorMsg("create offset store dir failed: ");
+      errorMsg.append(storeDir);
+      THROW_MQEXCEPTION(MQClientException, errorMsg, -1);
     }
   }
 }
@@ -94,14 +82,12 @@ void LocalFileOffsetStore::load() {
   }
 }
 
-void LocalFileOffsetStore::updateOffset(const MQMessageQueue& mq, int64 offset) {
+void LocalFileOffsetStore::updateOffset(const MQMessageQueue& mq, int64_t offset, bool increaseOnly) {
   std::lock_guard<std::mutex> lock(m_lock);
   m_offsetTable[mq] = offset;
 }
 
-int64 LocalFileOffsetStore::readOffset(const MQMessageQueue& mq,
-                                       ReadOffsetType type,
-                                       const SessionCredentials& session_credentials) {
+int64_t LocalFileOffsetStore::readOffset(const MQMessageQueue& mq, ReadOffsetType type) {
   switch (type) {
     case MEMORY_FIRST_THEN_STORE:
     case READ_FROM_MEMORY: {
@@ -119,7 +105,7 @@ int64 LocalFileOffsetStore::readOffset(const MQMessageQueue& mq,
         auto it = offsetTable.find(mq);
         if (it != offsetTable.end()) {
           auto offset = it->second;
-          updateOffset(mq, offset);
+          updateOffset(mq, offset, false);
           return offset;
         }
       }
@@ -131,7 +117,7 @@ int64 LocalFileOffsetStore::readOffset(const MQMessageQueue& mq,
   return -1;
 }
 
-void LocalFileOffsetStore::persist(const MQMessageQueue& mq, const SessionCredentials& session_credentials) {}
+void LocalFileOffsetStore::persist(const MQMessageQueue& mq) {}
 
 void LocalFileOffsetStore::persistAll(const std::vector<MQMessageQueue>& mqs) {
   if (mqs.empty()) {
@@ -139,7 +125,7 @@ void LocalFileOffsetStore::persistAll(const std::vector<MQMessageQueue>& mqs) {
   }
 
   std::unique_lock<std::mutex> lock(m_lock);
-  auto offsetTable = m_offsetTable;
+  MQ2OFFSET offsetTable = m_offsetTable;
   lock.unlock();
 
   Json::Value root(Json::objectValue);
@@ -147,8 +133,8 @@ void LocalFileOffsetStore::persistAll(const std::vector<MQMessageQueue>& mqs) {
   for (const auto& mq : mqs) {
     auto it = offsetTable.find(mq);
     if (it != offsetTable.end()) {
-      std::string strMQ = Json::writeString(sPlainWriterBuilder, toJson(mq));
-      jOffsetTable[strMQ] = Json::Value(it->second);
+      std::string strMQ = RemotingSerializable::toJson(toJson(mq));
+      jOffsetTable[strMQ] = Json::Value((Json::Int64)it->second);
     }
   }
   root["offsetTable"] = jOffsetTable;
@@ -157,9 +143,8 @@ void LocalFileOffsetStore::persistAll(const std::vector<MQMessageQueue>& mqs) {
   std::string storePathTmp = m_storePath + ".tmp";
   std::ofstream ofstrm(storePathTmp, std::ios::binary | std::ios::out);
   if (ofstrm.is_open()) {
-    std::unique_ptr<Json::StreamWriter> writer(sWriterBuilder.newStreamWriter());
     try {
-      writer->write(root, &ofstrm);
+      RemotingSerializable::toJson(root, ofstrm, true);
     } catch (std::exception& e) {
       THROW_MQEXCEPTION(MQClientException, "persistAll failed", -1);
     }
@@ -176,20 +161,19 @@ LocalFileOffsetStore::MQ2OFFSET LocalFileOffsetStore::readLocalOffset() {
   std::lock_guard<std::mutex> lock(m_fileMutex);
   std::ifstream ifstrm(m_storePath, std::ios::binary | std::ios::in);
   if (ifstrm.is_open() && !ifstrm.eof()) {
-    Json::Value root;
-    if (Json::parseFromStream(sReaderBuilder, ifstrm, &root, nullptr)) {
+    try {
+      Json::Value root = RemotingSerializable::fromJson(ifstrm);
       MQ2OFFSET offsetTable;
       auto& jOffsetTable = root["offsetTable"];
       for (auto& strMQ : jOffsetTable.getMemberNames()) {
         auto& offset = jOffsetTable[strMQ];
-        std::istringstream isstrm(strMQ);
-        Json::Value jMQ;
-        if (!Json::parseFromStream(sReaderBuilder, isstrm, &jMQ, nullptr)) {
-          MQMessageQueue mq(jMQ["topic"].asString(), jMQ["brokerName"].asString(), jMQ["queueId"].asInt());
-          offsetTable.emplace(mq, offset.asInt64());
-        }
+        Json::Value jMQ = RemotingSerializable::fromJson(strMQ);
+        MQMessageQueue mq(jMQ["topic"].asString(), jMQ["brokerName"].asString(), jMQ["queueId"].asInt());
+        offsetTable.emplace(std::move(mq), offset.asInt64());
       }
       return offsetTable;
+    } catch (std::exception& e) {
+      // ...
     }
   }
   return readLocalOffsetBak();
@@ -200,21 +184,17 @@ LocalFileOffsetStore::MQ2OFFSET LocalFileOffsetStore::readLocalOffsetBak() {
   std::ifstream ifstrm(m_storePath + ".bak", std::ios::binary | std::ios::in);
   if (ifstrm.is_open()) {
     if (!ifstrm.eof()) {
-      Json::Value root;
-      std::string errs;
-      if (Json::parseFromStream(sReaderBuilder, ifstrm, &root, &errs)) {
+      try {
+        Json::Value root = RemotingSerializable::fromJson(ifstrm);
         auto& jOffsetTable = root["offsetTable"];
         for (auto& strMQ : jOffsetTable.getMemberNames()) {
           auto& offset = jOffsetTable[strMQ];
-          std::istringstream isstrm(strMQ);
-          Json::Value jMQ;
-          if (!Json::parseFromStream(sReaderBuilder, isstrm, &jMQ, nullptr)) {
-            MQMessageQueue mq(jMQ["topic"].asString(), jMQ["brokerName"].asString(), jMQ["queueId"].asInt());
-            offsetTable.emplace(mq, offset.asInt64());
-          }
+          Json::Value jMQ = RemotingSerializable::fromJson(strMQ);
+          MQMessageQueue mq(jMQ["topic"].asString(), jMQ["brokerName"].asString(), jMQ["queueId"].asInt());
+          offsetTable.emplace(mq, offset.asInt64());
         }
-      } else {
-        LOG_WARN_NEW("readLocalOffset Exception {}", errs);
+      } catch (const std::exception& e) {
+        LOG_WARN_NEW("readLocalOffset Exception {}", e.what());
         THROW_MQEXCEPTION(MQClientException, "readLocalOffset Exception", -1);
       }
     }
@@ -226,21 +206,26 @@ LocalFileOffsetStore::MQ2OFFSET LocalFileOffsetStore::readLocalOffsetBak() {
 // RemoteBrokerOffsetStore
 //######################################
 
-RemoteBrokerOffsetStore::RemoteBrokerOffsetStore(const string& groupName, MQClientFactory* pfactory)
+RemoteBrokerOffsetStore::RemoteBrokerOffsetStore(const std::string& groupName, MQClientInstance* pfactory)
     : OffsetStore(groupName, pfactory) {}
 
 RemoteBrokerOffsetStore::~RemoteBrokerOffsetStore() {}
 
 void RemoteBrokerOffsetStore::load() {}
 
-void RemoteBrokerOffsetStore::updateOffset(const MQMessageQueue& mq, int64 offset) {
+void RemoteBrokerOffsetStore::updateOffset(const MQMessageQueue& mq, int64_t offset, bool increaseOnly) {
   std::lock_guard<std::mutex> lock(m_lock);
-  m_offsetTable[mq] = offset;
+  auto it = m_offsetTable.find(mq);
+  if (it != m_offsetTable.end()) {
+    if (!increaseOnly || offset > it->second) {
+      it->second = offset;
+    }
+  } else {
+    m_offsetTable[mq] = offset;
+  }
 }
 
-int64 RemoteBrokerOffsetStore::readOffset(const MQMessageQueue& mq,
-                                          ReadOffsetType type,
-                                          const SessionCredentials& session_credentials) {
+int64_t RemoteBrokerOffsetStore::readOffset(const MQMessageQueue& mq, ReadOffsetType type) {
   switch (type) {
     case MEMORY_FIRST_THEN_STORE:
     case READ_FROM_MEMORY: {
@@ -255,9 +240,9 @@ int64 RemoteBrokerOffsetStore::readOffset(const MQMessageQueue& mq,
     }
     case READ_FROM_STORE: {
       try {
-        int64 brokerOffset = fetchConsumeOffsetFromBroker(mq, session_credentials);
-        //<!update;
-        updateOffset(mq, brokerOffset);
+        int64_t brokerOffset = fetchConsumeOffsetFromBroker(mq);
+        // update
+        updateOffset(mq, brokerOffset, false);
         return brokerOffset;
       } catch (MQBrokerException& e) {
         LOG_ERROR(e.what());
@@ -273,7 +258,7 @@ int64 RemoteBrokerOffsetStore::readOffset(const MQMessageQueue& mq,
   return -1;
 }
 
-void RemoteBrokerOffsetStore::persist(const MQMessageQueue& mq, const SessionCredentials& session_credentials) {
+void RemoteBrokerOffsetStore::persist(const MQMessageQueue& mq) {
   MQ2OFFSET offsetTable;
   {
     std::lock_guard<std::mutex> lock(m_lock);
@@ -283,7 +268,7 @@ void RemoteBrokerOffsetStore::persist(const MQMessageQueue& mq, const SessionCre
   MQ2OFFSET::iterator it = offsetTable.find(mq);
   if (it != offsetTable.end()) {
     try {
-      updateConsumeOffsetToBroker(mq, it->second, session_credentials);
+      updateConsumeOffsetToBroker(mq, it->second);
     } catch (MQException& e) {
       LOG_ERROR("updateConsumeOffsetToBroker error");
     }
@@ -298,27 +283,25 @@ void RemoteBrokerOffsetStore::removeOffset(const MQMessageQueue& mq) {
     m_offsetTable.erase(mq);
 }
 
-void RemoteBrokerOffsetStore::updateConsumeOffsetToBroker(const MQMessageQueue& mq,
-                                                          int64 offset,
-                                                          const SessionCredentials& session_credentials) {
-  std::unique_ptr<FindBrokerResult> pFindBrokerResult(m_pClientFactory->findBrokerAddressInAdmin(mq.getBrokerName()));
+void RemoteBrokerOffsetStore::updateConsumeOffsetToBroker(const MQMessageQueue& mq, int64_t offset) {
+  std::unique_ptr<FindBrokerResult> findBrokerResult(m_clientFactory->findBrokerAddressInAdmin(mq.getBrokerName()));
 
-  if (pFindBrokerResult == NULL) {
-    m_pClientFactory->updateTopicRouteInfoFromNameServer(mq.getTopic(), session_credentials);
-    pFindBrokerResult.reset(m_pClientFactory->findBrokerAddressInAdmin(mq.getBrokerName()));
+  if (findBrokerResult == nullptr) {
+    m_clientFactory->updateTopicRouteInfoFromNameServer(mq.getTopic());
+    findBrokerResult.reset(m_clientFactory->findBrokerAddressInAdmin(mq.getBrokerName()));
   }
 
-  if (pFindBrokerResult != NULL) {
-    UpdateConsumerOffsetRequestHeader* pRequestHeader = new UpdateConsumerOffsetRequestHeader();
-    pRequestHeader->topic = mq.getTopic();
-    pRequestHeader->consumerGroup = m_groupName;
-    pRequestHeader->queueId = mq.getQueueId();
-    pRequestHeader->commitOffset = offset;
+  if (findBrokerResult != nullptr) {
+    UpdateConsumerOffsetRequestHeader* requestHeader = new UpdateConsumerOffsetRequestHeader();
+    requestHeader->topic = mq.getTopic();
+    requestHeader->consumerGroup = m_groupName;
+    requestHeader->queueId = mq.getQueueId();
+    requestHeader->commitOffset = offset;
 
     try {
       LOG_INFO("oneway updateConsumeOffsetToBroker of mq:%s, its offset is:%lld", mq.toString().c_str(), offset);
-      return m_pClientFactory->getMQClientAPIImpl()->updateConsumerOffsetOneway(
-          pFindBrokerResult->brokerAddr, pRequestHeader, 1000 * 5, session_credentials);
+      return m_clientFactory->getMQClientAPIImpl()->updateConsumerOffsetOneway(findBrokerResult->brokerAddr,
+                                                                               requestHeader, 1000 * 5);
     } catch (MQException& e) {
       LOG_ERROR(e.what());
     }
@@ -326,23 +309,22 @@ void RemoteBrokerOffsetStore::updateConsumeOffsetToBroker(const MQMessageQueue& 
   LOG_WARN("The broker not exist");
 }
 
-int64 RemoteBrokerOffsetStore::fetchConsumeOffsetFromBroker(const MQMessageQueue& mq,
-                                                            const SessionCredentials& session_credentials) {
-  std::unique_ptr<FindBrokerResult> pFindBrokerResult(m_pClientFactory->findBrokerAddressInAdmin(mq.getBrokerName()));
+int64_t RemoteBrokerOffsetStore::fetchConsumeOffsetFromBroker(const MQMessageQueue& mq) {
+  std::unique_ptr<FindBrokerResult> findBrokerResult(m_clientFactory->findBrokerAddressInAdmin(mq.getBrokerName()));
 
-  if (pFindBrokerResult == NULL) {
-    m_pClientFactory->updateTopicRouteInfoFromNameServer(mq.getTopic(), session_credentials);
-    pFindBrokerResult.reset(m_pClientFactory->findBrokerAddressInAdmin(mq.getBrokerName()));
+  if (findBrokerResult == nullptr) {
+    m_clientFactory->updateTopicRouteInfoFromNameServer(mq.getTopic());
+    findBrokerResult.reset(m_clientFactory->findBrokerAddressInAdmin(mq.getBrokerName()));
   }
 
-  if (pFindBrokerResult != NULL) {
-    QueryConsumerOffsetRequestHeader* pRequestHeader = new QueryConsumerOffsetRequestHeader();
-    pRequestHeader->topic = mq.getTopic();
-    pRequestHeader->consumerGroup = m_groupName;
-    pRequestHeader->queueId = mq.getQueueId();
+  if (findBrokerResult != nullptr) {
+    QueryConsumerOffsetRequestHeader* requestHeader = new QueryConsumerOffsetRequestHeader();
+    requestHeader->topic = mq.getTopic();
+    requestHeader->consumerGroup = m_groupName;
+    requestHeader->queueId = mq.getQueueId();
 
-    return m_pClientFactory->getMQClientAPIImpl()->queryConsumerOffset(pFindBrokerResult->brokerAddr, pRequestHeader,
-                                                                       1000 * 5, session_credentials);
+    return m_clientFactory->getMQClientAPIImpl()->queryConsumerOffset(findBrokerResult->brokerAddr, requestHeader,
+                                                                      1000 * 5);
   } else {
     LOG_ERROR("The broker not exist when fetchConsumeOffsetFromBroker");
     THROW_MQEXCEPTION(MQClientException, "The broker not exist", -1);

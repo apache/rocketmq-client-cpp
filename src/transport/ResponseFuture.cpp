@@ -20,7 +20,7 @@
 
 namespace rocketmq {
 
-ResponseFuture::ResponseFuture(int requestCode, int opaque, int64 timeoutMillis, InvokeCallback* invokeCallback)
+ResponseFuture::ResponseFuture(int requestCode, int opaque, int64_t timeoutMillis, InvokeCallback* invokeCallback)
     : m_requestCode(requestCode),
       m_opaque(opaque),
       m_timeoutMillis(timeoutMillis),
@@ -88,11 +88,11 @@ void ResponseFuture::setResponseCommand(RemotingCommand* responseCommand) {
   m_responseCommand = responseCommand;
 }
 
-int64 ResponseFuture::getBeginTimestamp() {
+int64_t ResponseFuture::getBeginTimestamp() {
   return m_beginTimestamp;
 }
 
-int64 ResponseFuture::getTimeoutMillis() {
+int64_t ResponseFuture::getTimeoutMillis() {
   return m_timeoutMillis;
 }
 
@@ -101,7 +101,7 @@ bool ResponseFuture::isTimeout() const {
   return diff > m_timeoutMillis;
 }
 
-int64 ResponseFuture::leftTime() const {
+int64_t ResponseFuture::leftTime() const {
   auto diff = UtilAll::currentTimeMillis() - m_beginTimestamp;
   auto left = m_timeoutMillis - diff;
   return left < 0 ? 0 : left;

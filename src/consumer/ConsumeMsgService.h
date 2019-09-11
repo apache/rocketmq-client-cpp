@@ -21,67 +21,82 @@
 
 #include "Logging.h"
 #include "MQMessageListener.h"
+#include "MessageQueueLock.hpp"
 #include "PullRequest.h"
 
 namespace rocketmq {
 
-class MQConsumer;
+class DefaultMQPushConsumer;
 
 class ConsumeMsgService {
  public:
   ConsumeMsgService() = default;
   virtual ~ConsumeMsgService() = default;
+
   virtual void start() {}
   virtual void shutdown() {}
-  virtual void submitConsumeRequest(std::shared_ptr<PullRequest> request, std::vector<MQMessageExt>& msgs) = 0;
-  virtual MessageListenerType getConsumeMsgServiceListenerType() { return messageListenerDefaultly; }
+  virtual void submitConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
+                                    ProcessQueuePtr processQueue,
+                                    const MQMessageQueue& messageQueue,
+                                    const bool dispathToConsume) = 0;
 };
 
 class ConsumeMessageConcurrentlyService : public ConsumeMsgService {
  public:
-  ConsumeMessageConcurrentlyService(MQConsumer*, int threadCount, MQMessageListener* msgListener);
+  ConsumeMessageConcurrentlyService(DefaultMQPushConsumer*, int threadCount, MQMessageListener* msgListener);
   ~ConsumeMessageConcurrentlyService() override;
+
   void start() override;
   void shutdown() override;
-  void submitConsumeRequest(std::shared_ptr<PullRequest> request, std::vector<MQMessageExt>& msgs) override;
-  MessageListenerType getConsumeMsgServiceListenerType() override;
 
-  void ConsumeRequest(std::shared_ptr<PullRequest> request, std::vector<MQMessageExt>& msgs);
+  void submitConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
+                            ProcessQueuePtr processQueue,
+                            const MQMessageQueue& messageQueue,
+                            const bool dispathToConsume) override;
+
+  void ConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
+                      ProcessQueuePtr processQueue,
+                      const MQMessageQueue& messageQueue);
 
  private:
-  void resetRetryTopic(std::vector<MQMessageExt>& msgs);
-
- private:
-  MQConsumer* m_pConsumer;
-  MQMessageListener* m_pMessageListener;
+  DefaultMQPushConsumer* m_consumer;
+  MQMessageListener* m_messageListener;
 
   thread_pool_executor m_consumeExecutor;
 };
 
 class ConsumeMessageOrderlyService : public ConsumeMsgService {
  public:
-  ConsumeMessageOrderlyService(MQConsumer*, int threadCount, MQMessageListener* msgListener);
+  ConsumeMessageOrderlyService(DefaultMQPushConsumer*, int threadCount, MQMessageListener* msgListener);
   ~ConsumeMessageOrderlyService() override;
+
   void start() override;
   void shutdown() override;
-  void submitConsumeRequest(std::shared_ptr<PullRequest> request, std::vector<MQMessageExt>& msgs) override;
-  MessageListenerType getConsumeMsgServiceListenerType() override;
-
   void stopThreadPool();
 
-  void tryLockLaterAndReconsume(std::shared_ptr<PullRequest> request, bool tryLockMQ);
-  void submitConsumeRequestLater(std::shared_ptr<PullRequest> request, bool tryLockMQ);
-  void ConsumeRequest(std::shared_ptr<PullRequest> request);
+  void submitConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
+                            ProcessQueuePtr processQueue,
+                            const MQMessageQueue& messageQueue,
+                            const bool dispathToConsume) override;
+  void submitConsumeRequestLater(ProcessQueuePtr processQueue,
+                                 const MQMessageQueue& messageQueue,
+                                 const long suspendTimeMillis);
+  void tryLockLaterAndReconsume(const MQMessageQueue& mq, ProcessQueuePtr processQueue, const long delayMills);
+
+  void ConsumeRequest(ProcessQueuePtr processQueue, const MQMessageQueue& messageQueue);
+
   void lockMQPeriodically();
   void unlockAllMQ();
   bool lockOneMQ(const MQMessageQueue& mq);
 
  private:
-  MQConsumer* m_pConsumer;
-  bool m_shutdownInprogress;
-  MQMessageListener* m_pMessageListener;
-  uint64_t m_MaxTimeConsumeContinuously;
+  static const uint64_t MaxTimeConsumeContinuously;
 
+ private:
+  DefaultMQPushConsumer* m_consumer;
+  MQMessageListener* m_messageListener;
+
+  MessageQueueLock m_messageQueueLock;
   thread_pool_executor m_consumeExecutor;
   scheduled_thread_pool_executor m_scheduledExecutorService;
 };

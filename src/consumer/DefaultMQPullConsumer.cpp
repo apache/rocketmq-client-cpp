@@ -16,45 +16,47 @@
  */
 #include "DefaultMQPullConsumer.h"
 
-#include "AsyncArg.h"
+#ifndef WIN32
+#include <signal.h>
+#endif
+
+#include "AllocateMQAveragely.h"
 #include "CommunicationMode.h"
 #include "FilterAPI.h"
 #include "Logging.h"
+#include "MQAdminImpl.h"
 #include "MQClientAPIImpl.h"
-#include "MQClientFactory.h"
+#include "MQClientInstance.h"
 #include "MQClientManager.h"
 #include "MQProtos.h"
 #include "OffsetStore.h"
 #include "PullAPIWrapper.h"
 #include "PullSysFlag.h"
-#include "Rebalance.h"
+#include "RebalanceImpl.h"
 #include "Validators.h"
 
 namespace rocketmq {
 
-DefaultMQPullConsumer::DefaultMQPullConsumer(const string& groupname)
-    : m_pMessageQueueListener(NULL),
-      m_pOffsetStore(NULL),
-      m_pRebalance(NULL),
-      m_pPullAPIWrapper(NULL)
+DefaultMQPullConsumerConfig::DefaultMQPullConsumerConfig() : m_allocateMQStrategy(new AllocateMQAveragely()) {}
 
-{
-  //<!set default group name;
-  string gname = groupname.empty() ? DEFAULT_CONSUMER_GROUP : groupname;
-  setGroupName(gname);
+DefaultMQPullConsumer::DefaultMQPullConsumer(const string& groupname) : DefaultMQPullConsumer(groupname, nullptr) {}
 
-  setMessageModel(CLUSTERING);
+DefaultMQPullConsumer::DefaultMQPullConsumer(const string& groupname, std::shared_ptr<RPCHook> rpcHook)
+    : MQClient(rpcHook),
+      m_rebalanceImpl(new RebalancePullImpl(this)),
+      m_pullAPIWrapper(nullptr),
+      m_offsetStore(nullptr),
+      m_messageQueueListener(nullptr) {
+  // set default group name
+  if (groupname.empty()) {
+    setGroupName(DEFAULT_CONSUMER_GROUP);
+  } else {
+    setGroupName(groupname);
+  }
 }
 
-DefaultMQPullConsumer::~DefaultMQPullConsumer() {
-  m_pMessageQueueListener = NULL;
-  deleteAndZero(m_pRebalance);
-  deleteAndZero(m_pOffsetStore);
-  deleteAndZero(m_pPullAPIWrapper);
-}
+DefaultMQPullConsumer::~DefaultMQPullConsumer() = default;
 
-// MQConsumer
-//<!************************************************************************
 void DefaultMQPullConsumer::start() {
 #ifndef WIN32
   /* Ignore the SIGPIPE */
@@ -62,26 +64,45 @@ void DefaultMQPullConsumer::start() {
   memset(&sa, 0, sizeof(struct sigaction));
   sa.sa_handler = SIG_IGN;
   sa.sa_flags = 0;
-  sigaction(SIGPIPE, &sa, 0);
+  ::sigaction(SIGPIPE, &sa, 0);
 #endif
   switch (m_serviceState) {
     case CREATE_JUST: {
       m_serviceState = START_FAILED;
-      MQClient::start();
-      LOG_INFO("DefaultMQPullConsumer:%s start", m_GroupName.c_str());
 
-      //<!create rebalance;
-      m_pRebalance = new RebalancePull(this, getFactory());
-
-      string groupname = getGroupName();
-      m_pPullAPIWrapper = new PullAPIWrapper(getFactory(), groupname);
-
-      //<!data;
+      // data
       checkConfig();
+
       copySubscription();
 
-      //<! registe;
-      bool registerOK = getFactory()->registerConsumer(this);
+      if (getMessageModel() == CLUSTERING) {
+        changeInstanceNameToPID();
+      }
+
+      MQClient::start();
+      LOG_INFO_NEW("DefaultMQPullConsumer:{} start", getGroupName());
+
+      // reset rebalance;
+      m_rebalanceImpl->setConsumerGroup(getGroupName());
+      m_rebalanceImpl->setMessageModel(getMessageModel());
+      m_rebalanceImpl->setAllocateMQStrategy(getAllocateMQStrategy());
+      m_rebalanceImpl->setMQClientFactory(getFactory());
+
+      m_pullAPIWrapper.reset(new PullAPIWrapper(getFactory(), getGroupName()));
+
+      // msg model
+      switch (getMessageModel()) {
+        case BROADCASTING:
+          m_offsetStore.reset(new LocalFileOffsetStore(getGroupName(), getFactory()));
+          break;
+        case CLUSTERING:
+          m_offsetStore.reset(new RemoteBrokerOffsetStore(getGroupName(), getFactory()));
+          break;
+      }
+      m_offsetStore->load();
+
+      // register consumer
+      bool registerOK = getFactory()->registerConsumer(getGroupName(), this);
       if (!registerOK) {
         m_serviceState = CREATE_JUST;
         THROW_MQEXCEPTION(
@@ -89,30 +110,9 @@ void DefaultMQPullConsumer::start() {
             "The cousumer group[" + getGroupName() + "] has been created before, specify another name please.", -1);
       }
 
-      //<!msg model;
-      switch (getMessageModel()) {
-        case BROADCASTING:
-          m_pOffsetStore = new LocalFileOffsetStore(groupname, getFactory());
-          break;
-        case CLUSTERING:
-          m_pOffsetStore = new RemoteBrokerOffsetStore(groupname, getFactory());
-          break;
-      }
-      bool bStartFailed = false;
-      string errorMsg;
-      try {
-        m_pOffsetStore->load();
-      } catch (MQClientException& e) {
-        bStartFailed = true;
-        errorMsg = std::string(e.what());
-      }
-
       getFactory()->start();
+      LOG_INFO_NEW("the consumer [{}] start OK", getGroupName());
       m_serviceState = RUNNING;
-      if (bStartFailed) {
-        shutdown();
-        THROW_MQEXCEPTION(MQClientException, errorMsg, -1);
-      }
       break;
     }
     case RUNNING:
@@ -127,9 +127,9 @@ void DefaultMQPullConsumer::start() {
 void DefaultMQPullConsumer::shutdown() {
   switch (m_serviceState) {
     case RUNNING: {
-      LOG_INFO("DefaultMQPullConsumer:%s shutdown", m_GroupName.c_str());
+      LOG_INFO("DefaultMQPullConsumer:%s shutdown", m_groupName.c_str());
       persistConsumerOffset();
-      getFactory()->unregisterConsumer(this);
+      getFactory()->unregisterConsumer(getGroupName());
       getFactory()->shutdown();
       m_serviceState = SHUTDOWN_ALREADY;
       break;
@@ -142,12 +142,14 @@ void DefaultMQPullConsumer::shutdown() {
   }
 }
 
-void DefaultMQPullConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {}
+bool DefaultMQPullConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {
+  return false;
+}
 
 void DefaultMQPullConsumer::fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) {
   mqs.clear();
   try {
-    getFactory()->fetchSubscribeMessageQueues(topic, mqs, getSessionCredentials());
+    getFactory()->getMQAdminImpl()->fetchSubscribeMessageQueues(topic, mqs);
   } catch (MQException& e) {
     LOG_ERROR(e.what());
   }
@@ -155,23 +157,23 @@ void DefaultMQPullConsumer::fetchSubscribeMessageQueues(const std::string& topic
 
 void DefaultMQPullConsumer::updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info) {}
 
-void DefaultMQPullConsumer::registerMessageQueueListener(const std::string& topic, MQueueListener* pListener) {
+void DefaultMQPullConsumer::registerMessageQueueListener(const std::string& topic, MQueueListener* listener) {
   m_registerTopics.insert(topic);
-  if (pListener) {
-    m_pMessageQueueListener = pListener;
+  if (listener != nullptr) {
+    m_messageQueueListener = listener;
   }
 }
 
 PullResult DefaultMQPullConsumer::pull(const MQMessageQueue& mq,
                                        const std::string& subExpression,
-                                       int64 offset,
+                                       int64_t offset,
                                        int maxNums) {
   return pullSyncImpl(mq, subExpression, offset, maxNums, false);
 }
 
 void DefaultMQPullConsumer::pull(const MQMessageQueue& mq,
                                  const std::string& subExpression,
-                                 int64 offset,
+                                 int64_t offset,
                                  int maxNums,
                                  PullCallback* pPullCallback) {
   pullAsyncImpl(mq, subExpression, offset, maxNums, false, pPullCallback);
@@ -179,14 +181,14 @@ void DefaultMQPullConsumer::pull(const MQMessageQueue& mq,
 
 PullResult DefaultMQPullConsumer::pullBlockIfNotFound(const MQMessageQueue& mq,
                                                       const std::string& subExpression,
-                                                      int64 offset,
+                                                      int64_t offset,
                                                       int maxNums) {
   return pullSyncImpl(mq, subExpression, offset, maxNums, true);
 }
 
 void DefaultMQPullConsumer::pullBlockIfNotFound(const MQMessageQueue& mq,
                                                 const std::string& subExpression,
-                                                int64 offset,
+                                                int64_t offset,
                                                 int maxNums,
                                                 PullCallback* pPullCallback) {
   pullAsyncImpl(mq, subExpression, offset, maxNums, true, pPullCallback);
@@ -194,7 +196,7 @@ void DefaultMQPullConsumer::pullBlockIfNotFound(const MQMessageQueue& mq,
 
 PullResult DefaultMQPullConsumer::pullSyncImpl(const MQMessageQueue& mq,
                                                const std::string& subExpression,
-                                               int64 offset,
+                                               int64_t offset,
                                                int maxNums,
                                                bool block) {
   if (offset < 0)
@@ -203,30 +205,30 @@ PullResult DefaultMQPullConsumer::pullSyncImpl(const MQMessageQueue& mq,
   if (maxNums <= 0)
     THROW_MQEXCEPTION(MQClientException, "maxNums <= 0", -1);
 
-  //<!auto subscript,all sub;
+  // auto subscript, all sub
   subscriptionAutomatically(mq.getTopic());
 
   int sysFlag = PullSysFlag::buildSysFlag(false, block, true, false);
 
-  //<!this sub;
+  // this sub
   std::unique_ptr<SubscriptionData> pSData(FilterAPI::buildSubscriptionData(mq.getTopic(), subExpression));
 
   int timeoutMillis = block ? 1000 * 30 : 1000 * 10;
 
   try {
-    std::unique_ptr<PullResult> pullResult(m_pPullAPIWrapper->pullKernelImpl(mq,                      // 1
-                                                                             pSData->getSubString(),  // 2
-                                                                             0L,                      // 3
-                                                                             offset,                  // 4
-                                                                             maxNums,                 // 5
-                                                                             sysFlag,                 // 6
-                                                                             0,                       // 7
-                                                                             1000 * 20,               // 8
-                                                                             timeoutMillis,           // 9
-                                                                             ComMode_SYNC,            // 10
-                                                                             NULL,                    //<!callback;
-                                                                             getSessionCredentials(), NULL));
-    return m_pPullAPIWrapper->processPullResult(mq, pullResult.get(), pSData.get());
+    std::unique_ptr<PullResult> pullResult(m_pullAPIWrapper->pullKernelImpl(mq,                      // 1
+                                                                            pSData->getSubString(),  // 2
+                                                                            0L,                      // 3
+                                                                            offset,                  // 4
+                                                                            maxNums,                 // 5
+                                                                            sysFlag,                 // 6
+                                                                            0,                       // 7
+                                                                            1000 * 20,               // 8
+                                                                            timeoutMillis,           // 9
+                                                                            ComMode_SYNC,            // 10
+                                                                            nullptr));               // callback
+    assert(pullResult != nullptr);
+    return m_pullAPIWrapper->processPullResult(mq, *pullResult, pSData.get());
   } catch (MQException& e) {
     LOG_ERROR(e.what());
   }
@@ -235,7 +237,7 @@ PullResult DefaultMQPullConsumer::pullSyncImpl(const MQMessageQueue& mq,
 
 void DefaultMQPullConsumer::pullAsyncImpl(const MQMessageQueue& mq,
                                           const std::string& subExpression,
-                                          int64 offset,
+                                          int64_t offset,
                                           int maxNums,
                                           bool block,
                                           PullCallback* pPullCallback) {
@@ -248,57 +250,51 @@ void DefaultMQPullConsumer::pullAsyncImpl(const MQMessageQueue& mq,
   if (!pPullCallback)
     THROW_MQEXCEPTION(MQClientException, "pPullCallback is null", -1);
 
-  //<!auto subscript,all sub;
+  // auto subscript, all sub
   subscriptionAutomatically(mq.getTopic());
 
   int sysFlag = PullSysFlag::buildSysFlag(false, block, true, false);
 
-  //<!this sub;
+  // this sub
   std::unique_ptr<SubscriptionData> pSData(FilterAPI::buildSubscriptionData(mq.getTopic(), subExpression));
 
   int timeoutMillis = block ? 1000 * 30 : 1000 * 10;
 
-  AsyncArg arg;
-  arg.mq = mq;
-  arg.subData = *pSData;
-  arg.pPullWrapper = m_pPullAPIWrapper;
-
   try {
-    std::unique_ptr<PullResult> pullResult(m_pPullAPIWrapper->pullKernelImpl(mq,                      // 1
-                                                                             pSData->getSubString(),  // 2
-                                                                             0L,                      // 3
-                                                                             offset,                  // 4
-                                                                             maxNums,                 // 5
-                                                                             sysFlag,                 // 6
-                                                                             0,                       // 7
-                                                                             1000 * 20,               // 8
-                                                                             timeoutMillis,           // 9
-                                                                             ComMode_ASYNC,           // 10
-                                                                             pPullCallback, getSessionCredentials(),
-                                                                             &arg));
+    std::unique_ptr<PullResult> pullResult(m_pullAPIWrapper->pullKernelImpl(mq,                      // 1
+                                                                            pSData->getSubString(),  // 2
+                                                                            0L,                      // 3
+                                                                            offset,                  // 4
+                                                                            maxNums,                 // 5
+                                                                            sysFlag,                 // 6
+                                                                            0,                       // 7
+                                                                            1000 * 20,               // 8
+                                                                            timeoutMillis,           // 9
+                                                                            ComMode_ASYNC,           // 10
+                                                                            pPullCallback));
   } catch (MQException& e) {
     LOG_ERROR(e.what());
   }
 }
 
 void DefaultMQPullConsumer::subscriptionAutomatically(const std::string& topic) {
-  SubscriptionData* pSdata = m_pRebalance->getSubscriptionData(topic);
+  SubscriptionDataPtr pSdata = m_rebalanceImpl->getSubscriptionData(topic);
   if (pSdata == nullptr) {
     std::unique_ptr<SubscriptionData> subscriptionData(FilterAPI::buildSubscriptionData(topic, SUB_ALL));
-    m_pRebalance->setSubscriptionData(topic, subscriptionData.release());
+    m_rebalanceImpl->setSubscriptionData(topic, subscriptionData.release());
   }
 }
 
-void DefaultMQPullConsumer::updateConsumeOffset(const MQMessageQueue& mq, int64 offset) {
-  m_pOffsetStore->updateOffset(mq, offset);
+void DefaultMQPullConsumer::updateConsumeOffset(const MQMessageQueue& mq, int64_t offset) {
+  m_offsetStore->updateOffset(mq, offset, false);
 }
 
 void DefaultMQPullConsumer::removeConsumeOffset(const MQMessageQueue& mq) {
-  m_pOffsetStore->removeOffset(mq);
+  m_offsetStore->removeOffset(mq);
 }
 
-int64 DefaultMQPullConsumer::fetchConsumeOffset(const MQMessageQueue& mq, bool fromStore) {
-  return m_pOffsetStore->readOffset(mq, fromStore ? READ_FROM_STORE : MEMORY_FIRST_THEN_STORE, getSessionCredentials());
+int64_t DefaultMQPullConsumer::fetchConsumeOffset(const MQMessageQueue& mq, bool fromStore) {
+  return m_offsetStore->readOffset(mq, fromStore ? READ_FROM_STORE : MEMORY_FIRST_THEN_STORE);
 }
 
 void DefaultMQPullConsumer::persistConsumerOffset() {
@@ -318,11 +314,9 @@ void DefaultMQPullConsumer::persistConsumerOffset() {
   m_pOffsetStore->persistAll(mqs);*/
 }
 
-void DefaultMQPullConsumer::persistConsumerOffsetByResetOffset() {}
-
 void DefaultMQPullConsumer::persistConsumerOffset4PullConsumer(const MQMessageQueue& mq) {
   if (isServiceStateOk()) {
-    m_pOffsetStore->persist(mq, getSessionCredentials());
+    m_offsetStore->persist(mq);
   }
 }
 
@@ -349,30 +343,34 @@ void DefaultMQPullConsumer::copySubscription() {
   std::set<string>::iterator it = m_registerTopics.begin();
   for (; it != m_registerTopics.end(); ++it) {
     std::unique_ptr<SubscriptionData> subscriptionData(FilterAPI::buildSubscriptionData((*it), SUB_ALL));
-    m_pRebalance->setSubscriptionData((*it), subscriptionData.release());
+    m_rebalanceImpl->setSubscriptionData((*it), subscriptionData.release());
   }
 }
 
-ConsumeType DefaultMQPullConsumer::getConsumeType() {
+std::string DefaultMQPullConsumer::groupName() const {
+  return getGroupName();
+}
+
+MessageModel DefaultMQPullConsumer::messageModel() const {
+  return getMessageModel();
+}
+
+ConsumeType DefaultMQPullConsumer::consumeType() const {
   return CONSUME_ACTIVELY;
 }
 
-ConsumeFromWhere DefaultMQPullConsumer::getConsumeFromWhere() {
+ConsumeFromWhere DefaultMQPullConsumer::consumeFromWhere() const {
   return CONSUME_FROM_LAST_OFFSET;
 }
 
-void DefaultMQPullConsumer::getSubscriptions(std::vector<SubscriptionData>& result) {
+std::vector<SubscriptionData> DefaultMQPullConsumer::subscriptions() const {
+  std::vector<SubscriptionData> result;
   std::set<string>::iterator it = m_registerTopics.begin();
   for (; it != m_registerTopics.end(); ++it) {
     SubscriptionData ms(*it, SUB_ALL);
     result.push_back(ms);
   }
-}
-
-void DefaultMQPullConsumer::producePullMsgTask(std::shared_ptr<PullRequest>) {}
-
-Rebalance* DefaultMQPullConsumer::getRebalance() const {
-  return NULL;
+  return result;
 }
 
 }  // namespace rocketmq

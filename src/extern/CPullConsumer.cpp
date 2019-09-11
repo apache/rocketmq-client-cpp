@@ -89,8 +89,7 @@ int SetPullConsumerNameServerDomain(CPullConsumer* consumer, const char* domain)
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPullConsumer*)consumer)->setNamesrvDomain(domain);
-  return OK;
+  return Not_Support;
 }
 
 int SetPullConsumerSessionCredentials(CPullConsumer* consumer,
@@ -100,7 +99,7 @@ int SetPullConsumerSessionCredentials(CPullConsumer* consumer,
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPullConsumer*)consumer)->setSessionCredentials(accessKey, secretKey, channel);
+  // ((DefaultMQPullConsumer*)consumer)->setSessionCredentials(accessKey, secretKey, channel);
   return OK;
 }
 
@@ -204,7 +203,7 @@ CPullResult Pull(CPullConsumer* consumer,
       // Thus, this memory should be released by users using @ReleasePullResult
       pullResult.msgFoundList = (CMessageExt**)malloc(pullResult.size * sizeof(CMessageExt*));
       for (size_t i = 0; i < cppPullResult.msgFoundList.size(); i++) {
-        MQMessageExt* msg = const_cast<MQMessageExt*>(&tmpPullResult->msgFoundList[i]);
+        MQMessageExt* msg = tmpPullResult->msgFoundList[i].get();
         pullResult.msgFoundList[i] = (CMessageExt*)(msg);
       }
       break;

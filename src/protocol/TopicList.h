@@ -20,13 +20,13 @@
 #include <string>
 #include <vector>
 
-#include "dataBlock.h"
+#include "DataBlock.h"
 
 namespace rocketmq {
 
 class TopicList {
  public:
-  static TopicList* Decode(const MemoryBlock* mem) { return new TopicList(); }
+  static TopicList* Decode(MemoryBlock& mem) { return new TopicList(); }
 
  private:
   std::vector<std::string> m_topicList;

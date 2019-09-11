@@ -25,9 +25,11 @@
 
 #include "concurrent/executor.hpp"
 
-#include "ClientRemotingProcessor.h"
+#include "MQClientException.h"
+#include "MQProtos.h"
 #include "RPCHook.h"
 #include "RemotingCommand.h"
+#include "RequestProcessor.h"
 #include "ResponseFuture.h"
 #include "SocketUtil.h"
 #include "TcpTransport.h"
@@ -36,65 +38,71 @@ namespace rocketmq {
 
 class TcpRemotingClient {
  public:
-  TcpRemotingClient(int pullThreadNum, uint64_t tcpConnectTimeout, uint64_t tcpTransportTryLockTimeout);
+  TcpRemotingClient(int workerThreadNum, uint64_t tcpConnectTimeout, uint64_t tcpTransportTryLockTimeout);
   virtual ~TcpRemotingClient();
 
-  void stopAllTcpTransportThread();
+  void start();
+  void shutdown();
 
   void registerRPCHook(std::shared_ptr<RPCHook> rpcHook);
 
   void updateNameServerAddressList(const std::string& addrs);
 
-  bool invokeHeartBeat(const std::string& addr, RemotingCommand& request, int timeoutMillis = 3000);
+  // delete by caller
+  RemotingCommand* invokeSync(const std::string& addr,
+                              RemotingCommand& request,
+                              int timeoutMillis = 3000) throw(RemotingException);
 
-  // delete outsite
-  RemotingCommand* invokeSync(const std::string& addr, RemotingCommand& request, int timeoutMillis = 3000);
-
-  bool invokeAsync(const std::string& addr,
+  void invokeAsync(const std::string& addr,
                    RemotingCommand& request,
                    InvokeCallback* invokeCallback,
-                   int64 timeoutMillis);
+                   int64_t timeoutMillis) throw(RemotingException);
 
-  void invokeOneway(const std::string& addr, RemotingCommand& request);
+  void invokeOneway(const std::string& addr, RemotingCommand& request) throw(RemotingException);
 
-  void registerProcessor(MQRequestCode requestCode, ClientRemotingProcessor* clientRemotingProcessor);
+  void registerProcessor(MQRequestCode requestCode, RequestProcessor* requestProcessor);
+
+  std::vector<std::string> getNameServerAddressList() { return m_namesrvAddrList; }
 
  private:
-  static bool SendCommand(std::shared_ptr<TcpTransport> pTts, RemotingCommand& msg);
-  static void MessageReceived(void* context, const MemoryBlock& mem, const std::string& addr);
+  static bool SendCommand(TcpTransportPtr channel, RemotingCommand& msg);
+  static void MessageReceived(void* context, MemoryBlockPtr3& mem, const std::string& addr);
 
-  void messageReceived(const MemoryBlock& mem, const std::string& addr);
-  void processMessageReceived(const MemoryBlock& mem, const std::string& addr);
+  void messageReceived(MemoryBlockPtr3& mem, const std::string& addr);
+  void processMessageReceived(MemoryBlockPtr2& mem, const std::string& addr);
   void processRequestCommand(RemotingCommand* cmd, const std::string& addr);
   void processResponseCommand(RemotingCommand* cmd);
 
-  void checkAsyncRequestTimeout(int opaque);
+  // timeout daemon
+  void scanResponseTablePeriodically();
+  void scanResponseTable();
 
-  std::shared_ptr<TcpTransport> GetTransport(const std::string& addr, bool needResponse);
-  std::shared_ptr<TcpTransport> CreateTransport(const std::string& addr, bool needResponse);
-  std::shared_ptr<TcpTransport> CreateNameServerTransport(bool needResponse);
+  TcpTransportPtr GetTransport(const std::string& addr, bool needResponse);
+  TcpTransportPtr CreateTransport(const std::string& addr, bool needResponse);
+  TcpTransportPtr CreateNameServerTransport(bool needResponse);
 
-  bool CloseTransport(const std::string& addr, std::shared_ptr<TcpTransport> pTcp);
-  bool CloseNameServerTransport(std::shared_ptr<TcpTransport> pTcp);
+  bool CloseTransport(const std::string& addr, TcpTransportPtr channel);
+  bool CloseNameServerTransport(TcpTransportPtr channel);
 
-  RemotingCommand* invokeSyncImpl(std::shared_ptr<TcpTransport> pTcp,
+  RemotingCommand* invokeSyncImpl(TcpTransportPtr channel,
                                   RemotingCommand& request,
-                                  int64 timeoutMillis) throw(RemotingTimeoutException, RemotingSendRequestException);
-  void invokeAsyncImpl(std::shared_ptr<TcpTransport> pTcp,
+                                  int64_t timeoutMillis) throw(RemotingTimeoutException, RemotingSendRequestException);
+  void invokeAsyncImpl(TcpTransportPtr channel,
                        RemotingCommand& request,
-                       int64 timeoutMillis,
+                       int64_t timeoutMillis,
                        InvokeCallback* invokeCallback) throw(RemotingSendRequestException);
-  void invokeOnewayImpl(std::shared_ptr<TcpTransport> pTcp, RemotingCommand& request);
+  void invokeOnewayImpl(TcpTransportPtr channel, RemotingCommand& request) throw(RemotingSendRequestException);
 
   // rpc hook
   void doBeforeRpcHooks(const std::string& addr, RemotingCommand& request, bool toSent);
   void doAfterRpcHooks(const std::string& addr, RemotingCommand& request, RemotingCommand* response, bool toSent);
 
+  // future management
   void addResponseFuture(int opaque, std::shared_ptr<ResponseFuture> pFuture);
   std::shared_ptr<ResponseFuture> findAndDeleteResponseFuture(int opaque);
 
  private:
-  using ProcessorMap = std::map<int, ClientRemotingProcessor*>;
+  using ProcessorMap = std::map<int, RequestProcessor*>;
   using TransportMap = std::map<std::string, std::shared_ptr<TcpTransport>>;
   using FutureMap = std::map<int, std::shared_ptr<ResponseFuture>>;
 

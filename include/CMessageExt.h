@@ -46,4 +46,5 @@ ROCKETMQCLIENT_API long long GetMessagePreparedTransactionOffset(CMessageExt* ms
 #ifdef __cplusplus
 };
 #endif
+
 #endif  //__C_MESSAGE_EXT_H__

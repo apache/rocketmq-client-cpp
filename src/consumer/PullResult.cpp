@@ -15,32 +15,40 @@
  * limitations under the License.
  */
 #include "PullResult.h"
+
 #include "UtilAll.h"
 
 namespace rocketmq {
-//<!************************************************************************
+
 PullResult::PullResult() : pullStatus(NO_MATCHED_MSG), nextBeginOffset(0), minOffset(0), maxOffset(0) {}
 
 PullResult::PullResult(PullStatus status) : pullStatus(status), nextBeginOffset(0), minOffset(0), maxOffset(0) {}
 
-PullResult::PullResult(PullStatus pullStatus, int64 nextBeginOffset, int64 minOffset, int64 maxOffset)
+PullResult::PullResult(PullStatus pullStatus, int64_t nextBeginOffset, int64_t minOffset, int64_t maxOffset)
     : pullStatus(pullStatus), nextBeginOffset(nextBeginOffset), minOffset(minOffset), maxOffset(maxOffset) {}
 
 PullResult::PullResult(PullStatus pullStatus,
-                       int64 nextBeginOffset,
-                       int64 minOffset,
-                       int64 maxOffset,
-                       const std::vector<MQMessageExt>& src)
-    : pullStatus(pullStatus), nextBeginOffset(nextBeginOffset), minOffset(minOffset), maxOffset(maxOffset) {
-  msgFoundList.reserve(src.size());
-  for (size_t i = 0; i < src.size(); i++) {
-    msgFoundList.push_back(src[i]);
-  }
-}
+                       int64_t nextBeginOffset,
+                       int64_t minOffset,
+                       int64_t maxOffset,
+                       const std::vector<MQMessageExtPtr2>& src)
+    : pullStatus(pullStatus),
+      nextBeginOffset(nextBeginOffset),
+      minOffset(minOffset),
+      maxOffset(maxOffset),
+      msgFoundList(src) {}
 
-PullResult::~PullResult() {
-  msgFoundList.clear();
-}
+PullResult::PullResult(PullStatus pullStatus,
+                       int64_t nextBeginOffset,
+                       int64_t minOffset,
+                       int64_t maxOffset,
+                       std::vector<MQMessageExtPtr2>&& src)
+    : pullStatus(pullStatus),
+      nextBeginOffset(nextBeginOffset),
+      minOffset(minOffset),
+      maxOffset(maxOffset),
+      msgFoundList(std::forward<std::vector<MQMessageExtPtr2>>(src)) {}
 
-//<!***************************************************************************
+PullResult::~PullResult() = default;
+
 }  // namespace rocketmq

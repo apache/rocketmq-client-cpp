@@ -24,6 +24,7 @@
 #include <sys/socket.h>  // for socket(), bind(), and connect()...
 #endif
 
+#include "ByteOrder.h"
 #include "Logging.h"
 #include "TcpRemotingClient.h"
 #include "UtilAll.h"
@@ -192,51 +193,47 @@ void TcpTransport::ReadCallback(BufferEvent* event, TcpTransport* transport) {
 
   struct evbuffer* input = event->getInput();
   while (1) {
+    // glance at first 4 byte to get package length
     struct evbuffer_iovec v[4];
     int n = evbuffer_peek(input, 4, NULL, v, sizeof(v) / sizeof(v[0]));
 
-    char hdr[4];
-    char* p = hdr;
+    uint32_t packageLength;  // first 4 bytes, which indicates 1st part of protocol
+    char* p = (char*)&packageLength;
     size_t needed = 4;
 
-    for (int idx = 0; idx < n; idx++) {
-      if (needed > 0) {
-        size_t tmp = needed < v[idx].iov_len ? needed : v[idx].iov_len;
-        memcpy(p, v[idx].iov_base, tmp);
-        p += tmp;
-        needed -= tmp;
-      } else {
-        break;
-      }
+    for (int idx = 0; idx < n && needed > 0; idx++) {
+      size_t s = needed < v[idx].iov_len ? needed : v[idx].iov_len;
+      memcpy(p, v[idx].iov_base, s);
+      p += s;
+      needed -= s;
     }
 
     if (needed > 0) {
-      LOG_DEBUG("too little data received with sum = %d", 4 - needed);
+      LOG_DEBUG_NEW("too little data received with {} byte(s)", 4 - needed);
       return;
     }
 
-    uint32 totalLenOfOneMsg = *(uint32*)hdr;  // first 4 bytes, which indicates 1st part of protocol
-    uint32 msgLen = ntohl(totalLenOfOneMsg);
+    uint32_t msgLen = ByteOrder::swapIfLittleEndian(packageLength);  // same as ntohl()
     size_t recvLen = evbuffer_get_length(input);
     if (recvLen >= msgLen + 4) {
-      LOG_DEBUG("had received all data. msgLen:%d, from:%d, recvLen:%d", msgLen, event->getfd(), recvLen);
+      LOG_DEBUG_NEW("had received all data. msgLen:{}, from:{}, recvLen:{}", msgLen, event->getfd(), recvLen);
     } else {
-      LOG_DEBUG("didn't received whole. msgLen:%d, from:%d, recvLen:%d", msgLen, event->getfd(), recvLen);
+      LOG_DEBUG_NEW("didn't received whole. msgLen:{}, from:{}, recvLen:{}", msgLen, event->getfd(), recvLen);
       return;  // consider large data which was not received completely by now
     }
 
     if (msgLen > 0) {
-      MemoryBlock msg(msgLen, true);
+      MemoryBlockPtr3 msg(new MemoryPool(msgLen, true));
 
-      event->read(hdr, 4);  // skip length field
-      event->read(msg.getData(), msgLen);
+      event->read(&packageLength, 4);  // skip length field
+      event->read(msg->getData(), msgLen);
 
       transport->messageReceived(msg, event->getPeerAddrPort());
     }
   }
 }
 
-void TcpTransport::messageReceived(const MemoryBlock& mem, const std::string& addr) {
+void TcpTransport::messageReceived(MemoryBlockPtr3& mem, const std::string& addr) {
   if (m_readCallback != nullptr) {
     m_readCallback(m_tcpRemotingClient, mem, addr);
   }

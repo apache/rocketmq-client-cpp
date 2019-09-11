@@ -42,7 +42,71 @@ namespace rocketmq {
 std::string UtilAll::s_localHostName;
 std::string UtilAll::s_localIpAddress;
 
-bool UtilAll::startsWith_retry(const std::string& topic) {
+bool UtilAll::try_lock_for(std::timed_mutex& mutex, long timeout) {
+  auto now = std::chrono::steady_clock::now();
+  auto deadline = now + std::chrono::milliseconds(timeout);
+  for (;;) {
+    if (mutex.try_lock_until(deadline)) {
+      return true;
+    }
+    now = std::chrono::steady_clock::now();
+    if (now > deadline) {
+      return false;
+    }
+    std::this_thread::yield();
+  }
+}
+
+int32_t UtilAll::HashCode(const std::string& str) {
+  // FIXME: don't equal to String#hashCode in Java
+  int32 h = 0;
+  if (!str.empty()) {
+    for (const auto& c : str) {
+      h = 31 * h + c;
+    }
+  }
+  return h;
+}
+
+static const int hex2int[256] = {
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+    -1, -1, -1, -1, -1, -1, -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+
+uint64_t UtilAll::hexstr2ull(const char* str) {
+  uint64_t num = 0;
+  unsigned char* ch = (unsigned char*)str;
+  while (*ch != '\0') {
+    num = (num << 4) + hex2int[*ch];
+    ch++;
+  }
+  return num;
+}
+
+static const char sHexAlphabet[] = "0123456789ABCDEF";
+
+std::string UtilAll::bytes2string(const char* bytes, size_t len) {
+  if (bytes == nullptr || len <= 0) {
+    return std::string();
+  }
+
+  std::string buffer;
+  buffer.reserve(len * 2 + 1);
+  for (std::size_t i = 0; i < len; i++) {
+    unsigned char v = (unsigned char)bytes[i];
+    buffer.append(1, sHexAlphabet[v >> 4]);
+    buffer.append(1, sHexAlphabet[v & 0x0FU]);
+  }
+  return buffer;
+}
+
+bool UtilAll::isRetryTopic(const std::string& topic) {
   return topic.find(RETRY_GROUP_TOPIC_PREFIX) == 0;
 }
 
@@ -69,63 +133,8 @@ bool UtilAll::isBlank(const std::string& str) {
   return false;
 }
 
-const int hex2int[256] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
-    -1, -1, -1, -1, -1, -1, -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
-
-uint64 UtilAll::hexstr2ull(const char* str) {
-  uint64 num = 0;
-  unsigned char* ch = (unsigned char*)str;
-  while (*ch != '\0') {
-    num = (num << 4) + hex2int[*ch];
-    ch++;
-  }
-  return num;
-}
-
-int64 UtilAll::str2ll(const char* str) {
-  return std::atoll(str);
-}
-
-std::string UtilAll::bytes2string(const char* bytes, int len) {
-  if (bytes == nullptr || len <= 0) {
-    return std::string();
-  }
-
-#ifdef WIN32
-  std::string buffer;
-  for (int i = 0; i < len; i++) {
-    char tmp[3];
-    sprintf(tmp, "%02X", (unsigned char)bytes[i]);
-    buffer.append(tmp);
-  }
-
-  return buffer;
-#else
-  static const char hex_str[] = "0123456789ABCDEF";
-
-  char result[len * 2 + 1];
-
-  result[len * 2] = 0;
-  for (int i = 0; i < len; i++) {
-    result[i * 2 + 0] = hex_str[(bytes[i] >> 4) & 0x0F];
-    result[i * 2 + 1] = hex_str[(bytes[i]) & 0x0F];
-  }
-
-  std::string buffer(result);
-  return buffer;
-#endif
-}
-
 bool UtilAll::SplitURL(const std::string& serverURL, std::string& addr, short& nPort) {
-  size_t pos = serverURL.find(':');
+  auto pos = serverURL.find(':');
   if (pos == std::string::npos) {
     return false;
   }
@@ -196,47 +205,6 @@ int UtilAll::Split(std::vector<std::string>& ret_, const std::string& strIn, con
   return ret_.size();
 }
 
-int32_t UtilAll::StringToInt32(const std::string& str, int32_t& out) {
-  out = 0;
-  if (str.empty()) {
-    return false;
-  }
-
-  char* end = NULL;
-  errno = 0;
-  long l = strtol(str.c_str(), &end, 10);
-  /* Both checks are needed because INT_MAX == LONG_MAX is possible. */
-  if (l > INT_MAX || (errno == ERANGE && l == LONG_MAX))
-    return false;
-  if (l < INT_MIN || (errno == ERANGE && l == LONG_MIN))
-    return false;
-  if (*end != '\0')
-    return false;
-  out = l;
-  return true;
-}
-
-int64_t UtilAll::StringToInt64(const std::string& str, int64_t& val) {
-  char* endptr = NULL;
-  errno = 0; /* To distinguish success/failure after call */
-  val = strtoll(str.c_str(), &endptr, 10);
-
-  /* Check for various possible errors */
-  if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN)) || (errno != 0 && val == 0)) {
-    return false;
-  }
-  /*no digit was found Or  Further characters after number*/
-  if (endptr == str.c_str()) {
-    return false;
-  }
-  /*no digit was found Or  Further characters after number*/
-  if (*endptr != '\0') {
-    return false;
-  }
-  /* If we got here, strtol() successfully parsed a number */
-  return true;
-}
-
 std::string UtilAll::getLocalHostName() {
   if (s_localHostName.empty()) {
     char name[1024];
@@ -263,9 +231,31 @@ std::string UtilAll::getLocalAddress() {
   return s_localIpAddress;
 }
 
+uint32_t UtilAll::getIP() {
+  std::string ip = UtilAll::getLocalAddress();
+  if (ip.empty()) {
+    return 0;
+  }
+
+  char* ip_str = new char[ip.length() + 1];
+  std::strncpy(ip_str, ip.c_str(), ip.length());
+  ip_str[ip.length()] = '\0';
+
+  int i = 3;
+  uint32_t nResult = 0;
+  for (char* token = std::strtok(ip_str, "."); token != nullptr && i >= 0; token = std::strtok(nullptr, ".")) {
+    uint32_t n = std::atoi(token);
+    nResult |= n << (8 * i--);
+  }
+
+  delete[] ip_str;
+
+  return nResult;
+}
+
 std::string UtilAll::getHomeDirectory() {
 #ifndef WIN32
-  char* homeEnv = getenv("HOME");
+  char* homeEnv = std::getenv("HOME");
   std::string homeDir;
   if (homeEnv == NULL) {
     homeDir.append(getpwuid(getuid())->pw_dir);
@@ -273,7 +263,7 @@ std::string UtilAll::getHomeDirectory() {
     homeDir.append(homeEnv);
   }
 #else
-  std::string homeDir(getenv("USERPROFILE"));
+  std::string homeDir(std::getenv("USERPROFILE"));
 #endif
   return homeDir;
 }
@@ -283,7 +273,7 @@ static bool createDirectoryInner(const char* dir) {
     std::cerr << "directory is nullptr" << std::endl;
     return false;
   }
-  if (access(dir, 0) == -1) {
+  if (access(dir, F_OK) == -1) {
 #ifdef _WIN32
     int flag = mkdir(dir);
 #else
@@ -296,7 +286,7 @@ static bool createDirectoryInner(const char* dir) {
 
 void UtilAll::createDirectory(std::string const& dir) {
   const char* ptr = dir.c_str();
-  if (access(ptr, 0) == 0) {
+  if (access(ptr, F_OK) == 0) {
     return;
   }
   char buff[2048] = {0};
@@ -311,7 +301,7 @@ void UtilAll::createDirectory(std::string const& dir) {
 }
 
 bool UtilAll::existDirectory(std::string const& dir) {
-  return access(dir.c_str(), 0) == 0;
+  return access(dir.c_str(), F_OK) == 0;
 }
 
 int UtilAll::getProcessId() {
@@ -324,11 +314,11 @@ int UtilAll::getProcessId() {
 
 std::string UtilAll::getProcessName() {
 #ifndef WIN32
-  char buf[PATH_MAX + 1] = {0};
-  int count = PATH_MAX + 1;
-  char procpath[PATH_MAX + 1] = {0};
-  sprintf(procpath, "/proc/%d/exe", getpid());
+  char buf[PATH_MAX] = {0};
+  char procpath[PATH_MAX] = {0};
+  int count = PATH_MAX;
 
+  sprintf(procpath, "/proc/%d/exe", getpid());
   if (access(procpath, F_OK) == -1) {
     return "";
   }
@@ -349,8 +339,8 @@ std::string UtilAll::getProcessName() {
     return "";
   }
 #else
-  TCHAR szFileName[MAX_PATH + 1];
-  GetModuleFileName(NULL, szFileName, MAX_PATH + 1);
+  TCHAR szFileName[MAX_PATH];
+  ::GetModuleFileName(NULL, szFileName, MAX_PATH);
   return std::string(szFileName);
 #endif
 }
@@ -368,6 +358,10 @@ int64_t UtilAll::currentTimeSeconds() {
 }
 
 bool UtilAll::deflate(const std::string& input, std::string& out, int level) {
+  return deflate(input.data(), input.length(), out, level);
+}
+
+bool UtilAll::deflate(const char* input, size_t len, std::string& out, int level) {
   int ret;
   unsigned have;
   z_stream strm;
@@ -382,8 +376,8 @@ bool UtilAll::deflate(const std::string& input, std::string& out, int level) {
     return false;
   }
 
-  strm.avail_in = input.size();
-  strm.next_in = (z_const Bytef*)input.c_str();
+  strm.avail_in = len;
+  strm.next_in = (z_const Bytef*)input;
 
   /* run deflate() on input until output buffer not full, finish
      compression if all of source has been read in */
@@ -405,6 +399,10 @@ bool UtilAll::deflate(const std::string& input, std::string& out, int level) {
 }
 
 bool UtilAll::inflate(const std::string& input, std::string& out) {
+  return inflate(input.data(), input.length(), out);
+}
+
+bool UtilAll::inflate(const char* input, size_t len, std::string& out) {
   int ret;
   unsigned have;
   z_stream strm;
@@ -421,8 +419,8 @@ bool UtilAll::inflate(const std::string& input, std::string& out) {
     return false;
   }
 
-  strm.avail_in = input.size();
-  strm.next_in = (z_const Bytef*)input.c_str();
+  strm.avail_in = len;
+  strm.next_in = (z_const Bytef*)input;
 
   /* run inflate() on input until output buffer not full */
   do {
@@ -452,8 +450,10 @@ bool UtilAll::ReplaceFile(const std::string& from_path, const std::string& to_pa
 #ifdef WIN32
   // Try a simple move first.  It will only succeed when |to_path| doesn't
   // already exist.
-  if (::MoveFile(from_path.c_str(), to_path.c_str()))
+  if (::MoveFile(from_path.c_str(), to_path.c_str())) {
     return true;
+  }
+
   // Try the full-blown replace if the move fails, as ReplaceFile will only
   // succeed when |to_path| does exist. When writing to a network share, we may
   // not be able to change the ACLs. Ignore ACL errors then
@@ -461,11 +461,10 @@ bool UtilAll::ReplaceFile(const std::string& from_path, const std::string& to_pa
   if (::ReplaceFile(to_path.c_str(), from_path.c_str(), NULL, REPLACEFILE_IGNORE_MERGE_ERRORS, NULL, NULL)) {
     return true;
   }
+
   return false;
 #else
-  if (rename(from_path.c_str(), to_path.c_str()) == 0)
-    return true;
-  return false;
+  return rename(from_path.c_str(), to_path.c_str()) == 0;
 #endif
 }
 

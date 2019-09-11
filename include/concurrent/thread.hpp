@@ -68,6 +68,7 @@ class thread {
  public:
   thread() {}
   thread(const std::string& name) : name_(name) {}
+  virtual ~thread() = default;
 
   template <class Function, class... Args>
   thread(const std::string& name, Function&& f, Args&&... args)
@@ -129,11 +130,11 @@ class thread {
     // we use short and descriptive thread names that fit: this helps for log readibility as well.
     // Since several components set verbose thread names with a uniqifier at the end, we do a split
     // truncation of "first7bytes.last7bytes".
-    if (threadName->size() > 15) {
-      std::string shortName = name.substr(0, 7) + '.' + name.substr(threadName->size() - 7);
+    if (name.size() > 15) {
+      std::string shortName = name.substr(0, 7) + '.' + name.substr(name.size() - 7);
       pthread_setname_np(pthread_self(), shortName.c_str());
     } else {
-      pthread_setname_np(pthread_self(), threadName->c_str());
+      pthread_setname_np(pthread_self(), name.c_str());
     }
 #endif
   }

@@ -16,133 +16,119 @@
  */
 #include "ConsumeMsgService.h"
 
-#if !defined(WIN32) && !defined(__APPLE__)
-#include <sys/prctl.h>
-#endif
-
 #include "DefaultMQPushConsumer.h"
 #include "Logging.h"
+#include "MessageAccessor.h"
+#include "OffsetStore.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
 
-ConsumeMessageConcurrentlyService::ConsumeMessageConcurrentlyService(MQConsumer* consumer,
+ConsumeMessageConcurrentlyService::ConsumeMessageConcurrentlyService(DefaultMQPushConsumer* consumer,
                                                                      int threadCount,
                                                                      MQMessageListener* msgListener)
-    : m_pConsumer(consumer), m_pMessageListener(msgListener), m_consumeExecutor(threadCount, false) {
-#if !defined(WIN32) && !defined(__APPLE__)
-  string taskName = UtilAll::getProcessName();
-  prctl(PR_SET_NAME, "ConsumeTP", 0, 0, 0);
-#endif
+    : m_consumer(consumer), m_messageListener(msgListener), m_consumeExecutor("ConsumeService", threadCount, false) {}
+
+ConsumeMessageConcurrentlyService::~ConsumeMessageConcurrentlyService() = default;
+
+void ConsumeMessageConcurrentlyService::start() {
   // start callback threadpool
   m_consumeExecutor.startup();
-#if !defined(WIN32) && !defined(__APPLE__)
-  prctl(PR_SET_NAME, taskName.c_str(), 0, 0, 0);
-#endif
 }
-
-ConsumeMessageConcurrentlyService::~ConsumeMessageConcurrentlyService() {
-  m_pConsumer = nullptr;
-  m_pMessageListener = nullptr;
-}
-
-void ConsumeMessageConcurrentlyService::start() {}
 
 void ConsumeMessageConcurrentlyService::shutdown() {
   m_consumeExecutor.shutdown();
 }
 
-MessageListenerType ConsumeMessageConcurrentlyService::getConsumeMsgServiceListenerType() {
-  return m_pMessageListener->getMessageListenerType();
+void ConsumeMessageConcurrentlyService::submitConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
+                                                             ProcessQueuePtr processQueue,
+                                                             const MQMessageQueue& messageQueue,
+                                                             const bool dispathToConsume) {
+  m_consumeExecutor.submit(
+      std::bind(&ConsumeMessageConcurrentlyService::ConsumeRequest, this, msgs, processQueue, messageQueue));
 }
 
-void ConsumeMessageConcurrentlyService::submitConsumeRequest(std::shared_ptr<PullRequest> request,
-                                                             std::vector<MQMessageExt>& msgs) {
-  m_consumeExecutor.submit(std::bind(&ConsumeMessageConcurrentlyService::ConsumeRequest, this, request, msgs));
-}
-
-void ConsumeMessageConcurrentlyService::ConsumeRequest(std::shared_ptr<PullRequest> request,
-                                                       std::vector<MQMessageExt>& msgs) {
-  if (!request || request->isDroped()) {
-    LOG_WARN("the pull result is NULL or Had been dropped");
-    request->clearAllMsgs();  // add clear operation to avoid bad state when dropped pullRequest returns normal
+void ConsumeMessageConcurrentlyService::ConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
+                                                       ProcessQueuePtr processQueue,
+                                                       const MQMessageQueue& messageQueue) {
+  if (processQueue->isDropped()) {
+    LOG_WARN_NEW("the message queue not be able to consume, because it's dropped. group={} {}",
+                 m_consumer->getGroupName(), messageQueue.toString());
     return;
   }
 
   // empty
   if (msgs.empty()) {
-    LOG_WARN("the msg of pull result is EMPTY, its mq:%s", (request->m_messageQueue).toString().c_str());
+    LOG_WARN_NEW("the msg of pull result is EMPTY, its mq:{}", messageQueue.toString());
     return;
   }
 
-  ConsumeStatus status = CONSUME_SUCCESS;
-  if (m_pMessageListener != nullptr) {
-    resetRetryTopic(msgs);  // set where to sendMessageBack
-    request->setLastConsumeTimestamp(UtilAll::currentTimeMillis());
-    status = m_pMessageListener->consumeMessage(msgs);
-  }
+  m_consumer->resetRetryTopic(msgs, m_consumer->getGroupName());  // set where to sendMessageBack
 
-  /*LOG_DEBUG("Consumed MSG size:%d of mq:%s", msgs.size(), (request->m_messageQueue).toString().c_str());*/
-  if (request->isDroped()) {
-    LOG_WARN("PullRequest[%p] is dropped without process consume result. messageQueue:%s", request.get(),
-             request->m_messageQueue.toString().c_str());
-    return;
-  }
-
-  /*LOG_DEBUG("Consumed MSG size:%d of mq:%s", msgs.size(), (request->m_messageQueue).toString().c_str());*/
-  int ackIndex = -1;
-  switch (status) {
-    case CONSUME_SUCCESS:
-      ackIndex = msgs.size();
-      break;
-    case RECONSUME_LATER:
-      ackIndex = -1;
-      break;
-    default:
-      break;
-  }
-
-  switch (m_pConsumer->getMessageModel()) {
-    case BROADCASTING:
-      // Note: broadcasting reconsume should do by application, as it has big affect to broker cluster
-      if (ackIndex != (int)msgs.size())
-        LOG_WARN("BROADCASTING, the message consume failed, drop it:%s", (request->m_messageQueue).toString().c_str());
-      break;
-    case CLUSTERING:
-      // send back msg to broker;
-      for (size_t i = ackIndex + 1; i < msgs.size(); i++) {
-        LOG_WARN("consume fail, MQ is:%s, its msgId is:%s, index is:" SIZET_FMT ", reconsume times is:%d",
-                 request->m_messageQueue.toString().c_str(), msgs[i].getMsgId().c_str(), i,
-                 msgs[i].getReconsumeTimes());
-        m_pConsumer->sendMessageBack(msgs[i], 0);
+  ConsumeStatus status = RECONSUME_LATER;
+  try {
+    auto consumeTimestamp = UtilAll::currentTimeMillis();
+    processQueue->setLastConsumeTimestamp(consumeTimestamp);
+    if (!msgs.empty()) {
+      auto timestamp = UtilAll::to_string(consumeTimestamp);
+      for (auto& msg : msgs) {
+        MessageAccessor::setConsumeStartTimeStamp(*msg, timestamp);
       }
-      break;
-    default:
-      break;
+    }
+    status = m_messageListener->consumeMessage(msgs);
+  } catch (std::exception& e) {
+    // ...
   }
 
-  // update offset
-  int64 offset = request->removeMessage(msgs);
-  if (offset >= 0) {
-    if (request->isDroped()) {
-      LOG_WARN("PullRequest[%p] is dropped without process consume result. messageQueue:%s", request.get(),
-               request->m_messageQueue.toString().c_str());
-      return;
+  // processConsumeResult
+  if (!processQueue->isDropped()) {
+    int ackIndex = -1;
+    switch (status) {
+      case CONSUME_SUCCESS:
+        ackIndex = msgs.size() - 1;
+        break;
+      case RECONSUME_LATER:
+        ackIndex = -1;
+        break;
+      default:
+        break;
     }
 
-    // LOG_DEBUG("update offset:%lld of mq: %s", offset, (request->m_messageQueue).toString().c_str());
-    m_pConsumer->updateConsumeOffset(request->m_messageQueue, offset);
-  } else {
-    LOG_WARN("Note: accumulation consume occurs on mq:%s", (request->m_messageQueue).toString().c_str());
-  }
-}
+    switch (m_consumer->messageModel()) {
+      case BROADCASTING:
+        // Note: broadcasting reconsume should do by application, as it has big affect to broker cluster
+        for (size_t i = ackIndex + 1; i < msgs.size(); i++) {
+          const auto& msg = msgs[i];
+          LOG_WARN_NEW("BROADCASTING, the message consume failed, drop it, {}", msg->toString());
+        }
+        break;
+      case CLUSTERING: {
+        // send back msg to broker
+        std::vector<MQMessageExtPtr2> msgBackFailed;
+        for (size_t i = ackIndex + 1; i < msgs.size(); i++) {
+          LOG_WARN_NEW("consume fail, MQ is:{}, its msgId is:{}, index is:{}, reconsume times is:{}",
+                       messageQueue.toString(), msgs[i]->getMsgId(), i, msgs[i]->getReconsumeTimes());
+          auto& msg = msgs[i];
+          bool result = m_consumer->sendMessageBack(*msg, 0);
+          if (!result) {
+            msg->setReconsumeTimes(msg->getReconsumeTimes() + 1);
+            msgBackFailed.push_back(msg);
+          }
+        }
 
-void ConsumeMessageConcurrentlyService::resetRetryTopic(std::vector<MQMessageExt>& msgs) {
-  std::string groupTopic = UtilAll::getRetryTopic(m_pConsumer->getGroupName());
-  for (auto& msg : msgs) {
-    std::string retryTopic = msg.getProperty(MQMessage::PROPERTY_RETRY_TOPIC);
-    if (!retryTopic.empty() && groupTopic == msg.getTopic()) {
-      msg.setTopic(retryTopic);
+        if (!msgBackFailed.empty()) {
+          // FIXME: send back failed
+          // m_pConsumer->submitConsumeRequestLater()
+        }
+      } break;
+      default:
+        break;
+    }
+
+    // update offset
+    int64_t offset = processQueue->removeMessage(msgs);
+    if (offset >= 0 && !processQueue->isDropped()) {
+      m_consumer->getOffsetStore()->updateOffset(messageQueue, offset, true);
     }
   }
 }

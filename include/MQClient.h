@@ -17,15 +17,13 @@
 #ifndef __MQ_CLIENT_H__
 #define __MQ_CLIENT_H__
 
-#include "MQMessageExt.h"
-#include "MQMessageQueue.h"
-#include "QueryResult.h"
-#include "RocketMQClient.h"
-#include "SessionCredentials.h"
+#include "MQAdmin.h"
+#include "MQClientConfig.h"
+#include "ServiceState.h"
 
 namespace rocketmq {
 
-class MQClientFactory;
+class MQClientInstance;
 
 enum elogLevel {
   eLOG_LEVEL_FATAL = 1,
@@ -37,88 +35,10 @@ enum elogLevel {
   eLOG_LEVEL_LEVEL_NUM = 7
 };
 
-class ROCKETMQCLIENT_API MQClient {
+class ROCKETMQCLIENT_API MQClient : virtual public MQAdmin, public MQClientConfig {
  public:
-  MQClient();
-  virtual ~MQClient();
-
- public:
-  // clientid=processId-ipAddr@instanceName;
-  std::string getMQClientId() const;
-  const std::string& getNamesrvAddr() const;
-  void setNamesrvAddr(const std::string& namesrvAddr);
-  const std::string& getNamesrvDomain() const;
-  void setNamesrvDomain(const std::string& namesrvDomain);
-  const std::string& getInstanceName() const;
-  void setInstanceName(const std::string& instanceName);
-  //<!groupName;
-  const std::string& getGroupName() const;
-  void setGroupName(const std::string& groupname);
-
-  /**
-   * no realization
-   */
-  void createTopic(const std::string& key, const std::string& newTopic, int queueNum);
-  /**
-   * search earliest msg store time for specified queue
-   *
-   * @param mq
-   *            message queue
-   * @return earliest store time, ms
-   */
-  int64 earliestMsgStoreTime(const MQMessageQueue& mq);
-  /**
-   * search maxOffset of queue
-   *
-   * @param mq
-   *            message queue
-   * @return minOffset of queue
-   */
-  int64 minOffset(const MQMessageQueue& mq);
-  /**
-   * search maxOffset of queue
-   * Note: maxOffset-1 is max offset that could get msg
-   * @param mq
-   *            message queue
-   * @return maxOffset of queue
-   */
-  int64 maxOffset(const MQMessageQueue& mq);
-  /**
-   * get queue offset by timestamp
-   *
-   * @param mq
-   *            mq queue
-   * @param timestamp
-   *            timestamp with ms unit
-   * @return queue offset according to timestamp
-   */
-  int64 searchOffset(const MQMessageQueue& mq, uint64_t timestamp);
-  /**
-   * get whole msg info from broker by msgId
-   *
-   * @param msgId
-   * @return MQMessageExt
-   */
-  MQMessageExt* viewMessage(const std::string& msgId);
-  /**
-   * query message by topic and key
-   *
-   * @param topic
-   *            topic name
-   * @param key
-   *            topic key
-   * @param maxNum
-   *            query num
-   * @param begin
-   *            begin timestamp
-   * @param end
-   *            end timestamp
-   * @return
-   *            according to QueryResult
-   */
-  QueryResult queryMessage(const std::string& topic, const std::string& key, int maxNum, int64 begin, int64 end);
-
-  std::vector<MQMessageQueue> getTopicMessageQueueInfo(const std::string& topic);
+  MQClient() : MQClient(nullptr) {}
+  MQClient(RPCHookPtr rpcHook) : MQClientConfig(rpcHook), m_serviceState(CREATE_JUST), m_clientFactory(nullptr) {}
 
   // log configuration interface, default LOG_LEVEL is LOG_LEVEL_INFO, default
   // log file num is 3, each log size is 100M
@@ -126,69 +46,31 @@ class ROCKETMQCLIENT_API MQClient {
   elogLevel getLogLevel();
   void setLogFileSizeAndNum(int fileNum, long perFileSize);  // perFileSize is MB unit
 
-  /** set TcpTransport pull thread num, which dermine the num of threads to
- distribute network data,
-     1. its default value is CPU num, it must be setted before producer/consumer
- start, minimum value is CPU num;
-     2. this pullThread num must be tested on your environment to find the best
- value for RT of sendMsg or delay time of consume msg before you change it;
-     3. producer and consumer need different pullThread num, if set this num,
- producer and consumer must set different instanceName.
-     4. configuration suggestion:
-         1>. minimum RT of sendMsg:
-                 pullThreadNum = brokerNum*2
- **/
-  void setTcpTransportPullThreadNum(int num);
-  const int getTcpTransportPullThreadNum() const;
+  std::vector<MQMessageQueue> getTopicMessageQueueInfo(const std::string& topic);
 
-  /** timeout of tcp connect, it is same meaning for both producer and consumer;
-      1. default value is 3000ms
-      2. input parameter could only be milliSecond, suggestion value is
-  1000-3000ms;
-  **/
-  void setTcpTransportConnectTimeout(uint64_t timeout);  // ms
-  const uint64_t getTcpTransportConnectTimeout() const;
+ public:  // MQAdmin
+  void createTopic(const std::string& key, const std::string& newTopic, int queueNum) override;
+  int64_t searchOffset(const MQMessageQueue& mq, uint64_t timestamp) override;
+  int64_t maxOffset(const MQMessageQueue& mq) override;
+  int64_t minOffset(const MQMessageQueue& mq) override;
+  int64_t earliestMsgStoreTime(const MQMessageQueue& mq) override;
+  MQMessageExtPtr viewMessage(const std::string& offsetMsgId) override;
+  QueryResult queryMessage(const std::string& topic,
+                           const std::string& key,
+                           int maxNum,
+                           int64_t begin,
+                           int64_t end) override;
 
-  /** timeout of tryLock tcpTransport before sendMsg/pullMsg, if timeout,
-  returns NULL
-      1. paremeter unit is ms, default value is 3000ms, the minimun value is
-  1000ms
-          suggestion value is 3000ms;
-      2. if configured with value smaller than 1000ms, the tryLockTimeout value
-  will be setted to 1000ms
-  **/
-  void setTcpTransportTryLockTimeout(uint64_t timeout);  // ms
-  const uint64_t getTcpTransportTryLockTimeout() const;
-
-  void setUnitName(std::string unitName);
-  const std::string& getUnitName();
-
-  void setSessionCredentials(const std::string& input_accessKey,
-                             const std::string& input_secretKey,
-                             const std::string& input_onsChannel);
-  const SessionCredentials& getSessionCredentials() const;
-
- protected:
+ public:
   virtual void start();
   virtual void shutdown();
-  MQClientFactory* getFactory() const;
+
+  MQClientInstance* getFactory() const;
   virtual bool isServiceStateOk();
 
  protected:
-  std::string m_namesrvAddr;
-  std::string m_namesrvDomain;
-  std::string m_instanceName;
-  //<!  the name is globle only
-  std::string m_GroupName;
-  //<!factory;
-  MQClientFactory* m_clientFactory;
-  int m_serviceState;
-  int m_pullThreadNum;
-  uint64_t m_tcpConnectTimeout;           // ms
-  uint64_t m_tcpTransportTryLockTimeout;  // s
-
-  std::string m_unitName;
-  SessionCredentials m_SessionCredentials;
+  ServiceState m_serviceState;
+  MQClientInstance* m_clientFactory;  // factory
 };
 
 }  // namespace rocketmq

@@ -20,34 +20,31 @@
 #include <mutex>
 
 #include "AsyncCallback.h"
+#include "CommunicationMode.h"
+#include "MQClientInstance.h"
 #include "MQMessageQueue.h"
-#include "SessionCredentials.h"
 #include "SubscriptionData.h"
 
 namespace rocketmq {
 
-class MQClientFactory;
-
 class PullAPIWrapper {
  public:
-  PullAPIWrapper(MQClientFactory* mqClientFactory, const std::string& consumerGroup);
+  PullAPIWrapper(MQClientInstance* mqClientFactory, const std::string& consumerGroup);
   ~PullAPIWrapper();
 
-  PullResult processPullResult(const MQMessageQueue& mq, PullResult* pullResult, SubscriptionData* subscriptionData);
+  PullResult processPullResult(const MQMessageQueue& mq, PullResult& pullResult, SubscriptionDataPtr subscriptionData);
 
-  PullResult* pullKernelImpl(const MQMessageQueue& mq,        // 1
-                             std::string subExpression,       // 2
-                             int64 subVersion,                // 3
-                             int64 offset,                    // 4
-                             int maxNums,                     // 5
-                             int sysFlag,                     // 6
-                             int64 commitOffset,              // 7
-                             int brokerSuspendMaxTimeMillis,  // 8
-                             int timeoutMillis,               // 9
-                             int communicationMode,           // 10
-                             PullCallback* pullCallback,
-                             const SessionCredentials& session_credentials,
-                             void* pArg = nullptr);
+  PullResult* pullKernelImpl(const MQMessageQueue& mq,             // 1
+                             std::string subExpression,            // 2
+                             int64_t subVersion,                   // 3
+                             int64_t offset,                       // 4
+                             int maxNums,                          // 5
+                             int sysFlag,                          // 6
+                             int64_t commitOffset,                 // 7
+                             int brokerSuspendMaxTimeMillis,       // 8
+                             int timeoutMillis,                    // 9
+                             CommunicationMode communicationMode,  // 10
+                             PullCallback* pullCallback);
 
  private:
   void updatePullFromWhichNode(const MQMessageQueue& mq, int brokerId);
@@ -55,7 +52,7 @@ class PullAPIWrapper {
   int recalculatePullFromWhichNode(const MQMessageQueue& mq);
 
  private:
-  MQClientFactory* m_MQClientFactory;
+  MQClientInstance* m_MQClientFactory;
   std::string m_consumerGroup;
   std::mutex m_lock;
   std::map<MQMessageQueue, int /* brokerId */> m_pullFromWhichNodeTable;

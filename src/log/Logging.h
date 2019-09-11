@@ -50,7 +50,9 @@ class logAdapter {
   std::string m_logFile;
 
   std::shared_ptr<spdlog::logger> m_logger;
+#if SPDLOG_VER_MAJOR >= 1
   std::vector<spdlog::sink_ptr> m_logSinks;
+#endif
 };
 
 #define ALOG_ADAPTER logAdapter::getLogInstance()

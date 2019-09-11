@@ -14,51 +14,69 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef __DEFAULT_MQ_PULL_CONSUMER_H__
 #define __DEFAULT_MQ_PULL_CONSUMER_H__
 
 #include <set>
 #include <string>
+
+#include "AllocateMQStrategy.h"
+#include "MQClient.h"
 #include "MQConsumer.h"
-#include "MQMessageQueue.h"
 #include "MQueueListener.h"
-#include "RocketMQClient.h"
 
 namespace rocketmq {
-class Rebalance;
+
+class RebalanceImpl;
 class SubscriptionData;
 class OffsetStore;
 class PullAPIWrapper;
-class ConsumerRunningInfo;
 
-class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
+class ROCKETMQCLIENT_API DefaultMQPullConsumerConfig : public DefaultMQConsumerConfig {
+ public:
+  DefaultMQPullConsumerConfig();
+  virtual ~DefaultMQPullConsumerConfig() = default;
+
+  AllocateMQStrategy* getAllocateMQStrategy() { return m_allocateMQStrategy.get(); }
+  void setAllocateMQStrategy(AllocateMQStrategy* strategy) { m_allocateMQStrategy.reset(strategy); }
+
+ protected:
+  std::unique_ptr<AllocateMQStrategy> m_allocateMQStrategy;
+};
+
+class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQPullConsumer,
+                                                 public MQClient,
+                                                 public DefaultMQPullConsumerConfig {
  public:
   DefaultMQPullConsumer(const std::string& groupname);
+  DefaultMQPullConsumer(const std::string& groupname, RPCHookPtr rpcHook);
   virtual ~DefaultMQPullConsumer();
 
-  //<!begin mqadmin;
-  virtual void start();
-  virtual void shutdown();
-  //<!end mqadmin;
+ public:  // MQClient
+  void start() override;
+  void shutdown() override;
 
-  //<!begin MQConsumer
-  virtual void sendMessageBack(MQMessageExt& msg, int delayLevel);
-  virtual void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs);
-  virtual void doRebalance();
-  virtual void persistConsumerOffset();
-  virtual void persistConsumerOffsetByResetOffset();
-  virtual void updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info);
-  virtual ConsumeType getConsumeType();
-  virtual ConsumeFromWhere getConsumeFromWhere();
-  virtual void getSubscriptions(std::vector<SubscriptionData>&);
-  virtual void updateConsumeOffset(const MQMessageQueue& mq, int64 offset);
-  virtual void removeConsumeOffset(const MQMessageQueue& mq);
-  virtual void producePullMsgTask(std::shared_ptr<PullRequest>);
-  virtual Rebalance* getRebalance() const;
-  //<!end MQConsumer;
+ public:  // MQConsumer
+  bool sendMessageBack(MQMessageExt& msg, int delayLevel) override;
+  void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) override;
 
-  void registerMessageQueueListener(const std::string& topic, MQueueListener* pListener);
+  std::string groupName() const override;
+  MessageModel messageModel() const override;
+  ConsumeType consumeType() const override;
+  ConsumeFromWhere consumeFromWhere() const override;
+  std::vector<SubscriptionData> subscriptions() const override;
+
+  void doRebalance() override;
+  void persistConsumerOffset() override;
+  void updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info) override;
+  ConsumerRunningInfo* consumerRunningInfo() override { return nullptr; }
+
+ public:  // MQPullConsumer
+  void pull(const MQMessageQueue& mq,
+            const std::string& subExpression,
+            int64_t offset,
+            int maxNums,
+            PullCallback* pullCallback) override;
 
   /**
    * pull msg from specified queue, if no msg in queue, return directly
@@ -76,13 +94,12 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
    * @return
    *            accroding to PullResult
    */
-  virtual PullResult pull(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums);
+  PullResult pull(const MQMessageQueue& mq, const std::string& subExpression, int64_t offset, int maxNums) override;
 
-  virtual void pull(const MQMessageQueue& mq,
-                    const std::string& subExpression,
-                    int64 offset,
-                    int maxNums,
-                    PullCallback* pPullCallback);
+  virtual void updateConsumeOffset(const MQMessageQueue& mq, int64_t offset);
+  virtual void removeConsumeOffset(const MQMessageQueue& mq);
+
+  void registerMessageQueueListener(const std::string& topic, MQueueListener* pListener);
 
   /**
    * pull msg from specified queue, if no msg, broker will suspend the pull request 20s
@@ -100,15 +117,16 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
    * @return
    *            accroding to PullResult
    */
-  PullResult pullBlockIfNotFound(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums);
+  PullResult pullBlockIfNotFound(const MQMessageQueue& mq,
+                                 const std::string& subExpression,
+                                 int64_t offset,
+                                 int maxNums);
 
   void pullBlockIfNotFound(const MQMessageQueue& mq,
                            const std::string& subExpression,
-                           int64 offset,
+                           int64_t offset,
                            int maxNums,
                            PullCallback* pPullCallback);
-
-  virtual ConsumerRunningInfo* getConsumerRunningInfo() { return NULL; }
 
   /**
    * Fetch the offset
@@ -117,13 +135,12 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
    * @param fromStore
    * @return
    */
-  int64 fetchConsumeOffset(const MQMessageQueue& mq, bool fromStore);
+  int64_t fetchConsumeOffset(const MQMessageQueue& mq, bool fromStore);
 
   /**
    * Fetch the message queues according to the topic
    *
-   * @param topic
-   *            Message Topic
+   * @param topic Message Topic
    * @return
    */
   void fetchMessageQueuesInBalance(const std::string& topic, std::vector<MQMessageQueue> mqs);
@@ -132,19 +149,22 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
   // RemoteBrokerOffsetStore, updateConsumeOffset should be called before.
   void persistConsumerOffset4PullConsumer(const MQMessageQueue& mq);
 
+ public:
+  OffsetStore* getOffsetStore() const { return m_offsetStore.get(); }
+
  private:
   void checkConfig();
   void copySubscription();
 
   PullResult pullSyncImpl(const MQMessageQueue& mq,
                           const std::string& subExpression,
-                          int64 offset,
+                          int64_t offset,
                           int maxNums,
                           bool block);
 
   void pullAsyncImpl(const MQMessageQueue& mq,
                      const std::string& subExpression,
-                     int64 offset,
+                     int64_t offset,
                      int maxNums,
                      bool block,
                      PullCallback* pPullCallback);
@@ -154,10 +174,10 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
  private:
   std::set<std::string> m_registerTopics;
 
-  MQueueListener* m_pMessageQueueListener;
-  OffsetStore* m_pOffsetStore;
-  Rebalance* m_pRebalance;
-  PullAPIWrapper* m_pPullAPIWrapper;
+  std::unique_ptr<RebalanceImpl> m_rebalanceImpl;
+  std::unique_ptr<PullAPIWrapper> m_pullAPIWrapper;
+  std::unique_ptr<OffsetStore> m_offsetStore;
+  MQueueListener* m_messageQueueListener;
 };
 
 }  // namespace rocketmq

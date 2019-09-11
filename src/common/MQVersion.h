@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQVERSION_H__
-#define __MQVERSION_H__
+#ifndef __MQ_VERSION_H__
+#define __MQ_VERSION_H__
 
 #include <string>
 
 namespace rocketmq {
-//<!***************************************************************************
+
 class MQVersion {
  public:
   enum Version {
@@ -224,6 +224,6 @@ class MQVersion {
   static int s_CurrentVersion;
 };
 
-//<!***************************************************************************
-}  //<!end namespace;
-#endif
+}  // namespace rocketmq
+
+#endif  // __MQ_VERSION_H__

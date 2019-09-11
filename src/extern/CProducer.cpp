@@ -36,7 +36,7 @@ class SelectMessageQueueInner : public MessageQueueSelector {
  public:
   MQMessageQueue select(const std::vector<MQMessageQueue>& mqs, const MQMessage& msg, void* arg) {
     int index = 0;
-    std::string shardingKey = rocketmq::UtilAll::to_string((char*)arg);
+    std::string shardingKey = UtilAll::to_string((char*)arg);
 
     index = std::hash<std::string>{}(shardingKey) % mqs.size();
     return mqs[index % mqs.size()];
@@ -70,7 +70,7 @@ class COnSendCallback : public AutoDeleteSendCallback {
     m_userData = userData;
   }
 
-  virtual ~CSendCallback() = default;
+  virtual ~COnSendCallback() = default;
 
   void onSuccess(SendResult& sendResult) override {
     CSendResult result;
@@ -183,7 +183,7 @@ int SetProducerNameServerDomain(CProducer* producer, const char* domain) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQProducer*)producer)->setNamesrvDomain(domain);
+  // ((DefaultMQProducer*)producer)->setNamesrvDomain(domain);
   return OK;
 }
 
@@ -195,7 +195,7 @@ int SendMessageSync(CProducer* producer, CMessage* msg, CSendResult* result) {
   try {
     DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
     MQMessage* message = (MQMessage*)msg;
-    SendResult sendResult = defaultMQProducer->send(*message);
+    SendResult sendResult = defaultMQProducer->send(message);
     switch (sendResult.getSendStatus()) {
       case SEND_OK:
         result->sendStatus = E_SEND_OK;
@@ -230,7 +230,7 @@ int SendBatchMessage(CProducer* producer, CBatchMessage* batcMsg, CSendResult* r
   }
   try {
     DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
-    std::vector<MQMessage>* message = (std::vector<MQMessage>*)batcMsg;
+    std::vector<MQMessage*>* message = (std::vector<MQMessage*>*)batcMsg;
     SendResult sendResult = defaultMQProducer->send(*message);
     switch (sendResult.getSendStatus()) {
       case SEND_OK:
@@ -268,21 +268,7 @@ int SendMessageAsync(CProducer* producer,
   DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
   MQMessage* message = (MQMessage*)msg;
   CSendCallback* cSendCallback = new CSendCallback(cSendSuccessCallback, cSendExceptionCallback);
-
-  try {
-    defaultMQProducer->send(*message, cSendCallback);
-  } catch (std::exception& e) {
-    if (cSendCallback != NULL) {
-      if (std::type_index(typeid(e)) == std::type_index(typeid(MQException))) {
-        MQException& mqe = (MQException&)e;
-        cSendCallback->onException(mqe);
-      }
-      delete cSendCallback;
-      cSendCallback = NULL;
-    }
-    MQClientErrorContainer::setErr(std::string(e.what()));
-    return PRODUCER_SEND_ASYNC_FAILED;
-  }
+  defaultMQProducer->send(message, cSendCallback);
   return OK;
 }
 
@@ -297,21 +283,7 @@ int SendAsync(CProducer* producer,
   DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
   MQMessage* message = (MQMessage*)msg;
   COnSendCallback* cSendCallback = new COnSendCallback(onSuccess, onException, (void*)msg, usrData);
-
-  try {
-    defaultMQProducer->send(*message, cSendCallback);
-  } catch (exception& e) {
-    if (cSendCallback != NULL) {
-      if (std::type_index(typeid(e)) == std::type_index(typeid(MQException))) {
-        MQException& mqe = (MQException&)e;
-        cSendCallback->onException(mqe);
-      }
-      delete cSendCallback;
-      cSendCallback = NULL;
-    }
-    MQClientErrorContainer::setErr(string(e.what()));
-    return PRODUCER_SEND_ASYNC_FAILED;
-  }
+  defaultMQProducer->send(message, cSendCallback);
   return OK;
 }
 
@@ -322,7 +294,7 @@ int SendMessageOneway(CProducer* producer, CMessage* msg) {
   DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
   MQMessage* message = (MQMessage*)msg;
   try {
-    defaultMQProducer->sendOneway(*message);
+    defaultMQProducer->sendOneway(message);
   } catch (std::exception& e) {
     return PRODUCER_SEND_ONEWAY_FAILED;
   }
@@ -337,7 +309,7 @@ int SendMessageOnewayOrderly(CProducer* producer, CMessage* msg, QueueSelectorCa
   MQMessage* message = (MQMessage*)msg;
   try {
     SelectMessageQueue selectMessageQueue(selector);
-    defaultMQProducer->sendOneway(*message, &selectMessageQueue, arg);
+    defaultMQProducer->sendOneway(message, &selectMessageQueue, arg);
   } catch (std::exception& e) {
     MQClientErrorContainer::setErr(std::string(e.what()));
     return PRODUCER_SEND_ONEWAY_FAILED;
@@ -358,17 +330,9 @@ int SendMessageOrderlyAsync(CProducer* producer,
   DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
   MQMessage* message = (MQMessage*)msg;
   CSendCallback* cSendCallback = new CSendCallback(cSendSuccessCallback, cSendExceptionCallback);
-
-  try {
-    // Constructing SelectMessageQueue objects through function pointer callback
-    SelectMessageQueue selectMessageQueue(callback);
-    defaultMQProducer->send(*message, &selectMessageQueue, arg, cSendCallback);
-  } catch (std::exception& e) {
-    printf("%s\n", e.what());
-    // std::count<<e.what( )<<std::endl;
-    MQClientErrorContainer::setErr(std::string(e.what()));
-    return PRODUCER_SEND_ORDERLYASYNC_FAILED;
-  }
+  // Constructing SelectMessageQueue objects through function pointer callback
+  SelectMessageQueue selectMessageQueue(callback);
+  defaultMQProducer->send(message, &selectMessageQueue, arg, cSendCallback);
   return OK;
 }
 
@@ -386,7 +350,7 @@ int SendMessageOrderly(CProducer* producer,
   try {
     // Constructing SelectMessageQueue objects through function pointer callback
     SelectMessageQueue selectMessageQueue(callback);
-    SendResult sendResult = defaultMQProducer->send(*message, &selectMessageQueue, arg, autoRetryTimes);
+    SendResult sendResult = defaultMQProducer->send(message, &selectMessageQueue, arg);
     // Convert SendStatus to CSendStatus
     result->sendStatus = CSendStatus((int)sendResult.getSendStatus());
     result->offset = sendResult.getQueueOffset();
@@ -409,7 +373,7 @@ int SendMessageOrderlyByShardingKey(CProducer* producer, CMessage* msg, const ch
     // Constructing SelectMessageQueue objects through function pointer callback
     int retryTimes = 3;
     SelectMessageQueueInner selectMessageQueue;
-    SendResult sendResult = defaultMQProducer->send(*message, &selectMessageQueue, (void*)shardingKey, retryTimes);
+    SendResult sendResult = defaultMQProducer->send(message, &selectMessageQueue, (void*)shardingKey, retryTimes);
     // Convert SendStatus to CSendStatus
     result->sendStatus = CSendStatus((int)sendResult.getSendStatus());
     result->offset = sendResult.getQueueOffset();
@@ -445,7 +409,7 @@ int SetProducerSessionCredentials(CProducer* producer,
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQProducer*)producer)->setSessionCredentials(accessKey, secretKey, onsChannel);
+  // ((DefaultMQProducer*)producer)->setSessionCredentials(accessKey, secretKey, onsChannel);
   return OK;
 }
 

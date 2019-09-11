@@ -16,13 +16,16 @@
  */
 #include "MQDecoder.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sstream>
 
+#ifndef WIN32
+#include <netinet/in.h>
+#endif
+
+#include "ByteOrder.h"
 #include "Logging.h"
 #include "MemoryOutputStream.h"
+#include "MessageAccessor.h"
 #include "MessageSysFlag.h"
 #include "UtilAll.h"
 
@@ -38,8 +41,7 @@ int MQDecoder::MessageFlagPostion = 16;
 int MQDecoder::MessagePhysicOffsetPostion = 28;
 int MQDecoder::MessageStoreTimestampPostion = 56;
 
-//<!***************************************************************************
-std::string MQDecoder::createMessageId(sockaddr addr, int64 offset) {
+std::string MQDecoder::createMessageId(sockaddr addr, int64_t offset) {
   struct sockaddr_in* sa = (struct sockaddr_in*)&addr;
 
   MemoryOutputStream outputmen(MSG_ID_LENGTH);
@@ -59,106 +61,114 @@ MQMessageId MQDecoder::decodeMessageId(const std::string& msgId) {
   std::string portStr = msgId.substr(8, 8);
   std::string offsetStr = msgId.substr(16);
 
-  char* end;
-  int ipInt = strtoul(ipStr.c_str(), &end, 16);
-  int portInt = strtoul(portStr.c_str(), &end, 16);
+  size_t pos;
+  int ipInt = std::stoul(ipStr, &pos, 16);
+  int portInt = std::stoul(portStr, &pos, 16);
 
-  int64 offset = UtilAll::hexstr2ull(offsetStr.c_str());
+  uint64_t offset = UtilAll::hexstr2ull(offsetStr.c_str());
 
   struct sockaddr_in sa;
   sa.sin_family = AF_INET;
   sa.sin_port = htons(portInt);
   sa.sin_addr.s_addr = htonl(ipInt);
 
-  MQMessageId id(*((sockaddr*)&sa), offset);
-  return id;
+  return MQMessageId(*((sockaddr*)&sa), offset);
 }
 
-MQMessageExt* MQDecoder::decode(MemoryInputStream& byteBuffer) {
-  return decode(byteBuffer, true);
+MQMessageExtPtr MQDecoder::clientDecode(MemoryInputStream& byteBuffer, bool readBody) {
+  return decode(byteBuffer, readBody, true, true);
 }
 
-MQMessageExt* MQDecoder::decode(MemoryInputStream& byteBuffer, bool readBody) {
-  MQMessageExt* msgExt = new MQMessageExt();
+MQMessageExtPtr MQDecoder::decode(MemoryInputStream& byteBuffer, bool readBody) {
+  return decode(byteBuffer, readBody, true, false);
+}
+
+MQMessageExtPtr MQDecoder::decode(MemoryInputStream& byteBuffer, bool readBody, bool deCompressBody, bool isClient) {
+  MQMessageExtPtr msgExt;
+
+  if (isClient) {
+    msgExt = new MQMessageClientExt();
+  } else {
+    msgExt = new MQMessageExt();
+  }
 
   // 1 TOTALSIZE
-  int storeSize = byteBuffer.readIntBigEndian();
+  int32_t storeSize = byteBuffer.readIntBigEndian();
   msgExt->setStoreSize(storeSize);
 
   // 2 MAGICCODE sizeof(int)
   byteBuffer.skipNextBytes(sizeof(int));
 
   // 3 BODYCRC
-  int bodyCRC = byteBuffer.readIntBigEndian();
+  int32_t bodyCRC = byteBuffer.readIntBigEndian();
   msgExt->setBodyCRC(bodyCRC);
 
   // 4 QUEUEID
-  int queueId = byteBuffer.readIntBigEndian();
+  int32_t queueId = byteBuffer.readIntBigEndian();
   msgExt->setQueueId(queueId);
 
   // 5 FLAG
-  int flag = byteBuffer.readIntBigEndian();
+  int32_t flag = byteBuffer.readIntBigEndian();
   msgExt->setFlag(flag);
 
   // 6 QUEUEOFFSET
-  int64 queueOffset = byteBuffer.readInt64BigEndian();
+  int64_t queueOffset = byteBuffer.readInt64BigEndian();
   msgExt->setQueueOffset(queueOffset);
 
   // 7 PHYSICALOFFSET
-  int64 physicOffset = byteBuffer.readInt64BigEndian();
+  int64_t physicOffset = byteBuffer.readInt64BigEndian();
   msgExt->setCommitLogOffset(physicOffset);
 
   // 8 SYSFLAG
-  int sysFlag = byteBuffer.readIntBigEndian();
+  int32_t sysFlag = byteBuffer.readIntBigEndian();
   msgExt->setSysFlag(sysFlag);
 
   // 9 BORNTIMESTAMP
-  int64 bornTimeStamp = byteBuffer.readInt64BigEndian();
+  int64_t bornTimeStamp = byteBuffer.readInt64BigEndian();
   msgExt->setBornTimestamp(bornTimeStamp);
 
   // 10 BORNHOST
-  int bornHost = byteBuffer.readIntBigEndian();
-  int port = byteBuffer.readIntBigEndian();
-  sockaddr bornAddr = IPPort2socketAddress(bornHost, port);
+  int32_t bornHost = byteBuffer.readIntBigEndian();
+  int32_t bornPort = byteBuffer.readIntBigEndian();
+  sockaddr bornAddr = IPPort2socketAddress(bornHost, bornPort);
   msgExt->setBornHost(bornAddr);
 
   // 11 STORETIMESTAMP
-  int64 storeTimestamp = byteBuffer.readInt64BigEndian();
+  int64_t storeTimestamp = byteBuffer.readInt64BigEndian();
   msgExt->setStoreTimestamp(storeTimestamp);
 
   // // 12 STOREHOST
-  int storeHost = byteBuffer.readIntBigEndian();
-  port = byteBuffer.readIntBigEndian();
-  sockaddr storeAddr = IPPort2socketAddress(storeHost, port);
+  int32_t storeHost = byteBuffer.readIntBigEndian();
+  int32_t storePort = byteBuffer.readIntBigEndian();
+  sockaddr storeAddr = IPPort2socketAddress(storeHost, storePort);
   msgExt->setStoreHost(storeAddr);
 
   // 13 RECONSUMETIMES
-  int reconsumeTimes = byteBuffer.readIntBigEndian();
+  int32_t reconsumeTimes = byteBuffer.readIntBigEndian();
   msgExt->setReconsumeTimes(reconsumeTimes);
 
   // 14 Prepared Transaction Offset
-  int64 preparedTransactionOffset = byteBuffer.readInt64BigEndian();
+  int64_t preparedTransactionOffset = byteBuffer.readInt64BigEndian();
   msgExt->setPreparedTransactionOffset(preparedTransactionOffset);
 
   // 15 BODY
-  int bodyLen = byteBuffer.readIntBigEndian();
+  int uncompress_failed = false;
+  int32_t bodyLen = byteBuffer.readIntBigEndian();
   if (bodyLen > 0) {
     if (readBody) {
-      MemoryBlock block;
+      MemoryPool block;
       byteBuffer.readIntoMemoryBlock(block, bodyLen);
 
-      const char* const pBody = static_cast<const char*>(block.getData());
-      int len = block.getSize();
-      std::string msgbody(pBody, len);
-
       // decompress body
-      if ((sysFlag & MessageSysFlag::CompressedFlag) == MessageSysFlag::CompressedFlag) {
+      if (deCompressBody && (sysFlag & MessageSysFlag::CompressedFlag) == MessageSysFlag::CompressedFlag) {
         std::string outbody;
-        if (UtilAll::inflate(msgbody, outbody)) {
-          msgExt->setBody(outbody);
+        if (UtilAll::inflate(block.getData(), block.getSize(), outbody)) {
+          msgExt->setBody(std::move(outbody));
+        } else {
+          uncompress_failed = true;
         }
       } else {
-        msgExt->setBody(msgbody);
+        msgExt->setBody(block.getData(), block.getSize());
       }
     } else {
       byteBuffer.skipNextBytes(bodyLen);
@@ -166,83 +176,152 @@ MQMessageExt* MQDecoder::decode(MemoryInputStream& byteBuffer, bool readBody) {
   }
 
   // 16 TOPIC
-  int topicLen = (int)byteBuffer.readByte();
-  MemoryBlock block;
+  int8_t topicLen = byteBuffer.readByte();
+  MemoryPool block;
   byteBuffer.readIntoMemoryBlock(block, topicLen);
   const char* const pTopic = static_cast<const char*>(block.getData());
   topicLen = block.getSize();
   msgExt->setTopic(pTopic, topicLen);
 
   // 17 properties
-  short propertiesLen = byteBuffer.readShortBigEndian();
+  int16_t propertiesLen = byteBuffer.readShortBigEndian();
   if (propertiesLen > 0) {
-    MemoryBlock block;
+    MemoryPool block;
     byteBuffer.readIntoMemoryBlock(block, propertiesLen);
-    const char* const pProperty = static_cast<const char*>(block.getData());
-    int len = block.getSize();
-    std::string propertiesString(pProperty, len);
+    std::string propertiesString(block.getData(), block.getSize());
 
-    std::map<std::string, std::string> propertiesMap;
-    string2messageProperties(propertiesString, propertiesMap);
-    msgExt->setPropertiesInternal(propertiesMap);
-    propertiesMap.clear();
+    std::map<std::string, std::string> propertiesMap = string2messageProperties(propertiesString);
+    MessageAccessor::setProperties(*msgExt, std::move(propertiesMap));
   }
 
   // 18 msg ID
-  std::string offsetMsgId = createMessageId(msgExt->getStoreHost(), (int64)msgExt->getCommitLogOffset());
-  msgExt->setOffsetMsgId(offsetMsgId);
+  std::string msgId = createMessageId(msgExt->getStoreHost(), (int64_t)msgExt->getCommitLogOffset());
+  msgExt->MQMessageExt::setMsgId(msgId);
 
-  std::string msgId = msgExt->getProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);
-  if (msgId.empty()) {
-    msgId = offsetMsgId;
+  if (uncompress_failed) {
+    LOG_WARN_NEW("can not uncompress message, id:{}", msgExt->getMsgId());
   }
-  msgExt->setMsgId(msgId);
 
-  // LOG_INFO("get msgExt from remote server, its contents are:%s", msgExt->toString().c_str());
   return msgExt;
 }
 
-void MQDecoder::decodes(const MemoryBlock* mem, std::vector<MQMessageExt>& mqvec) {
-  mqvec.clear();
-  decodes(mem, mqvec, true);
+MQMessageExtPtr2 MQDecoder::decode(MemoryBlock& mem) {
+  return decode(mem, true);
 }
 
-void MQDecoder::decodes(const MemoryBlock* mem, std::vector<MQMessageExt>& mqvec, bool readBody) {
-  MemoryInputStream rawInput(*mem, true);
+MQMessageExtPtr2 MQDecoder::decode(MemoryBlock& mem, bool readBody) {
+  MemoryInputStream rawInput(mem, true);
+  MQMessageExtPtr2 message(decode(rawInput, readBody));
+  return message;
+}
 
+std::vector<MQMessageExtPtr2> MQDecoder::decodes(MemoryBlock& mem) {
+  return decodes(mem, true);
+}
+
+std::vector<MQMessageExtPtr2> MQDecoder::decodes(MemoryBlock& mem, bool readBody) {
+  std::vector<MQMessageExtPtr2> msgExts;
+  MemoryInputStream rawInput(mem, true);
   while (rawInput.getNumBytesRemaining() > 0) {
-    std::unique_ptr<MQMessageExt> msg(decode(rawInput, readBody));
-    mqvec.push_back(*msg);
+    auto* msgExt = clientDecode(rawInput, readBody);
+    if (msgExt != nullptr) {
+      msgExts.emplace_back(msgExt);
+    } else {
+      break;
+    }
   }
+  return msgExts;
 }
 
 std::string MQDecoder::messageProperties2String(const std::map<std::string, std::string>& properties) {
   std::string os;
 
   for (const auto& it : properties) {
-    // os << it->first << NAME_VALUE_SEPARATOR << it->second << PROPERTY_SEPARATOR;
-    os.append(it.first);
+    const auto& name = it.first;
+    const auto& value = it.second;
+
+    if (MQMessageConst::PROPERTY_ALREADY_COMPRESSED_FLAG == name) {
+      continue;
+    }
+
+    os.append(name);
     os += NAME_VALUE_SEPARATOR;
-    os.append(it.second);
+    os.append(value);
     os += PROPERTY_SEPARATOR;
   }
 
   return os;
 }
 
-void MQDecoder::string2messageProperties(const std::string& propertiesString,
-                                         std::map<std::string, std::string>& properties) {
+std::map<std::string, std::string> MQDecoder::string2messageProperties(const std::string& properties) {
   std::vector<std::string> out;
-  UtilAll::Split(out, propertiesString, PROPERTY_SEPARATOR);
+  UtilAll::Split(out, properties, PROPERTY_SEPARATOR);
 
+  std::map<std::string, std::string> map;
   for (size_t i = 0; i < out.size(); i++) {
     std::vector<std::string> outValue;
     UtilAll::Split(outValue, out[i], NAME_VALUE_SEPARATOR);
 
     if (outValue.size() == 2) {
-      properties[outValue[0]] = outValue[1];
+      map[outValue[0]] = outValue[1];
     }
   }
+  return map;
+}
+
+std::string MQDecoder::encodeMessage(MQMessage& message) {
+  const std::string& body = message.getBody();
+  uint32_t bodyLen = body.length();
+  std::string properties = MQDecoder::messageProperties2String(message.getProperties());
+  uint16_t propertiesLength = (int16_t)properties.length();
+  uint32_t storeSize = 4                        // 1 TOTALSIZE
+                       + 4                      // 2 MAGICCODE
+                       + 4                      // 3 BODYCRC
+                       + 4                      // 4 FLAG
+                       + 4 + bodyLen            // 5 BODY
+                       + 2 + propertiesLength;  // 6 PROPERTIES
+
+  // TOTALSIZE|MAGICCODE|BODYCRC|FLAG|BodyLen|Body|propertiesLength|properties
+  std::string encodeMsg;
+
+  // 1 TOTALSIZE
+  uint32_t storeSize_net = ByteOrder::swapIfLittleEndian(storeSize);
+  encodeMsg.append((char*)&storeSize_net, sizeof(uint32_t));
+
+  // 2 MAGICCODE
+  uint32_t magicCode = 0;
+  uint32_t magicCode_net = ByteOrder::swapIfLittleEndian(magicCode);
+  encodeMsg.append((char*)&magicCode_net, sizeof(uint32_t));
+
+  // 3 BODYCRC
+  uint32_t bodyCrc = 0;
+  uint32_t bodyCrc_net = ByteOrder::swapIfLittleEndian(bodyCrc);
+  encodeMsg.append((char*)&bodyCrc_net, sizeof(uint32_t));
+
+  // 4 FLAG
+  uint32_t flag = message.getFlag();
+  uint32_t flag_net = ByteOrder::swapIfLittleEndian(flag);
+  encodeMsg.append((char*)&flag_net, sizeof(uint32_t));
+
+  // 5 BODY
+  uint32_t bodyLen_net = ByteOrder::swapIfLittleEndian(bodyLen);
+  encodeMsg.append((char*)&bodyLen_net, sizeof(uint32_t));
+  encodeMsg.append(body);
+
+  // 6 properties
+  uint16_t propertiesLength_net = ByteOrder::swapIfLittleEndian(propertiesLength);
+  encodeMsg.append((char*)&propertiesLength_net, sizeof(uint16_t));
+  encodeMsg.append(std::move(properties));
+
+  return encodeMsg;
+}
+
+std::string MQDecoder::encodeMessages(std::vector<MQMessagePtr>& msgs) {
+  std::string encodedBody;
+  for (auto* message : msgs) {
+    encodedBody.append(encodeMessage(*message));
+  }
+  return encodedBody;
 }
 
 }  // namespace rocketmq

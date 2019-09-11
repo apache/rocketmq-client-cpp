@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PERMNAME_H__
-#define __PERMNAME_H__
+#ifndef __PERM_NAME_H__
+#define __PERM_NAME_H__
 
 #include <string>
 
 namespace rocketmq {
-//<!***************************************************************************
+
 class PermName {
  public:
   static int PERM_PRIORITY;
@@ -34,6 +34,6 @@ class PermName {
   static std::string perm2String(int perm);
 };
 
-//<!***************************************************************************
-}  //<!end namespace;
-#endif
+}  // namespace rocketmq
+
+#endif  // __PERM_NAME_H__

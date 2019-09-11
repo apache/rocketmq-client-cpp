@@ -17,6 +17,7 @@
 #ifndef __TIME_HPP__
 #define __TIME_HPP__
 
+#include <cassert>
 #include <chrono>
 
 namespace rocketmq {
@@ -38,7 +39,11 @@ inline std::chrono::steady_clock::time_point until_time_point(long delay, time_u
       return now + std::chrono::minutes(delay);
     case hours:
       return now + std::chrono::hours(delay);
+    default:
+      break;
   }
+  assert(false);
+  return now;
 }
 
 }  // namespace rocketmq

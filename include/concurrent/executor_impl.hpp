@@ -92,7 +92,7 @@ class thread_pool_executor : public abstract_executor_service {
   void run() {
     while (state_ & PROCESS_QUEUED_TASKS) {
       auto task = task_queue_.pop_front();
-      if (task) {
+      if (task != nullptr) {
         task->operator()();
       } else {
         if (!(state_ & ACCEPT_NEW_TASKS)) {

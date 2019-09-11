@@ -14,18 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MESSAGEID_H__
-#define __MESSAGEID_H__
+#ifndef __MESSAGE_ID_H__
+#define __MESSAGE_ID_H__
 
 #include "SocketUtil.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
-//<!***************************************************************************
+
 class MQMessageId {
  public:
   MQMessageId() {}
-  MQMessageId(sockaddr address, int64 offset) : m_address(address), m_offset(offset) {}
+  MQMessageId(sockaddr address, int64_t offset) : m_address(address), m_offset(offset) {}
   MQMessageId& operator=(const MQMessageId& id) {
     if (&id == this) {
       return *this;
@@ -35,19 +35,19 @@ class MQMessageId {
     return *this;
   }
 
-  sockaddr getAddress() const { return m_address; }
+  const sockaddr& getAddress() const { return m_address; }
 
   void setAddress(sockaddr address) { m_address = address; }
 
-  int64 getOffset() const { return m_offset; }
+  int64_t getOffset() const { return m_offset; }
 
-  void setOffset(int64 offset) { m_offset = offset; }
+  void setOffset(int64_t offset) { m_offset = offset; }
 
  private:
-  sockaddr m_address;
-  int64 m_offset;
+  sockaddr m_address;  // FIXME: store a pointer for ipv6
+  int64_t m_offset;
 };
 
 }  // namespace rocketmq
 
-#endif
+#endif  // __MESSAGE_ID_H__
