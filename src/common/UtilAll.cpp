@@ -17,6 +17,7 @@
 #include "UtilAll.h"
 
 #include <chrono>
+#include <iostream>
 
 namespace rocketmq {
 //<!************************************************************************
@@ -217,7 +218,7 @@ int64_t UtilAll::StringToInt64(const std::string& str, int64_t& val) {
   return true;
 }
 
-string UtilAll::getLocalHostName() {
+std::string UtilAll::getLocalHostName() {
   if (s_localHostName.empty()) {
     // boost::system::error_code error;
     // s_localHostName = boost::asio::ip::host_name(error);
@@ -232,7 +233,7 @@ string UtilAll::getLocalHostName() {
   return s_localHostName;
 }
 
-string UtilAll::getLocalAddress() {
+std::string UtilAll::getLocalAddress() {
   if (s_localIpAddress.empty()) {
     boost::asio::io_service io_service;
     boost::asio::ip::tcp::resolver resolver(io_service);
@@ -252,7 +253,7 @@ string UtilAll::getLocalAddress() {
   return s_localIpAddress;
 }
 
-string UtilAll::getHomeDirectory() {
+std::string UtilAll::getHomeDirectory() {
 #ifndef WIN32
   char* homeEnv = getenv("HOME");
   string homeDir;
