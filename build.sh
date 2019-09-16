@@ -410,10 +410,13 @@ ExecutionTesting()
 
 PackageRocketMQStatic()
 {
-    #packet libevent,jsoncpp,boost,rocketmq,Signature to one librocketmq.a
-    cp -f ${basepath}/libs/signature/lib/libSignature.a ${install_lib_dir}/lib
-    ar -M < ${basepath}/package_rocketmq.mri
-    cp -f librocketmq.a ${install_lib_dir}
+    if test "$(uname)" = "Linux"; then
+        echo "package static library."
+        #packet libevent,jsoncpp,boost,rocketmq,Signature to one librocketmq.a
+        cp -f ${basepath}/libs/signature/lib/libSignature.a ${install_lib_dir}/lib
+        ar -M < ${basepath}/package_rocketmq.mri
+        cp -f librocketmq.a ${install_lib_dir}
+    fi
 }
 
 PrintParams
