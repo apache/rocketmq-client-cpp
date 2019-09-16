@@ -22,12 +22,16 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <sstream>
+
 #ifndef WIN32
 #include <pwd.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #endif
+
 #include <boost/asio.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
@@ -38,8 +42,7 @@
 #include <boost/locale/conversion.hpp>
 #include <boost/locale/encoding.hpp>
 #include <boost/filesystem.hpp>
-#include <sstream>
-#include <iostream>
+
 #include "RocketMQClient.h"
 
 using namespace std;
@@ -117,9 +120,10 @@ class UtilAll {
   static int32_t StringToInt32(const std::string& str, int32_t& out);
   static int64_t StringToInt64(const std::string& str, int64_t& val);
 
-  static string getLocalHostName();
-  static string getLocalAddress();
-  static string getHomeDirectory();
+  static std::string getLocalHostName();
+  static std::string getLocalAddress();
+
+  static std::string getHomeDirectory();
   static void createDirectory(std::string const& dir);
   static bool existDirectory(std::string const& dir);
 

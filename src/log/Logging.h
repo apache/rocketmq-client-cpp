@@ -1,102 +1,87 @@
-#ifndef _SPDLOG_LOGGER_
-#define _SPDLOG_LOGGER_
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#ifndef __ROCKETMQ_LOGGING_H__
+#define __ROCKETMQ_LOGGING_H__
 
-#ifdef _WIN32
-#include <direct.h>
-#include <io.h>
-#else
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#endif
-#include <iostream>
-#include <mutex>
+#include <memory>
+#include <string>
+
+// clang-format off
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/bundled/printf.h>
+// clang-format on
+
 #include "MQClient.h"
-
-#ifdef _WIN32
-#define __FILENAME__ (strrchr(__FILE__, '\\') ? (strrchr(__FILE__, '\\') + 1) : __FILE__)
-#else
-#define __FILENAME__ (strrchr(__FILE__, '/') ? (strrchr(__FILE__, '/') + 1) : __FILE__)
-#endif
-
-// define log SUFFIX: [filename] [function:line] macro
-#ifndef SUFFIX
-#define SUFFIX(msg)                     \
-  std::string(msg)                      \
-      .append(" [")                     \
-      .append(__FILENAME__)             \
-      .append("] [")                    \
-      .append(__func__)                 \
-      .append(":")                      \
-      .append(std::to_string(__LINE__)) \
-      .append("]")                      \
-      .c_str()
-#endif
-
-// must define before spdlog.h
-#ifndef SPDLOG_TRACE_ON
-#define SPDLOG_TRACE_ON
-#endif
-
-#ifndef SPDLOG_DEBUG_ON
-#define SPDLOG_DEBUG_ON
-#endif
-
-#include "spdlog.h"
-#include "async.h"
-#include "sinks/stdout_color_sinks.h"
-#include "sinks/basic_file_sink.h"
-#include "sinks/rotating_file_sink.h"
 
 namespace rocketmq {
 
 class logAdapter {
  public:
   ~logAdapter();
+
   static logAdapter* getLogInstance();
+
   void setLogLevel(elogLevel logLevel);
   elogLevel getLogLevel();
+
   void setLogFileNumAndSize(int logNum, int sizeOfPerFile);
 
-  // auto getLogger() { return m_logger; } // c++14 or warning
-  std::shared_ptr<spdlog::async_logger>& getLogger() { return m_logger; }
-
- private:
-  logAdapter(const logAdapter&) = delete;
-  logAdapter& operator=(const logAdapter&) = delete;
+  spdlog::logger* getSeverityLogger() { return m_logger.get(); }
 
  private:
   logAdapter();
   void setLogLevelInner(elogLevel logLevel);
+
   elogLevel m_logLevel;
   std::string m_logFile;
-  std::shared_ptr<spdlog::async_logger> m_logger;
+
+  std::shared_ptr<spdlog::logger> m_logger;
   std::vector<spdlog::sink_ptr> m_logSinks;
-  static logAdapter* alogInstance;
-  static std::mutex m_imtx;
 };
 
 #define ALOG_ADAPTER logAdapter::getLogInstance()
+#define AGENT_LOGGER ALOG_ADAPTER->getSeverityLogger()
 
-#define AGENT_LOGGER AGENT_LOGGER()->getLogger()
-
-#define LOG_TRACE(msg, ...) logAdapter::getLogInstance()->getLogger()->trace(SUFFIX(msg), ##__VA_ARGS__)
-#define LOG_DEBUG(msg, ...) logAdapter::getLogInstance()->getLogger()->debug(SUFFIX(msg), ##__VA_ARGS__)
-#define LOG_INFO(msg, ...) logAdapter::getLogInstance()->getLogger()->info(SUFFIX(msg), ##__VA_ARGS__)
-#define LOG_WARN(msg, ...) logAdapter::getLogInstance()->getLogger()->warn(SUFFIX(msg), ##__VA_ARGS__)
-#define LOG_ERROR(msg, ...) logAdapter::getLogInstance()->getLogger()->error(SUFFIX(msg), ##__VA_ARGS__)
-#define LOG_CRITICAL(msg, ...) logAdapter::getLogInstance()->getLogger()->critical(SUFFIX(msg), ##__VA_ARGS__)
-
-#define criticalif(b, ...)                                              \
-  do {                                                                  \
-    if ((b)) {                                                          \
-      logAdapter::getLogInstance()->getLogger()->critical(__VA_ARGS__); \
-    }                                                                   \
+#define SPDLOG_PRINTF(logger, level, format, ...)                        \
+  do {                                                                   \
+    if (logger->should_log(level)) {                                     \
+      std::string message = fmt::sprintf(format, ##__VA_ARGS__);         \
+      logger->log(level, message); \
+      logger->log(level, "{} [{}:{}]", message, __FUNCTION__, __LINE__); \
+    }                                                                    \
   } while (0)
 
-#ifdef WIN32
-#define errcode WSAGetLastError()
-#endif
+#define LOG_FATAL(...) SPDLOG_PRINTF(AGENT_LOGGER, spdlog::level::critical, __VA_ARGS__)
+#define LOG_ERROR(...) SPDLOG_PRINTF(AGENT_LOGGER, spdlog::level::err, __VA_ARGS__)
+#define LOG_WARN(...) SPDLOG_PRINTF(AGENT_LOGGER, spdlog::level::warn, __VA_ARGS__)
+#define LOG_INFO(...) SPDLOG_PRINTF(AGENT_LOGGER, spdlog::level::info, __VA_ARGS__)
+#define LOG_DEBUG(...) SPDLOG_PRINTF(AGENT_LOGGER, spdlog::level::debug, __VA_ARGS__)
+
+#define SPDLOG_EXT(logger, level, format, ...)                                    \
+  do {                                                                            \
+    logger->log(level, format " [{}:{}]", ##__VA_ARGS__, __FUNCTION__, __LINE__); \
+  } while (0)
+
+#define LOG_FATAL_NEW(...) SPDLOG_EXT(AGENT_LOGGER, spdlog::level::critical, __VA_ARGS__)
+#define LOG_ERROR_NEW(...) SPDLOG_EXT(AGENT_LOGGER, spdlog::level::err, __VA_ARGS__)
+#define LOG_WARN_NEW(...) SPDLOG_EXT(AGENT_LOGGER, spdlog::level::warn, __VA_ARGS__)
+#define LOG_INFO_NEW(...) SPDLOG_EXT(AGENT_LOGGER, spdlog::level::info, __VA_ARGS__)
+#define LOG_DEBUG_NEW(...) SPDLOG_EXT(AGENT_LOGGER, spdlog::level::debug, __VA_ARGS__)
+
 }  // namespace rocketmq
-#endif
+
+#endif  // __ROCKETMQ_LOGGING_H__
