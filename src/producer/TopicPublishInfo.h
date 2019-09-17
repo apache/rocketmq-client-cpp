@@ -103,7 +103,7 @@ class TopicPublishInfo {
     if (m_nonSerivceQueues.find(key) != m_nonSerivceQueues.end()) {
       return;
     }
-    LOG_INFO("updateNonServiceMessageQueue of mq:{}", mq.toString().c_str());
+    LOG_INFO("updateNonServiceMessageQueue of mq:%s", mq.toString().c_str());
     m_brokerTimerMap[mq] = UtilAll::currentTimeMillis();
     m_nonSerivceQueues[key] = mq;
     if (m_onSerivceQueues.find(key) != m_onSerivceQueues.end()) {
@@ -141,7 +141,7 @@ class TopicPublishInfo {
 
           ++m_sendWhichQueue;
           MQMessageQueue mq = m_queues.at(pos);
-          LOG_DEBUG("lastmq broker not empty, m_sendWhichQueue:{}, pos:{}",
+          LOG_DEBUG("lastmq broker not empty, m_sendWhichQueue:%d, pos:%d",
                     m_sendWhichQueue.load(boost::memory_order_acquire), pos);
           if (mq.getBrokerName().compare(lastmq.getBrokerName()) != 0) {
             mq_index = pos;
@@ -157,7 +157,7 @@ class TopicPublishInfo {
         }
 
         ++m_sendWhichQueue;
-        LOG_DEBUG("lastmq broker empty, m_sendWhichQueue:{}, pos:{}",
+        LOG_DEBUG("lastmq broker empty, m_sendWhichQueue:%d, pos:%d",
                   m_sendWhichQueue.load(boost::memory_order_acquire), pos);
         mq_index = pos;
         return m_queues.at(pos);
@@ -216,7 +216,7 @@ class TopicPublishInfo {
             pos = pos % m_queues.size();
 
           ++m_sendWhichQueue;
-          LOG_DEBUG("lastmq broker empty, m_sendWhichQueue:{}, pos:{}",
+          LOG_DEBUG("lastmq broker empty, m_sendWhichQueue:%d, pos:%d",
                     m_sendWhichQueue.load(boost::memory_order_acquire), pos);
           mq_index = pos;
           MQMessageQueue mq = m_queues.at(pos);

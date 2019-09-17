@@ -86,7 +86,7 @@ class BatchEventProcessor : public boost::noncopyable, public EventProcessorInte
             try {
                 int64_t avalaible_sequence = \
                     sequence_barrier_->WaitFor(next_sequence, 300*1000);//wait 300 milliseconds to avoid taskThread blocking on BlockingStrategy::WaitFor when shutdown
-                //rocketmq::LOG_INFO("avalaible_sequence:{}, next_sequence:{}", avalaible_sequence,next_sequence);
+                //rocketmq::LOG_INFO("avalaible_sequence:%d, next_sequence:%d", avalaible_sequence,next_sequence);
                 while (next_sequence <= avalaible_sequence) {
                     event = ring_buffer_->Get(next_sequence);
                     event_handler_->OnEvent(next_sequence,

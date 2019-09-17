@@ -56,7 +56,7 @@ LocalFileOffsetStore::LocalFileOffsetStore(const string& groupName, MQClientFact
     boost::system::error_code ec;
     if (!boost::filesystem::exists(dir, ec)) {
       if (!boost::filesystem::create_directories(dir, ec)) {
-        LOG_ERROR("create offset store dir:{} error", storePath.c_str());
+        LOG_ERROR("create offset store dir:%s error", storePath.c_str());
         string errorMsg("create offset store dir fail: ");
         errorMsg.append(storePath);
         THROW_MQEXCEPTION(MQClientException, errorMsg, -1);
@@ -79,7 +79,7 @@ void LocalFileOffsetStore::load() {
           ia >> m_offsetTable_tmp;
         } catch (...) {
           LOG_ERROR(
-              "load offset store file failed, please check whether file: {} is "
+              "load offset store file failed, please check whether file: %s is "
               "cleared by operator, if so, delete this offsets.Json file and "
               "then restart consumer",
               m_storeFile.c_str());
@@ -95,7 +95,7 @@ void LocalFileOffsetStore::load() {
         ifs.close();
 
         for (map<string, int64>::iterator it = m_offsetTable_tmp.begin(); it != m_offsetTable_tmp.end(); ++it) {
-          // LOG_INFO("it->first:{}, it->second:{}", it->first.c_str(),
+          // LOG_INFO("it->first:%s, it->second:%lld", it->first.c_str(),
           // it->second);
           Json::Reader reader;
           Json::Value object;
@@ -106,7 +106,7 @@ void LocalFileOffsetStore::load() {
         m_offsetTable_tmp.clear();
       } else {
         LOG_ERROR(
-            "open offset store file failed, please check whether file: {} is "
+            "open offset store file failed, please check whether file: %s is "
             "cleared by operator, if so, delete this offsets.Json file and "
             "then restart consumer",
             m_storeFile.c_str());
@@ -118,12 +118,12 @@ void LocalFileOffsetStore::load() {
       }
     } else {
       LOG_ERROR(
-          "open offset store file failed, please check whether file:{} is "
+          "open offset store file failed, please check whether file:%s is "
           "deleted by operator and then restart consumer",
           m_storeFile.c_str());
       THROW_MQEXCEPTION(MQClientException,
                         "open offset store file failed, please check "
-                        "directory:{} is deleted by operator or offset.Json "
+                        "directory:%s is deleted by operator or offset.Json "
                         "file is cleared by operator, and then restart "
                         "consumer",
                         -1);
@@ -199,16 +199,16 @@ void LocalFileOffsetStore::persistAll(const std::vector<MQMessageQueue>& mqs) {
       // the same address.
       oa << const_cast<const map<string, int64>&>(m_offsetTable_tmp);
     } catch (...) {
-      LOG_ERROR("persist offset store file:{} failed", m_storeFile.c_str());
+      LOG_ERROR("persist offset store file:%s failed", m_storeFile.c_str());
       s.close();
       THROW_MQEXCEPTION(MQClientException, "persistAll:open offset store file failed", -1);
     }
     s.close();
     if (!UtilAll::ReplaceFile(storefile_bak, m_storeFile))
-      LOG_ERROR("could not rename bak file:{}", strerror(errno));
+      LOG_ERROR("could not rename bak file:%s", strerror(errno));
     m_offsetTable_tmp.clear();
   } else {
-    LOG_ERROR("open offset store file:{} failed", m_storeFile.c_str());
+    LOG_ERROR("open offset store file:%s failed", m_storeFile.c_str());
     m_offsetTable_tmp.clear();
     THROW_MQEXCEPTION(MQClientException, "persistAll:open offset store file failed", -1);
   }
@@ -307,7 +307,7 @@ void RemoteBrokerOffsetStore::updateConsumeOffsetToBroker(const MQMessageQueue& 
     pRequestHeader->commitOffset = offset;
 
     try {
-      LOG_INFO("oneway updateConsumeOffsetToBroker of mq:{}, its offset is:{}", mq.toString().c_str(), offset);
+      LOG_INFO("oneway updateConsumeOffsetToBroker of mq:%s, its offset is:%lld", mq.toString().c_str(), offset);
       return m_pClientFactory->getMQClientAPIImpl()->updateConsumerOffsetOneway(
           pFindBrokerResult->brokerAddr, pRequestHeader, 1000 * 5, session_credentials);
     } catch (MQException& e) {

@@ -75,8 +75,8 @@ class AllocateMQAveragely : public AllocateMQStrategy {
     int startIndex = (mod > 0 && index < mod) ? index * averageSize : index * averageSize + mod;
     int range = (std::min)(averageSize, mqAllSize - startIndex);
     LOG_INFO(
-        "range is:{}, index is:{}, mqAllSize is:{}, averageSize is:{}, "
-        "startIndex is:{}",
+        "range is:%d, index is:%d, mqAllSize is:%d, averageSize is:%d, "
+        "startIndex is:%d",
         range, index, mqAllSize, averageSize, startIndex);
     //<!out;
     if (range >= 0)  // example: range is:-1, index is:1, mqAllSize is:1,

@@ -129,20 +129,19 @@ void TcpTransport::disconnect(const string& addr) {
   // disconnect is idempotent.
   std::lock_guard<std::mutex> lock(m_eventLock);
   if (getTcpConnectStatus() != TCP_CONNECT_STATUS_INIT) {
-    LOG_INFO("disconnect:{} start.", addr.c_str());
-    LOG_INFO("disconnect: event:{0:x}.", (long long)m_event.get());
+    LOG_INFO("disconnect:%s start. event:%x", addr.c_str(), (long long)m_event.get());
     freeBufferEvent();
     setTcpConnectEvent(TCP_CONNECT_STATUS_INIT);
-    LOG_INFO("disconnect:{} completely", addr.c_str());
+    LOG_INFO("disconnect:%s completely", addr.c_str());
   }
 }
 
 TcpConnectStatus TcpTransport::connect(const string& strServerURL, int timeoutMillis) {
   string hostname;
   short port;
-  LOG_DEBUG("connect to [{}].", strServerURL.c_str());
+  LOG_DEBUG("connect to [%s].", strServerURL.c_str());
   if (!UtilAll::SplitURL(strServerURL, hostname, port)) {
-    LOG_INFO("connect to [{}] failed, Invalid url.", strServerURL.c_str());
+    LOG_INFO("connect to [%s] failed, Invalid url.", strServerURL.c_str());
     return TCP_CONNECT_STATUS_FAILED;
   }
 
@@ -162,7 +161,7 @@ TcpConnectStatus TcpTransport::connect(const string& strServerURL, int timeoutMi
 
     setTcpConnectStatus(TCP_CONNECT_STATUS_WAIT);
     if (m_event->connect((struct sockaddr*)&sin, sizeof(sin)) < 0) {
-      LOG_INFO("connect to fd:{} failed", m_event->getfd());
+      LOG_INFO("connect to fd:%d failed", m_event->getfd());
       freeBufferEvent();
       setTcpConnectStatus(TCP_CONNECT_STATUS_FAILED);
       return TCP_CONNECT_STATUS_FAILED;
@@ -170,13 +169,13 @@ TcpConnectStatus TcpTransport::connect(const string& strServerURL, int timeoutMi
   }
 
   if (timeoutMillis <= 0) {
-    LOG_INFO("try to connect to fd:{}, addr:{}", m_event->getfd(), hostname.c_str());
+    LOG_INFO("try to connect to fd:%d, addr:%s", m_event->getfd(), hostname.c_str());
     return TCP_CONNECT_STATUS_WAIT;
   }
 
   TcpConnectStatus connectStatus = waitTcpConnectEvent(timeoutMillis);
   if (connectStatus != TCP_CONNECT_STATUS_SUCCESS) {
-    LOG_WARN("can not connect to server:{}", strServerURL.c_str());
+    LOG_WARN("can not connect to server:%s", strServerURL.c_str());
 
     std::lock_guard<std::mutex> lock(m_eventLock);
     freeBufferEvent();
@@ -189,21 +188,21 @@ TcpConnectStatus TcpTransport::connect(const string& strServerURL, int timeoutMi
 
 void TcpTransport::eventCallback(BufferEvent* event, short what, TcpTransport* transport) {
   socket_t fd = event->getfd();
-  LOG_INFO("eventcb: received event:{} on fd:{}", what, fd);
+  LOG_INFO("eventcb: received event:%x on fd:%d", what, fd);
   if (what & BEV_EVENT_CONNECTED) {
-    LOG_INFO("eventcb: connect to fd:{} successfully", fd);
+    LOG_INFO("eventcb: connect to fd:%d successfully", fd);
 
     // disable Nagle
     int val = 1;
     setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void*)&val, sizeof(val));
     transport->setTcpConnectEvent(TCP_CONNECT_STATUS_SUCCESS);
   } else if (what & (BEV_EVENT_ERROR | BEV_EVENT_EOF | BEV_EVENT_READING | BEV_EVENT_WRITING)) {
-    LOG_INFO("eventcb: received error event cb:{} on fd:{}", what, fd);
+    LOG_INFO("eventcb: received error event cb:%x on fd:%d", what, fd);
     // if error, stop callback.
     event->setCallback(nullptr, nullptr, nullptr, nullptr);
     transport->setTcpConnectEvent(TCP_CONNECT_STATUS_FAILED);
   } else {
-    LOG_ERROR("eventcb: received error event:{} on fd:{}", what, fd);
+    LOG_ERROR("eventcb: received error event:%d on fd:%d", what, fd);
   }
 }
 
@@ -239,7 +238,7 @@ void TcpTransport::readNextMessageIntCallback(BufferEvent* event, TcpTransport* 
     }
 
     if (needed > 0) {
-      LOG_DEBUG("too little data received with sum = {}", 4 - needed);
+      LOG_DEBUG("too little data received with sum = %d", 4 - needed);
       return;
     }
 
@@ -247,9 +246,9 @@ void TcpTransport::readNextMessageIntCallback(BufferEvent* event, TcpTransport* 
     uint32 msgLen = ntohl(totalLenOfOneMsg);
     size_t recvLen = evbuffer_get_length(input);
     if (recvLen >= msgLen + 4) {
-      LOG_DEBUG("had received all data. msgLen:{}, from:{}, recvLen:{}", msgLen, event->getfd(), recvLen);
+      LOG_DEBUG("had received all data. msgLen:%d, from:%d, recvLen:%d", msgLen, event->getfd(), recvLen);
     } else {
-      LOG_DEBUG("didn't received whole. msgLen:{}, from:{}, recvLen:{}", msgLen, event->getfd(), recvLen);
+      LOG_DEBUG("didn't received whole. msgLen:%d, from:%d, recvLen:%d", msgLen, event->getfd(), recvLen);
       return;  // consider large data which was not received completely by now
     }
 

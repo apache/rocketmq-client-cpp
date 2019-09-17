@@ -197,7 +197,7 @@ MQMessageExt* MQDecoder::decode(MemoryInputStream& byteBuffer, bool readBody) {
   }
   msgExt->setMsgId(msgId);
 
-  // LOG_INFO("get msgExt from remote server, its contents are:{}", msgExt->toString().c_str());
+  // LOG_INFO("get msgExt from remote server, its contents are:%s", msgExt->toString().c_str());
   return msgExt;
 }
 

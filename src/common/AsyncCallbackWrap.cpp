@@ -79,17 +79,17 @@ void SendCallbackWrap::operationComplete(ResponseFuture* pResponseFuture, bool b
       MQException exception(err, -1, __FILE__, __LINE__);
       pCallback->onException(exception);
     }
-    LOG_ERROR("send failed of:{}", pResponseFuture->getOpaque());
+    LOG_ERROR("send failed of:%d", pResponseFuture->getOpaque());
   } else {
     try {
       SendResult ret = m_pClientAPI->processSendResponse(m_brokerName, m_msg, pResponse.get());
       if (pCallback) {
-        LOG_DEBUG("operationComplete: processSendResponse success, opaque:{}, maxRetryTime:{}, retrySendTimes:{}",
+        LOG_DEBUG("operationComplete: processSendResponse success, opaque:%d, maxRetryTime:%d, retrySendTimes:%d",
                   opaque, pResponseFuture->getMaxRetrySendTimes(), pResponseFuture->getRetrySendTimes());
         pCallback->onSuccess(ret);
       }
     } catch (MQException& e) {
-      LOG_ERROR("operationComplete: processSendResponse exception: {}", e.what());
+      LOG_ERROR("operationComplete: processSendResponse exception: %s", e.what());
 
       // broker may return exception, need consider retry send
       int maxRetryTimes = pResponseFuture->getMaxRetrySendTimes();
@@ -99,7 +99,7 @@ void SendCallbackWrap::operationComplete(ResponseFuture* pResponseFuture, bool b
         string brokerAddr = pResponseFuture->getBrokerAddr();
         const RemotingCommand& requestCommand = pResponseFuture->getRequestCommand();
         retryTimes += 1;
-        LOG_WARN("retry send, opaque:{}, sendTimes:{}, maxRetryTimes:{}, left_timeout:{}, brokerAddr:{}, msg:{}",
+        LOG_WARN("retry send, opaque:%d, sendTimes:%d, maxRetryTimes:%d, left_timeout:%lld, brokerAddr:%s, msg:%s",
                  opaque, retryTimes, maxRetryTimes, left_timeout_ms, brokerAddr.data(), m_msg.toString().data());
 
         bool exception_flag = false;
@@ -108,7 +108,7 @@ void SendCallbackWrap::operationComplete(ResponseFuture* pResponseFuture, bool b
                                          (RemotingCommand&)requestCommand, pCallback, left_timeout_ms, maxRetryTimes,
                                          retryTimes);
         } catch (MQClientException& e) {
-          LOG_ERROR("retry send exception:{}, opaque:{}, retryTimes:{}, msg:{}, not retry send again", e.what(), opaque,
+          LOG_ERROR("retry send exception:%s, opaque:%d, retryTimes:%d, msg:%s, not retry send again", e.what(), opaque,
                     retryTimes, m_msg.toString().data());
           exception_flag = true;
         }
@@ -167,7 +167,7 @@ void PullCallbackWarp::operationComplete(ResponseFuture* pResponseFuture, bool b
       err = "wait response timeout";
     }
     MQException exception(err, -1, __FILE__, __LINE__);
-    LOG_ERROR("Async pull exception of opaque:{}", pResponseFuture->getOpaque());
+    LOG_ERROR("Async pull exception of opaque:%d", pResponseFuture->getOpaque());
     if (pCallback && bProducePullRequest)
       pCallback->onException(exception);
   } else {

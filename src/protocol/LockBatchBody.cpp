@@ -79,14 +79,14 @@ void LockBatchResponseBody::Decode(const MemoryBlock* mem, vector<MQMessageQueue
   }
 
   Json::Value mqs = root["lockOKMQSet"];
-  LOG_DEBUG("LockBatchResponseBody mqs size:{}", mqs.size());
+  LOG_DEBUG("LockBatchResponseBody mqs size:%d", mqs.size());
   for (unsigned int i = 0; i < mqs.size(); i++) {
     MQMessageQueue mq;
     Json::Value qd = mqs[i];
     mq.setTopic(qd["topic"].asString());
     mq.setBrokerName(qd["brokerName"].asString());
     mq.setQueueId(qd["queueId"].asInt());
-    LOG_INFO("LockBatchResponseBody MQ:{}", mq.toString().c_str());
+    LOG_INFO("LockBatchResponseBody MQ:%s", mq.toString().c_str());
     messageQueues.push_back(mq);
   }
 }

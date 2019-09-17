@@ -47,7 +47,7 @@ void taskBatchHandler::OnEvent(const int64_t& sequence, const bool& end_of_batch
 }
 
 void taskBatchHandler::runTaskEvent(Task event, int64_t sequence) {
-  // LOG_INFO("processor event sequence:{}",  sequence);
+  // LOG_INFO("processor event sequence:%lld",  sequence);
   event.run();
 }
 
@@ -59,7 +59,7 @@ void taskBatchHandler::stopIOService() {
 taskEventTranslator::taskEventTranslator(Task* event) : m_taskEvent(event) {}
 
 Task* taskEventTranslator::TranslateTo(const int64_t& sequence, Task* event) {
-  // LOG_INFO("publish sequence:{}, event:{}", sequence, event);
+  // LOG_INFO("publish sequence:%lld, event:%x", sequence, event);
   *event = *m_taskEvent;
   return event;
 };

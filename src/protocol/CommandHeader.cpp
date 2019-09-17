@@ -170,11 +170,11 @@ void SendMessageRequestHeader::setReconsumeTimes(int input_reconsumeTimes) {
 
 void SendMessageRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
   LOG_DEBUG(
-      "SendMessageRequestHeader producerGroup is:{},topic is:{}, defaulttopic "
-      "is:{}, properties is:{},UtilAll::to_string( defaultTopicQueueNums) "
-      "is:{},UtilAll::to_string( queueId):{}, UtilAll::to_string( sysFlag) "
-      "is:{}, UtilAll::to_string( bornTimestamp) is:{},UtilAll::to_string( "
-      "flag) is:{}",
+      "SendMessageRequestHeader producerGroup is:%s,topic is:%s, defaulttopic "
+      "is:%s, properties is:%s,UtilAll::to_string( defaultTopicQueueNums) "
+      "is:%s,UtilAll::to_string( queueId):%s, UtilAll::to_string( sysFlag) "
+      "is:%s, UtilAll::to_string( bornTimestamp) is:%s,UtilAll::to_string( "
+      "flag) is:%s",
       producerGroup.c_str(), topic.c_str(), defaultTopic.c_str(), properties.c_str(),
       UtilAll::to_string(defaultTopicQueueNums).c_str(), UtilAll::to_string(queueId).c_str(),
       UtilAll::to_string(sysFlag).c_str(), UtilAll::to_string(bornTimestamp).c_str(), UtilAll::to_string(flag).c_str());
@@ -534,7 +534,7 @@ CommandHeader* ResetOffsetRequestHeader::Decode(Json::Value& ext) {
   if (tempValue.isString()) {
     h->isForce = UtilAll::to_bool(tempValue.asCString());
   }
-  LOG_INFO("topic:{}, group:{}, timestamp:{}, isForce:{},isForce:{}", h->topic.c_str(), h->group.c_str(),
+  LOG_INFO("topic:%s, group:%s, timestamp:%lld, isForce:%d,isForce:%s", h->topic.c_str(), h->group.c_str(),
            h->timestamp, h->isForce, tempValue.asCString());
   return h;
 }
@@ -556,7 +556,7 @@ CommandHeader* GetConsumerRunningInfoRequestHeader::Decode(Json::Value& ext) {
   if (tempValue.isString()) {
     h->jstackEnable = UtilAll::to_bool(tempValue.asCString());
   }
-  LOG_INFO("consumerGroup:{}, clientId:{},  jstackEnable:{}", h->consumerGroup.c_str(), h->clientId.c_str(),
+  LOG_INFO("consumerGroup:%s, clientId:%s,  jstackEnable:%d", h->consumerGroup.c_str(), h->clientId.c_str(),
            h->jstackEnable);
   return h;
 }

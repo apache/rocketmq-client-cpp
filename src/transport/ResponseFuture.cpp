@@ -64,7 +64,7 @@ RemotingCommand* ResponseFuture::waitResponse(int timeoutMillis) {
       timeoutMillis = m_timeout;
     }
     if (m_defaultEvent.wait_for(eventLock, std::chrono::milliseconds(timeoutMillis)) == std::cv_status::timeout) {
-      LOG_WARN("waitResponse of code:{} with opaque:{} timeout", m_requestCode, m_opaque);
+      LOG_WARN("waitResponse of code:%d with opaque:%d timeout", m_requestCode, m_opaque);
       m_haveResponse = true;
     }
   }
@@ -123,7 +123,7 @@ void ResponseFuture::invokeExceptionCallback() {
     return;
   } else {
     // here no need retrySendTimes process because of it have timeout
-    LOG_ERROR("send msg, callback timeout, opaque:{}, sendTimes:{}, maxRetryTimes:{}", getOpaque(), getRetrySendTimes(),
+    LOG_ERROR("send msg, callback timeout, opaque:%d, sendTimes:%d, maxRetryTimes:%d", getOpaque(), getRetrySendTimes(),
               getMaxRetrySendTimes());
 
     m_pCallbackWrap->onException();

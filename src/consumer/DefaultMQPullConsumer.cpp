@@ -68,7 +68,7 @@ void DefaultMQPullConsumer::start() {
     case CREATE_JUST: {
       m_serviceState = START_FAILED;
       MQClient::start();
-      LOG_INFO("DefaultMQPullConsumer:{} start", m_GroupName.c_str());
+      LOG_INFO("DefaultMQPullConsumer:%s start", m_GroupName.c_str());
 
       //<!create rebalance;
       m_pRebalance = new RebalancePull(this, getFactory());
@@ -127,7 +127,7 @@ void DefaultMQPullConsumer::start() {
 void DefaultMQPullConsumer::shutdown() {
   switch (m_serviceState) {
     case RUNNING: {
-      LOG_INFO("DefaultMQPullConsumer:{} shutdown", m_GroupName.c_str());
+      LOG_INFO("DefaultMQPullConsumer:%s shutdown", m_GroupName.c_str());
       persistConsumerOffset();
       getFactory()->unregisterConsumer(this);
       getFactory()->shutdown();

@@ -47,7 +47,7 @@ MQClientFactory::MQClientFactory(const string& clientID,
 }
 
 MQClientFactory::~MQClientFactory() {
-  LOG_INFO("MQClientFactory:{} destruct", m_clientId.c_str());
+  LOG_INFO("MQClientFactory:%s destruct", m_clientId.c_str());
 
   for (TRDMAP::iterator itp = m_topicRouteTable.begin(); itp != m_topicRouteTable.end(); ++itp) {
     delete itp->second;
@@ -65,7 +65,7 @@ MQClientFactory::~MQClientFactory() {
 void MQClientFactory::start() {
   switch (m_serviceState) {
     case CREATE_JUST:
-      LOG_INFO("MQClientFactory:{} start", m_clientId.c_str());
+      LOG_INFO("MQClientFactory:%s start", m_clientId.c_str());
       m_serviceState = START_FAILED;
       //<!start time task;
       m_async_service_thread.reset(
@@ -75,7 +75,7 @@ void MQClientFactory::start() {
     case RUNNING:
     case SHUTDOWN_ALREADY:
     case START_FAILED:
-      LOG_INFO("The Factory object:{} start failed with fault state:{}", m_clientId.c_str(), m_serviceState);
+      LOG_INFO("The Factory object:%s start failed with fault state:%d", m_clientId.c_str(), m_serviceState);
       break;
     default:
       break;
@@ -143,7 +143,7 @@ boost::shared_ptr<TopicPublishInfo> MQClientFactory::tryToFindTopicPublishInfo(
   }
 
   if (!isTopicInfoValidInTable(topic)) {
-    LOG_WARN("tryToFindTopicPublishInfo null:{}", topic.c_str());
+    LOG_WARN("tryToFindTopicPublishInfo null:%s", topic.c_str());
     boost::shared_ptr<TopicPublishInfo> pTopicPublishInfo;
     return pTopicPublishInfo;
   }
@@ -156,7 +156,7 @@ bool MQClientFactory::updateTopicRouteInfoFromNameServer(const string& topic,
                                                          bool isDefault /* = false */) {
   boost::lock_guard<boost::mutex> lock(m_factoryLock);
   unique_ptr<TopicRouteData> pTopicRouteData;
-  LOG_INFO("updateTopicRouteInfoFromNameServer start:{}", topic.c_str());
+  LOG_INFO("updateTopicRouteInfoFromNameServer start:%s", topic.c_str());
 
   if (isDefault) {
     pTopicRouteData.reset(
@@ -170,7 +170,7 @@ bool MQClientFactory::updateTopicRouteInfoFromNameServer(const string& topic,
         it->writeQueueNums = queueNums;
       }
     }
-    LOG_DEBUG("getTopicRouteInfoFromNameServer is null for topic :{}", topic.c_str());
+    LOG_DEBUG("getTopicRouteInfoFromNameServer is null for topic :%s", topic.c_str());
   } else {
     pTopicRouteData.reset(m_pClientAPIImpl->getTopicRouteInfoFromNameServer(topic, 1000 * 5, session_credentials));
   }
@@ -191,11 +191,11 @@ bool MQClientFactory::updateTopicRouteInfoFromNameServer(const string& topic,
 
     if (changed) {
       //<!update Broker addr
-      LOG_INFO("updateTopicRouteInfoFromNameServer changed:{}", topic.c_str());
+      LOG_INFO("updateTopicRouteInfoFromNameServer changed:%s", topic.c_str());
       vector<BrokerData> brokerList = pTopicRouteData->getBrokerDatas();
       vector<BrokerData>::iterator it = brokerList.begin();
       for (; it != brokerList.end(); ++it) {
-        LOG_INFO("updateTopicRouteInfoFromNameServer changed with broker name:{}", (*it).brokerName.c_str());
+        LOG_INFO("updateTopicRouteInfoFromNameServer changed with broker name:%s", (*it).brokerName.c_str());
         addBrokerToAddrMap((*it).brokerName, (*it).brokerAddrs);
       }
 
@@ -208,10 +208,10 @@ bool MQClientFactory::updateTopicRouteInfoFromNameServer(const string& topic,
       //<! update subscribe info
       addTopicRouteData(topic, pTopicRouteData.release());
     }
-    LOG_DEBUG("updateTopicRouteInfoFromNameServer end:{}", topic.c_str());
+    LOG_DEBUG("updateTopicRouteInfoFromNameServer end:%s", topic.c_str());
     return true;
   }
-  LOG_DEBUG("updateTopicRouteInfoFromNameServer end null:{}", topic.c_str());
+  LOG_DEBUG("updateTopicRouteInfoFromNameServer end null:%s", topic.c_str());
   return false;
 }
 
@@ -295,7 +295,7 @@ void MQClientFactory::shutdown() {
                                                       // responseFuture
                                                       // conditions
       m_serviceState = SHUTDOWN_ALREADY;
-      LOG_INFO("MQClientFactory:{} shutdown", m_clientId.c_str());
+      LOG_INFO("MQClientFactory:%s shutdown", m_clientId.c_str());
       break;
     }
     case SHUTDOWN_ALREADY:
@@ -319,7 +319,7 @@ bool MQClientFactory::registerProducer(MQProducer* pProducer) {
     return false;
   }
 
-  LOG_DEBUG("registerProducer success:{}", groupName.c_str());
+  LOG_DEBUG("registerProducer success:%s", groupName.c_str());
   //<!set nameserver;
   if (namesrvaddr.empty()) {
     string nameSrvDomain(pProducer->getNamesrvDomain());
@@ -329,7 +329,7 @@ bool MQClientFactory::registerProducer(MQProducer* pProducer) {
   } else {
     m_bFetchNSService = false;
     m_pClientAPIImpl->updateNameServerAddr(namesrvaddr);
-    LOG_INFO("user specfied name server address: {}", namesrvaddr.c_str());
+    LOG_INFO("user specfied name server address: %s", namesrvaddr.c_str());
   }
   return true;
 }
@@ -351,7 +351,7 @@ bool MQClientFactory::registerConsumer(MQConsumer* pConsumer) {
   if (!addConsumerToTable(groupName, pConsumer)) {
     return false;
   }
-  LOG_DEBUG("registerConsumer success:{}", groupName.c_str());
+  LOG_DEBUG("registerConsumer success:%s", groupName.c_str());
   //<!set nameserver;
   if (namesrvaddr.empty()) {
     string nameSrvDomain(pConsumer->getNamesrvDomain());
@@ -361,7 +361,7 @@ bool MQClientFactory::registerConsumer(MQConsumer* pConsumer) {
   } else {
     m_bFetchNSService = false;
     m_pClientAPIImpl->updateNameServerAddr(namesrvaddr);
-    LOG_INFO("user specfied name server address: {}", namesrvaddr.c_str());
+    LOG_INFO("user specfied name server address: %s", namesrvaddr.c_str());
   }
 
   return true;
@@ -471,7 +471,7 @@ void MQClientFactory::eraseConsumerFromTable(const string& consumerName) {
     m_consumerTable.erase(consumerName);  // do not need freee pConsumer, as it
                                           // was allocated by user
   else
-    LOG_WARN("could not find consumer:{} from table", consumerName.c_str());
+    LOG_WARN("could not find consumer:%s from table", consumerName.c_str());
 }
 
 int MQClientFactory::getConsumerTableSize() {
@@ -800,7 +800,7 @@ void MQClientFactory::startScheduledTask(bool startFetchNSService) {
     t5->async_wait(boost::bind(&MQClientFactory::fetchNameServerAddr, this, ec5, t5));
   }
 
-  LOG_INFO("start scheduled task:{}", m_clientId.c_str());
+  LOG_INFO("start scheduled task:%s", m_clientId.c_str());
   boost::system::error_code ec;
   m_async_ioService.run(ec);
 }
@@ -815,7 +815,7 @@ void MQClientFactory::rebalanceImmediately() {
 }
 
 void MQClientFactory::consumer_timerOperation() {
-  LOG_INFO("clientFactory:{} start consumer_timerOperation", m_clientId.c_str());
+  LOG_INFO("clientFactory:%s start consumer_timerOperation", m_clientId.c_str());
   boost::asio::io_service::work work(m_consumer_async_ioService);  // avoid async io
                                                                    // service stops after
                                                                    // first timer timeout
@@ -831,7 +831,7 @@ void MQClientFactory::consumer_timerOperation() {
 
   boost::system::error_code ec;
   m_consumer_async_ioService.run(ec);
-  LOG_INFO("clientFactory:{} stop consumer_timerOperation", m_clientId.c_str());
+  LOG_INFO("clientFactory:%s stop consumer_timerOperation", m_clientId.c_str());
 }
 
 void MQClientFactory::timerCB_doRebalance(boost::system::error_code& ec, boost::asio::deadline_timer* t) {
@@ -843,20 +843,20 @@ void MQClientFactory::timerCB_doRebalance(boost::system::error_code& ec, boost::
 }
 
 void MQClientFactory::doRebalance() {
-  LOG_INFO("Client factory:{} start dorebalance", m_clientId.c_str());
+  LOG_INFO("Client factory:%s start dorebalance", m_clientId.c_str());
   if (getConsumerTableSize() > 0) {
     boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
     for (MQCMAP::iterator it = m_consumerTable.begin(); it != m_consumerTable.end(); ++it) {
       it->second->doRebalance();
     }
   }
-  LOG_INFO("Client factory:{} finish dorebalance", m_clientId.c_str());
+  LOG_INFO("Client factory:%s finish dorebalance", m_clientId.c_str());
 }
 
 void MQClientFactory::doRebalanceByConsumerGroup(const string& consumerGroup) {
   boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
   if (m_consumerTable.find(consumerGroup) != m_consumerTable.end()) {
-    LOG_INFO("Client factory:{} start dorebalance for consumer:{}", m_clientId.c_str(), consumerGroup.c_str());
+    LOG_INFO("Client factory:%s start dorebalance for consumer:%s", m_clientId.c_str(), consumerGroup.c_str());
     MQConsumer* pMQConsumer = m_consumerTable[consumerGroup];
     pMQConsumer->doRebalance();
   }
@@ -1023,7 +1023,7 @@ void MQClientFactory::findConsumerIds(const string& topic,
 
   if (!brokerAddr.empty()) {
     try {
-      LOG_INFO("getConsumerIdList from broker:{}", brokerAddr.c_str());
+      LOG_INFO("getConsumerIdList from broker:%s", brokerAddr.c_str());
       return m_pClientAPIImpl->getConsumerIdListByGroup(brokerAddr, group, cids, 5000, sessionCredentials);
     } catch (MQException& e) {
       LOG_ERROR(e.what());
@@ -1043,18 +1043,18 @@ void MQClientFactory::resetOffset(const string& group,
       PullRequest* pullreq = pConsumer->getRebalance()->getPullRequest(mq);
       if (pullreq) {
         pullreq->setDroped(true);
-        LOG_INFO("resetOffset setDroped for mq:{}", mq.toString().data());
+        LOG_INFO("resetOffset setDroped for mq:%s", mq.toString().data());
         pullreq->clearAllMsgs();
         pullreq->updateQueueMaxOffset(it->second);
       } else {
-        LOG_ERROR("no corresponding pullRequest found for topic:{}", topic.c_str());
+        LOG_ERROR("no corresponding pullRequest found for topic:%s", topic.c_str());
       }
     }
 
     for (it = offsetTable.begin(); it != offsetTable.end(); ++it) {
       MQMessageQueue mq = it->first;
       if (topic == mq.getTopic()) {
-        LOG_INFO("offset sets to:{}", it->second);
+        LOG_INFO("offset sets to:%lld", it->second);
         pConsumer->updateConsumeOffset(mq, it->second);
       }
     }
@@ -1065,7 +1065,7 @@ void MQClientFactory::resetOffset(const string& group,
     for (it = offsetTable.begin(); it != offsetTable.end(); ++it) {
       MQMessageQueue mq = it->first;
       if (topic == mq.getTopic()) {
-        LOG_DEBUG("resetOffset sets to:{} for mq:{}", it->second, mq.toString().c_str());
+        LOG_DEBUG("resetOffset sets to:%lld for mq:%s", it->second, mq.toString().c_str());
         pConsumer->updateConsumeOffset(mq, it->second);
       }
     }
@@ -1082,7 +1082,7 @@ void MQClientFactory::resetOffset(const string& group,
     // timerCB_doRebalance;
     doRebalanceByConsumerGroup(pConsumer->getGroupName());
   } else {
-    LOG_ERROR("no corresponding consumer found for group:{}", group.c_str());
+    LOG_ERROR("no corresponding consumer found for group:%s", group.c_str());
   }
 }
 
@@ -1103,7 +1103,7 @@ ConsumerRunningInfo* MQClientFactory::consumerRunningInfo(const string& consumer
     }
   }
 
-  LOG_ERROR("no corresponding consumer found for group:{}", consumerGroup.c_str());
+  LOG_ERROR("no corresponding consumer found for group:%s", consumerGroup.c_str());
   return NULL;
 }
 

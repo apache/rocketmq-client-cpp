@@ -137,7 +137,7 @@ void MQClient::start() {
   }
   LOG_INFO(
       "MQClient "
-      "start,groupname:{},clientID:{},instanceName:{},nameserveraddr:{}",
+      "start,groupname:%s,clientID:%s,instanceName:%s,nameserveraddr:%s",
       getGroupName().c_str(), getMQClientId().c_str(), getInstanceName().c_str(), getNamesrvAddr().c_str());
 }
 
