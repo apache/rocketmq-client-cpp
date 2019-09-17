@@ -17,7 +17,6 @@
 #include "UtilAll.h"
 
 #include <chrono>
-#include <iostream>
 
 namespace rocketmq {
 //<!************************************************************************
@@ -266,6 +265,50 @@ std::string UtilAll::getHomeDirectory() {
   string homeDir(getenv("USERPROFILE"));
 #endif
   return homeDir;
+}
+
+static bool createDirectoryInner(const char *dir)
+{
+    if (dir == nullptr)  {
+        return false;
+    }
+    if (access(dir, 0) == -1) {
+#ifdef _WIN32
+        int flag = mkdir(dir);
+#else
+        int flag = mkdir(dir, 0755);
+#endif
+        if (flag == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+	return true;
+}
+
+void UtilAll::createDirectory(std::string const& dir) {
+    const char* ptr = dir.c_str();
+    if (access(ptr, 0) == 0) {
+        return;
+    }
+    char buff[PATH_MAX] = {0};
+    for (unsigned int i = 0; i < dir.size(); i++) {
+        if (i != 0 && (*(ptr + i) == '/' || *(ptr + i) == '\\')) {
+            memcpy(buff, ptr, i);
+            createDirectoryInner(buff);
+            memset(buff, 0, PATH_MAX);
+        }
+    }
+    return;
+}
+
+bool UtilAll::existDirectory(std::string const& dir) {
+    if (access(dir.c_str(), 0) == 0) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 string UtilAll::getProcessName() {
