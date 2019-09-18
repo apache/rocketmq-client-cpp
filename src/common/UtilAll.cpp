@@ -17,7 +17,6 @@
 #include "UtilAll.h"
 
 #include <chrono>
-#include <iostream>
 
 namespace rocketmq {
 //<!************************************************************************
@@ -271,7 +270,6 @@ std::string UtilAll::getHomeDirectory() {
 static bool createDirectoryInner(const char *dir)
 {
     if (dir == nullptr)  {
-        std::cout << "directory is nullptr" << std::endl;
         return false;
     }
     if (access(dir, 0) == -1) {
@@ -294,12 +292,12 @@ void UtilAll::createDirectory(std::string const& dir) {
     if (access(ptr, 0) == 0) {
         return;
     }
-    char buff[2048] = {0};
+    char buff[PATH_MAX] = {0};
     for (unsigned int i = 0; i < dir.size(); i++) {
         if (i != 0 && (*(ptr + i) == '/' || *(ptr + i) == '\\')) {
             memcpy(buff, ptr, i);
             createDirectoryInner(buff);
-            memset(buff, 0, 1024);
+            memset(buff, 0, PATH_MAX);
         }
     }
     return;
