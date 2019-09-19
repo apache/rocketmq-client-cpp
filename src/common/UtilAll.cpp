@@ -267,48 +267,55 @@ std::string UtilAll::getHomeDirectory() {
   return homeDir;
 }
 
-static bool createDirectoryInner(const char *dir)
-{
-    if (dir == nullptr)  {
-        return false;
-    }
-    if (access(dir, 0) == -1) {
+static bool createDirectoryInner(const char* dir) {
+  if (dir == nullptr) {
+    return false;
+  }
+  if (access(dir, 0) == -1) {
 #ifdef _WIN32
-        int flag = mkdir(dir);
+    int ret = mkdir(dir);
 #else
-        int flag = mkdir(dir, 0755);
+    int ret = mkdir(dir, 0755);
 #endif
-        if (flag == 0) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-	return true;
+    return ret == 0;
+  }
+  return true;
 }
 
 void UtilAll::createDirectory(std::string const& dir) {
-    const char* ptr = dir.c_str();
-    if (access(ptr, 0) == 0) {
-        return;
-    }
-    char buff[PATH_MAX] = {0};
-    for (unsigned int i = 0; i < dir.size(); i++) {
-        if (i != 0 && (*(ptr + i) == '/' || *(ptr + i) == '\\')) {
-            memcpy(buff, ptr, i);
-            createDirectoryInner(buff);
-            memset(buff, 0, PATH_MAX);
-        }
-    }
+  const char* ptr = dir.c_str();
+  if (access(ptr, 0) == 0) {
     return;
+  }
+
+#ifndef WIN32
+  char buff[PATH_MAX] = {0};
+#else
+  char buff[MAX_PATH] = {0};
+#endif
+
+  for (unsigned int i = 0; i < dir.size(); i++) {
+    if (i != 0 && (*(ptr + i) == '/' || *(ptr + i) == '\\')) {
+      memcpy(buff, ptr, i);
+      createDirectoryInner(buff);
+
+#ifndef WIN32
+      memset(buff, 0, PATH_MAX);
+#else
+      memset(buff, 0, MAX_PATH);
+#endif
+
+    }
+  }
+  return;
 }
 
 bool UtilAll::existDirectory(std::string const& dir) {
-    if (access(dir.c_str(), 0) == 0) {
-        return true;
-    } else {
-        return false;
-    }
+  if (access(dir.c_str(), 0) == 0) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 string UtilAll::getProcessName() {
@@ -397,4 +404,4 @@ bool UtilAll::ReplaceFile(const std::string& from_path, const std::string& to_pa
   return false;
 #endif
 }
-}
+}  // namespace rocketmq

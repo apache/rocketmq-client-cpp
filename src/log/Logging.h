@@ -60,7 +60,7 @@ class logAdapter {
   do {                                                                   \
     if (logger->should_log(level)) {                                     \
       std::string message = fmt::sprintf(format, ##__VA_ARGS__);         \
-      logger->log(level, message); \
+      logger->log(level, message);                                       \
       logger->log(level, "{} [{}:{}]", message, __FUNCTION__, __LINE__); \
     }                                                                    \
   } while (0)
