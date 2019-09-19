@@ -314,6 +314,14 @@ bool UtilAll::existDirectory(std::string const& dir) {
   return access(dir.c_str(), 0) == 0;
 }
 
+int UtilAll::getProcessId() {
+#ifndef WIN32
+  return getpid();
+#else
+  return ::GetCurrentProcessId();
+#endif
+}
+
 std::string UtilAll::getProcessName() {
 #ifndef WIN32
   char buf[PATH_MAX + 1] = {0};

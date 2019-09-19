@@ -79,6 +79,10 @@ inline void deleteAndZero(Type& pointer) {
 #define FILE_SEPARATOR "/"
 #endif
 
+#ifdef WIN32
+typedef pid_t DWORD;
+#endif
+
 class UtilAll {
  public:
   static bool startsWith_retry(const std::string& topic);
@@ -113,6 +117,7 @@ class UtilAll {
   static void createDirectory(std::string const& dir);
   static bool existDirectory(std::string const& dir);
 
+  static pid_t getProcessId();
   static std::string getProcessName();
 
   static uint64_t currentTimeMillis();
