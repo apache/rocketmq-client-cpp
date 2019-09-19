@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __OFFSETSTORE_H__
-#define __OFFSETSTORE_H__
+#ifndef __OFFSET_STORE_H__
+#define __OFFSET_STORE_H__
 
 #include <map>
 #include <mutex>
@@ -28,7 +28,6 @@ namespace rocketmq {
 
 class MQClientFactory;
 
-//<!***************************************************************************
 enum ReadOffsetType {
   // read offset from memory
   READ_FROM_MEMORY,
@@ -38,7 +37,6 @@ enum ReadOffsetType {
   MEMORY_FIRST_THEN_STORE,
 };
 
-//<!***************************************************************************
 class OffsetStore {
  public:
   OffsetStore(const std::string& groupName, MQClientFactory*);
@@ -61,7 +59,6 @@ class OffsetStore {
   std::mutex m_lock;
 };
 
-//<!***************************************************************************
 class LocalFileOffsetStore : public OffsetStore {
  public:
   LocalFileOffsetStore(const std::string& groupName, MQClientFactory*);
@@ -77,11 +74,14 @@ class LocalFileOffsetStore : public OffsetStore {
   virtual void removeOffset(const MQMessageQueue& mq);
 
  private:
+  MQ2OFFSET readLocalOffset();
+  MQ2OFFSET readLocalOffsetBak();
+
+ private:
   std::string m_storePath;
-  std::string m_storeFile;
+  std::mutex m_fileMutex;
 };
 
-//<!***************************************************************************
 class RemoteBrokerOffsetStore : public OffsetStore {
  public:
   RemoteBrokerOffsetStore(const std::string& groupName, MQClientFactory*);
@@ -103,7 +103,6 @@ class RemoteBrokerOffsetStore : public OffsetStore {
   int64 fetchConsumeOffsetFromBroker(const MQMessageQueue& mq, const SessionCredentials& session_credentials);
 };
 
-//<!***************************************************************************
 }  // namespace rocketmq
 
-#endif
+#endif  // __OFFSET_STORE_H__

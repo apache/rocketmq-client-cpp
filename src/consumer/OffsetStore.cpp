@@ -15,51 +15,60 @@
  * limitations under the License.
  */
 #include "OffsetStore.h"
+
 #include "Logging.h"
 #include "MQClientFactory.h"
 #include "MessageQueue.h"
+#include "UtilAll.h"
 
 #include <fstream>
 #include <sstream>
 
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/serialization/map.hpp>
-
 namespace rocketmq {
 
-//<!***************************************************************************
+//######################################
+// SendCallbackWrap
+//######################################
+
 OffsetStore::OffsetStore(const string& groupName, MQClientFactory* pfactory)
     : m_groupName(groupName), m_pClientFactory(pfactory) {}
 
 OffsetStore::~OffsetStore() {
-  m_pClientFactory = NULL;
+  m_pClientFactory = nullptr;
   m_offsetTable.clear();
 }
 
-//<!***************************************************************************
-LocalFileOffsetStore::LocalFileOffsetStore(const string& groupName, MQClientFactory* pfactory)
-    : OffsetStore(groupName, pfactory) {
-  MQConsumer* pConsumer = pfactory->selectConsumer(groupName);
-  if (pConsumer) {
-    LOG_INFO("new LocalFileOffsetStore");
-    string directoryName = UtilAll::getLocalAddress() + "@" + pConsumer->getInstanceName();
-    m_storePath = ".rocketmq_offsets/" + directoryName + "/" + groupName;
-    string homeDir(UtilAll::getHomeDirectory());
-    m_storeFile = homeDir + "/" + m_storePath + "/offsets.Json";
+//######################################
+// LocalFileOffsetStore
+//######################################
 
-    string storePath(homeDir);
-    storePath.append("/").append(m_storePath);
-    boost::filesystem::path dir(storePath);
-    boost::system::error_code ec;
-    if (!boost::filesystem::exists(dir, ec)) {
-      if (!boost::filesystem::create_directories(dir, ec)) {
-        LOG_ERROR("create offset store dir:%s error", storePath.c_str());
-        string errorMsg("create offset store dir fail: ");
-        errorMsg.append(storePath);
+class PlainStreamWriterBuilder : public Json::StreamWriterBuilder {
+ public:
+  PlainStreamWriterBuilder() : StreamWriterBuilder() { (*this)["indentation"] = ""; }
+};
+
+static Json::CharReaderBuilder sReaderBuilder;
+static Json::StreamWriterBuilder sWriterBuilder;
+static PlainStreamWriterBuilder sPlainWriterBuilder;
+
+LocalFileOffsetStore::LocalFileOffsetStore(const string& groupName, MQClientFactory* factory)
+    : OffsetStore(groupName, factory) {
+  MQConsumer* consumer = factory->selectConsumer(groupName);
+  if (consumer != nullptr) {
+    LOG_INFO("new LocalFileOffsetStore");
+
+    std::string clientId = UtilAll::getLocalAddress() + "@" + consumer->getInstanceName();
+    std::string homeDir(UtilAll::getHomeDirectory());
+    std::string storeDir =
+        homeDir + FILE_SEPARATOR + ".rocketmq_offsets" + FILE_SEPARATOR + clientId + FILE_SEPARATOR + groupName;
+    m_storePath = storeDir + FILE_SEPARATOR + "offsets.json";
+
+    if (!UtilAll::existDirectory(storeDir)) {
+      UtilAll::createDirectory(storeDir);
+      if (!UtilAll::existDirectory(storeDir)) {
+        LOG_ERROR("create offset store dir:%s error", storeDir.c_str());
+        std::string errorMsg("create offset store dir failed: ");
+        errorMsg.append(storeDir);
         THROW_MQEXCEPTION(MQClientException, errorMsg, -1);
       }
     }
@@ -69,70 +78,19 @@ LocalFileOffsetStore::LocalFileOffsetStore(const string& groupName, MQClientFact
 LocalFileOffsetStore::~LocalFileOffsetStore() {}
 
 void LocalFileOffsetStore::load() {
-  std::ifstream ifs(m_storeFile.c_str(), std::ios::in);
-  if (ifs.good()) {
-    if (ifs.is_open()) {
-      if (ifs.peek() != std::ifstream::traits_type::eof()) {
-        map<string, int64> m_offsetTable_tmp;
-        boost::system::error_code e;
-        try {
-          boost::archive::text_iarchive ia(ifs);
-          ia >> m_offsetTable_tmp;
-        } catch (...) {
-          LOG_ERROR(
-              "load offset store file failed, please check whether file: %s is "
-              "cleared by operator, if so, delete this offsets.Json file and "
-              "then restart consumer",
-              m_storeFile.c_str());
-          ifs.close();
-          string errorMsg("load offset store file: ");
-          errorMsg.append(m_storeFile)
-              .append(
-                  " failed, please check whether offsets.Json is cleared by "
-                  "operator, if so, delete this offsets.Json file and then "
-                  "restart consumer");
-          THROW_MQEXCEPTION(MQClientException, errorMsg, -1);
-        }
-        ifs.close();
-
-        for (map<string, int64>::iterator it = m_offsetTable_tmp.begin(); it != m_offsetTable_tmp.end(); ++it) {
-          // LOG_INFO("it->first:%s, it->second:%lld", it->first.c_str(),
-          // it->second);
-          Json::Reader reader;
-          Json::Value object;
-          reader.parse(it->first.c_str(), object);
-          MQMessageQueue mq(object["topic"].asString(), object["brokerName"].asString(), object["queueId"].asInt());
-          updateOffset(mq, it->second);
-        }
-        m_offsetTable_tmp.clear();
-      } else {
-        LOG_ERROR(
-            "open offset store file failed, please check whether file: %s is "
-            "cleared by operator, if so, delete this offsets.Json file and "
-            "then restart consumer",
-            m_storeFile.c_str());
-        THROW_MQEXCEPTION(MQClientException,
-                          "open offset store file failed, please check whether "
-                          "offsets.Json is cleared by operator, if so, delete "
-                          "this offsets.Json file and then restart consumer",
-                          -1);
-      }
-    } else {
-      LOG_ERROR(
-          "open offset store file failed, please check whether file:%s is "
-          "deleted by operator and then restart consumer",
-          m_storeFile.c_str());
-      THROW_MQEXCEPTION(MQClientException,
-                        "open offset store file failed, please check "
-                        "directory:%s is deleted by operator or offset.Json "
-                        "file is cleared by operator, and then restart "
-                        "consumer",
-                        -1);
+  auto offsetTable = readLocalOffset();
+  if (!offsetTable.empty()) {
+    // update offsetTable
+    {
+      std::lock_guard<std::mutex> lock(m_lock);
+      m_offsetTable = offsetTable;
     }
-  } else {
-    LOG_WARN(
-        "offsets.Json file not exist, maybe this is the first time "
-        "consumation");
+
+    for (const auto& it : offsetTable) {
+      const auto& mq = it.first;
+      const auto offset = it.second;
+      LOG_INFO_NEW("load consumer's offset, {} {} {}", m_groupName, mq.toString(), offset);
+    }
   }
 }
 
@@ -148,26 +106,24 @@ int64 LocalFileOffsetStore::readOffset(const MQMessageQueue& mq,
     case MEMORY_FIRST_THEN_STORE:
     case READ_FROM_MEMORY: {
       std::lock_guard<std::mutex> lock(m_lock);
-      MQ2OFFSET::iterator it = m_offsetTable.find(mq);
+      auto it = m_offsetTable.find(mq);
       if (it != m_offsetTable.end()) {
         return it->second;
       } else if (READ_FROM_MEMORY == type) {
         return -1;
       }
-    }
+    } break;
     case READ_FROM_STORE: {
-      try {
-        load();
-      } catch (MQException& e) {
-        LOG_ERROR("catch exception when load local file");
-        return -1;
+      auto offsetTable = readLocalOffset();
+      if (!offsetTable.empty()) {
+        auto it = offsetTable.find(mq);
+        if (it != offsetTable.end()) {
+          auto offset = it->second;
+          updateOffset(mq, offset);
+          return offset;
+        }
       }
-      std::lock_guard<std::mutex> lock(m_lock);
-      MQ2OFFSET::iterator it = m_offsetTable.find(mq);
-      if (it != m_offsetTable.end()) {
-        return it->second;
-      }
-    }
+    } break;
     default:
       break;
   }
@@ -178,44 +134,98 @@ int64 LocalFileOffsetStore::readOffset(const MQMessageQueue& mq,
 void LocalFileOffsetStore::persist(const MQMessageQueue& mq, const SessionCredentials& session_credentials) {}
 
 void LocalFileOffsetStore::persistAll(const std::vector<MQMessageQueue>& mqs) {
-  std::lock_guard<std::mutex> lock(m_lock);
-
-  std::map<std::string, int64> m_offsetTable_tmp;
-  for (const auto& mq : mqs) {
-    string mqKey = toJson(mq).toStyledString();
-    m_offsetTable_tmp[mqKey] = m_offsetTable[mq];
+  if (mqs.empty()) {
+    return;
   }
 
-  std::ofstream s;
-  string storefile_bak(m_storeFile);
-  storefile_bak.append(".bak");
-  s.open(storefile_bak.c_str(), std::ios::out);
-  if (s.is_open()) {
-    try {
-      boost::archive::text_oarchive oa(s);
-      // Boost is nervous that archiving non-const class instances which might
-      // cause a problem with object tracking if different tracked objects use
-      // the same address.
-      oa << const_cast<const map<string, int64>&>(m_offsetTable_tmp);
-    } catch (...) {
-      LOG_ERROR("persist offset store file:%s failed", m_storeFile.c_str());
-      s.close();
-      THROW_MQEXCEPTION(MQClientException, "persistAll:open offset store file failed", -1);
+  std::unique_lock<std::mutex> lock(m_lock);
+  auto offsetTable = m_offsetTable;
+  lock.unlock();
+
+  Json::Value root(Json::objectValue);
+  Json::Value jOffsetTable(Json::objectValue);
+  for (const auto& mq : mqs) {
+    auto it = offsetTable.find(mq);
+    if (it != offsetTable.end()) {
+      std::string strMQ = Json::writeString(sPlainWriterBuilder, toJson(mq));
+      jOffsetTable[strMQ] = Json::Value(it->second);
     }
-    s.close();
-    if (!UtilAll::ReplaceFile(storefile_bak, m_storeFile))
-      LOG_ERROR("could not rename bak file:%s", strerror(errno));
-    m_offsetTable_tmp.clear();
-  } else {
-    LOG_ERROR("open offset store file:%s failed", m_storeFile.c_str());
-    m_offsetTable_tmp.clear();
-    THROW_MQEXCEPTION(MQClientException, "persistAll:open offset store file failed", -1);
+  }
+  root["offsetTable"] = jOffsetTable;
+
+  std::lock_guard<std::mutex> lock2(m_fileMutex);
+  std::string storePathTmp = m_storePath + ".tmp";
+  std::ofstream ofstrm(storePathTmp, std::ios::binary | std::ios::out);
+  if (ofstrm.is_open()) {
+    std::unique_ptr<Json::StreamWriter> writer(sWriterBuilder.newStreamWriter());
+    try {
+      writer->write(root, &ofstrm);
+    } catch (std::exception& e) {
+      THROW_MQEXCEPTION(MQClientException, "persistAll failed", -1);
+    }
+
+    if (!UtilAll::ReplaceFile(m_storePath, m_storePath + ".bak") || !UtilAll::ReplaceFile(storePathTmp, m_storePath)) {
+      LOG_ERROR("could not rename file: %s", strerror(errno));
+    }
   }
 }
 
 void LocalFileOffsetStore::removeOffset(const MQMessageQueue& mq) {}
 
-//<!***************************************************************************
+LocalFileOffsetStore::MQ2OFFSET LocalFileOffsetStore::readLocalOffset() {
+  std::lock_guard<std::mutex> lock(m_fileMutex);
+  std::ifstream ifstrm(m_storePath, std::ios::binary | std::ios::in);
+  if (ifstrm.is_open() && !ifstrm.eof()) {
+    Json::Value root;
+    if (Json::parseFromStream(sReaderBuilder, ifstrm, &root, nullptr)) {
+      MQ2OFFSET offsetTable;
+      auto& jOffsetTable = root["offsetTable"];
+      for (auto& strMQ : jOffsetTable.getMemberNames()) {
+        auto& offset = jOffsetTable[strMQ];
+        std::istringstream isstrm(strMQ);
+        Json::Value jMQ;
+        if (!Json::parseFromStream(sReaderBuilder, isstrm, &jMQ, nullptr)) {
+          MQMessageQueue mq(jMQ["topic"].asString(), jMQ["brokerName"].asString(), jMQ["queueId"].asInt());
+          offsetTable.emplace(mq, offset.asInt64());
+        }
+      }
+      return offsetTable;
+    }
+  }
+  return readLocalOffsetBak();
+}
+
+LocalFileOffsetStore::MQ2OFFSET LocalFileOffsetStore::readLocalOffsetBak() {
+  MQ2OFFSET offsetTable;
+  std::ifstream ifstrm(m_storePath + ".bak", std::ios::binary | std::ios::in);
+  if (ifstrm.is_open()) {
+    if (!ifstrm.eof()) {
+      Json::Value root;
+      std::string errs;
+      if (Json::parseFromStream(sReaderBuilder, ifstrm, &root, &errs)) {
+        auto& jOffsetTable = root["offsetTable"];
+        for (auto& strMQ : jOffsetTable.getMemberNames()) {
+          auto& offset = jOffsetTable[strMQ];
+          std::istringstream isstrm(strMQ);
+          Json::Value jMQ;
+          if (!Json::parseFromStream(sReaderBuilder, isstrm, &jMQ, nullptr)) {
+            MQMessageQueue mq(jMQ["topic"].asString(), jMQ["brokerName"].asString(), jMQ["queueId"].asInt());
+            offsetTable.emplace(mq, offset.asInt64());
+          }
+        }
+      } else {
+        LOG_WARN_NEW("readLocalOffset Exception {}", errs);
+        THROW_MQEXCEPTION(MQClientException, "readLocalOffset Exception", -1);
+      }
+    }
+  }
+  return offsetTable;
+}
+
+//######################################
+// RemoteBrokerOffsetStore
+//######################################
+
 RemoteBrokerOffsetStore::RemoteBrokerOffsetStore(const string& groupName, MQClientFactory* pfactory)
     : OffsetStore(groupName, pfactory) {}
 
@@ -339,5 +349,4 @@ int64 RemoteBrokerOffsetStore::fetchConsumeOffsetFromBroker(const MQMessageQueue
   }
 }
 
-//<!***************************************************************************
 }  // namespace rocketmq

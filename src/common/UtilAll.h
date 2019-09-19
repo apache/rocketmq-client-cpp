@@ -90,6 +90,12 @@ inline void deleteAndZero(Type& pointer) {
 #define SIZET_FMT "%zu"
 #endif
 
+#ifdef WIN32
+#define FILE_SEPARATOR "\\"
+#else
+#define FILE_SEPARATOR "/"
+#endif
+
 class UtilAll {
  public:
   static bool startsWith_retry(const std::string& topic);
