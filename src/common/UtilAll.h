@@ -120,8 +120,8 @@ class UtilAll {
   static pid_t getProcessId();
   static std::string getProcessName();
 
-  static uint64_t currentTimeMillis();
-  static uint64_t currentTimeSeconds();
+  static int64_t currentTimeMillis();
+  static int64_t currentTimeSeconds();
 
   static bool deflate(const std::string& input, std::string& out, int level);
   static bool inflate(const std::string& input, std::string& out);

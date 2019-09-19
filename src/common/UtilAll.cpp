@@ -355,16 +355,16 @@ std::string UtilAll::getProcessName() {
 #endif
 }
 
-uint64_t UtilAll::currentTimeMillis() {
+int64_t UtilAll::currentTimeMillis() {
   auto since_epoch =
       std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-  return static_cast<uint64_t>(since_epoch.count());
+  return static_cast<int64_t>(since_epoch.count());
 }
 
-uint64_t UtilAll::currentTimeSeconds() {
+int64_t UtilAll::currentTimeSeconds() {
   auto since_epoch =
       std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch());
-  return static_cast<uint64_t>(since_epoch.count());
+  return static_cast<int64_t>(since_epoch.count());
 }
 
 bool UtilAll::deflate(const std::string& input, std::string& out, int level) {
