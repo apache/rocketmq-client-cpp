@@ -839,7 +839,6 @@ ConsumerRunningInfo* DefaultMQPushConsumer::getConsumerRunningInfo() {
 
   for (const auto& it : requestTable) {
     if (!it.second->isDroped()) {
-      MessageQueue queue((it.first).getTopic(), (it.first).getBrokerName(), (it.first).getQueueId());
       ProcessQueueInfo processQueue;
       processQueue.cachedMsgMinOffset = it.second->getCacheMinOffset();
       processQueue.cachedMsgMaxOffset = it.second->getCacheMaxOffset();
@@ -851,7 +850,7 @@ ConsumerRunningInfo* DefaultMQPushConsumer::getConsumerRunningInfo() {
       processQueue.lastLockTimestamp = it.second->getLastLockTimestamp();
       processQueue.lastPullTimestamp = it.second->getLastPullTimestamp();
       processQueue.lastConsumeTimestamp = it.second->getLastConsumeTimestamp();
-      info->setMqTable(queue, processQueue);
+      info->setMqTable(it.first, processQueue);
     }
   }
 

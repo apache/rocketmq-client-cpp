@@ -38,11 +38,11 @@ void ConsumerRunningInfo::setProperty(const std::string& key, const std::string&
   properties[key] = value;
 }
 
-const std::map<MessageQueue, ProcessQueueInfo> ConsumerRunningInfo::getMqTable() const {
+const std::map<MQMessageQueue, ProcessQueueInfo> ConsumerRunningInfo::getMqTable() const {
   return mqTable;
 }
 
-void ConsumerRunningInfo::setMqTable(MessageQueue queue, ProcessQueueInfo queueInfo) {
+void ConsumerRunningInfo::setMqTable(const MQMessageQueue& queue, ProcessQueueInfo queueInfo) {
   mqTable[queue] = queueInfo;
 }
 
@@ -99,7 +99,7 @@ std::string ConsumerRunningInfo::encode() {
   std::string key = "\"mqTable\":";
   key.append("{");
   for (const auto& it : mqTable) {
-    key.append(it.first.toJson().toStyledString());
+    key.append(toJson(it.first).toStyledString());
     key.erase(key.end() - 1);
     key.append(":");
     key.append(it.second.toJson().toStyledString());

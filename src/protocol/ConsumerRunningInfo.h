@@ -44,8 +44,8 @@ class ConsumerRunningInfo {
   const std::map<std::string, std::string> getProperties() const;
   void setProperties(const std::map<std::string, std::string>& input_properties);
   void setProperty(const std::string& key, const std::string& value);
-  const std::map<MessageQueue, ProcessQueueInfo> getMqTable() const;
-  void setMqTable(MessageQueue queue, ProcessQueueInfo queueInfo);
+  const std::map<MQMessageQueue, ProcessQueueInfo> getMqTable() const;
+  void setMqTable(const MQMessageQueue& queue, ProcessQueueInfo queueInfo);
   // const map<string, ConsumeStatus> getStatusTable() const;
   // void setStatusTable(const map<string, ConsumeStatus>& input_statusTable) ;
   const std::vector<SubscriptionData> getSubscriptionSet() const;
@@ -57,7 +57,7 @@ class ConsumerRunningInfo {
  private:
   std::map<std::string, std::string> properties;
   std::vector<SubscriptionData> subscriptionSet;
-  std::map<MessageQueue, ProcessQueueInfo> mqTable;
+  std::map<MQMessageQueue, ProcessQueueInfo> mqTable;
   // map<string, ConsumeStatus> statusTable;
   std::string jstack;
 };

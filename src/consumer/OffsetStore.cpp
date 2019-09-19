@@ -182,8 +182,7 @@ void LocalFileOffsetStore::persistAll(const std::vector<MQMessageQueue>& mqs) {
 
   std::map<std::string, int64> m_offsetTable_tmp;
   for (const auto& mq : mqs) {
-    MessageQueue mq_tmp(mq.getTopic(), mq.getBrokerName(), mq.getQueueId());
-    string mqKey = mq_tmp.toJson().toStyledString();
+    string mqKey = toJson(mq).toStyledString();
     m_offsetTable_tmp[mqKey] = m_offsetTable[mq];
   }
 
