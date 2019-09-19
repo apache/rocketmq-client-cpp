@@ -23,15 +23,17 @@ install_lib_dir="${basepath}/bin"
 fname_libevent="libevent*.zip"
 fname_jsoncpp="jsoncpp*.zip"
 fname_boost="boost*.tar.gz"
+fname_spdlog="spdlog*.zip"
 fname_libevent_down="release-2.0.22-stable.zip"
 fname_jsoncpp_down="0.10.6.zip"
 fname_boost_down="1.58.0/boost_1_58_0.tar.gz"
+fname_spdlog_down="v1.3.1.zip"
 
 PrintParams()
 {
     echo "=========================================one key build help============================================"
-    echo "sh build.sh [no build libevent:noEvent] [no build json:noJson] [no build boost:noBoost] [ execution test:test]"
-    echo "usage: sh build.sh noJson noEvent noBoost test"
+    echo "sh build.sh [no build libevent:noEvent] [no build json:noJson] [no build boost:noBoost] [no build spdlog:noSpdlog] [ execution test:test]"
+    echo "usage: sh build.sh noJson noEvent noBoost noSpdlog test"
     echo "=========================================one key build help============================================"
     echo ""
 }
@@ -39,6 +41,7 @@ PrintParams()
 need_build_jsoncpp=1
 need_build_libevent=1
 need_build_boost=1
+need_build_spdlog=1
 test=0
 cpu_num=4
 
@@ -54,6 +57,9 @@ pasres_arguments(){
                         ;;
                 noBoost)
                         need_build_boost=0
+                        ;;
+                noSpdlog)
+                        need_build_spdlog=0
                         ;;
                 test)
                        test=1
@@ -87,6 +93,13 @@ PrintParams()
         echo "need build boost lib"
     fi
 
+    if [ $need_build_spdlog -eq 0 ]
+    then
+      echo "no need build spdlog lib"
+    else
+      echo "need build spdlog lib"
+    fi
+
     echo "###########################################################################"
     echo ""
 }
@@ -118,6 +131,11 @@ Prepare()
         mv -f ${basepath}/${fname_boost} ${down_dir}
     fi
 
+    if [ -e ${fname_spdlog} ]
+    then
+        mv -f ${basepath}/${fname_spdlog} ${down_dir}
+    fi
+
     if [ -e ${build_dir} ]
     then
         echo "${build_dir} is exist"
@@ -140,6 +158,43 @@ Prepare()
     else
         mkdir -p ${install_lib_dir}
     fi
+}
+
+BuildSpdlog()
+{
+    if [ $need_build_spdlog -eq 0 ]
+    then
+      echo "no need build spdlog lib"
+      return 0
+    fi
+    
+    cd ${down_dir}
+    if [ -e ${fname_spdlog} ]
+    then 
+      echo "${fname_spdlog} is exist"
+    else
+      wget https://github.com/gabime/spdlog/archive/${fname_spdlog_down} -O spdlog-${fname_spdlog_down}
+    fi
+    unzip -o ${fname_spdlog}
+    if [ $? -ne 0 ];then
+      exit 1
+    fi
+    libspdlog_dir=`ls | grep spdlog | grep .*[^zip]$`
+    cd ${libspdlog_dir}
+    if [ $? -ne 0 ];then
+        exit 1
+    fi    
+    mkdir build; cd build
+    echo "build spdlog header-only ######################"
+    cmake .. -DSPDLOG_BUILD_BENCH=OFF -DCMAKE_INSTALL_PREFIX=${install_lib_dir}
+    if [ $? -ne 0 ];then
+        exit 1
+    fi    
+    make
+    if [ $? -ne 0 ];then
+        exit 1
+    fi
+    make install
 }
 
 BuildLibevent()
@@ -369,6 +424,7 @@ Prepare
 BuildLibevent
 BuildJsonCPP
 BuildBoost
+BuildSpdlog
 BuildGoogleTest
 BuildRocketMQClient
 ExecutionTesting
