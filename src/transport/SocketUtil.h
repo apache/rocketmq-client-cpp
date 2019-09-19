@@ -52,9 +52,10 @@ void socketAddress2IPPort(sockaddr addr, int& host, int& port);
 
 std::string socketAddress2String(sockaddr addr);
 std::string getHostName(sockaddr addr);
+std::string lookupNameServers(const std::string& hostname);
 
-uint64 h2nll(uint64 v);
-uint64 n2hll(uint64 v);
+uint64_t h2nll(uint64_t v);
+uint64_t n2hll(uint64_t v);
 
 }  // namespace rocketmq
 

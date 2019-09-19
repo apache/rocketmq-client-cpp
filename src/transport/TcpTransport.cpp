@@ -88,41 +88,10 @@ void TcpTransport::setTcpConnectEvent(TcpConnectStatus connectStatus) {
 
 u_long TcpTransport::getInetAddr(std::string& hostname) {
   u_long addr = inet_addr(hostname.c_str());
-
   if (INADDR_NONE == addr) {
-    constexpr size_t length = 128;
-    struct evutil_addrinfo hints;
-    struct evutil_addrinfo* answer = NULL;
-    /* Build the hints to tell getaddrinfo how to act. */
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC; /* v4 or v6 is fine. */
-    // Look up the hostname.
-    int err = evutil_getaddrinfo(hostname.c_str(), NULL, &hints, &answer);
-    if (err != 0) {
-      std::string info = "Failed to resolve  host name(" + hostname + "): " + evutil_gai_strerror(err);
-      THROW_MQEXCEPTION(MQClientException, info, -1);
-    }
-
-    struct evutil_addrinfo* addressInfo;
-    for (addressInfo = answer; addressInfo; addressInfo = addressInfo->ai_next) {
-      char buf[length];
-      const char* address = NULL;
-      if (addressInfo->ai_family == AF_INET) {
-        struct sockaddr_in* sin = (struct sockaddr_in*)addressInfo->ai_addr;
-        address = evutil_inet_ntop(AF_INET, &sin->sin_addr, buf, length);
-      } else if (addressInfo->ai_family == AF_INET6) {
-        struct sockaddr_in6* sin6 = (struct sockaddr_in6*)addressInfo->ai_addr;
-        address = evutil_inet_ntop(AF_INET6, &sin6->sin6_addr, buf, length);
-      }
-      if (address) {
-        addr = inet_addr(address);
-        if (addr != INADDR_NONE) {
-          break;
-        }
-      }
-    }
+    auto ip = lookupNameServers(hostname);
+    addr = inet_addr(ip.c_str());
   }
-
   return addr;
 }
 
@@ -149,6 +118,7 @@ TcpConnectStatus TcpTransport::connect(const std::string& strServerURL, int time
   {
     std::lock_guard<std::mutex> lock(m_eventLock);
 
+    // TODO: support ipv6
     struct sockaddr_in sin;
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;

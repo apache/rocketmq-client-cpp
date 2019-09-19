@@ -16,6 +16,9 @@
  */
 #include "SocketUtil.h"
 
+#include "ByteOrder.h"
+#include "MQClientException.h"
+
 namespace rocketmq {
 //<!***************************************************************************
 sockaddr IPPort2socketAddress(int host, int port) {
@@ -68,22 +71,49 @@ std::string getHostName(sockaddr addr) {
   }
 }
 
-uint64 swapll(uint64 v) {
-#ifdef ENDIANMODE_BIG
-  return v;
-#else
-  uint64 ret = ((v << 56) | ((v & 0xff00) << 40) | ((v & 0xff0000) << 24) | ((v & 0xff000000) << 8) |
-                ((v >> 8) & 0xff000000) | ((v >> 24) & 0xff0000) | ((v >> 40) & 0xff00) | (v >> 56));
+std::string lookupNameServers(const std::string& hostname) {
+  if (hostname.empty()) {
+    return "127.0.0.1";
+  }
 
-  return ret;
-#endif
+  std::string ip;
+
+  struct evutil_addrinfo hints;
+  struct evutil_addrinfo* answer = NULL;
+
+  /* Build the hints to tell getaddrinfo how to act. */
+  memset(&hints, 0, sizeof(hints));
+  // hints.ai_family = AF_UNSPEC;           /* v4 or v6 is fine. */
+  hints.ai_family = AF_INET;             /* v4 only. */
+  hints.ai_socktype = SOCK_STREAM;       /* We want stream socket*/
+  hints.ai_protocol = IPPROTO_TCP;       /* We want a TCP socket */
+  hints.ai_flags = EVUTIL_AI_ADDRCONFIG; /* Only return addresses we can use. */
+
+  // Look up the hostname.
+  int err = evutil_getaddrinfo(hostname.c_str(), NULL, &hints, &answer);
+  if (err != 0) {
+    std::string info = "Failed to resolve host name(" + hostname + "): " + evutil_gai_strerror(err);
+    THROW_MQEXCEPTION(MQClientException, info, -1);
+  }
+
+  for (struct evutil_addrinfo* addressInfo = answer; addressInfo != NULL; addressInfo = addressInfo->ai_next) {
+    ip = socketAddress2String(addressInfo->ai_addr);
+    if (!ip.empty()) {
+      break;
+    }
+  }
+
+  evutil_freeaddrinfo(answer);
+
+  return ip;
 }
 
-uint64 h2nll(uint64 v) {
-  return swapll(v);
+uint64_t h2nll(uint64_t v) {
+  return ByteOrder::swapIfLittleEndian(v);
 }
 
-uint64 n2hll(uint64 v) {
-  return swapll(v);
+uint64_t n2hll(uint64_t v) {
+  return ByteOrder::swapIfLittleEndian(v);
 }
-}  //<!end namespace;
+
+}  // namespace rocketmq

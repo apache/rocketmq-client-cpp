@@ -25,16 +25,6 @@
 
 #include <sstream>
 
-#ifndef WIN32
-#include <pwd.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#endif
-
-#include <boost/asio.hpp>
-#include <boost/iostreams/copy.hpp>
-
 #include "RocketMQClient.h"
 
 namespace rocketmq {

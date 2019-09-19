@@ -20,8 +20,12 @@
 #include <iostream>
 
 #ifndef WIN32
-#include <unistd.h>
+#include <netdb.h>     // gethostbyname
+#include <pwd.h>       // getpwuid
+#include <sys/stat.h>  // mkdir
+#include <unistd.h>    // gethostname, access, getpid
 #else
+#include <Winsock2.h>
 #include <direct.h>
 #include <io.h>
 #endif
@@ -29,6 +33,9 @@
 #include <zlib.h>
 
 #define ZLIB_CHUNK 16384
+
+#include "Logging.h"
+#include "SocketUtil.h"
 
 namespace rocketmq {
 
@@ -232,13 +239,9 @@ int64_t UtilAll::StringToInt64(const std::string& str, int64_t& val) {
 
 std::string UtilAll::getLocalHostName() {
   if (s_localHostName.empty()) {
-    // boost::system::error_code error;
-    // s_localHostName = boost::asio::ip::host_name(error);
-
     char name[1024];
-    boost::system::error_code ec;
-    if (boost::asio::detail::socket_ops::gethostname(name, sizeof(name), ec) != 0) {
-      return std::string();
+    if (::gethostname(name, sizeof(name)) != 0) {
+      return null;
     }
     s_localHostName.append(name, strlen(name));
   }
@@ -247,20 +250,15 @@ std::string UtilAll::getLocalHostName() {
 
 std::string UtilAll::getLocalAddress() {
   if (s_localIpAddress.empty()) {
-    boost::asio::io_service io_service;
-    boost::asio::ip::tcp::resolver resolver(io_service);
-    boost::asio::ip::tcp::resolver::query query(getLocalHostName(), "");
-    boost::system::error_code error;
-    boost::asio::ip::tcp::resolver::iterator iter = resolver.resolve(query, error);
-    if (error) {
-      return "";
+    auto hostname = getLocalHostName();
+    if (!hostname.empty()) {
+      try {
+        s_localIpAddress = lookupNameServers(hostname);
+      } catch (std::exception& e) {
+        LOG_WARN(e.what());
+        s_localIpAddress = "127.0.0.1";
+      }
     }
-    boost::asio::ip::tcp::resolver::iterator end;  // End marker.
-    boost::asio::ip::tcp::endpoint ep;
-    while (iter != end) {
-      ep = *iter++;
-    }
-    s_localIpAddress = ep.address().to_string();
   }
   return s_localIpAddress;
 }
