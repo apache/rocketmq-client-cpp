@@ -34,13 +34,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/iostreams/copy.hpp>
-#include <boost/iostreams/device/back_inserter.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
-#include <boost/iostreams/filter/zlib.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/locale/conversion.hpp>
-#include <boost/locale/encoding.hpp>
 
 #include "RocketMQClient.h"
 
@@ -135,8 +129,8 @@ class UtilAll {
   static uint64_t currentTimeMillis();
   static uint64_t currentTimeSeconds();
 
-  static bool deflate(std::string& input, std::string& out, int level);
-  static bool inflate(std::string& input, std::string& out);
+  static bool deflate(const std::string& input, std::string& out, int level);
+  static bool inflate(const std::string& input, std::string& out);
 
   // Renames file |from_path| to |to_path|. Both paths must be on the same
   // volume, or the function will fail. Destination file will be created

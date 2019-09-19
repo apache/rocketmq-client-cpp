@@ -26,6 +26,10 @@
 #include <io.h>
 #endif
 
+#include <zlib.h>
+
+#define ZLIB_CHUNK 16384
+
 namespace rocketmq {
 
 std::string UtilAll::s_localHostName;
@@ -357,25 +361,85 @@ uint64_t UtilAll::currentTimeSeconds() {
   return static_cast<uint64_t>(since_epoch.count());
 }
 
-bool UtilAll::deflate(std::string& input, std::string& out, int level) {
-  boost::iostreams::zlib_params zlibParams(level, boost::iostreams::zlib::deflated);
-  boost::iostreams::filtering_ostream compressingStream;
-  compressingStream.push(boost::iostreams::zlib_compressor(zlibParams));
-  compressingStream.push(boost::iostreams::back_inserter(out));
-  compressingStream << input;
-  boost::iostreams::close(compressingStream);
+bool UtilAll::deflate(const std::string& input, std::string& out, int level) {
+  int ret;
+  unsigned have;
+  z_stream strm;
+  unsigned char buf[ZLIB_CHUNK];
+
+  /* allocate deflate state */
+  strm.zalloc = Z_NULL;
+  strm.zfree = Z_NULL;
+  strm.opaque = Z_NULL;
+  ret = ::deflateInit(&strm, level);
+  if (ret != Z_OK) {
+    return false;
+  }
+
+  strm.avail_in = input.size();
+  strm.next_in = (z_const Bytef*)input.c_str();
+
+  /* run deflate() on input until output buffer not full, finish
+     compression if all of source has been read in */
+  do {
+    strm.avail_out = ZLIB_CHUNK;
+    strm.next_out = buf;
+    ret = ::deflate(&strm, Z_FINISH); /* no bad return value */
+    assert(ret != Z_STREAM_ERROR);    /* state not clobbered */
+    have = ZLIB_CHUNK - strm.avail_out;
+    out.append((char*)buf, have);
+  } while (strm.avail_out == 0);
+  assert(strm.avail_in == 0);  /* all input will be used */
+  assert(ret == Z_STREAM_END); /* stream will be complete */
+
+  /* clean up and return */
+  (void)::deflateEnd(&strm);
 
   return true;
 }
 
-bool UtilAll::inflate(std::string& input, std::string& out) {
-  boost::iostreams::filtering_ostream decompressingStream;
-  decompressingStream.push(boost::iostreams::zlib_decompressor());
-  decompressingStream.push(boost::iostreams::back_inserter(out));
-  decompressingStream << input;
-  boost::iostreams::close(decompressingStream);
+bool UtilAll::inflate(const std::string& input, std::string& out) {
+  int ret;
+  unsigned have;
+  z_stream strm;
+  unsigned char buf[ZLIB_CHUNK];
 
-  return true;
+  /* allocate inflate state */
+  strm.zalloc = Z_NULL;
+  strm.zfree = Z_NULL;
+  strm.opaque = Z_NULL;
+  strm.avail_in = 0;
+  strm.next_in = Z_NULL;
+  ret = ::inflateInit(&strm);
+  if (ret != Z_OK) {
+    return false;
+  }
+
+  strm.avail_in = input.size();
+  strm.next_in = (z_const Bytef*)input.c_str();
+
+  /* run inflate() on input until output buffer not full */
+  do {
+    strm.avail_out = ZLIB_CHUNK;
+    strm.next_out = buf;
+    ret = ::inflate(&strm, Z_NO_FLUSH);
+    assert(ret != Z_STREAM_ERROR); /* state not clobbered */
+    switch (ret) {
+      case Z_NEED_DICT:
+        ret = Z_DATA_ERROR; /* and fall through */
+      case Z_DATA_ERROR:
+      case Z_MEM_ERROR:
+        (void)inflateEnd(&strm);
+        return false;
+    }
+    have = ZLIB_CHUNK - strm.avail_out;
+    out.append((char*)buf, have);
+  } while (strm.avail_out == 0);
+
+  /* clean up and return */
+  (void)::inflateEnd(&strm);
+
+  return ret == Z_STREAM_END;
 }
 
 bool UtilAll::ReplaceFile(const std::string& from_path, const std::string& to_path) {
