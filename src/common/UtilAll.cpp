@@ -84,7 +84,7 @@ uint64 UtilAll::hexstr2ull(const char* str) {
 }
 
 int64 UtilAll::str2ll(const char* str) {
-  return boost::lexical_cast<int64>(str);
+  return std::atoll(str);
 }
 
 std::string UtilAll::bytes2string(const char* bytes, int len) {
