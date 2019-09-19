@@ -304,7 +304,6 @@ void UtilAll::createDirectory(std::string const& dir) {
 #else
       memset(buff, 0, MAX_PATH);
 #endif
-
     }
   }
   return;
