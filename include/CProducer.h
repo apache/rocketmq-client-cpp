@@ -34,6 +34,7 @@ typedef void (*CSendSuccessCallback)(CSendResult result);
 typedef void (*CSendExceptionCallback)(CMQException e);
 
 ROCKETMQCLIENT_API CProducer* CreateProducer(const char* groupId);
+ROCKETMQCLIENT_API CProducer* CreateOrderlyProducer(const char* groupId);
 ROCKETMQCLIENT_API int DestroyProducer(CProducer* producer);
 ROCKETMQCLIENT_API int StartProducer(CProducer* producer);
 ROCKETMQCLIENT_API int ShutdownProducer(CProducer* producer);
@@ -77,6 +78,8 @@ ROCKETMQCLIENT_API int SendMessageOrderlyAsync(CProducer* producer,
                                                void* arg,
                                                CSendSuccessCallback cSendSuccessCallback,
                                                CSendExceptionCallback cSendExceptionCallback);
+ROCKETMQCLIENT_API int SendMessageOrderlyByShardingKey(CProducer* producer,
+                                          CMessage* msg, const char * shardingKey, CSendResult* result);
 
 #ifdef __cplusplus
 };
