@@ -397,11 +397,12 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
       if (!isBatchMsg) {
         string unique_id = StringIdMaker::get_mutable_instance().get_unique_id();
         msg.setProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX, unique_id);
+
+        // batch does not support compressing right now,
+        tryToCompressMessage(msg);
       }
 
       LOG_DEBUG("produce before:%s to %s", msg.toString().c_str(), mq.toString().c_str());
-
-      tryToCompressMessage(msg);
 
       SendMessageRequestHeader* requestHeader = new SendMessageRequestHeader();
       requestHeader->producerGroup = getGroupName();
