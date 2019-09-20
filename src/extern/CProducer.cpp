@@ -28,6 +28,8 @@
 #include "CSendResult.h"
 #include "DefaultMQProducer.h"
 #include "MQClientErrorContainer.h"
+#include "UtilAll.h"
+#include <functional>
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,9 +39,11 @@ using namespace std;
 
 class SelectMessageQueueInner : public MessageQueueSelector {
 public:
-
     MQMessageQueue select(const std::vector<MQMessageQueue>& mqs, const MQMessage& msg, void* arg) {
         int index = 0;
+        std::string shardingKey = rocketmq::UtilAll::to_string((char *)arg);
+
+        index = std::hash<std::string>{}(shardingKey) % mqs.size();
         return mqs[index % mqs.size()];
     }
 };
@@ -331,7 +335,7 @@ int SendMessageOrderlyByShardingKey(CProducer* producer,
     try {
         // Constructing SelectMessageQueue objects through function pointer callback
         int retryTimes = 3;
-        SelectMessageQueueInner selectMessageQueue();
+        SelectMessageQueueInner selectMessageQueue;
         SendResult sendResult = defaultMQProducer->send(*message, &selectMessageQueue, (void *)shardingKey, retryTimes);
         // Convert SendStatus to CSendStatus
         result->sendStatus = CSendStatus((int)sendResult.getSendStatus());
