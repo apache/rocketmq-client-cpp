@@ -19,9 +19,9 @@
 #define __C_PRODUCER_H__
 
 #include "CBatchMessage.h"
+#include "CMQException.h"
 #include "CMessage.h"
 #include "CSendResult.h"
-#include "CMQException.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -79,7 +79,9 @@ ROCKETMQCLIENT_API int SendMessageOrderlyAsync(CProducer* producer,
                                                CSendSuccessCallback cSendSuccessCallback,
                                                CSendExceptionCallback cSendExceptionCallback);
 ROCKETMQCLIENT_API int SendMessageOrderlyByShardingKey(CProducer* producer,
-                                          CMessage* msg, const char * shardingKey, CSendResult* result);
+                                                       CMessage* msg,
+                                                       const char* shardingKey,
+                                                       CSendResult* result);
 
 #ifdef __cplusplus
 };
