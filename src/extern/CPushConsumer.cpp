@@ -229,7 +229,20 @@ int SetPushConsumerMessageBatchMaxSize(CPushConsumer* consumer, int batchSize) {
   ((DefaultMQPushConsumer*)consumer)->setConsumeMessageBatchMaxSize(batchSize);
   return OK;
 }
+int SetPushConsumerMaxCacheMessageSize(CPushConsumer* consumer, int maxCacheSize) {
+  if (consumer == NULL || maxCacheSize <= 0) {
+    return NULL_POINTER;
+  }
+  ((DefaultMQPushConsumer*)consumer)->setMaxCacheMsgSizePerQueue(maxCacheSize);
+  return OK;
+}
 
+int SetPushConsumerMaxCacheMessageSizeInMb(CPushConsumer* consumer, int maxCacheSizeInMb) {
+  if (consumer == NULL || maxCacheSizeInMb <= 0) {
+    return NULL_POINTER;
+  }
+  return Not_Support;
+}
 int SetPushConsumerInstanceName(CPushConsumer* consumer, const char* instanceName) {
   if (consumer == NULL) {
     return NULL_POINTER;
