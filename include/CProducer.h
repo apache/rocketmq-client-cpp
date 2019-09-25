@@ -32,9 +32,12 @@ typedef struct CProducer CProducer;
 typedef int (*QueueSelectorCallback)(int size, CMessage* msg, void* arg);
 typedef void (*CSendSuccessCallback)(CSendResult result);
 typedef void (*CSendExceptionCallback)(CMQException e);
+typedef void (*COnSendSuccessCallback)(CSendResult result, CMessage* msg, void* userData);
+typedef void (*COnSendExceptionCallback)(CMQException e, CMessage* msg, void* userData);
 
 ROCKETMQCLIENT_API CProducer* CreateProducer(const char* groupId);
 ROCKETMQCLIENT_API CProducer* CreateOrderlyProducer(const char* groupId);
+ROCKETMQCLIENT_API CProducer* CreateTransactionProducer(const char* groupId);
 ROCKETMQCLIENT_API int DestroyProducer(CProducer* producer);
 ROCKETMQCLIENT_API int StartProducer(CProducer* producer);
 ROCKETMQCLIENT_API int ShutdownProducer(CProducer* producer);
@@ -60,6 +63,11 @@ ROCKETMQCLIENT_API int SendMessageAsync(CProducer* producer,
                                         CMessage* msg,
                                         CSendSuccessCallback cSendSuccessCallback,
                                         CSendExceptionCallback cSendExceptionCallback);
+ROCKETMQCLIENT_API int SendAsync(CProducer* producer,
+                                 CMessage* msg,
+                                 COnSendSuccessCallback cSendSuccessCallback,
+                                 COnSendExceptionCallback cSendExceptionCallback,
+                                 void* userData);
 ROCKETMQCLIENT_API int SendMessageOneway(CProducer* producer, CMessage* msg);
 ROCKETMQCLIENT_API int SendMessageOnewayOrderly(CProducer* producer,
                                                 CMessage* msg,
