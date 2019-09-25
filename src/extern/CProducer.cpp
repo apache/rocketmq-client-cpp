@@ -61,6 +61,44 @@ class SelectMessageQueue : public MessageQueueSelector {
  private:
   QueueSelectorCallback m_pCallback;
 };
+class COnSendCallback : public AutoDeleteSendCallBack {
+ public:
+  COnSendCallback(COnSendSuccessCallback cSendSuccessCallback,
+                  COnSendExceptionCallback cSendExceptionCallback,
+                  void* message,
+                  void* userData) {
+    m_cSendSuccessCallback = cSendSuccessCallback;
+    m_cSendExceptionCallback = cSendExceptionCallback;
+    m_message = message;
+    m_userData = userData;
+  }
+
+  virtual ~COnSendCallback() {}
+
+  virtual void onSuccess(SendResult& sendResult) {
+    CSendResult result;
+    result.sendStatus = CSendStatus((int)sendResult.getSendStatus());
+    result.offset = sendResult.getQueueOffset();
+    strncpy(result.msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+    result.msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
+    m_cSendSuccessCallback(result, (CMessage*)m_message, m_userData);
+  }
+
+  virtual void onException(MQException& e) {
+    CMQException exception;
+    exception.error = e.GetError();
+    exception.line = e.GetLine();
+    strncpy(exception.msg, e.what(), MAX_EXEPTION_MSG_LENGTH - 1);
+    strncpy(exception.file, e.GetFile(), MAX_EXEPTION_FILE_LENGTH - 1);
+    m_cSendExceptionCallback(exception, (CMessage*)m_message, m_userData);
+  }
+
+ private:
+  COnSendSuccessCallback m_cSendSuccessCallback;
+  COnSendExceptionCallback m_cSendExceptionCallback;
+  void* m_message;
+  void* m_userData;
+};
 
 class CSendCallback : public AutoDeleteSendCallBack {
  public:
@@ -68,7 +106,9 @@ class CSendCallback : public AutoDeleteSendCallBack {
     m_cSendSuccessCallback = cSendSuccessCallback;
     m_cSendExceptionCallback = cSendExceptionCallback;
   }
+
   virtual ~CSendCallback() {}
+
   virtual void onSuccess(SendResult& sendResult) {
     CSendResult result;
     result.sendStatus = CSendStatus((int)sendResult.getSendStatus());
@@ -77,6 +117,7 @@ class CSendCallback : public AutoDeleteSendCallBack {
     result.msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
     m_cSendSuccessCallback(result);
   }
+
   virtual void onException(MQException& e) {
     CMQException exception;
     exception.error = e.GetError();
@@ -223,6 +264,35 @@ int SendMessageAsync(CProducer* producer,
   DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
   MQMessage* message = (MQMessage*)msg;
   CSendCallback* cSendCallback = new CSendCallback(cSendSuccessCallback, cSendExceptionCallback);
+
+  try {
+    defaultMQProducer->send(*message, cSendCallback);
+  } catch (exception& e) {
+    if (cSendCallback != NULL) {
+      if (std::type_index(typeid(e)) == std::type_index(typeid(MQException))) {
+        MQException& mqe = (MQException&)e;
+        cSendCallback->onException(mqe);
+      }
+      delete cSendCallback;
+      cSendCallback = NULL;
+    }
+    MQClientErrorContainer::setErr(string(e.what()));
+    return PRODUCER_SEND_ASYNC_FAILED;
+  }
+  return OK;
+}
+
+int SendAsync(CProducer* producer,
+              CMessage* msg,
+              COnSendSuccessCallback onSuccess,
+              COnSendExceptionCallback onException,
+              void* usrData) {
+  if (producer == NULL || msg == NULL || onSuccess == NULL || onException == NULL) {
+    return NULL_POINTER;
+  }
+  DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
+  MQMessage* message = (MQMessage*)msg;
+  COnSendCallback* cSendCallback = new COnSendCallback(onSuccess, onException, (void*)msg, usrData);
 
   try {
     defaultMQProducer->send(*message, cSendCallback);
