@@ -15,6 +15,47 @@ RocketMQ-Client-CPP is the C/C++ client of Apache RocketMQ, a distributed messag
 
 ## Build and Install
 
+### CentOS
+
+```bash
+# intsall toolchain
+yum install -y gcc gcc-c++ cmake
+
+# install dependencies
+yum install -y spdlog-devel libevent-devel jsoncpp-devel zlib-devel
+
+# configure porject
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DLibevent_USE_STATIC_LIBS=OFF -DJSONCPP_USE_STATIC_LIBS=OFF -DBUILD_ROCKETMQ_STATIC=OFF -DRUN_UNIT_TEST=OFF -DCMAKE_INSTALL_PREFIX=../bin ..
+
+# build librocketmq.so
+make rocketmq_shared -j 6
+
+# build example: SyncProducer, PushConsumer, etc.
+make SyncProducer
+make PushConsumer
+```
+
+### macOS
+
+```bash
+# dependencies
+brew install spdlog libevent jsoncpp zlib
+
+# configure porject
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DLibevent_USE_STATIC_LIBS=OFF -DJSONCPP_USE_STATIC_LIBS=OFF -DBUILD_ROCKETMQ_STATIC=OFF -DRUN_UNIT_TEST=OFF -DCMAKE_INSTALL_PREFIX=../bin ..
+
+# build librocketmq.so
+make rocketmq_shared -j 6
+
+# build example: SyncProducer, PushConsumer, etc.
+make SyncProducer
+make PushConsumer
+```
+
+## Build and Install (Old SDK)
+
 ### Linux and Mac OS
 
 **note**: make sure the following compile tools or libraries have been installed before running the build script **build.sh**.
