@@ -48,10 +48,10 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumerConfig : public DefaultMQConsumerC
   /**
    * consuming thread count, default value is cpu cores
    */
-  int getConsumeThreadCount() const { return m_consumeThreadCount; }
-  void setConsumeThreadCount(int threadCount) {
-    if (threadCount > 0) {
-      m_consumeThreadCount = threadCount;
+  int getConsumeThreadNum() const { return m_consumeThreadNum; }
+  void setConsumeThreadNum(int threadNum) {
+    if (threadNum > 0) {
+      m_consumeThreadNum = threadNum;
     }
   }
 
@@ -82,7 +82,7 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumerConfig : public DefaultMQConsumerC
  protected:
   ConsumeFromWhere m_consumeFromWhere;
 
-  int m_consumeThreadCount;
+  int m_consumeThreadNum;
   int m_consumeMessageBatchMaxSize;
   int m_maxMsgCacheSize;
 

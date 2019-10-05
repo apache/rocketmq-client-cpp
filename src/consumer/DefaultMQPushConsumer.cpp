@@ -131,7 +131,7 @@ class AsyncPullCallback : public AutoDeletePullCallback {
 
 DefaultMQPushConsumerConfig::DefaultMQPushConsumerConfig()
     : m_consumeFromWhere(CONSUME_FROM_LAST_OFFSET),
-      m_consumeThreadCount(std::min(8, (int)std::thread::hardware_concurrency())),
+      m_consumeThreadNum(std::min(8, (int)std::thread::hardware_concurrency())),
       m_consumeMessageBatchMaxSize(1),
       m_maxMsgCacheSize(1000),
       m_asyncPullTimeout(30 * 1000),
@@ -247,13 +247,13 @@ void DefaultMQPushConsumer::start() {
       if (m_messageListener->getMessageListenerType() == messageListenerOrderly) {
         LOG_INFO_NEW("start orderly consume service: {}", getGroupName());
         m_consumeOrderly = true;
-        m_consumerService.reset(new ConsumeMessageOrderlyService(this, m_consumeThreadCount, m_messageListener));
+        m_consumerService.reset(new ConsumeMessageOrderlyService(this, m_consumeThreadNum, m_messageListener));
       } else {
         // for backward compatible, defaultly and concurrently listeners are allocating
         // ConsumeMessageConcurrentlyService
         LOG_INFO_NEW("start concurrently consume service: {}", getGroupName());
         m_consumeOrderly = false;
-        m_consumerService.reset(new ConsumeMessageConcurrentlyService(this, m_consumeThreadCount, m_messageListener));
+        m_consumerService.reset(new ConsumeMessageConcurrentlyService(this, m_consumeThreadNum, m_messageListener));
       }
       m_consumerService->start();
 
@@ -552,7 +552,7 @@ ConsumerRunningInfo* DefaultMQPushConsumer::consumerRunningInfo() {
   auto* info = new ConsumerRunningInfo();
 
   info->setProperty(ConsumerRunningInfo::PROP_CONSUME_ORDERLY, UtilAll::to_string(m_consumeOrderly));
-  info->setProperty(ConsumerRunningInfo::PROP_THREADPOOL_CORE_SIZE, UtilAll::to_string(m_consumeThreadCount));
+  info->setProperty(ConsumerRunningInfo::PROP_THREADPOOL_CORE_SIZE, UtilAll::to_string(m_consumeThreadNum));
   info->setProperty(ConsumerRunningInfo::PROP_CONSUMER_START_TIMESTAMP, UtilAll::to_string(m_startTime));
 
   auto subSet = subscriptions();

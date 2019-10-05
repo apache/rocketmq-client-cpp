@@ -226,7 +226,7 @@ int SetPushConsumerThreadCount(CPushConsumer* consumer, int threadCount) {
   if (consumer == NULL || threadCount == 0) {
     return NULL_POINTER;
   }
-  ((DefaultMQPushConsumer*)consumer)->setConsumeThreadCount(threadCount);
+  ((DefaultMQPushConsumer*)consumer)->setConsumeThreadNum(threadCount);
   return OK;
 }
 

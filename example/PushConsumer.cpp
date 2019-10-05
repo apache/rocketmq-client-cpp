@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
   consumer.setGroupName(info.groupname);
   consumer.setTcpTransportTryLockTimeout(1000);
   consumer.setTcpTransportConnectTimeout(400);
-  consumer.setConsumeThreadCount(info.thread_count);
+  consumer.setConsumeThreadNum(info.thread_count);
   consumer.setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
 
   if (info.broadcasting) {
