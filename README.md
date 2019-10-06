@@ -18,7 +18,7 @@ RocketMQ-Client-CPP is the C/C++ client of Apache RocketMQ, a distributed messag
 ### CentOS
 
 ```bash
-# intsall toolchain
+# install toolchain
 yum install -y gcc gcc-c++ cmake
 
 # install dependencies
@@ -26,7 +26,10 @@ yum install -y spdlog-devel libevent-devel jsoncpp-devel zlib-devel
 
 # configure porject
 mkdir build && cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DLibevent_USE_STATIC_LIBS=OFF -DJSONCPP_USE_STATIC_LIBS=OFF -DBUILD_ROCKETMQ_STATIC=OFF -DRUN_UNIT_TEST=OFF -DCMAKE_INSTALL_PREFIX=../bin ..
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
+  -DLibevent_USE_STATIC_LIBS=OFF -DJSONCPP_USE_STATIC_LIBS=OFF \
+  -DBUILD_ROCKETMQ_STATIC=OFF -DBUILD_ROCKETMQ_SHARED=ON \
+  -DRUN_UNIT_TEST=OFF ..
 
 # build librocketmq.so
 make rocketmq_shared -j 6
@@ -39,7 +42,7 @@ make PushConsumer
 ### Ubuntu
 
 ```bash
-# intsall toolchain
+# install toolchain
 apt install -y gcc g++ cmake
 
 # install dependencies
@@ -47,7 +50,10 @@ apt install -y libspdlog-dev libevent-dev libjsoncpp-dev zlib1g-dev
 
 # configure porject
 mkdir build && cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DLibevent_USE_STATIC_LIBS=OFF -DJSONCPP_USE_STATIC_LIBS=OFF -DBUILD_ROCKETMQ_STATIC=OFF -DRUN_UNIT_TEST=OFF -DCMAKE_INSTALL_PREFIX=../bin ..
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
+  -DLibevent_USE_STATIC_LIBS=OFF -DJSONCPP_USE_STATIC_LIBS=OFF \
+  -DBUILD_ROCKETMQ_STATIC=OFF -DBUILD_ROCKETMQ_SHARED=ON \
+  -DRUN_UNIT_TEST=OFF ..
 
 # build librocketmq.so
 make rocketmq_shared -j 6
@@ -60,15 +66,21 @@ make PushConsumer
 ### macOS
 
 ```bash
+# install toolchain
+brew install cmake
+
 # dependencies
 brew install spdlog libevent jsoncpp zlib
 
 # configure porject
 mkdir build && cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DLibevent_USE_STATIC_LIBS=OFF -DJSONCPP_USE_STATIC_LIBS=OFF -DBUILD_ROCKETMQ_STATIC=OFF -DRUN_UNIT_TEST=OFF -DCMAKE_INSTALL_PREFIX=../bin ..
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
+  -DLibevent_USE_STATIC_LIBS=OFF -DJSONCPP_USE_STATIC_LIBS=OFF \
+  -DBUILD_ROCKETMQ_STATIC=OFF -DBUILD_ROCKETMQ_SHARED=ON \
+  -DRUN_UNIT_TEST=OFF ..
 
 # build librocketmq.so
-make rocketmq_shared -j 6
+make rocketmq_shared -j 4
 
 # build example: SyncProducer, PushConsumer, etc.
 make SyncProducer
