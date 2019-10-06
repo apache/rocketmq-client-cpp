@@ -16,7 +16,7 @@
  */
 #include "CProducer.h"
 
-#include <string.h>
+#include <cstring>
 #include <functional>
 #include <typeindex>
 

@@ -17,6 +17,7 @@
 
 #include <stdio.h>
 #include <string.h>
+
 #include "CBatchMessage.h"
 #include "CCommon.h"
 #include "CMessage.h"

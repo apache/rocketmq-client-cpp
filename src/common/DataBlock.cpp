@@ -17,6 +17,7 @@
 #include "DataBlock.h"
 
 #include <algorithm>
+#include <cstring>
 #include <stdexcept>
 
 namespace rocketmq {

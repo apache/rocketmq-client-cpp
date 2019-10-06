@@ -16,6 +16,9 @@
  */
 #include "MemoryOutputStream.h"
 
+#include <algorithm>
+#include <cstring>
+
 namespace rocketmq {
 
 MemoryOutputStream::MemoryOutputStream(const size_t initialSize)
@@ -166,4 +169,5 @@ OutputStream& operator<<(OutputStream& stream, const MemoryOutputStream& streamT
 
   return stream;
 }
+
 }  // namespace rocketmq

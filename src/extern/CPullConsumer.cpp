@@ -14,8 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "CPullConsumer.h"
+
+#include <cstring>
 
 #include "CCommon.h"
 #include "CMessageExt.h"

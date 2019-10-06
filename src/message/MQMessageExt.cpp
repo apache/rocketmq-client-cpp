@@ -16,6 +16,8 @@
  */
 #include "MQMessageExt.h"
 
+#include <cstring>
+
 #include "MessageClientIDSetter.h"
 #include "MessageSysFlag.h"
 #include "SocketUtil.h"

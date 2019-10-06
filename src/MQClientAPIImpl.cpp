@@ -17,6 +17,7 @@
 #include "MQClientAPIImpl.h"
 
 #include <cassert>
+#include <cstring>
 #include <typeindex>
 
 #include "AsyncCallbackWrap.h"

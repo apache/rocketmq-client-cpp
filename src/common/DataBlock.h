@@ -17,11 +17,6 @@
 #ifndef __DATA_BLOCK_H__
 #define __DATA_BLOCK_H__
 
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
 #include <memory>
 
 #include "RocketMQClient.h"

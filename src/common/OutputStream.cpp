@@ -16,6 +16,7 @@
  */
 #include "OutputStream.h"
 
+#include <algorithm>
 #include <limits>
 
 #include "big_endian.h"

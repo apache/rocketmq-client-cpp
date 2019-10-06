@@ -16,7 +16,11 @@
  */
 #include "MemoryInputStream.h"
 
+#include <algorithm>
+#include <cstring>
+
 namespace rocketmq {
+
 MemoryInputStream::MemoryInputStream(const void* const sourceData,
                                      const size_t sourceDataSize,
                                      const bool keepInternalCopy)
@@ -74,4 +78,5 @@ bool MemoryInputStream::setPosition(const int64_t pos) {
 int64_t MemoryInputStream::getPosition() {
   return (int64_t)position;
 }
+
 }  // namespace rocketmq

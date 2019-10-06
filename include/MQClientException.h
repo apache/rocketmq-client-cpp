@@ -17,7 +17,6 @@
 #ifndef __MQ_CLIENT_EXCEPTION_H__
 #define __MQ_CLIENT_EXCEPTION_H__
 
-#include <string.h>
 #include <exception>
 #include <ostream>
 #include <sstream>
