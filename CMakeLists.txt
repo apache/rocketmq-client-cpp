@@ -44,19 +44,19 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
 set(CMAKE_VERBOSE_MAKEFILE 1)
 
-option(BUILD_ROCKETMQ_STATIC "build rocketmq-client static library" ON)
+option(BUILD_ROCKETMQ_STATIC "build rocketmq-client static library" OFF)
 option(BUILD_ROCKETMQ_SHARED "build rocketmq-client shared library" ON)
 
 # Find dependency
 #find_package(spdlog REQUIRED)
 
-option(Libevent_USE_STATIC_LIBS "only find libevent static libs" ON) # only find static libs
+option(Libevent_USE_STATIC_LIBS "only find libevent static libs" OFF) # only find static libs
 find_package(Libevent 2.0.21 REQUIRED)
 include_directories(${LIBEVENT_INCLUDE_DIRS})
 message(STATUS "** LIBEVENT_INCLUDE_DIR: ${LIBEVENT_INCLUDE_DIR}")
 message(STATUS "** LIBEVENT_LIBRARIES: ${LIBEVENT_LIBRARIES}")
 
-option(JSONCPP_USE_STATIC_LIBS "only find jsoncpp static libs" ON) # only find static libs
+option(JSONCPP_USE_STATIC_LIBS "only find jsoncpp static libs" OFF) # only find static libs
 find_package(Jsoncpp 0.10.6 REQUIRED)
 include_directories(${JSONCPP_INCLUDE_DIRS})
 message(STATUS "** JSONCPP_INCLUDE_DIRS: ${JSONCPP_INCLUDE_DIRS}")
