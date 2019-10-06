@@ -18,6 +18,7 @@
 #define __EXECUTOR_IMPL_HPP__
 
 #include <atomic>
+#include <functional>
 #include <memory>
 #include <queue>
 
@@ -30,8 +31,8 @@ namespace rocketmq {
 class abstract_executor_service : virtual public executor_service {
  public:
   std::future<void> submit(const handler_type& task) override {
-    executor_handler handler(task);
-    std::future<void> fut = handler.promise_->get_future();
+    std::unique_ptr<executor_handler> handler(new executor_handler(task));
+    std::future<void> fut = handler->promise_->get_future();
     execute(std::move(handler));
     return fut;
   }
@@ -78,14 +79,14 @@ class thread_pool_executor : public abstract_executor_service {
 
   enum state { STOP = 0, SHUTDOWN = PROCESS_QUEUED_TASKS, RUNNING = ACCEPT_NEW_TASKS | PROCESS_QUEUED_TASKS };
 
-  void execute(executor_handler&& command) override {
+  void execute(std::unique_ptr<executor_handler> command) override {
     if (state_ & ACCEPT_NEW_TASKS) {
-      task_queue_.push_back(std::forward<executor_handler>(command));
+      task_queue_.push_back(command.release());
       if (free_threads_ > 0) {
         wakeup_event_.notify_one();
       }
     } else {
-      command.abort(std::logic_error("executor don't accept new tasks."));
+      command->abort(std::logic_error("executor don't accept new tasks."));
     }
   }
 
@@ -128,16 +129,27 @@ class thread_pool_executor : public abstract_executor_service {
 struct scheduled_executor_handler : public executor_handler {
   std::chrono::steady_clock::time_point wakeup_time_;
 
-  explicit scheduled_executor_handler(const handler_type& handler, const std::chrono::steady_clock::time_point& time)
-      : executor_handler(handler), wakeup_time_(time) {}
+  template <typename H,
+            typename std::enable_if<std::is_same<typename std::decay<H>::type, handler_type>::value, int>::type = 0>
+  explicit scheduled_executor_handler(H handler, const std::chrono::steady_clock::time_point& time)
+      : executor_handler(std::forward<handler_type>(handler)), wakeup_time_(time) {}
 
   bool operator<(const scheduled_executor_handler& other) const { return (wakeup_time_ > other.wakeup_time_); }
+
+  static bool less(const std::unique_ptr<scheduled_executor_handler>& a,
+                   const std::unique_ptr<scheduled_executor_handler>& b) {
+    return *a < *b;
+  }
 };
 
 class scheduled_thread_pool_executor : public thread_pool_executor, virtual public scheduled_executor_service {
  public:
   explicit scheduled_thread_pool_executor(std::size_t num_threads, bool start_immediately = true)
-      : thread_pool_executor(num_threads, false), stopped_(true), single_thread_(false), timer_thread_() {
+      : thread_pool_executor(num_threads, false),
+        time_queue_(&scheduled_executor_handler::less),
+        stopped_(true),
+        single_thread_(false),
+        timer_thread_() {
     timer_thread_.set_target(&scheduled_thread_pool_executor::time_daemon, this);
     if (start_immediately) {
       startup();
@@ -147,6 +159,7 @@ class scheduled_thread_pool_executor : public thread_pool_executor, virtual publ
                                           std::size_t num_threads,
                                           bool start_immediately = true)
       : thread_pool_executor(name, num_threads, false),
+        time_queue_(&scheduled_executor_handler::less),
         stopped_(true),
         single_thread_(false),
         timer_thread_(name + "-Timer") {
@@ -157,14 +170,22 @@ class scheduled_thread_pool_executor : public thread_pool_executor, virtual publ
   }
 
   explicit scheduled_thread_pool_executor(bool start_immediately = true)
-      : thread_pool_executor(0, false), stopped_(true), single_thread_(true), timer_thread_() {
+      : thread_pool_executor(0, false),
+        time_queue_(&scheduled_executor_handler::less),
+        stopped_(true),
+        single_thread_(true),
+        timer_thread_() {
     timer_thread_.set_target(&scheduled_thread_pool_executor::time_daemon, this);
     if (start_immediately) {
       startup();
     }
   }
   explicit scheduled_thread_pool_executor(const std::string& name, bool start_immediately = true)
-      : thread_pool_executor(name, 0, false), stopped_(true), single_thread_(true), timer_thread_(name + "-Timer") {
+      : thread_pool_executor(name, 0, false),
+        time_queue_(&scheduled_executor_handler::less),
+        stopped_(true),
+        single_thread_(true),
+        timer_thread_(name + "-Timer") {
     timer_thread_.set_target(&scheduled_thread_pool_executor::time_daemon, this);
     if (start_immediately) {
       startup();
@@ -210,12 +231,12 @@ class scheduled_thread_pool_executor : public thread_pool_executor, virtual publ
 
   std::future<void> schedule(const handler_type& task, long delay, time_unit unit) override {
     auto time_point = until_time_point(delay, unit);
-    scheduled_executor_handler handler(task, time_point);
-    std::future<void> fut = handler.promise_->get_future();
+    std::unique_ptr<scheduled_executor_handler> handler(new scheduled_executor_handler(task, time_point));
+    std::future<void> fut = handler->promise_->get_future();
 
     {
       std::unique_lock<std::mutex> lock(time_mutex_);
-      if (time_queue_.empty() || time_queue_.top().wakeup_time_ < time_point) {
+      if (time_queue_.empty() || time_queue_.top()->wakeup_time_ < time_point) {
         time_queue_.push(std::move(handler));
         time_event_.notify_one();
       } else {
@@ -232,16 +253,16 @@ class scheduled_thread_pool_executor : public thread_pool_executor, virtual publ
     while (!stopped_) {
       auto now = std::chrono::steady_clock::now();
       while (!time_queue_.empty()) {
-        auto& top = const_cast<scheduled_executor_handler&>(time_queue_.top());
-        if (top.wakeup_time_ <= now) {
+        auto& top = const_cast<std::unique_ptr<scheduled_executor_handler>&>(time_queue_.top());
+        if (top->wakeup_time_ <= now) {
           if (!single_thread_) {
             thread_pool_executor::execute(std::move(top));
             time_queue_.pop();
           } else {
-            auto copy = top;
+            auto copy = std::move(top);
             time_queue_.pop();
             lock.unlock();
-            copy();
+            (*copy)();
             lock.lock();
 
             // if function cost more time, we need re-watch clock
@@ -253,9 +274,9 @@ class scheduled_thread_pool_executor : public thread_pool_executor, virtual publ
       }
 
       if (!time_queue_.empty()) {
-        auto& top = time_queue_.top();
+        const auto& top = time_queue_.top();
         // wait more 10 milliseconds
-        time_event_.wait_for(lock, top.wakeup_time_ - now + std::chrono::milliseconds(10));
+        time_event_.wait_for(lock, top->wakeup_time_ - now + std::chrono::milliseconds(10));
       } else {
         // default, wakeup after 10 seconds for check stopped flag.
         time_event_.wait_for(lock, std::chrono::seconds(10));
@@ -264,7 +285,11 @@ class scheduled_thread_pool_executor : public thread_pool_executor, virtual publ
   }
 
  protected:
-  std::priority_queue<scheduled_executor_handler> time_queue_;
+  std::priority_queue<std::unique_ptr<scheduled_executor_handler>,
+                      std::vector<std::unique_ptr<scheduled_executor_handler>>,
+                      std::function<bool(const std::unique_ptr<scheduled_executor_handler>&,
+                                         const std::unique_ptr<scheduled_executor_handler>&)>>
+      time_queue_;
 
  private:
   bool stopped_;

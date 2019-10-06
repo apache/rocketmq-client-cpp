@@ -29,50 +29,42 @@ typedef std::function<void()> handler_type;
 
 struct executor_handler {
   handler_type handler_;
-  std::shared_ptr<std::promise<void>> promise_;
+  std::unique_ptr<std::promise<void>> promise_;
 
-  explicit executor_handler(const handler_type& handler) : handler_(handler), promise_(new std::promise<void>) {}
-  explicit executor_handler(handler_type&& handler)
+  template <typename H,
+            typename std::enable_if<std::is_same<typename std::decay<H>::type, handler_type>::value, int>::type = 0>
+  explicit executor_handler(H handler)
       : handler_(std::forward<handler_type>(handler)), promise_(new std::promise<void>) {}
 
   void operator()() noexcept {
     // call handler, then set promise
-    if (promise_) {
+    try {
+      // handler that may throw
+      handler_();
+      promise_->set_value();
+    } catch (...) {
       try {
-        // handler that may throw
-        handler_();
-        promise_->set_value();
+        // store anything thrown in the promise
+        promise_->set_exception(std::current_exception());
       } catch (...) {
-        try {
-          // store anything thrown in the promise
-          promise_->set_exception(std::current_exception());
-        } catch (...) {
-        }  // set_exception() may throw too
-      }
+      }  // set_exception() may throw too
     }
   }
 
   template <class _Ep>
   void abort(_Ep&& exception) noexcept {
-    if (promise_) {
-      promise_->set_exception(std::make_exception_ptr(std::forward<_Ep>(exception)));
-    }
+    promise_->set_exception(std::make_exception_ptr(std::forward<_Ep>(exception)));
   }
+
+ private:
+  executor_handler() = delete;
 };
 
 class executor {
  public:
   virtual ~executor() = default;
 
-  virtual void execute(const executor_handler& command) {
-    // pass rvalue
-    auto copy = command;
-    execute(std::move(copy));
-  }
-  virtual void execute(executor_handler&& command) {
-    // pass lvalue;
-    execute(command);
-  }
+  virtual void execute(std::unique_ptr<executor_handler> command) = 0;
 };
 
 class executor_service : virtual public executor {

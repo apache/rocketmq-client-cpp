@@ -19,6 +19,7 @@
 
 #include <atomic>
 #include <memory>
+#include <type_traits>
 #include <utility>
 
 namespace rocketmq {
@@ -34,8 +35,12 @@ class concurrent_queue_node {
   typedef concurrent_queue_node<value_type> type;
 
  private:
-  explicit concurrent_queue_node(const value_type& v) : value_(new value_type(v)){};
-  explicit concurrent_queue_node(value_type&& v) : value_(new value_type(std::move(v))){};
+  template <typename E,
+            typename std::enable_if<std::is_same<typename std::decay<E>::type, value_type>::value, int>::type = 0>
+  explicit concurrent_queue_node(E v) : value_(new value_type(std::forward<E>(v))) {}
+
+  template <class E, typename std::enable_if<std::is_convertible<E, value_type*>::value, int>::type = 0>
+  explicit concurrent_queue_node(E v) : value_(v) {}
 
   value_type* value_;
   type* volatile next_;
@@ -59,24 +64,20 @@ class concurrent_queue {
 
   bool empty() { return sentinel == tail_.load(); }
 
-  void push_back(const value_type& v) {
-    auto* node = new node_type(v);
+  template <class E>
+  void push_back(E v) {
+    auto* node = new node_type(std::forward<E>(v));
     push_back_impl(node);
   }
 
-  void push_back(value_type&& v) {
-    auto* node = new node_type(std::move(v));
-    push_back_impl(node);
-  }
-
-  std::shared_ptr<value_type> pop_front() {
+  std::unique_ptr<value_type> pop_front() {
     node_type* node = pop_front_impl();
     if (node == sentinel) {
-      return std::shared_ptr<value_type>();
+      return std::unique_ptr<value_type>();
     } else {
       auto val = node->value_;
       delete node;
-      return std::shared_ptr<value_type>(val);
+      return std::unique_ptr<value_type>(val);
     }
   }
 
