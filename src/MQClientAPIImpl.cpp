@@ -572,7 +572,7 @@ void MQClientAPIImpl::lockBatchMQ(const std::string& addr,
   switch (response->getCode()) {
     case SUCCESS_VALUE: {
       auto requestBody = response->getBody();
-      if (requestBody->getSize() > 0) {
+      if (requestBody != nullptr && requestBody->getSize() > 0) {
         std::unique_ptr<LockBatchResponseBody> body(LockBatchResponseBody::Decode(*requestBody));
         mqs = body->getLockOKMQSet();
       } else {
@@ -622,7 +622,7 @@ TopicRouteData* MQClientAPIImpl::getTopicRouteInfoFromNameServer(const std::stri
     }
     case SUCCESS_VALUE: {
       auto responseBody = response->getBody();
-      if (responseBody->getSize() > 0) {
+      if (responseBody != nullptr && responseBody->getSize() > 0) {
         return TopicRouteData::Decode(*responseBody);
       }
     }
@@ -641,7 +641,7 @@ TopicList* MQClientAPIImpl::getTopicListFromNameServer() {
   switch (response->getCode()) {
     case SUCCESS_VALUE: {
       auto responseBody = response->getBody();
-      if (responseBody->getSize() > 0) {
+      if (responseBody != nullptr && responseBody->getSize() > 0) {
         return TopicList::Decode(*responseBody);
       }
     }

@@ -59,7 +59,7 @@ RemotingCommand* ClientRemotingProcessor::processRequest(const std::string& addr
 RemotingCommand* ClientRemotingProcessor::resetOffset(RemotingCommand* request) {
   auto* responseHeader = request->decodeCommandCustomHeader<ResetOffsetRequestHeader>();
   auto requestBody = request->getBody();
-  if (requestBody->getSize() > 0) {
+  if (requestBody != nullptr && requestBody->getSize() > 0) {
     std::unique_ptr<ResetOffsetBody> body(ResetOffsetBody::Decode(*requestBody));
     if (body != nullptr) {
       m_mqClientFactory->resetOffset(responseHeader->getGroup(), responseHeader->getTopic(), body->getOffsetTable());
