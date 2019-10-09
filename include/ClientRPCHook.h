@@ -24,7 +24,7 @@ namespace rocketmq {
 
 class ClientRPCHook : public RPCHook {
  public:
-  ClientRPCHook(const SessionCredentials& session_credentials) : sessionCredentials(session_credentials) {}
+  ClientRPCHook(const SessionCredentials& sessionCredentials) : sessionCredentials_(sessionCredentials) {}
   ~ClientRPCHook() override = default;
 
   void doBeforeRequest(const std::string& remoteAddr, RemotingCommand& request, bool toSent) override;
@@ -37,7 +37,7 @@ class ClientRPCHook : public RPCHook {
   void signCommand(RemotingCommand& command);
 
  private:
-  SessionCredentials sessionCredentials;
+  SessionCredentials sessionCredentials_;
 };
 
 }  // namespace rocketmq

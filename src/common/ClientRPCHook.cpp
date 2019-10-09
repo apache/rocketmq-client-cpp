@@ -52,8 +52,8 @@ void ClientRPCHook::doAfterResponse(const std::string& remoteAddr,
 
 void ClientRPCHook::signCommand(RemotingCommand& command) {
   std::map<std::string, std::string> headerMap;
-  headerMap.insert(std::make_pair(SessionCredentials::AccessKey, sessionCredentials.getAccessKey()));
-  headerMap.insert(std::make_pair(SessionCredentials::ONSChannelKey, sessionCredentials.getAuthChannel()));
+  headerMap.insert(std::make_pair(SessionCredentials::AccessKey, sessionCredentials_.getAccessKey()));
+  headerMap.insert(std::make_pair(SessionCredentials::ONSChannelKey, sessionCredentials_.getAuthChannel()));
 
   LOG_DEBUG("before insert declared filed, MAP SIZE is:" SIZET_FMT "", headerMap.size());
   auto* header = command.readCustomHeader();
@@ -66,20 +66,20 @@ void ClientRPCHook::signCommand(RemotingCommand& command) {
   for (const auto& it : headerMap) {
     totalMsg.append(it.second);
   }
-  if (command.getBody()->getSize() > 0) {
-    LOG_DEBUG_NEW("request have msgBody, length is:{}", command.getBody()->getSize());
-
-    totalMsg.append(command.getBody()->getData(), command.getBody()->getSize());
+  auto body = command.getBody();
+  if (body != nullptr && body->getSize() > 0) {
+    LOG_DEBUG_NEW("request have msgBody, length is:{}", body->getSize());
+    totalMsg.append(body->getData(), body->getSize());
   }
   LOG_DEBUG("total msg info are:%s, size is:" SIZET_FMT "", totalMsg.c_str(), totalMsg.size());
 
   char* pSignature =
-      rocketmqSignature::spas_sign(totalMsg.c_str(), totalMsg.size(), sessionCredentials.getSecretKey().c_str());
+      rocketmqSignature::spas_sign(totalMsg.c_str(), totalMsg.size(), sessionCredentials_.getSecretKey().c_str());
   if (pSignature != nullptr) {
     std::string signature(static_cast<const char*>(pSignature));
     command.addExtField(SessionCredentials::Signature, signature);
-    command.addExtField(SessionCredentials::AccessKey, sessionCredentials.getAccessKey());
-    command.addExtField(SessionCredentials::ONSChannelKey, sessionCredentials.getAuthChannel());
+    command.addExtField(SessionCredentials::AccessKey, sessionCredentials_.getAccessKey());
+    command.addExtField(SessionCredentials::ONSChannelKey, sessionCredentials_.getAuthChannel());
     rocketmqSignature::spas_mem_free(pSignature);
   } else {
     LOG_ERROR("signature for request failed");
