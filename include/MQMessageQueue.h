@@ -34,7 +34,7 @@ class ROCKETMQCLIENT_API MQMessageQueue {
   MQMessageQueue(const MQMessageQueue& other);
   MQMessageQueue& operator=(const MQMessageQueue& other);
 
-  std::string getTopic() const;
+  const std::string& getTopic() const;
   void setTopic(const std::string& topic);
 
   const std::string& getBrokerName() const;

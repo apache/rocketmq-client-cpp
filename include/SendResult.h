@@ -41,7 +41,7 @@ class ROCKETMQCLIENT_API SendResult {
   SendStatus getSendStatus() const;
   const std::string& getMsgId() const;
   const std::string& getOffsetMsgId() const;
-  MQMessageQueue getMessageQueue() const;
+  const MQMessageQueue& getMessageQueue() const;
   int64_t getQueueOffset() const;
 
   const std::string& getTransactionId() const { return m_transactionId; }

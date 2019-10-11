@@ -69,7 +69,7 @@ SendStatus SendResult::getSendStatus() const {
   return m_sendStatus;
 }
 
-MQMessageQueue SendResult::getMessageQueue() const {
+const MQMessageQueue& SendResult::getMessageQueue() const {
   return m_messageQueue;
 }
 

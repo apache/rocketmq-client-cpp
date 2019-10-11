@@ -39,7 +39,7 @@ MQMessageQueue& MQMessageQueue::operator=(const MQMessageQueue& other) {
   return *this;
 }
 
-std::string MQMessageQueue::getTopic() const {
+const std::string& MQMessageQueue::getTopic() const {
   return m_topic;
 }
 
