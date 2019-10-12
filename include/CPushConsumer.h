@@ -18,8 +18,8 @@
 #ifndef __C_PUSH_CONSUMER_H__
 #define __C_PUSH_CONSUMER_H__
 
-#include "CMessageExt.h"
 #include "CCommon.h"
+#include "CMessageExt.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,6 +56,8 @@ ROCKETMQCLIENT_API int SetPushConsumerLogPath(CPushConsumer* consumer, const cha
 ROCKETMQCLIENT_API int SetPushConsumerLogFileNumAndSize(CPushConsumer* consumer, int fileNum, long fileSize);
 ROCKETMQCLIENT_API int SetPushConsumerLogLevel(CPushConsumer* consumer, CLogLevel level);
 ROCKETMQCLIENT_API int SetPushConsumerMessageModel(CPushConsumer* consumer, CMessageModel messageModel);
+ROCKETMQCLIENT_API int SetPushConsumerMaxCacheMessageSize(CPushConsumer* consumer, int maxCacheSize);
+ROCKETMQCLIENT_API int SetPushConsumerMaxCacheMessageSizeInMb(CPushConsumer* consumer, int maxCacheSizeInMb);
 
 #ifdef __cplusplus
 };
