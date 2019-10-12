@@ -27,11 +27,11 @@
 #include <memory.h>
 #endif
 
-void thread_sleep(unsigned milliseconds) {
+void thread_sleep(unsigned int milliseconds) {
 #ifdef _WIN32
   Sleep(milliseconds);
 #else
-  usleep(milliseconds * 1000);  // takes microseconds
+  usleep(milliseconds * 1000);  // suspend execution for microsecond intervals
 #endif
 }
 
@@ -42,26 +42,33 @@ void StartSendMessage(CProducer* producer) {
   SetMessageTags(msg, "Test_Tag");
   SetMessageKeys(msg, "Test_Keys");
   CSendResult result;
-  for (i = 0; i < 10; i++) {
+  for (i = 0; i < 3; i++) {
     memset(body, 0, sizeof(body));
     snprintf(body, sizeof(body), "new message body, index %d", i);
     SetMessageBody(msg, body);
-    SendMessageSync(producer, msg, &result);
-    printf("send message[%d] result status:%d, msgId:%s\n", i, (int)result.sendStatus, result.msgId);
+    int status = SendMessageSync(producer, msg, &result);
+    if(status == OK){
+      printf("send message[%d] result status:%d, msgId:%s\n", i, (int)result.sendStatus, result.msgId);
+    }else{
+      printf("send message[%d] failed !\n",i);
+    }
     thread_sleep(1000);
   }
   DestroyMessage(msg);
 }
 
 int main(int argc, char* argv[]) {
-  printf("Producer Initializing.....\n");
+  printf("Producer initializing ...\n");
   CProducer* producer = CreateProducer("Group_producer");
   SetProducerNameServerAddress(producer, "127.0.0.1:9876");
   StartProducer(producer);
-  printf("Producer start.....\n");
+
+  printf("Producer starting ...\n");
   StartSendMessage(producer);
+
+  printf("Producer stopping !\n");
   ShutdownProducer(producer);
   DestroyProducer(producer);
-  printf("Producer Shutdown!\n");
+
   return 0;
 }
