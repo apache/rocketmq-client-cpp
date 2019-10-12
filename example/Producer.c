@@ -1,30 +1,30 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include <stdio.h>
-#include "CProducer.h"
 #include "CCommon.h"
 #include "CMessage.h"
+#include "CProducer.h"
 #include "CSendResult.h"
 #ifdef _WIN32
 #include <windows.h>
 #else
-#include <unistd.h>
 #include <memory.h>
+#include <unistd.h>
 #endif
 
 void thread_sleep(unsigned int milliseconds) {
@@ -47,10 +47,10 @@ void StartSendMessage(CProducer* producer) {
     snprintf(body, sizeof(body), "new message body, index %d", i);
     SetMessageBody(msg, body);
     int status = SendMessageSync(producer, msg, &result);
-    if(status == OK){
+    if (status == OK) {
       printf("send message[%d] result status:%d, msgId:%s\n", i, (int)result.sendStatus, result.msgId);
-    }else{
-      printf("send message[%d] failed !\n",i);
+    } else {
+      printf("send message[%d] failed !\n", i);
     }
     thread_sleep(1000);
   }
