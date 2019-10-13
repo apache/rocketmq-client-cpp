@@ -365,17 +365,20 @@ TcpTransportPtr TcpRemotingClient::CreateTransport(const std::string& addr, bool
       TcpTransportPtr tcp = iter->second;
       if (tcp != nullptr) {
         TcpConnectStatus connectStatus = tcp->getTcpConnectStatus();
-        if (connectStatus == TCP_CONNECT_STATUS_SUCCESS) {
-          return tcp;
-        } else if (connectStatus == TCP_CONNECT_STATUS_WAIT) {
-          return TcpTransportPtr();
-        } else if (connectStatus == TCP_CONNECT_STATUS_FAILED) {
-          LOG_ERROR("tcpTransport with server disconnected, erase server:%s", addr.c_str());
-          tcp->disconnect(addr);  // avoid coredump when connection with broker was broken
-          m_transportTable.erase(addr);
-        } else {
-          LOG_ERROR("go to fault state, erase:%s from tcpMap, and reconnect it", addr.c_str());
-          m_transportTable.erase(addr);
+        switch (connectStatus) {
+          case TCP_CONNECT_STATUS_SUCCESS:
+            return tcp;
+          case TCP_CONNECT_STATUS_WAIT:
+            return TcpTransportPtr();
+          case TCP_CONNECT_STATUS_FAILED:
+            LOG_ERROR("tcpTransport with server disconnected, erase server:%s", addr.c_str());
+            tcp->disconnect(addr);  // avoid coredump when connection with broker was broken
+            m_transportTable.erase(addr);
+            break;
+          default:
+            LOG_ERROR("go to fault state, erase:%s from tcpMap, and reconnect it", addr.c_str());
+            m_transportTable.erase(addr);
+            break;
         }
       }
     }

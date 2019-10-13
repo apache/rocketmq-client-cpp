@@ -106,6 +106,8 @@ void EventLoop::runLoop() {
 BufferEvent* EventLoop::createBufferEvent(socket_t fd, int options) {
   struct bufferevent* event = bufferevent_socket_new(m_eventBase, fd, options);
   if (event == nullptr) {
+    auto ev_errno = EVUTIL_SOCKET_ERROR();
+    LOG_ERROR_NEW("create bufferevent failed: {}", evutil_socket_error_to_string(ev_errno));
     return nullptr;
   }
 
@@ -163,16 +165,18 @@ void BufferEvent::setCallback(BufferEventDataCallback readCallback,
 void BufferEvent::read_callback(struct bufferevent* bev, void* ctx) {
   auto event = static_cast<BufferEvent*>(ctx);
 
-  if (event->m_unlockCallbacks)
+  if (event->m_unlockCallbacks) {
     bufferevent_lock(event->m_bufferEvent);
+  }
 
   BufferEventDataCallback callback = event->m_readCallback;
   std::shared_ptr<TcpTransport> transport = event->m_callbackTransport.lock();
 
-  if (event->m_unlockCallbacks)
+  if (event->m_unlockCallbacks) {
     bufferevent_unlock(event->m_bufferEvent);
+  }
 
-  if (callback) {
+  if (callback != nullptr) {
     callback(event, transport.get());
   }
 }
@@ -180,16 +184,18 @@ void BufferEvent::read_callback(struct bufferevent* bev, void* ctx) {
 void BufferEvent::write_callback(struct bufferevent* bev, void* ctx) {
   auto event = static_cast<BufferEvent*>(ctx);
 
-  if (event->m_unlockCallbacks)
+  if (event->m_unlockCallbacks) {
     bufferevent_lock(event->m_bufferEvent);
+  }
 
   BufferEventDataCallback callback = event->m_writeCallback;
   std::shared_ptr<TcpTransport> transport = event->m_callbackTransport.lock();
 
-  if (event->m_unlockCallbacks)
+  if (event->m_unlockCallbacks) {
     bufferevent_unlock(event->m_bufferEvent);
+  }
 
-  if (callback) {
+  if (callback != nullptr) {
     callback(event, transport.get());
   }
 }
@@ -216,16 +222,18 @@ void BufferEvent::event_callback(struct bufferevent* bev, short what, void* ctx)
     event->m_peerAddrPort = buildPeerAddrPort(fd);
   }
 
-  if (event->m_unlockCallbacks)
+  if (event->m_unlockCallbacks) {
     bufferevent_lock(event->m_bufferEvent);
+  }
 
   BufferEventEventCallback callback = event->m_eventCallback;
   std::shared_ptr<TcpTransport> transport = event->m_callbackTransport.lock();
 
-  if (event->m_unlockCallbacks)
+  if (event->m_unlockCallbacks) {
     bufferevent_unlock(event->m_bufferEvent);
+  }
 
-  if (callback) {
+  if (callback != nullptr) {
     callback(event, what, transport.get());
   }
 }

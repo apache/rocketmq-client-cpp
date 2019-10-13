@@ -127,8 +127,14 @@ TcpConnectStatus TcpTransport::connect(const std::string& strServerURL, int time
     sin.sin_addr.s_addr = resolveInetAddr(hostname);
     sin.sin_port = htons(port);
 
-    // create and configure BufferEvent
+    // create BufferEvent
     m_event.reset(EventLoop::GetDefaultEventLoop()->createBufferEvent(-1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE));
+    if (nullptr == m_event) {
+      setTcpConnectStatus(TCP_CONNECT_STATUS_FAILED);
+      return TCP_CONNECT_STATUS_FAILED;
+    }
+
+    // then, configure BufferEvent
     m_event->setCallback(ReadCallback, nullptr, EventCallback, shared_from_this());
     m_event->setWatermark(EV_READ, 4, 0);
     m_event->enable(EV_READ | EV_WRITE);
