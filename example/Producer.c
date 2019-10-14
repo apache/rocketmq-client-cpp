@@ -58,17 +58,16 @@ void StartSendMessage(CProducer* producer) {
 }
 
 int main(int argc, char* argv[]) {
-  printf("Producer initializing ...\n");
   CProducer* producer = CreateProducer("Group_producer");
   SetProducerNameServerAddress(producer, "127.0.0.1:9876");
   StartProducer(producer);
+  printf("Producer initialized. \n");
 
-  printf("Producer starting ...\n");
   StartSendMessage(producer);
 
-  printf("Producer stopping !\n");
   ShutdownProducer(producer);
   DestroyProducer(producer);
+  printf("Producer stopped !\n");
 
   return 0;
 }
