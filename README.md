@@ -39,6 +39,12 @@ make SyncProducer
 make PushConsumer
 ```
 
+If encounter error about "fmt/format.h" header file, modify "printf.h" as shown below.
+
+```bash
+sed -i "s/#include \"fmt\/format.h\"/#include \"format.h\"/" /usr/include/spdlog/fmt/bundled/printf.h
+```
+
 ### Ubuntu
 
 ```bash
