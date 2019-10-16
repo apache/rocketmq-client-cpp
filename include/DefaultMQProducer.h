@@ -70,15 +70,15 @@ class ROCKETMQCLIENT_API DefaultMQProducerConfig {
     m_retryAnotherBrokerWhenNotStoreOK = retryAnotherBrokerWhenNotStoreOK;
   }
 
-  bool isSendMessageInTransactionEnable() { return m_sendMessageInTransactionEnable; }
+  bool isSendMessageInTransactionEnable() const { return m_sendMessageInTransactionEnable; }
   void setSendMessageInTransactionEnable(bool sendMessageInTransactionEnable) {
     m_sendMessageInTransactionEnable = sendMessageInTransactionEnable;
   }
 
-  TransactionListener* getTransactionListener() { return m_transactionListener; }
+  TransactionListener* getTransactionListener() const { return m_transactionListener; }
   void setTransactionListener(TransactionListener* transactionListener) { m_transactionListener = transactionListener; }
 
-  virtual bool isSendLatencyFaultEnable() = 0;
+  virtual bool isSendLatencyFaultEnable() const = 0;
   virtual void setSendLatencyFaultEnable(bool sendLatencyFaultEnable) = 0;
 
  protected:
@@ -158,7 +158,7 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer, public MQClient,
                       LocalTransactionState localTransactionState,
                       std::exception_ptr& localException);
 
-  bool isSendLatencyFaultEnable() override;
+  bool isSendLatencyFaultEnable() const override;
   void setSendLatencyFaultEnable(bool sendLatencyFaultEnable) override;
 
  protected:

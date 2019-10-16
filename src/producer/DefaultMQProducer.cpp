@@ -763,7 +763,7 @@ bool DefaultMQProducer::tryToCompressMessage(MQMessage& msg) {
   return false;
 }
 
-bool DefaultMQProducer::isSendLatencyFaultEnable() {
+bool DefaultMQProducer::isSendLatencyFaultEnable() const {
   return m_mqFaultStrategy->isSendLatencyFaultEnable();
 }
 
