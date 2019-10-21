@@ -54,5 +54,5 @@ class ROCKETMQCLIENT_API PullCallback : public AsyncCallback {
   virtual void onException(MQException& e) = 0;
 };
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

@@ -16,8 +16,8 @@
  */
 
 #include "CMessage.h"
-#include "MQMessage.h"
 #include "CCommon.h"
+#include "MQMessage.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -88,7 +88,42 @@ int SetDelayTimeLevel(CMessage* msg, int level) {
   ((MQMessage*)msg)->setDelayTimeLevel(level);
   return OK;
 }
-
+const char* GetOriginMessageTopic(CMessage* msg) {
+  if (msg == NULL) {
+    return NULL;
+  }
+  return ((MQMessage*)msg)->getTopic().c_str();
+}
+const char* GetOriginMessageTags(CMessage* msg) {
+  if (msg == NULL) {
+    return NULL;
+  }
+  return ((MQMessage*)msg)->getTags().c_str();
+}
+const char* GetOriginMessageKeys(CMessage* msg) {
+  if (msg == NULL) {
+    return NULL;
+  }
+  return ((MQMessage*)msg)->getKeys().c_str();
+}
+const char* GetOriginMessageBody(CMessage* msg) {
+  if (msg == NULL) {
+    return NULL;
+  }
+  return ((MQMessage*)msg)->getBody().c_str();
+}
+const char* GetOriginMessageProperty(CMessage* msg, const char* key) {
+  if (msg == NULL) {
+    return NULL;
+  }
+  return ((MQMessage*)msg)->getProperty(key).c_str();
+}
+int GetOriginDelayTimeLevel(CMessage* msg) {
+  if (msg == NULL) {
+    return -1;
+  }
+  return ((MQMessage*)msg)->getDelayTimeLevel();
+}
 #ifdef __cplusplus
 };
 #endif

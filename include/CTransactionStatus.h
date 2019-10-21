@@ -15,34 +15,19 @@
  * limitations under the License.
  */
 
-#ifndef __C_PULL_RESULT_H__
-#define __C_PULL_RESULT_H__
-
-#include "CCommon.h"
-#include "CMessageExt.h"
+#ifndef __C_TRANSACTION_STATUS_H__
+#define __C_TRANSACTION_STATUS_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-typedef enum E_CPullStatus {
-  E_FOUND,
-  E_NO_NEW_MSG,
-  E_NO_MATCHED_MSG,
-  E_OFFSET_ILLEGAL,
-  E_BROKER_TIMEOUT  // indicate pull request timeout or received NULL response
-} CPullStatus;
-
-typedef struct _CPullResult_ {
-  CPullStatus pullStatus;
-  long long nextBeginOffset;
-  long long minOffset;
-  long long maxOffset;
-  CMessageExt** msgFoundList;
-  int size;
-  void* pData;
-} CPullResult;
+typedef enum E_CTransactionStatus {
+  E_COMMIT_TRANSACTION = 0,
+  E_ROLLBACK_TRANSACTION = 1,
+  E_UNKNOWN_TRANSACTION = 2,
+} CTransactionStatus;
 
 #ifdef __cplusplus
 }
 #endif
-#endif  //__C_PULL_RESULT_H__
+#endif  //__C_TRANSACTION_STATUS_H__

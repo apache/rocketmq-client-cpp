@@ -81,6 +81,6 @@ typedef enum _CLogLevel_ {
 typedef enum _CMessageModel_ { BROADCASTING, CLUSTERING } CMessageModel;
 
 #ifdef __cplusplus
-};
+}
 #endif
 #endif  //__C_COMMON_H__

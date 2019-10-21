@@ -75,5 +75,5 @@ class ROCKETMQCLIENT_API MessageListenerConcurrently : public MQMessageListener 
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

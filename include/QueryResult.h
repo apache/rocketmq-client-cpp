@@ -38,5 +38,5 @@ class ROCKETMQCLIENT_API QueryResult {
   std::vector<MQMessageExt*> m_messageList;
 };
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

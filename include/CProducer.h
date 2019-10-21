@@ -21,7 +21,9 @@
 #include "CBatchMessage.h"
 #include "CMQException.h"
 #include "CMessage.h"
+#include "CMessageExt.h"
 #include "CSendResult.h"
+#include "CTransactionStatus.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,10 +36,14 @@ typedef void (*CSendSuccessCallback)(CSendResult result);
 typedef void (*CSendExceptionCallback)(CMQException e);
 typedef void (*COnSendSuccessCallback)(CSendResult result, CMessage* msg, void* userData);
 typedef void (*COnSendExceptionCallback)(CMQException e, CMessage* msg, void* userData);
+typedef CTransactionStatus (*CLocalTransactionCheckerCallback)(CProducer* producer, CMessageExt* msg, void* data);
+typedef CTransactionStatus (*CLocalTransactionExecutorCallback)(CProducer* producer, CMessage* msg, void* data);
 
 ROCKETMQCLIENT_API CProducer* CreateProducer(const char* groupId);
 ROCKETMQCLIENT_API CProducer* CreateOrderlyProducer(const char* groupId);
-ROCKETMQCLIENT_API CProducer* CreateTransactionProducer(const char* groupId);
+ROCKETMQCLIENT_API CProducer* CreateTransactionProducer(const char* groupId,
+                                                        CLocalTransactionCheckerCallback callback,
+                                                        void* userData);
 ROCKETMQCLIENT_API int DestroyProducer(CProducer* producer);
 ROCKETMQCLIENT_API int StartProducer(CProducer* producer);
 ROCKETMQCLIENT_API int ShutdownProducer(CProducer* producer);
@@ -90,8 +96,12 @@ ROCKETMQCLIENT_API int SendMessageOrderlyByShardingKey(CProducer* producer,
                                                        CMessage* msg,
                                                        const char* shardingKey,
                                                        CSendResult* result);
-
+ROCKETMQCLIENT_API int SendMessageTransaction(CProducer* producer,
+                                              CMessage* msg,
+                                              CLocalTransactionExecutorCallback callback,
+                                              void* userData,
+                                              CSendResult* result);
 #ifdef __cplusplus
-};
+}
 #endif
 #endif  //__C_PRODUCER_H__

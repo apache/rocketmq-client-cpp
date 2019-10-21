@@ -30,5 +30,5 @@ class ROCKETMQCLIENT_API MQueueListener {
                                    std::vector<MQMessageQueue>& mqDivided) = 0;
 };
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

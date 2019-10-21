@@ -31,6 +31,6 @@ typedef struct _CMessageQueue_ {
 } CMessageQueue;
 
 #ifdef __cplusplus
-};
+}
 #endif
 #endif  //__C_MESSAGE_H__

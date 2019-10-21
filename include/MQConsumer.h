@@ -62,5 +62,5 @@ class ROCKETMQCLIENT_API MQConsumer : public MQClient {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

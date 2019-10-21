@@ -18,11 +18,11 @@
 #ifndef __DEFAULTMQPRODUCER_H__
 #define __DEFAULTMQPRODUCER_H__
 
+#include "BatchMessage.h"
 #include "MQMessageQueue.h"
 #include "MQProducer.h"
 #include "RocketMQClient.h"
 #include "SendResult.h"
-#include "BatchMessage.h"
 
 namespace rocketmq {
 //<!***************************************************************************
@@ -113,5 +113,5 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer {
   int m_retryTimes4Async;
 };
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

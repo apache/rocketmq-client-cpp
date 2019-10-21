@@ -57,5 +57,5 @@ class ROCKETMQCLIENT_API MQProducer : public MQClient {
   virtual void sendOneway(MQMessage& msg, MessageQueueSelector* selector, void* arg) = 0;
 };
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

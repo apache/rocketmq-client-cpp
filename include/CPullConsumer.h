@@ -56,6 +56,6 @@ Pull(CPullConsumer* consumer, const CMessageQueue* mq, const char* subExpression
 ROCKETMQCLIENT_API int ReleasePullResult(CPullResult pullResult);
 
 #ifdef __cplusplus
-};
+}
 #endif
 #endif  //__C_PUSH_CONSUMER_H__
