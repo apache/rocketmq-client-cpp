@@ -44,6 +44,6 @@ ROCKETMQCLIENT_API long long GetMessageCommitLogOffset(CMessageExt* msgExt);
 ROCKETMQCLIENT_API long long GetMessagePreparedTransactionOffset(CMessageExt* msgExt);
 
 #ifdef __cplusplus
-};
+}
 #endif
 #endif  //__C_MESSAGE_EXT_H__

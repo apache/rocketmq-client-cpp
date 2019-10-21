@@ -153,5 +153,5 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
   std::unique_ptr<boost::thread> m_pullmsgThread;
 };
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

@@ -31,6 +31,6 @@ ROCKETMQCLIENT_API int AddMessage(CBatchMessage* batchMsg, CMessage* msg);
 ROCKETMQCLIENT_API int DestroyBatchMessage(CBatchMessage* batchMsg);
 
 #ifdef __cplusplus
-};
+}
 #endif
 #endif  //__C_BATCHMESSAGE_H__

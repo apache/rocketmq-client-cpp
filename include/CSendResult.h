@@ -37,6 +37,6 @@ typedef struct _SendResult_ {
 } CSendResult;
 
 #ifdef __cplusplus
-};
+}
 #endif
 #endif  //__C_PRODUCER_H__

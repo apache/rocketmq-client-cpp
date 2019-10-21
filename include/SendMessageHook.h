@@ -43,5 +43,5 @@ class ROCKETMQCLIENT_API SendMessageHook {
   virtual void sendMessageAfter(const SendMessageContext& context) = 0;
 };
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

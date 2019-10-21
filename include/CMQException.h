@@ -35,6 +35,6 @@ typedef struct _CMQException_ {
 } CMQException;
 
 #ifdef __cplusplus
-};
+}
 #endif
 #endif

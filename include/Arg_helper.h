@@ -37,6 +37,6 @@ class ROCKETMQCLIENT_API Arg_helper {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif  //<!_ARG_HELPER_H_;

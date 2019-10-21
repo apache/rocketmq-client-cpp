@@ -62,66 +62,66 @@ class ROCKETMQCLIENT_API MQClient {
   void setGroupName(const std::string& groupname);
 
   /**
-  * no realization
-  */
+   * no realization
+   */
   void createTopic(const std::string& key, const std::string& newTopic, int queueNum);
   /**
-  * search earliest msg store time for specified queue
-  *
-  * @param mq
-  *            message queue
-  * @return earliest store time, ms
-  */
+   * search earliest msg store time for specified queue
+   *
+   * @param mq
+   *            message queue
+   * @return earliest store time, ms
+   */
   int64 earliestMsgStoreTime(const MQMessageQueue& mq);
   /**
-  * search maxOffset of queue
-  *
-  * @param mq
-  *            message queue
-  * @return minOffset of queue
-  */
+   * search maxOffset of queue
+   *
+   * @param mq
+   *            message queue
+   * @return minOffset of queue
+   */
   int64 minOffset(const MQMessageQueue& mq);
   /**
-  * search maxOffset of queue
-  * Note: maxOffset-1 is max offset that could get msg
-  * @param mq
-  *            message queue
-  * @return maxOffset of queue
-  */
+   * search maxOffset of queue
+   * Note: maxOffset-1 is max offset that could get msg
+   * @param mq
+   *            message queue
+   * @return maxOffset of queue
+   */
   int64 maxOffset(const MQMessageQueue& mq);
   /**
-  * get queue offset by timestamp
-  *
-  * @param mq
-  *            mq queue
-  * @param timestamp
-  *            timestamp with ms unit
-  * @return queue offset according to timestamp
-  */
+   * get queue offset by timestamp
+   *
+   * @param mq
+   *            mq queue
+   * @param timestamp
+   *            timestamp with ms unit
+   * @return queue offset according to timestamp
+   */
   int64 searchOffset(const MQMessageQueue& mq, uint64_t timestamp);
   /**
-  * get whole msg info from broker by msgId
-  *
-  * @param msgId
-  * @return MQMessageExt
-  */
+   * get whole msg info from broker by msgId
+   *
+   * @param msgId
+   * @return MQMessageExt
+   */
   MQMessageExt* viewMessage(const std::string& msgId);
   /**
-  * query message by topic and key
-  *
-  * @param topic
-  *            topic name
-  * @param key
-  *            topic key
-  * @param maxNum
-  *            query num
-  * @param begin
-  *            begin timestamp
-  * @param end
-  *            end timestamp
-  * @return
-  *            according to QueryResult
-  */
+   * query message by topic and key
+   *
+   * @param topic
+   *            topic name
+   * @param key
+   *            topic key
+   * @param maxNum
+   *            query num
+   * @param begin
+   *            begin timestamp
+   * @param end
+   *            end timestamp
+   * @return
+   *            according to QueryResult
+   */
   QueryResult queryMessage(const std::string& topic, const std::string& key, int maxNum, int64 begin, int64 end);
 
   std::vector<MQMessageQueue> getTopicMessageQueueInfo(const std::string& topic);
@@ -197,5 +197,5 @@ class ROCKETMQCLIENT_API MQClient {
   SessionCredentials m_SessionCredentials;
 };
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

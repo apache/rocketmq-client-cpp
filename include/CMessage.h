@@ -35,8 +35,14 @@ ROCKETMQCLIENT_API int SetMessageBody(CMessage* msg, const char* body);
 ROCKETMQCLIENT_API int SetByteMessageBody(CMessage* msg, const char* body, int len);
 ROCKETMQCLIENT_API int SetMessageProperty(CMessage* msg, const char* key, const char* value);
 ROCKETMQCLIENT_API int SetDelayTimeLevel(CMessage* msg, int level);
+ROCKETMQCLIENT_API const char* GetOriginMessageTopic(CMessage* msg);
+ROCKETMQCLIENT_API const char* GetOriginMessageTags(CMessage* msg);
+ROCKETMQCLIENT_API const char* GetOriginMessageKeys(CMessage* msg);
+ROCKETMQCLIENT_API const char* GetOriginMessageBody(CMessage* msg);
+ROCKETMQCLIENT_API const char* GetOriginMessageProperty(CMessage* msg, const char* key);
+ROCKETMQCLIENT_API int GetOriginDelayTimeLevel(CMessage* msg);
 
 #ifdef __cplusplus
-};
+}
 #endif
 #endif  //__C_MESSAGE_H__

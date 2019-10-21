@@ -69,5 +69,5 @@ class SessionCredentials {
   std::string signatureMethod;
   std::string authChannel;
 };
-}
+}  // namespace rocketmq
 #endif

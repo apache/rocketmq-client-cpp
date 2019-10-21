@@ -59,5 +59,5 @@ class ROCKETMQCLIENT_API MQMessageQueue {
   int m_queueId;
 };
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

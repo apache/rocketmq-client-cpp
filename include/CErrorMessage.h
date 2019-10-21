@@ -27,6 +27,6 @@ extern "C" {
 ROCKETMQCLIENT_API const char* GetLatestErrorMessage();  // Return the last error message
 
 #ifdef __cplusplus
-};
+}
 #endif
 #endif  //__CERROR_MESSAGE_H__

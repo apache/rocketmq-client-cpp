@@ -28,5 +28,5 @@ class ROCKETMQCLIENT_API MessageQueueSelector {
   virtual MQMessageQueue select(const std::vector<MQMessageQueue>& mqs, const MQMessage& msg, void* arg) = 0;
 };
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif  //<! _MQSELECTOR_H_

@@ -17,13 +17,13 @@
 
 #ifndef __BATCHMESSAGE_H__
 #define __BATCHMESSAGE_H__
-#include "MQMessage.h"
 #include <string>
+#include "MQMessage.h"
 namespace rocketmq {
 class BatchMessage : public MQMessage {
  public:
   static std::string encode(std::vector<MQMessage>& msgs);
   static std::string encode(MQMessage& message);
 };
-}
+}  // namespace rocketmq
 #endif
