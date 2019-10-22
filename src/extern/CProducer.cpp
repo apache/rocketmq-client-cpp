@@ -247,6 +247,7 @@ CProducer* CreateTransactionProducer(const char* groupId, CLocalTransactionCheck
   defaultMQProducer->innerTransactionProducer = new TransactionMQProducer(groupId);
   defaultMQProducer->listenerInner =
       new LocalTransactionListenerInner((CProducer*)defaultMQProducer, callback, userData);
+  defaultMQProducer->innerTransactionProducer->setTransactionListener(defaultMQProducer->listenerInner);
   return (CProducer*)defaultMQProducer;
 }
 int DestroyProducer(CProducer* pProducer) {
