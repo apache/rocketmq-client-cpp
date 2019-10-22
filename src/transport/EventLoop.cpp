@@ -25,6 +25,7 @@
 #endif
 
 #include "Logging.h"
+#include "SocketUtil.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
@@ -206,10 +207,8 @@ static std::string buildPeerAddrPort(socket_t fd) {
 
   getpeername(fd, (struct sockaddr*)&addr, &len);
 
-  LOG_DEBUG("socket: %d, addr: %s, port: %d", fd, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
-  std::string addrPort(inet_ntoa(addr.sin_addr));
-  addrPort.append(":");
-  addrPort.append(UtilAll::to_string(ntohs(addr.sin_port)));
+  std::string addrPort = socketAddress2IPPort((struct sockaddr*)&addr);
+  LOG_DEBUG("socket: %d, addr: %s", fd, addrPort);
 
   return addrPort;
 }
