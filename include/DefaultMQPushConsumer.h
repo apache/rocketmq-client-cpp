@@ -91,12 +91,27 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumerConfig : public DefaultMQConsumerC
   std::unique_ptr<AllocateMQStrategy> m_allocateMQStrategy;
 };
 
-class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQPushConsumer,
+class DefaultMQPushConsumer;
+typedef std::shared_ptr<DefaultMQPushConsumer> DefaultMQPushConsumerPtr;
+
+class ROCKETMQCLIENT_API DefaultMQPushConsumer : public std::enable_shared_from_this<DefaultMQPushConsumer>,
+                                                 public MQPushConsumer,
                                                  public MQClient,
                                                  public DefaultMQPushConsumerConfig {
  public:
+  static DefaultMQPushConsumerPtr create(const std::string& groupname = "", RPCHookPtr rpcHook = nullptr) {
+    if (nullptr == rpcHook) {
+      return DefaultMQPushConsumerPtr(new DefaultMQPushConsumer(groupname));
+    } else {
+      return DefaultMQPushConsumerPtr(new DefaultMQPushConsumer(groupname, rpcHook));
+    }
+  }
+
+ private:
   DefaultMQPushConsumer(const std::string& groupname);
   DefaultMQPushConsumer(const std::string& groupname, RPCHookPtr rpcHook);
+
+ public:
   virtual ~DefaultMQPushConsumer();
 
  public:  // MQClient

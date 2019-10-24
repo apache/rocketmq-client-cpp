@@ -53,34 +53,34 @@ int main(int argc, char* argv[]) {
   }
   PrintRocketmqSendAndConsumerArgs(info);
 
-  DefaultMQPushConsumer consumer("please_rename_unique_group_name");
-  consumer.setNamesrvAddr(info.namesrv);
-  consumer.setGroupName(info.groupname);
-  consumer.setTcpTransportTryLockTimeout(1000);
-  consumer.setTcpTransportConnectTimeout(400);
-  consumer.setConsumeThreadNum(info.thread_count);
-  consumer.setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
+  auto consumer = DefaultMQPushConsumer::create();
+  consumer->setNamesrvAddr(info.namesrv);
+  consumer->setGroupName(info.groupname);
+  consumer->setTcpTransportTryLockTimeout(1000);
+  consumer->setTcpTransportConnectTimeout(400);
+  consumer->setConsumeThreadNum(info.thread_count);
+  consumer->setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
 
   if (info.broadcasting) {
-    consumer.setMessageModel(rocketmq::BROADCASTING);
+    consumer->setMessageModel(rocketmq::BROADCASTING);
   }
 
-  consumer.subscribe(info.topic, "*");
+  consumer->subscribe(info.topic, "*");
 
   MyMsgListener msglistener;
-  consumer.registerMessageListener(&msglistener);
+  consumer->registerMessageListener(&msglistener);
 
   g_tps.start();
 
   try {
-    consumer.start();
+    consumer->start();
   } catch (MQClientException& e) {
     std::cout << e << std::endl;
   }
 
   g_finished.wait();
 
-  consumer.shutdown();
+  consumer->shutdown();
 
   return 0;
 }

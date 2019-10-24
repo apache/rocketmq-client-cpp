@@ -62,4 +62,5 @@ ROCKETMQCLIENT_API int SetPushConsumerMaxCacheMessageSizeInMb(CPushConsumer* con
 #ifdef __cplusplus
 };
 #endif
+
 #endif  //__C_PUSH_CONSUMER_H__

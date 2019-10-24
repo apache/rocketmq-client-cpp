@@ -424,7 +424,7 @@ SendResult* DefaultMQProducer::sendDefaultImpl(MQMessagePtr msg,
         // TODO: 区分异常类型
         endTimestamp = UtilAll::currentTimeMillis();
         updateFaultItem(mq.getBrokerName(), endTimestamp - beginTimestampPrev, true);
-        LOG_ERROR("send failed of times:%d, brokerName:%s", times, mq.getBrokerName().c_str());
+        LOG_ERROR("send failed of times:{}, brokerName:{}. exception:{}", times, mq.getBrokerName(), e.what());
         continue;
       }
 
@@ -515,7 +515,7 @@ SendResult* DefaultMQProducer::sendKernelImpl(MQMessagePtr msg,
           }
           sendResult = getFactory()->getMQClientAPIImpl()->sendMessage(
               brokerAddr, mq.getBrokerName(), msg, std::move(requestHeader), timeout, communicationMode, sendCallback,
-              topicPublishInfo, getFactory(), getRetryTimes4Async(), this);
+              topicPublishInfo, getFactory(), getRetryTimes4Async(), shared_from_this());
         } break;
         case ComMode_ONEWAY:
         case ComMode_SYNC: {
@@ -523,8 +523,9 @@ SendResult* DefaultMQProducer::sendKernelImpl(MQMessagePtr msg,
           if (timeout < costTimeSync) {
             THROW_MQEXCEPTION(RemotingTooMuchRequestException, "sendKernelImpl call timeout", -1);
           }
-          sendResult = getFactory()->getMQClientAPIImpl()->sendMessage(
-              brokerAddr, mq.getBrokerName(), msg, std::move(requestHeader), timeout, communicationMode, this);
+          sendResult = getFactory()->getMQClientAPIImpl()->sendMessage(brokerAddr, mq.getBrokerName(), msg,
+                                                                       std::move(requestHeader), timeout,
+                                                                       communicationMode, shared_from_this());
         } break;
         default:
           assert(false);

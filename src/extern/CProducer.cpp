@@ -133,7 +133,8 @@ CProducer* CreateProducer(const char* groupId) {
   if (groupId == NULL) {
     return NULL;
   }
-  DefaultMQProducer* defaultMQProducer = new DefaultMQProducer(groupId);
+  DefaultMQProducerPtr* defaultMQProducer = new DefaultMQProducerPtr;
+  *defaultMQProducer = DefaultMQProducer::create(groupId);
   return (CProducer*)defaultMQProducer;
 }
 
@@ -145,7 +146,7 @@ int DestroyProducer(CProducer* pProducer) {
   if (pProducer == NULL) {
     return NULL_POINTER;
   }
-  delete reinterpret_cast<DefaultMQProducer*>(pProducer);
+  delete reinterpret_cast<DefaultMQProducerPtr*>(pProducer);
   return OK;
 }
 
@@ -154,7 +155,7 @@ int StartProducer(CProducer* producer) {
     return NULL_POINTER;
   }
   try {
-    ((DefaultMQProducer*)producer)->start();
+    (*(DefaultMQProducerPtr*)producer)->start();
   } catch (std::exception& e) {
     MQClientErrorContainer::setErr(std::string(e.what()));
     return PRODUCER_START_FAILED;
@@ -166,7 +167,7 @@ int ShutdownProducer(CProducer* producer) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQProducer*)producer)->shutdown();
+  (*(DefaultMQProducerPtr*)producer)->shutdown();
   return OK;
 }
 
@@ -174,7 +175,7 @@ int SetProducerNameServerAddress(CProducer* producer, const char* namesrv) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQProducer*)producer)->setNamesrvAddr(namesrv);
+  (*(DefaultMQProducerPtr*)producer)->setNamesrvAddr(namesrv);
   return OK;
 }
 
@@ -183,7 +184,7 @@ int SetProducerNameServerDomain(CProducer* producer, const char* domain) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  // ((DefaultMQProducer*)producer)->setNamesrvDomain(domain);
+  // (*(DefaultMQProducerPtr*)producer)->setNamesrvDomain(domain);
   return OK;
 }
 
@@ -390,7 +391,7 @@ int SetProducerGroupName(CProducer* producer, const char* groupName) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQProducer*)producer)->setGroupName(groupName);
+  (*(DefaultMQProducerPtr*)producer)->setGroupName(groupName);
   return OK;
 }
 
@@ -398,7 +399,7 @@ int SetProducerInstanceName(CProducer* producer, const char* instanceName) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQProducer*)producer)->setInstanceName(instanceName);
+  (*(DefaultMQProducerPtr*)producer)->setInstanceName(instanceName);
   return OK;
 }
 
@@ -409,7 +410,7 @@ int SetProducerSessionCredentials(CProducer* producer,
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  // ((DefaultMQProducer*)producer)->setSessionCredentials(accessKey, secretKey, onsChannel);
+  // (*(DefaultMQProducerPtr*)producer)->setSessionCredentials(accessKey, secretKey, onsChannel);
   return OK;
 }
 
@@ -418,7 +419,7 @@ int SetProducerLogPath(CProducer* producer, const char* logPath) {
     return NULL_POINTER;
   }
   // Todo, This api should be implemented by core api.
-  //((DefaultMQProducer *) producer)->setLogFileSizeAndNum(3, 102400000);
+  //(*(DefaultMQProducerPtr*)producer)->setLogFileSizeAndNum(3, 102400000);
   return OK;
 }
 
@@ -426,7 +427,7 @@ int SetProducerLogFileNumAndSize(CProducer* producer, int fileNum, long fileSize
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQProducer*)producer)->setLogFileSizeAndNum(fileNum, fileSize);
+  (*(DefaultMQProducerPtr*)producer)->setLogFileSizeAndNum(fileNum, fileSize);
   return OK;
 }
 
@@ -434,7 +435,7 @@ int SetProducerLogLevel(CProducer* producer, CLogLevel level) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQProducer*)producer)->setLogLevel((elogLevel)level);
+  (*(DefaultMQProducerPtr*)producer)->setLogLevel((elogLevel)level);
   return OK;
 }
 
@@ -442,7 +443,7 @@ int SetProducerSendMsgTimeout(CProducer* producer, int timeout) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQProducer*)producer)->setSendMsgTimeout(timeout);
+  (*(DefaultMQProducerPtr*)producer)->setSendMsgTimeout(timeout);
   return OK;
 }
 
@@ -450,7 +451,7 @@ int SetProducerCompressMsgBodyOverHowmuch(CProducer* producer, int howmuch) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQProducer*)producer)->setCompressMsgBodyOverHowmuch(howmuch);
+  (*(DefaultMQProducerPtr*)producer)->setCompressMsgBodyOverHowmuch(howmuch);
   return OK;
 }
 
@@ -458,7 +459,7 @@ int SetProducerCompressLevel(CProducer* producer, int level) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQProducer*)producer)->setCompressLevel(level);
+  (*(DefaultMQProducerPtr*)producer)->setCompressLevel(level);
   return OK;
 }
 
@@ -466,6 +467,6 @@ int SetProducerMaxMessageSize(CProducer* producer, int size) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQProducer*)producer)->setMaxMessageSize(size);
+  (*(DefaultMQProducerPtr*)producer)->setMaxMessageSize(size);
   return OK;
 }

@@ -20,6 +20,7 @@
 #include "AsyncCallback.h"
 #include "CommandHeader.h"
 #include "CommunicationMode.h"
+#include "DefaultMQProducer.h"
 #include "HeartbeatData.h"
 #include "KVTable.h"
 #include "LockBatchBody.h"
@@ -37,7 +38,6 @@ class MQClientInstance;
 class TcpRemotingClient;
 class ClientRemotingProcessor;
 class RPCHook;
-class DefaultMQProducer;
 class SendCallbackWrap;
 
 /**
@@ -63,7 +63,7 @@ class MQClientAPIImpl {
                           std::unique_ptr<SendMessageRequestHeader> requestHeader,
                           int timeoutMillis,
                           CommunicationMode communicationMode,
-                          DefaultMQProducer* producer);
+                          DefaultMQProducerPtr producer);
   SendResult* sendMessage(const std::string& addr,
                           const std::string& brokerName,
                           const MQMessagePtr msg,
@@ -74,7 +74,7 @@ class MQClientAPIImpl {
                           TopicPublishInfoPtr topicPublishInfo,
                           MQClientInstance* instance,
                           int retryTimesWhenSendFailed,
-                          DefaultMQProducer* producer);
+                          DefaultMQProducerPtr producer);
   SendResult* processSendResponse(const std::string& brokerName, const MQMessagePtr msg, RemotingCommand* pResponse);
 
   PullResult* pullMessage(const std::string& addr,
@@ -171,7 +171,7 @@ class MQClientAPIImpl {
                         MQClientInstance* instance,
                         int64_t timeoutMilliseconds,
                         int retryTimesWhenSendFailed,
-                        DefaultMQProducer* producer) throw(RemotingException);
+                        DefaultMQProducerPtr producer) throw(RemotingException);
 
   void sendMessageAsyncImpl(SendCallbackWrap* cbw, int64_t timeoutMillis) throw(RemotingException);
 

@@ -96,10 +96,27 @@ class ROCKETMQCLIENT_API DefaultMQProducerConfig {
   std::unique_ptr<thread_pool_executor> m_checkTransactionExecutor;
 };
 
-class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer, public MQClient, public DefaultMQProducerConfig {
+class DefaultMQProducer;
+typedef std::shared_ptr<DefaultMQProducer> DefaultMQProducerPtr;
+
+class ROCKETMQCLIENT_API DefaultMQProducer : public std::enable_shared_from_this<DefaultMQProducer>,
+                                             public MQProducer,
+                                             public MQClient,
+                                             public DefaultMQProducerConfig {
  public:
+  static DefaultMQProducerPtr create(const std::string& groupname = "", RPCHookPtr rpcHook = nullptr) {
+    if (nullptr == rpcHook) {
+      return DefaultMQProducerPtr(new DefaultMQProducer(groupname));
+    } else {
+      return DefaultMQProducerPtr(new DefaultMQProducer(groupname, rpcHook));
+    }
+  }
+
+ private:
   DefaultMQProducer(const std::string& groupname);
   DefaultMQProducer(const std::string& groupname, RPCHookPtr rpcHook);
+
+ public:
   virtual ~DefaultMQProducer();
 
  public:  // MQClient

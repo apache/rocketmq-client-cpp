@@ -43,18 +43,24 @@ namespace rocketmq {
 
 class AsyncPullCallback : public AutoDeletePullCallback {
  public:
-  AsyncPullCallback(DefaultMQPushConsumer* pushConsumer, PullRequestPtr request, SubscriptionDataPtr subscriptionData)
+  AsyncPullCallback(DefaultMQPushConsumerPtr pushConsumer, PullRequestPtr request, SubscriptionDataPtr subscriptionData)
       : m_defaultMQPushConsumer(pushConsumer), m_pullRequest(request), m_subscriptionData(subscriptionData) {}
 
   ~AsyncPullCallback() override {
-    m_defaultMQPushConsumer = nullptr;
+    m_defaultMQPushConsumer.reset();
     m_pullRequest.reset();
     m_subscriptionData = nullptr;
   }
 
   void onSuccess(PullResult& pullResult) override {
-    PullResult result = m_defaultMQPushConsumer->getPullAPIWrapper()->processPullResult(
-        m_pullRequest->getMessageQueue(), pullResult, m_subscriptionData);
+    auto defaultMQPushConsumer = m_defaultMQPushConsumer.lock();
+    if (nullptr == defaultMQPushConsumer) {
+      LOG_WARN_NEW("AsyncPullCallback::onSuccess: DefaultMQPushConsumer is released.");
+      return;
+    }
+
+    PullResult result = defaultMQPushConsumer->getPullAPIWrapper()->processPullResult(m_pullRequest->getMessageQueue(),
+                                                                                      pullResult, m_subscriptionData);
     switch (result.pullStatus) {
       case FOUND: {
         int64_t prevRequestOffset = m_pullRequest->getNextOffset();
@@ -62,15 +68,15 @@ class AsyncPullCallback : public AutoDeletePullCallback {
 
         int64_t firstMsgOffset = (std::numeric_limits<int64_t>::max)();
         if (result.msgFoundList.empty()) {
-          m_defaultMQPushConsumer->executePullRequestImmediately(m_pullRequest);
+          defaultMQPushConsumer->executePullRequestImmediately(m_pullRequest);
         } else {
           firstMsgOffset = (*result.msgFoundList.begin())->getQueueOffset();
 
           m_pullRequest->getProcessQueue()->putMessage(result.msgFoundList);
-          m_defaultMQPushConsumer->getConsumerMsgService()->submitConsumeRequest(
+          defaultMQPushConsumer->getConsumerMsgService()->submitConsumeRequest(
               result.msgFoundList, m_pullRequest->getProcessQueue(), m_pullRequest->getMessageQueue(), true);
 
-          m_defaultMQPushConsumer->executePullRequestImmediately(m_pullRequest);
+          defaultMQPushConsumer->executePullRequestImmediately(m_pullRequest);
         }
 
         if (result.nextBeginOffset < prevRequestOffset || firstMsgOffset < prevRequestOffset) {
@@ -83,8 +89,8 @@ class AsyncPullCallback : public AutoDeletePullCallback {
       case NO_NEW_MSG:
       case NO_MATCHED_MSG:
         m_pullRequest->setNextOffset(result.nextBeginOffset);
-        m_defaultMQPushConsumer->correctTagsOffset(m_pullRequest);
-        m_defaultMQPushConsumer->executePullRequestImmediately(m_pullRequest);
+        defaultMQPushConsumer->correctTagsOffset(m_pullRequest);
+        defaultMQPushConsumer->executePullRequestImmediately(m_pullRequest);
         break;
       case OFFSET_ILLEGAL: {
         LOG_WARN_NEW("the pull request offset illegal, {} {}", m_pullRequest->toString(), result.toString());
@@ -93,15 +99,14 @@ class AsyncPullCallback : public AutoDeletePullCallback {
         m_pullRequest->getProcessQueue()->setDropped(true);
 
         // update and persist offset, then removeProcessQueue
-        auto* consumer = m_defaultMQPushConsumer;
         auto pullRequest = m_pullRequest;
-        m_defaultMQPushConsumer->executeTaskLater(
-            [consumer, pullRequest]() {
+        defaultMQPushConsumer->executeTaskLater(
+            [defaultMQPushConsumer, pullRequest]() {
               try {
-                consumer->getOffsetStore()->updateOffset(pullRequest->getMessageQueue(), pullRequest->getNextOffset(),
-                                                         false);
-                consumer->getOffsetStore()->persist(pullRequest->getMessageQueue());
-                consumer->getRebalanceImpl()->removeProcessQueue(pullRequest->getMessageQueue());
+                defaultMQPushConsumer->getOffsetStore()->updateOffset(pullRequest->getMessageQueue(),
+                                                                      pullRequest->getNextOffset(), false);
+                defaultMQPushConsumer->getOffsetStore()->persist(pullRequest->getMessageQueue());
+                defaultMQPushConsumer->getRebalanceImpl()->removeProcessQueue(pullRequest->getMessageQueue());
 
                 LOG_WARN_NEW("fix the pull request offset, {}", pullRequest->toString());
               } catch (std::exception& e) {
@@ -116,15 +121,21 @@ class AsyncPullCallback : public AutoDeletePullCallback {
   }
 
   void onException(MQException& e) noexcept override {
+    auto defaultMQPushConsumer = m_defaultMQPushConsumer.lock();
+    if (nullptr == defaultMQPushConsumer) {
+      LOG_WARN_NEW("AsyncPullCallback::onException: DefaultMQPushConsumer is released.");
+      return;
+    }
+
     if (!UtilAll::isRetryTopic(m_pullRequest->getMessageQueue().getTopic())) {
       LOG_WARN_NEW("execute the pull request exception: {}", e.what());
     }
 
-    m_defaultMQPushConsumer->executePullRequestLater(m_pullRequest, 3000);
+    defaultMQPushConsumer->executePullRequestLater(m_pullRequest, 3000);
   }
 
  private:
-  DefaultMQPushConsumer* m_defaultMQPushConsumer;
+  std::weak_ptr<DefaultMQPushConsumer> m_defaultMQPushConsumer;
   PullRequestPtr m_pullRequest;
   SubscriptionDataPtr m_subscriptionData;
 };
@@ -520,7 +531,7 @@ void DefaultMQPushConsumer::pullMessage(PullRequestPtr pullRequest) {
                                           false);                  // class filter
 
   try {
-    auto* pCallback = new AsyncPullCallback(this, pullRequest, subscriptionData);
+    auto* pCallback = new AsyncPullCallback(shared_from_this(), pullRequest, subscriptionData);
     m_pullAPIWrapper->pullKernelImpl(messageQueue,                       // 1
                                      subExpression,                      // 2
                                      subscriptionData->getSubVersion(),  // 3

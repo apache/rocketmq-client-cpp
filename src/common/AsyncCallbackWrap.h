@@ -43,7 +43,7 @@ class SendCallbackWrap : public InvokeCallback {
                    MQClientInstance* instance,
                    int retryTimesWhenSendFailed,
                    int times,
-                   DefaultMQProducer* producer);
+                   DefaultMQProducerPtr producer);
 
   void operationComplete(ResponseFuture* responseFuture) noexcept override;
   void onExceptionImpl(ResponseFuture* responseFuture, long timeoutMillis, MQException& e, bool needRetry);
@@ -66,7 +66,7 @@ class SendCallbackWrap : public InvokeCallback {
   MQClientInstance* m_instance;
   int m_timesTotal;
   int m_times;
-  DefaultMQProducer* m_producer;  // FIXME: ensure object is live.
+  std::weak_ptr<DefaultMQProducer> m_producer;  // FIXME: ensure object is live.
 };
 
 class PullCallbackWrap : public InvokeCallback {

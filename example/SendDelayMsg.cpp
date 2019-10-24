@@ -25,13 +25,13 @@ int main(int argc, char* argv[]) {
   }
   PrintRocketmqSendAndConsumerArgs(info);
 
-  DefaultMQProducer producer("please_rename_unique_group_name");
-  producer.setNamesrvAddr(info.namesrv);
-  producer.setGroupName(info.groupname);
-  producer.setSendMsgTimeout(3000);
-  producer.setTcpTransportTryLockTimeout(1000);
-  producer.setTcpTransportConnectTimeout(400);
-  producer.start();
+  auto producer = DefaultMQProducer::create();
+  producer->setNamesrvAddr(info.namesrv);
+  producer->setGroupName(info.groupname);
+  producer->setSendMsgTimeout(3000);
+  producer->setTcpTransportTryLockTimeout(1000);
+  producer->setTcpTransportConnectTimeout(400);
+  producer->start();
 
   MQMessage msg(info.topic,  // topic
                 "*",         // tag
@@ -40,12 +40,12 @@ int main(int argc, char* argv[]) {
   // messageDelayLevel=1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h
   msg.setDelayTimeLevel(5);  // 1m
   try {
-    SendResult sendResult = producer.send(&msg);
+    SendResult sendResult = producer->send(&msg);
   } catch (const MQException& e) {
     std::cout << "send failed: " << std::endl;
   }
 
-  producer.shutdown();
+  producer->shutdown();
 
   return 0;
 }

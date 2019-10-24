@@ -47,7 +47,7 @@ class MyAutoDeleteSendCallback : public AutoDeleteSendCallback {
   MQMessage* m_msg;
 };
 
-void AsyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* producer) {
+void AsyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducerPtr producer) {
   while (g_msgCount.fetch_sub(1) > 0) {
     auto* msg = new MQMessage(info->topic,  // topic
                               "*",          // tag
@@ -71,16 +71,16 @@ int main(int argc, char* argv[]) {
   }
   PrintRocketmqSendAndConsumerArgs(info);
 
-  DefaultMQProducer producer("please_rename_unique_group_name");
-  producer.setNamesrvAddr(info.namesrv);
-  producer.setGroupName(info.groupname);
-  producer.setSendMsgTimeout(3000);
-  producer.setRetryTimes(info.retrytimes);
-  producer.setRetryTimes4Async(info.retrytimes);
-  producer.setSendLatencyFaultEnable(!info.selectUnactiveBroker);
-  producer.setTcpTransportTryLockTimeout(1000);
-  producer.setTcpTransportConnectTimeout(400);
-  producer.start();
+  auto producer = DefaultMQProducer::create();
+  producer->setNamesrvAddr(info.namesrv);
+  producer->setGroupName(info.groupname);
+  producer->setSendMsgTimeout(3000);
+  producer->setRetryTimes(info.retrytimes);
+  producer->setRetryTimes4Async(info.retrytimes);
+  producer->setSendLatencyFaultEnable(!info.selectUnactiveBroker);
+  producer->setTcpTransportTryLockTimeout(1000);
+  producer->setTcpTransportConnectTimeout(400);
+  producer->start();
 
   std::vector<std::shared_ptr<std::thread>> work_pool;
   int msgcount = g_msgCount.load();
@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
 
   int threadCount = info.thread_count;
   for (int j = 0; j < threadCount; j++) {
-    std::shared_ptr<std::thread> th = std::make_shared<std::thread>(AsyncProducerWorker, &info, &producer);
+    std::shared_ptr<std::thread> th = std::make_shared<std::thread>(AsyncProducerWorker, &info, producer);
     work_pool.push_back(th);
   }
 
@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
             << "success: " << g_success << ", failed: " << g_failed << std::endl;
 
   try {
-    producer.shutdown();
+    producer->shutdown();
   } catch (std::exception& e) {
     std::cout << "encounter exception: " << e.what() << std::endl;
   }

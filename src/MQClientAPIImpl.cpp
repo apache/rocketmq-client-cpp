@@ -90,7 +90,7 @@ SendResult* MQClientAPIImpl::sendMessage(const std::string& addr,
                                          std::unique_ptr<SendMessageRequestHeader> requestHeader,
                                          int timeoutMillis,
                                          CommunicationMode communicationMode,
-                                         DefaultMQProducer* producer) {
+                                         DefaultMQProducerPtr producer) {
   return sendMessage(addr, brokerName, msg, std::move(requestHeader), timeoutMillis, communicationMode, nullptr,
                      nullptr, nullptr, 0, producer);
 }
@@ -105,7 +105,7 @@ SendResult* MQClientAPIImpl::sendMessage(const std::string& addr,
                                          TopicPublishInfoPtr topicPublishInfo,
                                          MQClientInstance* instance,
                                          int retryTimesWhenSendFailed,
-                                         DefaultMQProducer* producer) {
+                                         DefaultMQProducerPtr producer) {
   int code = SEND_MESSAGE;
   std::unique_ptr<CommandCustomHeader> header;
 
@@ -146,7 +146,7 @@ void MQClientAPIImpl::sendMessageAsync(const std::string& addr,
                                        MQClientInstance* instance,
                                        int64_t timeoutMillis,
                                        int retryTimesWhenSendFailed,
-                                       DefaultMQProducer* producer) throw(RemotingException) {
+                                       DefaultMQProducerPtr producer) throw(RemotingException) {
   // delete in future
   auto cbw = new SendCallbackWrap(addr, brokerName, msg, std::forward<RemotingCommand>(request), sendCallback,
                                   topicPublishInfo, instance, retryTimesWhenSendFailed, 0, producer);
