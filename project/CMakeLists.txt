@@ -16,7 +16,7 @@
 # source files
 project(rocketmq-client)
 
-file(GLOB_RECURSE SRC_FILES ${PROJECT_SOURCE_DIR}/../src/*)
+file(GLOB_RECURSE SRC_FILES ${PROJECT_SOURCE_DIR}/../src/*.c*)
 list(REMOVE_ITEM SRC_FILES ${PROJECT_SOURCE_DIR}/../src/dllmain.cpp)
 
 # subdirs
