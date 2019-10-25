@@ -27,10 +27,11 @@
 namespace rocketmq {
 
 typedef enum TcpConnectStatus {
-  TCP_CONNECT_STATUS_INIT = 0,
-  TCP_CONNECT_STATUS_WAIT = 1,
-  TCP_CONNECT_STATUS_SUCCESS = 2,
-  TCP_CONNECT_STATUS_FAILED = 3
+  TCP_CONNECT_STATUS_CREATED = 0,
+  TCP_CONNECT_STATUS_CONNECTING = 1,
+  TCP_CONNECT_STATUS_CONNECTED = 2,
+  TCP_CONNECT_STATUS_FAILED = 3,
+  TCP_CONNECT_STATUS_CLOSED = 4
 } TcpConnectStatus;
 
 using TcpTransportReadCallback = void (*)(void* context, MemoryBlockPtr3&, const std::string&);
@@ -67,10 +68,11 @@ class TcpTransport : public std::enable_shared_from_this<TcpTransport> {
   static void EventCallback(BufferEvent* event, short what, TcpTransport* transport);
 
   void messageReceived(MemoryBlockPtr3& mem, const std::string& addr);
-  void freeBufferEvent();  // not thread-safe
 
-  void setTcpConnectEvent(TcpConnectStatus connectStatus);
-  void setTcpConnectStatus(TcpConnectStatus connectStatus);
+  TcpConnectStatus closeBufferEvent();  // not thread-safe
+
+  TcpConnectStatus setTcpConnectEvent(TcpConnectStatus connectStatus);
+  bool setTcpConnectEventIf(TcpConnectStatus& expectStatus, TcpConnectStatus connectStatus);
 
   // convert host to binary
   u_long resolveInetAddr(std::string& hostname);
@@ -79,7 +81,6 @@ class TcpTransport : public std::enable_shared_from_this<TcpTransport> {
   uint64_t m_startTime;
 
   std::shared_ptr<BufferEvent> m_event;  // NOTE: use m_event in callback is unsafe.
-  std::mutex m_eventMutex;
 
   std::atomic<TcpConnectStatus> m_tcpConnectStatus;
   std::mutex m_statusMutex;

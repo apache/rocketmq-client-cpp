@@ -75,6 +75,7 @@ class BufferEvent : public noncopyable {
   }
 
   int enable(short event) { return bufferevent_enable(m_bufferEvent, event); }
+  int disable(short event) { return bufferevent_disable(m_bufferEvent, event); }
 
   int connect(const struct sockaddr* addr, int socklen) {
     return bufferevent_socket_connect(m_bufferEvent, (struct sockaddr*)addr, socklen);

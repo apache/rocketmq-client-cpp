@@ -178,8 +178,7 @@ RemotingCommand* TcpRemotingClient::invokeSync(const std::string& addr,
       doAfterRpcHooks(addr, request, response, false);
       return response;
     } catch (const RemotingSendRequestException& e) {
-      LOG_WARN_NEW("invokeSync: send request exception, so close the channel[{}]",
-                   channel->getPeerAddrAndPort().c_str());
+      LOG_WARN_NEW("invokeSync: send request exception, so close the channel[{}]", channel->getPeerAddrAndPort());
       CloseTransport(addr, channel);
       throw e;
     } catch (const RemotingTimeoutException& e) {
@@ -297,7 +296,7 @@ void TcpRemotingClient::invokeOneway(const std::string& addr, RemotingCommand& r
       doBeforeRpcHooks(addr, request, true);
       invokeOnewayImpl(channel, request);
     } catch (const RemotingSendRequestException& e) {
-      LOG_WARN("invokeOneway: send request exception, so close the channel[%s]", channel->getPeerAddrAndPort().c_str());
+      LOG_WARN("invokeOneway: send request exception, so close the channel[{}]", channel->getPeerAddrAndPort());
       CloseTransport(addr, channel);
       throw e;
     }
@@ -351,8 +350,8 @@ TcpTransportPtr TcpRemotingClient::CreateTransport(const std::string& addr, bool
   TcpTransportPtr channel;
 
   {
-    // try get m_tcpLock util m_tcpTransportTryLockTimeout to avoid blocking
-    // long time, if could not get m_tcpLock, return NULL
+    // try get m_tcpLock util m_tcpTransportTryLockTimeout to avoid blocking long time,
+    // if could not get m_transportTableMutex, return NULL
     if (!UtilAll::try_lock_for(m_transportTableMutex, 1000 * m_tcpTransportTryLockTimeout)) {
       LOG_ERROR("GetTransport of:%s get timed_mutex timeout", addr.c_str());
       return TcpTransportPtr();
@@ -362,34 +361,36 @@ TcpTransportPtr TcpRemotingClient::CreateTransport(const std::string& addr, bool
     // check for reuse
     auto iter = m_transportTable.find(addr);
     if (iter != m_transportTable.end()) {
-      TcpTransportPtr tcp = iter->second;
-      if (tcp != nullptr) {
-        TcpConnectStatus connectStatus = tcp->getTcpConnectStatus();
+      channel = iter->second;
+      if (channel != nullptr) {
+        TcpConnectStatus connectStatus = channel->getTcpConnectStatus();
         switch (connectStatus) {
-          case TCP_CONNECT_STATUS_SUCCESS:
-            return tcp;
-          case TCP_CONNECT_STATUS_WAIT:
+          case TCP_CONNECT_STATUS_CONNECTED:
+            return channel;
+          case TCP_CONNECT_STATUS_CONNECTING:
+            // wait server answer, return dummy
             return TcpTransportPtr();
           case TCP_CONNECT_STATUS_FAILED:
-            LOG_ERROR("tcpTransport with server disconnected, erase server:%s", addr.c_str());
-            tcp->disconnect(addr);  // avoid coredump when connection with broker was broken
+            LOG_ERROR_NEW("tcpTransport with server disconnected, erase server:{}", addr);
+            channel->disconnect(addr);  // avoid coredump when connection with broker was broken
             m_transportTable.erase(addr);
             break;
           default:
-            LOG_ERROR("go to fault state, erase:%s from tcpMap, and reconnect it", addr.c_str());
+            LOG_ERROR_NEW("go to CLOSED state, erase:{} from transportTable, and reconnect it", addr);
             m_transportTable.erase(addr);
             break;
         }
       }
     }
 
-    // callback;
+    // choose callback
     TcpTransportReadCallback callback = needResponse ? &TcpRemotingClient::MessageReceived : nullptr;
 
+    // create new transport, then connect server
     channel = TcpTransport::CreateTransport(this, callback);
     TcpConnectStatus connectStatus = channel->connect(addr, 0);  // use non-block
-    if (connectStatus != TCP_CONNECT_STATUS_WAIT) {
-      LOG_WARN("can not connect to:%s", addr.c_str());
+    if (connectStatus != TCP_CONNECT_STATUS_CONNECTING) {
+      LOG_WARN("can not connect to:{}", addr);
       channel->disconnect(addr);
       return TcpTransportPtr();
     } else {
@@ -398,8 +399,9 @@ TcpTransportPtr TcpRemotingClient::CreateTransport(const std::string& addr, bool
     }
   }
 
+  // waiting...
   TcpConnectStatus connectStatus = channel->waitTcpConnectEvent(static_cast<int>(m_tcpConnectTimeout));
-  if (connectStatus != TCP_CONNECT_STATUS_SUCCESS) {
+  if (connectStatus != TCP_CONNECT_STATUS_CONNECTED) {
     LOG_WARN("can not connect to server:%s", addr.c_str());
     channel->disconnect(addr);
     return TcpTransportPtr();
@@ -450,35 +452,34 @@ bool TcpRemotingClient::CloseTransport(const std::string& addr, TcpTransportPtr 
   }
 
   if (!UtilAll::try_lock_for(m_transportTableMutex, 1000 * m_tcpTransportTryLockTimeout)) {
-    LOG_ERROR("CloseTransport of:%s get timed_mutex timeout", addr.c_str());
+    LOG_ERROR_NEW("CloseTransport of:{} get timed_mutex timeout", addr);
     return false;
   }
   std::lock_guard<std::timed_mutex> lock(m_transportTableMutex, std::adopt_lock);
 
-  LOG_ERROR("CloseTransport of:%s", addr.c_str());
+  LOG_ERROR_NEW("CloseTransport of:{}", addr);
 
   bool removeItemFromTable = true;
   if (m_transportTable.find(addr) != m_transportTable.end()) {
     if (m_transportTable[addr]->getStartTime() != channel->getStartTime()) {
-      LOG_INFO("tcpTransport with addr:%s has been closed before, and has been created again, nothing to do",
-               addr.c_str());
+      LOG_INFO_NEW("tcpTransport with addr:{} has been closed before, and has been created again, nothing to do", addr);
       removeItemFromTable = false;
     }
   } else {
-    LOG_INFO("tcpTransport with addr:%s had been removed from tcpTable before", addr.c_str());
+    LOG_INFO_NEW("tcpTransport with addr:{} had been removed from tcpTable before", addr);
     removeItemFromTable = false;
   }
 
   if (removeItemFromTable) {
-    LOG_WARN("closeTransport: disconnect:%s with state:%d", addr.c_str(),
-             m_transportTable[addr]->getTcpConnectStatus());
-    if (m_transportTable[addr]->getTcpConnectStatus() == TCP_CONNECT_STATUS_SUCCESS)
+    LOG_WARN_NEW("closeTransport: disconnect:{} with state:{}", addr, m_transportTable[addr]->getTcpConnectStatus());
+    if (m_transportTable[addr]->getTcpConnectStatus() != TCP_CONNECT_STATUS_CLOSED) {
       m_transportTable[addr]->disconnect(addr);  // avoid coredump when connection with server was broken
-    LOG_WARN("closeTransport: erase broker: %s", addr.c_str());
+    }
+    LOG_WARN_NEW("closeTransport: erase broker: {}", addr);
     m_transportTable.erase(addr);
   }
 
-  LOG_ERROR("CloseTransport of:%s end", addr.c_str());
+  LOG_ERROR_NEW("CloseTransport of:{} end", addr);
 
   return removeItemFromTable;
 }

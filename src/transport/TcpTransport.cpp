@@ -33,7 +33,7 @@ namespace rocketmq {
 
 TcpTransport::TcpTransport(TcpRemotingClient* client, TcpTransportReadCallback callback)
     : m_event(nullptr),
-      m_tcpConnectStatus(TCP_CONNECT_STATUS_INIT),
+      m_tcpConnectStatus(TCP_CONNECT_STATUS_CREATED),
       m_statusMutex(),
       m_statusEvent(),
       m_readCallback(callback),
@@ -42,24 +42,19 @@ TcpTransport::TcpTransport(TcpRemotingClient* client, TcpTransportReadCallback c
 }
 
 TcpTransport::~TcpTransport() {
-  freeBufferEvent();
+  closeBufferEvent();
   m_readCallback = nullptr;
 }
 
-void TcpTransport::freeBufferEvent() {
-  // freeBufferEvent is idempotent.
-
-  // first, unlink BufferEvent
-  if (m_event != nullptr) {
-    m_event->setCallback(nullptr, nullptr, nullptr, nullptr);
+TcpConnectStatus TcpTransport::closeBufferEvent() {
+  // closeBufferEvent is idempotent.
+  if (setTcpConnectEvent(TCP_CONNECT_STATUS_CLOSED) != TCP_CONNECT_STATUS_CLOSED) {
+    if (m_event != nullptr) {
+      m_event->disable(EV_READ | EV_WRITE);
+      // FIXME: not close the socket!!!
+    }
   }
-
-  // then, release BufferEvent
-  m_event.reset();
-}
-
-void TcpTransport::setTcpConnectStatus(TcpConnectStatus connectStatus) {
-  m_tcpConnectStatus = connectStatus;
+  return TCP_CONNECT_STATUS_CLOSED;
 }
 
 TcpConnectStatus TcpTransport::getTcpConnectStatus() {
@@ -67,10 +62,10 @@ TcpConnectStatus TcpTransport::getTcpConnectStatus() {
 }
 
 TcpConnectStatus TcpTransport::waitTcpConnectEvent(int timeoutMillis) {
-  if (m_tcpConnectStatus == TCP_CONNECT_STATUS_WAIT) {
+  if (m_tcpConnectStatus == TCP_CONNECT_STATUS_CONNECTING) {
     std::unique_lock<std::mutex> lock(m_statusMutex);
     if (!m_statusEvent.wait_for(lock, std::chrono::milliseconds(timeoutMillis),
-                                [&] { return m_tcpConnectStatus != TCP_CONNECT_STATUS_WAIT; })) {
+                                [&] { return m_tcpConnectStatus != TCP_CONNECT_STATUS_CONNECTING; })) {
       LOG_INFO("connect timeout");
     }
   }
@@ -78,12 +73,22 @@ TcpConnectStatus TcpTransport::waitTcpConnectEvent(int timeoutMillis) {
 }
 
 // internal method
-void TcpTransport::setTcpConnectEvent(TcpConnectStatus connectStatus) {
+TcpConnectStatus TcpTransport::setTcpConnectEvent(TcpConnectStatus connectStatus) {
   TcpConnectStatus oldStatus = m_tcpConnectStatus.exchange(connectStatus, std::memory_order_relaxed);
-  if (oldStatus == TCP_CONNECT_STATUS_WAIT) {
+  if (oldStatus == TCP_CONNECT_STATUS_CONNECTING) {
     // awake waiting thread
     m_statusEvent.notify_all();
   }
+  return oldStatus;
+}
+
+bool TcpTransport::setTcpConnectEventIf(TcpConnectStatus& expectStatus, TcpConnectStatus connectStatus) {
+  bool ret = m_tcpConnectStatus.compare_exchange_strong(expectStatus, connectStatus);
+  if (expectStatus == TCP_CONNECT_STATUS_CONNECTING) {
+    // awake waiting thread
+    m_statusEvent.notify_all();
+  }
+  return ret;
 }
 
 u_long TcpTransport::resolveInetAddr(std::string& hostname) {
@@ -98,28 +103,23 @@ u_long TcpTransport::resolveInetAddr(std::string& hostname) {
 
 void TcpTransport::disconnect(const std::string& addr) {
   // disconnect is idempotent.
-  std::lock_guard<std::mutex> lock(m_eventMutex);
-  if (getTcpConnectStatus() != TCP_CONNECT_STATUS_INIT) {
-    LOG_INFO("disconnect:%s start. event:%p", addr.c_str(), (void*)m_event.get());
-    freeBufferEvent();
-    setTcpConnectEvent(TCP_CONNECT_STATUS_INIT);
-    LOG_INFO("disconnect:%s completely", addr.c_str());
-  }
+  LOG_INFO_NEW("disconnect:{} start. event:{}", addr, (void*)m_event.get());
+  closeBufferEvent();
+  LOG_INFO_NEW("disconnect:{} completely", addr);
 }
 
 TcpConnectStatus TcpTransport::connect(const std::string& strServerURL, int timeoutMillis) {
   std::string hostname;
   short port;
 
-  LOG_DEBUG("connect to [%s].", strServerURL.c_str());
+  LOG_DEBUG("connect to [{}].", strServerURL);
   if (!UtilAll::SplitURL(strServerURL, hostname, port)) {
-    LOG_INFO("connect to [%s] failed, Invalid url.", strServerURL.c_str());
-    return TCP_CONNECT_STATUS_FAILED;
+    LOG_INFO("connect to [{}] failed, Invalid url.", strServerURL);
+    return closeBufferEvent();
   }
 
-  {
-    std::lock_guard<std::mutex> lock(m_eventMutex);
-
+  TcpConnectStatus curStatus = TCP_CONNECT_STATUS_CREATED;
+  if (setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_CONNECTING)) {
     // TODO: support ipv6
     struct sockaddr_in sin;
     memset(&sin, 0, sizeof(sin));
@@ -130,8 +130,8 @@ TcpConnectStatus TcpTransport::connect(const std::string& strServerURL, int time
     // create BufferEvent
     m_event.reset(EventLoop::GetDefaultEventLoop()->createBufferEvent(-1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE));
     if (nullptr == m_event) {
-      setTcpConnectStatus(TCP_CONNECT_STATUS_FAILED);
-      return TCP_CONNECT_STATUS_FAILED;
+      LOG_ERROR_NEW("create BufferEvent failed");
+      return closeBufferEvent();
     }
 
     // then, configure BufferEvent
@@ -139,31 +139,26 @@ TcpConnectStatus TcpTransport::connect(const std::string& strServerURL, int time
     m_event->setWatermark(EV_READ, 4, 0);
     m_event->enable(EV_READ | EV_WRITE);
 
-    setTcpConnectStatus(TCP_CONNECT_STATUS_WAIT);
     if (m_event->connect((struct sockaddr*)&sin, sizeof(sin)) < 0) {
-      LOG_INFO("connect to fd:%d failed", m_event->getfd());
-      freeBufferEvent();
-      setTcpConnectStatus(TCP_CONNECT_STATUS_FAILED);
-      return TCP_CONNECT_STATUS_FAILED;
+      LOG_WARN_NEW("connect to fd:{} failed", m_event->getfd());
+      return closeBufferEvent();
     }
+  } else {
+    return curStatus;
   }
 
   if (timeoutMillis <= 0) {
-    LOG_INFO("try to connect to fd:%d, addr:%s", m_event->getfd(), hostname.c_str());
-    return TCP_CONNECT_STATUS_WAIT;
+    LOG_INFO_NEW("try to connect to fd:{}, addr:{}", m_event->getfd(), hostname);
+    return TCP_CONNECT_STATUS_CONNECTING;
   }
 
   TcpConnectStatus connectStatus = waitTcpConnectEvent(timeoutMillis);
-  if (connectStatus != TCP_CONNECT_STATUS_SUCCESS) {
-    LOG_WARN("can not connect to server:%s", strServerURL.c_str());
-
-    std::lock_guard<std::mutex> lock(m_eventMutex);
-    freeBufferEvent();
-    setTcpConnectStatus(TCP_CONNECT_STATUS_FAILED);
-    return TCP_CONNECT_STATUS_FAILED;
+  if (connectStatus != TCP_CONNECT_STATUS_CONNECTED) {
+    LOG_WARN_NEW("can not connect to server:{}", strServerURL);
+    return closeBufferEvent();
   }
 
-  return TCP_CONNECT_STATUS_SUCCESS;
+  return TCP_CONNECT_STATUS_CONNECTED;
 }
 
 void TcpTransport::EventCallback(BufferEvent* event, short what, TcpTransport* transport) {
@@ -175,12 +170,20 @@ void TcpTransport::EventCallback(BufferEvent* event, short what, TcpTransport* t
     // disable Nagle
     int val = 1;
     setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void*)&val, sizeof(val));
-    transport->setTcpConnectEvent(TCP_CONNECT_STATUS_SUCCESS);
+
+    TcpConnectStatus curStatus = TCP_CONNECT_STATUS_CONNECTING;
+    transport->setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_CONNECTED);
   } else if (what & (BEV_EVENT_ERROR | BEV_EVENT_EOF | BEV_EVENT_READING | BEV_EVENT_WRITING)) {
     LOG_INFO("eventcb: received error event cb:%x on fd:%d", what, fd);
     // if error, stop callback.
-    event->setCallback(nullptr, nullptr, nullptr, nullptr);
-    transport->setTcpConnectEvent(TCP_CONNECT_STATUS_FAILED);
+    TcpConnectStatus curStatus = transport->getTcpConnectStatus();
+    while (curStatus != TCP_CONNECT_STATUS_CLOSED && curStatus != TCP_CONNECT_STATUS_FAILED) {
+      if (transport->setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_FAILED)) {
+        event->setCallback(nullptr, nullptr, nullptr, nullptr);
+        break;
+      }
+      curStatus = transport->getTcpConnectStatus();
+    }
   } else {
     LOG_ERROR("eventcb: received error event:%d on fd:%d", what, fd);
   }
@@ -245,9 +248,8 @@ void TcpTransport::messageReceived(MemoryBlockPtr3& mem, const std::string& addr
   }
 }
 
-bool TcpTransport::sendMessage(const char* pData, size_t len) {
-  std::lock_guard<std::mutex> lock(m_eventMutex);
-  if (getTcpConnectStatus() != TCP_CONNECT_STATUS_SUCCESS) {
+bool TcpTransport::sendMessage(const char* data, size_t len) {
+  if (getTcpConnectStatus() != TCP_CONNECT_STATUS_CONNECTED) {
     return false;
   }
 
@@ -255,12 +257,11 @@ bool TcpTransport::sendMessage(const char* pData, size_t len) {
       do not need to consider large data which could not send by once, as
       bufferevent could handle this case;
    */
-  return m_event != nullptr && m_event->write(pData, len) == 0;
+  return m_event != nullptr && m_event->write(data, len) == 0;
 }
 
 const std::string TcpTransport::getPeerAddrAndPort() {
-  std::lock_guard<std::mutex> lock(m_eventMutex);
-  return m_event ? m_event->getPeerAddrPort() : "";
+  return m_event != nullptr ? m_event->getPeerAddrPort() : "";
 }
 
 const uint64_t TcpTransport::getStartTime() const {
