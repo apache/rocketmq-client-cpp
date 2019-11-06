@@ -595,7 +595,7 @@ int SendMessageTransaction(CProducer* producer,
     result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
   } catch (exception& e) {
     MQClientErrorContainer::setErr(string(e.what()));
-    return PRODUCER_SEND_SYNC_FAILED;
+    return PRODUCER_SEND_TRANSACTION_FAILED;
   }
   return OK;
 }
