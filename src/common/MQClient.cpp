@@ -25,8 +25,8 @@
 
 namespace rocketmq {
 
-#define ROCKETMQCPP_VERSION "1.0.1"
-#define BUILD_DATE "03-14-2018"
+#define ROCKETMQCPP_VERSION "1.2.4"
+#define BUILD_DATE "11-11-2019"
 // display version: strings bin/librocketmq.so |grep VERSION
 const char* rocketmq_build_time = "VERSION: " ROCKETMQCPP_VERSION ", BUILD DATE: " BUILD_DATE " ";
 
