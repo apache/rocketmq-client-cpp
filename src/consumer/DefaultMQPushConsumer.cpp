@@ -855,44 +855,40 @@ int DefaultMQPushConsumer::getMaxCacheMsgSizePerQueue() const {
 }
 
 ConsumerRunningInfo* DefaultMQPushConsumer::getConsumerRunningInfo() {
-  ConsumerRunningInfo* info = new ConsumerRunningInfo();
-  if (info) {
-    if (m_consumerService->getConsumeMsgSerivceListenerType() == messageListenerOrderly)
-      info->setProperty(ConsumerRunningInfo::PROP_CONSUME_ORDERLY, "true");
-    else
-      info->setProperty(ConsumerRunningInfo::PROP_CONSUME_ORDERLY, "flase");
-    info->setProperty(ConsumerRunningInfo::PROP_THREADPOOL_CORE_SIZE, UtilAll::to_string(m_consumeThreadCount));
-    info->setProperty(ConsumerRunningInfo::PROP_CONSUMER_START_TIMESTAMP, UtilAll::to_string(m_startTime));
-
-    vector<SubscriptionData> result;
-    getSubscriptions(result);
-    info->setSubscriptionSet(result);
-
-    map<MQMessageQueue, PullRequest*> requestTable = m_pRebalance->getPullRequestTable();
-    map<MQMessageQueue, PullRequest*>::iterator it = requestTable.begin();
-
-    for (; it != requestTable.end(); ++it) {
-      if (!it->second->isDroped()) {
-        map<MessageQueue, ProcessQueueInfo> queueTable;
-        MessageQueue queue((it->first).getTopic(), (it->first).getBrokerName(), (it->first).getQueueId());
-        ProcessQueueInfo processQueue;
-        processQueue.cachedMsgMinOffset = it->second->getCacheMinOffset();
-        processQueue.cachedMsgMaxOffset = it->second->getCacheMaxOffset();
-        processQueue.cachedMsgCount = it->second->getCacheMsgCount();
-        processQueue.setCommitOffset(
-            m_pOffsetStore->readOffset(it->first, MEMORY_FIRST_THEN_STORE, getSessionCredentials()));
-        processQueue.setDroped(it->second->isDroped());
-        processQueue.setLocked(it->second->isLocked());
-        processQueue.lastLockTimestamp = it->second->getLastLockTimestamp();
-        processQueue.lastPullTimestamp = it->second->getLastPullTimestamp();
-        processQueue.lastConsumeTimestamp = it->second->getLastConsumeTimestamp();
-        info->setMqTable(queue, processQueue);
-      }
-    }
-
-    return info;
+  auto* info = new ConsumerRunningInfo();
+  if (m_consumerService->getConsumeMsgSerivceListenerType() == messageListenerOrderly) {
+    info->setProperty(ConsumerRunningInfo::PROP_CONSUME_ORDERLY, "true");
+  } else {
+    info->setProperty(ConsumerRunningInfo::PROP_CONSUME_ORDERLY, "false");
   }
-  return NULL;
+  info->setProperty(ConsumerRunningInfo::PROP_THREADPOOL_CORE_SIZE, UtilAll::to_string(m_consumeThreadCount));
+  info->setProperty(ConsumerRunningInfo::PROP_CONSUMER_START_TIMESTAMP, UtilAll::to_string(m_startTime));
+
+  std::vector<SubscriptionData> result;
+  getSubscriptions(result);
+  info->setSubscriptionSet(result);
+
+  std::map<MQMessageQueue, PullRequest*> requestTable = m_pRebalance->getPullRequestTable();
+
+  for (const auto& it : requestTable) {
+    if (!it.second->isDroped()) {
+      MessageQueue queue((it.first).getTopic(), (it.first).getBrokerName(), (it.first).getQueueId());
+      ProcessQueueInfo processQueue;
+      processQueue.cachedMsgMinOffset = it.second->getCacheMinOffset();
+      processQueue.cachedMsgMaxOffset = it.second->getCacheMaxOffset();
+      processQueue.cachedMsgCount = it.second->getCacheMsgCount();
+      processQueue.setCommitOffset(
+          m_pOffsetStore->readOffset(it.first, MEMORY_FIRST_THEN_STORE, getSessionCredentials()));
+      processQueue.setDroped(it.second->isDroped());
+      processQueue.setLocked(it.second->isLocked());
+      processQueue.lastLockTimestamp = it.second->getLastLockTimestamp();
+      processQueue.lastPullTimestamp = it.second->getLastPullTimestamp();
+      processQueue.lastConsumeTimestamp = it.second->getLastConsumeTimestamp();
+      info->setMqTable(queue, processQueue);
+    }
+  }
+
+  return info;
 }
 
 //<!************************************************************************
