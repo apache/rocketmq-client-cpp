@@ -67,9 +67,10 @@ TcpConnectStatus TcpTransport::getTcpConnectStatus() {
 }
 
 TcpConnectStatus TcpTransport::waitTcpConnectEvent(int timeoutMillis) {
-  std::unique_lock<std::mutex> eventLock(m_connectEventLock);
   if (m_tcpConnectStatus == TCP_CONNECT_STATUS_WAIT) {
-    if (m_connectEvent.wait_for(eventLock, std::chrono::milliseconds(timeoutMillis)) == std::cv_status::timeout) {
+    std::unique_lock<std::mutex> eventLock(m_connectEventLock);
+    if (!m_connectEvent.wait_for(eventLock, std::chrono::milliseconds(timeoutMillis),
+                                 [&] { return m_tcpConnectStatus != TCP_CONNECT_STATUS_WAIT; })) {
       LOG_INFO("connect timeout");
     }
   }
@@ -80,7 +81,7 @@ TcpConnectStatus TcpTransport::waitTcpConnectEvent(int timeoutMillis) {
 void TcpTransport::setTcpConnectEvent(TcpConnectStatus connectStatus) {
   TcpConnectStatus baseStatus = m_tcpConnectStatus.exchange(connectStatus, std::memory_order_relaxed);
   if (baseStatus == TCP_CONNECT_STATUS_WAIT) {
-    std::unique_lock<std::mutex> eventLock(m_connectEventLock);
+    // awake waiting thread
     m_connectEvent.notify_all();
   }
 }

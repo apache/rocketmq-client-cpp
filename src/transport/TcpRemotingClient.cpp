@@ -242,13 +242,12 @@ bool TcpRemotingClient::invokeAsync(const string& addr,
     responseFuture->setRequestCommand(request);
     addResponseFuture(opaque, responseFuture);
 
-    if (callback) {
-      boost::asio::deadline_timer* t =
-          new boost::asio::deadline_timer(m_timerService, boost::posix_time::milliseconds(timeoutMillis));
-      addTimerCallback(t, opaque);
-      t->async_wait(
-          boost::bind(&TcpRemotingClient::handleAsyncRequestTimeout, this, boost::asio::placeholders::error, opaque));
-    }
+    // timeout monitor
+    boost::asio::deadline_timer* t =
+        new boost::asio::deadline_timer(m_timerService, boost::posix_time::milliseconds(timeoutMillis));
+    addTimerCallback(t, opaque);
+    t->async_wait(
+        boost::bind(&TcpRemotingClient::handleAsyncRequestTimeout, this, boost::asio::placeholders::error, opaque));
 
     // even if send failed, asyncTimerThread will trigger next pull request or report send msg failed
     if (SendCommand(pTcp, request)) {
