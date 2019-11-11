@@ -14,20 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "gtest/gtest.h"
-#include "gmock/gmock.h"
-#include "StringIdMaker.h"
-#include <map>
 #include <iostream>
+#include <map>
+
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+
+#include "StringIdMaker.h"
 
 using namespace std;
 using namespace rocketmq;
-using ::testing::InitGoogleTest;
 using ::testing::InitGoogleMock;
+using ::testing::InitGoogleTest;
 using testing::Return;
 
 TEST(StringIdMakerTest, get_unique_id) {
-  string unique_id = StringIdMaker::get_mutable_instance().get_unique_id();
+  string unique_id = StringIdMaker::getInstance().createUniqID();
   cout << "unique_id: " << unique_id << endl;
   EXPECT_EQ(unique_id.size(), 32);
 }

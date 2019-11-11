@@ -14,18 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "BatchMessage.h"
+
 #include "MQDecoder.h"
 #include "StringIdMaker.h"
 
-using namespace std;
 namespace rocketmq {
 
 std::string BatchMessage::encode(std::vector<MQMessage>& msgs) {
-  string encodedBody;
+  std::string encodedBody;
   for (auto message : msgs) {
-    string unique_id = StringIdMaker::get_mutable_instance().get_unique_id();
+    std::string unique_id = StringIdMaker::getInstance().createUniqID();
     message.setProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX, unique_id);
     encodedBody.append(encode(message));
   }
@@ -59,4 +58,5 @@ std::string BatchMessage::encode(MQMessage& message) {
   encodeMsg.append(properties.c_str(), propertiesLength);
   return encodeMsg;
 }
-}
+
+}  // namespace rocketmq
