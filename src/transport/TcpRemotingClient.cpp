@@ -471,12 +471,13 @@ bool TcpRemotingClient::CloseTransport(const std::string& addr, TcpTransportPtr 
   }
 
   if (removeItemFromTable) {
-    LOG_WARN_NEW("closeTransport: disconnect:{} with state:{}", addr, m_transportTable[addr]->getTcpConnectStatus());
-    if (m_transportTable[addr]->getTcpConnectStatus() != TCP_CONNECT_STATUS_CLOSED) {
-      m_transportTable[addr]->disconnect(addr);  // avoid coredump when connection with server was broken
-    }
     LOG_WARN_NEW("closeTransport: erase broker: {}", addr);
     m_transportTable.erase(addr);
+  }
+
+  LOG_WARN_NEW("closeTransport: disconnect:{} with state:{}", addr, channel->getTcpConnectStatus());
+  if (channel->getTcpConnectStatus() != TCP_CONNECT_STATUS_CLOSED) {
+    channel->disconnect(addr);  // avoid coredump when connection with server was broken
   }
 
   LOG_ERROR_NEW("CloseTransport of:{} end", addr);

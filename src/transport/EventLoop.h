@@ -77,9 +77,7 @@ class BufferEvent : public noncopyable {
   int enable(short event) { return bufferevent_enable(m_bufferEvent, event); }
   int disable(short event) { return bufferevent_disable(m_bufferEvent, event); }
 
-  int connect(const struct sockaddr* addr, int socklen) {
-    return bufferevent_socket_connect(m_bufferEvent, (struct sockaddr*)addr, socklen);
-  }
+  int connect(const struct sockaddr* addr, int socklen);
 
   int write(const void* data, size_t size) { return bufferevent_write(m_bufferEvent, data, size); }
 
@@ -110,7 +108,7 @@ class BufferEvent : public noncopyable {
   BufferEventEventCallback m_eventCallback;
   std::weak_ptr<TcpTransport> m_callbackTransport;  // avoid reference cycle
 
-  // cache properties
+  // cached properties
   std::string m_peerAddrPort;
 };
 

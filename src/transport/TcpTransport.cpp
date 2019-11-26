@@ -82,13 +82,13 @@ TcpConnectStatus TcpTransport::setTcpConnectEvent(TcpConnectStatus connectStatus
   return oldStatus;
 }
 
-bool TcpTransport::setTcpConnectEventIf(TcpConnectStatus& expectStatus, TcpConnectStatus connectStatus) {
-  bool ret = m_tcpConnectStatus.compare_exchange_strong(expectStatus, connectStatus);
-  if (expectStatus == TCP_CONNECT_STATUS_CONNECTING) {
+bool TcpTransport::setTcpConnectEventIf(TcpConnectStatus& expectedStatus, TcpConnectStatus newStatus) {
+  bool isSuccessed = m_tcpConnectStatus.compare_exchange_strong(expectedStatus, newStatus);
+  if (expectedStatus == TCP_CONNECT_STATUS_CONNECTING) {
     // awake waiting thread
     m_statusEvent.notify_all();
   }
-  return ret;
+  return isSuccessed;
 }
 
 u_long TcpTransport::resolveInetAddr(std::string& hostname) {
@@ -173,7 +173,7 @@ void TcpTransport::EventCallback(BufferEvent* event, short what, TcpTransport* t
 
     TcpConnectStatus curStatus = TCP_CONNECT_STATUS_CONNECTING;
     transport->setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_CONNECTED);
-  } else if (what & (BEV_EVENT_ERROR | BEV_EVENT_EOF | BEV_EVENT_READING | BEV_EVENT_WRITING)) {
+  } else if (what & (BEV_EVENT_ERROR | BEV_EVENT_EOF)) {
     LOG_INFO("eventcb: received error event cb:%x on fd:%d", what, fd);
     // if error, stop callback.
     TcpConnectStatus curStatus = transport->getTcpConnectStatus();

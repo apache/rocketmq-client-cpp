@@ -213,13 +213,18 @@ static std::string buildPeerAddrPort(socket_t fd) {
   return addrPort;
 }
 
+int BufferEvent::connect(const struct sockaddr* addr, int socklen) {
+  m_peerAddrPort = socketAddress2IPPort(addr);
+  return bufferevent_socket_connect(m_bufferEvent, (struct sockaddr*)addr, socklen);
+}
+
 void BufferEvent::event_callback(struct bufferevent* bev, short what, void* ctx) {
   auto event = static_cast<BufferEvent*>(ctx);
 
-  if (what & BEV_EVENT_CONNECTED) {
-    socket_t fd = event->getfd();
-    event->m_peerAddrPort = buildPeerAddrPort(fd);
-  }
+  // if (what & BEV_EVENT_CONNECTED) {
+  //   socket_t fd = event->getfd();
+  //   event->m_peerAddrPort = buildPeerAddrPort(fd);
+  // }
 
   if (event->m_unlockCallbacks) {
     bufferevent_lock(event->m_bufferEvent);
