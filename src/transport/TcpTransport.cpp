@@ -260,8 +260,8 @@ bool TcpTransport::sendMessage(const char* data, size_t len) {
   return m_event != nullptr && m_event->write(data, len) == 0;
 }
 
-const std::string TcpTransport::getPeerAddrAndPort() {
-  return m_event != nullptr ? m_event->getPeerAddrPort() : "";
+const std::string& TcpTransport::getPeerAddrAndPort() {
+  return m_event != nullptr ? m_event->getPeerAddrPort() : null;
 }
 
 const uint64_t TcpTransport::getStartTime() const {

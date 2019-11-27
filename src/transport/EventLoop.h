@@ -89,7 +89,7 @@ class BufferEvent : public noncopyable {
 
   socket_t getfd() const { return bufferevent_getfd(m_bufferEvent); }
 
-  std::string getPeerAddrPort() const { return m_peerAddrPort; }
+  const std::string& getPeerAddrPort() const { return m_peerAddrPort; }
 
  private:
   BufferEvent(struct bufferevent* event, bool unlockCallbacks);

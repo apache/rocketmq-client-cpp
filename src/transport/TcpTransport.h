@@ -56,7 +56,7 @@ class TcpTransport : public std::enable_shared_from_this<TcpTransport> {
   TcpConnectStatus getTcpConnectStatus();
 
   bool sendMessage(const char* pData, size_t len);
-  const std::string getPeerAddrAndPort();
+  const std::string& getPeerAddrAndPort();
   const uint64_t getStartTime() const;
 
  private:
