@@ -59,4 +59,4 @@ class PullResultExt : public PullResult {
   MemoryBlock msgMemBlock;
 };
 
-}  //<!end namespace;
+}  // namespace rocketmq

@@ -130,4 +130,4 @@ PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,        // 1
   THROW_MQEXCEPTION(MQClientException, "The broker not exist", -1);
 }
 
-}  //<!end namespace;
+}  // namespace rocketmq

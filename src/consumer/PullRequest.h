@@ -91,6 +91,6 @@ class PullRequest {
   boost::atomic<bool> m_bPullMsgEventInprogress;
 };
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif

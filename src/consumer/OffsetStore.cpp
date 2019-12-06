@@ -340,4 +340,4 @@ int64 RemoteBrokerOffsetStore::fetchConsumeOffsetFromBroker(const MQMessageQueue
   }
 }
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

@@ -27,6 +27,6 @@ struct FindBrokerResult {
   std::string brokerAddr;
   bool slave;
 };
-}
+}  // namespace rocketmq
 
 #endif

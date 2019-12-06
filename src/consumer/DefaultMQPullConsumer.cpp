@@ -369,11 +369,13 @@ void DefaultMQPullConsumer::getSubscriptions(vector<SubscriptionData>& result) {
   }
 }
 
-void DefaultMQPullConsumer::producePullMsgTask(PullRequest*) {}
+bool DefaultMQPullConsumer::producePullMsgTask(boost::weak_ptr<PullRequest> pullRequest) {
+  return true;
+}
 
 Rebalance* DefaultMQPullConsumer::getRebalance() const {
   return NULL;
 }
 
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

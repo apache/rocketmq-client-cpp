@@ -271,4 +271,4 @@ bool PullRequest::addPullMsgEvent() {
 }
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

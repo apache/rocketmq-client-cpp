@@ -54,7 +54,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
   virtual void getSubscriptions(std::vector<SubscriptionData>&);
   virtual void updateConsumeOffset(const MQMessageQueue& mq, int64 offset);
   virtual void removeConsumeOffset(const MQMessageQueue& mq);
-  virtual void producePullMsgTask(PullRequest*);
+  virtual bool producePullMsgTask(boost::weak_ptr<PullRequest> pullRequest);
   virtual Rebalance* getRebalance() const;
   //<!end MQConsumer;
 
@@ -67,7 +67,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
    * @param subExpression
    *            set filter expression for pulled msg, broker will filter msg actively
    *            Now only OR operation is supported, eg: "tag1 || tag2 || tag3"
-   *            if subExpression is setted to "null" or "*"£¬all msg will be subscribed
+   *            if subExpression is setted to "null" or "*"ï¿½ï¿½all msg will be subscribed
    * @param offset
    *            specify the started pull offset
    * @param maxNums
@@ -90,7 +90,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
    * @param subExpression
    *            set filter expression for pulled msg, broker will filter msg actively
    *            Now only OR operation is supported, eg: "tag1 || tag2 || tag3"
-   *            if subExpression is setted to "null" or "*"£¬all msg will be subscribed
+   *            if subExpression is setted to "null" or "*"ï¿½ï¿½all msg will be subscribed
    * @param offset
    *            specify the started pull offset
    * @param maxNums
@@ -107,7 +107,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
 
   virtual ConsumerRunningInfo* getConsumerRunningInfo() { return NULL; }
   /**
-   * »ñÈ¡Ïû·Ñ½ø¶È£¬·µ»Ø-1±íÊ¾³ö´í
+   * ï¿½ï¿½È¡ï¿½ï¿½ï¿½Ñ½ï¿½ï¿½È£ï¿½ï¿½ï¿½ï¿½ï¿½-1ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½
    *
    * @param mq
    * @param fromStore
@@ -115,11 +115,11 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
    */
   int64 fetchConsumeOffset(const MQMessageQueue& mq, bool fromStore);
   /**
-   * ¸ù¾Ýtopic»ñÈ¡MessageQueue£¬ÒÔ¾ùºâ·½Ê½ÔÚ×éÄÚ¶à¸ö³ÉÔ±Ö®¼ä·ÖÅä
+   * ï¿½ï¿½ï¿½ï¿½topicï¿½ï¿½È¡MessageQueueï¿½ï¿½ï¿½Ô¾ï¿½ï¿½â·½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¶ï¿½ï¿½ï¿½ï¿½Ô±Ö®ï¿½ï¿½ï¿½ï¿½ï¿½
    *
    * @param topic
-   *            ÏûÏ¢Topic
-   * @return ·µ»Ø¶ÓÁÐ¼¯ºÏ
+   *            ï¿½ï¿½Ï¢Topic
+   * @return ï¿½ï¿½ï¿½Ø¶ï¿½ï¿½Ð¼ï¿½ï¿½ï¿½
    */
   void fetchMessageQueuesInBalance(const std::string& topic, std::vector<MQMessageQueue> mqs);
 

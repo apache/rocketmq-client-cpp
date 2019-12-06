@@ -101,6 +101,6 @@ class RemoteBrokerOffsetStore : public OffsetStore {
   int64 fetchConsumeOffsetFromBroker(const MQMessageQueue& mq, const SessionCredentials& session_credentials);
 };
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif

@@ -60,11 +60,28 @@ MessageListenerType ConsumeMessageConcurrentlyService::getConsumeMsgSerivceListe
   return m_pMessageListener->getMessageListenerType();
 }
 
-void ConsumeMessageConcurrentlyService::submitConsumeRequest(PullRequest* request, vector<MQMessageExt>& msgs) {
+void ConsumeMessageConcurrentlyService::submitConsumeRequest(boost::weak_ptr<PullRequest> pullRequest,
+                                                             vector<MQMessageExt>& msgs) {
+  boost::shared_ptr<PullRequest> request = pullRequest.lock();
+  if (!request) {
+    LOG_WARN("Pull request has been released");
+    return;
+  }
+  if (request->isDroped()) {
+    LOG_INFO("Pull request for %s is dropped, which will be released in next re-balance.",
+             request->m_messageQueue.toString().c_str());
+    return;
+  }
   m_ioService.post(boost::bind(&ConsumeMessageConcurrentlyService::ConsumeRequest, this, request, msgs));
 }
 
-void ConsumeMessageConcurrentlyService::ConsumeRequest(PullRequest* request, vector<MQMessageExt>& msgs) {
+void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullRequest> pullRequest,
+                                                       vector<MQMessageExt>& msgs) {
+  boost::shared_ptr<PullRequest> request = pullRequest.lock();
+  if (!request) {
+    LOG_WARN("Pull request has been released");
+    return;
+  }
   if (!request || request->isDroped()) {
     LOG_WARN("the pull result is NULL or Had been dropped");
     request->clearAllMsgs();  // add clear operation to avoid bad state when
@@ -72,7 +89,7 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(PullRequest* request, vec
     return;
   }
 
-  //<!¶ÁÈ¡Êý¾Ý;
+  //<!ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½;
   if (msgs.empty()) {
     LOG_WARN("the msg of pull result is NULL,its mq:%s", (request->m_messageQueue).toString().c_str());
     return;
@@ -144,4 +161,4 @@ void ConsumeMessageConcurrentlyService::resetRetryTopic(vector<MQMessageExt>& ms
 }
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

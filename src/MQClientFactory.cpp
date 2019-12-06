@@ -1040,7 +1040,9 @@ void MQClientFactory::resetOffset(const string& group,
 
     for (; it != offsetTable.end(); ++it) {
       MQMessageQueue mq = it->first;
-      PullRequest* pullreq = pConsumer->getRebalance()->getPullRequest(mq);
+      boost::weak_ptr<PullRequest> pullRequest = pConsumer->getRebalance()->getPullRequest(mq);
+      boost::shared_ptr<PullRequest> pullreq = pullRequest.lock();
+      // PullRequest* pullreq = pConsumer->getRebalance()->getPullRequest(mq);
       if (pullreq) {
         pullreq->setDroped(true);
         LOG_INFO("resetOffset setDroped for mq:%s", mq.toString().data());

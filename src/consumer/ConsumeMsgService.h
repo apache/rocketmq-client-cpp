@@ -38,7 +38,7 @@ class ConsumeMsgService {
   virtual void start() {}
   virtual void shutdown() {}
   virtual void stopThreadPool() {}
-  virtual void submitConsumeRequest(PullRequest* request, vector<MQMessageExt>& msgs) {}
+  virtual void submitConsumeRequest(boost::weak_ptr<PullRequest> request, vector<MQMessageExt>& msgs) {}
   virtual MessageListenerType getConsumeMsgSerivceListenerType() { return messageListenerDefaultly; }
 };
 
@@ -48,11 +48,11 @@ class ConsumeMessageConcurrentlyService : public ConsumeMsgService {
   virtual ~ConsumeMessageConcurrentlyService();
   virtual void start();
   virtual void shutdown();
-  virtual void submitConsumeRequest(PullRequest* request, vector<MQMessageExt>& msgs);
+  virtual void submitConsumeRequest(boost::weak_ptr<PullRequest> request, vector<MQMessageExt>& msgs);
   virtual MessageListenerType getConsumeMsgSerivceListenerType();
   virtual void stopThreadPool();
 
-  void ConsumeRequest(PullRequest* request, vector<MQMessageExt>& msgs);
+  void ConsumeRequest(boost::weak_ptr<PullRequest> request, vector<MQMessageExt>& msgs);
 
  private:
   void resetRetryTopic(vector<MQMessageExt>& msgs);
@@ -71,17 +71,17 @@ class ConsumeMessageOrderlyService : public ConsumeMsgService {
   virtual ~ConsumeMessageOrderlyService();
   virtual void start();
   virtual void shutdown();
-  virtual void submitConsumeRequest(PullRequest* request, vector<MQMessageExt>& msgs);
+  virtual void submitConsumeRequest(boost::weak_ptr<PullRequest> request, vector<MQMessageExt>& msgs);
   virtual void stopThreadPool();
   virtual MessageListenerType getConsumeMsgSerivceListenerType();
 
   void boost_asio_work();
-  void tryLockLaterAndReconsume(PullRequest* request, bool tryLockMQ);
+  void tryLockLaterAndReconsume(boost::weak_ptr<PullRequest> request, bool tryLockMQ);
   static void static_submitConsumeRequestLater(void* context,
-                                               PullRequest* request,
+                                               boost::weak_ptr<PullRequest> request,
                                                bool tryLockMQ,
                                                boost::asio::deadline_timer* t);
-  void ConsumeRequest(PullRequest* request);
+  void ConsumeRequest(boost::weak_ptr<PullRequest> request);
   void lockMQPeriodically(boost::system::error_code& ec, boost::asio::deadline_timer* t);
   void unlockAllMQ();
   bool lockOneMQ(const MQMessageQueue& mq);
@@ -99,6 +99,6 @@ class ConsumeMessageOrderlyService : public ConsumeMsgService {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif  //<! _CONSUMEMESSAGESERVICE_H_
