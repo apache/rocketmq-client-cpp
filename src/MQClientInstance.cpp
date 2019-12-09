@@ -112,10 +112,12 @@ TopicPublishInfoPtr MQClientInstance::topicRouteData2TopicPublishInfo(const std:
         }
 
         if (nullptr == brokerData) {
+          LOG_WARN_NEW("MQClientInstance: broker:{} of topic:{} have not data", qd.brokerName, topic);
           continue;
         }
 
         if (brokerData->brokerAddrs.find(MASTER_ID) == brokerData->brokerAddrs.end()) {
+          LOG_WARN_NEW("MQClientInstance: broker:{} of topic:{} have not master node", qd.brokerName, topic);
           continue;
         }
 
@@ -449,7 +451,7 @@ TopicRouteDataPtr MQClientInstance::getTopicRouteData(const std::string& topic) 
 
 void MQClientInstance::addTopicRouteData(const std::string& topic, TopicRouteDataPtr topicRouteData) {
   std::lock_guard<std::mutex> lock(m_topicRouteTableMutex);
-  m_topicRouteTable.emplace(topic, topicRouteData);
+  m_topicRouteTable[topic] = topicRouteData;
 }
 
 bool MQClientInstance::registerConsumer(const std::string& group, MQConsumer* consumer) {
