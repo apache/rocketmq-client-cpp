@@ -157,7 +157,7 @@ void Rebalance::persistConsumerOffset() {
     boost::lock_guard<boost::mutex> lock(m_requestTableMutex);
     MQ2PULLREQ::iterator it = m_requestQueueTable.begin();
     for (; it != m_requestQueueTable.end(); ++it) {
-      if (it->second && (!it->second->isDroped())) {
+      if (it->second && (!it->second->isDropped())) {
         mqs.push_back(it->first);
       }
     }
@@ -269,7 +269,7 @@ void Rebalance::unlockAll(bool oneWay) {
   map<string, vector<MQMessageQueue>*> brokerMqs;
   MQ2PULLREQ requestQueueTable = getPullRequestTable();
   for (MQ2PULLREQ::iterator it = requestQueueTable.begin(); it != requestQueueTable.end(); ++it) {
-    if (!(it->second->isDroped())) {
+    if (!(it->second->isDropped())) {
       if (brokerMqs.find(it->first.getBrokerName()) == brokerMqs.end()) {
         vector<MQMessageQueue>* mqs = new vector<MQMessageQueue>;
         brokerMqs[it->first.getBrokerName()] = mqs;
@@ -347,7 +347,7 @@ void Rebalance::lockAll() {
   map<string, vector<MQMessageQueue>*> brokerMqs;
   MQ2PULLREQ requestQueueTable = getPullRequestTable();
   for (MQ2PULLREQ::iterator it = requestQueueTable.begin(); it != requestQueueTable.end(); ++it) {
-    if (!(it->second->isDroped())) {
+    if (!(it->second->isDropped())) {
       string brokerKey = it->first.getBrokerName() + it->first.getTopic();
       if (brokerMqs.find(brokerKey) == brokerMqs.end()) {
         vector<MQMessageQueue>* mqs = new vector<MQMessageQueue>;
@@ -490,21 +490,36 @@ bool RebalancePush::updateRequestTableInRebalance(const string& topic, vector<MQ
     if (mqtemp.getTopic().compare(topic) == 0) {
       if (mqsSelf.empty() || (std::find(mqsSelf.begin(), mqsSelf.end(), mqtemp) == mqsSelf.end())) {
         // if not response , set to dropped
-        itDel->second->setDroped(true);
+
+        LOG_INFO("Drop mq:%s,because not responsive", mqtemp.toString().c_str());
+          itDel->second->setDropped(true);
         // remove offset table to avoid offset backup
         removeUnnecessaryMessageQueue(mqtemp);
         itDel->second->clearAllMsgs();
-        LOG_INFO("drop mq:%s", mqtemp.toString().c_str());
+
+        if (itDel->second->hasInFlightPullRequest()) {
+          LOG_WARN("Unconditionally remove in-flight pull request mark for queue: %s since it is being dropped",
+                   mqtemp.toString().c_str());
+          itDel->second->removePullMsgEvent(true);
+        }
         removePullRequest(mqtemp);
         changed = true;
       }
-      if (itDel->second->isLockExpired()) {
+      if (itDel->second->isPullRequestExpired()) {
         // if pull expired , set to dropped
-        itDel->second->setDroped(true);
+
+        LOG_INFO("Drop mq:%s according Pull timeout.", mqtemp.toString().c_str());
+          itDel->second->setDropped(true);
         removeUnnecessaryMessageQueue(mqtemp);
         itDel->second->clearAllMsgs();
+
+        if (itDel->second->hasInFlightPullRequest()) {
+          LOG_WARN("Unconditionally remove in-flight pull request mark for queue: %s since it is being dropped",
+                   mqtemp.toString().c_str());
+          itDel->second->removePullMsgEvent(true);
+        }
         removePullRequest(mqtemp);
-        LOG_INFO("drop mq:%s", mqtemp.toString().c_str());
+        changed = true;
       }
     }
   }

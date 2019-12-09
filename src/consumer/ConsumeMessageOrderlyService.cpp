@@ -156,7 +156,7 @@ void ConsumeMessageOrderlyService::ConsumeRequest(boost::weak_ptr<PullRequest> p
     // request->m_messageQueue.toString().c_str());
     return;
   }
-  if (!request || request->isDroped()) {
+  if (!request || request->isDropped()) {
     LOG_WARN("the pull result is NULL or Had been dropped");
     request->clearAllMsgs();  // add clear operation to avoid bad state when
                               // dropped pullRequest returns normal

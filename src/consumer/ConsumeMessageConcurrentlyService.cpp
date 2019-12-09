@@ -67,7 +67,7 @@ void ConsumeMessageConcurrentlyService::submitConsumeRequest(boost::weak_ptr<Pul
     LOG_WARN("Pull request has been released");
     return;
   }
-  if (request->isDroped()) {
+  if (request->isDropped()) {
     LOG_INFO("Pull request for %s is dropped, which will be released in next re-balance.",
              request->m_messageQueue.toString().c_str());
     return;
@@ -82,14 +82,13 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
     LOG_WARN("Pull request has been released");
     return;
   }
-  if (!request || request->isDroped()) {
-    LOG_WARN("the pull result is NULL or Had been dropped");
+  if (!request || request->isDropped()) {
+    LOG_WARN("the pull request had been dropped");
     request->clearAllMsgs();  // add clear operation to avoid bad state when
                               // dropped pullRequest returns normal
     return;
   }
 
-  //<!��ȡ����;
   if (msgs.empty()) {
     LOG_WARN("the msg of pull result is NULL,its mq:%s", (request->m_messageQueue).toString().c_str());
     return;
@@ -140,12 +139,10 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
 
   // update offset
   int64 offset = request->removeMessage(msgs);
-  // LOG_DEBUG("update offset:%lld of mq: %s",
-  // offset,(request->m_messageQueue).toString().c_str());
   if (offset >= 0) {
     m_pConsumer->updateConsumeOffset(request->m_messageQueue, offset);
   } else {
-    LOG_WARN("Note: accumulation consume occurs on mq:%s", (request->m_messageQueue).toString().c_str());
+    LOG_WARN("Note: Get local offset for mq:%s failed, may be it is updated before. skip..", (request->m_messageQueue).toString().c_str());
   }
 }
 

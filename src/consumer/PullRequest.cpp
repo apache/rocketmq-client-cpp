@@ -21,14 +21,23 @@ namespace rocketmq {
 //<!***************************************************************************
 const uint64 PullRequest::RebalanceLockInterval = 20 * 1000;
 const uint64 PullRequest::RebalanceLockMaxLiveTime = 30 * 1000;
+/**
+ * If the process queue has not been pulled for more than MAX_PULL_IDLE_TIME, we need to mark it as dropped
+ * default 120s
+ */
+const uint64 PullRequest::MAX_PULL_IDLE_TIME = 120 * 1000;
 
 PullRequest::PullRequest(const string& groupname)
     : m_groupname(groupname),
       m_nextOffset(0),
       m_queueOffsetMax(0),
-      m_bDroped(false),
+      m_bDropped(false),
       m_bLocked(false),
-      m_bPullMsgEventInprogress(false) {}
+      m_bPullMsgEventInprogress(false) {
+    m_lastLockTimestamp = UtilAll::currentTimeMillis();
+    m_lastPullTimestamp = UtilAll::currentTimeMillis();
+    m_lastConsumeTimestamp = UtilAll::currentTimeMillis();
+}
 
 PullRequest::~PullRequest() {
   m_msgTreeMapTemp.clear();
@@ -40,11 +49,13 @@ PullRequest& PullRequest::operator=(const PullRequest& other) {
   if (this != &other) {
     m_groupname = other.m_groupname;
     m_nextOffset = other.m_nextOffset;
-    m_bDroped.store(other.m_bDroped.load());
+    m_bDropped.store(other.m_bDropped.load());
     m_queueOffsetMax = other.m_queueOffsetMax;
     m_messageQueue = other.m_messageQueue;
     m_msgTreeMap = other.m_msgTreeMap;
     m_msgTreeMapTemp = other.m_msgTreeMapTemp;
+    m_lastPullTimestamp = other.m_lastPullTimestamp;
+    m_lastConsumeTimestamp = other.m_lastConsumeTimestamp;
   }
   return *this;
 }
@@ -127,7 +138,7 @@ int64 PullRequest::removeMessage(vector<MQMessageExt>& msgs) {
 void PullRequest::clearAllMsgs() {
   boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
 
-  if (isDroped()) {
+  if (isDropped()) {
     LOG_DEBUG("clear m_msgTreeMap as PullRequest had been dropped.");
     m_msgTreeMap.clear();
     m_msgTreeMapTemp.clear();
@@ -143,9 +154,9 @@ void PullRequest::updateQueueMaxOffset(int64 queueOffset) {
   m_queueOffsetMax = queueOffset;
 }
 
-void PullRequest::setDroped(bool droped) {
-  int temp = (droped == true ? 1 : 0);
-  m_bDroped.store(temp);
+void PullRequest::setDropped(bool dropped) {
+  int temp = (dropped == true ? 1 : 0);
+  m_bDropped.store(temp);
   /*
   m_queueOffsetMax = 0;
   m_nextOffset = 0;
@@ -160,8 +171,8 @@ void PullRequest::setDroped(bool droped) {
   */
 }
 
-bool PullRequest::isDroped() const {
-  return m_bDroped.load() == 1;
+bool PullRequest::isDropped() const {
+  return m_bDropped.load() == 1;
 }
 
 int64 PullRequest::getNextOffset() {
@@ -173,6 +184,7 @@ void PullRequest::setLocked(bool Locked) {
   int temp = (Locked == true ? 1 : 0);
   m_bLocked.store(temp);
 }
+
 bool PullRequest::isLocked() const {
   return m_bLocked.load() == 1;
 }
@@ -195,6 +207,16 @@ void PullRequest::setLastPullTimestamp(uint64 time) {
 
 uint64 PullRequest::getLastPullTimestamp() const {
   return m_lastPullTimestamp;
+}
+
+bool PullRequest::isPullRequestExpired() const {
+  uint64 interval = m_lastPullTimestamp + MAX_PULL_IDLE_TIME;
+  if (interval <= UtilAll::currentTimeMillis()) {
+    LOG_WARN("PullRequest for [%s] has been expired %lld ms,m_lastPullTimestamp = %lld ms",
+             m_messageQueue.toString().c_str(), UtilAll::currentTimeMillis() - interval, m_lastPullTimestamp);
+    return true;
+  }
+  return false;
 }
 
 void PullRequest::setLastConsumeTimestamp(uint64 time) {
@@ -257,18 +279,33 @@ int64 PullRequest::commit() {
   }
 }
 
-void PullRequest::removePullMsgEvent() {
-  m_bPullMsgEventInprogress = false;
-}
-
-bool PullRequest::addPullMsgEvent() {
-  if (m_bPullMsgEventInprogress == false) {
-    m_bPullMsgEventInprogress = true;
-    LOG_INFO("pullRequest with mq :%s set pullMsgEvent", m_messageQueue.toString().c_str());
+bool PullRequest::removePullMsgEvent(bool force) {
+  // m_bPullMsgEventInprogress = false;
+  if (force) {
+    m_bPullMsgEventInprogress.store(false, boost::memory_order_relaxed);
     return true;
   }
+
+  bool expected = true;
+  if (m_bPullMsgEventInprogress.compare_exchange_strong(expected, false, boost::memory_order_relaxed)) {
+    LOG_DEBUG("Un-mark in-flight pull request for %s", m_messageQueue.toString().c_str());
+    return true;
+  }
+  LOG_WARN("Failed to un-mark in-flight pull request for %s", m_messageQueue.toString().c_str());
   return false;
 }
 
+bool PullRequest::addPullMsgEvent() {
+  bool expected = false;
+  if (m_bPullMsgEventInprogress.compare_exchange_strong(expected, true, boost::memory_order_relaxed)) {
+    LOG_DEBUG("Mark in-flight pull request for %s", m_messageQueue.toString().c_str());
+    return true;
+  }
+  LOG_WARN("Failed to mark in-flight pull request for %s", m_messageQueue.toString().c_str());
+  return false;
+}
+bool PullRequest::hasInFlightPullRequest() const {
+  return m_bPullMsgEventInprogress.load(boost::memory_order_relaxed);
+}
 //<!***************************************************************************
 }  // namespace rocketmq

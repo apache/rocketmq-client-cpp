@@ -1044,8 +1044,8 @@ void MQClientFactory::resetOffset(const string& group,
       boost::shared_ptr<PullRequest> pullreq = pullRequest.lock();
       // PullRequest* pullreq = pConsumer->getRebalance()->getPullRequest(mq);
       if (pullreq) {
-        pullreq->setDroped(true);
-        LOG_INFO("resetOffset setDroped for mq:%s", mq.toString().data());
+          pullreq->setDropped(true);
+        LOG_INFO("resetOffset setDropped for mq:%s", mq.toString().data());
         pullreq->clearAllMsgs();
         pullreq->updateQueueMaxOffset(it->second);
       } else {
