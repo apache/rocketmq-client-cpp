@@ -88,7 +88,9 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
 
   virtual bool producePullMsgTask(boost::weak_ptr<PullRequest>);
   virtual bool producePullMsgTaskLater(boost::weak_ptr<PullRequest>, int millis);
-  static void static_triggerNextPullRequest(void* context, boost::asio::deadline_timer* t, boost::weak_ptr<PullRequest>);
+  static void static_triggerNextPullRequest(void* context,
+                                            boost::asio::deadline_timer* t,
+                                            boost::weak_ptr<PullRequest>);
   void triggerNextPullRequest(boost::asio::deadline_timer* t, boost::weak_ptr<PullRequest>);
   void runPullMsgQueue(TaskQueue* pTaskQueue);
   void pullMessage(boost::weak_ptr<PullRequest> pullrequest);       // sync pullMsg

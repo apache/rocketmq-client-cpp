@@ -67,7 +67,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
    * @param subExpression
    *            set filter expression for pulled msg, broker will filter msg actively
    *            Now only OR operation is supported, eg: "tag1 || tag2 || tag3"
-   *            if subExpression is setted to "null" or "*"��all msg will be subscribed
+   *            if subExpression is setted to "null" or "*", all msg will be subscribed
    * @param offset
    *            specify the started pull offset
    * @param maxNums
@@ -90,7 +90,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
    * @param subExpression
    *            set filter expression for pulled msg, broker will filter msg actively
    *            Now only OR operation is supported, eg: "tag1 || tag2 || tag3"
-   *            if subExpression is setted to "null" or "*"��all msg will be subscribed
+   *            if subExpression is setted to "null" or "*", all msg will be subscribed
    * @param offset
    *            specify the started pull offset
    * @param maxNums
@@ -107,20 +107,13 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
 
   virtual ConsumerRunningInfo* getConsumerRunningInfo() { return NULL; }
   /**
-   * ��ȡ���ѽ��ȣ�����-1��ʾ����
    *
    * @param mq
    * @param fromStore
    * @return
    */
   int64 fetchConsumeOffset(const MQMessageQueue& mq, bool fromStore);
-  /**
-   * ����topic��ȡMessageQueue���Ծ��ⷽʽ�����ڶ����Ա֮�����
-   *
-   * @param topic
-   *            ��ϢTopic
-   * @return ���ض��м���
-   */
+
   void fetchMessageQueuesInBalance(const std::string& topic, std::vector<MQMessageQueue> mqs);
 
   // temp persist consumer offset interface, only valid with
