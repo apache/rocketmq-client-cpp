@@ -34,9 +34,9 @@ PullRequest::PullRequest(const string& groupname)
       m_bDropped(false),
       m_bLocked(false),
       m_bPullMsgEventInprogress(false) {
-    m_lastLockTimestamp = UtilAll::currentTimeMillis();
-    m_lastPullTimestamp = UtilAll::currentTimeMillis();
-    m_lastConsumeTimestamp = UtilAll::currentTimeMillis();
+  m_lastLockTimestamp = UtilAll::currentTimeMillis();
+  m_lastPullTimestamp = UtilAll::currentTimeMillis();
+  m_lastConsumeTimestamp = UtilAll::currentTimeMillis();
 }
 
 PullRequest::~PullRequest() {

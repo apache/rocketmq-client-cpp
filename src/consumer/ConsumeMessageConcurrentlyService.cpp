@@ -142,7 +142,8 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
   if (offset >= 0) {
     m_pConsumer->updateConsumeOffset(request->m_messageQueue, offset);
   } else {
-    LOG_WARN("Note: Get local offset for mq:%s failed, may be it is updated before. skip..", (request->m_messageQueue).toString().c_str());
+    LOG_WARN("Note: Get local offset for mq:%s failed, may be it is updated before. skip..",
+             (request->m_messageQueue).toString().c_str());
   }
 }
 

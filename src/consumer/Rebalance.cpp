@@ -492,7 +492,7 @@ bool RebalancePush::updateRequestTableInRebalance(const string& topic, vector<MQ
         // if not response , set to dropped
 
         LOG_INFO("Drop mq:%s,because not responsive", mqtemp.toString().c_str());
-          itDel->second->setDropped(true);
+        itDel->second->setDropped(true);
         // remove offset table to avoid offset backup
         removeUnnecessaryMessageQueue(mqtemp);
         itDel->second->clearAllMsgs();
@@ -509,7 +509,7 @@ bool RebalancePush::updateRequestTableInRebalance(const string& topic, vector<MQ
         // if pull expired , set to dropped
 
         LOG_INFO("Drop mq:%s according Pull timeout.", mqtemp.toString().c_str());
-          itDel->second->setDropped(true);
+        itDel->second->setDropped(true);
         removeUnnecessaryMessageQueue(mqtemp);
         itDel->second->clearAllMsgs();
 
