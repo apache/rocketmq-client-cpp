@@ -54,7 +54,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
   virtual void getSubscriptions(std::vector<SubscriptionData>&);
   virtual void updateConsumeOffset(const MQMessageQueue& mq, int64 offset);
   virtual void removeConsumeOffset(const MQMessageQueue& mq);
-  virtual void producePullMsgTask(PullRequest*);
+  virtual bool producePullMsgTask(boost::weak_ptr<PullRequest> pullRequest);
   virtual Rebalance* getRebalance() const;
   //<!end MQConsumer;
 
@@ -67,7 +67,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
    * @param subExpression
    *            set filter expression for pulled msg, broker will filter msg actively
    *            Now only OR operation is supported, eg: "tag1 || tag2 || tag3"
-   *            if subExpression is setted to "null" or "*"，all msg will be subscribed
+   *            if subExpression is setted to "null" or "*", all msg will be subscribed
    * @param offset
    *            specify the started pull offset
    * @param maxNums
@@ -90,7 +90,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
    * @param subExpression
    *            set filter expression for pulled msg, broker will filter msg actively
    *            Now only OR operation is supported, eg: "tag1 || tag2 || tag3"
-   *            if subExpression is setted to "null" or "*"，all msg will be subscribed
+   *            if subExpression is setted to "null" or "*", all msg will be subscribed
    * @param offset
    *            specify the started pull offset
    * @param maxNums
@@ -107,20 +107,13 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
 
   virtual ConsumerRunningInfo* getConsumerRunningInfo() { return NULL; }
   /**
-   * 获取消费进度，返回-1表示出错
    *
    * @param mq
    * @param fromStore
    * @return
    */
   int64 fetchConsumeOffset(const MQMessageQueue& mq, bool fromStore);
-  /**
-   * 根据topic获取MessageQueue，以均衡方式在组内多个成员之间分配
-   *
-   * @param topic
-   *            消息Topic
-   * @return 返回队列集合
-   */
+
   void fetchMessageQueuesInBalance(const std::string& topic, std::vector<MQMessageQueue> mqs);
 
   // temp persist consumer offset interface, only valid with

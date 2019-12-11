@@ -57,6 +57,6 @@ class SubscriptionData {
   vector<int> m_codeSet;
 };
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif

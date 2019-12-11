@@ -61,6 +61,6 @@ class PullAPIWrapper {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif  //<! _PULLAPIWRAPPER_H_

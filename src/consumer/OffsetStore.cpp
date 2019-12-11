@@ -276,7 +276,7 @@ void RemoteBrokerOffsetStore::persist(const MQMessageQueue& mq, const SessionCre
     try {
       updateConsumeOffsetToBroker(mq, it->second, session_credentials);
     } catch (MQException& e) {
-      LOG_ERROR("updateConsumeOffsetToBroker error");
+      LOG_ERROR("updateConsumeOffsetToBroker %s ,offset:[%lld] error", mq.toString().c_str(), it->second);
     }
   }
 }
@@ -340,4 +340,4 @@ int64 RemoteBrokerOffsetStore::fetchConsumeOffsetFromBroker(const MQMessageQueue
   }
 }
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

@@ -18,8 +18,8 @@
 #include <algorithm>
 #include <sstream>
 #include <vector>
-#include "UtilAll.h"
 #include "Logging.h"
+#include "UtilAll.h"
 namespace rocketmq {
 //<!************************************************************************
 SubscriptionData::SubscriptionData() {
@@ -127,4 +127,4 @@ Json::Value SubscriptionData::toJson() const {
 }
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

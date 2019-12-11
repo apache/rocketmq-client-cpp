@@ -24,14 +24,17 @@
 #include "PullRequest.h"
 #include "SubscriptionData.h"
 
+#include <boost/smart_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 namespace rocketmq {
 class MQClientFactory;
+
 //<!************************************************************************
 class Rebalance {
  public:
   Rebalance(MQConsumer*, MQClientFactory*);
+
   virtual ~Rebalance();
 
   virtual void messageQueueChanged(const string& topic,
@@ -46,24 +49,36 @@ class Rebalance {
 
  public:
   void doRebalance();
+
   void persistConsumerOffset();
+
   void persistConsumerOffsetByResetOffset();
+
   //<!m_subscriptionInner;
   SubscriptionData* getSubscriptionData(const string& topic);
+
   void setSubscriptionData(const string& topic, SubscriptionData* pdata);
 
   map<string, SubscriptionData*>& getSubscriptionInner();
 
   //<!m_topicSubscribeInfoTable;
   void setTopicSubscribeInfo(const string& topic, vector<MQMessageQueue>& mqs);
+
   bool getTopicSubscribeInfo(const string& topic, vector<MQMessageQueue>& mqs);
 
-  void addPullRequest(MQMessageQueue mq, PullRequest* pPullRequest);
-  PullRequest* getPullRequest(MQMessageQueue mq);
-  map<MQMessageQueue, PullRequest*> getPullRequestTable();
+  void addPullRequest(MQMessageQueue mq, boost::shared_ptr<PullRequest> pPullRequest);
+  void removePullRequest(MQMessageQueue mq);
+  bool isPullRequestExist(MQMessageQueue mq);
+  boost::weak_ptr<PullRequest> getPullRequest(MQMessageQueue mq);
+
+  map<MQMessageQueue, boost::shared_ptr<PullRequest>> getPullRequestTable();
+
   void lockAll();
+
   bool lock(MQMessageQueue mq);
-  void unlockAll(bool oneway = false);
+
+  void unlockAll(bool oneWay = false);
+
   void unlock(MQMessageQueue mq);
 
  protected:
@@ -71,7 +86,7 @@ class Rebalance {
 
   boost::mutex m_topicSubscribeInfoTableMutex;
   map<string, vector<MQMessageQueue>> m_topicSubscribeInfoTable;
-  typedef map<MQMessageQueue, PullRequest*> MQ2PULLREQ;
+  typedef map<MQMessageQueue, boost::shared_ptr<PullRequest>> MQ2PULLREQ;
   MQ2PULLREQ m_requestQueueTable;
   boost::mutex m_requestTableMutex;
 
@@ -84,6 +99,7 @@ class Rebalance {
 class RebalancePull : public Rebalance {
  public:
   RebalancePull(MQConsumer*, MQClientFactory*);
+
   virtual ~RebalancePull(){};
 
   virtual void messageQueueChanged(const string& topic,
@@ -101,6 +117,7 @@ class RebalancePull : public Rebalance {
 class RebalancePush : public Rebalance {
  public:
   RebalancePush(MQConsumer*, MQClientFactory*);
+
   virtual ~RebalancePush(){};
 
   virtual void messageQueueChanged(const string& topic,
@@ -115,6 +132,6 @@ class RebalancePush : public Rebalance {
 };
 
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif

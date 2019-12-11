@@ -43,4 +43,4 @@ PullResult::~PullResult() {
 }
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

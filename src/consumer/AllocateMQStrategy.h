@@ -92,5 +92,5 @@ class AllocateMQAveragely : public AllocateMQStrategy {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

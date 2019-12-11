@@ -23,8 +23,6 @@
 #include "Logging.h"
 #include "MQClientAPIImpl.h"
 #include "MQClientFactory.h"
-#include "MQClientManager.h"
-#include "MQProtos.h"
 #include "OffsetStore.h"
 #include "PullAPIWrapper.h"
 #include "PullSysFlag.h"
@@ -37,150 +35,157 @@ namespace rocketmq {
 
 class AsyncPullCallback : public PullCallback {
  public:
-  AsyncPullCallback(DefaultMQPushConsumer* pushConsumer, PullRequest* request)
+  AsyncPullCallback(DefaultMQPushConsumer* pushConsumer, boost::weak_ptr<PullRequest> request)
       : m_callbackOwner(pushConsumer), m_pullRequest(request), m_bShutdown(false) {}
 
-  virtual ~AsyncPullCallback() {
-    m_callbackOwner = NULL;
-    m_pullRequest = NULL;
-  }
+  virtual ~AsyncPullCallback() { m_callbackOwner = NULL; }
 
   virtual void onSuccess(MQMessageQueue& mq, PullResult& result, bool bProducePullRequest) {
-    if (m_bShutdown == true) {
-      LOG_INFO("pullrequest for:%s in shutdown, return", (m_pullRequest->m_messageQueue).toString().c_str());
-      m_pullRequest->removePullMsgEvent();
+    boost::shared_ptr<PullRequest> pullRequest = m_pullRequest.lock();
+    if (!pullRequest) {
+      LOG_WARN("Pull request for[%s] has been released", mq.toString().c_str());
       return;
     }
 
+    if (m_bShutdown) {
+      LOG_INFO("pullrequest for:%s in shutdown, return", (pullRequest->m_messageQueue).toString().c_str());
+      return;
+    }
+    if (pullRequest->isDropped()) {
+      LOG_INFO("Pull request for queue[%s] has been set as dropped. Will NOT pull this queue any more",
+               pullRequest->m_messageQueue.toString().c_str());
+      return;
+    }
     switch (result.pullStatus) {
       case FOUND: {
-        if (!m_pullRequest->isDroped())  // if request is setted to dropped,
-                                         // don't add msgFoundList to
-                                         // m_msgTreeMap and don't call
-                                         // producePullMsgTask
-        {                                // avoid issue: pullMsg is sent out, rebalance is doing concurrently
-          // and this request is dropped, and then received pulled msgs.
-          m_pullRequest->setNextOffset(result.nextBeginOffset);
-          m_pullRequest->putMessage(result.msgFoundList);
-
-          m_callbackOwner->getConsumerMsgService()->submitConsumeRequest(m_pullRequest, result.msgFoundList);
-
-          if (bProducePullRequest)
-            m_callbackOwner->producePullMsgTask(m_pullRequest);
-          else
-            m_pullRequest->removePullMsgEvent();
-
-          LOG_DEBUG("FOUND:%s with size:" SIZET_FMT ", nextBeginOffset:%lld",
-                    (m_pullRequest->m_messageQueue).toString().c_str(), result.msgFoundList.size(),
-                    result.nextBeginOffset);
-        } else {
-          LOG_INFO("remove pullmsg event of mq:%s", (m_pullRequest->m_messageQueue).toString().c_str());
-          m_pullRequest->removePullMsgEvent();
+        if (pullRequest->isDropped()) {
+          LOG_INFO("[Dropped]Remove pullmsg event of mq:%s", (pullRequest->m_messageQueue).toString().c_str());
+          break;
         }
+        pullRequest->setNextOffset(result.nextBeginOffset);
+        pullRequest->putMessage(result.msgFoundList);
+
+        m_callbackOwner->getConsumerMsgService()->submitConsumeRequest(pullRequest, result.msgFoundList);
+
+        if (bProducePullRequest) {
+          m_callbackOwner->producePullMsgTask(pullRequest);
+        } else {
+          LOG_INFO("[bProducePullRequest = false]Stop pullmsg event of mq:%s",
+                   (pullRequest->m_messageQueue).toString().c_str());
+        }
+
+        LOG_DEBUG("FOUND:%s with size:" SIZET_FMT ", nextBeginOffset:%lld",
+                  (pullRequest->m_messageQueue).toString().c_str(), result.msgFoundList.size(), result.nextBeginOffset);
+
         break;
       }
       case NO_NEW_MSG: {
-        m_pullRequest->setNextOffset(result.nextBeginOffset);
+        if (pullRequest->isDropped()) {
+          LOG_INFO("[Dropped]Remove pullmsg event of mq:%s", (pullRequest->m_messageQueue).toString().c_str());
+          break;
+        }
+        pullRequest->setNextOffset(result.nextBeginOffset);
 
         vector<MQMessageExt> msgs;
-        m_pullRequest->getMessage(msgs);
+        pullRequest->getMessage(msgs);
         if ((msgs.size() == 0) && (result.nextBeginOffset > 0)) {
-          /*if broker losted/cleared msgs of one msgQueue, but the brokerOffset
-          is kept, then consumer will enter following situation:
-          1>. get pull offset with 0 when do rebalance, and set
-          m_offsetTable[mq] to 0;
-          2>. NO_NEW_MSG or NO_MATCHED_MSG got when pullMessage, and nextBegin
-          offset increase by 800
-          3>. request->getMessage(msgs) always NULL
-          4>. we need update consumerOffset to nextBeginOffset indicated by
-          broker
-          but if really no new msg could be pulled, also go to this CASE
-
-          LOG_INFO("maybe misMatch between broker and client happens, update
-          consumerOffset to nextBeginOffset indicated by broker");*/
-          m_callbackOwner->updateConsumeOffset(m_pullRequest->m_messageQueue, result.nextBeginOffset);
+          m_callbackOwner->updateConsumeOffset(pullRequest->m_messageQueue, result.nextBeginOffset);
         }
-        if (bProducePullRequest)
-          m_callbackOwner->producePullMsgTask(m_pullRequest);
-        else
-          m_pullRequest->removePullMsgEvent();
-
-        /*LOG_INFO("NO_NEW_MSG:%s,nextBeginOffset:%lld",
-                 (m_pullRequest->m_messageQueue).toString().c_str(),
-                 result.nextBeginOffset);*/
+        if (bProducePullRequest) {
+          m_callbackOwner->producePullMsgTask(pullRequest);
+        } else {
+          LOG_INFO("[bProducePullRequest = false]Stop pullmsg event of mq:%s",
+                   (pullRequest->m_messageQueue).toString().c_str());
+        }
+        LOG_DEBUG("NO_NEW_MSG:%s,nextBeginOffset:%lld", pullRequest->m_messageQueue.toString().c_str(),
+                  result.nextBeginOffset);
         break;
       }
       case NO_MATCHED_MSG: {
-        m_pullRequest->setNextOffset(result.nextBeginOffset);
+        if (pullRequest->isDropped()) {
+          LOG_INFO("[Dropped]Remove pullmsg event of mq:%s", (pullRequest->m_messageQueue).toString().c_str());
+          break;
+        }
+        pullRequest->setNextOffset(result.nextBeginOffset);
 
         vector<MQMessageExt> msgs;
-        m_pullRequest->getMessage(msgs);
+        pullRequest->getMessage(msgs);
         if ((msgs.size() == 0) && (result.nextBeginOffset > 0)) {
-          /*if broker losted/cleared msgs of one msgQueue, but the brokerOffset
-          is kept, then consumer will enter following situation:
-          1>. get pull offset with 0 when do rebalance, and set
-          m_offsetTable[mq] to 0;
-          2>. NO_NEW_MSG or NO_MATCHED_MSG got when pullMessage, and nextBegin
-          offset increase by 800
-          3>. request->getMessage(msgs) always NULL
-          4>. we need update consumerOffset to nextBeginOffset indicated by
-          broker
-          but if really no new msg could be pulled, also go to this CASE
-
-          LOG_INFO("maybe misMatch between broker and client happens, update
-          consumerOffset to nextBeginOffset indicated by broker");*/
-          m_callbackOwner->updateConsumeOffset(m_pullRequest->m_messageQueue, result.nextBeginOffset);
+          m_callbackOwner->updateConsumeOffset(pullRequest->m_messageQueue, result.nextBeginOffset);
         }
-        if (bProducePullRequest)
-          m_callbackOwner->producePullMsgTask(m_pullRequest);
-        else
-          m_pullRequest->removePullMsgEvent();
-        /*LOG_INFO("NO_MATCHED_MSG:%s,nextBeginOffset:%lld",
-                 (m_pullRequest->m_messageQueue).toString().c_str(),
-                 result.nextBeginOffset);*/
+        if (bProducePullRequest) {
+          m_callbackOwner->producePullMsgTask(pullRequest);
+        } else {
+          LOG_INFO("[bProducePullRequest = false]Stop pullmsg event of mq:%s",
+                   (pullRequest->m_messageQueue).toString().c_str());
+        }
+        LOG_DEBUG("NO_MATCHED_MSG:%s,nextBeginOffset:%lld", pullRequest->m_messageQueue.toString().c_str(),
+                  result.nextBeginOffset);
         break;
       }
       case OFFSET_ILLEGAL: {
-        m_pullRequest->setNextOffset(result.nextBeginOffset);
-        if (bProducePullRequest)
-          m_callbackOwner->producePullMsgTask(m_pullRequest);
-        else
-          m_pullRequest->removePullMsgEvent();
+        if (pullRequest->isDropped()) {
+          LOG_INFO("[Dropped]Remove pullmsg event of mq:%s", (pullRequest->m_messageQueue).toString().c_str());
+          break;
+        }
+        pullRequest->setNextOffset(result.nextBeginOffset);
+        if (bProducePullRequest) {
+          m_callbackOwner->producePullMsgTask(pullRequest);
+        } else {
+          LOG_INFO("[bProducePullRequest = false]Stop pullmsg event of mq:%s",
+                   (pullRequest->m_messageQueue).toString().c_str());
+        }
 
-        /*LOG_INFO("OFFSET_ILLEGAL:%s,nextBeginOffset:%lld",
-                 (m_pullRequest->m_messageQueue).toString().c_str(),
-                 result.nextBeginOffset);*/
+        LOG_DEBUG("OFFSET_ILLEGAL:%s,nextBeginOffset:%lld", pullRequest->m_messageQueue.toString().c_str(),
+                  result.nextBeginOffset);
         break;
       }
-      case BROKER_TIMEOUT: {  // as BROKER_TIMEOUT is defined by client, broker
-        // will not returns this status, so this case
-        // could not be entered.
+      case BROKER_TIMEOUT: {
+        if (pullRequest->isDropped()) {
+          LOG_INFO("[Dropped]Remove pullmsg event of mq:%s", (pullRequest->m_messageQueue).toString().c_str());
+          break;
+        }
         LOG_ERROR("impossible BROKER_TIMEOUT Occurs");
-        m_pullRequest->setNextOffset(result.nextBeginOffset);
-        if (bProducePullRequest)
-          m_callbackOwner->producePullMsgTask(m_pullRequest);
-        else
-          m_pullRequest->removePullMsgEvent();
+        pullRequest->setNextOffset(result.nextBeginOffset);
+        if (bProducePullRequest) {
+          m_callbackOwner->producePullMsgTask(pullRequest);
+        } else {
+          LOG_INFO("[bProducePullRequest = false]Stop pullmsg event of mq:%s",
+                   (pullRequest->m_messageQueue).toString().c_str());
+        }
         break;
       }
     }
   }
 
   virtual void onException(MQException& e) {
-    if (m_bShutdown == true) {
-      LOG_INFO("pullrequest for:%s in shutdown, return", (m_pullRequest->m_messageQueue).toString().c_str());
-      m_pullRequest->removePullMsgEvent();
+    boost::shared_ptr<PullRequest> pullRequest = m_pullRequest.lock();
+    if (!pullRequest) {
+      LOG_WARN("Pull request has been released.");
       return;
     }
-    LOG_WARN("pullrequest for:%s occurs exception, reproduce it", (m_pullRequest->m_messageQueue).toString().c_str());
-    m_callbackOwner->producePullMsgTask(m_pullRequest);
+    std::string queueName = pullRequest->m_messageQueue.toString();
+    if (m_bShutdown) {
+      LOG_INFO("pullrequest for:%s in shutdown, return", queueName.c_str());
+      return;
+    }
+    if (pullRequest->isDropped()) {
+      LOG_INFO("[Dropped]Remove pullmsg event of mq:%s", queueName.c_str());
+      return;
+    }
+    LOG_WARN("Pullrequest for:%s occurs exception, reproduce it after 1s.", queueName.c_str());
+    m_callbackOwner->producePullMsgTaskLater(pullRequest, 1000);
   }
 
   void setShutdownStatus() { m_bShutdown = true; }
 
+  const boost::weak_ptr<PullRequest>& getPullRequest() const { return m_pullRequest; }
+
+  void setPullRequest(boost::weak_ptr<PullRequest>& pullRequest) { m_pullRequest = pullRequest; }
+
  private:
   DefaultMQPushConsumer* m_callbackOwner;
-  PullRequest* m_pullRequest;
+  boost::weak_ptr<PullRequest> m_pullRequest;
   bool m_bShutdown;
 };
 
@@ -524,38 +529,84 @@ void DefaultMQPushConsumer::removeConsumeOffset(const MQMessageQueue& mq) {
   m_pOffsetStore->removeOffset(mq);
 }
 
-void DefaultMQPushConsumer::triggerNextPullRequest(boost::asio::deadline_timer* t, PullRequest* request) {
-  // LOG_INFO("trigger pullrequest for:%s",
-  // (request->m_messageQueue).toString().c_str());
-  producePullMsgTask(request);
-  deleteAndZero(t);
+void DefaultMQPushConsumer::static_triggerNextPullRequest(void* context,
+                                                          boost::asio::deadline_timer* t,
+                                                          boost::weak_ptr<PullRequest> pullRequest) {
+  if (pullRequest.expired()) {
+    LOG_WARN("Pull request has been released before.");
+    return;
+  }
+  DefaultMQPushConsumer* pDefaultMQPushConsumer = (DefaultMQPushConsumer*)context;
+  if (pDefaultMQPushConsumer) {
+    pDefaultMQPushConsumer->triggerNextPullRequest(t, pullRequest);
+  }
 }
 
-void DefaultMQPushConsumer::producePullMsgTask(PullRequest* request) {
+void DefaultMQPushConsumer::triggerNextPullRequest(boost::asio::deadline_timer* t,
+                                                   boost::weak_ptr<PullRequest> pullRequest) {
+  // delete first to avoild memleak
+  deleteAndZero(t);
+  boost::shared_ptr<PullRequest> request = pullRequest.lock();
+  if (!request) {
+    LOG_WARN("Pull request has been released before.");
+    return;
+  }
+  producePullMsgTask(request);
+}
+
+bool DefaultMQPushConsumer::producePullMsgTaskLater(boost::weak_ptr<PullRequest> pullRequest, int millis) {
+  boost::shared_ptr<PullRequest> request = pullRequest.lock();
+  if (!request) {
+    LOG_INFO("Pull request is invalid. Maybe it is dropped before.");
+    return false;
+  }
+  if (request->isDropped()) {
+    LOG_INFO("[Dropped]Remove pullmsg event of mq:%s", request->m_messageQueue.toString().c_str());
+    return false;
+  }
+  boost::asio::deadline_timer* t =
+      new boost::asio::deadline_timer(m_async_ioService, boost::posix_time::milliseconds(millis));
+  t->async_wait(boost::bind(&(DefaultMQPushConsumer::static_triggerNextPullRequest), this, t, request));
+  LOG_INFO("Produce Pull request [%s] Later and Sleep [%d]ms.", (request->m_messageQueue).toString().c_str(), millis);
+  return true;
+}
+
+bool DefaultMQPushConsumer::producePullMsgTask(boost::weak_ptr<PullRequest> pullRequest) {
+  boost::shared_ptr<PullRequest> request = pullRequest.lock();
+  if (!request) {
+    LOG_WARN("Pull request has been released.");
+    return false;
+  }
+  if (request->isDropped()) {
+    LOG_INFO("[Dropped]Remove pullmsg event of mq:%s", request->m_messageQueue.toString().c_str());
+    return false;
+  }
   if (m_pullmsgQueue->bTaskQueueStatusOK() && isServiceStateOk()) {
-    request->addPullMsgEvent();
     if (m_asyncPull) {
       m_pullmsgQueue->produce(TaskBinder::gen(&DefaultMQPushConsumer::pullMessageAsync, this, request));
     } else {
       m_pullmsgQueue->produce(TaskBinder::gen(&DefaultMQPushConsumer::pullMessage, this, request));
     }
   } else {
-    LOG_WARN("produce pullmsg of mq:%s failed", request->m_messageQueue.toString().c_str());
+    LOG_WARN("produce PullRequest of mq:%s failed", request->m_messageQueue.toString().c_str());
+    return false;
   }
+  return true;
 }
 
 void DefaultMQPushConsumer::runPullMsgQueue(TaskQueue* pTaskQueue) {
   pTaskQueue->run();
 }
 
-void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
-  if (request == NULL) {
-    LOG_ERROR("Pull request is NULL, return");
+void DefaultMQPushConsumer::pullMessage(boost::weak_ptr<PullRequest> pullRequest) {
+  boost::shared_ptr<PullRequest> request = pullRequest.lock();
+  if (!request) {
+    LOG_ERROR("Pull request is released, return");
     return;
   }
-  if (request->isDroped()) {
+  if (request->isDropped()) {
     LOG_WARN("Pull request is set drop with mq:%s, return", (request->m_messageQueue).toString().c_str());
-    request->removePullMsgEvent();
+    // request->removePullMsgEvent();
     return;
   }
 
@@ -563,19 +614,19 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
   if (m_consumerService->getConsumeMsgSerivceListenerType() == messageListenerOrderly) {
     if (!request->isLocked() || request->isLockExpired()) {
       if (!m_pRebalance->lock(messageQueue)) {
-        producePullMsgTask(request);
+        request->setLastPullTimestamp(UtilAll::currentTimeMillis());
+        producePullMsgTaskLater(request, 1000);
         return;
       }
     }
   }
 
   if (request->getCacheMsgCount() > m_maxMsgCacheSize) {
-    // LOG_INFO("retry pullrequest for:%s after 1s, as cachMsgSize:%d is larger
-    // than:%d",  (request->m_messageQueue).toString().c_str(),
-    // request->getCacheMsgCount(), m_maxMsgCacheSize);
-    boost::asio::deadline_timer* t =
-        new boost::asio::deadline_timer(m_async_ioService, boost::posix_time::milliseconds(1 * 1000));
-    t->async_wait(boost::bind(&DefaultMQPushConsumer::triggerNextPullRequest, this, t, request));
+    LOG_INFO("Sync Pull request for %s has Cached with %d Messages and The Max size is %d, Sleep 1s.",
+             (request->m_messageQueue).toString().c_str(), request->getCacheMsgCount(), m_maxMsgCacheSize);
+    request->setLastPullTimestamp(UtilAll::currentTimeMillis());
+    // Retry 1s,
+    producePullMsgTaskLater(request, 1000);
     return;
   }
 
@@ -591,7 +642,9 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
   string subExpression;
   SubscriptionData* pSdata = m_pRebalance->getSubscriptionData(messageQueue.getTopic());
   if (pSdata == NULL) {
-    producePullMsgTask(request);
+    LOG_INFO("Can not get SubscriptionData of Pull request for [%s], Sleep 1s.",
+             (request->m_messageQueue).toString().c_str());
+    producePullMsgTaskLater(request, 1000);
     return;
   }
   subExpression = pSdata->getSubString();
@@ -600,7 +653,10 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
                                           false,                   // suspend
                                           !subExpression.empty(),  // subscription
                                           false);                  // class filter
-
+  if (request->isDropped()) {
+    LOG_WARN("Pull request is set as dropped with mq:%s, return", (request->m_messageQueue).toString().c_str());
+    return;
+  }
   try {
     request->setLastPullTimestamp(UtilAll::currentTimeMillis());
     unique_ptr<PullResult> result(m_pPullAPIWrapper->pullKernelImpl(messageQueue,              // 1
@@ -616,45 +672,35 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
                                                                     NULL, getSessionCredentials()));
 
     PullResult pullResult = m_pPullAPIWrapper->processPullResult(messageQueue, result.get(), pSdata);
-
     switch (pullResult.pullStatus) {
       case FOUND: {
-        if (!request->isDroped())  // if request is setted to dropped, don't add
-                                   // msgFoundList to m_msgTreeMap and don't
-                                   // call producePullMsgTask
-        {                          // avoid issue: pullMsg is sent out, rebalance is doing concurrently
-          // and this request is dropped, and then received pulled msgs.
-          request->setNextOffset(pullResult.nextBeginOffset);
-          request->putMessage(pullResult.msgFoundList);
-
-          m_consumerService->submitConsumeRequest(request, pullResult.msgFoundList);
-          producePullMsgTask(request);
-
-          LOG_DEBUG("FOUND:%s with size:" SIZET_FMT ",nextBeginOffset:%lld", messageQueue.toString().c_str(),
-                    pullResult.msgFoundList.size(), pullResult.nextBeginOffset);
-        } else {
-          request->removePullMsgEvent();
+        if (request->isDropped()) {
+          LOG_INFO("Get pull result but the queue has been marked as dropped. Queue: %s",
+                   messageQueue.toString().c_str());
+          break;
         }
+        // and this request is dropped, and then received pulled msgs.
+        request->setNextOffset(pullResult.nextBeginOffset);
+        request->putMessage(pullResult.msgFoundList);
+
+        m_consumerService->submitConsumeRequest(request, pullResult.msgFoundList);
+        producePullMsgTask(request);
+
+        LOG_DEBUG("FOUND:%s with size:" SIZET_FMT ",nextBeginOffset:%lld", messageQueue.toString().c_str(),
+                  pullResult.msgFoundList.size(), pullResult.nextBeginOffset);
+
         break;
       }
       case NO_NEW_MSG: {
+        if (request->isDropped()) {
+          LOG_INFO("Get pull result but the queue has been marked as dropped. Queue: %s",
+                   messageQueue.toString().c_str());
+          break;
+        }
         request->setNextOffset(pullResult.nextBeginOffset);
         vector<MQMessageExt> msgs;
         request->getMessage(msgs);
         if ((msgs.size() == 0) && (pullResult.nextBeginOffset > 0)) {
-          /*if broker losted/cleared msgs of one msgQueue, but the brokerOffset
-          is kept, then consumer will enter following situation:
-          1>. get pull offset with 0 when do rebalance, and set
-          m_offsetTable[mq] to 0;
-          2>. NO_NEW_MSG or NO_MATCHED_MSG got when pullMessage, and nextBegin
-          offset increase by 800
-          3>. request->getMessage(msgs) always NULL
-          4>. we need update consumerOffset to nextBeginOffset indicated by
-          broker
-          but if really no new msg could be pulled, also go to this CASE
-       */
-          // LOG_DEBUG("maybe misMatch between broker and client happens, update
-          // consumerOffset to nextBeginOffset indicated by broker");
           updateConsumeOffset(messageQueue, pullResult.nextBeginOffset);
         }
         producePullMsgTask(request);
@@ -662,12 +708,15 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
         break;
       }
       case NO_MATCHED_MSG: {
+        if (request->isDropped()) {
+          LOG_INFO("Get pull result but the queue has been marked as dropped. Queue: %s",
+                   messageQueue.toString().c_str());
+          break;
+        }
         request->setNextOffset(pullResult.nextBeginOffset);
         vector<MQMessageExt> msgs;
         request->getMessage(msgs);
         if ((msgs.size() == 0) && (pullResult.nextBeginOffset > 0)) {
-          // LOG_DEBUG("maybe misMatch between broker and client happens, update
-          // consumerOffset to nextBeginOffset indicated by broker");
           updateConsumeOffset(messageQueue, pullResult.nextBeginOffset);
         }
         producePullMsgTask(request);
@@ -677,6 +726,11 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
         break;
       }
       case OFFSET_ILLEGAL: {
+        if (request->isDropped()) {
+          LOG_INFO("Get pull result but the queue has been marked as dropped. Queue: %s",
+                   messageQueue.toString().c_str());
+          break;
+        }
         request->setNextOffset(pullResult.nextBeginOffset);
         producePullMsgTask(request);
 
@@ -695,11 +749,17 @@ void DefaultMQPushConsumer::pullMessage(PullRequest* request) {
     }
   } catch (MQException& e) {
     LOG_ERROR(e.what());
-    producePullMsgTask(request);
+    LOG_WARN("Pull %s occur exception, restart 1s  later.", messageQueue.toString().c_str());
+    producePullMsgTaskLater(request, 1000);
   }
 }
 
-AsyncPullCallback* DefaultMQPushConsumer::getAsyncPullCallBack(PullRequest* request, MQMessageQueue msgQueue) {
+AsyncPullCallback* DefaultMQPushConsumer::getAsyncPullCallBack(boost::weak_ptr<PullRequest> pullRequest,
+                                                               MQMessageQueue msgQueue) {
+  boost::shared_ptr<PullRequest> request = pullRequest.lock();
+  if (!request) {
+    return NULL;
+  }
   boost::lock_guard<boost::mutex> lock(m_asyncCallbackLock);
   if (m_asyncPull && request) {
     PullMAP::iterator it = m_PullCallback.find(msgQueue);
@@ -707,7 +767,11 @@ AsyncPullCallback* DefaultMQPushConsumer::getAsyncPullCallBack(PullRequest* requ
       LOG_INFO("new pull callback for mq:%s", msgQueue.toString().c_str());
       m_PullCallback[msgQueue] = new AsyncPullCallback(this, request);
     }
-    return m_PullCallback[msgQueue];
+    AsyncPullCallback* asyncPullCallback = m_PullCallback[msgQueue];
+    if (asyncPullCallback && asyncPullCallback->getPullRequest().expired()) {
+      asyncPullCallback->setPullRequest(pullRequest);
+    }
+    return asyncPullCallback;
   }
 
   return NULL;
@@ -727,34 +791,34 @@ void DefaultMQPushConsumer::shutdownAsyncPullCallBack() {
   }
 }
 
-void DefaultMQPushConsumer::pullMessageAsync(PullRequest* request) {
-  if (request == NULL) {
-    LOG_ERROR("Pull request is NULL, return");
+void DefaultMQPushConsumer::pullMessageAsync(boost::weak_ptr<PullRequest> pullRequest) {
+  boost::shared_ptr<PullRequest> request = pullRequest.lock();
+  if (!request) {
+    LOG_ERROR("Pull request is released, return");
     return;
   }
-  if (request->isDroped()) {
+  if (request->isDropped()) {
     LOG_WARN("Pull request is set drop with mq:%s, return", (request->m_messageQueue).toString().c_str());
-    request->removePullMsgEvent();
     return;
   }
-
   MQMessageQueue& messageQueue = request->m_messageQueue;
   if (m_consumerService->getConsumeMsgSerivceListenerType() == messageListenerOrderly) {
     if (!request->isLocked() || request->isLockExpired()) {
       if (!m_pRebalance->lock(messageQueue)) {
-        producePullMsgTask(request);
+        request->setLastPullTimestamp(UtilAll::currentTimeMillis());
+        // Retry later.
+        producePullMsgTaskLater(request, 1000);
         return;
       }
     }
   }
 
   if (request->getCacheMsgCount() > m_maxMsgCacheSize) {
-    // LOG_INFO("retry pullrequest for:%s after 1s, as cachMsgSize:%d is larger
-    // than:%d",  (request->m_messageQueue).toString().c_str(),
-    // request->getCacheMsgCount(), m_maxMsgCacheSize);
-    boost::asio::deadline_timer* t =
-        new boost::asio::deadline_timer(m_async_ioService, boost::posix_time::milliseconds(1 * 1000));
-    t->async_wait(boost::bind(&DefaultMQPushConsumer::triggerNextPullRequest, this, t, request));
+    LOG_INFO("Pull request for [%s] has Cached with %d Messages and The Max size is %d, Sleep 3s.",
+             (request->m_messageQueue).toString().c_str(), request->getCacheMsgCount(), m_maxMsgCacheSize);
+    request->setLastPullTimestamp(UtilAll::currentTimeMillis());
+    // Retry 3s,
+    producePullMsgTaskLater(request, 3000);
     return;
   }
 
@@ -770,7 +834,10 @@ void DefaultMQPushConsumer::pullMessageAsync(PullRequest* request) {
   string subExpression;
   SubscriptionData* pSdata = (m_pRebalance->getSubscriptionData(messageQueue.getTopic()));
   if (pSdata == NULL) {
-    producePullMsgTask(request);
+    LOG_INFO("Can not get SubscriptionData of Pull request for [%s], Sleep 1s.",
+             (request->m_messageQueue).toString().c_str());
+    // Subscribe data error, retry later.
+    producePullMsgTaskLater(request, 1000);
     return;
   }
   subExpression = pSdata->getSubString();
@@ -784,24 +851,39 @@ void DefaultMQPushConsumer::pullMessageAsync(PullRequest* request) {
   arg.mq = messageQueue;
   arg.subData = *pSdata;
   arg.pPullWrapper = m_pPullAPIWrapper;
+  if (request->isDropped()) {
+    LOG_WARN("Pull request is set as dropped with mq:%s, return", request->m_messageQueue.toString().c_str());
+    return;
+  }
   try {
     request->setLastPullTimestamp(UtilAll::currentTimeMillis());
-    m_pPullAPIWrapper->pullKernelImpl(messageQueue,                                 // 1
-                                      subExpression,                                // 2
-                                      pSdata->getSubVersion(),                      // 3
-                                      request->getNextOffset(),                     // 4
-                                      32,                                           // 5
-                                      sysFlag,                                      // 6
-                                      commitOffsetValue,                            // 7
-                                      1000 * 15,                                    // 8
-                                      m_asyncPullTimeout,                           // 9
-                                      ComMode_ASYNC,                                // 10
-                                      getAsyncPullCallBack(request, messageQueue),  // 11
-                                      getSessionCredentials(),                      // 12
-                                      &arg);                                        // 13
+    AsyncPullCallback* pullCallback = getAsyncPullCallBack(request, messageQueue);
+    if (pullCallback == NULL) {
+      LOG_WARN("Can not get pull callback for:%s, Maybe this pull request has been released.",
+               request->m_messageQueue.toString().c_str());
+      return;
+    }
+    m_pPullAPIWrapper->pullKernelImpl(messageQueue,              // 1
+                                      subExpression,             // 2
+                                      pSdata->getSubVersion(),   // 3
+                                      request->getNextOffset(),  // 4
+                                      32,                        // 5
+                                      sysFlag,                   // 6
+                                      commitOffsetValue,         // 7
+                                      1000 * 15,                 // 8
+                                      m_asyncPullTimeout,        // 9
+                                      ComMode_ASYNC,             // 10
+                                      pullCallback,              // 11
+                                      getSessionCredentials(),   // 12
+                                      &arg);                     // 13
   } catch (MQException& e) {
     LOG_ERROR(e.what());
-    producePullMsgTask(request);
+    if (request->isDropped()) {
+      LOG_WARN("Pull request is set as dropped with mq:%s, return", (request->m_messageQueue).toString().c_str());
+      return;
+    }
+    LOG_INFO("Pull %s occur exception, restart 1s  later.", (request->m_messageQueue).toString().c_str());
+    producePullMsgTaskLater(request, 1000);
   }
 }
 
@@ -868,10 +950,10 @@ ConsumerRunningInfo* DefaultMQPushConsumer::getConsumerRunningInfo() {
   getSubscriptions(result);
   info->setSubscriptionSet(result);
 
-  std::map<MQMessageQueue, PullRequest*> requestTable = m_pRebalance->getPullRequestTable();
+  std::map<MQMessageQueue, boost::shared_ptr<PullRequest>> requestTable = m_pRebalance->getPullRequestTable();
 
   for (const auto& it : requestTable) {
-    if (!it.second->isDroped()) {
+    if (!it.second->isDropped()) {
       MessageQueue queue((it.first).getTopic(), (it.first).getBrokerName(), (it.first).getQueueId());
       ProcessQueueInfo processQueue;
       processQueue.cachedMsgMinOffset = it.second->getCacheMinOffset();
@@ -879,7 +961,7 @@ ConsumerRunningInfo* DefaultMQPushConsumer::getConsumerRunningInfo() {
       processQueue.cachedMsgCount = it.second->getCacheMsgCount();
       processQueue.setCommitOffset(
           m_pOffsetStore->readOffset(it.first, MEMORY_FIRST_THEN_STORE, getSessionCredentials()));
-      processQueue.setDroped(it.second->isDroped());
+      processQueue.setDroped(it.second->isDropped());
       processQueue.setLocked(it.second->isLocked());
       processQueue.lastLockTimestamp = it.second->getLastLockTimestamp();
       processQueue.lastPullTimestamp = it.second->getLastPullTimestamp();
@@ -892,4 +974,4 @@ ConsumerRunningInfo* DefaultMQPushConsumer::getConsumerRunningInfo() {
 }
 
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
