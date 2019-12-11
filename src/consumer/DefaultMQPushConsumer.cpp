@@ -23,8 +23,6 @@
 #include "Logging.h"
 #include "MQClientAPIImpl.h"
 #include "MQClientFactory.h"
-#include "MQClientManager.h"
-#include "MQProtos.h"
 #include "OffsetStore.h"
 #include "PullAPIWrapper.h"
 #include "PullSysFlag.h"
@@ -49,17 +47,12 @@ class AsyncPullCallback : public PullCallback {
       return;
     }
 
-    if (m_bShutdown == true) {
+    if (m_bShutdown) {
       LOG_INFO("pullrequest for:%s in shutdown, return", (pullRequest->m_messageQueue).toString().c_str());
       return;
     }
     if (pullRequest->isDropped()) {
       LOG_INFO("Pull request for queue[%s] has been set as dropped. Will NOT pull this queue any more",
-               pullRequest->m_messageQueue.toString().c_str());
-      return;
-    }
-    if (!pullRequest->removePullMsgEvent()) {
-      LOG_WARN("Mark unflight for:%s failed, May be it is Dropped by #Rebalance.",
                pullRequest->m_messageQueue.toString().c_str());
       return;
     }
@@ -171,13 +164,8 @@ class AsyncPullCallback : public PullCallback {
       LOG_WARN("Pull request has been released.");
       return;
     }
-    if (!pullRequest->removePullMsgEvent()) {
-      LOG_WARN("Mark unflight for:%s failed when exception, May be it is Dropped by #Rebalance.",
-               pullRequest->m_messageQueue.toString().c_str());
-      return;
-    }
     std::string queueName = pullRequest->m_messageQueue.toString();
-    if (m_bShutdown == true) {
+    if (m_bShutdown) {
       LOG_INFO("pullrequest for:%s in shutdown, return", queueName.c_str());
       return;
     }
@@ -544,6 +532,10 @@ void DefaultMQPushConsumer::removeConsumeOffset(const MQMessageQueue& mq) {
 void DefaultMQPushConsumer::static_triggerNextPullRequest(void* context,
                                                           boost::asio::deadline_timer* t,
                                                           boost::weak_ptr<PullRequest> pullRequest) {
+  if (pullRequest.expired()) {
+    LOG_WARN("Pull request has been released before.");
+    return;
+  }
   DefaultMQPushConsumer* pDefaultMQPushConsumer = (DefaultMQPushConsumer*)context;
   if (pDefaultMQPushConsumer) {
     pDefaultMQPushConsumer->triggerNextPullRequest(t, pullRequest);
@@ -556,6 +548,7 @@ void DefaultMQPushConsumer::triggerNextPullRequest(boost::asio::deadline_timer* 
   deleteAndZero(t);
   boost::shared_ptr<PullRequest> request = pullRequest.lock();
   if (!request) {
+    LOG_WARN("Pull request has been released before.");
     return;
   }
   producePullMsgTask(request);
@@ -581,6 +574,7 @@ bool DefaultMQPushConsumer::producePullMsgTaskLater(boost::weak_ptr<PullRequest>
 bool DefaultMQPushConsumer::producePullMsgTask(boost::weak_ptr<PullRequest> pullRequest) {
   boost::shared_ptr<PullRequest> request = pullRequest.lock();
   if (!request) {
+    LOG_WARN("Pull request has been released.");
     return false;
   }
   if (request->isDropped()) {
@@ -588,16 +582,10 @@ bool DefaultMQPushConsumer::producePullMsgTask(boost::weak_ptr<PullRequest> pull
     return false;
   }
   if (m_pullmsgQueue->bTaskQueueStatusOK() && isServiceStateOk()) {
-    if (request->addPullMsgEvent()) {
-      if (m_asyncPull) {
-        m_pullmsgQueue->produce(TaskBinder::gen(&DefaultMQPushConsumer::pullMessageAsync, this, request));
-
-      } else {
-        m_pullmsgQueue->produce(TaskBinder::gen(&DefaultMQPushConsumer::pullMessage, this, request));
-      }
+    if (m_asyncPull) {
+      m_pullmsgQueue->produce(TaskBinder::gen(&DefaultMQPushConsumer::pullMessageAsync, this, request));
     } else {
-      LOG_WARN("Failed to mark in-flight pull request for %s", request->m_messageQueue.toString().c_str());
-      return false;
+      m_pullmsgQueue->produce(TaskBinder::gen(&DefaultMQPushConsumer::pullMessage, this, request));
     }
   } else {
     LOG_WARN("produce PullRequest of mq:%s failed", request->m_messageQueue.toString().c_str());
@@ -626,6 +614,7 @@ void DefaultMQPushConsumer::pullMessage(boost::weak_ptr<PullRequest> pullRequest
   if (m_consumerService->getConsumeMsgSerivceListenerType() == messageListenerOrderly) {
     if (!request->isLocked() || request->isLockExpired()) {
       if (!m_pRebalance->lock(messageQueue)) {
+        request->setLastPullTimestamp(UtilAll::currentTimeMillis());
         producePullMsgTaskLater(request, 1000);
         return;
       }
@@ -633,11 +622,9 @@ void DefaultMQPushConsumer::pullMessage(boost::weak_ptr<PullRequest> pullRequest
   }
 
   if (request->getCacheMsgCount() > m_maxMsgCacheSize) {
-    LOG_INFO("Sync Pull request for [%s] has Cached with %d Messages and The Max size is %d, Sleep 1s.",
+    LOG_INFO("Sync Pull request for %s has Cached with %d Messages and The Max size is %d, Sleep 1s.",
              (request->m_messageQueue).toString().c_str(), request->getCacheMsgCount(), m_maxMsgCacheSize);
     request->setLastPullTimestamp(UtilAll::currentTimeMillis());
-    // This process is on flight, should be remove event before producer task again.
-    request->removePullMsgEvent();
     // Retry 1s,
     producePullMsgTaskLater(request, 1000);
     return;
@@ -657,7 +644,6 @@ void DefaultMQPushConsumer::pullMessage(boost::weak_ptr<PullRequest> pullRequest
   if (pSdata == NULL) {
     LOG_INFO("Can not get SubscriptionData of Pull request for [%s], Sleep 1s.",
              (request->m_messageQueue).toString().c_str());
-    request->removePullMsgEvent();
     producePullMsgTaskLater(request, 1000);
     return;
   }
@@ -686,10 +672,6 @@ void DefaultMQPushConsumer::pullMessage(boost::weak_ptr<PullRequest> pullRequest
                                                                     NULL, getSessionCredentials()));
 
     PullResult pullResult = m_pPullAPIWrapper->processPullResult(messageQueue, result.get(), pSdata);
-    if (!request->removePullMsgEvent()) {
-      LOG_WARN("Failed to swap pullMsgEvent[%s] flag", messageQueue.toString().c_str());
-      return;
-    }
     switch (pullResult.pullStatus) {
       case FOUND: {
         if (request->isDropped()) {
@@ -767,11 +749,8 @@ void DefaultMQPushConsumer::pullMessage(boost::weak_ptr<PullRequest> pullRequest
     }
   } catch (MQException& e) {
     LOG_ERROR(e.what());
-    if (request->removePullMsgEvent()) {
-      producePullMsgTaskLater(request, 1000);
-    } else {
-      LOG_WARN("Failed to swap pullMsgEvent[%s] flag", messageQueue.toString().c_str());
-    }
+    LOG_WARN("Pull %s occur exception, restart 1s  later.", messageQueue.toString().c_str());
+    producePullMsgTaskLater(request, 1000);
   }
 }
 
@@ -820,16 +799,13 @@ void DefaultMQPushConsumer::pullMessageAsync(boost::weak_ptr<PullRequest> pullRe
   }
   if (request->isDropped()) {
     LOG_WARN("Pull request is set drop with mq:%s, return", (request->m_messageQueue).toString().c_str());
-    // request->removePullMsgEvent();
     return;
   }
-
   MQMessageQueue& messageQueue = request->m_messageQueue;
   if (m_consumerService->getConsumeMsgSerivceListenerType() == messageListenerOrderly) {
     if (!request->isLocked() || request->isLockExpired()) {
       if (!m_pRebalance->lock(messageQueue)) {
-        // This process is on flight, should be remove event before producer task again.
-        request->removePullMsgEvent();
+        request->setLastPullTimestamp(UtilAll::currentTimeMillis());
         // Retry later.
         producePullMsgTaskLater(request, 1000);
         return;
@@ -841,8 +817,6 @@ void DefaultMQPushConsumer::pullMessageAsync(boost::weak_ptr<PullRequest> pullRe
     LOG_INFO("Pull request for [%s] has Cached with %d Messages and The Max size is %d, Sleep 3s.",
              (request->m_messageQueue).toString().c_str(), request->getCacheMsgCount(), m_maxMsgCacheSize);
     request->setLastPullTimestamp(UtilAll::currentTimeMillis());
-    // This process is on flight, should be remove event before producer task again.
-    request->removePullMsgEvent();
     // Retry 3s,
     producePullMsgTaskLater(request, 3000);
     return;
@@ -862,8 +836,6 @@ void DefaultMQPushConsumer::pullMessageAsync(boost::weak_ptr<PullRequest> pullRe
   if (pSdata == NULL) {
     LOG_INFO("Can not get SubscriptionData of Pull request for [%s], Sleep 1s.",
              (request->m_messageQueue).toString().c_str());
-    // This process is on flight, should be remove event before producer task again.
-    request->removePullMsgEvent();
     // Subscribe data error, retry later.
     producePullMsgTaskLater(request, 1000);
     return;
@@ -885,26 +857,32 @@ void DefaultMQPushConsumer::pullMessageAsync(boost::weak_ptr<PullRequest> pullRe
   }
   try {
     request->setLastPullTimestamp(UtilAll::currentTimeMillis());
-    m_pPullAPIWrapper->pullKernelImpl(messageQueue,                                 // 1
-                                      subExpression,                                // 2
-                                      pSdata->getSubVersion(),                      // 3
-                                      request->getNextOffset(),                     // 4
-                                      32,                                           // 5
-                                      sysFlag,                                      // 6
-                                      commitOffsetValue,                            // 7
-                                      1000 * 15,                                    // 8
-                                      m_asyncPullTimeout,                           // 9
-                                      ComMode_ASYNC,                                // 10
-                                      getAsyncPullCallBack(request, messageQueue),  // 11
-                                      getSessionCredentials(),                      // 12
-                                      &arg);                                        // 13
+    AsyncPullCallback* pullCallback = getAsyncPullCallBack(request, messageQueue);
+    if (pullCallback == NULL) {
+      LOG_WARN("Can not get pull callback for:%s, Maybe this pull request has been released.",
+               request->m_messageQueue.toString().c_str());
+      return;
+    }
+    m_pPullAPIWrapper->pullKernelImpl(messageQueue,              // 1
+                                      subExpression,             // 2
+                                      pSdata->getSubVersion(),   // 3
+                                      request->getNextOffset(),  // 4
+                                      32,                        // 5
+                                      sysFlag,                   // 6
+                                      commitOffsetValue,         // 7
+                                      1000 * 15,                 // 8
+                                      m_asyncPullTimeout,        // 9
+                                      ComMode_ASYNC,             // 10
+                                      pullCallback,              // 11
+                                      getSessionCredentials(),   // 12
+                                      &arg);                     // 13
   } catch (MQException& e) {
     LOG_ERROR(e.what());
     if (request->isDropped()) {
       LOG_WARN("Pull request is set as dropped with mq:%s, return", (request->m_messageQueue).toString().c_str());
       return;
     }
-    request->removePullMsgEvent();
+    LOG_INFO("Pull %s occur exception, restart 1s  later.", (request->m_messageQueue).toString().c_str());
     producePullMsgTaskLater(request, 1000);
   }
 }

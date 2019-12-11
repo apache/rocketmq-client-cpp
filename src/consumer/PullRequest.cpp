@@ -28,12 +28,7 @@ const uint64 PullRequest::RebalanceLockMaxLiveTime = 30 * 1000;
 const uint64 PullRequest::MAX_PULL_IDLE_TIME = 120 * 1000;
 
 PullRequest::PullRequest(const string& groupname)
-    : m_groupname(groupname),
-      m_nextOffset(0),
-      m_queueOffsetMax(0),
-      m_bDropped(false),
-      m_bLocked(false),
-      m_bPullMsgEventInprogress(false) {
+    : m_groupname(groupname), m_nextOffset(0), m_queueOffsetMax(0), m_bDropped(false), m_bLocked(false) {
   m_lastLockTimestamp = UtilAll::currentTimeMillis();
   m_lastPullTimestamp = UtilAll::currentTimeMillis();
   m_lastConsumeTimestamp = UtilAll::currentTimeMillis();
@@ -279,33 +274,5 @@ int64 PullRequest::commit() {
   }
 }
 
-bool PullRequest::removePullMsgEvent(bool force) {
-  // m_bPullMsgEventInprogress = false;
-  if (force) {
-    m_bPullMsgEventInprogress.store(false, boost::memory_order_relaxed);
-    return true;
-  }
-
-  bool expected = true;
-  if (m_bPullMsgEventInprogress.compare_exchange_strong(expected, false, boost::memory_order_relaxed)) {
-    LOG_DEBUG("Un-mark in-flight pull request for %s", m_messageQueue.toString().c_str());
-    return true;
-  }
-  LOG_WARN("Failed to un-mark in-flight pull request for %s", m_messageQueue.toString().c_str());
-  return false;
-}
-
-bool PullRequest::addPullMsgEvent() {
-  bool expected = false;
-  if (m_bPullMsgEventInprogress.compare_exchange_strong(expected, true, boost::memory_order_relaxed)) {
-    LOG_DEBUG("Mark in-flight pull request for %s", m_messageQueue.toString().c_str());
-    return true;
-  }
-  LOG_WARN("Failed to mark in-flight pull request for %s", m_messageQueue.toString().c_str());
-  return false;
-}
-bool PullRequest::hasInFlightPullRequest() const {
-  return m_bPullMsgEventInprogress.load(boost::memory_order_relaxed);
-}
 //<!***************************************************************************
 }  // namespace rocketmq

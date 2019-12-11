@@ -94,7 +94,6 @@ class PullRequest {
   uint64 m_lastPullTimestamp;
   uint64 m_lastConsumeTimestamp;
   boost::timed_mutex m_consumeLock;
-  boost::atomic<bool> m_bPullMsgEventInprogress;
 };
 //<!************************************************************************
 }  // namespace rocketmq

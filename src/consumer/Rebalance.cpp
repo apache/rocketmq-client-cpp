@@ -459,7 +459,7 @@ void RebalancePull::removeUnnecessaryMessageQueue(const MQMessageQueue& mq) {}
 RebalancePush::RebalancePush(MQConsumer* consumer, MQClientFactory* pfactory) : Rebalance(consumer, pfactory) {}
 
 bool RebalancePush::updateRequestTableInRebalance(const string& topic, vector<MQMessageQueue>& mqsSelf) {
-  LOG_DEBUG("updateRequestTableInRebalance Enter");
+  LOG_DEBUG("updateRequestTableInRebalance for Topic[%s] Enter", topic.c_str());
 
   // 1. Clear no in charge of
   //   1. set dropped
@@ -476,13 +476,12 @@ bool RebalancePush::updateRequestTableInRebalance(const string& topic, vector<MQ
   //   5. set flag for route changed
   // 4. Start long pull for request
   if (mqsSelf.empty()) {
-    // to disscuss, shall we do rebalance cotinue?
     LOG_WARN("allocated queue is empty for topic:%s", topic.c_str());
   }
 
   bool changed = false;
 
-  //<!remove
+  //<!remove none responsive mq
   MQ2PULLREQ requestQueueTable(getPullRequestTable());
   MQ2PULLREQ::iterator itDel = requestQueueTable.begin();
   for (; itDel != requestQueueTable.end(); ++itDel) {
@@ -490,49 +489,31 @@ bool RebalancePush::updateRequestTableInRebalance(const string& topic, vector<MQ
     if (mqtemp.getTopic().compare(topic) == 0) {
       if (mqsSelf.empty() || (std::find(mqsSelf.begin(), mqsSelf.end(), mqtemp) == mqsSelf.end())) {
         // if not response , set to dropped
-
         LOG_INFO("Drop mq:%s,because not responsive", mqtemp.toString().c_str());
         itDel->second->setDropped(true);
         // remove offset table to avoid offset backup
         removeUnnecessaryMessageQueue(mqtemp);
         itDel->second->clearAllMsgs();
-
-        if (itDel->second->hasInFlightPullRequest()) {
-          LOG_WARN("Unconditionally remove in-flight pull request mark for queue: %s since it is being dropped",
-                   mqtemp.toString().c_str());
-          itDel->second->removePullMsgEvent(true);
-        }
         removePullRequest(mqtemp);
         changed = true;
-      }
-      if (itDel->second->isPullRequestExpired()) {
-        // if pull expired , set to dropped
-
+      } else if (itDel->second->isPullRequestExpired()) {
+        // if pull expired , set to dropped, eg: if add pull task error, the pull request will be expired.
         LOG_INFO("Drop mq:%s according Pull timeout.", mqtemp.toString().c_str());
         itDel->second->setDropped(true);
         removeUnnecessaryMessageQueue(mqtemp);
         itDel->second->clearAllMsgs();
-
-        if (itDel->second->hasInFlightPullRequest()) {
-          LOG_WARN("Unconditionally remove in-flight pull request mark for queue: %s since it is being dropped",
-                   mqtemp.toString().c_str());
-          itDel->second->removePullMsgEvent(true);
-        }
         removePullRequest(mqtemp);
         changed = true;
       }
     }
   }
 
-  // if mqSelf == null, it is better to break;
   //<!add check new mq added.
   vector<boost::shared_ptr<PullRequest>> pullRequestsToAdd;
   vector<MQMessageQueue>::iterator itAdd = mqsSelf.begin();
   for (; itAdd != mqsSelf.end(); ++itAdd) {
-    // PullRequest* pPullRequest(getPullRequest(*it2));
-    // boost::weak_ptr<PullRequest> pPullRequest = getPullRequest(*itAdd);
-    // if exist in table, go to next
     if (isPullRequestExist(*itAdd)) {
+      // have check the expired pull request, re-add it.
       continue;
     }
     boost::shared_ptr<PullRequest> pullRequest = boost::make_shared<PullRequest>(m_pConsumer->getGroupName());
@@ -543,7 +524,7 @@ bool RebalancePush::updateRequestTableInRebalance(const string& topic, vector<MQ
       changed = true;
       addPullRequest(*itAdd, pullRequest);
       pullRequestsToAdd.push_back(pullRequest);
-      LOG_INFO("add mq:%s, request initial offset:%ld", (*itAdd).toString().c_str(), nextOffset);
+      LOG_INFO("Add mq:%s, request initial offset:%ld", (*itAdd).toString().c_str(), nextOffset);
     } else {
       LOG_WARN(
           "Failed to add pull request for %s due to failure of querying consume offset, request initial offset:%ld",
@@ -553,13 +534,19 @@ bool RebalancePush::updateRequestTableInRebalance(const string& topic, vector<MQ
 
   for (vector<boost::shared_ptr<PullRequest>>::iterator itAdded = pullRequestsToAdd.begin();
        itAdded != pullRequestsToAdd.end(); ++itAdded) {
-    LOG_DEBUG("start to pull %s", (*itAdded)->m_messageQueue.toString().c_str());
+    LOG_INFO("Start to pull %s, offset:%ld, GroupName %s", (*itAdded)->m_messageQueue.toString().c_str(),
+             (*itAdded)->getNextOffset(), (*itAdded)->getGroupName().c_str());
     if (!m_pConsumer->producePullMsgTask(*itAdded)) {
-      LOG_WARN("Failed to producer pull message task for %s", (*itAdded)->m_messageQueue.toString().c_str());
+      LOG_WARN(
+          "Failed to producer pull message task for %s, Remove it from Request table and wait for next #Rebalance.",
+          (*itAdded)->m_messageQueue.toString().c_str());
+      // remove from request table, and wait for next rebalance.
+      (*itAdded)->setDropped(true);
+      removePullRequest((*itAdded)->m_messageQueue);
     }
   }
 
-  LOG_DEBUG("updateRequestTableInRebalance exit");
+  LOG_DEBUG("updateRequestTableInRebalance Topic[%s] exit", topic.c_str());
   return changed;
 }
 
@@ -567,7 +554,8 @@ int64 RebalancePush::computePullFromWhere(const MQMessageQueue& mq) {
   int64 result = -1;
   DefaultMQPushConsumer* pConsumer = dynamic_cast<DefaultMQPushConsumer*>(m_pConsumer);
   if (!pConsumer) {
-    LOG_ERROR("Cast consumer pointer to DefaultMQPushConsumer pointer failed");
+    LOG_ERROR("Cast consumer pointer to DefaultMQPushConsumer pointer failed when computePullFromWhere %s",
+              mq.toString().c_str());
     return result;
   }
   ConsumeFromWhere consumeFromWhere = pConsumer->getConsumeFromWhere();
@@ -653,7 +641,7 @@ void RebalancePush::removeUnnecessaryMessageQueue(const MQMessageQueue& mq) {
   // DefaultMQPushConsumer *pConsumer = static_cast<DefaultMQPushConsumer *>(m_pConsumer);
   DefaultMQPushConsumer* pConsumer = dynamic_cast<DefaultMQPushConsumer*>(m_pConsumer);
   if (!pConsumer) {
-    LOG_ERROR("Cast  MQConsumer* to DefaultMQPushConsumer* failed");
+    LOG_ERROR("Cast  MQConsumer* to DefaultMQPushConsumer* failed when remove %s", mq.toString().c_str());
     return;
   }
   OffsetStore* pOffsetStore = pConsumer->getOffsetStore();
