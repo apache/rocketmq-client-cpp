@@ -71,9 +71,9 @@ void MQFaultStrategy::updateFaultItem(const std::string& brokerName, const long 
 }
 
 long MQFaultStrategy::computeNotAvailableDuration(const long currentLatency) {
-  for (size_t i = m_latencyMax.size(); i >= 0; i--) {
-    if (currentLatency >= m_latencyMax[i]) {
-      return m_notAvailableDuration[i];
+  for (size_t i = m_latencyMax.size(); i > 0; i--) {
+    if (currentLatency >= m_latencyMax[i - 1]) {
+      return m_notAvailableDuration[i - 1];
     }
   }
   return 0;
