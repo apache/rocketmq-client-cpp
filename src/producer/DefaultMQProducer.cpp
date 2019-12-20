@@ -424,7 +424,7 @@ SendResult* DefaultMQProducer::sendDefaultImpl(MQMessagePtr msg,
         // TODO: 区分异常类型
         endTimestamp = UtilAll::currentTimeMillis();
         updateFaultItem(mq.getBrokerName(), endTimestamp - beginTimestampPrev, true);
-        LOG_ERROR("send failed of times:{}, brokerName:{}. exception:{}", times, mq.getBrokerName(), e.what());
+        LOG_ERROR_NEW("send failed of times:{}, brokerName:{}. exception:{}", times, mq.getBrokerName(), e.what());
         continue;
       }
 
