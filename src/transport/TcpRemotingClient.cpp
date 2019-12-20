@@ -365,6 +365,7 @@ TcpTransportPtr TcpRemotingClient::CreateTransport(const std::string& addr, bool
       if (channel != nullptr) {
         TcpConnectStatus connectStatus = channel->getTcpConnectStatus();
         switch (connectStatus) {
+          // case TCP_CONNECT_STATUS_CREATED:
           case TCP_CONNECT_STATUS_CONNECTED:
             return channel;
           case TCP_CONNECT_STATUS_CONNECTING:
@@ -375,7 +376,7 @@ TcpTransportPtr TcpRemotingClient::CreateTransport(const std::string& addr, bool
             channel->disconnect(addr);  // avoid coredump when connection with broker was broken
             m_transportTable.erase(addr);
             break;
-          default:
+          default: // TCP_CONNECT_STATUS_CLOSED
             LOG_ERROR_NEW("go to CLOSED state, erase:{} from transportTable, and reconnect it", addr);
             m_transportTable.erase(addr);
             break;
