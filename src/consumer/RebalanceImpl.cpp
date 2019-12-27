@@ -32,11 +32,11 @@ namespace rocketmq {
 RebalanceImpl::RebalanceImpl(const std::string& consumerGroup,
                              MessageModel messageModel,
                              AllocateMQStrategy* allocateMqStrategy,
-                             MQClientInstance* mqClientFactory)
+                             MQClientInstance* instance)
     : m_consumerGroup(consumerGroup),
       m_messageModel(messageModel),
       m_allocateMQStrategy(allocateMqStrategy),
-      m_mqClientFactory(mqClientFactory) {}
+      m_clientInstance(instance) {}
 
 RebalanceImpl::~RebalanceImpl() {
   for (auto& it : m_subscriptionInner) {
@@ -46,16 +46,16 @@ RebalanceImpl::~RebalanceImpl() {
 
 void RebalanceImpl::unlock(MQMessageQueue mq, const bool oneway) {
   std::unique_ptr<FindBrokerResult> findBrokerResult(
-      m_mqClientFactory->findBrokerAddressInSubscribe(mq.getBrokerName(), MASTER_ID, true));
+      m_clientInstance->findBrokerAddressInSubscribe(mq.getBrokerName(), MASTER_ID, true));
   if (findBrokerResult) {
     std::unique_ptr<UnlockBatchRequestBody> unlockBatchRequest(new UnlockBatchRequestBody());
     unlockBatchRequest->setConsumerGroup(m_consumerGroup);
-    unlockBatchRequest->setClientId(m_mqClientFactory->getClientId());
+    unlockBatchRequest->setClientId(m_clientInstance->getClientId());
     unlockBatchRequest->getMqSet().push_back(mq);
 
     try {
-      m_mqClientFactory->getMQClientAPIImpl()->unlockBatchMQ(findBrokerResult->brokerAddr, unlockBatchRequest.get(),
-                                                             1000);
+      m_clientInstance->getMQClientAPIImpl()->unlockBatchMQ(findBrokerResult->brokerAddr, unlockBatchRequest.get(),
+                                                            1000);
 
       ProcessQueuePtr processQueue = getProcessQueue(mq);
       if (processQueue) {
@@ -85,16 +85,16 @@ void RebalanceImpl::unlockAll(const bool oneway) {
     }
 
     std::unique_ptr<FindBrokerResult> findBrokerResult(
-        m_mqClientFactory->findBrokerAddressInSubscribe(brokerName, MASTER_ID, true));
+        m_clientInstance->findBrokerAddressInSubscribe(brokerName, MASTER_ID, true));
     if (findBrokerResult) {
       std::unique_ptr<UnlockBatchRequestBody> unlockBatchRequest(new UnlockBatchRequestBody());
       unlockBatchRequest->setConsumerGroup(m_consumerGroup);
-      unlockBatchRequest->setClientId(m_mqClientFactory->getClientId());
+      unlockBatchRequest->setClientId(m_clientInstance->getClientId());
       unlockBatchRequest->setMqSet(mqs);
 
       try {
-        m_mqClientFactory->getMQClientAPIImpl()->unlockBatchMQ(findBrokerResult->brokerAddr, unlockBatchRequest.get(),
-                                                               1000);
+        m_clientInstance->getMQClientAPIImpl()->unlockBatchMQ(findBrokerResult->brokerAddr, unlockBatchRequest.get(),
+                                                              1000);
         for (const auto& mq : mqs) {
           ProcessQueuePtr processQueue = getProcessQueue(mq);
           if (processQueue) {
@@ -129,19 +129,19 @@ std::shared_ptr<BROKER2MQS> RebalanceImpl::buildProcessQueueTableByBrokerName() 
 
 bool RebalanceImpl::lock(MQMessageQueue mq) {
   std::unique_ptr<FindBrokerResult> findBrokerResult(
-      m_mqClientFactory->findBrokerAddressInSubscribe(mq.getBrokerName(), MASTER_ID, true));
+      m_clientInstance->findBrokerAddressInSubscribe(mq.getBrokerName(), MASTER_ID, true));
   if (findBrokerResult) {
     std::unique_ptr<LockBatchRequestBody> lockBatchRequest(new LockBatchRequestBody());
     lockBatchRequest->setConsumerGroup(m_consumerGroup);
-    lockBatchRequest->setClientId(m_mqClientFactory->getClientId());
+    lockBatchRequest->setClientId(m_clientInstance->getClientId());
     lockBatchRequest->getMqSet().push_back(mq);
 
     try {
       LOG_DEBUG("try to lock mq:%s", mq.toString().c_str());
 
       std::vector<MQMessageQueue> lockedMq;
-      m_mqClientFactory->getMQClientAPIImpl()->lockBatchMQ(findBrokerResult->brokerAddr, lockBatchRequest.get(),
-                                                           lockedMq, 1000);
+      m_clientInstance->getMQClientAPIImpl()->lockBatchMQ(findBrokerResult->brokerAddr, lockBatchRequest.get(),
+                                                          lockedMq, 1000);
 
       bool lockOK = false;
       if (!lockedMq.empty()) {
@@ -186,18 +186,18 @@ void RebalanceImpl::lockAll() {
     }
 
     std::unique_ptr<FindBrokerResult> findBrokerResult(
-        m_mqClientFactory->findBrokerAddressInSubscribe(brokerName, MASTER_ID, true));
+        m_clientInstance->findBrokerAddressInSubscribe(brokerName, MASTER_ID, true));
     if (findBrokerResult) {
       std::unique_ptr<LockBatchRequestBody> lockBatchRequest(new LockBatchRequestBody());
       lockBatchRequest->setConsumerGroup(m_consumerGroup);
-      lockBatchRequest->setClientId(m_mqClientFactory->getClientId());
+      lockBatchRequest->setClientId(m_clientInstance->getClientId());
       lockBatchRequest->setMqSet(mqs);
 
       LOG_INFO("try to lock:" SIZET_FMT " mqs of broker:%s", mqs.size(), brokerName.c_str());
       try {
         std::vector<MQMessageQueue> lockOKMQVec;
-        m_mqClientFactory->getMQClientAPIImpl()->lockBatchMQ(findBrokerResult->brokerAddr, lockBatchRequest.get(),
-                                                             lockOKMQVec, 1000);
+        m_clientInstance->getMQClientAPIImpl()->lockBatchMQ(findBrokerResult->brokerAddr, lockBatchRequest.get(),
+                                                            lockOKMQVec, 1000);
 
         std::set<MQMessageQueue> lockOKMQSet;
         for (const auto& mq : lockOKMQVec) {
@@ -270,7 +270,7 @@ void RebalanceImpl::rebalanceByTopic(const std::string& topic, const bool isOrde
       }
 
       std::vector<string> cidAll;
-      m_mqClientFactory->findConsumerIds(topic, m_consumerGroup, cidAll);
+      m_clientInstance->findConsumerIds(topic, m_consumerGroup, cidAll);
 
       if (cidAll.empty()) {
         LOG_WARN("doRebalance, %s %s, get consumer id list failed", m_consumerGroup.c_str(), topic.c_str());
@@ -289,7 +289,7 @@ void RebalanceImpl::rebalanceByTopic(const std::string& topic, const bool isOrde
       // allocate mqs
       std::vector<MQMessageQueue> allocateResult;
       try {
-        m_allocateMQStrategy->allocate(m_mqClientFactory->getClientId(), mqAll, cidAll, allocateResult);
+        m_allocateMQStrategy->allocate(m_clientInstance->getClientId(), mqAll, cidAll, allocateResult);
       } catch (MQException& e) {
         LOG_ERROR("AllocateMessageQueueStrategy.allocate Exception: %s", e.what());
         return;
@@ -300,7 +300,7 @@ void RebalanceImpl::rebalanceByTopic(const std::string& topic, const bool isOrde
       if (changed) {
         LOG_INFO("rebalanced result changed. group=%s, topic=%s, clientId=%s, mqAllSize=" SIZET_FMT
                  ", cidAllSize=" SIZET_FMT ", rebalanceResultSize=" SIZET_FMT ", rebalanceResultSet:",
-                 m_consumerGroup.c_str(), topic.c_str(), m_mqClientFactory->getClientId().c_str(), mqAll.size(),
+                 m_consumerGroup.c_str(), topic.c_str(), m_clientInstance->getClientId().c_str(), mqAll.size(),
                  cidAll.size(), allocateResult.size());
         for (auto& mq : allocateResult) {
           LOG_INFO("allocate mq:%s", mq.toString().c_str());

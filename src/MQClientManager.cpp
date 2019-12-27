@@ -28,36 +28,31 @@ MQClientManager* MQClientManager::getInstance() {
 MQClientManager::MQClientManager() = default;
 MQClientManager::~MQClientManager() = default;
 
-MQClientInstance* MQClientManager::getAndCreateMQClientInstance(MQClient* clientConfig) {
+MQClientInstancePtr MQClientManager::getAndCreateMQClientInstance(MQClient* clientConfig) {
   return getAndCreateMQClientInstance(clientConfig, nullptr);
 }
 
-MQClientInstance* MQClientManager::getAndCreateMQClientInstance(MQClient* clientConfig,
-                                                                std::shared_ptr<RPCHook> rpcHook) {
+MQClientInstancePtr MQClientManager::getAndCreateMQClientInstance(MQClient* clientConfig,
+                                                                  std::shared_ptr<RPCHook> rpcHook) {
   std::string clientId = clientConfig->buildMQClientId();
   std::lock_guard<std::mutex> lock(m_mutex);
-  auto it = m_factoryTable.find(clientId);
-  if (it != m_factoryTable.end()) {
+  auto it = m_instanceTable.find(clientId);
+  if (it != m_instanceTable.end()) {
     return it->second;
   } else {
-    auto* factory = new MQClientInstance(clientConfig, clientId, rpcHook);
-    m_factoryTable[clientId] = factory;
+    auto instance = std::make_shared<MQClientInstance>(clientConfig, clientId, rpcHook);
+    m_instanceTable[clientId] = instance;
     LOG_INFO_NEW("Created new MQClientInstance for clientId:[{}]", clientId);
-    return factory;
+    return instance;
   }
 }
 
 void MQClientManager::removeMQClientInstance(const std::string& clientId) {
-  MQClientInstance* instance = nullptr;
-  {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    FTMAP::iterator it = m_factoryTable.find(clientId);
-    if (it != m_factoryTable.end()) {
-      instance = it->second;
-      m_factoryTable.erase(it);
-    }
+  std::lock_guard<std::mutex> lock(m_mutex);
+  auto it = m_instanceTable.find(clientId);
+  if (it != m_instanceTable.end()) {
+    m_instanceTable.erase(it);
   }
-  delete instance;
 }
 
 }  // namespace rocketmq

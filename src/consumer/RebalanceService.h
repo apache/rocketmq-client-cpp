@@ -25,14 +25,14 @@ namespace rocketmq {
 
 class RebalanceService : public ServiceThread {
  public:
-  RebalanceService(MQClientInstance* factory) : m_clientFactory(factory) {}
+  RebalanceService(MQClientInstance* instance) : m_clientInstance(instance) {}
 
   void run() override {
     LOG_INFO_NEW("{} service started", getServiceName());
 
     while (!isStopped()) {
       waitForRunning(20000);
-      m_clientFactory->doRebalance();
+      m_clientInstance->doRebalance();
     }
 
     LOG_INFO_NEW("{} service end", getServiceName());
@@ -41,7 +41,7 @@ class RebalanceService : public ServiceThread {
   std::string getServiceName() override { return "RebalanceService"; }
 
  private:
-  MQClientInstance* m_clientFactory;
+  MQClientInstance* m_clientInstance;
 };
 
 }  // namespace rocketmq

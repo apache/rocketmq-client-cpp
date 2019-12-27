@@ -28,15 +28,15 @@ namespace rocketmq {
 
 class PullMessageService {
  public:
-  PullMessageService(MQClientInstance* factory)
-      : m_clientFactory(factory), m_scheduledExecutorService(getServiceName(), 1, false) {}
+  PullMessageService(MQClientInstance* instance)
+      : m_clientInstance(instance), m_scheduledExecutorService(getServiceName(), 1, false) {}
 
   void start() { m_scheduledExecutorService.startup(); }
 
   void shutdown() { m_scheduledExecutorService.shutdown(); }
 
   void executePullRequestLater(PullRequestPtr pullRequest, long timeDelay) {
-    if (m_clientFactory->isRunning()) {
+    if (m_clientInstance->isRunning()) {
       m_scheduledExecutorService.schedule(
           std::bind(&PullMessageService::executePullRequestImmediately, this, pullRequest), timeDelay,
           time_unit::milliseconds);
@@ -57,7 +57,7 @@ class PullMessageService {
 
  private:
   void pullMessage(PullRequestPtr pullRequest) {
-    MQConsumer* consumer = m_clientFactory->selectConsumer(pullRequest->getConsumerGroup());
+    MQConsumer* consumer = m_clientInstance->selectConsumer(pullRequest->getConsumerGroup());
     if (consumer != nullptr && std::type_index(typeid(*consumer)) == std::type_index(typeid(DefaultMQPushConsumer))) {
       auto* impl = static_cast<DefaultMQPushConsumer*>(consumer);
       impl->pullMessage(pullRequest);
@@ -67,7 +67,7 @@ class PullMessageService {
   }
 
  private:
-  MQClientInstance* m_clientFactory;
+  MQClientInstance* m_clientInstance;
   scheduled_thread_pool_executor m_scheduledExecutorService;
 };
 

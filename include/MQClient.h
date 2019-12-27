@@ -24,6 +24,7 @@
 namespace rocketmq {
 
 class MQClientInstance;
+typedef std::shared_ptr<MQClientInstance> MQClientInstancePtr;
 
 enum elogLevel {
   eLOG_LEVEL_FATAL = 1,
@@ -38,7 +39,7 @@ enum elogLevel {
 class ROCKETMQCLIENT_API MQClient : virtual public MQAdmin, public MQClientConfig {
  public:
   MQClient() : MQClient(nullptr) {}
-  MQClient(RPCHookPtr rpcHook) : MQClientConfig(rpcHook), m_serviceState(CREATE_JUST), m_clientFactory(nullptr) {}
+  MQClient(RPCHookPtr rpcHook) : MQClientConfig(rpcHook), m_serviceState(CREATE_JUST), m_clientInstance(nullptr) {}
 
   // log configuration interface, default LOG_LEVEL is LOG_LEVEL_INFO, default
   // log file num is 3, each log size is 100M
@@ -65,12 +66,12 @@ class ROCKETMQCLIENT_API MQClient : virtual public MQAdmin, public MQClientConfi
   virtual void start();
   virtual void shutdown();
 
-  MQClientInstance* getFactory() const;
+  MQClientInstancePtr getFactory() const;
   virtual bool isServiceStateOk();
 
  protected:
   ServiceState m_serviceState;
-  MQClientInstance* m_clientFactory;  // factory
+  MQClientInstancePtr m_clientInstance;
 };
 
 }  // namespace rocketmq

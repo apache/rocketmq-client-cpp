@@ -240,6 +240,7 @@ std::string MQDecoder::messageProperties2String(const std::map<std::string, std:
     const auto& name = it.first;
     const auto& value = it.second;
 
+    // skip compressed flag
     if (MQMessageConst::PROPERTY_ALREADY_COMPRESSED_FLAG == name) {
       continue;
     }

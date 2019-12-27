@@ -38,8 +38,7 @@ enum ReadOffsetType {
 
 class OffsetStore {
  public:
-  OffsetStore(const std::string& groupName, MQClientInstance*);
-  virtual ~OffsetStore();
+  virtual ~OffsetStore() = default;
 
   virtual void load() = 0;
   virtual void updateOffset(const MQMessageQueue& mq, int64_t offset, bool increaseOnly) = 0;
@@ -47,18 +46,11 @@ class OffsetStore {
   virtual void persist(const MQMessageQueue& mq) = 0;
   virtual void persistAll(const std::vector<MQMessageQueue>& mq) = 0;
   virtual void removeOffset(const MQMessageQueue& mq) = 0;
-
- protected:
-  std::string m_groupName;
-  typedef std::map<MQMessageQueue, int64_t> MQ2OFFSET;
-  MQ2OFFSET m_offsetTable;
-  MQClientInstance* m_clientFactory;
-  std::mutex m_lock;
 };
 
 class LocalFileOffsetStore : public OffsetStore {
  public:
-  LocalFileOffsetStore(const std::string& groupName, MQClientInstance*);
+  LocalFileOffsetStore(MQClientInstance* instance, const std::string& groupName);
   virtual ~LocalFileOffsetStore();
 
   void load() override;
@@ -69,17 +61,23 @@ class LocalFileOffsetStore : public OffsetStore {
   void removeOffset(const MQMessageQueue& mq) override;
 
  private:
-  MQ2OFFSET readLocalOffset();
-  MQ2OFFSET readLocalOffsetBak();
+  std::map<MQMessageQueue, int64_t> readLocalOffset();
+  std::map<MQMessageQueue, int64_t> readLocalOffsetBak();
 
  private:
+  MQClientInstance* m_clientInstance;
+  std::string m_groupName;
+
+  std::map<MQMessageQueue, int64_t> m_offsetTable;
+  std::mutex m_lock;
+
   std::string m_storePath;
   std::mutex m_fileMutex;
 };
 
 class RemoteBrokerOffsetStore : public OffsetStore {
  public:
-  RemoteBrokerOffsetStore(const std::string& groupName, MQClientInstance*);
+  RemoteBrokerOffsetStore(MQClientInstance* instance, const std::string& groupName);
   virtual ~RemoteBrokerOffsetStore();
 
   void load() override;
@@ -92,6 +90,13 @@ class RemoteBrokerOffsetStore : public OffsetStore {
  private:
   void updateConsumeOffsetToBroker(const MQMessageQueue& mq, int64_t offset);
   int64_t fetchConsumeOffsetFromBroker(const MQMessageQueue& mq);
+
+ private:
+  MQClientInstance* m_clientInstance;
+  std::string m_groupName;
+
+  std::map<MQMessageQueue, int64_t> m_offsetTable;
+  std::mutex m_lock;
 };
 
 }  // namespace rocketmq

@@ -72,7 +72,7 @@ class MQClientAPIImpl {
                           CommunicationMode communicationMode,
                           SendCallback* sendCallback,
                           TopicPublishInfoPtr topicPublishInfo,
-                          MQClientInstance* instance,
+                          MQClientInstancePtr instance,
                           int retryTimesWhenSendFailed,
                           DefaultMQProducerPtr producer);
   SendResult* processSendResponse(const std::string& brokerName, const MQMessagePtr msg, RemotingCommand* pResponse);
@@ -168,7 +168,7 @@ class MQClientAPIImpl {
                         RemotingCommand&& request,
                         SendCallback* sendCallback,
                         TopicPublishInfoPtr topicPublishInfo,
-                        MQClientInstance* instance,
+                        MQClientInstancePtr instance,
                         int64_t timeoutMilliseconds,
                         int retryTimesWhenSendFailed,
                         DefaultMQProducerPtr producer) throw(RemotingException);

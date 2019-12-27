@@ -31,8 +31,8 @@ class MQClientManager {
 
   virtual ~MQClientManager();
 
-  MQClientInstance* getAndCreateMQClientInstance(MQClient* clientConfig);
-  MQClientInstance* getAndCreateMQClientInstance(MQClient* clientConfig, std::shared_ptr<RPCHook> rpcHook);
+  MQClientInstancePtr getAndCreateMQClientInstance(MQClient* clientConfig);
+  MQClientInstancePtr getAndCreateMQClientInstance(MQClient* clientConfig, std::shared_ptr<RPCHook> rpcHook);
 
   void removeMQClientInstance(const std::string& clientId);
 
@@ -40,8 +40,7 @@ class MQClientManager {
   MQClientManager();
 
  private:
-  typedef std::map<std::string, MQClientInstance*> FTMAP;
-  FTMAP m_factoryTable;
+  std::map<std::string, MQClientInstancePtr> m_instanceTable;
   std::mutex m_mutex;
 };
 

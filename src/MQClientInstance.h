@@ -42,6 +42,9 @@ class ClientRemotingProcessor;
 class RebalanceService;
 class PullMessageService;
 
+class MQClientInstance;
+typedef std::shared_ptr<MQClientInstance> MQClientInstancePtr;
+
 class MQClientInstance {
  public:
   MQClientInstance(MQClient* clientConfig, const std::string& clientId);
@@ -93,7 +96,7 @@ class MQClientInstance {
   TopicPublishInfoPtr tryToFindTopicPublishInfo(const std::string& topic);
 
  public:
-  MQClientAPIImpl* getMQClientAPIImpl() const { return m_clientAPIImpl.get(); }
+  MQClientAPIImpl* getMQClientAPIImpl() const { return m_mqClientAPIImpl.get(); }
   MQAdminImpl* getMQAdminImpl() const { return m_mqAdminImpl.get(); }
   PullMessageService* getPullMessageService() const { return m_pullMessageService.get(); }
 
@@ -180,9 +183,9 @@ class MQClientInstance {
   std::timed_mutex m_lockNamesrv;
   std::timed_mutex m_lockHeartbeat;
 
-  std::unique_ptr<MQClientAPIImpl> m_clientAPIImpl;
+  std::unique_ptr<MQClientAPIImpl> m_mqClientAPIImpl;
   std::unique_ptr<MQAdminImpl> m_mqAdminImpl;
-  std::unique_ptr<ClientRemotingProcessor> m_pClientRemotingProcessor;
+  std::unique_ptr<ClientRemotingProcessor> m_clientRemotingProcessor;
 
   std::unique_ptr<RebalanceService> m_rebalanceService;
   std::unique_ptr<PullMessageService> m_pullMessageService;

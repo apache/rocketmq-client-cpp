@@ -89,7 +89,7 @@ void DefaultMQProducer::start() {
       MQClient::start();
       LOG_INFO_NEW("DefaultMQProducer:{} start", getGroupName());
 
-      bool registerOK = getFactory()->registerProducer(getGroupName(), this);
+      bool registerOK = m_clientInstance->registerProducer(getGroupName(), this);
       if (!registerOK) {
         m_serviceState = CREATE_JUST;
         THROW_MQEXCEPTION(
@@ -97,7 +97,7 @@ void DefaultMQProducer::start() {
             "The producer group[" + getGroupName() + "] has been created before, specify another name please.", -1);
       }
 
-      getFactory()->start();
+      m_clientInstance->start();
       LOG_INFO_NEW("the producer [{}] start OK.", getGroupName());
       m_serviceState = RUNNING;
       break;
@@ -110,15 +110,15 @@ void DefaultMQProducer::start() {
       break;
   }
 
-  getFactory()->sendHeartbeatToAllBrokerWithLock();
+  m_clientInstance->sendHeartbeatToAllBrokerWithLock();
 }
 
 void DefaultMQProducer::shutdown() {
   switch (m_serviceState) {
     case RUNNING: {
       LOG_INFO("DefaultMQProducer shutdown");
-      getFactory()->unregisterProducer(getGroupName());
-      getFactory()->shutdown();
+      m_clientInstance->unregisterProducer(getGroupName());
+      m_clientInstance->shutdown();
 
       if (isSendMessageInTransactionEnable()) {
         destroyTransactionEnv();
@@ -376,7 +376,7 @@ SendResult* DefaultMQProducer::sendDefaultImpl(MQMessagePtr msg,
   uint64_t beginTimestampFirst = UtilAll::currentTimeMillis();
   uint64_t beginTimestampPrev = beginTimestampFirst;
   uint64_t endTimestamp = beginTimestampFirst;
-  TopicPublishInfoPtr topicPublishInfo = getFactory()->tryToFindTopicPublishInfo(msg->getTopic());
+  TopicPublishInfoPtr topicPublishInfo = m_clientInstance->tryToFindTopicPublishInfo(msg->getTopic());
   if (topicPublishInfo != nullptr && topicPublishInfo->ok()) {
     bool callTimeout = false;
     std::unique_ptr<SendResult> sendResult;
@@ -450,10 +450,10 @@ SendResult* DefaultMQProducer::sendKernelImpl(MQMessagePtr msg,
                                               TopicPublishInfoPtr topicPublishInfo,
                                               long timeout) {
   uint64_t beginStartTime = UtilAll::currentTimeMillis();
-  std::string brokerAddr = getFactory()->findBrokerAddressInPublish(mq.getBrokerName());
+  std::string brokerAddr = m_clientInstance->findBrokerAddressInPublish(mq.getBrokerName());
   if (brokerAddr.empty()) {
-    getFactory()->tryToFindTopicPublishInfo(mq.getTopic());
-    brokerAddr = getFactory()->findBrokerAddressInPublish(mq.getBrokerName());
+    m_clientInstance->tryToFindTopicPublishInfo(mq.getTopic());
+    brokerAddr = m_clientInstance->findBrokerAddressInPublish(mq.getBrokerName());
   }
 
   if (!brokerAddr.empty()) {
@@ -513,9 +513,9 @@ SendResult* DefaultMQProducer::sendKernelImpl(MQMessagePtr msg,
           if (timeout < costTimeAsync) {
             THROW_MQEXCEPTION(RemotingTooMuchRequestException, "sendKernelImpl call timeout", -1);
           }
-          sendResult = getFactory()->getMQClientAPIImpl()->sendMessage(
+          sendResult = m_clientInstance->getMQClientAPIImpl()->sendMessage(
               brokerAddr, mq.getBrokerName(), msg, std::move(requestHeader), timeout, communicationMode, sendCallback,
-              topicPublishInfo, getFactory(), getRetryTimes4Async(), shared_from_this());
+              topicPublishInfo, m_clientInstance, getRetryTimes4Async(), shared_from_this());
         } break;
         case ComMode_ONEWAY:
         case ComMode_SYNC: {
@@ -523,9 +523,9 @@ SendResult* DefaultMQProducer::sendKernelImpl(MQMessagePtr msg,
           if (timeout < costTimeSync) {
             THROW_MQEXCEPTION(RemotingTooMuchRequestException, "sendKernelImpl call timeout", -1);
           }
-          sendResult = getFactory()->getMQClientAPIImpl()->sendMessage(brokerAddr, mq.getBrokerName(), msg,
-                                                                       std::move(requestHeader), timeout,
-                                                                       communicationMode, shared_from_this());
+          sendResult = m_clientInstance->getMQClientAPIImpl()->sendMessage(brokerAddr, mq.getBrokerName(), msg,
+                                                                           std::move(requestHeader), timeout,
+                                                                           communicationMode, shared_from_this());
         } break;
         default:
           assert(false);
@@ -550,7 +550,7 @@ SendResult* DefaultMQProducer::sendSelectImpl(MQMessagePtr msg,
   auto beginStartTime = UtilAll::currentTimeMillis();
   Validators::checkMessage(*msg, getMaxMessageSize());
 
-  TopicPublishInfoPtr topicPublishInfo = getFactory()->tryToFindTopicPublishInfo(msg->getTopic());
+  TopicPublishInfoPtr topicPublishInfo = m_clientInstance->tryToFindTopicPublishInfo(msg->getTopic());
   if (topicPublishInfo != nullptr && topicPublishInfo->ok()) {
     MQMessageQueue mq = selector->select(topicPublishInfo->getMessageQueueList(), *msg, arg);
 
@@ -696,7 +696,7 @@ void DefaultMQProducer::checkTransactionStateImpl(const std::string& addr,
   }
 
   try {
-    getFactory()->getMQClientAPIImpl()->endTransactionOneway(addr, endHeader, remark);
+    m_clientInstance->getMQClientAPIImpl()->endTransactionOneway(addr, endHeader, remark);
   } catch (std::exception& e) {
     LOG_ERROR_NEW("endTransactionOneway exception: {}", e.what());
   }
@@ -712,7 +712,7 @@ void DefaultMQProducer::endTransaction(SendResult& sendResult,
     id = MQDecoder::decodeMessageId(sendResult.getMsgId());
   }
   const auto& transactionId = sendResult.getTransactionId();
-  std::string brokerAddr = getFactory()->findBrokerAddressInPublish(sendResult.getMessageQueue().getBrokerName());
+  std::string brokerAddr = m_clientInstance->findBrokerAddressInPublish(sendResult.getMessageQueue().getBrokerName());
   EndTransactionRequestHeader* requestHeader = new EndTransactionRequestHeader();
   requestHeader->transactionId = transactionId;
   requestHeader->commitLogOffset = id.getOffset();
@@ -737,7 +737,7 @@ void DefaultMQProducer::endTransaction(SendResult& sendResult,
   std::string remark =
       localException ? ("executeLocalTransactionBranch exception: " + UtilAll::to_string(localException)) : null;
 
-  getFactory()->getMQClientAPIImpl()->endTransactionOneway(brokerAddr, requestHeader, remark);
+  m_clientInstance->getMQClientAPIImpl()->endTransactionOneway(brokerAddr, requestHeader, remark);
 }
 
 bool DefaultMQProducer::tryToCompressMessage(MQMessage& msg) {

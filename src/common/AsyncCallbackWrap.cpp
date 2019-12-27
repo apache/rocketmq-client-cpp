@@ -43,7 +43,7 @@ SendCallbackWrap::SendCallbackWrap(const string& addr,
                                    RemotingCommand&& request,
                                    SendCallback* sendCallback,
                                    TopicPublishInfoPtr topicPublishInfo,
-                                   MQClientInstance* instance,
+                                   MQClientInstancePtr instance,
                                    int retryTimesWhenSendFailed,
                                    int times,
                                    DefaultMQProducerPtr producer)

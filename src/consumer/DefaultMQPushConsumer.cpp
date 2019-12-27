@@ -172,7 +172,7 @@ DefaultMQPushConsumer::~DefaultMQPushConsumer() = default;
 
 bool DefaultMQPushConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {
   try {
-    getFactory()->getMQClientAPIImpl()->consumerSendMessageBack(msg, getGroupName(), delayLevel, 3000);
+    m_clientInstance->getMQClientAPIImpl()->consumerSendMessageBack(msg, getGroupName(), delayLevel, 3000);
     return true;
   } catch (std::exception& e) {
     LOG_ERROR_NEW("sendMessageBack exception, group: {}, msg: {}. {}", m_groupName, msg.toString(), e.what());
@@ -183,7 +183,7 @@ bool DefaultMQPushConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {
 void DefaultMQPushConsumer::fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) {
   mqs.clear();
   try {
-    getFactory()->getMQAdminImpl()->fetchSubscribeMessageQueues(topic, mqs);
+    m_clientInstance->getMQAdminImpl()->fetchSubscribeMessageQueues(topic, mqs);
   } catch (MQException& e) {
     LOG_ERROR_NEW("{}", e.what());
   }
@@ -240,16 +240,16 @@ void DefaultMQPushConsumer::start() {
       m_rebalanceImpl->setConsumerGroup(getGroupName());
       m_rebalanceImpl->setMessageModel(getMessageModel());
       m_rebalanceImpl->setAllocateMQStrategy(getAllocateMQStrategy());
-      m_rebalanceImpl->setMQClientFactory(getFactory());
+      m_rebalanceImpl->setMQClientFactory(m_clientInstance.get());
 
-      m_pullAPIWrapper.reset(new PullAPIWrapper(getFactory(), getGroupName()));
+      m_pullAPIWrapper.reset(new PullAPIWrapper(m_clientInstance.get(), getGroupName()));
 
       switch (getMessageModel()) {
         case BROADCASTING:
-          m_offsetStore.reset(new LocalFileOffsetStore(getGroupName(), getFactory()));
+          m_offsetStore.reset(new LocalFileOffsetStore(m_clientInstance.get(), getGroupName()));
           break;
         case CLUSTERING:
-          m_offsetStore.reset(new RemoteBrokerOffsetStore(getGroupName(), getFactory()));
+          m_offsetStore.reset(new RemoteBrokerOffsetStore(m_clientInstance.get(), getGroupName()));
           break;
       }
       m_offsetStore->load();
@@ -269,7 +269,7 @@ void DefaultMQPushConsumer::start() {
       m_consumerService->start();
 
       // register consumer
-      bool registerOK = getFactory()->registerConsumer(getGroupName(), this);
+      bool registerOK = m_clientInstance->registerConsumer(getGroupName(), this);
       if (!registerOK) {
         m_serviceState = CREATE_JUST;
         m_consumerService->shutdown();
@@ -278,7 +278,7 @@ void DefaultMQPushConsumer::start() {
             "The cousumer group[" + getGroupName() + "] has been created before, specify another name please.", -1);
       }
 
-      getFactory()->start();
+      m_clientInstance->start();
       LOG_INFO_NEW("the consumer [{}] start OK", getGroupName());
       m_serviceState = RUNNING;
       break;
@@ -292,8 +292,8 @@ void DefaultMQPushConsumer::start() {
   }
 
   updateTopicSubscribeInfoWhenSubscriptionChanged();
-  getFactory()->sendHeartbeatToAllBrokerWithLock();
-  getFactory()->rebalanceImmediately();
+  m_clientInstance->sendHeartbeatToAllBrokerWithLock();
+  m_clientInstance->rebalanceImmediately();
 }
 
 void DefaultMQPushConsumer::shutdown() {
@@ -301,8 +301,8 @@ void DefaultMQPushConsumer::shutdown() {
     case RUNNING: {
       m_consumerService->shutdown();
       persistConsumerOffset();
-      getFactory()->unregisterConsumer(getGroupName());
-      getFactory()->shutdown();
+      m_clientInstance->unregisterConsumer(getGroupName());
+      m_clientInstance->shutdown();
       LOG_INFO_NEW("the consumer [{}] shutdown OK", getGroupName());
       m_rebalanceImpl->destroy();
       m_serviceState = SHUTDOWN_ALREADY;
@@ -383,7 +383,7 @@ void DefaultMQPushConsumer::updateTopicSubscribeInfo(const std::string& topic, s
 void DefaultMQPushConsumer::updateTopicSubscribeInfoWhenSubscriptionChanged() {
   auto& subTable = m_rebalanceImpl->getSubscriptionInner();
   for (const auto& sub : subTable) {
-    bool ret = getFactory()->updateTopicRouteInfoFromNameServer(sub.first);
+    bool ret = m_clientInstance->updateTopicRouteInfoFromNameServer(sub.first);
     if (!ret) {
       LOG_WARN_NEW("The topic:[{}] not exist", sub.first);
     }
@@ -449,15 +449,15 @@ void DefaultMQPushConsumer::correctTagsOffset(PullRequestPtr pullRequest) {
 }
 
 void DefaultMQPushConsumer::executePullRequestLater(PullRequestPtr pullRequest, long timeDelay) {
-  m_clientFactory->getPullMessageService()->executePullRequestLater(pullRequest, timeDelay);
+  m_clientInstance->getPullMessageService()->executePullRequestLater(pullRequest, timeDelay);
 }
 
 void DefaultMQPushConsumer::executePullRequestImmediately(PullRequestPtr pullRequest) {
-  m_clientFactory->getPullMessageService()->executePullRequestImmediately(pullRequest);
+  m_clientInstance->getPullMessageService()->executePullRequestImmediately(pullRequest);
 }
 
 void DefaultMQPushConsumer::executeTaskLater(const handler_type& task, long timeDelay) {
-  m_clientFactory->getPullMessageService()->executeTaskLater(task, timeDelay);
+  m_clientInstance->getPullMessageService()->executeTaskLater(task, timeDelay);
 }
 
 void DefaultMQPushConsumer::pullMessage(PullRequestPtr pullRequest) {

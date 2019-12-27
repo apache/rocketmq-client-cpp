@@ -98,7 +98,7 @@ class RebalanceImpl {
   void setConsumerGroup(const std::string& groupname) { m_consumerGroup = groupname; }
   void setMessageModel(MessageModel messageModel) { m_messageModel = messageModel; }
   void setAllocateMQStrategy(AllocateMQStrategy* allocateMqStrategy) { m_allocateMQStrategy = allocateMqStrategy; }
-  void setMQClientFactory(MQClientInstance* mqClientFactory) { m_mqClientFactory = mqClientFactory; }
+  void setMQClientFactory(MQClientInstance* instance) { m_clientInstance = instance; }
 
  protected:
   MQ2PQ m_processQueueTable;
@@ -112,7 +112,7 @@ class RebalanceImpl {
   std::string m_consumerGroup;
   MessageModel m_messageModel;
   AllocateMQStrategy* m_allocateMQStrategy;
-  MQClientInstance* m_mqClientFactory;
+  MQClientInstance* m_clientInstance;
 };
 
 //######################################

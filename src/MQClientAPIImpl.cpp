@@ -103,7 +103,7 @@ SendResult* MQClientAPIImpl::sendMessage(const std::string& addr,
                                          CommunicationMode communicationMode,
                                          SendCallback* sendCallback,
                                          TopicPublishInfoPtr topicPublishInfo,
-                                         MQClientInstance* instance,
+                                         MQClientInstancePtr instance,
                                          int retryTimesWhenSendFailed,
                                          DefaultMQProducerPtr producer) {
   int code = SEND_MESSAGE;
@@ -143,7 +143,7 @@ void MQClientAPIImpl::sendMessageAsync(const std::string& addr,
                                        RemotingCommand&& request,
                                        SendCallback* sendCallback,
                                        TopicPublishInfoPtr topicPublishInfo,
-                                       MQClientInstance* instance,
+                                       MQClientInstancePtr instance,
                                        int64_t timeoutMillis,
                                        int retryTimesWhenSendFailed,
                                        DefaultMQProducerPtr producer) throw(RemotingException) {

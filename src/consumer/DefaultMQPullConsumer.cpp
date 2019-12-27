@@ -86,23 +86,23 @@ void DefaultMQPullConsumer::start() {
       m_rebalanceImpl->setConsumerGroup(getGroupName());
       m_rebalanceImpl->setMessageModel(getMessageModel());
       m_rebalanceImpl->setAllocateMQStrategy(getAllocateMQStrategy());
-      m_rebalanceImpl->setMQClientFactory(getFactory());
+      m_rebalanceImpl->setMQClientFactory(m_clientInstance.get());
 
-      m_pullAPIWrapper.reset(new PullAPIWrapper(getFactory(), getGroupName()));
+      m_pullAPIWrapper.reset(new PullAPIWrapper(m_clientInstance.get(), getGroupName()));
 
       // msg model
       switch (getMessageModel()) {
         case BROADCASTING:
-          m_offsetStore.reset(new LocalFileOffsetStore(getGroupName(), getFactory()));
+          m_offsetStore.reset(new LocalFileOffsetStore(m_clientInstance.get(), getGroupName()));
           break;
         case CLUSTERING:
-          m_offsetStore.reset(new RemoteBrokerOffsetStore(getGroupName(), getFactory()));
+          m_offsetStore.reset(new RemoteBrokerOffsetStore(m_clientInstance.get(), getGroupName()));
           break;
       }
       m_offsetStore->load();
 
       // register consumer
-      bool registerOK = getFactory()->registerConsumer(getGroupName(), this);
+      bool registerOK = m_clientInstance->registerConsumer(getGroupName(), this);
       if (!registerOK) {
         m_serviceState = CREATE_JUST;
         THROW_MQEXCEPTION(
@@ -110,7 +110,7 @@ void DefaultMQPullConsumer::start() {
             "The cousumer group[" + getGroupName() + "] has been created before, specify another name please.", -1);
       }
 
-      getFactory()->start();
+      m_clientInstance->start();
       LOG_INFO_NEW("the consumer [{}] start OK", getGroupName());
       m_serviceState = RUNNING;
       break;
@@ -129,8 +129,8 @@ void DefaultMQPullConsumer::shutdown() {
     case RUNNING: {
       LOG_INFO("DefaultMQPullConsumer:%s shutdown", m_groupName.c_str());
       persistConsumerOffset();
-      getFactory()->unregisterConsumer(getGroupName());
-      getFactory()->shutdown();
+      m_clientInstance->unregisterConsumer(getGroupName());
+      m_clientInstance->shutdown();
       m_serviceState = SHUTDOWN_ALREADY;
       break;
     }
@@ -149,7 +149,7 @@ bool DefaultMQPullConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {
 void DefaultMQPullConsumer::fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) {
   mqs.clear();
   try {
-    getFactory()->getMQAdminImpl()->fetchSubscribeMessageQueues(topic, mqs);
+    m_clientInstance->getMQAdminImpl()->fetchSubscribeMessageQueues(topic, mqs);
   } catch (MQException& e) {
     LOG_ERROR(e.what());
   }

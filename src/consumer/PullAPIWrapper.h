@@ -29,7 +29,7 @@ namespace rocketmq {
 
 class PullAPIWrapper {
  public:
-  PullAPIWrapper(MQClientInstance* mqClientFactory, const std::string& consumerGroup);
+  PullAPIWrapper(MQClientInstance* instance, const std::string& consumerGroup);
   ~PullAPIWrapper();
 
   PullResult processPullResult(const MQMessageQueue& mq, PullResult& pullResult, SubscriptionDataPtr subscriptionData);
@@ -52,7 +52,7 @@ class PullAPIWrapper {
   int recalculatePullFromWhichNode(const MQMessageQueue& mq);
 
  private:
-  MQClientInstance* m_MQClientFactory;
+  MQClientInstance* m_clientInstance;
   std::string m_consumerGroup;
   std::mutex m_lock;
   std::map<MQMessageQueue, int /* brokerId */> m_pullFromWhichNodeTable;

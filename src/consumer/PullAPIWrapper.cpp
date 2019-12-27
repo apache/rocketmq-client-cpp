@@ -25,13 +25,13 @@
 
 namespace rocketmq {
 
-PullAPIWrapper::PullAPIWrapper(MQClientInstance* mQClientFactory, const std::string& consumerGroup) {
-  m_MQClientFactory = mQClientFactory;
+PullAPIWrapper::PullAPIWrapper(MQClientInstance* instance, const std::string& consumerGroup) {
+  m_clientInstance = instance;
   m_consumerGroup = consumerGroup;
 }
 
 PullAPIWrapper::~PullAPIWrapper() {
-  m_MQClientFactory = NULL;
+  m_clientInstance = nullptr;
   m_pullFromWhichNodeTable.clear();
 }
 
@@ -101,11 +101,11 @@ PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,            
                                            CommunicationMode communicationMode,  // 10
                                            PullCallback* pullCallback) {
   std::unique_ptr<FindBrokerResult> findBrokerResult(
-      m_MQClientFactory->findBrokerAddressInSubscribe(mq.getBrokerName(), recalculatePullFromWhichNode(mq), false));
+      m_clientInstance->findBrokerAddressInSubscribe(mq.getBrokerName(), recalculatePullFromWhichNode(mq), false));
   if (findBrokerResult == nullptr) {
-    m_MQClientFactory->updateTopicRouteInfoFromNameServer(mq.getTopic());
+    m_clientInstance->updateTopicRouteInfoFromNameServer(mq.getTopic());
     findBrokerResult.reset(
-        m_MQClientFactory->findBrokerAddressInSubscribe(mq.getBrokerName(), recalculatePullFromWhichNode(mq), false));
+        m_clientInstance->findBrokerAddressInSubscribe(mq.getBrokerName(), recalculatePullFromWhichNode(mq), false));
   }
 
   if (findBrokerResult != nullptr) {
@@ -127,7 +127,7 @@ PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,            
     pRequestHeader->subscription = subExpression;
     pRequestHeader->subVersion = subVersion;
 
-    return m_MQClientFactory->getMQClientAPIImpl()->pullMessage(findBrokerResult->brokerAddr, pRequestHeader,
+    return m_clientInstance->getMQClientAPIImpl()->pullMessage(findBrokerResult->brokerAddr, pRequestHeader,
                                                                 timeoutMillis, communicationMode, pullCallback);
   }
 

@@ -33,19 +33,19 @@ namespace rocketmq {
 const char* rocketmq_build_time = "VERSION: " ROCKETMQCPP_VERSION ", BUILD DATE: " BUILD_DATE;
 
 void MQClient::start() {
-  if (getFactory() == nullptr) {
-    m_clientFactory = MQClientManager::getInstance()->getAndCreateMQClientInstance(this, m_rpcHook);
+  if (m_clientInstance == nullptr) {
+    m_clientInstance = MQClientManager::getInstance()->getAndCreateMQClientInstance(this, m_rpcHook);
   }
   LOG_INFO_NEW("MQClient start, nameserveraddr:{}, instanceName:{}, groupName:{}, clientId:{}", getNamesrvAddr(),
-               getInstanceName(), getGroupName(), m_clientFactory->getClientId());
+               getInstanceName(), getGroupName(), m_clientInstance->getClientId());
 }
 
 void MQClient::shutdown() {
-  m_clientFactory = nullptr;
+  m_clientInstance = nullptr;
 }
 
 std::vector<MQMessageQueue> MQClient::getTopicMessageQueueInfo(const std::string& topic) {
-  TopicPublishInfoPtr topicPublishInfo = getFactory()->tryToFindTopicPublishInfo(topic);
+  TopicPublishInfoPtr topicPublishInfo = m_clientInstance->tryToFindTopicPublishInfo(topic);
   if (topicPublishInfo) {
     return topicPublishInfo->getMessageQueueList();
   }
@@ -54,30 +54,30 @@ std::vector<MQMessageQueue> MQClient::getTopicMessageQueueInfo(const std::string
 
 void MQClient::createTopic(const std::string& key, const std::string& newTopic, int queueNum) {
   try {
-    getFactory()->getMQAdminImpl()->createTopic(key, newTopic, queueNum);
+    m_clientInstance->getMQAdminImpl()->createTopic(key, newTopic, queueNum);
   } catch (MQException& e) {
     LOG_ERROR(e.what());
   }
 }
 
 int64_t MQClient::searchOffset(const MQMessageQueue& mq, uint64_t timestamp) {
-  return getFactory()->getMQAdminImpl()->searchOffset(mq, timestamp);
+  return m_clientInstance->getMQAdminImpl()->searchOffset(mq, timestamp);
 }
 
 int64_t MQClient::maxOffset(const MQMessageQueue& mq) {
-  return getFactory()->getMQAdminImpl()->maxOffset(mq);
+  return m_clientInstance->getMQAdminImpl()->maxOffset(mq);
 }
 
 int64_t MQClient::minOffset(const MQMessageQueue& mq) {
-  return getFactory()->getMQAdminImpl()->minOffset(mq);
+  return m_clientInstance->getMQAdminImpl()->minOffset(mq);
 }
 
 int64_t MQClient::earliestMsgStoreTime(const MQMessageQueue& mq) {
-  return getFactory()->getMQAdminImpl()->earliestMsgStoreTime(mq);
+  return m_clientInstance->getMQAdminImpl()->earliestMsgStoreTime(mq);
 }
 
 MQMessageExtPtr MQClient::viewMessage(const std::string& msgId) {
-  return getFactory()->getMQAdminImpl()->viewMessage(msgId);
+  return m_clientInstance->getMQAdminImpl()->viewMessage(msgId);
 }
 
 QueryResult MQClient::queryMessage(const std::string& topic,
@@ -85,11 +85,11 @@ QueryResult MQClient::queryMessage(const std::string& topic,
                                    int maxNum,
                                    int64_t begin,
                                    int64_t end) {
-  return getFactory()->getMQAdminImpl()->queryMessage(topic, key, maxNum, begin, end);
+  return m_clientInstance->getMQAdminImpl()->queryMessage(topic, key, maxNum, begin, end);
 }
 
-MQClientInstance* MQClient::getFactory() const {
-  return m_clientFactory;
+MQClientInstancePtr MQClient::getFactory() const {
+  return m_clientInstance;
 }
 
 bool MQClient::isServiceStateOk() {

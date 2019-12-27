@@ -40,7 +40,7 @@ class SendCallbackWrap : public InvokeCallback {
                    RemotingCommand&& request,
                    SendCallback* sendCallback,
                    TopicPublishInfoPtr topicPublishInfo,
-                   MQClientInstance* instance,
+                   MQClientInstancePtr instance,
                    int retryTimesWhenSendFailed,
                    int times,
                    DefaultMQProducerPtr producer);
@@ -63,7 +63,7 @@ class SendCallbackWrap : public InvokeCallback {
   RemotingCommand m_request;
   SendCallback* m_sendCallback;
   TopicPublishInfoPtr m_topicPublishInfo;
-  MQClientInstance* m_instance;
+  MQClientInstancePtr m_instance;
   int m_timesTotal;
   int m_times;
   std::weak_ptr<DefaultMQProducer> m_producer;  // FIXME: ensure object is live.
