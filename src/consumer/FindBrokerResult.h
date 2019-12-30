@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef __FIND_BROKER_RESULT_H__
 #define __FIND_BROKER_RESULT_H__
 

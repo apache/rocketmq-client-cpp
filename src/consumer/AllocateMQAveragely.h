@@ -17,10 +17,9 @@
 #ifndef __ALLOCATE_MQ_AVERAGELY_H__
 #define __ALLOCATE_MQ_AVERAGELY_H__
 
-#include "AllocateMQStrategy.h"
-
 #include <algorithm>
 
+#include "AllocateMQStrategy.h"
 #include "Logging.h"
 
 namespace rocketmq {

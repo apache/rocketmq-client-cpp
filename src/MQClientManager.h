@@ -31,8 +31,8 @@ class MQClientManager {
 
   virtual ~MQClientManager();
 
-  MQClientInstancePtr getAndCreateMQClientInstance(MQClient* clientConfig);
-  MQClientInstancePtr getAndCreateMQClientInstance(MQClient* clientConfig, std::shared_ptr<RPCHook> rpcHook);
+  MQClientInstancePtr getOrCreateMQClientInstance(const MQClientConfig* clientConfig);
+  MQClientInstancePtr getOrCreateMQClientInstance(const MQClientConfig* clientConfig, std::shared_ptr<RPCHook> rpcHook);
 
   void removeMQClientInstance(const std::string& clientId);
 

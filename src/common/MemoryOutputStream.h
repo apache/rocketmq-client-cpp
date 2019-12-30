@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef MEMORYOUTPUTSTREAM_H_INCLUDED
 #define MEMORYOUTPUTSTREAM_H_INCLUDED
 

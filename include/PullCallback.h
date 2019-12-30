@@ -14,29 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __PULL_CALLBACK_H__
+#define __PULL_CALLBACK_H__
 
-#ifndef __ARG_HELPER_H__
-#define __ARG_HELPER_H__
-
-#include <string>
-#include <vector>
-
-#include "RocketMQClient.h"
+#include "MQClientException.h"
+#include "PullResult.h"
 
 namespace rocketmq {
 
-class ROCKETMQCLIENT_API ArgHelper {
- public:
-  ArgHelper(int argc, char* argv[]);
-  ArgHelper(std::string arg_str_);
-  std::string get_option(int idx_) const;
-  bool is_enable_option(std::string opt_) const;
-  std::string get_option_value(std::string opt_) const;
+enum PullCallbackType { PULL_CALLBACK_TYPE_SIMPLE = 0, PULL_CALLBACK_TYPE_AUTO_DELETE = 1 };
 
- private:
-  std::vector<std::string> m_args;
+class ROCKETMQCLIENT_API PullCallback {
+ public:
+  virtual ~PullCallback() = default;
+
+  virtual void onSuccess(PullResult& pullResult) = 0;
+  virtual void onException(MQException& e) noexcept = 0;
+
+  virtual PullCallbackType getPullCallbackType() const { return PULL_CALLBACK_TYPE_SIMPLE; }
+};
+
+class ROCKETMQCLIENT_API AutoDeletePullCallback : public PullCallback {
+ public:
+  PullCallbackType getPullCallbackType() const override final { return PULL_CALLBACK_TYPE_AUTO_DELETE; }
 };
 
 }  // namespace rocketmq
 
-#endif  // __ARG_HELPER_H__
+#endif  // __PULL_CALLBACK_H__

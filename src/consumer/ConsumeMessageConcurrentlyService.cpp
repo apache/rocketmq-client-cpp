@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 #include "ConsumeMsgService.h"
-
-#include "DefaultMQPushConsumer.h"
 #include "Logging.h"
 #include "MessageAccessor.h"
 #include "OffsetStore.h"
@@ -24,7 +22,7 @@
 
 namespace rocketmq {
 
-ConsumeMessageConcurrentlyService::ConsumeMessageConcurrentlyService(DefaultMQPushConsumer* consumer,
+ConsumeMessageConcurrentlyService::ConsumeMessageConcurrentlyService(DefaultMQPushConsumerImpl* consumer,
                                                                      int threadCount,
                                                                      MQMessageListener* msgListener)
     : m_consumer(consumer), m_messageListener(msgListener), m_consumeExecutor("ConsumeService", threadCount, false) {}
@@ -53,7 +51,7 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(std::vector<MQMessageExtP
                                                        const MQMessageQueue& messageQueue) {
   if (processQueue->isDropped()) {
     LOG_WARN_NEW("the message queue not be able to consume, because it's dropped. group={} {}",
-                 m_consumer->getGroupName(), messageQueue.toString());
+                 m_consumer->getDefaultMQPushConsumerConfig()->getGroupName(), messageQueue.toString());
     return;
   }
 
@@ -63,7 +61,8 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(std::vector<MQMessageExtP
     return;
   }
 
-  m_consumer->resetRetryTopic(msgs, m_consumer->getGroupName());  // set where to sendMessageBack
+  m_consumer->resetRetryTopic(
+      msgs, m_consumer->getDefaultMQPushConsumerConfig()->getGroupName());  // set where to sendMessageBack
 
   ConsumeStatus status = RECONSUME_LATER;
   try {

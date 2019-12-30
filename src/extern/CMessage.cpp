@@ -14,9 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "CMessage.h"
+#include "c/CMessage.h"
 
-#include "CCommon.h"
 #include "MQMessage.h"
 
 using namespace rocketmq;

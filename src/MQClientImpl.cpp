@@ -14,13 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "MQClient.h"
+#include "MQClientImpl.h"
 
 #include "Logging.h"
 #include "MQAdminImpl.h"
-#include "MQClientInstance.h"
 #include "MQClientManager.h"
-#include "NameSpaceUtil.h"
 #include "TopicPublishInfo.h"
 #include "UtilAll.h"
 
@@ -32,27 +30,20 @@ namespace rocketmq {
 // display version: strings bin/librocketmq.so |grep VERSION
 const char* rocketmq_build_time = "VERSION: " ROCKETMQCPP_VERSION ", BUILD DATE: " BUILD_DATE;
 
-void MQClient::start() {
+void MQClientImpl::start() {
   if (m_clientInstance == nullptr) {
-    m_clientInstance = MQClientManager::getInstance()->getAndCreateMQClientInstance(this, m_rpcHook);
+    m_clientInstance = MQClientManager::getInstance()->getOrCreateMQClientInstance(m_clientConfig, m_rpcHook);
   }
-  LOG_INFO_NEW("MQClient start, nameserveraddr:{}, instanceName:{}, groupName:{}, clientId:{}", getNamesrvAddr(),
-               getInstanceName(), getGroupName(), m_clientInstance->getClientId());
+  LOG_INFO_NEW("MQClientImpl start, nameserveraddr:{}, instanceName:{}, groupName:{}, clientId:{}",
+               m_clientConfig->getNamesrvAddr(), m_clientConfig->getInstanceName(), m_clientConfig->getGroupName(),
+               m_clientInstance->getClientId());
 }
 
-void MQClient::shutdown() {
+void MQClientImpl::shutdown() {
   m_clientInstance = nullptr;
 }
 
-std::vector<MQMessageQueue> MQClient::getTopicMessageQueueInfo(const std::string& topic) {
-  TopicPublishInfoPtr topicPublishInfo = m_clientInstance->tryToFindTopicPublishInfo(topic);
-  if (topicPublishInfo) {
-    return topicPublishInfo->getMessageQueueList();
-  }
-  THROW_MQEXCEPTION(MQClientException, "could not find MessageQueue Info of topic: [" + topic + "].", -1);
-}
-
-void MQClient::createTopic(const std::string& key, const std::string& newTopic, int queueNum) {
+void MQClientImpl::createTopic(const std::string& key, const std::string& newTopic, int queueNum) {
   try {
     m_clientInstance->getMQAdminImpl()->createTopic(key, newTopic, queueNum);
   } catch (MQException& e) {
@@ -60,52 +51,40 @@ void MQClient::createTopic(const std::string& key, const std::string& newTopic, 
   }
 }
 
-int64_t MQClient::searchOffset(const MQMessageQueue& mq, uint64_t timestamp) {
+int64_t MQClientImpl::searchOffset(const MQMessageQueue& mq, uint64_t timestamp) {
   return m_clientInstance->getMQAdminImpl()->searchOffset(mq, timestamp);
 }
 
-int64_t MQClient::maxOffset(const MQMessageQueue& mq) {
+int64_t MQClientImpl::maxOffset(const MQMessageQueue& mq) {
   return m_clientInstance->getMQAdminImpl()->maxOffset(mq);
 }
 
-int64_t MQClient::minOffset(const MQMessageQueue& mq) {
+int64_t MQClientImpl::minOffset(const MQMessageQueue& mq) {
   return m_clientInstance->getMQAdminImpl()->minOffset(mq);
 }
 
-int64_t MQClient::earliestMsgStoreTime(const MQMessageQueue& mq) {
+int64_t MQClientImpl::earliestMsgStoreTime(const MQMessageQueue& mq) {
   return m_clientInstance->getMQAdminImpl()->earliestMsgStoreTime(mq);
 }
 
-MQMessageExtPtr MQClient::viewMessage(const std::string& msgId) {
+MQMessageExtPtr MQClientImpl::viewMessage(const std::string& msgId) {
   return m_clientInstance->getMQAdminImpl()->viewMessage(msgId);
 }
 
-QueryResult MQClient::queryMessage(const std::string& topic,
-                                   const std::string& key,
-                                   int maxNum,
-                                   int64_t begin,
-                                   int64_t end) {
+QueryResult MQClientImpl::queryMessage(const std::string& topic,
+                                       const std::string& key,
+                                       int maxNum,
+                                       int64_t begin,
+                                       int64_t end) {
   return m_clientInstance->getMQAdminImpl()->queryMessage(topic, key, maxNum, begin, end);
 }
 
-MQClientInstancePtr MQClient::getFactory() const {
+MQClientInstancePtr MQClientImpl::getFactory() const {
   return m_clientInstance;
 }
 
-bool MQClient::isServiceStateOk() {
+bool MQClientImpl::isServiceStateOk() {
   return m_serviceState == RUNNING;
-}
-
-void MQClient::setLogLevel(elogLevel inputLevel) {
-  ALOG_ADAPTER->setLogLevel(inputLevel);
-}
-
-elogLevel MQClient::getLogLevel() {
-  return ALOG_ADAPTER->getLogLevel();
-}
-
-void MQClient::setLogFileSizeAndNum(int fileNum, long perFileSize) {
-  ALOG_ADAPTER->setLogFileNumAndSize(fileNum, perFileSize);
 }
 
 }  // namespace rocketmq

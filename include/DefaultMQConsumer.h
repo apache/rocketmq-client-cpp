@@ -14,27 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __C_MQEXCPTION_H__
-#define __C_MQEXCPTION_H__
-#include "CCommon.h"
+#ifndef __DEFAULT_MQ_CONSUMER_H__
+#define __DEFAULT_MQ_CONSUMER_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "ConsumeType.h"
+#include "MQClientConfig.h"
 
-#define MAX_EXEPTION_MSG_LENGTH 512
-#define MAX_EXEPTION_FILE_LENGTH 256
-#define MAX_EXEPTION_TYPE_LENGTH 128
-typedef struct _CMQException_ {
-  int error;
-  int line;
-  char file[MAX_EXEPTION_FILE_LENGTH];
-  char msg[MAX_EXEPTION_MSG_LENGTH];
-  char type[MAX_EXEPTION_TYPE_LENGTH];
+namespace rocketmq {
 
-} CMQException;
+class ROCKETMQCLIENT_API DefaultMQConsumerConfig : public MQClientConfig {
+ public:
+  DefaultMQConsumerConfig() : m_messageModel(CLUSTERING) {}
 
-#ifdef __cplusplus
+  MessageModel getMessageModel() const { return m_messageModel; }
+  void setMessageModel(MessageModel messageModel) { m_messageModel = messageModel; }
+
+ protected:
+  MessageModel m_messageModel;
 };
-#endif
-#endif
+
+}  // namespace rocketmq
+
+#endif  // __DEFAULT_MQ_CONSUMER_H__

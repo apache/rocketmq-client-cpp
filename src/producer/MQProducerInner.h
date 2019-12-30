@@ -14,23 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __MQ_PRODUCER_INNER_H__
+#define __MQ_PRODUCER_INNER_H__
 
-#ifndef __C_MESSAGE_QUEUE_H__
-#define __C_MESSAGE_QUEUE_H__
+#include "TransactionListener.h"
 
-#include "CCommon.h"
+namespace rocketmq {
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+class CheckTransactionStateRequestHeader;
 
-typedef struct _CMessageQueue_ {
-  char topic[MAX_TOPIC_LENGTH];
-  char brokerName[MAX_BROKER_NAME_ID_LENGTH];
-  int queueId;
-} CMessageQueue;
+class MQProducerInner {
+ public:
+  virtual ~MQProducerInner() = default;
 
-#ifdef __cplusplus
+ public:  // MQProducerInner
+  virtual TransactionListener* getCheckListener() = 0;
+
+  virtual void checkTransactionState(const std::string& addr,
+                                     MQMessageExtPtr2 msg,
+                                     CheckTransactionStateRequestHeader* checkRequestHeader) = 0;
+
+  //  virtual std::vector<std::string> getPublishTopicList() = 0;
+  //  virtual void updateTopicPublishInfo(const std::string& topic, TopicPublishInfoPtr info) = 0;
 };
-#endif
-#endif  //__C_MESSAGE_H__
+
+}  // namespace rocketmq
+
+#endif  // __MQ_PRODUCER_INNER_H__

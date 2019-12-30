@@ -14,23 +14,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __C_PULL_RESULT_H__
+#define __C_PULL_RESULT_H__
 
-#ifndef __C_BATCHMESSAGE_H__
-#define __C_BATCHMESSAGE_H__
 #include "CCommon.h"
-#include "CMessage.h"
+#include "CMessageExt.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct CBatchMessage CBatchMessage;
+typedef enum E_CPullStatus {
+  E_FOUND,
+  E_NO_NEW_MSG,
+  E_NO_MATCHED_MSG,
+  E_OFFSET_ILLEGAL,
+  E_BROKER_TIMEOUT  // indicate pull request timeout or received NULL response
+} CPullStatus;
 
-ROCKETMQCLIENT_API CBatchMessage* CreateBatchMessage();
-ROCKETMQCLIENT_API int AddMessage(CBatchMessage* batchMsg, CMessage* msg);
-ROCKETMQCLIENT_API int DestroyBatchMessage(CBatchMessage* batchMsg);
+typedef struct _CPullResult_ {
+  CPullStatus pullStatus;
+  long long nextBeginOffset;
+  long long minOffset;
+  long long maxOffset;
+  CMessageExt** msgFoundList;
+  int size;
+  void* pData;
+} CPullResult;
 
 #ifdef __cplusplus
-};
+}
 #endif
-#endif  //__C_BATCHMESSAGE_H__
+
+#endif  // __C_PULL_RESULT_H__

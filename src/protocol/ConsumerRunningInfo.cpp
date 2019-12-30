@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "ConsumerRunningInfo.h"
+
 #include "UtilAll.h"
 
 namespace rocketmq {
@@ -30,8 +31,8 @@ const std::map<std::string, std::string> ConsumerRunningInfo::getProperties() co
   return properties;
 }
 
-void ConsumerRunningInfo::setProperties(const std::map<std::string, std::string>& input_properties) {
-  properties = input_properties;
+void ConsumerRunningInfo::setProperties(const std::map<std::string, std::string>& properties) {
+  this->properties = properties;
 }
 
 void ConsumerRunningInfo::setProperty(const std::string& key, const std::string& value) {
@@ -46,32 +47,28 @@ void ConsumerRunningInfo::setMqTable(const MQMessageQueue& queue, ProcessQueueIn
   mqTable[queue] = queueInfo;
 }
 
-/*const map<string, ConsumeStatus> ConsumerRunningInfo::getStatusTable() const
-{
-return statusTable;
+/* const std::map<std::string, ConsumeStatus> ConsumerRunningInfo::getStatusTable() const {
+  return statusTable;
 }
 
-
-void ConsumerRunningInfo::setStatusTable(const map<string, ConsumeStatus>&
-input_statusTable)
-{
-statusTable = input_statusTable;
-}    */
+void ConsumerRunningInfo::setStatusTable(const std::map<std::string, ConsumeStatus>& statusTable) {
+  this->statusTable = statusTable;
+} */
 
 const std::vector<SubscriptionData> ConsumerRunningInfo::getSubscriptionSet() const {
   return subscriptionSet;
 }
 
-void ConsumerRunningInfo::setSubscriptionSet(const std::vector<SubscriptionData>& input_subscriptionSet) {
-  subscriptionSet = input_subscriptionSet;
+void ConsumerRunningInfo::setSubscriptionSet(const std::vector<SubscriptionData>& subscriptionSet) {
+  this->subscriptionSet = subscriptionSet;
 }
 
 const std::string ConsumerRunningInfo::getJstack() const {
   return jstack;
 }
 
-void ConsumerRunningInfo::setJstack(const std::string& input_jstack) {
-  jstack = input_jstack;
+void ConsumerRunningInfo::setJstack(const std::string& jstack) {
+  this->jstack = jstack;
 }
 
 std::string ConsumerRunningInfo::encode() {

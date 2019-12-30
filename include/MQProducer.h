@@ -17,24 +17,24 @@
 #ifndef __MQ_PRODUCER_H__
 #define __MQ_PRODUCER_H__
 
-#include "AsyncCallback.h"
-#include "MQAdmin.h"
 #include "MQSelector.h"
+#include "SendCallback.h"
 #include "SendResult.h"
-#include "TransactionListener.h"
+#include "TransactionSendResult.h"
 
 namespace rocketmq {
-
-class CheckTransactionStateRequestHeader;
 
 /**
  * MQ Producer API
  */
-class ROCKETMQCLIENT_API MQProducer : virtual public MQAdmin {
+class ROCKETMQCLIENT_API MQProducer {
  public:
   virtual ~MQProducer() = default;
 
  public:  // MQProducer
+  virtual void start() = 0;
+  virtual void shutdown() = 0;
+
   // Sync
   virtual SendResult send(MQMessagePtr msg) = 0;
   virtual SendResult send(MQMessagePtr msg, long timeout) = 0;
@@ -74,16 +74,6 @@ class ROCKETMQCLIENT_API MQProducer : virtual public MQAdmin {
   virtual SendResult send(std::vector<MQMessagePtr>& msgs, long timeout) = 0;
   virtual SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq) = 0;
   virtual SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq, long timeout) = 0;
-
- public:  // MQProducerInner
-  virtual TransactionListener* getCheckListener() = 0;
-
-  virtual void checkTransactionState(const std::string& addr,
-                                     MQMessageExtPtr2 msg,
-                                     CheckTransactionStateRequestHeader* checkRequestHeader) = 0;
-
-  //  virtual std::vector<std::string> getPublishTopicList() = 0;
-  //  virtual void updateTopicPublishInfo(const std::string& topic, TopicPublishInfoPtr info) = 0;
 };
 
 }  // namespace rocketmq

@@ -734,24 +734,24 @@ const std::string GetConsumerRunningInfoRequestHeader::getConsumerGroup() const 
   return consumerGroup;
 }
 
-void GetConsumerRunningInfoRequestHeader::setConsumerGroup(const std::string& Group) {
-  consumerGroup = Group;
+void GetConsumerRunningInfoRequestHeader::setConsumerGroup(const std::string& consumerGroup) {
+  this->consumerGroup = consumerGroup;
 }
 
 const std::string GetConsumerRunningInfoRequestHeader::getClientId() const {
   return clientId;
 }
 
-void GetConsumerRunningInfoRequestHeader::setClientId(const std::string& input_clientId) {
-  clientId = input_clientId;
+void GetConsumerRunningInfoRequestHeader::setClientId(const std::string& clientId) {
+  this->clientId = clientId;
 }
 
 const bool GetConsumerRunningInfoRequestHeader::isJstackEnable() const {
   return jstackEnable;
 }
 
-void GetConsumerRunningInfoRequestHeader::setJstackEnable(const bool& input_jstackEnable) {
-  jstackEnable = input_jstackEnable;
+void GetConsumerRunningInfoRequestHeader::setJstackEnable(const bool& jstackEnable) {
+  this->jstackEnable = jstackEnable;
 }
 
 //######################################
@@ -765,12 +765,12 @@ NotifyConsumerIdsChangedRequestHeader* NotifyConsumerIdsChangedRequestHeader::De
   return header.release();
 }
 
-void NotifyConsumerIdsChangedRequestHeader::setGroup(const std::string& tmp) {
-  consumerGroup = tmp;
+const std::string NotifyConsumerIdsChangedRequestHeader::getConsumerGroup() const {
+  return consumerGroup;
 }
 
-const std::string NotifyConsumerIdsChangedRequestHeader::getGroup() const {
-  return consumerGroup;
+void NotifyConsumerIdsChangedRequestHeader::setConsumerGroup(const std::string& consumerGroup) {
+  this->consumerGroup = consumerGroup;
 }
 
 }  // namespace rocketmq

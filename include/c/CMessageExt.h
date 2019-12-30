@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef __C_MESSAGE_EXT_H__
 #define __C_MESSAGE_EXT_H__
 
@@ -44,7 +43,7 @@ ROCKETMQCLIENT_API long long GetMessageCommitLogOffset(CMessageExt* msgExt);
 ROCKETMQCLIENT_API long long GetMessagePreparedTransactionOffset(CMessageExt* msgExt);
 
 #ifdef __cplusplus
-};
+}
 #endif
 
-#endif  //__C_MESSAGE_EXT_H__
+#endif  // __C_MESSAGE_EXT_H__

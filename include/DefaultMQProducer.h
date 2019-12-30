@@ -17,19 +17,12 @@
 #ifndef __DEFAULT_MQ_PRODUCER_H__
 #define __DEFAULT_MQ_PRODUCER_H__
 
-#include "CommunicationMode.h"
-#include "MQClient.h"
+#include "MQClientConfig.h"
 #include "MQProducer.h"
-#include "MessageBatch.h"
-//#include "TopicPublishInfo.h"
 
 namespace rocketmq {
 
-class TopicPublishInfo;
-class MQFaultStrategy;
-class thread_pool_executor;
-
-class ROCKETMQCLIENT_API DefaultMQProducerConfig {
+class ROCKETMQCLIENT_API DefaultMQProducerConfig : public MQClientConfig {
  public:
   DefaultMQProducerConfig();
   virtual ~DefaultMQProducerConfig() = default;
@@ -70,14 +63,6 @@ class ROCKETMQCLIENT_API DefaultMQProducerConfig {
     m_retryAnotherBrokerWhenNotStoreOK = retryAnotherBrokerWhenNotStoreOK;
   }
 
-  bool isSendMessageInTransactionEnable() const { return m_sendMessageInTransactionEnable; }
-  void setSendMessageInTransactionEnable(bool sendMessageInTransactionEnable) {
-    m_sendMessageInTransactionEnable = sendMessageInTransactionEnable;
-  }
-
-  TransactionListener* getTransactionListener() const { return m_transactionListener; }
-  void setTransactionListener(TransactionListener* transactionListener) { m_transactionListener = transactionListener; }
-
   virtual bool isSendLatencyFaultEnable() const = 0;
   virtual void setSendLatencyFaultEnable(bool sendLatencyFaultEnable) = 0;
 
@@ -89,41 +74,18 @@ class ROCKETMQCLIENT_API DefaultMQProducerConfig {
   int m_retryTimes;
   int m_retryTimes4Async;
   bool m_retryAnotherBrokerWhenNotStoreOK;
-
-  // transcations
-  bool m_sendMessageInTransactionEnable;
-  TransactionListener* m_transactionListener;
-  std::unique_ptr<thread_pool_executor> m_checkTransactionExecutor;
 };
 
-class DefaultMQProducer;
-typedef std::shared_ptr<DefaultMQProducer> DefaultMQProducerPtr;
-
-class ROCKETMQCLIENT_API DefaultMQProducer : public std::enable_shared_from_this<DefaultMQProducer>,
-                                             public MQProducer,
-                                             public MQClient,
-                                             public DefaultMQProducerConfig {
+class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer, public DefaultMQProducerConfig {
  public:
-  static DefaultMQProducerPtr create(const std::string& groupname = "", RPCHookPtr rpcHook = nullptr) {
-    if (nullptr == rpcHook) {
-      return DefaultMQProducerPtr(new DefaultMQProducer(groupname));
-    } else {
-      return DefaultMQProducerPtr(new DefaultMQProducer(groupname, rpcHook));
-    }
-  }
-
- private:
   DefaultMQProducer(const std::string& groupname);
   DefaultMQProducer(const std::string& groupname, RPCHookPtr rpcHook);
-
- public:
   virtual ~DefaultMQProducer();
 
- public:  // MQClient
+ public:  // MQProducer
   void start() override;
   void shutdown() override;
 
- public:  // MQProducer
   // Sync: caller will be responsible for the lifecycle of messages.
   SendResult send(MQMessagePtr msg) override;
   SendResult send(MQMessagePtr msg, long timeout) override;
@@ -160,60 +122,15 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public std::enable_shared_from_this
   SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq) override;
   SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq, long timeout) override;
 
- public:  // MQProducerInner
-  TransactionListener* getCheckListener() override { return getTransactionListener(); };
-
-  void checkTransactionState(const std::string& addr,
-                             MQMessageExtPtr2 msg,
-                             CheckTransactionStateRequestHeader* checkRequestHeader) override;
-
- public:
-  const MQMessageQueue& selectOneMessageQueue(TopicPublishInfo* tpInfo, const std::string& lastBrokerName);
-  void updateFaultItem(const std::string& brokerName, const long currentLatency, bool isolation);
-
-  void endTransaction(SendResult& sendResult,
-                      LocalTransactionState localTransactionState,
-                      std::exception_ptr& localException);
-
+ public:  // DefaultMQProducerConfig
   bool isSendLatencyFaultEnable() const override;
   void setSendLatencyFaultEnable(bool sendLatencyFaultEnable) override;
 
+ public:
+  void setRPCHook(std::shared_ptr<RPCHook> rpcHook);
+
  protected:
-  void initTransactionEnv();
-  void destroyTransactionEnv();
-
-  SendResult* sendDefaultImpl(MQMessagePtr msg,
-                              CommunicationMode communicationMode,
-                              SendCallback* sendCallback,
-                              long timeout);
-  SendResult* sendKernelImpl(MQMessagePtr msg,
-                             const MQMessageQueue& mq,
-                             CommunicationMode communicationMode,
-                             SendCallback* sendCallback,
-                             std::shared_ptr<TopicPublishInfo> topicPublishInfo,
-                             long timeout);
-  SendResult* sendSelectImpl(MQMessagePtr msg,
-                             MessageQueueSelector* selector,
-                             void* arg,
-                             CommunicationMode communicationMode,
-                             SendCallback* sendCallback,
-                             long timeout);
-
-  TransactionSendResult* sendMessageInTransactionImpl(MQMessagePtr msg, void* arg, long timeout);
-  void checkTransactionStateImpl(const std::string& addr,
-                                 MQMessageExtPtr2 message,
-                                 long tranStateTableOffset,
-                                 long commitLogOffset,
-                                 const std::string& msgId,
-                                 const std::string& transactionId,
-                                 const std::string& offsetMsgId);
-
-  bool tryToCompressMessage(MQMessage& msg);
-
-  MessageBatch* batch(std::vector<MQMessagePtr>& msgs);
-
- private:
-  std::unique_ptr<MQFaultStrategy> m_mqFaultStrategy;
+  std::shared_ptr<MQProducer> m_producerDelegate;
 };
 
 }  // namespace rocketmq

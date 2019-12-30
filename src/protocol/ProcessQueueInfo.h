@@ -45,13 +45,13 @@ class ProcessQueueInfo {
  public:
   const uint64_t getCommitOffset() const { return commitOffset; }
 
-  void setCommitOffset(uint64_t input_commitOffset) { commitOffset = input_commitOffset; }
+  void setCommitOffset(uint64_t commitOffset) { this->commitOffset = commitOffset; }
 
-  void setLocked(bool in_locked) { locked = in_locked; }
+  void setLocked(bool locked) { this->locked = locked; }
 
   const bool isLocked() const { return locked; }
 
-  void setDroped(bool in_dropped) { droped = in_dropped; }
+  void setDroped(bool droped) { this->droped = droped; }
 
   const bool isDroped() const { return droped; }
 

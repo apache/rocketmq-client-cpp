@@ -20,18 +20,20 @@
 #include <cstring>
 #include <typeindex>
 
-#include "AsyncCallbackWrap.h"
 #include "ClientRemotingProcessor.h"
+#include "MQClientInstance.h"
 #include "MessageBatch.h"
 #include "MessageClientIDSetter.h"
+#include "PullCallbackWrap.h"
 #include "PullResultExt.h"
+#include "SendCallbackWrap.h"
 #include "TcpRemotingClient.h"
 
 namespace rocketmq {
 
 MQClientAPIImpl::MQClientAPIImpl(ClientRemotingProcessor* clientRemotingProcessor,
                                  std::shared_ptr<RPCHook> rpcHook,
-                                 MQClient* clientConfig)
+                                 const MQClientConfig* clientConfig)
     : m_remotingClient(new TcpRemotingClient(clientConfig->getTcpTransportWorkerThreadNum(),
                                              clientConfig->getTcpTransportConnectTimeout(),
                                              clientConfig->getTcpTransportTryLockTimeout())) {
@@ -90,7 +92,7 @@ SendResult* MQClientAPIImpl::sendMessage(const std::string& addr,
                                          std::unique_ptr<SendMessageRequestHeader> requestHeader,
                                          int timeoutMillis,
                                          CommunicationMode communicationMode,
-                                         DefaultMQProducerPtr producer) {
+                                         DefaultMQProducerImplPtr producer) {
   return sendMessage(addr, brokerName, msg, std::move(requestHeader), timeoutMillis, communicationMode, nullptr,
                      nullptr, nullptr, 0, producer);
 }
@@ -105,7 +107,7 @@ SendResult* MQClientAPIImpl::sendMessage(const std::string& addr,
                                          TopicPublishInfoPtr topicPublishInfo,
                                          MQClientInstancePtr instance,
                                          int retryTimesWhenSendFailed,
-                                         DefaultMQProducerPtr producer) {
+                                         DefaultMQProducerImplPtr producer) {
   int code = SEND_MESSAGE;
   std::unique_ptr<CommandCustomHeader> header;
 
@@ -146,7 +148,7 @@ void MQClientAPIImpl::sendMessageAsync(const std::string& addr,
                                        MQClientInstancePtr instance,
                                        int64_t timeoutMillis,
                                        int retryTimesWhenSendFailed,
-                                       DefaultMQProducerPtr producer) throw(RemotingException) {
+                                       DefaultMQProducerImplPtr producer) throw(RemotingException) {
   // delete in future
   auto cbw = new SendCallbackWrap(addr, brokerName, msg, std::forward<RemotingCommand>(request), sendCallback,
                                   topicPublishInfo, instance, retryTimesWhenSendFailed, 0, producer);
@@ -414,7 +416,7 @@ int64_t MQClientAPIImpl::getEarliestMsgStoretime(const std::string& addr,
 
 void MQClientAPIImpl::getConsumerIdListByGroup(const std::string& addr,
                                                const std::string& consumerGroup,
-                                               std::vector<string>& cids,
+                                               std::vector<std::string>& cids,
                                                int timeoutMillis) {
   GetConsumerListByGroupRequestHeader* requestHeader = new GetConsumerListByGroupRequestHeader();
   requestHeader->consumerGroup = consumerGroup;

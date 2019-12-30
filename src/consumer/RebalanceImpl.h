@@ -21,9 +21,8 @@
 
 #include "AllocateMQStrategy.h"
 #include "ConsumeType.h"
-#include "DefaultMQPullConsumer.h"
-#include "DefaultMQPushConsumer.h"
 #include "MQClientException.h"
+#include "MQClientInstance.h"
 #include "MQMessageQueue.h"
 #include "ProcessQueue.h"
 #include "PullRequest.h"
@@ -31,16 +30,10 @@
 
 namespace rocketmq {
 
-class MQClientInstance;
-
 typedef std::map<MQMessageQueue, ProcessQueuePtr> MQ2PQ;
 typedef std::map<std::string, std::vector<MQMessageQueue>> TOPIC2MQS;
 typedef std::map<std::string, SubscriptionDataPtr> TOPIC2SD;
 typedef std::map<std::string, std::vector<MQMessageQueue>> BROKER2MQS;
-
-//######################################
-// RebalanceImpl
-//######################################
 
 class RebalanceImpl {
  public:
@@ -113,58 +106,6 @@ class RebalanceImpl {
   MessageModel m_messageModel;
   AllocateMQStrategy* m_allocateMQStrategy;
   MQClientInstance* m_clientInstance;
-};
-
-//######################################
-// RebalancePushImpl
-//######################################
-
-class RebalancePushImpl : public RebalanceImpl {
- public:
-  RebalancePushImpl(DefaultMQPushConsumer* consumer);
-
-  ConsumeType consumeType() override final { return CONSUME_PASSIVELY; }
-
-  bool removeUnnecessaryMessageQueue(const MQMessageQueue& mq, ProcessQueuePtr pq) override;
-
-  void removeDirtyOffset(const MQMessageQueue& mq) override;
-
-  int64_t computePullFromWhere(const MQMessageQueue& mq) override;
-
-  void dispatchPullRequest(const std::vector<PullRequestPtr>& pullRequestList) override;
-
-  void messageQueueChanged(const std::string& topic,
-                           std::vector<MQMessageQueue>& mqAll,
-                           std::vector<MQMessageQueue>& mqDivided) override;
-
- private:
-  DefaultMQPushConsumer* m_defaultMQPushConsumer;
-};
-
-//######################################
-// RebalancePullImpl
-//######################################
-
-class RebalancePullImpl : public RebalanceImpl {
- public:
-  RebalancePullImpl(DefaultMQPullConsumer* consumer);
-
-  ConsumeType consumeType() override final { return CONSUME_ACTIVELY; }
-
-  bool removeUnnecessaryMessageQueue(const MQMessageQueue& mq, ProcessQueuePtr pq) override;
-
-  void removeDirtyOffset(const MQMessageQueue& mq) override;
-
-  int64_t computePullFromWhere(const MQMessageQueue& mq) override;
-
-  void dispatchPullRequest(const std::vector<PullRequestPtr>& pullRequestList) override;
-
-  void messageQueueChanged(const std::string& topic,
-                           std::vector<MQMessageQueue>& mqAll,
-                           std::vector<MQMessageQueue>& mqDivided) override;
-
- private:
-  DefaultMQPullConsumer* m_defaultMQPullConsumer;
 };
 
 }  // namespace rocketmq

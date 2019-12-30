@@ -30,4 +30,4 @@ class noncopyable {
 
 }  // namespace rocketmq
 
-#endif  //__NONCOPYABLE_H__
+#endif  // __NONCOPYABLE_H__

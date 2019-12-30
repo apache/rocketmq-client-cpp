@@ -108,7 +108,6 @@ H* RemotingCommand::decodeCommandCustomHeader(bool useCache) {
   if (cache != nullptr && useCache && std::type_index(typeid(*cache)) == std::type_index(typeid(H))) {
     return static_cast<H*>(m_customHeader.get());
   }
-
   return decodeCommandCustomHeader<H>();
 }
 

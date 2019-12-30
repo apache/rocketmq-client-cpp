@@ -17,12 +17,11 @@
 #ifndef __PULL_MESSAGE_SERVICE_H__
 #define __PULL_MESSAGE_SERVICE_H__
 
-#include "concurrent/executor.hpp"
-
-#include "DefaultMQPushConsumer.h"
+#include "DefaultMQPushConsumerImpl.h"
 #include "Logging.h"
 #include "MQClientInstance.h"
 #include "PullRequest.h"
+#include "concurrent/executor.hpp"
 
 namespace rocketmq {
 
@@ -57,9 +56,9 @@ class PullMessageService {
 
  private:
   void pullMessage(PullRequestPtr pullRequest) {
-    MQConsumer* consumer = m_clientInstance->selectConsumer(pullRequest->getConsumerGroup());
-    if (consumer != nullptr && std::type_index(typeid(*consumer)) == std::type_index(typeid(DefaultMQPushConsumer))) {
-      auto* impl = static_cast<DefaultMQPushConsumer*>(consumer);
+    MQConsumerInner* consumer = m_clientInstance->selectConsumer(pullRequest->getConsumerGroup());
+    if (consumer != nullptr && std::type_index(typeid(*consumer)) == std::type_index(typeid(DefaultMQPushConsumerImpl))) {
+      auto* impl = static_cast<DefaultMQPushConsumerImpl*>(consumer);
       impl->pullMessage(pullRequest);
     } else {
       LOG_WARN_NEW("No matched consumer for the PullRequest {}, drop it", pullRequest->toString());

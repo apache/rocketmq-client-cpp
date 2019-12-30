@@ -20,13 +20,12 @@
 #include <string>
 #include <vector>
 
+#include "MQClientInstance.h"
 #include "MQMessageExt.h"
 #include "MQMessageQueue.h"
 #include "QueryResult.h"
 
 namespace rocketmq {
-
-class MQClientInstance;
 
 class MQAdminImpl {
  public:

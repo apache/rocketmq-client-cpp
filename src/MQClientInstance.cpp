@@ -39,13 +39,14 @@
 
 namespace rocketmq {
 
-MQClientInstance::MQClientInstance(MQClient* clientConfig, const std::string& clientId)
+MQClientInstance::MQClientInstance(MQClientConfig clientConfig, const std::string& clientId)
     : MQClientInstance(clientConfig, clientId, nullptr) {}
 
-MQClientInstance::MQClientInstance(MQClient* clientConfig,
+MQClientInstance::MQClientInstance(MQClientConfig clientConfig,
                                    const std::string& clientId,
                                    std::shared_ptr<RPCHook> rpcHook)
-    : m_clientId(clientId),
+    : m_clientConfig(clientConfig),
+      m_clientId(clientId),
       m_rebalanceService(new RebalanceService(this)),
       m_pullMessageService(new PullMessageService(this)),
       m_scheduledExecutorService("MQClient", false) {
@@ -54,9 +55,9 @@ MQClientInstance::MQClientInstance(MQClient* clientConfig,
   m_topicPublishInfoTable[AUTO_CREATE_TOPIC_KEY_TOPIC] = defaultTopicInfo;
 
   m_clientRemotingProcessor.reset(new ClientRemotingProcessor(this));
-  m_mqClientAPIImpl.reset(new MQClientAPIImpl(m_clientRemotingProcessor.get(), rpcHook, clientConfig));
+  m_mqClientAPIImpl.reset(new MQClientAPIImpl(m_clientRemotingProcessor.get(), rpcHook, &m_clientConfig));
 
-  std::string namesrvAddr = clientConfig->getNamesrvAddr();
+  std::string namesrvAddr = m_clientConfig.getNamesrvAddr();
   if (!namesrvAddr.empty()) {
     m_mqClientAPIImpl->updateNameServerAddr(namesrvAddr);
     LOG_INFO_NEW("user specified name server address: {}", namesrvAddr);
@@ -71,6 +72,7 @@ MQClientInstance::MQClientInstance(MQClient* clientConfig,
 MQClientInstance::~MQClientInstance() {
   LOG_INFO("MQClientInstance:%s destruct", m_clientId.c_str());
 
+  // UNNECESSARY:
   m_producerTable.clear();
   m_consumerTable.clear();
   m_topicPublishInfoTable.clear();
@@ -454,7 +456,7 @@ void MQClientInstance::addTopicRouteData(const std::string& topic, TopicRouteDat
   m_topicRouteTable[topic] = topicRouteData;
 }
 
-bool MQClientInstance::registerConsumer(const std::string& group, MQConsumer* consumer) {
+bool MQClientInstance::registerConsumer(const std::string& group, MQConsumerInner* consumer) {
   if (group.empty()) {
     return false;
   }
@@ -493,7 +495,7 @@ void MQClientInstance::unregisterClient(const std::string& producerGroup, const 
   }
 }
 
-bool MQClientInstance::registerProducer(const std::string& group, MQProducer* producer) {
+bool MQClientInstance::registerProducer(const std::string& group, MQProducerInner* producer) {
   if (group.empty()) {
     return false;
   }
@@ -532,15 +534,15 @@ void MQClientInstance::doRebalanceByConsumerGroup(const std::string& consumerGro
   if (m_consumerTable.find(consumerGroup) != m_consumerTable.end()) {
     try {
       LOG_INFO("Client factory:%s start dorebalance for consumer:%s", m_clientId.c_str(), consumerGroup.c_str());
-      MQConsumer* pMQConsumer = m_consumerTable[consumerGroup];
-      pMQConsumer->doRebalance();
+      auto* consumer = m_consumerTable[consumerGroup];
+      consumer->doRebalance();
     } catch (const std::exception& e) {
       LOG_ERROR(e.what());
     }
   }
 }
 
-MQProducer* MQClientInstance::selectProducer(const std::string& producerName) {
+MQProducerInner* MQClientInstance::selectProducer(const std::string& producerName) {
   std::lock_guard<std::mutex> lock(m_producerTableMutex);
   if (m_producerTable.find(producerName) != m_producerTable.end()) {
     return m_producerTable[producerName];
@@ -548,7 +550,7 @@ MQProducer* MQClientInstance::selectProducer(const std::string& producerName) {
   return nullptr;
 }
 
-bool MQClientInstance::addProducerToTable(const std::string& producerName, MQProducer* producer) {
+bool MQClientInstance::addProducerToTable(const std::string& producerName, MQProducerInner* producer) {
   std::lock_guard<std::mutex> lock(m_producerTableMutex);
   if (m_producerTable.find(producerName) != m_producerTable.end())
     return false;
@@ -579,15 +581,15 @@ void MQClientInstance::updateProducerTopicPublishInfo(const std::string& topic, 
   addTopicInfoToTable(topic, publishInfo);
 }
 
-MQConsumer* MQClientInstance::selectConsumer(const std::string& group) {
+MQConsumerInner* MQClientInstance::selectConsumer(const std::string& group) {
   std::lock_guard<std::mutex> lock(m_consumerTableMutex);
   if (m_consumerTable.find(group) != m_consumerTable.end()) {
     return m_consumerTable[group];
   }
-  return NULL;
+  return nullptr;
 }
 
-bool MQClientInstance::addConsumerToTable(const std::string& consumerName, MQConsumer* consumer) {
+bool MQClientInstance::addConsumerToTable(const std::string& consumerName, MQConsumerInner* consumer) {
   std::lock_guard<std::mutex> lock(m_consumerTableMutex);
   if (m_consumerTable.find(consumerName) != m_consumerTable.end()) {
     return false;
@@ -678,11 +680,11 @@ FindBrokerResult* MQClientInstance::findBrokerAddressInAdmin(const std::string& 
   BrokerAddrMAP brokerTable(getBrokerAddrMap());
   bool found = false;
   bool slave = false;
-  string brokerAddr;
+  std::string brokerAddr;
 
   if (brokerTable.find(brokerName) != brokerTable.end()) {
-    map<int, string> brokerMap(brokerTable[brokerName]);
-    map<int, string>::iterator it1 = brokerMap.begin();
+    std::map<int, std::string> brokerMap(brokerTable[brokerName]);
+    std::map<int, std::string>::iterator it1 = brokerMap.begin();
     if (it1 != brokerMap.end()) {
       slave = (it1->first != MASTER_ID);
       found = true;
@@ -691,10 +693,11 @@ FindBrokerResult* MQClientInstance::findBrokerAddressInAdmin(const std::string& 
   }
 
   brokerTable.clear();
-  if (found)
+  if (found) {
     return new FindBrokerResult(brokerAddr, slave);
+  }
 
-  return NULL;
+  return nullptr;
 }
 
 std::string MQClientInstance::findBrokerAddressInPublish(const std::string& brokerName) {
@@ -722,13 +725,13 @@ std::string MQClientInstance::findBrokerAddressInPublish(const std::string& brok
 FindBrokerResult* MQClientInstance::findBrokerAddressInSubscribe(const std::string& brokerName,
                                                                  int brokerId,
                                                                  bool onlyThisBroker) {
-  string brokerAddr;
+  std::string brokerAddr;
   bool slave = false;
   bool found = false;
   BrokerAddrMAP brokerTable(getBrokerAddrMap());
 
   if (brokerTable.find(brokerName) != brokerTable.end()) {
-    map<int, string> brokerMap(brokerTable[brokerName]);
+    std::map<int, std::string> brokerMap(brokerTable[brokerName]);
     if (!brokerMap.empty()) {
       auto iter = brokerMap.find(brokerId);
       if (iter != brokerMap.end()) {
@@ -753,7 +756,9 @@ FindBrokerResult* MQClientInstance::findBrokerAddressInSubscribe(const std::stri
   return nullptr;
 }
 
-void MQClientInstance::findConsumerIds(const std::string& topic, const std::string& group, std::vector<string>& cids) {
+void MQClientInstance::findConsumerIds(const std::string& topic,
+                                       const std::string& group,
+                                       std::vector<std::string>& cids) {
   std::string brokerAddr = findBrokerAddrByTopic(topic);
   if (brokerAddr.empty()) {
     updateTopicRouteInfoFromNameServer(topic);
@@ -780,12 +785,12 @@ std::string MQClientInstance::findBrokerAddrByTopic(const std::string& topic) {
 
 void MQClientInstance::resetOffset(const std::string& group,
                                    const std::string& topic,
-                                   const map<MQMessageQueue, int64_t>& offsetTable) {
-  DefaultMQPushConsumer* consumer = nullptr;
+                                   const std::map<MQMessageQueue, int64_t>& offsetTable) {
+  DefaultMQPushConsumerImpl* consumer = nullptr;
   try {
     auto* impl = selectConsumer(group);
-    if (impl != nullptr && std::type_index(typeid(*impl)) == std::type_index(typeid(DefaultMQPushConsumer))) {
-      consumer = static_cast<DefaultMQPushConsumer*>(impl);
+    if (impl != nullptr && std::type_index(typeid(*impl)) == std::type_index(typeid(DefaultMQPushConsumerImpl))) {
+      consumer = static_cast<DefaultMQPushConsumerImpl*>(impl);
     } else {
       LOG_INFO("[reset-offset] consumer dose not exist. group=%s", group.c_str());
       return;
@@ -826,7 +831,7 @@ void MQClientInstance::resetOffset(const std::string& group,
 }
 
 ConsumerRunningInfo* MQClientInstance::consumerRunningInfo(const std::string& consumerGroup) {
-  MQConsumer* consumer = selectConsumer(consumerGroup);
+  auto* consumer = selectConsumer(consumerGroup);
   if (consumer != nullptr) {
     std::unique_ptr<ConsumerRunningInfo> runningInfo(consumer->consumerRunningInfo());
     if (runningInfo != nullptr) {

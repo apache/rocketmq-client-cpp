@@ -14,40 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_CLIENT_H__
-#define __MQ_CLIENT_H__
+#ifndef __MQ_CLIENT_IMPL_H__
+#define __MQ_CLIENT_IMPL_H__
 
 #include "MQAdmin.h"
 #include "MQClientConfig.h"
+#include "MQClientInstance.h"
 #include "ServiceState.h"
 
 namespace rocketmq {
 
-class MQClientInstance;
-typedef std::shared_ptr<MQClientInstance> MQClientInstancePtr;
-
-enum elogLevel {
-  eLOG_LEVEL_FATAL = 1,
-  eLOG_LEVEL_ERROR = 2,
-  eLOG_LEVEL_WARN = 3,
-  eLOG_LEVEL_INFO = 4,
-  eLOG_LEVEL_DEBUG = 5,
-  eLOG_LEVEL_TRACE = 6,
-  eLOG_LEVEL_LEVEL_NUM = 7
-};
-
-class ROCKETMQCLIENT_API MQClient : virtual public MQAdmin, public MQClientConfig {
+class MQClientImpl : virtual public MQAdmin {
  public:
-  MQClient() : MQClient(nullptr) {}
-  MQClient(RPCHookPtr rpcHook) : MQClientConfig(rpcHook), m_serviceState(CREATE_JUST), m_clientInstance(nullptr) {}
-
-  // log configuration interface, default LOG_LEVEL is LOG_LEVEL_INFO, default
-  // log file num is 3, each log size is 100M
-  void setLogLevel(elogLevel inputLevel);
-  elogLevel getLogLevel();
-  void setLogFileSizeAndNum(int fileNum, long perFileSize);  // perFileSize is MB unit
-
-  std::vector<MQMessageQueue> getTopicMessageQueueInfo(const std::string& topic);
+  MQClientImpl(MQClientConfig* config, std::shared_ptr<RPCHook> rpcHook)
+      : m_clientConfig(config), m_rpcHook(rpcHook), m_serviceState(CREATE_JUST), m_clientInstance(nullptr) {}
 
  public:  // MQAdmin
   void createTopic(const std::string& key, const std::string& newTopic, int queueNum) override;
@@ -69,11 +49,16 @@ class ROCKETMQCLIENT_API MQClient : virtual public MQAdmin, public MQClientConfi
   MQClientInstancePtr getFactory() const;
   virtual bool isServiceStateOk();
 
+  std::shared_ptr<RPCHook> getRPCHook() { return m_rpcHook; }
+  void setRPCHook(std::shared_ptr<RPCHook> rpcHook) { m_rpcHook = rpcHook; }
+
  protected:
+  MQClientConfig* m_clientConfig;
+  std::shared_ptr<RPCHook> m_rpcHook;
   ServiceState m_serviceState;
   MQClientInstancePtr m_clientInstance;
 };
 
 }  // namespace rocketmq
 
-#endif  // __MQ_CLIENT_H__
+#endif  // __MQ_CLIENT_IMPL_H__

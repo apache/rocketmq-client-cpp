@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef __C_COMMON_H__
 #define __C_COMMON_H__
 
@@ -27,10 +26,9 @@ extern "C" {
 #define MAX_BROKER_NAME_ID_LENGTH 256
 
 typedef enum _CStatus_ {
-  // Success
-  OK = 0,
-  // Failed, null pointer value
-  NULL_POINTER = 1,
+  OK = 0,  // Success
+
+  NULL_POINTER = 1,  // Failed, null pointer value
   MALLOC_FAILED = 2,
   PRODUCER_ERROR_CODE_START = 10,
   PRODUCER_START_FAILED = 10,
@@ -39,6 +37,7 @@ typedef enum _CStatus_ {
   PRODUCER_SEND_ORDERLY_FAILED = 13,
   PRODUCER_SEND_ASYNC_FAILED = 14,
   PRODUCER_SEND_ORDERLYASYNC_FAILED = 15,
+  PRODUCER_SEND_TRANSACTION_FAILED = 16,
 
   PUSHCONSUMER_ERROR_CODE_START = 20,
   PUSHCONSUMER_START_FAILED = 20,
@@ -48,7 +47,7 @@ typedef enum _CStatus_ {
   PULLCONSUMER_FETCH_MQ_FAILED = 31,
   PULLCONSUMER_FETCH_MESSAGE_FAILED = 32,
 
-  Not_Support = 500
+  NOT_SUPPORT_NOW = -1
 } CStatus;
 
 typedef enum _CLogLevel_ {
@@ -82,6 +81,7 @@ typedef enum _CLogLevel_ {
 typedef enum _CMessageModel_ { BROADCASTING, CLUSTERING } CMessageModel;
 
 #ifdef __cplusplus
-};
+}
 #endif
-#endif  //__C_COMMON_H__
+
+#endif  // __C_COMMON_H__

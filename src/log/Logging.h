@@ -25,9 +25,17 @@
 #include <spdlog/fmt/bundled/printf.h>
 // clang-format on
 
-#include "MQClient.h"
-
 namespace rocketmq {
+
+enum elogLevel {
+  eLOG_LEVEL_FATAL = 1,
+  eLOG_LEVEL_ERROR = 2,
+  eLOG_LEVEL_WARN = 3,
+  eLOG_LEVEL_INFO = 4,
+  eLOG_LEVEL_DEBUG = 5,
+  eLOG_LEVEL_TRACE = 6,
+  eLOG_LEVEL_LEVEL_NUM = 7
+};
 
 class logAdapter {
  public:

@@ -14,12 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "CBatchMessage.h"
+#include "c/CBatchMessage.h"
 
 #include <vector>
 
-#include "CCommon.h"
-#include "CMessage.h"
 #include "MQMessage.h"
 
 using std::vector;

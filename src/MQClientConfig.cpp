@@ -26,11 +26,8 @@ namespace rocketmq {
 
 static const std::string DEFAULT_INSTANCE_NAME = "DEFAULT";
 
-MQClientConfig::MQClientConfig() : MQClientConfig(nullptr) {}
-
-MQClientConfig::MQClientConfig(RPCHookPtr rpcHook)
+MQClientConfig::MQClientConfig()
     : m_instanceName(DEFAULT_INSTANCE_NAME),
-      m_rpcHook(rpcHook),
       m_tcpWorkerThreadNum(std::min(4, (int)std::thread::hardware_concurrency())),
       m_tcpConnectTimeout(3000),
       m_tcpTransportTryLockTimeout(3) {

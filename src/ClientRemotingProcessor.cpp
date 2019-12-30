@@ -16,12 +16,10 @@
  */
 #include "ClientRemotingProcessor.h"
 
-#include "ClientRPCHook.h"
+#include "CommandHeader.h"
 #include "ConsumerRunningInfo.h"
-#include "MQClientInstance.h"
 #include "MQDecoder.h"
 #include "MQProtos.h"
-//#include "UtilAll.h"
 
 namespace rocketmq {
 
@@ -119,7 +117,7 @@ RemotingCommand* ClientRemotingProcessor::getConsumerRunningInfo(const std::stri
 
 RemotingCommand* ClientRemotingProcessor::notifyConsumerIdsChanged(RemotingCommand* request) {
   auto* requestHeader = request->decodeCommandCustomHeader<NotifyConsumerIdsChangedRequestHeader>();
-  LOG_INFO("notifyConsumerIdsChanged:%s", requestHeader->getGroup().c_str());
+  LOG_INFO("notifyConsumerIdsChanged:%s", requestHeader->getConsumerGroup().c_str());
   m_mqClientFactory->rebalanceImmediately();
   return nullptr;
 }
@@ -138,7 +136,7 @@ RemotingCommand* ClientRemotingProcessor::checkTransactionState(const std::strin
       }
       const auto& group = messageExt->getProperty(MQMessageConst::PROPERTY_PRODUCER_GROUP);
       if (!group.empty()) {
-        MQProducer* producer = m_mqClientFactory->selectProducer(group);
+        auto* producer = m_mqClientFactory->selectProducer(group);
         if (producer != nullptr) {
           producer->checkTransactionState(addr, messageExt, requestHeader);
         } else {

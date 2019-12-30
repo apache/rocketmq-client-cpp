@@ -19,10 +19,10 @@
 
 #include <mutex>
 
-#include "AsyncCallback.h"
 #include "CommunicationMode.h"
 #include "MQClientInstance.h"
 #include "MQMessageQueue.h"
+#include "PullCallback.h"
 #include "SubscriptionData.h"
 
 namespace rocketmq {

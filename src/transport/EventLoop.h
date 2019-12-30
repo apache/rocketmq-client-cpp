@@ -114,4 +114,4 @@ class BufferEvent : public noncopyable {
 
 }  // namespace rocketmq
 
-#endif  //__EVENTLOOP_H__
+#endif  // __EVENTLOOP_H__

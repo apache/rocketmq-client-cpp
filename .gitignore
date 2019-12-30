@@ -3,6 +3,7 @@
 
 # visual studio code
 .vscode/
+.VSCodeCounter
 
 # cmake
 cmake-build-debug/

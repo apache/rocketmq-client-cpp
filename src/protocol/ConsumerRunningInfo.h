@@ -42,23 +42,23 @@ class ConsumerRunningInfo {
 
  public:
   const std::map<std::string, std::string> getProperties() const;
-  void setProperties(const std::map<std::string, std::string>& input_properties);
+  void setProperties(const std::map<std::string, std::string>& properties);
   void setProperty(const std::string& key, const std::string& value);
   const std::map<MQMessageQueue, ProcessQueueInfo> getMqTable() const;
   void setMqTable(const MQMessageQueue& queue, ProcessQueueInfo queueInfo);
-  // const map<string, ConsumeStatus> getStatusTable() const;
-  // void setStatusTable(const map<string, ConsumeStatus>& input_statusTable) ;
+  // const std::map<std::string, ConsumeStatus> getStatusTable() const;
+  // void setStatusTable(const std::map<std::string, ConsumeStatus>& statusTable) ;
   const std::vector<SubscriptionData> getSubscriptionSet() const;
-  void setSubscriptionSet(const std::vector<SubscriptionData>& input_subscriptionSet);
+  void setSubscriptionSet(const std::vector<SubscriptionData>& subscriptionSet);
   const std::string getJstack() const;
-  void setJstack(const std::string& input_jstack);
+  void setJstack(const std::string& jstack);
   std::string encode();
 
  private:
   std::map<std::string, std::string> properties;
   std::vector<SubscriptionData> subscriptionSet;
   std::map<MQMessageQueue, ProcessQueueInfo> mqTable;
-  // map<string, ConsumeStatus> statusTable;
+  // std::map<std::string, ConsumeStatus> statusTable;
   std::string jstack;
 };
 

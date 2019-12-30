@@ -14,19 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "CProducer.h"
+#include "c/CProducer.h"
 
 #include <cstring>
 #include <functional>
 #include <typeindex>
 
-#include "AsyncCallback.h"
-#include "CBatchMessage.h"
-#include "CCommon.h"
-#include "CMQException.h"
-#include "CMessage.h"
-#include "CSendResult.h"
+#include "ClientRPCHook.h"
 #include "DefaultMQProducer.h"
+#include "Logging.h"
 #include "MQClientErrorContainer.h"
 #include "UtilAll.h"
 
@@ -133,8 +129,7 @@ CProducer* CreateProducer(const char* groupId) {
   if (groupId == NULL) {
     return NULL;
   }
-  DefaultMQProducerPtr* defaultMQProducer = new DefaultMQProducerPtr;
-  *defaultMQProducer = DefaultMQProducer::create(groupId);
+  auto* defaultMQProducer = new DefaultMQProducer(groupId);
   return (CProducer*)defaultMQProducer;
 }
 
@@ -142,11 +137,11 @@ CProducer* CreateOrderlyProducer(const char* groupId) {
   return CreateProducer(groupId);
 }
 
-int DestroyProducer(CProducer* pProducer) {
-  if (pProducer == NULL) {
+int DestroyProducer(CProducer* producer) {
+  if (producer == nullptr) {
     return NULL_POINTER;
   }
-  delete reinterpret_cast<DefaultMQProducerPtr*>(pProducer);
+  delete reinterpret_cast<DefaultMQProducer*>(producer);
   return OK;
 }
 
@@ -155,7 +150,7 @@ int StartProducer(CProducer* producer) {
     return NULL_POINTER;
   }
   try {
-    (*(DefaultMQProducerPtr*)producer)->start();
+    reinterpret_cast<DefaultMQProducer*>(producer)->start();
   } catch (std::exception& e) {
     MQClientErrorContainer::setErr(std::string(e.what()));
     return PRODUCER_START_FAILED;
@@ -167,7 +162,7 @@ int ShutdownProducer(CProducer* producer) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  (*(DefaultMQProducerPtr*)producer)->shutdown();
+  reinterpret_cast<DefaultMQProducer*>(producer)->shutdown();
   return OK;
 }
 
@@ -175,7 +170,7 @@ int SetProducerNameServerAddress(CProducer* producer, const char* namesrv) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  (*(DefaultMQProducerPtr*)producer)->setNamesrvAddr(namesrv);
+  reinterpret_cast<DefaultMQProducer*>(producer)->setNamesrvAddr(namesrv);
   return OK;
 }
 
@@ -184,7 +179,7 @@ int SetProducerNameServerDomain(CProducer* producer, const char* domain) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  // (*(DefaultMQProducerPtr*)producer)->setNamesrvDomain(domain);
+  // reinterpret_cast<DefaultMQProducer*>(producer)->setNamesrvDomain(domain);
   return OK;
 }
 
@@ -391,7 +386,7 @@ int SetProducerGroupName(CProducer* producer, const char* groupName) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  (*(DefaultMQProducerPtr*)producer)->setGroupName(groupName);
+  reinterpret_cast<DefaultMQProducer*>(producer)->setGroupName(groupName);
   return OK;
 }
 
@@ -399,7 +394,7 @@ int SetProducerInstanceName(CProducer* producer, const char* instanceName) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  (*(DefaultMQProducerPtr*)producer)->setInstanceName(instanceName);
+  reinterpret_cast<DefaultMQProducer*>(producer)->setInstanceName(instanceName);
   return OK;
 }
 
@@ -410,7 +405,8 @@ int SetProducerSessionCredentials(CProducer* producer,
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  // (*(DefaultMQProducerPtr*)producer)->setSessionCredentials(accessKey, secretKey, onsChannel);
+  auto rpcHook = std::make_shared<ClientRPCHook>(SessionCredentials(accessKey, secretKey, onsChannel));
+  reinterpret_cast<DefaultMQProducer*>(producer)->setRPCHook(rpcHook);
   return OK;
 }
 
@@ -419,7 +415,7 @@ int SetProducerLogPath(CProducer* producer, const char* logPath) {
     return NULL_POINTER;
   }
   // Todo, This api should be implemented by core api.
-  //(*(DefaultMQProducerPtr*)producer)->setLogFileSizeAndNum(3, 102400000);
+  // reinterpret_cast<DefaultMQProducer*>(producer)->setLogFileSizeAndNum(3, 102400000);
   return OK;
 }
 
@@ -427,7 +423,7 @@ int SetProducerLogFileNumAndSize(CProducer* producer, int fileNum, long fileSize
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  (*(DefaultMQProducerPtr*)producer)->setLogFileSizeAndNum(fileNum, fileSize);
+  ALOG_ADAPTER->setLogFileNumAndSize(fileNum, fileSize);
   return OK;
 }
 
@@ -435,7 +431,7 @@ int SetProducerLogLevel(CProducer* producer, CLogLevel level) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  (*(DefaultMQProducerPtr*)producer)->setLogLevel((elogLevel)level);
+  ALOG_ADAPTER->setLogLevel((elogLevel)level);
   return OK;
 }
 
@@ -443,7 +439,7 @@ int SetProducerSendMsgTimeout(CProducer* producer, int timeout) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  (*(DefaultMQProducerPtr*)producer)->setSendMsgTimeout(timeout);
+  reinterpret_cast<DefaultMQProducer*>(producer)->setSendMsgTimeout(timeout);
   return OK;
 }
 
@@ -451,7 +447,7 @@ int SetProducerCompressMsgBodyOverHowmuch(CProducer* producer, int howmuch) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  (*(DefaultMQProducerPtr*)producer)->setCompressMsgBodyOverHowmuch(howmuch);
+  reinterpret_cast<DefaultMQProducer*>(producer)->setCompressMsgBodyOverHowmuch(howmuch);
   return OK;
 }
 
@@ -459,7 +455,7 @@ int SetProducerCompressLevel(CProducer* producer, int level) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  (*(DefaultMQProducerPtr*)producer)->setCompressLevel(level);
+  reinterpret_cast<DefaultMQProducer*>(producer)->setCompressLevel(level);
   return OK;
 }
 
@@ -467,6 +463,6 @@ int SetProducerMaxMessageSize(CProducer* producer, int size) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  (*(DefaultMQProducerPtr*)producer)->setMaxMessageSize(size);
+  reinterpret_cast<DefaultMQProducer*>(producer)->setMaxMessageSize(size);
   return OK;
 }

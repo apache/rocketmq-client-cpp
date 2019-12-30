@@ -14,8 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "AsyncCallbackWrap.h"
+#include "SendCallbackWrap.h"
 
 #include <typeindex>
 
@@ -33,12 +32,8 @@
 
 namespace rocketmq {
 
-//######################################
-// SendCallbackWrap
-//######################################
-
-SendCallbackWrap::SendCallbackWrap(const string& addr,
-                                   const string& brokerName,
+SendCallbackWrap::SendCallbackWrap(const std::string& addr,
+                                   const std::string& brokerName,
                                    const MQMessagePtr msg,
                                    RemotingCommand&& request,
                                    SendCallback* sendCallback,
@@ -46,7 +41,7 @@ SendCallbackWrap::SendCallbackWrap(const string& addr,
                                    MQClientInstancePtr instance,
                                    int retryTimesWhenSendFailed,
                                    int times,
-                                   DefaultMQProducerPtr producer)
+                                   DefaultMQProducerImplPtr producer)
     : m_addr(addr),
       m_brokerName(brokerName),
       m_msg(msg),
@@ -192,48 +187,6 @@ void SendCallbackWrap::onExceptionImpl(ResponseFuture* responseFuture,
     if (m_sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_ATUO_DELETE) {
       deleteAndZero(m_sendCallback);
     }
-  }
-}
-
-//######################################
-// PullCallbackWrap
-//######################################
-
-PullCallbackWrap::PullCallbackWrap(PullCallback* pullCallback, MQClientAPIImpl* pClientAPI)
-    : m_pullCallback(pullCallback), m_pClientAPI(pClientAPI) {}
-
-void PullCallbackWrap::operationComplete(ResponseFuture* responseFuture) noexcept {
-  std::unique_ptr<RemotingCommand> response(responseFuture->getResponseCommand());  // avoid RemotingCommand leak
-
-  if (m_pullCallback == nullptr) {
-    LOG_ERROR("m_pullCallback is NULL, AsyncPull could not continue");
-    return;
-  }
-
-  if (response != nullptr) {
-    try {
-      std::unique_ptr<PullResult> pullResult(m_pClientAPI->processPullResponse(response.get()));
-      assert(pullResult != nullptr);
-      m_pullCallback->onSuccess(*pullResult);
-    } catch (MQException& e) {
-      m_pullCallback->onException(e);
-    }
-  } else {
-    std::string err;
-    if (!responseFuture->isSendRequestOK()) {
-      err = "send request failed";
-    } else if (responseFuture->isTimeout()) {
-      err = "wait response timeout";
-    } else {
-      err = "unknown reason";
-    }
-    MQException exception(err, -1, __FILE__, __LINE__);
-    m_pullCallback->onException(exception);
-  }
-
-  // auto delete callback
-  if (m_pullCallback->getPullCallbackType() == PULL_CALLBACK_TYPE_AUTO_DELETE) {
-    deleteAndZero(m_pullCallback);
   }
 }
 

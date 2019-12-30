@@ -17,16 +17,14 @@
 #ifndef __CONSUME_MESSAGE_SERVICE_H__
 #define __CONSUME_MESSAGE_SERVICE_H__
 
-#include "concurrent/executor.hpp"
-
+#include "DefaultMQPushConsumerImpl.h"
 #include "Logging.h"
 #include "MQMessageListener.h"
 #include "MessageQueueLock.hpp"
 #include "PullRequest.h"
+#include "concurrent/executor.hpp"
 
 namespace rocketmq {
-
-class DefaultMQPushConsumer;
 
 class ConsumeMsgService {
  public:
@@ -43,7 +41,7 @@ class ConsumeMsgService {
 
 class ConsumeMessageConcurrentlyService : public ConsumeMsgService {
  public:
-  ConsumeMessageConcurrentlyService(DefaultMQPushConsumer*, int threadCount, MQMessageListener* msgListener);
+  ConsumeMessageConcurrentlyService(DefaultMQPushConsumerImpl*, int threadCount, MQMessageListener* msgListener);
   ~ConsumeMessageConcurrentlyService() override;
 
   void start() override;
@@ -59,7 +57,7 @@ class ConsumeMessageConcurrentlyService : public ConsumeMsgService {
                       const MQMessageQueue& messageQueue);
 
  private:
-  DefaultMQPushConsumer* m_consumer;
+  DefaultMQPushConsumerImpl* m_consumer;
   MQMessageListener* m_messageListener;
 
   thread_pool_executor m_consumeExecutor;
@@ -67,7 +65,7 @@ class ConsumeMessageConcurrentlyService : public ConsumeMsgService {
 
 class ConsumeMessageOrderlyService : public ConsumeMsgService {
  public:
-  ConsumeMessageOrderlyService(DefaultMQPushConsumer*, int threadCount, MQMessageListener* msgListener);
+  ConsumeMessageOrderlyService(DefaultMQPushConsumerImpl*, int threadCount, MQMessageListener* msgListener);
   ~ConsumeMessageOrderlyService() override;
 
   void start() override;
@@ -93,7 +91,7 @@ class ConsumeMessageOrderlyService : public ConsumeMsgService {
   static const uint64_t MaxTimeConsumeContinuously;
 
  private:
-  DefaultMQPushConsumer* m_consumer;
+  DefaultMQPushConsumerImpl* m_consumer;
   MQMessageListener* m_messageListener;
 
   MessageQueueLock m_messageQueueLock;

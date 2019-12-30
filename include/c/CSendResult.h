@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef __C_SEND_RESULT_H__
 #define __C_SEND_RESULT_H__
 
@@ -38,6 +37,7 @@ typedef struct _SendResult_ {
 } CSendResult;
 
 #ifdef __cplusplus
-};
+}
 #endif
-#endif  //__C_PRODUCER_H__
+
+#endif  // __C_PRODUCER_H__

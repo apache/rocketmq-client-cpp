@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef __C_PULL_CONSUMER_H__
 #define __C_PULL_CONSUMER_H__
 
@@ -56,6 +55,7 @@ Pull(CPullConsumer* consumer, const CMessageQueue* mq, const char* subExpression
 ROCKETMQCLIENT_API int ReleasePullResult(CPullResult pullResult);
 
 #ifdef __cplusplus
-};
+}
 #endif
-#endif  //__C_PUSH_CONSUMER_H__
+
+#endif  // __C_PUSH_CONSUMER_H__

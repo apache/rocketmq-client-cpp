@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 #include "ConsumeMsgService.h"
-
-#include "DefaultMQPushConsumer.h"
 #include "Logging.h"
 #include "OffsetStore.h"
 #include "RebalanceImpl.h"
@@ -26,7 +24,7 @@ namespace rocketmq {
 
 const uint64_t ConsumeMessageOrderlyService::MaxTimeConsumeContinuously = 60000;
 
-ConsumeMessageOrderlyService::ConsumeMessageOrderlyService(DefaultMQPushConsumer* consumer,
+ConsumeMessageOrderlyService::ConsumeMessageOrderlyService(DefaultMQPushConsumerImpl* consumer,
                                                            int threadCount,
                                                            MQMessageListener* msgListener)
     : m_consumer(consumer),
@@ -145,11 +143,11 @@ void ConsumeMessageOrderlyService::ConsumeRequest(ProcessQueuePtr processQueue, 
         break;
       }
 
-      const int consumeBatchSize = m_consumer->getConsumeMessageBatchMaxSize();
+      const int consumeBatchSize = m_consumer->getDefaultMQPushConsumerConfig()->getConsumeMessageBatchMaxSize();
 
       std::vector<MQMessageExtPtr2> msgs;
       processQueue->takeMessages(msgs, consumeBatchSize);
-      m_consumer->resetRetryTopic(msgs, m_consumer->getGroupName());
+      m_consumer->resetRetryTopic(msgs, m_consumer->getDefaultMQPushConsumerConfig()->getGroupName());
       if (!msgs.empty()) {
         ConsumeStatus status = RECONSUME_LATER;
         try {

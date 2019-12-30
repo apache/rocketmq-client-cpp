@@ -14,25 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQCLIENTFACTORY_H__
-#define __MQCLIENTFACTORY_H__
+#ifndef __MQ_CLIENT_INSTANCE_H__
+#define __MQ_CLIENT_INSTANCE_H__
 
 #include <memory>
 #include <mutex>
 #include <set>
 
-#include "concurrent/executor.hpp"
-
-#include "CommandHeader.h"
+#include "ConsumerRunningInfo.h"
 #include "FindBrokerResult.h"
 #include "HeartbeatData.h"
+#include "MQClientConfig.h"
 #include "MQClientException.h"
-#include "MQConsumer.h"
+#include "MQConsumerInner.h"
 #include "MQMessageQueue.h"
-#include "MQProducer.h"
+#include "MQProducerInner.h"
 #include "ServiceState.h"
 #include "TopicPublishInfo.h"
 #include "TopicRouteData.h"
+#include "concurrent/executor.hpp"
 
 namespace rocketmq {
 
@@ -47,8 +47,8 @@ typedef std::shared_ptr<MQClientInstance> MQClientInstancePtr;
 
 class MQClientInstance {
  public:
-  MQClientInstance(MQClient* clientConfig, const std::string& clientId);
-  MQClientInstance(MQClient* clientConfig, const std::string& clientId, std::shared_ptr<RPCHook> rpcHook);
+  MQClientInstance(MQClientConfig clientConfig, const std::string& clientId);
+  MQClientInstance(MQClientConfig clientConfig, const std::string& clientId, std::shared_ptr<RPCHook> rpcHook);
   virtual ~MQClientInstance();
 
   static TopicPublishInfoPtr topicRouteData2TopicPublishInfo(const std::string& topic, TopicRouteDataPtr route);
@@ -61,10 +61,10 @@ class MQClientInstance {
   void shutdown();
   bool isRunning();
 
-  bool registerProducer(const std::string& group, MQProducer* pProducer);
+  bool registerProducer(const std::string& group, MQProducerInner* producer);
   void unregisterProducer(const std::string& group);
 
-  bool registerConsumer(const std::string& group, MQConsumer* pConsumer);
+  bool registerConsumer(const std::string& group, MQConsumerInner* consumer);
   void unregisterConsumer(const std::string& group);
 
   void updateTopicRouteInfoFromNameServer();
@@ -75,8 +75,8 @@ class MQClientInstance {
   void rebalanceImmediately();
   void doRebalance();
 
-  MQProducer* selectProducer(const std::string& group);
-  MQConsumer* selectConsumer(const std::string& group);
+  MQProducerInner* selectProducer(const std::string& group);
+  MQConsumerInner* selectConsumer(const std::string& group);
 
   FindBrokerResult* findBrokerAddressInAdmin(const std::string& brokerName);
   std::string findBrokerAddressInPublish(const std::string& brokerName);
@@ -133,14 +133,14 @@ class MQClientInstance {
   void doRebalanceByConsumerGroup(const std::string& consumerGroup);
 
   // consumer related operation
-  bool addConsumerToTable(const std::string& consumerName, MQConsumer* consumer);
+  bool addConsumerToTable(const std::string& consumerName, MQConsumerInner* consumer);
   void eraseConsumerFromTable(const std::string& consumerName);
   int getConsumerTableSize();
   void getTopicListFromConsumerSubscription(std::set<std::string>& topicList);
   void updateConsumerTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue> subscribeInfo);
 
   // producer related operation
-  bool addProducerToTable(const std::string& producerName, MQProducer* producer);
+  bool addProducerToTable(const std::string& producerName, MQProducerInner* producer);
   void eraseProducerFromTable(const std::string& producerName);
   int getProducerTableSize();
   void getTopicListFromTopicPublishInfo(std::set<std::string>& topicList);
@@ -153,16 +153,17 @@ class MQClientInstance {
   bool isTopicInfoValidInTable(const std::string& topic);
 
  private:
+  MQClientConfig m_clientConfig;
   std::string m_clientId;
   ServiceState m_serviceState;
 
   // group -> MQProducer
-  typedef std::map<std::string, MQProducer*> MQPMAP;
+  typedef std::map<std::string, MQProducerInner*> MQPMAP;
   MQPMAP m_producerTable;
   std::mutex m_producerTableMutex;
 
   // group -> MQConsumer
-  typedef std::map<std::string, MQConsumer*> MQCMAP;
+  typedef std::map<std::string, MQConsumerInner*> MQCMAP;
   MQCMAP m_consumerTable;
   std::mutex m_consumerTableMutex;
 
@@ -194,4 +195,4 @@ class MQClientInstance {
 
 }  // namespace rocketmq
 
-#endif
+#endif  // __MQ_CLIENT_INSTANCE_H__

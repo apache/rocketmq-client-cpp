@@ -16,18 +16,11 @@
  */
 #include "RebalanceImpl.h"
 
-#include "AllocateMQAveragely.h"
-#include "FindBrokerResult.h"
 #include "LockBatchBody.h"
 #include "MQClientAPIImpl.h"
 #include "MQClientInstance.h"
-#include "OffsetStore.h"
 
 namespace rocketmq {
-
-//######################################
-// RebalanceImpl
-//######################################
 
 RebalanceImpl::RebalanceImpl(const std::string& consumerGroup,
                              MessageModel messageModel,
@@ -269,7 +262,7 @@ void RebalanceImpl::rebalanceByTopic(const std::string& topic, const bool isOrde
         return;
       }
 
-      std::vector<string> cidAll;
+      std::vector<std::string> cidAll;
       m_clientInstance->findConsumerIds(topic, m_consumerGroup, cidAll);
 
       if (cidAll.empty()) {
@@ -483,7 +476,7 @@ TOPIC2SD& RebalanceImpl::getSubscriptionInner() {
   return m_subscriptionInner;
 }
 
-SubscriptionDataPtr RebalanceImpl::getSubscriptionData(const string& topic) {
+SubscriptionDataPtr RebalanceImpl::getSubscriptionData(const std::string& topic) {
   auto it = m_subscriptionInner.find(topic);
   if (it != m_subscriptionInner.end()) {
     return it->second;
@@ -501,7 +494,7 @@ void RebalanceImpl::setSubscriptionData(const std::string& topic, SubscriptionDa
   }
 }
 
-bool RebalanceImpl::getTopicSubscribeInfo(const string& topic, std::vector<MQMessageQueue>& mqs) {
+bool RebalanceImpl::getTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& mqs) {
   std::lock_guard<std::mutex> lock(m_topicSubscribeInfoTableMutex);
   if (m_topicSubscribeInfoTable.find(topic) != m_topicSubscribeInfoTable.end()) {
     mqs = m_topicSubscribeInfoTable[topic];
@@ -527,160 +520,5 @@ void RebalanceImpl::setTopicSubscribeInfo(const std::string& topic, std::vector<
     LOG_DEBUG("topic [%s] has :%s", topic.c_str(), mq.toString().c_str());
   }
 }
-
-//######################################
-// RebalancePush
-//######################################
-
-RebalancePushImpl::RebalancePushImpl(DefaultMQPushConsumer* consumer)
-    : RebalanceImpl("", CLUSTERING, nullptr, nullptr), m_defaultMQPushConsumer(consumer) {}
-
-bool RebalancePushImpl::removeUnnecessaryMessageQueue(const MQMessageQueue& mq, ProcessQueuePtr pq) {
-  auto* pOffsetStore = m_defaultMQPushConsumer->getOffsetStore();
-
-  pOffsetStore->persist(mq);
-  pOffsetStore->removeOffset(mq);
-
-  if (m_defaultMQPushConsumer->getMessageListenerType() == messageListenerOrderly &&
-      CLUSTERING == m_defaultMQPushConsumer->getMessageModel()) {
-    try {
-      if (UtilAll::try_lock_for(pq->getLockConsume(), 1000)) {
-        std::lock_guard<std::timed_mutex> lock(pq->getLockConsume(), std::adopt_lock);
-        // TODO: unlockDelay
-        unlock(mq);
-        return true;
-      } else {
-        LOG_WARN("[WRONG]mq is consuming, so can not unlock it, %s. maybe hanged for a while, %ld",
-                 mq.toString().c_str(), pq->getTryUnlockTimes());
-
-        pq->incTryUnlockTimes();
-      }
-    } catch (const std::exception& e) {
-      LOG_ERROR("removeUnnecessaryMessageQueue Exception: %s", e.what());
-    }
-
-    return false;
-  }
-
-  return true;
-}
-
-void RebalancePushImpl::removeDirtyOffset(const MQMessageQueue& mq) {
-  m_defaultMQPushConsumer->getOffsetStore()->removeOffset(mq);
-}
-
-int64_t RebalancePushImpl::computePullFromWhere(const MQMessageQueue& mq) {
-  int64_t result = -1;
-  ConsumeFromWhere consumeFromWhere = m_defaultMQPushConsumer->getConsumeFromWhere();
-  OffsetStore* pOffsetStore = m_defaultMQPushConsumer->getOffsetStore();
-  switch (consumeFromWhere) {
-    case CONSUME_FROM_LAST_OFFSET: {
-      int64_t lastOffset = pOffsetStore->readOffset(mq, READ_FROM_STORE);
-      if (lastOffset >= 0) {
-        LOG_INFO_NEW("CONSUME_FROM_LAST_OFFSET, lastOffset of mq:{} is {}", mq.toString(), lastOffset);
-        result = lastOffset;
-      } else if (-1 == lastOffset) {
-        LOG_WARN_NEW("CONSUME_FROM_LAST_OFFSET, lastOffset of mq:%s is -1", mq.toString());
-        if (UtilAll::isRetryTopic(mq.getTopic())) {
-          LOG_INFO_NEW("CONSUME_FROM_LAST_OFFSET, lastOffset of mq:%s is 0", mq.toString());
-          result = 0;
-        } else {
-          try {
-            result = m_defaultMQPushConsumer->maxOffset(mq);
-            LOG_INFO_NEW("CONSUME_FROM_LAST_OFFSET, maxOffset of mq:{} is {}", mq.toString(), result);
-          } catch (MQException& e) {
-            LOG_ERROR_NEW("CONSUME_FROM_LAST_OFFSET error, lastOffset of mq:{} is -1", mq.toString());
-            result = -1;
-          }
-        }
-      } else {
-        LOG_ERROR_NEW("CONSUME_FROM_LAST_OFFSET error, lastOffset  of mq:{} is -1", mq.toString());
-        result = -1;
-      }
-    } break;
-    case CONSUME_FROM_FIRST_OFFSET: {
-      int64_t lastOffset = pOffsetStore->readOffset(mq, READ_FROM_STORE);
-      if (lastOffset >= 0) {
-        LOG_INFO_NEW("CONSUME_FROM_FIRST_OFFSET, lastOffset of mq:{} is {}", mq.toString(), lastOffset);
-        result = lastOffset;
-      } else if (-1 == lastOffset) {
-        LOG_INFO_NEW("CONSUME_FROM_FIRST_OFFSET, lastOffset of mq:{}, return 0", mq.toString());
-        result = 0;
-      } else {
-        LOG_INFO_NEW("CONSUME_FROM_FIRST_OFFSET, lastOffset of mq:{}, return -1", mq.toString());
-        result = -1;
-      }
-    } break;
-    case CONSUME_FROM_TIMESTAMP: {
-      int64_t lastOffset = pOffsetStore->readOffset(mq, READ_FROM_STORE);
-      if (lastOffset >= 0) {
-        LOG_INFO_NEW("CONSUME_FROM_TIMESTAMP, lastOffset of mq:{} is {}", mq.toString().c_str(), lastOffset);
-        result = lastOffset;
-      } else if (-1 == lastOffset) {
-        if (UtilAll::isRetryTopic(mq.getTopic())) {
-          try {
-            result = m_defaultMQPushConsumer->maxOffset(mq);
-            LOG_INFO_NEW("CONSUME_FROM_TIMESTAMP, maxOffset of mq:{} is {}", mq.toString(), result);
-          } catch (MQException& e) {
-            LOG_ERROR_NEW("CONSUME_FROM_TIMESTAMP error, lastOffset of mq:{} is -1", mq.toString());
-            result = -1;
-          }
-        } else {
-          try {
-          } catch (MQException& e) {
-            LOG_ERROR_NEW("CONSUME_FROM_TIMESTAMP error, lastOffset of mq:{}, return 0", mq.toString());
-            result = -1;
-          }
-        }
-      } else {
-        LOG_ERROR_NEW("CONSUME_FROM_TIMESTAMP error, lastOffset of mq:{}, return -1", mq.toString());
-        result = -1;
-      }
-    } break;
-    default:
-      break;
-  }
-  return result;
-}
-
-void RebalancePushImpl::dispatchPullRequest(const std::vector<PullRequestPtr>& pullRequestList) {
-  for (const auto& pullRequest : pullRequestList) {
-    m_defaultMQPushConsumer->executePullRequestImmediately(pullRequest);
-    LOG_INFO("doRebalance, %s, add a new pull request %s", m_consumerGroup.c_str(), pullRequest->toString().c_str());
-  }
-}
-
-void RebalancePushImpl::messageQueueChanged(const string& topic,
-                                            std::vector<MQMessageQueue>& mqAll,
-                                            std::vector<MQMessageQueue>& mqDivided) {
-  // TODO: update subscription's version
-}
-
-//######################################
-// RebalancePull
-//######################################
-
-RebalancePullImpl::RebalancePullImpl(DefaultMQPullConsumer* consumer)
-    : RebalanceImpl("", CLUSTERING, nullptr, nullptr), m_defaultMQPullConsumer(consumer) {}
-
-bool RebalancePullImpl::removeUnnecessaryMessageQueue(const MQMessageQueue& mq, ProcessQueuePtr pq) {
-  m_defaultMQPullConsumer->getOffsetStore()->persist(mq);
-  m_defaultMQPullConsumer->getOffsetStore()->removeOffset(mq);
-  return true;
-}
-
-void RebalancePullImpl::removeDirtyOffset(const MQMessageQueue& mq) {
-  m_defaultMQPullConsumer->removeConsumeOffset(mq);
-}
-
-int64_t RebalancePullImpl::computePullFromWhere(const MQMessageQueue& mq) {
-  return 0;
-}
-
-void RebalancePullImpl::dispatchPullRequest(const std::vector<PullRequestPtr>& pullRequestList) {}
-
-void RebalancePullImpl::messageQueueChanged(const std::string& topic,
-                                            std::vector<MQMessageQueue>& mqAll,
-                                            std::vector<MQMessageQueue>& mqDivided) {}
 
 }  // namespace rocketmq

@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef __LOCK_BATCH_BODY_H__
 #define __LOCK_BATCH_BODY_H__
 

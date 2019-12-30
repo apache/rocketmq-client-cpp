@@ -21,11 +21,10 @@
 #include <mutex>
 #include <vector>
 
+#include "MQClientInstance.h"
 #include "MQMessageQueue.h"
 
 namespace rocketmq {
-
-class MQClientInstance;
 
 enum ReadOffsetType {
   // read offset from memory

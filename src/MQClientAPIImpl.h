@@ -17,24 +17,25 @@
 #ifndef __MQ_CLIENT_API_IMPL_H__
 #define __MQ_CLIENT_API_IMPL_H__
 
-#include "AsyncCallback.h"
 #include "CommandHeader.h"
 #include "CommunicationMode.h"
-#include "DefaultMQProducer.h"
+#include "DefaultMQProducerImpl.h"
 #include "HeartbeatData.h"
 #include "KVTable.h"
 #include "LockBatchBody.h"
 #include "MQClientException.h"
 #include "MQMessageExt.h"
+#include "PullCallback.h"
+#include "SendCallback.h"
 #include "SendResult.h"
 #include "TopicConfig.h"
 #include "TopicList.h"
 #include "TopicPublishInfo.h"
 #include "TopicRouteData.h"
+#include "MQClientInstance.h"
 
 namespace rocketmq {
 
-class MQClientInstance;
 class TcpRemotingClient;
 class ClientRemotingProcessor;
 class RPCHook;
@@ -47,7 +48,7 @@ class MQClientAPIImpl {
  public:
   MQClientAPIImpl(ClientRemotingProcessor* clientRemotingProcessor,
                   std::shared_ptr<RPCHook> rpcHook,
-                  MQClient* clientConfig);
+                  const MQClientConfig* clientConfig);
   virtual ~MQClientAPIImpl();
 
   void start();
@@ -63,7 +64,7 @@ class MQClientAPIImpl {
                           std::unique_ptr<SendMessageRequestHeader> requestHeader,
                           int timeoutMillis,
                           CommunicationMode communicationMode,
-                          DefaultMQProducerPtr producer);
+                          DefaultMQProducerImplPtr producer);
   SendResult* sendMessage(const std::string& addr,
                           const std::string& brokerName,
                           const MQMessagePtr msg,
@@ -74,7 +75,7 @@ class MQClientAPIImpl {
                           TopicPublishInfoPtr topicPublishInfo,
                           MQClientInstancePtr instance,
                           int retryTimesWhenSendFailed,
-                          DefaultMQProducerPtr producer);
+                          DefaultMQProducerImplPtr producer);
   SendResult* processSendResponse(const std::string& brokerName, const MQMessagePtr msg, RemotingCommand* pResponse);
 
   PullResult* pullMessage(const std::string& addr,
@@ -99,7 +100,7 @@ class MQClientAPIImpl {
 
   void getConsumerIdListByGroup(const std::string& addr,
                                 const std::string& consumerGroup,
-                                std::vector<string>& cids,
+                                std::vector<std::string>& cids,
                                 int timeoutMillis);
 
   int64_t queryConsumerOffset(const std::string& addr,
@@ -145,7 +146,9 @@ class MQClientAPIImpl {
 
   void deleteSubscriptionGroup(const std::string& addr, const std::string& groupName, int timeoutMillis);
 
-  string getKVConfigByValue(const std::string& projectNamespace, const std::string& projectGroup, int timeoutMillis);
+  std::string getKVConfigByValue(const std::string& projectNamespace,
+                                 const std::string& projectGroup,
+                                 int timeoutMillis);
   void deleteKVConfigByValue(const std::string& projectNamespace, const std::string& projectGroup, int timeoutMillis);
 
   KVTable getKVListByNamespace(const std::string& projectNamespace, int timeoutMillis);
@@ -171,7 +174,7 @@ class MQClientAPIImpl {
                         MQClientInstancePtr instance,
                         int64_t timeoutMilliseconds,
                         int retryTimesWhenSendFailed,
-                        DefaultMQProducerPtr producer) throw(RemotingException);
+                        DefaultMQProducerImplPtr producer) throw(RemotingException);
 
   void sendMessageAsyncImpl(SendCallbackWrap* cbw, int64_t timeoutMillis) throw(RemotingException);
 

@@ -14,28 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __ASYNC_CALLBACK_WRAP_H__
-#define __ASYNC_CALLBACK_WRAP_H__
+#ifndef __SEND_CALLBACK_WRAP_H__
+#define __SEND_CALLBACK_WRAP_H__
 
 #include <functional>
 
-#include "AsyncCallback.h"
+#include "DefaultMQProducerImpl.h"
 #include "InvokeCallback.h"
-#include "MQClientAPIImpl.h"
+#include "MQClientInstance.h"
 #include "MQMessage.h"
 #include "RemotingCommand.h"
 #include "ResponseFuture.h"
+#include "SendCallback.h"
+#include "TopicPublishInfo.h"
 
 namespace rocketmq {
 
-class MQClientInstance;
-class DefaultMQProducer;
-class TopicPublishInfo;
-
 class SendCallbackWrap : public InvokeCallback {
  public:
-  SendCallbackWrap(const string& addr,
-                   const string& brokerName,
+  SendCallbackWrap(const std::string& addr,
+                   const std::string& brokerName,
                    const MQMessagePtr msg,
                    RemotingCommand&& request,
                    SendCallback* sendCallback,
@@ -43,7 +41,7 @@ class SendCallbackWrap : public InvokeCallback {
                    MQClientInstancePtr instance,
                    int retryTimesWhenSendFailed,
                    int times,
-                   DefaultMQProducerPtr producer);
+                   DefaultMQProducerImplPtr producer);
 
   void operationComplete(ResponseFuture* responseFuture) noexcept override;
   void onExceptionImpl(ResponseFuture* responseFuture, long timeoutMillis, MQException& e, bool needRetry);
@@ -66,20 +64,9 @@ class SendCallbackWrap : public InvokeCallback {
   MQClientInstancePtr m_instance;
   int m_timesTotal;
   int m_times;
-  std::weak_ptr<DefaultMQProducer> m_producer;  // FIXME: ensure object is live.
-};
-
-class PullCallbackWrap : public InvokeCallback {
- public:
-  PullCallbackWrap(PullCallback* pullCallback, MQClientAPIImpl* pClientAPI);
-
-  void operationComplete(ResponseFuture* responseFuture) noexcept override;
-
- private:
-  PullCallback* m_pullCallback;
-  MQClientAPIImpl* m_pClientAPI;
+  std::weak_ptr<DefaultMQProducerImpl> m_producer;  // FIXME: ensure object is live.
 };
 
 }  // namespace rocketmq
 
-#endif  // __ASYNC_CALLBACK_WRAP_H__
+#endif  // __SEND_CALLBACK_WRAP_H__

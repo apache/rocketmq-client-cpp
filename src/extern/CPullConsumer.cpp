@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "CPullConsumer.h"
+#include "c/CPullConsumer.h"
 
 #include <cstring>
 
-#include "CCommon.h"
-#include "CMessageExt.h"
+#include "ClientRPCHook.h"
 #include "DefaultMQPullConsumer.h"
+#include "Logging.h"
 #include "MQClientErrorContainer.h"
 
 using namespace rocketmq;
@@ -46,7 +46,7 @@ int StartPullConsumer(CPullConsumer* consumer) {
     return NULL_POINTER;
   }
   try {
-    ((DefaultMQPullConsumer*)consumer)->start();
+    reinterpret_cast<DefaultMQPullConsumer*>(consumer)->start();
   } catch (std::exception& e) {
     MQClientErrorContainer::setErr(std::string(e.what()));
     return PULLCONSUMER_START_FAILED;
@@ -58,7 +58,7 @@ int ShutdownPullConsumer(CPullConsumer* consumer) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPullConsumer*)consumer)->shutdown();
+  reinterpret_cast<DefaultMQPullConsumer*>(consumer)->shutdown();
   return OK;
 }
 
@@ -66,7 +66,7 @@ int SetPullConsumerGroupID(CPullConsumer* consumer, const char* groupId) {
   if (consumer == NULL || groupId == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPullConsumer*)consumer)->setGroupName(groupId);
+  reinterpret_cast<DefaultMQPullConsumer*>(consumer)->setGroupName(groupId);
   return OK;
 }
 
@@ -74,14 +74,14 @@ const char* GetPullConsumerGroupID(CPullConsumer* consumer) {
   if (consumer == NULL) {
     return NULL;
   }
-  return ((DefaultMQPullConsumer*)consumer)->getGroupName().c_str();
+  return reinterpret_cast<DefaultMQPullConsumer*>(consumer)->getGroupName().c_str();
 }
 
 int SetPullConsumerNameServerAddress(CPullConsumer* consumer, const char* namesrv) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPullConsumer*)consumer)->setNamesrvAddr(namesrv);
+  reinterpret_cast<DefaultMQPullConsumer*>(consumer)->setNamesrvAddr(namesrv);
   return OK;
 }
 
@@ -90,7 +90,7 @@ int SetPullConsumerNameServerDomain(CPullConsumer* consumer, const char* domain)
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  return Not_Support;
+  return NOT_SUPPORT_NOW;
 }
 
 int SetPullConsumerSessionCredentials(CPullConsumer* consumer,
@@ -100,7 +100,8 @@ int SetPullConsumerSessionCredentials(CPullConsumer* consumer,
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  // ((DefaultMQPullConsumer*)consumer)->setSessionCredentials(accessKey, secretKey, channel);
+  auto rpcHook = std::make_shared<ClientRPCHook>(SessionCredentials(accessKey, secretKey, channel));
+  reinterpret_cast<DefaultMQPullConsumer*>(consumer)->setRPCHook(rpcHook);
   return OK;
 }
 
@@ -117,7 +118,7 @@ int SetPullConsumerLogFileNumAndSize(CPullConsumer* consumer, int fileNum, long 
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPullConsumer*)consumer)->setLogFileSizeAndNum(fileNum, fileSize);
+  ALOG_ADAPTER->setLogFileNumAndSize(fileNum, fileSize);
   return OK;
 }
 
@@ -125,7 +126,7 @@ int SetPullConsumerLogLevel(CPullConsumer* consumer, CLogLevel level) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPullConsumer*)consumer)->setLogLevel((elogLevel)level);
+  ALOG_ADAPTER->setLogLevel((elogLevel)level);
   return OK;
 }
 
@@ -137,7 +138,7 @@ int FetchSubscriptionMessageQueues(CPullConsumer* consumer, const char* topic, C
   CMessageQueue* temMQ = NULL;
   std::vector<MQMessageQueue> fullMQ;
   try {
-    ((DefaultMQPullConsumer*)consumer)->fetchSubscribeMessageQueues(topic, fullMQ);
+    reinterpret_cast<DefaultMQPullConsumer*>(consumer)->fetchSubscribeMessageQueues(topic, fullMQ);
     *size = fullMQ.size();
     // Alloc memory to save the pointer to CPP MessageQueue, and the MessageQueues may be changed.
     // Thus, this memory should be released by users using @ReleaseSubscribeMessageQueue every time.
@@ -182,7 +183,8 @@ CPullResult Pull(CPullConsumer* consumer,
   MQMessageQueue messageQueue(mq->topic, mq->brokerName, mq->queueId);
   PullResult cppPullResult;
   try {
-    cppPullResult = ((DefaultMQPullConsumer*)consumer)->pull(messageQueue, subExpression, offset, maxNums);
+    cppPullResult =
+        reinterpret_cast<DefaultMQPullConsumer*>(consumer)->pull(messageQueue, subExpression, offset, maxNums);
   } catch (std::exception& e) {
     MQClientErrorContainer::setErr(std::string(e.what()));
     cppPullResult.pullStatus = BROKER_TIMEOUT;

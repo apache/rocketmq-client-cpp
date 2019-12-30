@@ -14,19 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __MQ_PUSH_CONSUMER_H__
+#define __MQ_PUSH_CONSUMER_H__
 
-#ifndef __CERROR_MESSAGE_H__
-#define __CERROR_MESSAGE_H__
+#include "MQConsumer.h"
+#include "MQMessageListener.h"
 
-#include "CCommon.h"
+namespace rocketmq {
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+class ROCKETMQCLIENT_API MQPushConsumer : public MQConsumer {
+ public:  // MQPushConsumer in Java
+  // [[deprecated]]
+  virtual void registerMessageListener(MQMessageListener* messageListener) = 0;
+  virtual void registerMessageListener(MessageListenerConcurrently* messageListener) = 0;
+  virtual void registerMessageListener(MessageListenerOrderly* messageListener) = 0;
 
-ROCKETMQCLIENT_API const char* GetLatestErrorMessage();  // Return the last error message
+  virtual void subscribe(const std::string& topic, const std::string& subExpression) = 0;
+  // virtual void subscribe(const std::string& topic, MessageSelector* selector) = 0;
 
-#ifdef __cplusplus
+  virtual void suspend() = 0;
+  virtual void resume() = 0;
 };
-#endif
-#endif  //__CERROR_MESSAGE_H__
+
+}  // namespace rocketmq
+
+#endif  // __MQ_PUSH_CONSUMER_H__

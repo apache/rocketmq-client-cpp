@@ -22,9 +22,6 @@
 
 #include "RemotingSerializable.h"
 
-using std::map;
-using std::string;
-
 namespace rocketmq {
 
 class KVTable : public RemotingSerializable {

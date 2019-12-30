@@ -17,13 +17,12 @@
 #ifndef __CLIENT_REMOTING_PROCESSOR_H__
 #define __CLIENT_REMOTING_PROCESSOR_H__
 
+#include "MQClientInstance.h"
 #include "MQMessageQueue.h"
 #include "RemotingCommand.h"
 #include "RequestProcessor.h"
 
 namespace rocketmq {
-
-class MQClientInstance;
 
 class ClientRemotingProcessor : public RequestProcessor {
  public:

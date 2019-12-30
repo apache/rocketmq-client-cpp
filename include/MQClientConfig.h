@@ -27,7 +27,6 @@ namespace rocketmq {
 class ROCKETMQCLIENT_API MQClientConfig {
  public:
   MQClientConfig();
-  MQClientConfig(RPCHookPtr rpcHook);
   virtual ~MQClientConfig() = default;
 
   // clientId=processId-ipAddr@instanceName
@@ -84,8 +83,6 @@ class ROCKETMQCLIENT_API MQClientConfig {
   std::string m_instanceName;
   std::string m_groupName;
   std::string m_unitName;
-
-  RPCHookPtr m_rpcHook;
 
   int m_tcpWorkerThreadNum;
   uint64_t m_tcpConnectTimeout;           // ms

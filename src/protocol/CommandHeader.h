@@ -454,8 +454,8 @@ class NotifyConsumerIdsChangedRequestHeader : public CommandCustomHeader {
  public:
   static NotifyConsumerIdsChangedRequestHeader* Decode(std::map<std::string, std::string>& extFields);
 
-  void setGroup(const std::string& tmp);
-  const std::string getGroup() const;
+  const std::string getConsumerGroup() const;
+  void setConsumerGroup(const std::string& tmp);
 
  private:
   std::string consumerGroup;
