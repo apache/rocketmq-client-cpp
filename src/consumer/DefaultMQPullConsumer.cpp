@@ -21,6 +21,7 @@
 #include "FilterAPI.h"
 #include "Logging.h"
 #include "MQClientFactory.h"
+#include "MessageAccessor.h"
 #include "NameSpaceUtil.h"
 #include "OffsetStore.h"
 #include "PullAPIWrapper.h"
@@ -146,7 +147,8 @@ void DefaultMQPullConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {
 void DefaultMQPullConsumer::fetchSubscribeMessageQueues(const string& topic, vector<MQMessageQueue>& mqs) {
   mqs.clear();
   try {
-    getFactory()->fetchSubscribeMessageQueues(topic, mqs, getSessionCredentials());
+    const string localTopic = NameSpaceUtil::withNameSpace(topic, getNameSpace());
+    getFactory()->fetchSubscribeMessageQueues(localTopic, mqs, getSessionCredentials());
   } catch (MQException& e) {
     LOG_ERROR(e.what());
   }
@@ -225,7 +227,11 @@ PullResult DefaultMQPullConsumer::pullSyncImpl(const MQMessageQueue& mq,
                                                                         ComMode_SYNC,            // 10
                                                                         NULL,                    //<!callback;
                                                                         getSessionCredentials(), NULL));
-    return m_pPullAPIWrapper->processPullResult(mq, pullResult.get(), pSData.get());
+    PullResult pr = m_pPullAPIWrapper->processPullResult(mq, pullResult.get(), pSData.get());
+    if (m_useNameSpaceMode) {
+      MessageAccessor::withoutNameSpace(pr.msgFoundList, m_nameSpace);
+    }
+    return pr;
   } catch (MQException& e) {
     LOG_ERROR(e.what());
   }
@@ -264,6 +270,7 @@ void DefaultMQPullConsumer::pullAsyncImpl(const MQMessageQueue& mq,
   arg.pPullWrapper = m_pPullAPIWrapper;
 
   try {
+    // not support name space
     unique_ptr<PullResult> pullResult(m_pPullAPIWrapper->pullKernelImpl(mq,                      // 1
                                                                         pSData->getSubString(),  // 2
                                                                         0L,                      // 3
@@ -392,6 +399,18 @@ bool DefaultMQPullConsumer::dealWithNameSpace() {
     string fullGID = NameSpaceUtil::withNameSpace(getGroupName(), ns);
     setGroupName(fullGID);
   }
+  set<string> tmpTopics;
+  for (auto iter = m_registerTopics.begin(); iter != m_registerTopics.end(); iter++) {
+    string topic = *iter;
+    if (!NameSpaceUtil::hasNameSpace(topic, ns)) {
+      LOG_INFO("Update Subscribe Topic[%s] with NameSpace:%s", topic.c_str(), ns.c_str());
+      topic = NameSpaceUtil::withNameSpace(topic, ns);
+      // let other mode to known, the name space model opened.
+      m_useNameSpaceMode = true;
+    }
+    tmpTopics.insert(topic);
+  }
+  m_registerTopics.swap(tmpTopics);
   return true;
 }
 //<!************************************************************************

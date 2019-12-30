@@ -207,6 +207,7 @@ DefaultMQPushConsumer::DefaultMQPushConsumer(const string& groupname)
   string gname = groupname.empty() ? DEFAULT_CONSUMER_GROUP : groupname;
   setGroupName(gname);
   m_asyncPull = true;
+  m_useNameSpaceMode = false;
   m_asyncPullTimeout = 30 * 1000;
   setMessageModel(CLUSTERING);
 
@@ -1000,11 +1001,12 @@ bool DefaultMQPushConsumer::dealWithNameSpace() {
     if (!NameSpaceUtil::hasNameSpace(topic, ns)) {
       LOG_INFO("Update Subscribe[%s:%s] with NameSpace:%s", it->first.c_str(), it->second.c_str(), ns.c_str());
       topic = NameSpaceUtil::withNameSpace(topic, ns);
+      // let other mode to known, the name space model opened.
+      m_useNameSpaceMode = true;
     }
     subTmp[topic] = subs;
   }
-  m_subTopics.clear();
-  m_subTopics = subTmp;
+  m_subTopics.swap(subTmp);
 
   return true;
 }

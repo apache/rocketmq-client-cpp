@@ -56,9 +56,11 @@ class ROCKETMQCLIENT_API MQConsumer : public MQClient {
  public:
   MessageModel getMessageModel() const { return m_messageModel; }
   void setMessageModel(MessageModel messageModel) { m_messageModel = messageModel; }
+  bool isUseNameSpaceMode() const { return m_useNameSpaceMode; }
 
  protected:
   MessageModel m_messageModel;
+  bool m_useNameSpaceMode = false;
 };
 
 //<!***************************************************************************

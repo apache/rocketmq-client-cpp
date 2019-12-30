@@ -183,7 +183,9 @@ void ConsumeMessageOrderlyService::ConsumeRequest(boost::weak_ptr<PullRequest> p
         request->takeMessages(msgs, pConsumer->getConsumeMessageBatchMaxSize());
         if (!msgs.empty()) {
           request->setLastConsumeTimestamp(UtilAll::currentTimeMillis());
-          MessageAccessor::withoutNameSpace(msgs, m_pConsumer->getNameSpace());
+          if (m_pConsumer->isUseNameSpaceMode()) {
+            MessageAccessor::withoutNameSpace(msgs, m_pConsumer->getNameSpace());
+          }
           ConsumeStatus consumeStatus = m_pMessageListener->consumeMessage(msgs);
           if (consumeStatus == RECONSUME_LATER) {
             request->makeMessageToCosumeAgain(msgs);
