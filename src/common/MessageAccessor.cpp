@@ -36,10 +36,11 @@ void MessageAccessor::withoutNameSpaceSingle(MQMessageExt& msg, const string nam
     string originTopic = msg.getTopic();
     auto index = originTopic.find(nameSpace);
     if (index != string::npos) {
-      string newTopic = originTopic.substr(index + nameSpace.length() + NAMESPACE_SPLIT_FLAG.length(), originTopic.length());
+      string newTopic =
+          originTopic.substr(index + nameSpace.length() + NAMESPACE_SPLIT_FLAG.length(), originTopic.length());
       msg.setTopic(newTopic);
       LOG_DEBUG("Find Name Space Prefix in MessageID[%s], OriginTopic[%s], NewTopic[%s]", msg.getMsgId().c_str(),
-               originTopic.c_str(), newTopic.c_str());
+                originTopic.c_str(), newTopic.c_str());
     }
   }
 }
