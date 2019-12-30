@@ -39,6 +39,7 @@ MQClient::MQClient() {
     m_namesrvAddr = "";
 
   m_instanceName = "DEFAULT";
+  m_nameSpace = "";
   m_clientFactory = NULL;
   m_serviceState = CREATE_JUST;
   m_pullThreadNum = std::thread::hardware_concurrency();

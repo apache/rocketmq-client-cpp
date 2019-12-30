@@ -130,6 +130,7 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
   void checkConfig();
   void copySubscription();
   void updateTopicSubscribeInfoWhenSubscriptionChanged();
+  bool dealWithNameSpace();
 
  private:
   uint64_t m_startTime;

@@ -20,6 +20,7 @@
 #include "ConsumeMsgService.h"
 #include "DefaultMQPushConsumer.h"
 #include "Logging.h"
+#include "MessageAccessor.h"
 #include "UtilAll.h"
 namespace rocketmq {
 
@@ -98,6 +99,9 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
   if (m_pMessageListener != NULL) {
     resetRetryTopic(msgs);
     request->setLastConsumeTimestamp(UtilAll::currentTimeMillis());
+    LOG_DEBUG("=====Receive Messages:[%s][%s][%s]", msgs[0].getTopic().c_str(), msgs[0].getMsgId().c_str(),
+             msgs[0].getBody().c_str());
+    MessageAccessor::withoutNameSpace(msgs, m_pConsumer->getNameSpace());
     status = m_pMessageListener->consumeMessage(msgs);
   }
 

@@ -23,6 +23,7 @@
 #include "Logging.h"
 #include "MQClientAPIImpl.h"
 #include "MQClientFactory.h"
+#include "NameSpaceUtil.h"
 #include "OffsetStore.h"
 #include "PullAPIWrapper.h"
 #include "PullSysFlag.h"
@@ -298,6 +299,8 @@ void DefaultMQPushConsumer::start() {
   sa.sa_flags = 0;
   sigaction(SIGPIPE, &sa, 0);
 #endif
+  // deal with name space before start
+  dealWithNameSpace();
   switch (m_serviceState) {
     case CREATE_JUST: {
       m_serviceState = START_FAILED;
@@ -972,6 +975,38 @@ ConsumerRunningInfo* DefaultMQPushConsumer::getConsumerRunningInfo() {
 
   return info;
 }
+// we should deal with name space before producer start.
+bool DefaultMQPushConsumer::dealWithNameSpace() {
+  string ns = getNameSpace();
+  if (ns.empty()) {
+    string nsAddr = getNamesrvAddr();
+    if (!NameSpaceUtil::checkNameSpaceExistInNameServer(nsAddr)) {
+      return true;
+    }
+    ns = NameSpaceUtil::getNameSpaceFromNsURL(nsAddr);
+    // reset namespace
+    setNameSpace(ns);
+  }
+  // reset group name
+  if (!NameSpaceUtil::hasNameSpace(getGroupName(), ns)) {
+    string fullGID = NameSpaceUtil::withNameSpace(getGroupName(), ns);
+    setGroupName(fullGID);
+  }
+  map<string, string> subTmp;
+  map<string, string>::iterator it = m_subTopics.begin();
+  for (; it != m_subTopics.end(); ++it) {
+    string topic = it->first;
+    string subs = it->second;
+    if (!NameSpaceUtil::hasNameSpace(topic, ns)) {
+      LOG_INFO("Update Subscribe[%s:%s] with NameSpace:%s", it->first.c_str(), it->second.c_str(), ns.c_str());
+      topic = NameSpaceUtil::withNameSpace(topic, ns);
+    }
+    subTmp[topic] = subs;
+  }
+  m_subTopics.clear();
+  m_subTopics = subTmp;
 
+  return true;
+}
 //<!************************************************************************
 }  // namespace rocketmq

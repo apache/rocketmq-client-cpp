@@ -50,7 +50,7 @@ string NameSpaceUtil::getNameSpaceFromNsURL(string nameServerAddr) {
       return nameSpace;
     }
   }
-  return nullptr;
+  return "";
 }
 
 bool NameSpaceUtil::checkNameSpaceExistInNsURL(string nameServerAddr) {
@@ -61,6 +61,29 @@ bool NameSpaceUtil::checkNameSpaceExistInNsURL(string nameServerAddr) {
   auto index = nameServerAddr.find(NAMESPACE_PREFIX);
   if (index != string::npos) {
     LOG_INFO("Find Name Space Prefix in nameServerAddr [%s]", nameServerAddr.c_str());
+    return true;
+  }
+  return false;
+}
+
+bool NameSpaceUtil::checkNameSpaceExistInNameServer(string nameServerAddr) {
+  auto index = nameServerAddr.find(NAMESPACE_PREFIX);
+  if (index != string::npos) {
+    LOG_INFO("Find Name Space Prefix in nameServerAddr [%s]", nameServerAddr.c_str());
+    return true;
+  }
+  return false;
+}
+
+string NameSpaceUtil::withNameSpace(string source, string ns) {
+  if (!ns.empty()) {
+    return ns + NAMESPACE_SPLIT_FLAG + source;
+  }
+  return source;
+}
+
+bool NameSpaceUtil::hasNameSpace(string source, string ns) {
+  if (source.length() >= ns.length() && source.find(ns) != string::npos) {
     return true;
   }
   return false;

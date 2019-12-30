@@ -20,10 +20,8 @@
 #include "CommunicationMode.h"
 #include "FilterAPI.h"
 #include "Logging.h"
-#include "MQClientAPIImpl.h"
 #include "MQClientFactory.h"
-#include "MQClientManager.h"
-#include "MQProtos.h"
+#include "NameSpaceUtil.h"
 #include "OffsetStore.h"
 #include "PullAPIWrapper.h"
 #include "PullSysFlag.h"
@@ -64,6 +62,7 @@ void DefaultMQPullConsumer::start() {
   sa.sa_flags = 0;
   sigaction(SIGPIPE, &sa, 0);
 #endif
+  dealWithNameSpace();
   switch (m_serviceState) {
     case CREATE_JUST: {
       m_serviceState = START_FAILED;
@@ -376,6 +375,24 @@ bool DefaultMQPullConsumer::producePullMsgTask(boost::weak_ptr<PullRequest> pull
 Rebalance* DefaultMQPullConsumer::getRebalance() const {
   return NULL;
 }
-
+// we should deal with name space before producer start.
+bool DefaultMQPullConsumer::dealWithNameSpace() {
+  string ns = getNameSpace();
+  if (ns.empty()) {
+    string nsAddr = getNamesrvAddr();
+    if (!NameSpaceUtil::checkNameSpaceExistInNameServer(nsAddr)) {
+      return true;
+    }
+    ns = NameSpaceUtil::getNameSpaceFromNsURL(nsAddr);
+    // reset namespace
+    setNameSpace(ns);
+  }
+  // reset group name
+  if (!NameSpaceUtil::hasNameSpace(getGroupName(), ns)) {
+    string fullGID = NameSpaceUtil::withNameSpace(getGroupName(), ns);
+    setGroupName(fullGID);
+  }
+  return true;
+}
 //<!************************************************************************
 }  // namespace rocketmq

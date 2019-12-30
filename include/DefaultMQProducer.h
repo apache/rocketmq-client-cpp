@@ -102,6 +102,7 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer {
                             SendCallback* pSendCallback);
   bool tryToCompressMessage(MQMessage& msg);
   BatchMessage buildBatchMessage(std::vector<MQMessage>& msgs);
+  bool dealWithNameSpace();
 
  private:
   int m_sendMsgTimeout;
