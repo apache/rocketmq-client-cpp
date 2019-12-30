@@ -20,7 +20,7 @@ using namespace rocketmq;
 
 TpsReportService g_tps;
 
-void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducerPtr producer) {
+void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* producer) {
   while (g_msgCount.fetch_sub(1) > 0) {
     std::vector<MQMessage*> msgs;
     MQMessage msg1(info->topic, "*", info->body);
@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
   }
   PrintRocketmqSendAndConsumerArgs(info);
 
-  auto producer = DefaultMQProducer::create();
+  auto* producer = new DefaultMQProducer(info.groupname);
   producer->setNamesrvAddr(info.namesrv);
   producer->setGroupName(info.groupname);
   producer->setSendMsgTimeout(3000);
@@ -95,6 +95,8 @@ int main(int argc, char* argv[]) {
             << "========================finished=============================" << std::endl;
 
   producer->shutdown();
+
+  delete producer;
 
   return 0;
 }

@@ -31,6 +31,7 @@
 #endif
 
 #include "DefaultMQProducer.h"
+#include "TransactionMQProducer.h"
 #include "DefaultMQPullConsumer.h"
 #include "DefaultMQPushConsumer.h"
 

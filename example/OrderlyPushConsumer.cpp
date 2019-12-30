@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 #include "common.h"
-
 #include "concurrent/latch.hpp"
 
 using namespace rocketmq;
@@ -53,7 +52,7 @@ int main(int argc, char* argv[]) {
   }
   PrintRocketmqSendAndConsumerArgs(info);
 
-  auto consumer = DefaultMQPushConsumer::create();
+  auto* consumer = new DefaultMQPushConsumer(info.groupname);
   consumer->setNamesrvAddr(info.namesrv);
   consumer->setGroupName(info.groupname);
   consumer->setTcpTransportTryLockTimeout(1000);
@@ -77,6 +76,8 @@ int main(int argc, char* argv[]) {
   g_finished.wait();
 
   consumer->shutdown();
+
+  delete consumer;
 
   return 0;
 }

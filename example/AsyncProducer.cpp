@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 #include "common.h"
-
 #include "concurrent/latch.hpp"
 
 using namespace rocketmq;
@@ -47,7 +46,7 @@ class MyAutoDeleteSendCallback : public AutoDeleteSendCallback {
   MQMessage* m_msg;
 };
 
-void AsyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducerPtr producer) {
+void AsyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* producer) {
   while (g_msgCount.fetch_sub(1) > 0) {
     auto* msg = new MQMessage(info->topic,  // topic
                               "*",          // tag
@@ -71,7 +70,7 @@ int main(int argc, char* argv[]) {
   }
   PrintRocketmqSendAndConsumerArgs(info);
 
-  auto producer = DefaultMQProducer::create();
+  auto* producer = new DefaultMQProducer(info.groupname);
   producer->setNamesrvAddr(info.namesrv);
   producer->setGroupName(info.groupname);
   producer->setSendMsgTimeout(3000);
@@ -114,6 +113,8 @@ int main(int argc, char* argv[]) {
     std::cout << "encounter exception: " << e.what() << std::endl;
   }
 
+  delete producer;
   delete g_finish;
+
   return 0;
 }

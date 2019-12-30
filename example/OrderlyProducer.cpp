@@ -31,7 +31,7 @@ class SelectMessageQueueByHash : public MessageQueueSelector {
 
 SelectMessageQueueByHash g_mySelector;
 
-void ProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducerPtr producer) {
+void ProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* producer) {
   while (g_msgCount.fetch_sub(1) > 0) {
     MQMessage msg(info->topic,  // topic
                   "*",          // tag
@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
   }
   PrintRocketmqSendAndConsumerArgs(info);
 
-  auto producer = DefaultMQProducer::create();
+  auto* producer = new DefaultMQProducer(info.groupname);
   producer->setNamesrvAddr(info.namesrv);
   producer->setGroupName(info.groupname);
   producer->setSendMsgTimeout(3000);
@@ -96,6 +96,8 @@ int main(int argc, char* argv[]) {
             << "========================finished=============================" << std::endl;
 
   producer->shutdown();
+
+  delete producer;
 
   return 0;
 }

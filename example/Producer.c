@@ -14,18 +14,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 #include <stdio.h>
-#include "CProducer.h"
-#include "CCommon.h"
-#include "CMessage.h"
-#include "CSendResult.h"
+
 #ifdef _WIN32
 #include <windows.h>
 #else
 #include <unistd.h>
 #include <memory.h>
 #endif
+
+#include "c/CProducer.h"
 
 void thread_sleep(unsigned milliseconds) {
 #ifdef _WIN32

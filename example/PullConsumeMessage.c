@@ -14,19 +14,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 #include <stdio.h>
-#include "CPullConsumer.h"
-#include "CCommon.h"
-#include "CMessageExt.h"
-#include "CPullResult.h"
-#include "CMessageQueue.h"
+
 #ifdef _WIN32
 #include <windows.h>
 #else
 #include <unistd.h>
 #include <memory.h>
 #endif
+
+#include "c/CPullConsumer.h"
 
 void thread_sleep(unsigned milliseconds) {
 #ifdef _WIN32

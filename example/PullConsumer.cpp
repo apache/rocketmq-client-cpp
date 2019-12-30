@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include <stdlib.h>
 #include <string.h>
 
@@ -115,5 +114,6 @@ int main(int argc, char* argv[]) {
             << "========================finished==============================\n";
 
   consumer.shutdown();
+
   return 0;
 }

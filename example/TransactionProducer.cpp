@@ -34,7 +34,7 @@ class MyTransactionListener : public TransactionListener {
   }
 };
 
-void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducerPtr producer) {
+void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, TransactionMQProducer* producer) {
   int old = g_msgCount.fetch_sub(1);
   while (old > 0) {
     MQMessage msg(info->topic,  // topic
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
   }
   PrintRocketmqSendAndConsumerArgs(info);
 
-  auto producer = DefaultMQProducer::create();
+  auto* producer = new TransactionMQProducer(info.groupname);
   producer->setNamesrvAddr(info.namesrv);
   producer->setGroupName(info.groupname);
   producer->setSendMsgTimeout(3000);
@@ -79,7 +79,6 @@ int main(int argc, char* argv[]) {
 
   MyTransactionListener myListener;
   producer->setTransactionListener(&myListener);
-  producer->setSendMessageInTransactionEnable(true);
 
   producer->start();
 
@@ -107,6 +106,8 @@ int main(int argc, char* argv[]) {
 
   std::this_thread::sleep_for(std::chrono::seconds(30));
   producer->shutdown();
+
+  delete producer;
 
   return 0;
 }
