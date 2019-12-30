@@ -57,7 +57,9 @@ class ROCKETMQCLIENT_API MQClient {
   void setNamesrvDomain(const std::string& namesrvDomain);
   const std::string& getInstanceName() const;
   void setInstanceName(const std::string& instanceName);
-  //<!groupName;
+  // nameSpace
+  const std::string& getNameSpace() const;
+  void setNameSpace(const std::string& nameSpace);
   const std::string& getGroupName() const;
   void setGroupName(const std::string& groupname);
 
@@ -184,9 +186,8 @@ class ROCKETMQCLIENT_API MQClient {
   std::string m_namesrvAddr;
   std::string m_namesrvDomain;
   std::string m_instanceName;
-  //<!  the name is globle only
+  std::string m_nameSpace;
   std::string m_GroupName;
-  //<!factory;
   MQClientFactory* m_clientFactory;
   int m_serviceState;
   int m_pullThreadNum;
