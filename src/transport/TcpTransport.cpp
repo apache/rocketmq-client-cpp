@@ -112,9 +112,9 @@ TcpConnectStatus TcpTransport::connect(const std::string& strServerURL, int time
   std::string hostname;
   short port;
 
-  LOG_INFO("connect to [{}].", strServerURL);
+  LOG_INFO_NEW("connect to [{}].", strServerURL);
   if (!UtilAll::SplitURL(strServerURL, hostname, port)) {
-    LOG_ERROR("connect to [{}] failed, Invalid url.", strServerURL);
+    LOG_ERROR_NEW("connect to [{}] failed, Invalid url.", strServerURL);
     return closeBufferEvent();
   }
 
