@@ -30,6 +30,8 @@
 #include "MQClientManager.h"
 #include "MQDecoder.h"
 #include "MQProtos.h"
+#include "MessageAccessor.h"
+#include "NameSpaceUtil.h"
 #include "StringIdMaker.h"
 #include "TopicPublishInfo.h"
 #include "Validators.h"
@@ -61,7 +63,8 @@ void DefaultMQProducer::start() {
   sa.sa_flags = 0;
   sigaction(SIGPIPE, &sa, 0);
 #endif
-
+  // we should deal with namespaced before start.
+  dealWithNameSpace();
   switch (m_serviceState) {
     case CREATE_JUST: {
       m_serviceState = START_FAILED;
@@ -109,6 +112,9 @@ void DefaultMQProducer::shutdown() {
 
 SendResult DefaultMQProducer::send(MQMessage& msg, bool bSelectActiveBroker) {
   Validators::checkMessage(msg, getMaxMessageSize());
+  if (!NameSpaceUtil::hasNameSpace(msg.getTopic(), getNameSpace())) {
+    MessageAccessor::withNameSpace(msg, getNameSpace());
+  }
   try {
     return sendDefaultImpl(msg, ComMode_SYNC, NULL, bSelectActiveBroker);
   } catch (MQException& e) {
@@ -120,6 +126,9 @@ SendResult DefaultMQProducer::send(MQMessage& msg, bool bSelectActiveBroker) {
 
 void DefaultMQProducer::send(MQMessage& msg, SendCallback* pSendCallback, bool bSelectActiveBroker) {
   Validators::checkMessage(msg, getMaxMessageSize());
+  if (!NameSpaceUtil::hasNameSpace(msg.getTopic(), getNameSpace())) {
+    MessageAccessor::withNameSpace(msg, getNameSpace());
+  }
   try {
     sendDefaultImpl(msg, ComMode_ASYNC, pSendCallback, bSelectActiveBroker);
   } catch (MQException& e) {
@@ -162,6 +171,9 @@ BatchMessage DefaultMQProducer::buildBatchMessage(std::vector<MQMessage>& msgs) 
   bool waitStoreMsgOK = false;
   for (auto& msg : msgs) {
     Validators::checkMessage(msg, getMaxMessageSize());
+    if (!NameSpaceUtil::hasNameSpace(msg.getTopic(), getNameSpace())) {
+      MessageAccessor::withNameSpace(msg, getNameSpace());
+    }
     if (firstFlag) {
       topic = msg.getTopic();
       waitStoreMsgOK = msg.isWaitStoreMsgOK();
@@ -190,6 +202,9 @@ BatchMessage DefaultMQProducer::buildBatchMessage(std::vector<MQMessage>& msgs) 
 
 SendResult DefaultMQProducer::send(MQMessage& msg, const MQMessageQueue& mq) {
   Validators::checkMessage(msg, getMaxMessageSize());
+  if (!NameSpaceUtil::hasNameSpace(msg.getTopic(), getNameSpace())) {
+    MessageAccessor::withNameSpace(msg, getNameSpace());
+  }
   if (msg.getTopic() != mq.getTopic()) {
     LOG_WARN("message's topic not equal mq's topic");
   }
@@ -204,6 +219,9 @@ SendResult DefaultMQProducer::send(MQMessage& msg, const MQMessageQueue& mq) {
 
 void DefaultMQProducer::send(MQMessage& msg, const MQMessageQueue& mq, SendCallback* pSendCallback) {
   Validators::checkMessage(msg, getMaxMessageSize());
+  if (!NameSpaceUtil::hasNameSpace(msg.getTopic(), getNameSpace())) {
+    MessageAccessor::withNameSpace(msg, getNameSpace());
+  }
   if (msg.getTopic() != mq.getTopic()) {
     LOG_WARN("message's topic not equal mq's topic");
   }
@@ -217,6 +235,9 @@ void DefaultMQProducer::send(MQMessage& msg, const MQMessageQueue& mq, SendCallb
 
 void DefaultMQProducer::sendOneway(MQMessage& msg, bool bSelectActiveBroker) {
   Validators::checkMessage(msg, getMaxMessageSize());
+  if (!NameSpaceUtil::hasNameSpace(msg.getTopic(), getNameSpace())) {
+    MessageAccessor::withNameSpace(msg, getNameSpace());
+  }
   try {
     sendDefaultImpl(msg, ComMode_ONEWAY, NULL, bSelectActiveBroker);
   } catch (MQException& e) {
@@ -227,6 +248,9 @@ void DefaultMQProducer::sendOneway(MQMessage& msg, bool bSelectActiveBroker) {
 
 void DefaultMQProducer::sendOneway(MQMessage& msg, const MQMessageQueue& mq) {
   Validators::checkMessage(msg, getMaxMessageSize());
+  if (!NameSpaceUtil::hasNameSpace(msg.getTopic(), getNameSpace())) {
+    MessageAccessor::withNameSpace(msg, getNameSpace());
+  }
   if (msg.getTopic() != mq.getTopic()) {
     LOG_WARN("message's topic not equal mq's topic");
   }
@@ -240,6 +264,9 @@ void DefaultMQProducer::sendOneway(MQMessage& msg, const MQMessageQueue& mq) {
 
 SendResult DefaultMQProducer::send(MQMessage& msg, MessageQueueSelector* pSelector, void* arg) {
   try {
+    if (!NameSpaceUtil::hasNameSpace(msg.getTopic(), getNameSpace())) {
+      MessageAccessor::withNameSpace(msg, getNameSpace());
+    }
     return sendSelectImpl(msg, pSelector, arg, ComMode_SYNC, NULL);
   } catch (MQException& e) {
     LOG_ERROR(e.what());
@@ -254,6 +281,9 @@ SendResult DefaultMQProducer::send(MQMessage& msg,
                                    int autoRetryTimes,
                                    bool bActiveBroker) {
   try {
+    if (!NameSpaceUtil::hasNameSpace(msg.getTopic(), getNameSpace())) {
+      MessageAccessor::withNameSpace(msg, getNameSpace());
+    }
     return sendAutoRetrySelectImpl(msg, pSelector, arg, ComMode_SYNC, NULL, autoRetryTimes, bActiveBroker);
   } catch (MQException& e) {
     LOG_ERROR(e.what());
@@ -264,6 +294,9 @@ SendResult DefaultMQProducer::send(MQMessage& msg,
 
 void DefaultMQProducer::send(MQMessage& msg, MessageQueueSelector* pSelector, void* arg, SendCallback* pSendCallback) {
   try {
+    if (!NameSpaceUtil::hasNameSpace(msg.getTopic(), getNameSpace())) {
+      MessageAccessor::withNameSpace(msg, getNameSpace());
+    }
     sendSelectImpl(msg, pSelector, arg, ComMode_ASYNC, pSendCallback);
   } catch (MQException& e) {
     LOG_ERROR(e.what());
@@ -273,6 +306,9 @@ void DefaultMQProducer::send(MQMessage& msg, MessageQueueSelector* pSelector, vo
 
 void DefaultMQProducer::sendOneway(MQMessage& msg, MessageQueueSelector* pSelector, void* arg) {
   try {
+    if (!NameSpaceUtil::hasNameSpace(msg.getTopic(), getNameSpace())) {
+      MessageAccessor::withNameSpace(msg, getNameSpace());
+    }
     sendSelectImpl(msg, pSelector, arg, ComMode_ONEWAY, NULL);
   } catch (MQException& e) {
     LOG_ERROR(e.what());
@@ -535,9 +571,11 @@ bool DefaultMQProducer::tryToCompressMessage(MQMessage& msg) {
 
   return false;
 }
+
 int DefaultMQProducer::getRetryTimes() const {
   return m_retryTimes;
 }
+
 void DefaultMQProducer::setRetryTimes(int times) {
   if (times <= 0) {
     LOG_WARN("set retry times illegal, use default value:5");
@@ -556,6 +594,7 @@ void DefaultMQProducer::setRetryTimes(int times) {
 int DefaultMQProducer::getRetryTimes4Async() const {
   return m_retryTimes4Async;
 }
+
 void DefaultMQProducer::setRetryTimes4Async(int times) {
   if (times <= 0) {
     LOG_WARN("set retry times illegal, use default value:1");
@@ -572,5 +611,24 @@ void DefaultMQProducer::setRetryTimes4Async(int times) {
   m_retryTimes4Async = times;
 }
 
+// we should deal with name space before producer start.
+bool DefaultMQProducer::dealWithNameSpace() {
+  string ns = getNameSpace();
+  if (ns.empty()) {
+    string nsAddr = getNamesrvAddr();
+    if (!NameSpaceUtil::checkNameSpaceExistInNameServer(nsAddr)) {
+      return true;
+    }
+    ns = NameSpaceUtil::getNameSpaceFromNsURL(nsAddr);
+    // reset namespace
+    setNameSpace(ns);
+  }
+  // reset group name
+  if (!NameSpaceUtil::hasNameSpace(getGroupName(), ns)) {
+    string fullGID = NameSpaceUtil::withNameSpace(getGroupName(), ns);
+    setGroupName(fullGID);
+  }
+  return true;
+}
 //<!***************************************************************************
 }  // namespace rocketmq

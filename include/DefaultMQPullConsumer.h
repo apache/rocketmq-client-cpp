@@ -123,6 +123,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
  private:
   void checkConfig();
   void copySubscription();
+  bool dealWithNameSpace();
 
   PullResult pullSyncImpl(const MQMessageQueue& mq,
                           const std::string& subExpression,

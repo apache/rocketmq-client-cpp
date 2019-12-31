@@ -14,37 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef __NAMESPACEUTIL_H__
-#define __NAMESPACEUTIL_H__
+#ifndef __MESSAGE_ACCESSOR_H__
+#define __MESSAGE_ACCESSOR_H__
 
 #include <string>
-
-using namespace std;
-
-static const string ENDPOINT_PREFIX = "http://";
-static const unsigned int ENDPOINT_PREFIX_LENGTH = ENDPOINT_PREFIX.length();
-static const string NAMESPACE_PREFIX = "MQ_INST_";
-static const int NAMESPACE_PREFIX_LENGTH = NAMESPACE_PREFIX.length();
-static const string NAMESPACE_SPLIT_FLAG = "%";
-
+#include <vector>
+#include "MQMessage.h"
+#include "MQMessageExt.h"
 namespace rocketmq {
-class NameSpaceUtil {
+//<!***************************************************************************
+class MessageAccessor {
  public:
-  static bool isEndPointURL(string nameServerAddr);
-
-  static string formatNameServerURL(string nameServerAddr);
-
-  static string getNameSpaceFromNsURL(string nameServerAddr);
-
-  static bool checkNameSpaceExistInNsURL(string nameServerAddr);
-
-  static bool checkNameSpaceExistInNameServer(string nameServerAddr);
-
-  static string withNameSpace(string source, string ns);
-
-  static bool hasNameSpace(string source, string ns);
+  static void withNameSpace(MQMessage& msg, const std::string nameSpace);
+  static void withoutNameSpaceSingle(MQMessageExt& msg, const std::string nameSpace);
+  static void withoutNameSpace(std::vector<MQMessageExt>& msgs, const std::string nameSpace);
 };
 
+//<!***************************************************************************
 }  // namespace rocketmq
-#endif  //__NAMESPACEUTIL_H__
+#endif

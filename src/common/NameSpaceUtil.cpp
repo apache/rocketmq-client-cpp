@@ -36,4 +36,56 @@ string NameSpaceUtil::formatNameServerURL(string nameServerAddr) {
   }
   return nameServerAddr;
 }
+
+string NameSpaceUtil::getNameSpaceFromNsURL(string nameServerAddr) {
+  LOG_DEBUG("Try to get Name Space from nameServerAddr [%s]", nameServerAddr.c_str());
+  string nsAddr = formatNameServerURL(nameServerAddr);
+  string nameSpace;
+  auto index = nameServerAddr.find(NAMESPACE_PREFIX);
+  if (index != string::npos) {
+    auto indexDot = nameServerAddr.find('.');
+    if (indexDot != string::npos) {
+      nameSpace = nameServerAddr.substr(index, indexDot);
+      LOG_INFO("Get Name Space [%s] from nameServerAddr [%s]", nameSpace.c_str(), nameServerAddr.c_str());
+      return nameSpace;
+    }
+  }
+  return "";
+}
+
+bool NameSpaceUtil::checkNameSpaceExistInNsURL(string nameServerAddr) {
+  if (!isEndPointURL(nameServerAddr)) {
+    LOG_DEBUG("This nameServerAddr [%s] is not a endpoint. should not get Name Space.", nameServerAddr.c_str());
+    return false;
+  }
+  auto index = nameServerAddr.find(NAMESPACE_PREFIX);
+  if (index != string::npos) {
+    LOG_INFO("Find Name Space Prefix in nameServerAddr [%s]", nameServerAddr.c_str());
+    return true;
+  }
+  return false;
+}
+
+bool NameSpaceUtil::checkNameSpaceExistInNameServer(string nameServerAddr) {
+  auto index = nameServerAddr.find(NAMESPACE_PREFIX);
+  if (index != string::npos) {
+    LOG_INFO("Find Name Space Prefix in nameServerAddr [%s]", nameServerAddr.c_str());
+    return true;
+  }
+  return false;
+}
+
+string NameSpaceUtil::withNameSpace(string source, string ns) {
+  if (!ns.empty()) {
+    return ns + NAMESPACE_SPLIT_FLAG + source;
+  }
+  return source;
+}
+
+bool NameSpaceUtil::hasNameSpace(string source, string ns) {
+  if (source.length() >= ns.length() && source.find(ns) != string::npos) {
+    return true;
+  }
+  return false;
+}
 }  // namespace rocketmq

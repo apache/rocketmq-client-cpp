@@ -19,9 +19,9 @@
 #include "Logging.h"
 #include "MQClientFactory.h"
 #include "MQClientManager.h"
+#include "NameSpaceUtil.h"
 #include "TopicPublishInfo.h"
 #include "UtilAll.h"
-#include "NameSpaceUtil.h"
 
 namespace rocketmq {
 
@@ -39,6 +39,7 @@ MQClient::MQClient() {
     m_namesrvAddr = "";
 
   m_instanceName = "DEFAULT";
+  m_nameSpace = "";
   m_clientFactory = NULL;
   m_serviceState = CREATE_JUST;
   m_pullThreadNum = std::thread::hardware_concurrency();
@@ -87,7 +88,13 @@ const string& MQClient::getInstanceName() const {
 void MQClient::setInstanceName(const string& instanceName) {
   m_instanceName = instanceName;
 }
+const string& MQClient::getNameSpace() const {
+  return m_nameSpace;
+}
 
+void MQClient::setNameSpace(const string& nameSpace) {
+  m_nameSpace = nameSpace;
+}
 void MQClient::createTopic(const string& key, const string& newTopic, int queueNum) {
   try {
     getFactory()->createTopic(key, newTopic, queueNum, m_SessionCredentials);
@@ -212,4 +219,4 @@ const SessionCredentials& MQClient::getSessionCredentials() const {
 }
 
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
