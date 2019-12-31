@@ -56,10 +56,10 @@ typedef int32_t int32;
 typedef uint32_t uint32;
 
 /** A platform-independent 64-bit integer type. */
-typedef int64_t int64_t;
+typedef int64_t int64;
 
 /** A platform-independent 64-bit unsigned integer type. */
-typedef uint64_t uint64_t;
+typedef uint64_t uint64;
 
 #ifdef WIN32
 #define SIZET_FMT "%lu"
