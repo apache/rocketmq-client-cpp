@@ -41,7 +41,7 @@ class TcpTransport;
 
 typedef std::shared_ptr<TcpTransport> TcpTransportPtr;
 
-class TcpTransport : public std::enable_shared_from_this<TcpTransport> {
+class TcpTransport : public noncopyable, public std::enable_shared_from_this<TcpTransport> {
  public:
   static TcpTransportPtr CreateTransport(TcpRemotingClient* client, TcpTransportReadCallback handle = nullptr) {
     // transport must be managed by smart pointer
