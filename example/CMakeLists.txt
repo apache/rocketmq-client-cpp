@@ -18,6 +18,7 @@ project(example)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/src)
 
 link_directories(${LIBEVENT_LIBRARY})
 link_directories(${JSONCPP_LIBRARY})
