@@ -31,6 +31,9 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumerConfig : public DefaultMQConsumerC
   ConsumeFromWhere getConsumeFromWhere() const { return m_consumeFromWhere; }
   void setConsumeFromWhere(ConsumeFromWhere consumeFromWhere) { m_consumeFromWhere = consumeFromWhere; }
 
+  std::string getConsumeTimestamp() { return m_consumeTimestamp; }
+  void setConsumeTimestamp(std::string consumeTimestamp) { m_consumeTimestamp = consumeTimestamp; }
+
   /**
    * consuming thread count, default value is cpu cores
    */
@@ -70,6 +73,7 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumerConfig : public DefaultMQConsumerC
 
  protected:
   ConsumeFromWhere m_consumeFromWhere;
+  std::string m_consumeTimestamp;
 
   int m_consumeThreadNum;
   int m_consumeMessageBatchMaxSize;

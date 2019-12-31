@@ -16,8 +16,8 @@
  */
 #include "RebalancePushImpl.h"
 
-#include "UtilAll.h"
 #include "OffsetStore.h"
+#include "UtilAll.h"
 
 namespace rocketmq {
 
@@ -60,11 +60,11 @@ void RebalancePushImpl::removeDirtyOffset(const MQMessageQueue& mq) {
 
 int64_t RebalancePushImpl::computePullFromWhere(const MQMessageQueue& mq) {
   int64_t result = -1;
-  ConsumeFromWhere consumeFromWhere = m_defaultMQPushConsumer->consumeFromWhere();
-  OffsetStore* pOffsetStore = m_defaultMQPushConsumer->getOffsetStore();
+  ConsumeFromWhere consumeFromWhere = m_defaultMQPushConsumer->getDefaultMQPushConsumerConfig()->getConsumeFromWhere();
+  OffsetStore* offsetStore = m_defaultMQPushConsumer->getOffsetStore();
   switch (consumeFromWhere) {
     case CONSUME_FROM_LAST_OFFSET: {
-      int64_t lastOffset = pOffsetStore->readOffset(mq, READ_FROM_STORE);
+      int64_t lastOffset = offsetStore->readOffset(mq, READ_FROM_STORE);
       if (lastOffset >= 0) {
         LOG_INFO_NEW("CONSUME_FROM_LAST_OFFSET, lastOffset of mq:{} is {}", mq.toString(), lastOffset);
         result = lastOffset;
@@ -88,7 +88,7 @@ int64_t RebalancePushImpl::computePullFromWhere(const MQMessageQueue& mq) {
       }
     } break;
     case CONSUME_FROM_FIRST_OFFSET: {
-      int64_t lastOffset = pOffsetStore->readOffset(mq, READ_FROM_STORE);
+      int64_t lastOffset = offsetStore->readOffset(mq, READ_FROM_STORE);
       if (lastOffset >= 0) {
         LOG_INFO_NEW("CONSUME_FROM_FIRST_OFFSET, lastOffset of mq:{} is {}", mq.toString(), lastOffset);
         result = lastOffset;
@@ -101,7 +101,7 @@ int64_t RebalancePushImpl::computePullFromWhere(const MQMessageQueue& mq) {
       }
     } break;
     case CONSUME_FROM_TIMESTAMP: {
-      int64_t lastOffset = pOffsetStore->readOffset(mq, READ_FROM_STORE);
+      int64_t lastOffset = offsetStore->readOffset(mq, READ_FROM_STORE);
       if (lastOffset >= 0) {
         LOG_INFO_NEW("CONSUME_FROM_TIMESTAMP, lastOffset of mq:{} is {}", mq.toString().c_str(), lastOffset);
         result = lastOffset;
@@ -111,13 +111,17 @@ int64_t RebalancePushImpl::computePullFromWhere(const MQMessageQueue& mq) {
             result = m_defaultMQPushConsumer->maxOffset(mq);
             LOG_INFO_NEW("CONSUME_FROM_TIMESTAMP, maxOffset of mq:{} is {}", mq.toString(), result);
           } catch (MQException& e) {
-            LOG_ERROR_NEW("CONSUME_FROM_TIMESTAMP error, lastOffset of mq:{} is -1", mq.toString());
+            LOG_ERROR_NEW("CONSUME_FROM_TIMESTAMP error, maxOffset of mq:{} is -1", mq.toString());
             result = -1;
           }
         } else {
           try {
+            // TODO: parseDate by YYYYMMDDHHMMSS
+            auto timestamp =
+                std::stoull(m_defaultMQPushConsumer->getDefaultMQPushConsumerConfig()->getConsumeTimestamp());
+            result = m_defaultMQPushConsumer->searchOffset(mq, timestamp);
           } catch (MQException& e) {
-            LOG_ERROR_NEW("CONSUME_FROM_TIMESTAMP error, lastOffset of mq:{}, return 0", mq.toString());
+            LOG_ERROR_NEW("CONSUME_FROM_TIMESTAMP error, searchOffset of mq:{}, return 0", mq.toString());
             result = -1;
           }
         }

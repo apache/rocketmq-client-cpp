@@ -24,6 +24,7 @@ namespace rocketmq {
 
 DefaultMQPushConsumerConfig::DefaultMQPushConsumerConfig()
     : m_consumeFromWhere(CONSUME_FROM_LAST_OFFSET),
+      m_consumeTimestamp("0"),
       m_consumeThreadNum(std::min(8, (int)std::thread::hardware_concurrency())),
       m_consumeMessageBatchMaxSize(1),
       m_maxMsgCacheSize(1000),
