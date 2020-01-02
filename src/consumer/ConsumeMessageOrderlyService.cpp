@@ -167,7 +167,7 @@ void ConsumeMessageOrderlyService::ConsumeRequest(boost::weak_ptr<PullRequest> p
 
   if (m_pMessageListener) {
     if ((request->isLocked() && !request->isLockExpired()) || m_pConsumer->getMessageModel() == BROADCASTING) {
-      //DefaultMQPushConsumer* pConsumer = (DefaultMQPushConsumer*)m_pConsumer;
+      // DefaultMQPushConsumer* pConsumer = (DefaultMQPushConsumer*)m_pConsumer;
       uint64_t beginTime = UtilAll::currentTimeMillis();
       bool continueConsume = true;
       while (continueConsume) {
