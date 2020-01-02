@@ -32,7 +32,7 @@ class ConsumerRunningInfo;
 class ROCKETMQCLIENT_API MQConsumer : public MQClient {
  public:
   virtual ~MQConsumer() {}
-  virtual void sendMessageBack(MQMessageExt& msg, int delayLevel) = 0;
+  virtual bool sendMessageBack(MQMessageExt& msg, int delayLevel) = 0;
   virtual void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) = 0;
   virtual void doRebalance() = 0;
   virtual void persistConsumerOffset() = 0;

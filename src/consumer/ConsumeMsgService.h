@@ -53,6 +53,15 @@ class ConsumeMessageConcurrentlyService : public ConsumeMsgService {
   virtual void stopThreadPool();
 
   void ConsumeRequest(boost::weak_ptr<PullRequest> request, vector<MQMessageExt>& msgs);
+  void submitConsumeRequestLater(boost::weak_ptr<PullRequest> request, vector<MQMessageExt>& msgs, int millis);
+
+  void triggersubmitConsumeRequestLater(boost::asio::deadline_timer* t,
+                                        boost::weak_ptr<PullRequest> pullRequest,
+                                        vector<MQMessageExt>& msgs);
+  static void static_submitConsumeRequest(void* context,
+                                          boost::asio::deadline_timer* t,
+                                          boost::weak_ptr<PullRequest> pullRequest,
+                                          vector<MQMessageExt>& msgs);
 
  private:
   void resetRetryTopic(vector<MQMessageExt>& msgs);
@@ -76,7 +85,8 @@ class ConsumeMessageOrderlyService : public ConsumeMsgService {
   virtual MessageListenerType getConsumeMsgSerivceListenerType();
 
   void boost_asio_work();
-  void tryLockLaterAndReconsume(boost::weak_ptr<PullRequest> request, bool tryLockMQ);
+  // void tryLockLaterAndReconsume(boost::weak_ptr<PullRequest> request, bool tryLockMQ);
+  void tryLockLaterAndReconsumeDelay(boost::weak_ptr<PullRequest> request, bool tryLockMQ, int millisDelay);
   static void static_submitConsumeRequestLater(void* context,
                                                boost::weak_ptr<PullRequest> request,
                                                bool tryLockMQ,

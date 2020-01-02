@@ -142,7 +142,9 @@ void DefaultMQPullConsumer::shutdown() {
   }
 }
 
-void DefaultMQPullConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {}
+bool DefaultMQPullConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {
+  return true;
+}
 
 void DefaultMQPullConsumer::fetchSubscribeMessageQueues(const string& topic, vector<MQMessageQueue>& mqs) {
   mqs.clear();
