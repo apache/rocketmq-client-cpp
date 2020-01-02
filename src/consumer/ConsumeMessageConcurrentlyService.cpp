@@ -189,14 +189,18 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
     case CLUSTERING: {
       // send back msg to broker;
       for (size_t i = ackIndex + 1; i < msgs.size(); i++) {
-        LOG_WARN("consume fail, MQ is:%s, its msgId is:%s, index is:" SIZET_FMT ", reconsume times is:%d",
-                 (request->m_messageQueue).toString().c_str(), msgs[i].getMsgId().c_str(), i,
-                 msgs[i].getReconsumeTimes());
-        if (m_pConsumer->getConsumeType() == CONSUME_PASSIVELY && !m_pConsumer->sendMessageBack(msgs[i], 0)) {
-          LOG_WARN("Send message back fail, MQ is:%s, its msgId is:%s, index is:%d, re-consume times is:%d",
-                   (request->m_messageQueue).toString().c_str(), msgs[i].getMsgId().c_str(), i,
-                   msgs[i].getReconsumeTimes());
-          localRetryMsgs.push_back(msgs[i]);
+        LOG_DEBUG("consume fail, MQ is:%s, its msgId is:%s, index is:" SIZET_FMT ", reconsume times is:%d",
+                  (request->m_messageQueue).toString().c_str(), msgs[i].getMsgId().c_str(), i,
+                  msgs[i].getReconsumeTimes());
+        if (m_pConsumer->getConsumeType() == CONSUME_PASSIVELY) {
+          string brokerName = request->m_messageQueue.getBrokerName();
+          if (!m_pConsumer->sendMessageBack(msgs[i], 0, brokerName)) {
+            LOG_WARN("Send message back fail, MQ is:%s, its msgId is:%s, index is:%d, re-consume times is:%d",
+                     (request->m_messageQueue).toString().c_str(), msgs[i].getMsgId().c_str(), i,
+                     msgs[i].getReconsumeTimes());
+            msgs[i].setReconsumeTimes(msgs[i].getReconsumeTimes() + 1);
+            localRetryMsgs.push_back(msgs[i]);
+          }
         }
       }
       break;

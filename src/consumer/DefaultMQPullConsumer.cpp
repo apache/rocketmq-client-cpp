@@ -142,7 +142,7 @@ void DefaultMQPullConsumer::shutdown() {
   }
 }
 
-bool DefaultMQPullConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {
+bool DefaultMQPullConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel, string& brokerName) {
   return true;
 }
 

@@ -823,7 +823,8 @@ void MQClientAPIImpl::updateConsumerOffsetOneway(const string& addr,
   m_pRemotingClient->invokeOneway(addr, request);
 }
 
-void MQClientAPIImpl::consumerSendMessageBack(MQMessageExt& msg,
+void MQClientAPIImpl::consumerSendMessageBack(const string addr,
+                                              MQMessageExt& msg,
                                               const string& consumerGroup,
                                               int delayLevel,
                                               int timeoutMillis,
@@ -833,7 +834,7 @@ void MQClientAPIImpl::consumerSendMessageBack(MQMessageExt& msg,
   pRequestHeader->offset = msg.getCommitLogOffset();
   pRequestHeader->delayLevel = delayLevel;
 
-  string addr = socketAddress2IPPort(msg.getStoreHost());
+  // string addr = socketAddress2IPPort(msg.getStoreHost());
   RemotingCommand request(CONSUMER_SEND_MSG_BACK, pRequestHeader);
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
