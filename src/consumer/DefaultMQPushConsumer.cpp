@@ -259,6 +259,7 @@ bool DefaultMQPushConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {
     LOG_ERROR(e.what());
     return false;
   }
+  return true;
 }
 
 void DefaultMQPushConsumer::fetchSubscribeMessageQueues(const string& topic, vector<MQMessageQueue>& mqs) {
