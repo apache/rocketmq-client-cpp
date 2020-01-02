@@ -128,7 +128,7 @@ void Rebalance::doRebalance() {
             std::stringstream ss;
             ss << "Allocation result for [Consumer Group: " << m_pConsumer->getGroupName() << ", Topic: " << topic
                << ", Current Consumer ID: " << m_pConsumer->getMQClientId() << "] is changed.\n "
-               << "Total Queue #: " << mqAll.size() << ", Total Consumer #: " << cidAll.size()
+               << "Total Queue :#" << mqAll.size() << ", Total Consumer :#" << cidAll.size()
                << " Allocated Queues are: \n";
 
             for (vector<MQMessageQueue>::size_type i = 0; i < allocateResult.size(); ++i) {

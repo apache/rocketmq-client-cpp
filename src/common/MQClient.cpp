@@ -53,7 +53,8 @@ MQClient::~MQClient() {}
 string MQClient::getMQClientId() const {
   string clientIP = UtilAll::getLocalAddress();
   string processId = UtilAll::to_string(getpid());
-  return processId + "-" + clientIP + "@" + m_instanceName;
+  // return processId + "-" + clientIP + "@" + m_instanceName;
+  return clientIP + "@" + processId + "#" + m_instanceName;
 }
 
 //<!groupName;

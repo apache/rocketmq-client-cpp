@@ -55,7 +55,7 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
   //<!end mqadmin;
 
   //<!begin MQConsumer
-  virtual bool sendMessageBack(MQMessageExt& msg, int delayLevel);
+  virtual bool sendMessageBack(MQMessageExt& msg, int delayLevel, std::string& brokerName);
   virtual void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs);
   virtual void doRebalance();
   virtual void persistConsumerOffset();

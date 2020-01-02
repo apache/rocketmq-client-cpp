@@ -167,7 +167,8 @@ class MQClientAPIImpl {
                                   int timeoutMillis,
                                   const SessionCredentials& sessionCredentials);
 
-  void consumerSendMessageBack(MQMessageExt& msg,
+  void consumerSendMessageBack(const string addr,
+                               MQMessageExt& msg,
                                const string& consumerGroup,
                                int delayLevel,
                                int timeoutMillis,

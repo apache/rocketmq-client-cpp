@@ -251,9 +251,14 @@ DefaultMQPushConsumer::~DefaultMQPushConsumer() {
   m_subTopics.clear();
 }
 
-bool DefaultMQPushConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {
+bool DefaultMQPushConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel, string& brokerName) {
+  string brokerAddr;
+  if (!brokerName.empty())
+    brokerAddr = getFactory()->findBrokerAddressInPublish(brokerName);
+  else
+    brokerAddr = socketAddress2IPPort(msg.getStoreHost());
   try {
-    getFactory()->getMQClientAPIImpl()->consumerSendMessageBack(msg, getGroupName(), delayLevel, 3000,
+    getFactory()->getMQClientAPIImpl()->consumerSendMessageBack(brokerAddr, msg, getGroupName(), delayLevel, 3000,
                                                                 getSessionCredentials());
   } catch (MQException& e) {
     LOG_ERROR(e.what());
