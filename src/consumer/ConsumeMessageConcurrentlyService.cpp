@@ -73,7 +73,61 @@ void ConsumeMessageConcurrentlyService::submitConsumeRequest(boost::weak_ptr<Pul
              request->m_messageQueue.toString().c_str());
     return;
   }
-  m_ioService.post(boost::bind(&ConsumeMessageConcurrentlyService::ConsumeRequest, this, request, msgs));
+  if (!request->isDropped()) {
+    m_ioService.post(boost::bind(&ConsumeMessageConcurrentlyService::ConsumeRequest, this, request, msgs));
+  }
+}
+void ConsumeMessageConcurrentlyService::submitConsumeRequestLater(boost::weak_ptr<PullRequest> pullRequest,
+                                                                  vector<MQMessageExt>& msgs,
+                                                                  int millis) {
+  if (msgs.empty()) {
+    return;
+  }
+  boost::shared_ptr<PullRequest> request = pullRequest.lock();
+  if (!request) {
+    LOG_WARN("Pull request has been released");
+    return;
+  }
+  if (request->isDropped()) {
+    LOG_INFO("Pull request is set as dropped with mq:%s, need release in next rebalance.",
+             (request->m_messageQueue).toString().c_str());
+    return;
+  }
+  if (!request->isDropped()) {
+    boost::asio::deadline_timer* t =
+        new boost::asio::deadline_timer(m_ioService, boost::posix_time::milliseconds(millis));
+    t->async_wait(
+        boost::bind(&(ConsumeMessageConcurrentlyService::static_submitConsumeRequest), this, t, request, msgs));
+    LOG_INFO("Submit Message to Consumer [%s] Later and Sleep [%d]ms.", (request->m_messageQueue).toString().c_str(),
+             millis);
+  }
+}
+
+void ConsumeMessageConcurrentlyService::static_submitConsumeRequest(void* context,
+                                                                    boost::asio::deadline_timer* t,
+                                                                    boost::weak_ptr<PullRequest> pullRequest,
+                                                                    vector<MQMessageExt>& msgs) {
+  boost::shared_ptr<PullRequest> request = pullRequest.lock();
+  if (!request) {
+    LOG_WARN("Pull request has been released");
+    return;
+  }
+  ConsumeMessageConcurrentlyService* pService = (ConsumeMessageConcurrentlyService*)context;
+  if (pService) {
+    pService->triggersubmitConsumeRequestLater(t, request, msgs);
+  }
+}
+
+void ConsumeMessageConcurrentlyService::triggersubmitConsumeRequestLater(boost::asio::deadline_timer* t,
+                                                                         boost::weak_ptr<PullRequest> pullRequest,
+                                                                         vector<MQMessageExt>& msgs) {
+  boost::shared_ptr<PullRequest> request = pullRequest.lock();
+  if (!request) {
+    LOG_WARN("Pull request has been released");
+    return;
+  }
+  submitConsumeRequest(request, msgs);
+  deleteAndZero(t);
 }
 
 void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullRequest> pullRequest,
@@ -83,13 +137,12 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
     LOG_WARN("Pull request has been released");
     return;
   }
-  if (!request || request->isDropped()) {
-    LOG_WARN("the pull request had been dropped");
+  if (request->isDropped()) {
+    LOG_WARN("the pull request for %s Had been dropped before", request->m_messageQueue.toString().c_str());
     request->clearAllMsgs();  // add clear operation to avoid bad state when
                               // dropped pullRequest returns normal
     return;
   }
-
   if (msgs.empty()) {
     LOG_WARN("the msg of pull result is NULL,its mq:%s", (request->m_messageQueue).toString().c_str());
     return;
@@ -99,16 +152,19 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
   if (m_pMessageListener != NULL) {
     resetRetryTopic(msgs);
     request->setLastConsumeTimestamp(UtilAll::currentTimeMillis());
-    LOG_DEBUG("=====Receive Messages:[%s][%s][%s]", msgs[0].getTopic().c_str(), msgs[0].getMsgId().c_str(),
-              msgs[0].getBody().c_str());
+    LOG_DEBUG("=====Receive Messages,Topic[%s], MsgId[%s],Body[%s],RetryTimes[%d]", msgs[0].getTopic().c_str(),
+              msgs[0].getMsgId().c_str(), msgs[0].getBody().c_str(), msgs[0].getReconsumeTimes());
     if (m_pConsumer->isUseNameSpaceMode()) {
       MessageAccessor::withoutNameSpace(msgs, m_pConsumer->getNameSpace());
     }
-    status = m_pMessageListener->consumeMessage(msgs);
+    try {
+      status = m_pMessageListener->consumeMessage(msgs);
+    } catch (...) {
+      status = RECONSUME_LATER;
+      LOG_ERROR("Consumer's code is buggy. Un-caught exception raised");
+    }
   }
 
-  /*LOG_DEBUG("Consumed MSG size:%d of mq:%s",
-      msgs.size(), (request->m_messageQueue).toString().c_str());*/
   int ackIndex = -1;
   switch (status) {
     case CONSUME_SUCCESS:
@@ -121,28 +177,52 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
       break;
   }
 
+  std::vector<MQMessageExt> localRetryMsgs;
   switch (m_pConsumer->getMessageModel()) {
-    case BROADCASTING:
+    case BROADCASTING: {
       // Note: broadcasting reconsume should do by application, as it has big
       // affect to broker cluster
       if (ackIndex != (int)msgs.size())
         LOG_WARN("BROADCASTING, the message consume failed, drop it:%s", (request->m_messageQueue).toString().c_str());
       break;
-    case CLUSTERING:
+    }
+    case CLUSTERING: {
       // send back msg to broker;
       for (size_t i = ackIndex + 1; i < msgs.size(); i++) {
-        LOG_WARN("consume fail, MQ is:%s, its msgId is:%s, index is:" SIZET_FMT
-                 ", reconsume "
-                 "times is:%d",
+        LOG_WARN("consume fail, MQ is:%s, its msgId is:%s, index is:" SIZET_FMT ", reconsume times is:%d",
                  (request->m_messageQueue).toString().c_str(), msgs[i].getMsgId().c_str(), i,
                  msgs[i].getReconsumeTimes());
-        m_pConsumer->sendMessageBack(msgs[i], 0);
+        if (m_pConsumer->getConsumeType() == CONSUME_PASSIVELY && !m_pConsumer->sendMessageBack(msgs[i], 0)) {
+          LOG_WARN("Send message back fail, MQ is:%s, its msgId is:%s, index is:%d, re-consume times is:%d",
+                   (request->m_messageQueue).toString().c_str(), msgs[i].getMsgId().c_str(), i,
+                   msgs[i].getReconsumeTimes());
+          localRetryMsgs.push_back(msgs[i]);
+        }
       }
       break;
+    }
     default:
       break;
   }
 
+  if (!localRetryMsgs.empty()) {
+    LOG_ERROR("Client side re-consume launched due to both message consuming and SDK send-back retry failure");
+    for (std::vector<MQMessageExt>::iterator itOrigin = msgs.begin(); itOrigin != msgs.end();) {
+      bool remove = false;
+      for (std::vector<MQMessageExt>::iterator itRetry = localRetryMsgs.begin(); itRetry != localRetryMsgs.end();
+           itRetry++) {
+        if (itRetry->getQueueOffset() == itOrigin->getQueueOffset()) {
+          remove = true;
+          break;
+        }
+      }
+      if (remove) {
+        itOrigin = msgs.erase(itOrigin);
+      } else {
+        itOrigin++;
+      }
+    }
+  }
   // update offset
   int64 offset = request->removeMessage(msgs);
   if (offset >= 0) {
@@ -151,7 +231,13 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
     LOG_WARN("Note: Get local offset for mq:%s failed, may be it is updated before. skip..",
              (request->m_messageQueue).toString().c_str());
   }
-}
+  if (!localRetryMsgs.empty()) {
+    // submitConsumeRequest(request, localTryMsgs);
+    LOG_INFO("Send [%d ]messages back to mq:%s failed, call reconsume again after 1s.", localRetryMsgs.size(),
+             (request->m_messageQueue).toString().c_str());
+    submitConsumeRequestLater(request, localRetryMsgs, 1000);
+  }
+}  // namespace rocketmq
 
 void ConsumeMessageConcurrentlyService::resetRetryTopic(vector<MQMessageExt>& msgs) {
   string groupTopic = UtilAll::getRetryTopic(m_pConsumer->getGroupName());

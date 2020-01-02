@@ -251,13 +251,15 @@ DefaultMQPushConsumer::~DefaultMQPushConsumer() {
   m_subTopics.clear();
 }
 
-void DefaultMQPushConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {
+bool DefaultMQPushConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {
   try {
     getFactory()->getMQClientAPIImpl()->consumerSendMessageBack(msg, getGroupName(), delayLevel, 3000,
                                                                 getSessionCredentials());
   } catch (MQException& e) {
     LOG_ERROR(e.what());
+    return false;
   }
+  return true;
 }
 
 void DefaultMQPushConsumer::fetchSubscribeMessageQueues(const string& topic, vector<MQMessageQueue>& mqs) {
