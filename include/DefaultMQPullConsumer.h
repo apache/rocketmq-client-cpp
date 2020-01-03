@@ -60,7 +60,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
 
   void registerMessageQueueListener(const std::string& topic, MQueueListener* pListener);
   /**
-   * pull msg from specified queue, if no msg in queue, return directly
+   * Pull message from specified queue, if no msg in queue, return directly
    *
    * @param mq
    *            specify the pulled queue
@@ -73,7 +73,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
    * @param maxNums
    *            specify max msg num by per pull
    * @return
-   *            accroding to PullResult
+   *            PullResult
    */
   virtual PullResult pull(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums);
   virtual void pull(const MQMessageQueue& mq,
@@ -106,12 +106,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
                            PullCallback* pPullCallback);
 
   virtual ConsumerRunningInfo* getConsumerRunningInfo() { return NULL; }
-  /**
-   *
-   * @param mq
-   * @param fromStore
-   * @return
-   */
+
   int64 fetchConsumeOffset(const MQMessageQueue& mq, bool fromStore);
 
   void fetchMessageQueuesInBalance(const std::string& topic, std::vector<MQMessageQueue> mqs);

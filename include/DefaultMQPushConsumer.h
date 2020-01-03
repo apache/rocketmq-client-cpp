@@ -93,8 +93,8 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
                                             boost::weak_ptr<PullRequest>);
   void triggerNextPullRequest(boost::asio::deadline_timer* t, boost::weak_ptr<PullRequest>);
   void runPullMsgQueue(TaskQueue* pTaskQueue);
-  void pullMessage(boost::weak_ptr<PullRequest> pullrequest);       // sync pullMsg
-  void pullMessageAsync(boost::weak_ptr<PullRequest> pullrequest);  // async pullMsg
+  void pullMessage(boost::weak_ptr<PullRequest> pullrequest);
+  void pullMessageAsync(boost::weak_ptr<PullRequest> pullrequest);
   void setAsyncPull(bool asyncFlag);
   AsyncPullCallback* getAsyncPullCallBack(boost::weak_ptr<PullRequest>, MQMessageQueue msgQueue);
   void shutdownAsyncPullCallBack();
