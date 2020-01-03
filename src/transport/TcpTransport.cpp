@@ -50,8 +50,9 @@ TcpConnectStatus TcpTransport::closeBufferEvent() {
   // closeBufferEvent is idempotent.
   if (setTcpConnectEvent(TCP_CONNECT_STATUS_CLOSED) != TCP_CONNECT_STATUS_CLOSED) {
     if (m_event != nullptr) {
-      m_event->disable(EV_READ | EV_WRITE);
-      // FIXME: not close the socket!!!
+      // m_event->disable(EV_READ | EV_WRITE);
+      // close the socket!!!
+      m_event->close();
     }
   }
   return TCP_CONNECT_STATUS_CLOSED;
@@ -128,7 +129,8 @@ TcpConnectStatus TcpTransport::connect(const std::string& strServerURL, int time
     sin.sin_port = htons(port);
 
     // create BufferEvent
-    m_event.reset(EventLoop::GetDefaultEventLoop()->createBufferEvent(-1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE));
+    m_event.reset(
+        EventLoop::GetDefaultEventLoop()->createBufferEvent(-1, /* BEV_OPT_CLOSE_ON_FREE | */ BEV_OPT_THREADSAFE));
     if (nullptr == m_event) {
       LOG_ERROR_NEW("create BufferEvent failed");
       return closeBufferEvent();

@@ -218,6 +218,13 @@ int BufferEvent::connect(const struct sockaddr* addr, int socklen) {
   return bufferevent_socket_connect(m_bufferEvent, (struct sockaddr*)addr, socklen);
 }
 
+int BufferEvent::close() {
+  bufferevent_lock(m_bufferEvent);
+  auto ret = evutil_closesocket(bufferevent_getfd(m_bufferEvent));
+  bufferevent_unlock(m_bufferEvent);
+  return ret;
+}
+
 void BufferEvent::event_callback(struct bufferevent* bev, short what, void* ctx) {
   auto event = static_cast<BufferEvent*>(ctx);
 
