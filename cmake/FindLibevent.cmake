@@ -114,7 +114,7 @@ if (WIN32)
 else ()
     set(Libevent_FIND_COMPONENTS ${Libevent_LIB_PREFIX}event core extra pthreads)
 endif ()
-message(status "** libevent components: ${Libevent_FIND_COMPONENTS}")
+message(STATUS "** libevent components: ${Libevent_FIND_COMPONENTS}")
 foreach (COMPONENT ${Libevent_FIND_COMPONENTS})
     set(_LIBEVENT_LIBNAME "${Libevent_LIB_PREFIX}event")
     # Note: compare two variables to avoid a CMP0054 policy warning
@@ -124,7 +124,7 @@ foreach (COMPONENT ${Libevent_FIND_COMPONENTS})
         set(_LIBEVENT_LIBNAME "${Libevent_LIB_PREFIX}event_${COMPONENT}")
     endif ()
     string(TOUPPER "${COMPONENT}" COMPONENT_UPPER)
-    message(status "** ${_LIBEVENT_LIBNAME}")
+    message(STATUS "** ${_LIBEVENT_LIBNAME}")
     find_library(LIBEVENT_${COMPONENT_UPPER}_LIBRARY
             NAMES ${_LIBEVENT_LIBNAME}
             PATHS ${LIBEVENT_LIBRARIE_SEARCH_PATH}

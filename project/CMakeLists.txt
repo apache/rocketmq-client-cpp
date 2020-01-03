@@ -53,8 +53,11 @@ if (BUILD_ROCKETMQ_STATIC)
         target_link_libraries(rocketmq_static
                 PUBLIC ${deplibs} Signature ${JSONCPP_LIBRARIES} ${LIBEVENT_LIBRARIES})
     endif (spdlog_FOUND)
-    set_target_properties(rocketmq_static
-            PROPERTIES OUTPUT_NAME "rocketmq")
+    # set_target_properties(rocketmq_static
+    #         PROPERTIES OUTPUT_NAME "rocketmq")
+
+    include(BundleStaticLibrary)
+    bundle_static_library(rocketmq_static rocketmq)
 endif ()
 
 # shared
@@ -77,6 +80,7 @@ endif ()
 # install
 if (BUILD_ROCKETMQ_STATIC)
     install(TARGETS rocketmq_static DESTINATION lib)
+    install(FILES ${LIBRARY_OUTPUT_PATH}/${CMAKE_STATIC_LIBRARY_PREFIX}rocketmq${CMAKE_STATIC_LIBRARY_SUFFIX} DESTINATION lib)
 endif ()
 if (BUILD_ROCKETMQ_SHARED)
     install(TARGETS rocketmq_shared DESTINATION lib)
