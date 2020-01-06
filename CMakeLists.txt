@@ -191,7 +191,23 @@ if(NOT APPLE)
   list(APPEND deplibs rt)
 endif()
 list(APPEND deplibs z)
+# Code Coverage Configuration
+add_library(coverage_config INTERFACE)
 
+option(CODE_COVERAGE "Enable coverage reporting" ON)
+if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    # Add required flags (GCC & LLVM/Clang)
+    target_compile_options(coverage_config INTERFACE
+            -O0        # no optimization
+            -g         # generate debug info
+            --coverage # sets all required flags
+            )
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
+        target_link_options(coverage_config INTERFACE --coverage)
+    else()
+        target_link_libraries(coverage_config INTERFACE --coverage)
+    endif()
+endif(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 # add include dir for bsd (posix uses /usr/include/)
 set(CMAKE_INCLUDE_PATH "${CMAKE_INCLUDE_PATH}:/usr/local/include")
 ENDIF()
