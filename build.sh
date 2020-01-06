@@ -40,6 +40,7 @@ need_build_jsoncpp=1
 need_build_libevent=1
 need_build_boost=1
 test=0
+verbose=1
 cpu_num=4
 
 pasres_arguments(){
@@ -54,6 +55,9 @@ pasres_arguments(){
                         ;;
                 noBoost)
                         need_build_boost=0
+                        ;;
+                noVerbose)
+                        verbose=0
                         ;;
                 test)
                        test=1
@@ -85,6 +89,12 @@ PrintParams()
         echo "no need build boost lib"
     else
         echo "need build boost lib"
+    fi
+    if [ $verbose -eq 0 ]
+    then
+        echo "no need print detail logs"
+    else
+        echo "need print detail logs"
     fi
 
     echo "###########################################################################"
@@ -157,7 +167,7 @@ BuildLibevent()
     else
         wget https://github.com/libevent/libevent/archive/${fname_libevent_down} -O libevent-${fname_libevent_down}
     fi
-    unzip -o ${fname_libevent}
+    unzip -o ${fname_libevent} > unziplibevent.txt 2>&1
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -171,16 +181,28 @@ BuildLibevent()
     if [ $? -ne 0 ];then
         exit 1
     fi
-    echo "build libevent static #####################"    
-    ./configure --disable-openssl --enable-static=yes --enable-shared=no CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir}
+    echo "build libevent static #####################"
+    if [ $verbose -eq 0 ];
+    then
+        ./configure --disable-openssl --enable-static=yes --enable-shared=no CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} > libeventconfig.txt 2>&1
+    else
+        ./configure --disable-openssl --enable-static=yes --enable-shared=no CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir}
+    fi
     if [ $? -ne 0 ];then
         exit 1
-    fi    
-    make -j $cpu_num
+    fi
+    if [ $verbose -eq 0 ];
+    then
+        echo "build libevent without detail log."
+        make -j $cpu_num > libeventbuild.txt 2>&1
+    else
+        make -j $cpu_num
+    fi
     if [ $? -ne 0 ];then
         exit 1
     fi
     make install
+    echo "build linevent success."
 }
 
 
@@ -199,7 +221,7 @@ BuildJsonCPP()
     else
         wget https://github.com/open-source-parsers/jsoncpp/archive/${fname_jsoncpp_down} -O jsoncpp-${fname_jsoncpp_down}
     fi
-    unzip -o ${fname_jsoncpp}
+    unzip -o ${fname_jsoncpp} > unzipjsoncpp.txt 2>&1
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -210,16 +232,27 @@ BuildJsonCPP()
     fi
     mkdir build; cd build
     echo "build jsoncpp static ######################"
-    cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${install_lib_dir}
+    if [ $verbose -eq 0 ];
+    then
+        echo "build jsoncpp without detail log."
+        cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${install_lib_dir} > jsoncppbuild.txt 2>&1
+    else
+        cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${install_lib_dir}
+    fi
     if [ $? -ne 0 ];then
         exit 1
-    fi    
-    make -j $cpu_num
+    fi
+    if [ $verbose -eq 0 ];
+    then
+         make -j $cpu_num > jsoncppbuild.txt 2>&1
+    else
+        make -j $cpu_num
+    fi
     if [ $? -ne 0 ];then
         exit 1
     fi
     make install
-
+    echo "build jsoncpp success."
     if [ ! -f ${install_lib_dir}/lib/libjsoncpp.a ]
     then
         echo " ./bin/lib directory is not libjsoncpp.a"
@@ -241,7 +274,7 @@ BuildBoost()
     else
         wget http://sourceforge.net/projects/boost/files/boost/${fname_boost_down}
     fi
-    tar -zxvf ${fname_boost}
+    tar -zxvf ${fname_boost} > unzipboost.txt 2>&1
     boost_dir=`ls | grep boost | grep .*[^gz]$`
     cd ${boost_dir}
     if [ $? -ne 0 ];then
@@ -253,7 +286,13 @@ BuildBoost()
     fi    
     echo "build boost static #####################"
     pwd
-    ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC   --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static  release install --prefix=${install_lib_dir}
+    if [ $verbose -eq 0 ];
+    then
+        echo "build boost without detail log."
+        ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC   --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static  release install --prefix=${install_lib_dir} > boostbuild.txt 2>&1
+    else
+        ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC   --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static  release install --prefix=${install_lib_dir}
+    fi
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -262,13 +301,21 @@ BuildBoost()
 BuildRocketMQClient()
 {
     cd ${build_dir}
+    echo "============start to build rocketmq client cpp.========="
     if [ $test -eq 0 ];then
         cmake ..
     else
         cmake .. -DRUN_UNIT_TEST=ON
     fi
-    make -j $cpu_num
+    if [ $verbose -eq 0 ];
+    then
+        echo "build rocketmq without detail log."
+        make -j $cpu_num > buildclient.txt 2>&1
+    else
+        make -j $cpu_num
+    fi
     if [ $? -ne 0 ];then
+        echo "build error....."
         exit 1
     fi        
     #sudo make install
@@ -301,11 +348,22 @@ BuildGoogleTest()
     cd googletest-release-1.8.1
     mkdir build; cd build
     echo "build googletest static #####################"
-    cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${install_lib_dir}
+    if [ $verbose -eq 0 ];
+    then
+        echo "build googletest without detail log."
+        cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${install_lib_dir} > googletestbuild.txt 2>&1
+    else
+        cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${install_lib_dir}
+    fi
     if [ $? -ne 0 ];then
         exit 1
-    fi    
-    make -j $cpu_num
+    fi
+    if [ $verbose -eq 0 ];
+    then
+        make -j $cpu_num > gtestbuild.txt 2>&1
+    else
+        make -j $cpu_num
+    fi
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -321,36 +379,17 @@ BuildGoogleTest()
 ExecutionTesting()
 {
     if [ $test -eq 0 ];then
-        echo "Do not execution test"
+        echo "Build success without executing unit tests."
         return 0
     fi
-    echo "##################  test  start  ###########"
-    cd ${basepath}/test/bin
-    if [ ! -d ../log ]; then
-       mkdir ../log
+    echo "############# unit test  start  ###########"
+    cd ${build_dir}
+    make test
+    if [ $? -ne 0 ];then
+        echo "############# unit test failed  ###########"
+        exit 1
     fi
-    for files in `ls -F`
-    do
-        ./$files > "../log/$files.txt" 2>&1
-
-        if [ $? -ne 0 ]; then
-            echo "$files erren"
-            cat ../log/$files.txt
-            return 0
-        fi
-        erren=`grep "FAILED TEST" ../log/$files.txt`
-        
-        if [ -n "$erren" ]; then
-            echo "##################  find erren ###########"
-            cat ../log/$files.txt
-
-            echo "##################  end ExecutionTesting ###########"
-            return
-        else
-            echo "$files success"
-        fi
-    done
-    echo "##################  test  end  ###########"
+    echo "############# unit test  finish  ###########"
 }
 
 PackageRocketMQStatic()

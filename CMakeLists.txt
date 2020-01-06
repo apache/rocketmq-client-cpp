@@ -226,6 +226,7 @@ option(RUN_UNIT_TEST "RUN_UNIT_TEST" OFF)
 
 if(RUN_UNIT_TEST)
   message(STATUS "** RUN_UNIT_TEST: ${RUN_UNIT_TEST} Do execution testing")
+  enable_testing()
   add_subdirectory(test)
 endif()
 

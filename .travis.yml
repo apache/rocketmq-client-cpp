@@ -23,7 +23,7 @@ before_script:
   - cd ..
 
 script: 
-  - ./build.sh test  1>buildMakeLog.txt
+  - ./build.sh test noVerbose
 
 
 

@@ -27,6 +27,36 @@ using testing::Return;
 
 using rocketmq::MQMessage;
 
+TEST(cmessages, originMessage) {
+  CMessage* message = CreateMessage(NULL);
+  EXPECT_STREQ(GetOriginMessageTopic(message), "");
+
+  SetMessageTopic(message, "testTopic");
+  EXPECT_STREQ(GetOriginMessageTopic(message), "testTopic");
+
+  SetMessageTags(message, "testTags");
+  EXPECT_STREQ(GetOriginMessageTags(message), "testTags");
+
+  SetMessageKeys(message, "testKeys");
+  EXPECT_STREQ(GetOriginMessageKeys(message), "testKeys");
+
+  SetMessageBody(message, "testBody");
+  EXPECT_STREQ(GetOriginMessageBody(message), "testBody");
+
+  SetMessageProperty(message, "testKey", "testValue");
+  EXPECT_STREQ(GetOriginMessageProperty(message, "testKey"), "testValue");
+
+  SetDelayTimeLevel(message, 1);
+  EXPECT_EQ(GetOriginDelayTimeLevel(message), 1);
+
+  EXPECT_EQ(DestroyMessage(message), OK);
+
+  CMessage* message2 = CreateMessage("testTwoTopic");
+  EXPECT_STREQ(GetOriginMessageTopic(message2), "testTwoTopic");
+
+  EXPECT_EQ(DestroyMessage(message2), OK);
+}
+
 TEST(cmessages, info) {
   CMessage* message = CreateMessage(NULL);
   MQMessage* mqMessage = (MQMessage*)message;
@@ -75,7 +105,7 @@ TEST(cmessages, null) {
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
 
-  testing::GTEST_FLAG(filter) = "cmessages.null";
+  // testing::GTEST_FLAG(filter) = "cmessages.*";
   int itestts = RUN_ALL_TESTS();
   return itestts;
 }
