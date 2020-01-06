@@ -26,7 +26,7 @@ before_script:
   - ./bin/mqadmin updateSubGroup -b '127.0.0.1:10911' –n '127.0.0.1:9876' -g testGroup
   - cd ..
 
-script: 
+script:
   - ./build.sh test codecov noVerbose
 
 after_success:
