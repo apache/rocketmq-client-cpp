@@ -23,8 +23,10 @@ before_script:
   - cd ..
 
 script: 
-  - ./build.sh test noVerbose
+  - ./build.sh test codecov noVerbose
 
+after_success:
+  - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
 
 
 matrix:

@@ -41,6 +41,7 @@ need_build_libevent=1
 need_build_boost=1
 test=0
 verbose=1
+codecov=0
 cpu_num=4
 
 pasres_arguments(){
@@ -58,6 +59,9 @@ pasres_arguments(){
                         ;;
                 noVerbose)
                         verbose=0
+                        ;;
+                codecov)
+                        codecov=1
                         ;;
                 test)
                        test=1
@@ -89,6 +93,16 @@ PrintParams()
         echo "no need build boost lib"
     else
         echo "need build boost lib"
+    fi
+    if [ $test -eq 1 ]
+    then
+        echo "build unit tests"
+    else
+        echo "without build unit tests"
+    fi
+    if [ $codecov -eq 1 ]
+    then
+        echo "run unit tests with code coverage"
     fi
     if [ $verbose -eq 0 ]
     then
@@ -305,7 +319,11 @@ BuildRocketMQClient()
     if [ $test -eq 0 ];then
         cmake ..
     else
-        cmake .. -DRUN_UNIT_TEST=ON
+        if [ $codecov -eq 1 ];then
+          cmake .. -DRUN_UNIT_TEST=ON -DCODE_COVERAGE=ON
+        else
+          cmake .. -DRUN_UNIT_TEST=ON
+        fi
     fi
     if [ $verbose -eq 0 ];
     then
