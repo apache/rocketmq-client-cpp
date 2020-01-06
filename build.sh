@@ -324,33 +324,10 @@ ExecutionTesting()
         echo "Do not execution test"
         return 0
     fi
-    echo "##################  test  start  ###########"
-    cd ${basepath}/test/bin
-    if [ ! -d ../log ]; then
-       mkdir ../log
-    fi
-    for files in `ls -F`
-    do
-        ./$files > "../log/$files.txt" 2>&1
-
-        if [ $? -ne 0 ]; then
-            echo "$files erren"
-            cat ../log/$files.txt
-            return 0
-        fi
-        erren=`grep "FAILED TEST" ../log/$files.txt`
-        
-        if [ -n "$erren" ]; then
-            echo "##################  find erren ###########"
-            cat ../log/$files.txt
-
-            echo "##################  end ExecutionTesting ###########"
-            return
-        else
-            echo "$files success"
-        fi
-    done
-    echo "##################  test  end  ###########"
+    echo "################## unit test  start  ###########"
+    cd ${build_dir}
+    make test
+    echo "################## unit test  finish  ###########"
 }
 
 PackageRocketMQStatic()

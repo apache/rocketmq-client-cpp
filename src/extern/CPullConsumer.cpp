@@ -172,6 +172,10 @@ CPullResult Pull(CPullConsumer* consumer,
                  int maxNums) {
   CPullResult pullResult;
   memset(&pullResult, 0, sizeof(CPullResult));
+  if (consumer == NULL || subExpression == NULL) {
+    pullResult.pullStatus = E_BROKER_TIMEOUT;
+    return pullResult;
+  }
   MQMessageQueue messageQueue(mq->topic, mq->brokerName, mq->queueId);
   PullResult cppPullResult;
   try {

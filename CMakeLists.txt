@@ -222,10 +222,11 @@ add_subdirectory(project)
 add_subdirectory(example)
 
 
-option(RUN_UNIT_TEST "RUN_UNIT_TEST" OFF)
+option(RUN_UNIT_TEST "RUN_UNIT_TEST" ON)
 
 if(RUN_UNIT_TEST)
   message(STATUS "** RUN_UNIT_TEST: ${RUN_UNIT_TEST} Do execution testing")
+  enable_testing()
   add_subdirectory(test)
 endif()
 

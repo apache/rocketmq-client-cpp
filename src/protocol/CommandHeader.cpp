@@ -553,7 +553,9 @@ CommandHeader* GetConsumerRunningInfoRequestHeader::Decode(Json::Value& ext) {
   }
 
   tempValue = ext["jstackEnable"];
-  if (tempValue.isString()) {
+  if (tempValue.isBool()) {
+    h->jstackEnable = tempValue.asBool();
+  } else if (tempValue.isString()) {
     h->jstackEnable = UtilAll::to_bool(tempValue.asCString());
   }
   LOG_INFO("consumerGroup:%s, clientId:%s,  jstackEnable:%d", h->consumerGroup.c_str(), h->clientId.c_str(),
