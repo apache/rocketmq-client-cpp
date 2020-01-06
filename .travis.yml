@@ -40,6 +40,5 @@ matrix:
         - sudo apt-get update -qq
         - sudo apt-get install -qq clang-format-3.8
       install: []
-      before_script: []
       script:
         - sudo sh .travis/check-git-clang-format.sh
