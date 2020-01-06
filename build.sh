@@ -301,6 +301,7 @@ BuildBoost()
 BuildRocketMQClient()
 {
     cd ${build_dir}
+    echo "============start to build rocketmq client cpp.========="
     if [ $test -eq 0 ];then
         cmake ..
     else
@@ -308,11 +309,13 @@ BuildRocketMQClient()
     fi
     if [ $verbose -eq 0 ];
     then
+        echo "build rocketmq without detail log."
         make -j $cpu_num > buildclient.txt 2>&1
     else
         make -j $cpu_num
     fi
     if [ $? -ne 0 ];then
+        echo "build error....."
         exit 1
     fi        
     #sudo make install
@@ -379,10 +382,14 @@ ExecutionTesting()
         echo "Build success without executing unit tests."
         return 0
     fi
-    echo "################## unit test  start  ###########"
+    echo "############# unit test  start  ###########"
     cd ${build_dir}
     make test
-    echo "################## unit test  finish  ###########"
+    if [ $? -ne 0 ];then
+        echo "############# unit test failed  ###########"
+        exit 1
+    fi
+    echo "############# unit test  finish  ###########"
 }
 
 PackageRocketMQStatic()
