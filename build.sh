@@ -61,7 +61,7 @@ pasres_arguments(){
                         verbose=0
                         ;;
                 codecov)
-                        codecov=0
+                        codecov=1
                         ;;
                 test)
                        test=1
