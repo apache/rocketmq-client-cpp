@@ -42,14 +42,14 @@ include_directories(${Gmock_INCLUDE_DIR}/internal)
 set(Gtest_LIBRARY_DIRS ${CMAKE_SOURCE_DIR}/bin/lib)
 set(Gtest_LIBRARIES ${Gtest_LIBRARY_DIRS}/libgtest_main.a;${Gtest_LIBRARY_DIRS}/libgtest.a)
 set(Gmock_LIBRARIES ${Gtest_LIBRARY_DIRS}/libgmock_main.a;${Gtest_LIBRARY_DIRS}/libgmock.a)
-message(status "** Gmock_LIBRARIES: ${Gmock_LIBRARIES}")
+message(STATUS "** Gmock_LIBRARIES: ${Gmock_LIBRARIES}")
 
 link_directories(${Boost_LIBRARY_DIRS})
 link_directories(${LIBEVENT_LIBRARY})
 link_directories(${JSONCPP_LIBRARY})
 
 set(ROCKETMQ_LIBRARIES ${CMAKE_SOURCE_DIR}/bin/librocketmq.a)
-message(status "ROCKETMQ_LIBRARIES ${ROCKETMQ_LIBRARIES}")
+message(STATUS "** ROCKETMQ_LIBRARIES ${ROCKETMQ_LIBRARIES}")
 
 set(CMAKE_BUILD_TYPE "Debug")
 
