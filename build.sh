@@ -40,6 +40,7 @@ need_build_jsoncpp=1
 need_build_libevent=1
 need_build_boost=1
 test=0
+verbose=1
 cpu_num=4
 
 pasres_arguments(){
@@ -54,6 +55,9 @@ pasres_arguments(){
                         ;;
                 noBoost)
                         need_build_boost=0
+                        ;;
+                noVerbose)
+                        verbose=0
                         ;;
                 test)
                        test=1
@@ -85,6 +89,12 @@ PrintParams()
         echo "no need build boost lib"
     else
         echo "need build boost lib"
+    fi
+    if [ $verbose -eq 0 ]
+    then
+        echo "no need print detail logs"
+    else
+        echo "need print detail logs"
     fi
 
     echo "###########################################################################"
@@ -253,7 +263,12 @@ BuildBoost()
     fi    
     echo "build boost static #####################"
     pwd
-    ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC   --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static  release install --prefix=${install_lib_dir}
+    if [ $verbose -eq 0 ];then
+        echo "build boost without detail log."
+        ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC   --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static  release install --prefix=${install_lib_dir} > boostbuild.txt 2>&1
+    else
+        ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC   --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static  release install --prefix=${install_lib_dir}
+    fi
     if [ $? -ne 0 ];then
         exit 1
     fi
@@ -321,7 +336,7 @@ BuildGoogleTest()
 ExecutionTesting()
 {
     if [ $test -eq 0 ];then
-        echo "Do not execution test"
+        echo "Build success without executing unit tests."
         return 0
     fi
     echo "################## unit test  start  ###########"
