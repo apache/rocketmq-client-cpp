@@ -270,7 +270,7 @@ int DestroyProducer(CProducer* pProducer) {
       defaultMQProducer->innerProducer = NULL;
     }
   }
-  delete reinterpret_cast<DefaultMQProducer*>(pProducer);
+  delete reinterpret_cast<DefaultProducer*>(pProducer);
   return OK;
 }
 int StartProducer(CProducer* producer) {
