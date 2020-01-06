@@ -35,7 +35,7 @@ after_success:
   - lcov --directory . --capture --output-file coverage.info
   # filter out system and extra files.
   # To also not include test code in coverage add them with full path to the patterns: '*/tests/*'
-  - lcov --remove coverage.info '/usr/*' '/home/travis/build/apache/rocketmq-client-cpp/bin/*' --output-file coverage.info
+  - lcov --remove coverage.info '/usr/*' '/home/travis/build/*/rocketmq-client-cpp/bin/*' '/home/travis/build/*/rocketmq-client-cpp/libs/*' --output-file coverage.info
   # output coverage data for debugging (optional)
   - lcov --list coverage.info
   # Uploading to CodeCov
