@@ -2,6 +2,10 @@ language: cpp
 sudo: required
 dist: trusty
 
+addons:
+  apt:
+    packages: lcov
+
 install:
   - sudo apt-get update
   - sudo apt-get install -y git gcc-4.8 g++-4.8 autoconf cmake libtool wget unzip libbz2-dev zlib1g-dev
@@ -26,8 +30,17 @@ script:
   - ./build.sh test codecov noVerbose
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
-
+  # Create lcov report
+  # capture coverage info
+  - lcov --directory . --capture --output-file coverage.info
+  # filter out system and extra files.
+  # To also not include test code in coverage add them with full path to the patterns: '*/tests/*'
+  - lcov --remove coverage.info '/usr/*' '/home/travis/build/*/rocketmq-client-cpp/bin/*' '/home/travis/build/*/rocketmq-client-cpp/libs/*' --output-file coverage.info
+  # output coverage data for debugging (optional)
+  - lcov --list coverage.info
+  # Uploading to CodeCov
+  # '-f' specifies file(s) to use and disables manual coverage gathering and file search which has already been done above
+  - bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
 
 matrix:
   include:
