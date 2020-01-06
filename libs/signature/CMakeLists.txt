@@ -18,12 +18,12 @@ project(signature)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
-aux_source_directory(src/  DIR_LIB_SRCS)
+aux_source_directory(src/ DIR_LIB_SRCS)
 
 add_library(Signature STATIC ${DIR_LIB_SRCS})
 target_link_libraries(Signature ${deplibs})
 set_target_properties(Signature PROPERTIES OUTPUT_NAME "Signature")
 
 # install
-install (TARGETS   Signature             DESTINATION lib)
+install(TARGETS Signature DESTINATION lib)
 #install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION include/rocketmq)
