@@ -105,9 +105,13 @@ class MQClientInstance {
 
   void unregisterClient(const std::string& producerGroup, const std::string& consumerGroup);
 
-  void addBrokerToAddrMap(const std::string& brokerName, const std::map<int, std::string>& brokerAddrs);
-  void clearBrokerAddrMap();
-  BrokerAddrMAP getBrokerAddrMap();
+  void addBrokerToAddrTable(const std::string& brokerName, const std::map<int, std::string>& brokerAddrs);
+  void resetBrokerAddrTable(BrokerAddrMAP&& table);
+  void clearBrokerAddrTable();
+  BrokerAddrMAP getBrokerAddrTable();
+
+  void cleanOfflineBroker();
+  bool isBrokerAddrExistInTopicRouteTable(const std::string& addr);
 
   // scheduled task
   void startScheduledTask();
@@ -174,11 +178,11 @@ class MQClientInstance {
 
   // brokerName -> [ brokerid : addr ]
   BrokerAddrMAP m_brokerAddrTable;
-  std::mutex m_brokerAddrlock;
+  std::mutex m_brokerAddrTableMutex;
 
   // topic -> TopicPublishInfo
-  typedef std::map<std::string, TopicPublishInfoPtr> TPMap;
-  TPMap m_topicPublishInfoTable;
+  typedef std::map<std::string, TopicPublishInfoPtr> TPMAP;
+  TPMAP m_topicPublishInfoTable;
   std::mutex m_topicPublishInfoTableMutex;
 
   std::timed_mutex m_lockNamesrv;

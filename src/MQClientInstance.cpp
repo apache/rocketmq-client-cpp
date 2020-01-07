@@ -247,7 +247,8 @@ void MQClientInstance::updateTopicRouteInfoPeriodically() {
 }
 
 void MQClientInstance::sendHeartbeatToAllBrokerPeriodically() {
-  sendHeartbeatToAllBroker();
+  cleanOfflineBroker();
+  sendHeartbeatToAllBrokerWithLock();
 
   // next round
   m_scheduledExecutorService.schedule(std::bind(&MQClientInstance::sendHeartbeatToAllBrokerPeriodically, this),
@@ -283,6 +284,56 @@ void MQClientInstance::updateTopicRouteInfoFromNameServer() {
   }
 }
 
+void MQClientInstance::cleanOfflineBroker() {
+  static const long LOCK_TIMEOUT_MILLIS = 3000L;
+  if (UtilAll::try_lock_for(m_lockNamesrv, LOCK_TIMEOUT_MILLIS)) {
+    std::lock_guard<std::timed_mutex> lock(m_lockNamesrv, std::adopt_lock);
+
+    BrokerAddrMAP updatedTable(getBrokerAddrTable());
+    for (auto itBrokerTable = updatedTable.begin(); itBrokerTable != updatedTable.end();) {
+      const auto& brokerName = itBrokerTable->first;
+      auto& cloneAddrTable = itBrokerTable->second;
+
+      for (auto it = cloneAddrTable.begin(); it != cloneAddrTable.end();) {
+        const auto& addr = it->second;
+        if (!isBrokerAddrExistInTopicRouteTable(addr)) {
+          it = cloneAddrTable.erase(it);
+          LOG_INFO_NEW("the broker addr[{} {}] is offline, remove it", brokerName, addr);
+        } else {
+          it++;
+        }
+      }
+
+      if (cloneAddrTable.empty()) {
+        itBrokerTable = updatedTable.erase(itBrokerTable);
+        LOG_INFO_NEW("the broker[{}] name's host is offline, remove it", brokerName);
+      } else {
+        itBrokerTable++;
+      }
+    }
+
+    resetBrokerAddrTable(std::move(updatedTable));
+  } else {
+    LOG_WARN("lock namesrv, but failed.");
+  }
+}
+
+bool MQClientInstance::isBrokerAddrExistInTopicRouteTable(const std::string& addr) {
+  std::lock_guard<std::mutex> lock(m_topicRouteTableMutex);
+  for (const auto& it : m_topicRouteTable) {
+    const auto topicRouteData = it.second;
+    const auto& bds = topicRouteData->getBrokerDatas();
+    for (const auto& bd : bds) {
+      for (const auto& itAddr : bd.brokerAddrs) {
+        if (itAddr.second == addr) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 void MQClientInstance::sendHeartbeatToAllBrokerWithLock() {
   if (m_lockHeartbeat.try_lock()) {
     std::lock_guard<std::timed_mutex> lock(m_lockHeartbeat, std::adopt_lock);
@@ -309,7 +360,7 @@ void MQClientInstance::sendHeartbeatToAllBroker() {
     return;
   }
 
-  BrokerAddrMAP brokerAddrTable(getBrokerAddrMap());
+  BrokerAddrMAP brokerAddrTable(getBrokerAddrTable());
   if (!brokerAddrTable.empty()) {
     for (const auto& it : brokerAddrTable) {
       // const auto& brokerName = it.first;
@@ -368,7 +419,7 @@ bool MQClientInstance::updateTopicRouteInfoFromNameServer(const std::string& top
           const auto& brokerDatas = topicRouteData->getBrokerDatas();
           for (const auto& bd : brokerDatas) {
             LOG_INFO("updateTopicRouteInfoFromNameServer changed with broker name:%s", bd.brokerName.c_str());
-            addBrokerToAddrMap(bd.brokerName, bd.brokerAddrs);
+            addBrokerToAddrTable(bd.brokerName, bd.brokerAddrs);
           }
 
           // update publish info
@@ -488,7 +539,7 @@ void MQClientInstance::unregisterConsumer(const std::string& group) {
 
 void MQClientInstance::unregisterClient(const std::string& producerGroup, const std::string& consumerGroup) {
   // FIXME: lock heartBeat
-  BrokerAddrMAP brokerAddrTable(getBrokerAddrMap());
+  BrokerAddrMAP brokerAddrTable(getBrokerAddrTable());
   for (const auto& it : brokerAddrTable) {
     const auto& brokerName = it.first;
     const auto& oneTable = it.second;
@@ -688,7 +739,7 @@ TopicPublishInfoPtr MQClientInstance::tryToFindTopicPublishInfo(const std::strin
 }
 
 FindBrokerResult* MQClientInstance::findBrokerAddressInAdmin(const std::string& brokerName) {
-  BrokerAddrMAP brokerTable(getBrokerAddrMap());
+  BrokerAddrMAP brokerTable(getBrokerAddrTable());
   bool found = false;
   bool slave = false;
   std::string brokerAddr;
@@ -712,7 +763,7 @@ FindBrokerResult* MQClientInstance::findBrokerAddressInAdmin(const std::string& 
 }
 
 std::string MQClientInstance::findBrokerAddressInPublish(const std::string& brokerName) {
-  BrokerAddrMAP brokerTable(getBrokerAddrMap());
+  BrokerAddrMAP brokerTable(getBrokerAddrTable());
   std::string brokerAddr;
   bool found = false;
 
@@ -739,7 +790,7 @@ FindBrokerResult* MQClientInstance::findBrokerAddressInSubscribe(const std::stri
   std::string brokerAddr;
   bool slave = false;
   bool found = false;
-  BrokerAddrMAP brokerTable(getBrokerAddrMap());
+  BrokerAddrMAP brokerTable(getBrokerAddrTable());
 
   if (brokerTable.find(brokerName) != brokerTable.end()) {
     std::map<int, std::string> brokerMap(brokerTable[brokerName]);
@@ -869,22 +920,27 @@ ConsumerRunningInfo* MQClientInstance::consumerRunningInfo(const std::string& co
   return nullptr;
 }
 
-void MQClientInstance::addBrokerToAddrMap(const std::string& brokerName,
-                                          const std::map<int, std::string>& brokerAddrs) {
-  std::lock_guard<std::mutex> lock(m_brokerAddrlock);
+void MQClientInstance::addBrokerToAddrTable(const std::string& brokerName,
+                                            const std::map<int, std::string>& brokerAddrs) {
+  std::lock_guard<std::mutex> lock(m_brokerAddrTableMutex);
   if (m_brokerAddrTable.find(brokerName) != m_brokerAddrTable.end()) {
     m_brokerAddrTable.erase(brokerName);
   }
   m_brokerAddrTable.emplace(brokerName, brokerAddrs);
 }
 
-void MQClientInstance::clearBrokerAddrMap() {
-  std::lock_guard<std::mutex> lock(m_brokerAddrlock);
+void MQClientInstance::resetBrokerAddrTable(BrokerAddrMAP&& table) {
+  std::lock_guard<std::mutex> lock(m_brokerAddrTableMutex);
+  m_brokerAddrTable = std::forward<BrokerAddrMAP>(table);
+}
+
+void MQClientInstance::clearBrokerAddrTable() {
+  std::lock_guard<std::mutex> lock(m_brokerAddrTableMutex);
   m_brokerAddrTable.clear();
 }
 
-MQClientInstance::BrokerAddrMAP MQClientInstance::getBrokerAddrMap() {
-  std::lock_guard<std::mutex> lock(m_brokerAddrlock);
+MQClientInstance::BrokerAddrMAP MQClientInstance::getBrokerAddrTable() {
+  std::lock_guard<std::mutex> lock(m_brokerAddrTableMutex);
   return m_brokerAddrTable;
 }
 
