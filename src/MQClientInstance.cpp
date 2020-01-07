@@ -134,9 +134,9 @@ TopicPublishInfoPtr MQClientInstance::topicRouteData2TopicPublishInfo(const std:
               [](const MQMessageQueue& a, const MQMessageQueue& b) {
                 auto result = a.getQueueId() - b.getQueueId();
                 if (result == 0) {
-                  return a.getBrokerName().compare(b.getBrokerName());
+                  result = a.getBrokerName().compare(b.getBrokerName());
                 }
-                return result;
+                return result < 0;
               });
 
     info->setOrderTopic(false);
