@@ -164,8 +164,9 @@ TEST(clientRemotingProcessor, resetOffset) {
   delete request;
 }
 
-TEST(clientRemotingProcessorS, getConsumerRunningInfo) {
+TEST(clientRemotingProcessor, getConsumerRunningInfoFailed) {
   MockMQClientFactory* factory = new MockMQClientFactory("testClientId", 4, 3000, 4000, "a");
+  Mock::AllowLeak(factory);
   ConsumerRunningInfo* info = new ConsumerRunningInfo();
   EXPECT_CALL(*factory, consumerRunningInfo(_)).Times(2).WillOnce(Return(info)).WillOnce(Return(info));
   EXPECT_CALL(*factory, getSessionCredentialFromConsumer(_, _))
@@ -174,6 +175,8 @@ TEST(clientRemotingProcessorS, getConsumerRunningInfo) {
 
   GetConsumerRunningInfoRequestHeader* header = new GetConsumerRunningInfoRequestHeader();
   header->setConsumerGroup("testGroup");
+  header->setClientId("testClientId");
+  header->setJstackEnable(false);
 
   RemotingCommand* request = new RemotingCommand(14, header);
 
