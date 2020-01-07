@@ -39,12 +39,12 @@ int MQDecoder::MessageStoreTimestampPostion = 56;
 
 //<!***************************************************************************
 string MQDecoder::createMessageId(sockaddr addr, int64 offset) {
-  struct sockaddr_in* sa = (struct sockaddr_in*)&addr;
+  int host, port;
+  socketAddress2IPPort(addr, host, port);
 
   MemoryOutputStream outputmen(MSG_ID_LENGTH);
-  outputmen.writeIntBigEndian(sa->sin_addr.s_addr);
-  outputmen.writeRepeatedByte(0, 2);
-  outputmen.write(&(sa->sin_port), 2);
+  outputmen.writeIntBigEndian(host);
+  outputmen.writeIntBigEndian(port);
   outputmen.writeInt64BigEndian(offset);
 
   const char* bytes = static_cast<const char*>(outputmen.getData());
@@ -56,20 +56,25 @@ string MQDecoder::createMessageId(sockaddr addr, int64 offset) {
 MQMessageId MQDecoder::decodeMessageId(const string& msgId) {
   string ipStr = msgId.substr(0, 8);
   string portStr = msgId.substr(8, 8);
-  string offsetStr = msgId.substr(16);
+  string offsetStr = msgId.substr(16, 16);
+
+  int num = strspn(offsetStr.c_str(), "F");
+  offsetStr = offsetStr.substr(num, 16 - num);
 
   char* end;
   int ipInt = strtoul(ipStr.c_str(), &end, 16);
   int portInt = strtoul(portStr.c_str(), &end, 16);
-
-  int64 offset = UtilAll::hexstr2ull(offsetStr.c_str());
+  uint64 offset = strtoul(offsetStr.c_str(), &end, 16);
+  // int64 offset = UtilAll::hexstr2ull(offsetStr.c_str());
 
   struct sockaddr_in sa;
   sa.sin_family = AF_INET;
   sa.sin_port = htons(portInt);
   sa.sin_addr.s_addr = htonl(ipInt);
+  sockaddr addr;
+  memcpy(&addr, &sa, sizeof(sockaddr));
 
-  MQMessageId id(*((sockaddr*)&sa), offset);
+  MQMessageId id(addr, offset);
   return id;
 }
 
@@ -242,4 +247,4 @@ void MQDecoder::string2messageProperties(const string& propertiesString, map<str
     }
   }
 }
-}  //<!end namespace;
+}  // namespace rocketmq
