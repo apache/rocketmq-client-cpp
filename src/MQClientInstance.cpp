@@ -128,6 +128,17 @@ TopicPublishInfoPtr MQClientInstance::topicRouteData2TopicPublishInfo(const std:
         }
       }
     }
+
+    // sort, make brokerName is staggered.
+    std::sort(info->getMessageQueueList().begin(), info->getMessageQueueList().end(),
+              [](const MQMessageQueue& a, const MQMessageQueue& b) {
+                auto result = a.getQueueId() - b.getQueueId();
+                if (result == 0) {
+                  return a.getBrokerName().compare(b.getBrokerName());
+                }
+                return result;
+              });
+
     info->setOrderTopic(false);
   }
 
