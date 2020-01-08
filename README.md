@@ -2,6 +2,10 @@
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![TravisCI](https://travis-ci.org/apache/rocketmq-client-cpp.svg)](https://travis-ci.org/apache/rocketmq-client-cpp)
 [![CodeCov](https://codecov.io/gh/apache/rocketmq-client-cpp/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/rocketmq-client-cpp)
+[![GitHub release](https://img.shields.io/badge/release-download-default.svg)](https://github.com/apache/rocketmq-client-cpp/releases)
+[![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/apache/rocketmq-client-cpp.svg)](http://isitmaintained.com/project/apache/rocketmq-client-cpp "Average time to resolve an issue")
+[![Percentage of issues still open](http://isitmaintained.com/badge/open/apache/rocketmq-client-cpp.svg)](http://isitmaintained.com/project/apache/rocketmq-client-cpp "Percentage of issues still open")
+![Twitter Follow](https://img.shields.io/twitter/follow/ApacheRocketMQ?style=social)
 
 RocketMQ-Client-CPP is the C/C++ client of Apache RocketMQ, a distributed messaging and streaming platform with low latency, high performance and reliability, trillion-level capacity and flexible scalability.
 
