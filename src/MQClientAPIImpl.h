@@ -84,7 +84,7 @@ class MQClientAPIImpl {
                           void* pArg,
                           const SessionCredentials& sessionCredentials);
 
-  void sendHearbeat(const string& addr, HeartbeatData* pHeartbeatData, const SessionCredentials& sessionCredentials);
+  void sendHeartbeat(const string& addr, HeartbeatData* pHeartbeatData, const SessionCredentials& sessionCredentials);
 
   void unregisterClient(const string& addr,
                         const string& clientID,

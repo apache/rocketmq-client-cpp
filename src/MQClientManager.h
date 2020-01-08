@@ -45,6 +45,6 @@ class MQClientManager {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif

@@ -136,7 +136,7 @@ boost::shared_ptr<TopicPublishInfo> MQClientFactory::tryToFindTopicPublishInfo(
   if (!isTopicInfoValidInTable(topic)) {
     updateTopicRouteInfoFromNameServer(topic, session_credentials);
   }
-  //<!if not exsit ,update dafult topic;
+  //<!if not exist ,update default topic;
   if (!isTopicInfoValidInTable(topic)) {
     LOG_INFO("updateTopicRouteInfoFromNameServer with default");
     updateTopicRouteInfoFromNameServer(topic, session_credentials, true);
@@ -156,7 +156,7 @@ bool MQClientFactory::updateTopicRouteInfoFromNameServer(const string& topic,
                                                          bool isDefault /* = false */) {
   boost::lock_guard<boost::mutex> lock(m_factoryLock);
   unique_ptr<TopicRouteData> pTopicRouteData;
-  LOG_INFO("updateTopicRouteInfoFromNameServer start:%s", topic.c_str());
+  LOG_DEBUG("updateTopicRouteInfoFromNameServer start. Topic:%s", topic.c_str());
 
   if (isDefault) {
     pTopicRouteData.reset(
@@ -176,7 +176,7 @@ bool MQClientFactory::updateTopicRouteInfoFromNameServer(const string& topic,
   }
 
   if (pTopicRouteData != NULL) {
-    LOG_INFO("updateTopicRouteInfoFromNameServer has data");
+    LOG_DEBUG("updateTopicRouteInfoFromNameServer has data");
     TopicRouteData* pTemp = getTopicRouteData(topic);
     bool changed = true;
     if (pTemp != NULL) {
@@ -211,7 +211,7 @@ bool MQClientFactory::updateTopicRouteInfoFromNameServer(const string& topic,
     LOG_DEBUG("updateTopicRouteInfoFromNameServer end:%s", topic.c_str());
     return true;
   }
-  LOG_DEBUG("updateTopicRouteInfoFromNameServer end null:%s", topic.c_str());
+  LOG_DEBUG("updateTopicRouteInfoFromNameServer end:%s", topic.c_str());
   return false;
 }
 
@@ -424,7 +424,7 @@ void MQClientFactory::insertProducerInfoToHeartBeatData(HeartbeatData* pHeartbea
 }
 
 MQConsumer* MQClientFactory::selectConsumer(const string& group) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  boost::lock_guard<boost::recursive_mutex> lock(m_consumerTableMutex);
   if (m_consumerTable.find(group) != m_consumerTable.end()) {
     return m_consumerTable[group];
   }
@@ -432,7 +432,7 @@ MQConsumer* MQClientFactory::selectConsumer(const string& group) {
 }
 
 bool MQClientFactory::getSessionCredentialFromConsumerTable(SessionCredentials& sessionCredentials) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  boost::lock_guard<boost::recursive_mutex> lock(m_consumerTableMutex);
   for (MQCMAP::iterator it = m_consumerTable.begin(); it != m_consumerTable.end(); ++it) {
     if (it->second)
       sessionCredentials = it->second->getSessionCredentials();
@@ -446,7 +446,7 @@ bool MQClientFactory::getSessionCredentialFromConsumerTable(SessionCredentials& 
 
 bool MQClientFactory::getSessionCredentialFromConsumer(const string& consumerGroup,
                                                        SessionCredentials& sessionCredentials) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  boost::lock_guard<boost::recursive_mutex> lock(m_consumerTableMutex);
   if (m_consumerTable.find(consumerGroup) != m_consumerTable.end()) {
     sessionCredentials = m_consumerTable[consumerGroup]->getSessionCredentials();
   }
@@ -458,7 +458,7 @@ bool MQClientFactory::getSessionCredentialFromConsumer(const string& consumerGro
 }
 
 bool MQClientFactory::addConsumerToTable(const string& consumerName, MQConsumer* pMQConsumer) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  boost::lock_guard<boost::recursive_mutex> lock(m_consumerTableMutex);
   if (m_consumerTable.find(consumerName) != m_consumerTable.end())
     return false;
   m_consumerTable[consumerName] = pMQConsumer;
@@ -466,7 +466,7 @@ bool MQClientFactory::addConsumerToTable(const string& consumerName, MQConsumer*
 }
 
 void MQClientFactory::eraseConsumerFromTable(const string& consumerName) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  boost::lock_guard<boost::recursive_mutex> lock(m_consumerTableMutex);
   if (m_consumerTable.find(consumerName) != m_consumerTable.end())
     m_consumerTable.erase(consumerName);  // do not need freee pConsumer, as it
                                           // was allocated by user
@@ -475,12 +475,12 @@ void MQClientFactory::eraseConsumerFromTable(const string& consumerName) {
 }
 
 int MQClientFactory::getConsumerTableSize() {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  boost::lock_guard<boost::recursive_mutex> lock(m_consumerTableMutex);
   return m_consumerTable.size();
 }
 
 void MQClientFactory::getTopicListFromConsumerSubscription(set<string>& topicList) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  boost::lock_guard<boost::recursive_mutex> lock(m_consumerTableMutex);
   for (MQCMAP::iterator it = m_consumerTable.begin(); it != m_consumerTable.end(); ++it) {
     vector<SubscriptionData> result;
     it->second->getSubscriptions(result);
@@ -493,14 +493,14 @@ void MQClientFactory::getTopicListFromConsumerSubscription(set<string>& topicLis
 }
 
 void MQClientFactory::updateConsumerSubscribeTopicInfo(const string& topic, vector<MQMessageQueue> mqs) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  boost::lock_guard<boost::recursive_mutex> lock(m_consumerTableMutex);
   for (MQCMAP::iterator it = m_consumerTable.begin(); it != m_consumerTable.end(); ++it) {
     it->second->updateTopicSubscribeInfo(topic, mqs);
   }
 }
 
 void MQClientFactory::insertConsumerInfoToHeartBeatData(HeartbeatData* pHeartbeatData) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  boost::lock_guard<boost::recursive_mutex> lock(m_consumerTableMutex);
   for (MQCMAP::iterator it = m_consumerTable.begin(); it != m_consumerTable.end(); ++it) {
     MQConsumer* pConsumer = it->second;
     ConsumerData consumerData;
@@ -563,6 +563,27 @@ void MQClientFactory::clearBrokerAddrMap() {
   m_brokerAddrTable.clear();
 }
 
+bool MQClientFactory::isBrokerAddressInUse(const std::string& address) {
+  if (m_topicRouteTableMutex.try_lock()) {
+    boost::lock_guard<boost::mutex> lk(m_topicRouteTableMutex, boost::adopt_lock_t());
+    for (TRDMAP::iterator it = m_topicRouteTable.begin(); it != m_topicRouteTable.end(); it++) {
+      TopicRouteData* topicRouteData = it->second;
+      vector<BrokerData>& brokerData = topicRouteData->getBrokerDatas();
+      for (vector<BrokerData>::iterator next = brokerData.begin(); next != brokerData.end(); next++) {
+        map<int, string>& brokerAddresses = next->brokerAddrs;
+        for (map<int, string>::iterator entry = brokerAddresses.begin(); entry != brokerAddresses.end(); entry++) {
+          if (address == entry->second) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  } else {
+    LOG_WARN("Cannot lock m_topicRouteTableMutex. Assume %s is still in use", address.c_str());
+    return true;
+  }
+}
 void MQClientFactory::addBrokerToAddrMap(const string& brokerName, map<int, string>& brokerAddrs) {
   boost::lock_guard<boost::mutex> lock(m_brokerAddrlock);
   if (m_brokerAddrTable.find(brokerName) != m_brokerAddrTable.end()) {
@@ -697,6 +718,35 @@ MQClientAPIImpl* MQClientFactory::getMQClientAPIImpl() const {
   return m_pClientAPIImpl.get();
 }
 
+void MQClientFactory::cleanOfflineBrokers() {
+  LOG_DEBUG("Begin to clean offline brokers");
+  boost::lock_guard<boost::mutex> lock(m_brokerAddrlock);
+
+  for (BrokerAddrMAP::iterator it = m_brokerAddrTable.begin(); it != m_brokerAddrTable.end();) {
+    std::string brokerName = it->first;
+    map<int, std::string> brokerIdAddressMap = it->second;
+
+    for (map<int, std::string>::iterator next = brokerIdAddressMap.begin(); next != brokerIdAddressMap.end();) {
+      if (!isBrokerAddressInUse(next->second)) {
+        LOG_INFO("Remove broker address: %s", (next->second).c_str());
+        brokerIdAddressMap.erase(next++);
+      } else {
+        next++;
+      }
+    }
+
+    if (brokerIdAddressMap.empty()) {
+      m_brokerAddrTable.erase(it++);
+      LOG_INFO("Broker name: %s is purged from client", brokerName.c_str());
+    } else {
+      LOG_DEBUG("Broker: %s is alive", brokerName.c_str());
+      it++;
+    }
+  }
+
+  LOG_DEBUG("Exit of cleaning offline brokers");
+}
+
 void MQClientFactory::sendHeartbeatToAllBroker() {
   BrokerAddrMAP brokerTable(getBrokerAddrMap());
   if (brokerTable.size() == 0) {
@@ -724,7 +774,7 @@ void MQClientFactory::sendHeartbeatToAllBroker() {
         continue;
 
       try {
-        m_pClientAPIImpl->sendHearbeat(addr, heartbeatData.get(), session_credentials);
+        m_pClientAPIImpl->sendHeartbeat(addr, heartbeatData.get(), session_credentials);
       } catch (MQException& e) {
         LOG_ERROR(e.what());
       }
@@ -735,7 +785,7 @@ void MQClientFactory::sendHeartbeatToAllBroker() {
 
 void MQClientFactory::persistAllConsumerOffset(boost::system::error_code& ec, boost::asio::deadline_timer* t) {
   {
-    boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+    boost::lock_guard<boost::recursive_mutex> lock(m_consumerTableMutex);
     if (m_consumerTable.size() > 0) {
       for (MQCMAP::iterator it = m_consumerTable.begin(); it != m_consumerTable.end(); ++it) {
         LOG_DEBUG("Client factory start persistAllConsumerOffset");
@@ -771,6 +821,14 @@ void MQClientFactory::timerCB_sendHeartbeatToAllBroker(boost::system::error_code
   t->async_wait(boost::bind(&MQClientFactory::timerCB_sendHeartbeatToAllBroker, this, ec, t));
 }
 
+void MQClientFactory::timerCB_cleanOfflineBrokers(boost::system::error_code& ec, boost::asio::deadline_timer* t) {
+  cleanOfflineBrokers();
+
+  boost::system::error_code e;
+  t->expires_from_now(t->expires_from_now() + boost::posix_time::seconds(30), e);
+  t->async_wait(boost::bind(&MQClientFactory::timerCB_cleanOfflineBrokers, this, ec, t));
+}
+
 void MQClientFactory::fetchNameServerAddr(boost::system::error_code& ec, boost::asio::deadline_timer* t) {
   m_pClientAPIImpl->fetchNameServerAddr(m_nameSrvDomain);
 
@@ -792,6 +850,10 @@ void MQClientFactory::startScheduledTask(bool startFetchNSService) {
   boost::system::error_code ec2;
   boost::asio::deadline_timer t2(m_async_ioService, boost::posix_time::milliseconds(10));
   t2.async_wait(boost::bind(&MQClientFactory::timerCB_sendHeartbeatToAllBroker, this, ec2, &t2));
+
+  boost::system::error_code ec3;
+  boost::asio::deadline_timer t3(m_async_ioService, boost::posix_time::seconds(3));
+  t3.async_wait(boost::bind(&MQClientFactory::timerCB_cleanOfflineBrokers, this, ec3, &t3));
 
   if (startFetchNSService) {
     boost::system::error_code ec5;
@@ -843,18 +905,18 @@ void MQClientFactory::timerCB_doRebalance(boost::system::error_code& ec, boost::
 }
 
 void MQClientFactory::doRebalance() {
-  LOG_INFO("Client factory:%s start dorebalance", m_clientId.c_str());
+  LOG_DEBUG("Client factory:%s start doRebalance", m_clientId.c_str());
   if (getConsumerTableSize() > 0) {
-    boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+    boost::lock_guard<boost::recursive_mutex> lock(m_consumerTableMutex);
     for (MQCMAP::iterator it = m_consumerTable.begin(); it != m_consumerTable.end(); ++it) {
       it->second->doRebalance();
     }
   }
-  LOG_INFO("Client factory:%s finish dorebalance", m_clientId.c_str());
+  LOG_DEBUG("Client factory:%s finish doRebalance", m_clientId.c_str());
 }
 
 void MQClientFactory::doRebalanceByConsumerGroup(const string& consumerGroup) {
-  boost::lock_guard<boost::mutex> lock(m_consumerTableMutex);
+  boost::lock_guard<boost::recursive_mutex> lock(m_consumerTableMutex);
   if (m_consumerTable.find(consumerGroup) != m_consumerTable.end()) {
     LOG_INFO("Client factory:%s start dorebalance for consumer:%s", m_clientId.c_str(), consumerGroup.c_str());
     MQConsumer* pMQConsumer = m_consumerTable[consumerGroup];
@@ -1125,9 +1187,9 @@ void MQClientFactory::getSessionCredentialsFromOneOfProducerOrConsumer(SessionCr
     getSessionCredentialFromConsumerTable(session_credentials);
 
   if (!session_credentials.isValid()) {
-    LOG_ERROR(
+    LOG_INFO(
         "updateTopicRouteInfo: didn't get the session_credentials from any "
-        "producers and consumers, please re-intialize it");
+        "producers and consumers, please re-intialize it if application needs authentication");
   }
 }
 

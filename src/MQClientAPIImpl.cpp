@@ -252,9 +252,9 @@ SendResult MQClientAPIImpl::sendMessage(const string& addr,
   return SendResult();
 }
 
-void MQClientAPIImpl::sendHearbeat(const string& addr,
-                                   HeartbeatData* pHeartbeatData,
-                                   const SessionCredentials& sessionCredentials) {
+void MQClientAPIImpl::sendHeartbeat(const string& addr,
+                                    HeartbeatData* pHeartbeatData,
+                                    const SessionCredentials& sessionCredentials) {
   RemotingCommand request(HEART_BEAT, NULL);
 
   string body;
@@ -265,7 +265,9 @@ void MQClientAPIImpl::sendHearbeat(const string& addr,
   request.Encode();
 
   if (m_pRemotingClient->invokeHeartBeat(addr, request)) {
-    LOG_INFO("sendheartbeat to broker:%s success", addr.c_str());
+    LOG_DEBUG("sendHeartbeat to broker:%s success", addr.c_str());
+  } else {
+    LOG_WARN("sendHeartbeat to broker:%s failed", addr.c_str());
   }
 }
 
@@ -314,6 +316,7 @@ TopicRouteData* MQClientAPIImpl::getTopicRouteInfoFromNameServer(const string& t
           }
         }
         case TOPIC_NOT_EXIST: {
+          LOG_WARN("Get topic[%s] route failed [TOPIC_NOT_EXIST].", topic.c_str());
           return NULL;
         }
         default:
@@ -323,6 +326,7 @@ TopicRouteData* MQClientAPIImpl::getTopicRouteInfoFromNameServer(const string& t
       return NULL;
     }
   }
+  LOG_WARN("Get topic[%s] route failed [Null Response].", topic.c_str());
   return NULL;
 }
 
