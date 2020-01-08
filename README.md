@@ -1,7 +1,7 @@
 # RocketMQ-Client-CPP
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![TravisCI](https://travis-ci.org/apache/rocketmq-client-cpp.svg)](https://travis-ci.org/apache/rocketmq-client-cpp)
-[![GitHub release](https://img.shields.io/badge/release-download-orange.svg)](https://github.com/apache/rocketmq-client-cpp/releases)
+[![GitHub release](https://img.shields.io/badge/release-download-green.svg)](https://github.com/apache/rocketmq-client-cpp/releases)
 [![CodeCov](https://codecov.io/gh/apache/rocketmq-client-cpp/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/rocketmq-client-cpp)
 [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/apache/rocketmq-client-cpp.svg)](http://isitmaintained.com/project/apache/rocketmq-client-cpp "Average time to resolve an issue")
 [![Percentage of issues still open](http://isitmaintained.com/badge/open/apache/rocketmq-client-cpp.svg)](http://isitmaintained.com/project/apache/rocketmq-client-cpp "Percentage of issues still open")
