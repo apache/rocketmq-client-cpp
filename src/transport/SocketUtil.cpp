@@ -147,7 +147,7 @@ std::string lookupNameServers(const std::string& hostname) {
   int err = evutil_getaddrinfo(hostname.c_str(), NULL, &hints, &answer);
   if (err != 0) {
     std::string info = "Failed to resolve host name(" + hostname + "): " + evutil_gai_strerror(err);
-    THROW_MQEXCEPTION(MQClientException, info, -1);
+    THROW_MQEXCEPTION(UnknownHostException, info, -1);
   }
 
   for (struct evutil_addrinfo* addressInfo = answer; addressInfo != NULL; addressInfo = addressInfo->ai_next) {

@@ -220,7 +220,11 @@ int BufferEvent::connect(const struct sockaddr* addr, int socklen) {
 
 int BufferEvent::close() {
   bufferevent_lock(m_bufferEvent);
-  auto ret = evutil_closesocket(bufferevent_getfd(m_bufferEvent));
+  auto fd = bufferevent_getfd(m_bufferEvent);
+  int ret = -1;
+  if (fd != -1) {
+    ret = evutil_closesocket(fd);
+  }
   bufferevent_unlock(m_bufferEvent);
   return ret;
 }

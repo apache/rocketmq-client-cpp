@@ -125,7 +125,13 @@ TcpConnectStatus TcpTransport::connect(const std::string& strServerURL, int time
     struct sockaddr_in sin;
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = resolveInetAddr(hostname);
+    try {
+      sin.sin_addr.s_addr = resolveInetAddr(hostname);
+    } catch (UnknownHostException& e) {
+      // throw exception if dns failed.
+      LOG_WARN_NEW("{}", e.what());
+      return closeBufferEvent();
+    }
     sin.sin_port = htons(port);
 
     // create BufferEvent
