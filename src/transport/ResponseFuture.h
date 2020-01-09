@@ -34,7 +34,7 @@ class ResponseFuture {
   InvokeCallback* getInvokeCallback();
   void releaseInvokeCallback();
 
-  void executeInvokeCallback();
+  void executeInvokeCallback() noexcept;
 
   RemotingCommand* waitResponse(int timeoutMillis = 0);
   void putResponse(RemotingCommand* responseCommand);

@@ -57,7 +57,7 @@ void ResponseFuture::releaseInvokeCallback() {
   m_invokeCallback = nullptr;
 }
 
-void ResponseFuture::executeInvokeCallback() {
+void ResponseFuture::executeInvokeCallback() noexcept {
   if (m_invokeCallback != nullptr) {
     m_invokeCallback->operationComplete(this);
   }

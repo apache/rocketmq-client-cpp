@@ -90,7 +90,7 @@ PullResult PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
 }
 
 PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,             // 1
-                                           std::string subExpression,            // 2
+                                           const std::string& subExpression,     // 2
                                            int64_t subVersion,                   // 3
                                            int64_t offset,                       // 4
                                            int maxNums,                          // 5
@@ -128,7 +128,7 @@ PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,            
     pRequestHeader->subVersion = subVersion;
 
     return m_clientInstance->getMQClientAPIImpl()->pullMessage(findBrokerResult->brokerAddr, pRequestHeader,
-                                                                timeoutMillis, communicationMode, pullCallback);
+                                                               timeoutMillis, communicationMode, pullCallback);
   }
 
   THROW_MQEXCEPTION(MQClientException, "The broker [" + mq.getBrokerName() + "] not exist", -1);

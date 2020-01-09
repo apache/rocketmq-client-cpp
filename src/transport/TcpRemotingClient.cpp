@@ -70,10 +70,8 @@ void TcpRemotingClient::shutdown() {
   {
     std::lock_guard<std::mutex> lock(m_futureTableMutex);
     for (const auto& future : m_futureTable) {
-      if (future.second) {
-        if (future.second->getInvokeCallback() != nullptr) {
-          future.second->releaseThreadCondition();
-        }
+      if (future.second != nullptr) {
+        future.second->executeInvokeCallback();
       }
     }
   }

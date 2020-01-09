@@ -521,7 +521,7 @@ void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pullRequest) {
     }
   }
 
-  std::string subExpression = subscriptionData->getSubString();
+  const auto& subExpression = subscriptionData->getSubString();
 
   int sysFlag = PullSysFlag::buildSysFlag(commitOffsetEnable,      // commitOffset
                                           true,                    // suspend
@@ -529,7 +529,7 @@ void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pullRequest) {
                                           false);                  // class filter
 
   try {
-    auto* pCallback = new AsyncPullCallback(shared_from_this(), pullRequest, subscriptionData);
+    auto* callback = new AsyncPullCallback(shared_from_this(), pullRequest, subscriptionData);
     m_pullAPIWrapper->pullKernelImpl(messageQueue,                                 // 1
                                      subExpression,                                // 2
                                      subscriptionData->getSubVersion(),            // 3
@@ -540,7 +540,7 @@ void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pullRequest) {
                                      1000 * 15,                                    // 8
                                      m_pushConsumerConfig->getAsyncPullTimeout(),  // 9
                                      ComMode_ASYNC,                                // 10
-                                     pCallback);                                   // 11
+                                     callback);                                   // 11
   } catch (MQException& e) {
     LOG_ERROR_NEW("pullKernelImpl exception: {}", e.what());
     executePullRequestLater(pullRequest, 3000);
