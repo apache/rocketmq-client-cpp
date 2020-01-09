@@ -113,7 +113,7 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
 
   OffsetStore* getOffsetStore() const { return m_offsetStore.get(); }
 
-  ConsumeMsgService* getConsumerMsgService() const { return m_consumerService.get(); }
+  ConsumeMsgService* getConsumerMsgService() const { return m_consumeService.get(); }
 
   MessageListenerType getMessageListenerType() const {
     if (nullptr != m_messageListener) {
@@ -141,7 +141,7 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
   std::unique_ptr<RebalanceImpl> m_rebalanceImpl;
   std::unique_ptr<PullAPIWrapper> m_pullAPIWrapper;
   std::unique_ptr<OffsetStore> m_offsetStore;
-  std::unique_ptr<ConsumeMsgService> m_consumerService;
+  std::unique_ptr<ConsumeMsgService> m_consumeService;
   MQMessageListener* m_messageListener;
 };
 

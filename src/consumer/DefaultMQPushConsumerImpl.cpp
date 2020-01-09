@@ -155,7 +155,7 @@ DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfig
       m_rebalanceImpl(new RebalancePushImpl(this)),
       m_pullAPIWrapper(nullptr),
       m_offsetStore(nullptr),
-      m_consumerService(nullptr),
+      m_consumeService(nullptr),
       m_messageListener(nullptr) {}
 
 DefaultMQPushConsumerImpl::~DefaultMQPushConsumerImpl() = default;
@@ -252,23 +252,23 @@ void DefaultMQPushConsumerImpl::start() {
       if (m_messageListener->getMessageListenerType() == messageListenerOrderly) {
         LOG_INFO_NEW("start orderly consume service: {}", m_pushConsumerConfig->getGroupName());
         m_consumeOrderly = true;
-        m_consumerService.reset(
+        m_consumeService.reset(
             new ConsumeMessageOrderlyService(this, m_pushConsumerConfig->getConsumeThreadNum(), m_messageListener));
       } else {
         // for backward compatible, defaultly and concurrently listeners are allocating
         // ConsumeMessageConcurrentlyService
         LOG_INFO_NEW("start concurrently consume service: {}", m_pushConsumerConfig->getGroupName());
         m_consumeOrderly = false;
-        m_consumerService.reset(new ConsumeMessageConcurrentlyService(this, m_pushConsumerConfig->getConsumeThreadNum(),
-                                                                      m_messageListener));
+        m_consumeService.reset(new ConsumeMessageConcurrentlyService(this, m_pushConsumerConfig->getConsumeThreadNum(),
+                                                                     m_messageListener));
       }
-      m_consumerService->start();
+      m_consumeService->start();
 
       // register consumer
       bool registerOK = m_clientInstance->registerConsumer(m_pushConsumerConfig->getGroupName(), this);
       if (!registerOK) {
         m_serviceState = CREATE_JUST;
-        m_consumerService->shutdown();
+        m_consumeService->shutdown();
         THROW_MQEXCEPTION(MQClientException,
                           "The cousumer group[" + m_pushConsumerConfig->getGroupName() +
                               "] has been created before, specify another name please.",
@@ -296,7 +296,7 @@ void DefaultMQPushConsumerImpl::start() {
 void DefaultMQPushConsumerImpl::shutdown() {
   switch (m_serviceState) {
     case RUNNING: {
-      m_consumerService->shutdown();
+      m_consumeService->shutdown();
       persistConsumerOffset();
       m_clientInstance->unregisterConsumer(m_pushConsumerConfig->getGroupName());
       m_clientInstance->shutdown();
