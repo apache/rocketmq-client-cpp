@@ -74,6 +74,7 @@ void TcpRemotingClient::shutdown() {
         future.second->executeInvokeCallback();
       }
     }
+    m_futureTable.clear();
   }
 
   LOG_INFO_NEW("TcpRemotingClient::shutdown End, m_transportTable:{}", m_transportTable.size());
