@@ -164,8 +164,12 @@ class MQClientFactory {
 
   void getSessionCredentialsFromOneOfProducerOrConsumer(SessionCredentials& session_credentials);
 
- private:
+ protected:
   string m_clientId;
+  unique_ptr<MQClientAPIImpl> m_pClientAPIImpl;
+  unique_ptr<ClientRemotingProcessor> m_pClientRemotingProcessor;
+
+ private:
   string m_nameSrvDomain;  // per clientId
   ServiceState m_serviceState;
   bool m_bFetchNSService;
@@ -199,10 +203,6 @@ class MQClientFactory {
   TPMap m_topicPublishInfoTable;
   boost::mutex m_factoryLock;
   boost::mutex m_topicPublishInfoLock;
-
-  //<!clientapi;
-  unique_ptr<MQClientAPIImpl> m_pClientAPIImpl;
-  unique_ptr<ClientRemotingProcessor> m_pClientRemotingProcessor;
 
   boost::asio::io_service m_async_ioService;
   unique_ptr<boost::thread> m_async_service_thread;
