@@ -19,6 +19,7 @@
 
 #include <atomic>
 #include <memory>
+#include <thread>
 #include <type_traits>
 #include <utility>
 

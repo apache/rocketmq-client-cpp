@@ -68,6 +68,8 @@ EventLoop::EventLoop(const struct event_config* config, bool run_immediately)
 EventLoop::~EventLoop() {
   stop();
 
+  freeBufferEvent();
+
   if (m_eventBase != nullptr) {
     event_base_free(m_eventBase);
     m_eventBase = nullptr;
@@ -90,16 +92,30 @@ void EventLoop::stop() {
 
 void EventLoop::runLoop() {
   while (_is_running) {
-    int ret;
+    freeBufferEvent();
 
-    ret = event_base_dispatch(m_eventBase);
-    // ret = event_base_loop(m_eventBase, EVLOOP_NONBLOCK);
-
+    int ret = event_base_dispatch(m_eventBase);
     if (ret == 1) {
       // no event
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
   }
+
+  freeBufferEvent();
+}
+
+void EventLoop::freeBufferEvent() {
+  while (true) {
+    auto event = _free_queue.pop_front();
+    if (event == nullptr) {
+      break;
+    }
+    bufferevent_free(*event);
+  }
+}
+
+void EventLoop::freeBufferEvent(struct bufferevent* event) {
+  _free_queue.push_back(event);
 }
 
 #define OPT_UNLOCK_CALLBACKS (BEV_OPT_DEFER_CALLBACKS | BEV_OPT_UNLOCK_CALLBACKS)
@@ -114,11 +130,12 @@ BufferEvent* EventLoop::createBufferEvent(socket_t fd, int options) {
 
   bool unlock = (options & OPT_UNLOCK_CALLBACKS) == OPT_UNLOCK_CALLBACKS;
 
-  return new BufferEvent(event, unlock);
+  return new BufferEvent(event, unlock, this);
 }
 
-BufferEvent::BufferEvent(struct bufferevent* event, bool unlockCallbacks)
-    : m_bufferEvent(event),
+BufferEvent::BufferEvent(struct bufferevent* event, bool unlockCallbacks, EventLoop* loop)
+    : m_eventLoop(loop),
+      m_bufferEvent(event),
       m_unlockCallbacks(unlockCallbacks),
       m_readCallback(nullptr),
       m_writeCallback(nullptr),
@@ -133,8 +150,7 @@ BufferEvent::BufferEvent(struct bufferevent* event, bool unlockCallbacks)
 
 BufferEvent::~BufferEvent() {
   if (m_bufferEvent != nullptr) {
-    // free function will set all callbacks to NULL first.
-    bufferevent_free(m_bufferEvent);
+    m_eventLoop->freeBufferEvent(m_bufferEvent);
     m_bufferEvent = nullptr;
   }
 }

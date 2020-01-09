@@ -17,14 +17,14 @@
 #ifndef __EVENTLOOP_H__
 #define __EVENTLOOP_H__
 
-#include <memory>
-
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <event2/event.h>
 
-#include "concurrent/thread.hpp"
+#include <memory>
 
+#include "concurrent/concurrent_queue.hpp"
+#include "concurrent/thread.hpp"
 #include "noncopyable.h"
 
 using socket_t = evutil_socket_t;
@@ -44,16 +44,23 @@ class EventLoop : public noncopyable {
   void start();
   void stop();
 
+  bool isRunning() { return _is_running; }
+
   BufferEvent* createBufferEvent(socket_t fd, int options);
 
  private:
   void runLoop();
+  void freeBufferEvent();
+
+  void freeBufferEvent(struct bufferevent* event);
+  friend BufferEvent;
 
  private:
   struct event_base* m_eventBase;
   thread m_loopThread;
 
   bool _is_running;  // aotmic is unnecessary
+  concurrent_queue<struct bufferevent*> _free_queue;
 };
 
 class TcpTransport;
@@ -62,6 +69,10 @@ using BufferEventDataCallback = void (*)(BufferEvent* event, TcpTransport* trans
 using BufferEventEventCallback = void (*)(BufferEvent* event, short what, TcpTransport* transport);
 
 class BufferEvent : public noncopyable {
+ private:
+  BufferEvent(struct bufferevent* event, bool unlockCallbacks, EventLoop* loop);
+  friend EventLoop;
+
  public:
   virtual ~BufferEvent();
 
@@ -93,14 +104,12 @@ class BufferEvent : public noncopyable {
   const std::string& getPeerAddrPort() const { return m_peerAddrPort; }
 
  private:
-  BufferEvent(struct bufferevent* event, bool unlockCallbacks);
-  friend EventLoop;
-
   static void read_callback(struct bufferevent* bev, void* ctx);
   static void write_callback(struct bufferevent* bev, void* ctx);
   static void event_callback(struct bufferevent* bev, short what, void* ctx);
 
  private:
+  EventLoop* m_eventLoop;
   struct bufferevent* m_bufferEvent;
   const bool m_unlockCallbacks;
 

@@ -51,7 +51,7 @@ void TcpRemotingClient::start() {
 }
 
 void TcpRemotingClient::shutdown() {
-  LOG_DEBUG("TcpRemotingClient::stopAllTcpTransportThread Begin");
+  LOG_INFO_NEW("TcpRemotingClient::shutdown Begin");
 
   m_timeoutExecutor.shutdown();
 
@@ -78,7 +78,7 @@ void TcpRemotingClient::shutdown() {
     }
   }
 
-  LOG_ERROR("TcpRemotingClient::stopAllTcpTransportThread End, m_transportTable:%lu", m_transportTable.size());
+  LOG_INFO_NEW("TcpRemotingClient::shutdown End, m_transportTable:{}", m_transportTable.size());
 }
 
 void TcpRemotingClient::registerRPCHook(std::shared_ptr<RPCHook> rpcHook) {
@@ -376,7 +376,7 @@ TcpTransportPtr TcpRemotingClient::CreateTransport(const std::string& addr, bool
             channel->disconnect(addr);  // avoid coredump when connection with broker was broken
             m_transportTable.erase(addr);
             break;
-          default: // TCP_CONNECT_STATUS_CLOSED
+          default:  // TCP_CONNECT_STATUS_CLOSED
             LOG_ERROR_NEW("go to CLOSED state, erase:{} from transportTable, and reconnect it", addr);
             m_transportTable.erase(addr);
             break;

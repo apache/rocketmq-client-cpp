@@ -50,7 +50,7 @@ TcpConnectStatus TcpTransport::closeBufferEvent() {
   // closeBufferEvent is idempotent.
   if (setTcpConnectEvent(TCP_CONNECT_STATUS_CLOSED) != TCP_CONNECT_STATUS_CLOSED) {
     if (m_event != nullptr) {
-      // m_event->disable(EV_READ | EV_WRITE);
+      m_event->disable(EV_READ | EV_WRITE);  // this is need for avoid block on event_base_dispatch.
       // close the socket!!!
       m_event->close();
     }
