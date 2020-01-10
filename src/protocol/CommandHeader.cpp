@@ -534,8 +534,8 @@ CommandHeader* ResetOffsetRequestHeader::Decode(Json::Value& ext) {
   if (tempValue.isString()) {
     h->isForce = UtilAll::to_bool(tempValue.asCString());
   }
-  LOG_INFO("topic:%s, group:%s, timestamp:%lld, isForce:%d,isForce:%s", h->topic.c_str(), h->group.c_str(),
-           h->timestamp, h->isForce, tempValue.asCString());
+  LOG_INFO("topic:%s, group:%s, timestamp:%lld, isForce:%d", h->topic.c_str(), h->group.c_str(), h->timestamp,
+           h->isForce);
   return h;
 }
 
