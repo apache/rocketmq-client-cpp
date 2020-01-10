@@ -39,6 +39,8 @@
 
 namespace rocketmq {
 
+static const long LOCK_TIMEOUT_MILLIS = 3000L;
+
 MQClientInstance::MQClientInstance(MQClientConfig clientConfig, const std::string& clientId)
     : MQClientInstance(clientConfig, clientId, nullptr) {}
 
@@ -285,7 +287,6 @@ void MQClientInstance::updateTopicRouteInfoFromNameServer() {
 }
 
 void MQClientInstance::cleanOfflineBroker() {
-  static const long LOCK_TIMEOUT_MILLIS = 3000L;
   if (UtilAll::try_lock_for(m_lockNamesrv, LOCK_TIMEOUT_MILLIS)) {
     std::lock_guard<std::timed_mutex> lock(m_lockNamesrv, std::adopt_lock);
 
@@ -386,7 +387,6 @@ void MQClientInstance::sendHeartbeatToAllBroker() {
 }
 
 bool MQClientInstance::updateTopicRouteInfoFromNameServer(const std::string& topic, bool isDefault) {
-  static const long LOCK_TIMEOUT_MILLIS = 3000L;
   if (UtilAll::try_lock_for(m_lockNamesrv, LOCK_TIMEOUT_MILLIS)) {
     std::lock_guard<std::timed_mutex> lock(m_lockNamesrv, std::adopt_lock);
     LOG_INFO("updateTopicRouteInfoFromNameServer start:%s", topic.c_str());
@@ -534,11 +534,24 @@ bool MQClientInstance::registerConsumer(const std::string& group, MQConsumerInne
 
 void MQClientInstance::unregisterConsumer(const std::string& group) {
   eraseConsumerFromTable(group);
-  unregisterClient(null, group);
+  unregisterClientWithLock(null, group);
+}
+
+void MQClientInstance::unregisterClientWithLock(const std::string& producerGroup, const std::string& consumerGroup) {
+  if (UtilAll::try_lock_for(m_lockHeartbeat, LOCK_TIMEOUT_MILLIS)) {
+    std::lock_guard<std::timed_mutex> lock(m_lockHeartbeat, std::adopt_lock);
+
+    try {
+      unregisterClient(producerGroup, consumerGroup);
+    } catch (const std::exception& e) {
+      LOG_ERROR_NEW("unregisterClient exception: {}", e.what());
+    }
+  } else {
+    LOG_WARN("lock heartBeat, but failed.");
+  }
 }
 
 void MQClientInstance::unregisterClient(const std::string& producerGroup, const std::string& consumerGroup) {
-  // FIXME: lock heartBeat
   BrokerAddrMAP brokerAddrTable(getBrokerAddrTable());
   for (const auto& it : brokerAddrTable) {
     const auto& brokerName = it.first;
@@ -573,7 +586,7 @@ bool MQClientInstance::registerProducer(const std::string& group, MQProducerInne
 
 void MQClientInstance::unregisterProducer(const std::string& group) {
   eraseProducerFromTable(group);
-  unregisterClient(group, null);
+  unregisterClientWithLock(group, null);
 }
 
 void MQClientInstance::rebalanceImmediately() {

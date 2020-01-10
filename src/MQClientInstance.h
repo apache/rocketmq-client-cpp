@@ -103,6 +103,7 @@ class MQClientInstance {
  private:
   typedef std::map<std::string, std::map<int, std::string>> BrokerAddrMAP;
 
+  void unregisterClientWithLock(const std::string& producerGroup, const std::string& consumerGroup);
   void unregisterClient(const std::string& producerGroup, const std::string& consumerGroup);
 
   void addBrokerToAddrTable(const std::string& brokerName, const std::map<int, std::string>& brokerAddrs);
