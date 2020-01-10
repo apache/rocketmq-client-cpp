@@ -64,7 +64,7 @@ class SendCallbackWrap : public InvokeCallback {
   MQClientInstancePtr m_instance;
   int m_timesTotal;
   int m_times;
-  std::weak_ptr<DefaultMQProducerImpl> m_producer;  // FIXME: ensure object is live.
+  std::weak_ptr<DefaultMQProducerImpl> m_producer;
 };
 
 }  // namespace rocketmq
