@@ -54,4 +54,4 @@ void MQClientManager::removeClientFactory(const string& clientId) {
   }
 }
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

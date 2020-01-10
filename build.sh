@@ -368,7 +368,11 @@ ExecutionTesting() {
   fi
   echo "############# unit test  start  ###########"
   cd ${build_dir}
-  make test
+  if [ $verbose -eq 0 ]; then
+    ctest
+  else
+    ctest -V
+  fi
   if [ $? -ne 0 ]; then
     echo "############# unit test failed  ###########"
     exit 1

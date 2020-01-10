@@ -31,7 +31,7 @@ class TopAddressing {
   virtual ~TopAddressing();
 
  public:
-  string fetchNSAddr(const string& NSDomain);
+  virtual string fetchNSAddr(const string& NSDomain);
 
  private:
   string clearNewLine(const string& str);
@@ -43,5 +43,5 @@ class TopAddressing {
   list<string> m_addrs;
   string m_unitName;
 };
-}
+}  // namespace rocketmq
 #endif

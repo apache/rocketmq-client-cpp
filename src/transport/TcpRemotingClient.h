@@ -39,24 +39,24 @@ class TcpRemotingClient {
   TcpRemotingClient(int pullThreadNum, uint64_t tcpConnectTimeout, uint64_t tcpTransportTryLockTimeout);
   virtual ~TcpRemotingClient();
 
-  void stopAllTcpTransportThread();
-  void updateNameServerAddressList(const string& addrs);
+  virtual void stopAllTcpTransportThread();
+  virtual void updateNameServerAddressList(const string& addrs);
 
-  bool invokeHeartBeat(const string& addr, RemotingCommand& request, int timeoutMillis = 3000);
+  virtual bool invokeHeartBeat(const string& addr, RemotingCommand& request, int timeoutMillis = 3000);
 
   // delete outsite;
-  RemotingCommand* invokeSync(const string& addr, RemotingCommand& request, int timeoutMillis = 3000);
+  virtual RemotingCommand* invokeSync(const string& addr, RemotingCommand& request, int timeoutMillis = 3000);
 
-  bool invokeAsync(const string& addr,
-                   RemotingCommand& request,
-                   AsyncCallbackWrap* cbw,
-                   int64 timeoutMilliseconds,
-                   int maxRetrySendTimes = 1,
-                   int retrySendTimes = 1);
+  virtual bool invokeAsync(const string& addr,
+                           RemotingCommand& request,
+                           AsyncCallbackWrap* cbw,
+                           int64 timeoutMilliseconds,
+                           int maxRetrySendTimes = 1,
+                           int retrySendTimes = 1);
 
-  void invokeOneway(const string& addr, RemotingCommand& request);
+  virtual void invokeOneway(const string& addr, RemotingCommand& request);
 
-  void registerProcessor(MQRequestCode requestCode, ClientRemotingProcessor* clientRemotingProcessor);
+  virtual void registerProcessor(MQRequestCode requestCode, ClientRemotingProcessor* clientRemotingProcessor);
 
  private:
   static void static_messageReceived(void* context, const MemoryBlock& mem, const string& addr);

@@ -20,6 +20,7 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/thread.hpp>
 #include "FindBrokerResult.h"
 #include "MQClientAPIImpl.h"
@@ -103,6 +104,8 @@ class MQClientFactory {
   void doRebalanceByConsumerGroup(const string& consumerGroup);
   void sendHeartbeatToAllBroker();
 
+  void cleanOfflineBrokers();
+
   void findConsumerIds(const string& topic,
                        const string& group,
                        vector<string>& cids,
@@ -113,6 +116,8 @@ class MQClientFactory {
   void addBrokerToAddrMap(const string& brokerName, map<int, string>& brokerAddrs);
   map<string, map<int, string>> getBrokerAddrMap();
   void clearBrokerAddrMap();
+
+  bool isBrokerAddressInUse(const std::string& address);
 
  private:
   void unregisterClient(const string& producerGroup,
@@ -127,6 +132,8 @@ class MQClientFactory {
   void fetchNameServerAddr(boost::system::error_code& ec, boost::asio::deadline_timer* t);
   void updateTopicRouteInfo(boost::system::error_code& ec, boost::asio::deadline_timer* t);
   void timerCB_sendHeartbeatToAllBroker(boost::system::error_code& ec, boost::asio::deadline_timer* t);
+
+  void timerCB_cleanOfflineBrokers(boost::system::error_code& ec, boost::asio::deadline_timer* t);
 
   // consumer related operation
   void consumer_timerOperation();
@@ -157,8 +164,12 @@ class MQClientFactory {
 
   void getSessionCredentialsFromOneOfProducerOrConsumer(SessionCredentials& session_credentials);
 
- private:
+ protected:
   string m_clientId;
+  unique_ptr<MQClientAPIImpl> m_pClientAPIImpl;
+  unique_ptr<ClientRemotingProcessor> m_pClientRemotingProcessor;
+
+ private:
   string m_nameSrvDomain;  // per clientId
   ServiceState m_serviceState;
   bool m_bFetchNSService;
@@ -170,7 +181,8 @@ class MQClientFactory {
 
   //<! group --> MQConsumer;
   typedef map<string, MQConsumer*> MQCMAP;
-  boost::mutex m_consumerTableMutex;
+  // Changed to recursive mutex due to avoid deadlock issue:
+  boost::recursive_mutex m_consumerTableMutex;
   MQCMAP m_consumerTable;
 
   //<! Topic---> TopicRouteData
@@ -191,10 +203,6 @@ class MQClientFactory {
   TPMap m_topicPublishInfoTable;
   boost::mutex m_factoryLock;
   boost::mutex m_topicPublishInfoLock;
-
-  //<!clientapi;
-  unique_ptr<MQClientAPIImpl> m_pClientAPIImpl;
-  unique_ptr<ClientRemotingProcessor> m_pClientRemotingProcessor;
 
   boost::asio::io_service m_async_ioService;
   unique_ptr<boost::thread> m_async_service_thread;
