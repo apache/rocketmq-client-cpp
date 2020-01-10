@@ -30,6 +30,7 @@ using rocketmq::TcpRemotingClient;
 using testing::_;
 using ::testing::InitGoogleMock;
 using ::testing::InitGoogleTest;
+using testing::Mock;
 using testing::Return;
 
 class MockTcpRemotingClient : public TcpRemotingClient {
@@ -66,17 +67,41 @@ class MockMQClientAPIImpl : public MQClientAPIImpl {
     m_pRemotingClient->registerProcessor(CONSUME_MESSAGE_DIRECTLY, m_processor);
   }
 };
+class MockMQClientAPIImplUtil {
+ public:
+  static MockMQClientAPIImplUtil* GetInstance() {
+    static MockMQClientAPIImplUtil instance;
+    return &instance;
+  }
+  MockMQClientAPIImpl* GetGtestMockClientAPIImpl() {
+    if (m_impl != nullptr) {
+      return m_impl;
+    }
+    string cid = "testClientId";
+    int ptN = 1;
+    uint64_t tct = 3000;
+    uint64_t ttt = 3000;
+    string un = "central";
+    SessionCredentials sc;
+    ClientRemotingProcessor* pp = new ClientRemotingProcessor(nullptr);
+    MockMQClientAPIImpl* impl = new MockMQClientAPIImpl(cid, pp, ptN, tct, ttt, un);
+    MockTcpRemotingClient* pClient = new MockTcpRemotingClient(ptN, tct, ttt);
+    impl->reInitRemoteClient(pClient);
+    m_impl = impl;
+    m_pClient = pClient;
+    return impl;
+  }
+  MockTcpRemotingClient* GetGtestMockRemotingClient() { return m_pClient; }
+  MockMQClientAPIImpl* m_impl = nullptr;
+  MockTcpRemotingClient* m_pClient = nullptr;
+};
+
 TEST(MQClientAPIImplTest, getMaxOffset) {
-  string cid = "testClientId";
-  int ptN = 1;
-  uint64_t tct = 3000;
-  uint64_t ttt = 3000;
-  string un = "central";
   SessionCredentials sc;
-  ClientRemotingProcessor* pp = new ClientRemotingProcessor(nullptr);
-  MockMQClientAPIImpl* impl = new MockMQClientAPIImpl(cid, pp, ptN, tct, ttt, un);
-  MockTcpRemotingClient* pClient = new MockTcpRemotingClient(ptN, tct, ttt);
-  impl->reInitRemoteClient(pClient);
+  MockMQClientAPIImpl* impl = MockMQClientAPIImplUtil::GetInstance()->GetGtestMockClientAPIImpl();
+  Mock::AllowLeak(impl);
+  MockTcpRemotingClient* pClient = MockMQClientAPIImplUtil::GetInstance()->GetGtestMockRemotingClient();
+  Mock::AllowLeak(pClient);
   GetMaxOffsetResponseHeader* pHead = new GetMaxOffsetResponseHeader();
   pHead->offset = 4096;
   RemotingCommand* pCommandFailed = new RemotingCommand(SYSTEM_ERROR, nullptr);
@@ -90,20 +115,14 @@ TEST(MQClientAPIImplTest, getMaxOffset) {
   EXPECT_ANY_THROW(impl->getMaxOffset("127.0.0.0:10911", "testTopic", 0, 1000, sc));
   int64 offset = impl->getMaxOffset("127.0.0.0:10911", "testTopic", 0, 1000, sc);
   EXPECT_EQ(4096, offset);
-  delete impl;
 }
 
 TEST(MQClientAPIImplTest, getMinOffset) {
-  string cid = "testClientId";
-  int ptN = 1;
-  uint64_t tct = 3000;
-  uint64_t ttt = 3000;
-  string un = "central";
   SessionCredentials sc;
-  ClientRemotingProcessor* pp = new ClientRemotingProcessor(nullptr);
-  MockMQClientAPIImpl* impl = new MockMQClientAPIImpl(cid, pp, ptN, tct, ttt, un);
-  MockTcpRemotingClient* pClient = new MockTcpRemotingClient(ptN, tct, ttt);
-  impl->reInitRemoteClient(pClient);
+  MockMQClientAPIImpl* impl = MockMQClientAPIImplUtil::GetInstance()->GetGtestMockClientAPIImpl();
+  Mock::AllowLeak(impl);
+  MockTcpRemotingClient* pClient = MockMQClientAPIImplUtil::GetInstance()->GetGtestMockRemotingClient();
+  Mock::AllowLeak(pClient);
   GetMinOffsetResponseHeader* pHead = new GetMinOffsetResponseHeader();
   pHead->offset = 2048;
   RemotingCommand* pCommandFailed = new RemotingCommand(SYSTEM_ERROR, nullptr);
@@ -117,20 +136,16 @@ TEST(MQClientAPIImplTest, getMinOffset) {
   EXPECT_ANY_THROW(impl->getMinOffset("127.0.0.0:10911", "testTopic", 0, 1000, sc));
   int64 offset = impl->getMinOffset("127.0.0.0:10911", "testTopic", 0, 1000, sc);
   EXPECT_EQ(2048, offset);
-  delete impl;
 }
 
 TEST(MQClientAPIImplTest, sendMessage) {
   string cid = "testClientId";
-  int ptN = 1;
-  uint64_t tct = 3000;
-  uint64_t ttt = 3000;
-  string un = "central";
   SessionCredentials sc;
-  ClientRemotingProcessor* pp = new ClientRemotingProcessor(nullptr);
-  MockMQClientAPIImpl* impl = new MockMQClientAPIImpl(cid, pp, ptN, tct, ttt, un);
-  MockTcpRemotingClient* pClient = new MockTcpRemotingClient(ptN, tct, ttt);
-  impl->reInitRemoteClient(pClient);
+  MockMQClientAPIImpl* impl = MockMQClientAPIImplUtil::GetInstance()->GetGtestMockClientAPIImpl();
+  Mock::AllowLeak(impl);
+  MockTcpRemotingClient* pClient = MockMQClientAPIImplUtil::GetInstance()->GetGtestMockRemotingClient();
+  Mock::AllowLeak(pClient);
+
   SendMessageResponseHeader* pHead = new SendMessageResponseHeader();
   pHead->msgId = "MessageID";
   pHead->queueId = 1;
@@ -154,9 +169,9 @@ TEST(MQClientAPIImplTest, sendMessage) {
   EXPECT_EQ(result.getOffsetMsgId(), "MessageID");
   EXPECT_EQ(result.getMessageQueue().getBrokerName(), "testBroker");
   EXPECT_EQ(result.getMessageQueue().getTopic(), "testTopic");
-  delete impl;
 }
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
+  testing::GTEST_FLAG(filter) = "MQClientAPIImplTest.*";
   return RUN_ALL_TESTS();
 }
