@@ -132,7 +132,7 @@ TEST(messageExt, init) {
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
 
-  testing::GTEST_FLAG(filter) = "messageExt.init";
+  testing::GTEST_FLAG(filter) = "messageExt.*";
   int itestts = RUN_ALL_TESTS();
   return itestts;
 }
