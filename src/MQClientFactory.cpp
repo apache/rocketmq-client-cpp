@@ -22,6 +22,7 @@
 #include "Rebalance.h"
 #include "TopicPublishInfo.h"
 #include "TransactionMQProducer.h"
+#include "MQVersion.h"
 
 #define MAX_BUFF_SIZE 8192
 #define SAFE_BUFF_SIZE 7936  // 8192 - 256 = 7936
@@ -1161,7 +1162,7 @@ ConsumerRunningInfo* MQClientFactory::consumerRunningInfo(const string& consumer
       } else {
         runningInfo->setProperty(ConsumerRunningInfo::PROP_CONSUME_TYPE, "CONSUME_ACTIVELY");
       }
-      runningInfo->setProperty(ConsumerRunningInfo::PROP_CLIENT_VERSION, "V3_1_8");  // MQVersion::s_CurrentVersion ));
+      runningInfo->setProperty(ConsumerRunningInfo::PROP_CLIENT_VERSION, MQVersion::GetVersionDesc(MQVersion::s_CurrentVersion));  // MQVersion::s_CurrentVersion ));
 
       return runningInfo;
     }
