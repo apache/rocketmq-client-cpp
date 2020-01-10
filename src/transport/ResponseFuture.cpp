@@ -63,29 +63,29 @@ void ResponseFuture::executeInvokeCallback() noexcept {
   }
 }
 
-RemotingCommand* ResponseFuture::waitResponse(int timeoutMillis) {
+std::unique_ptr<RemotingCommand> ResponseFuture::waitResponse(int timeoutMillis) {
   if (m_countDownLatch != nullptr) {
     if (timeoutMillis <= 0) {
       timeoutMillis = m_timeoutMillis;
     }
     m_countDownLatch->wait(timeoutMillis, time_unit::milliseconds);
   }
-  return m_responseCommand;
+  return std::move(m_responseCommand);
 }
 
-void ResponseFuture::putResponse(RemotingCommand* responseCommand) {
-  m_responseCommand = responseCommand;
+void ResponseFuture::putResponse(std::unique_ptr<RemotingCommand> responseCommand) {
+  m_responseCommand = std::move(responseCommand);
   if (m_countDownLatch != nullptr) {
     m_countDownLatch->count_down();
   }
 }
 
-RemotingCommand* ResponseFuture::getResponseCommand() const {
-  return m_responseCommand;
+std::unique_ptr<RemotingCommand> ResponseFuture::getResponseCommand() {
+  return std::move(m_responseCommand);
 }
 
-void ResponseFuture::setResponseCommand(RemotingCommand* responseCommand) {
-  m_responseCommand = responseCommand;
+void ResponseFuture::setResponseCommand(std::unique_ptr<RemotingCommand> responseCommand) {
+  m_responseCommand = std::move(responseCommand);
 }
 
 int64_t ResponseFuture::getBeginTimestamp() {

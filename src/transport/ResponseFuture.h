@@ -36,11 +36,13 @@ class ResponseFuture {
 
   void executeInvokeCallback() noexcept;
 
-  RemotingCommand* waitResponse(int timeoutMillis = 0);
-  void putResponse(RemotingCommand* responseCommand);
+  // for sync request
+  std::unique_ptr<RemotingCommand> waitResponse(int timeoutMillis = 0);
+  void putResponse(std::unique_ptr<RemotingCommand> responseCommand);
 
-  RemotingCommand* getResponseCommand() const;
-  void setResponseCommand(RemotingCommand* responseCommand);
+  // for async request
+  std::unique_ptr<RemotingCommand> getResponseCommand();
+  void setResponseCommand(std::unique_ptr<RemotingCommand> responseCommand);
 
   int64_t getBeginTimestamp();
   int64_t getTimeoutMillis();
@@ -59,7 +61,7 @@ class ResponseFuture {
   int64_t m_timeoutMillis;
   InvokeCallback* m_invokeCallback;
 
-  RemotingCommand* volatile m_responseCommand;  // delete outside
+  std::unique_ptr<RemotingCommand> m_responseCommand;
 
   int64_t m_beginTimestamp;
   bool m_sendRequestOK;

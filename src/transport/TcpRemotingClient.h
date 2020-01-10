@@ -48,10 +48,9 @@ class TcpRemotingClient {
 
   void updateNameServerAddressList(const std::string& addrs);
 
-  // delete by caller
-  RemotingCommand* invokeSync(const std::string& addr,
-                              RemotingCommand& request,
-                              int timeoutMillis = 3000) throw(RemotingException);
+  std::unique_ptr<RemotingCommand> invokeSync(const std::string& addr,
+                                              RemotingCommand& request,
+                                              int timeoutMillis = 3000) throw(RemotingException);
 
   void invokeAsync(const std::string& addr,
                    RemotingCommand& request,
@@ -70,8 +69,8 @@ class TcpRemotingClient {
 
   void messageReceived(MemoryBlockPtr3& mem, const std::string& addr);
   void processMessageReceived(MemoryBlockPtr2& mem, const std::string& addr);
-  void processRequestCommand(RemotingCommand* cmd, const std::string& addr);
-  void processResponseCommand(RemotingCommand* cmd);
+  void processRequestCommand(std::unique_ptr<RemotingCommand> cmd, const std::string& addr);
+  void processResponseCommand(std::unique_ptr<RemotingCommand> cmd);
 
   // timeout daemon
   void scanResponseTablePeriodically();
@@ -84,9 +83,10 @@ class TcpRemotingClient {
   bool CloseTransport(const std::string& addr, TcpTransportPtr channel);
   bool CloseNameServerTransport(TcpTransportPtr channel);
 
-  RemotingCommand* invokeSyncImpl(TcpTransportPtr channel,
-                                  RemotingCommand& request,
-                                  int64_t timeoutMillis) throw(RemotingTimeoutException, RemotingSendRequestException);
+  std::unique_ptr<RemotingCommand> invokeSyncImpl(TcpTransportPtr channel,
+                                                  RemotingCommand& request,
+                                                  int64_t timeoutMillis) throw(RemotingTimeoutException,
+                                                                               RemotingSendRequestException);
   void invokeAsyncImpl(TcpTransportPtr channel,
                        RemotingCommand& request,
                        int64_t timeoutMillis,

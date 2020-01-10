@@ -161,9 +161,9 @@ void TcpRemotingClient::scanResponseTable() {
   }
 }
 
-RemotingCommand* TcpRemotingClient::invokeSync(const std::string& addr,
-                                               RemotingCommand& request,
-                                               int timeoutMillis) throw(RemotingException) {
+std::unique_ptr<RemotingCommand> TcpRemotingClient::invokeSync(const std::string& addr,
+                                                               RemotingCommand& request,
+                                                               int timeoutMillis) throw(RemotingException) {
   auto beginStartTime = UtilAll::currentTimeMillis();
   TcpTransportPtr channel = GetTransport(addr, true);
   if (channel != nullptr) {
@@ -173,8 +173,8 @@ RemotingCommand* TcpRemotingClient::invokeSync(const std::string& addr,
       if (timeoutMillis <= 0 || timeoutMillis < costTime) {
         THROW_MQEXCEPTION(RemotingTimeoutException, "invokeSync call timeout", -1);
       }
-      RemotingCommand* response = invokeSyncImpl(channel, request, timeoutMillis);
-      doAfterRpcHooks(addr, request, response, false);
+      std::unique_ptr<RemotingCommand> response(invokeSyncImpl(channel, request, timeoutMillis));
+      doAfterRpcHooks(addr, request, response.get(), false);
       return response;
     } catch (const RemotingSendRequestException& e) {
       LOG_WARN_NEW("invokeSync: send request exception, so close the channel[{}]", channel->getPeerAddrAndPort());
@@ -195,10 +195,10 @@ RemotingCommand* TcpRemotingClient::invokeSync(const std::string& addr,
   }
 }
 
-RemotingCommand* TcpRemotingClient::invokeSyncImpl(TcpTransportPtr channel,
-                                                   RemotingCommand& request,
-                                                   int64_t timeoutMillis) throw(RemotingTimeoutException,
-                                                                                RemotingSendRequestException) {
+std::unique_ptr<RemotingCommand> TcpRemotingClient::invokeSyncImpl(
+    TcpTransportPtr channel,
+    RemotingCommand& request,
+    int64_t timeoutMillis) throw(RemotingTimeoutException, RemotingSendRequestException) {
   int code = request.getCode();
   int opaque = request.getOpaque();
 
@@ -216,7 +216,7 @@ RemotingCommand* TcpRemotingClient::invokeSyncImpl(TcpTransportPtr channel,
     LOG_WARN_NEW("send a request command to channel <{}}> failed.", channel->getPeerAddrAndPort());
   }
 
-  RemotingCommand* response = responseFuture->waitResponse();
+  std::unique_ptr<RemotingCommand> response(responseFuture->waitResponse());
   if (nullptr == response) {
     if (responseFuture->isSendRequestOK()) {
       THROW_MQEXCEPTION(RemotingTimeoutException,
@@ -520,44 +520,67 @@ void TcpRemotingClient::messageReceived(MemoryBlockPtr3& mem, const std::string&
 }
 
 void TcpRemotingClient::processMessageReceived(MemoryBlockPtr2& mem, const std::string& addr) {
-  RemotingCommand* cmd = nullptr;
+  std::unique_ptr<RemotingCommand> cmd;
   try {
-    cmd = RemotingCommand::Decode(mem);
+    cmd.reset(RemotingCommand::Decode(mem));
   } catch (...) {
     LOG_ERROR("processMessageReceived error");
     return;
   }
 
   if (cmd->isResponseType()) {
-    processResponseCommand(cmd);
+    processResponseCommand(std::move(cmd));
   } else {
-    // FIXME: memory leak on cmd, if m_handleExecutor is shutdown, but some tasks are unfinished.
-    m_handleExecutor.submit(std::bind(&TcpRemotingClient::processRequestCommand, this, cmd, addr));
+    class task_adaptor {
+     public:
+      task_adaptor(TcpRemotingClient* client, std::unique_ptr<RemotingCommand> cmd, const std::string& addr)
+          : client_(client), cmd_(cmd.release()), addr_(addr) {}
+      task_adaptor(const task_adaptor& other) : client_(other.client_), cmd_(other.cmd_), addr_(other.addr_) {
+        // force move
+        const_cast<task_adaptor*>(&other)->cmd_ = nullptr;
+      }
+      task_adaptor(task_adaptor&& other) : client_(other.client_), cmd_(other.cmd_), addr_(other.addr_) {
+        other.cmd_ = nullptr;
+      }
+      ~task_adaptor() { delete cmd_; }
+
+      void operator()() {
+        std::unique_ptr<RemotingCommand> requestCommand(cmd_);
+        cmd_ = nullptr;
+        client_->processRequestCommand(std::move(requestCommand), addr_);
+      }
+
+     private:
+      TcpRemotingClient* client_;
+      RemotingCommand* cmd_;
+      std::string addr_;
+    };
+
+    m_handleExecutor.submit(task_adaptor(this, std::move(cmd), addr));
   }
 }
 
-void TcpRemotingClient::processResponseCommand(RemotingCommand* cmd) {
-  int opaque = cmd->getOpaque();
+void TcpRemotingClient::processResponseCommand(std::unique_ptr<RemotingCommand> responseCommand) {
+  int opaque = responseCommand->getOpaque();
   std::shared_ptr<ResponseFuture> responseFuture = findAndDeleteResponseFuture(opaque);
   if (responseFuture != nullptr) {
     int code = responseFuture->getRequestCode();
     LOG_DEBUG("processResponseCommand, opaque:%d, code:%d", opaque, code);
 
     if (responseFuture->getInvokeCallback() != nullptr) {
-      responseFuture->setResponseCommand(cmd);
+      responseFuture->setResponseCommand(std::move(responseCommand));
       // bind shared_ptr can save object's life
       m_handleExecutor.submit(std::bind(&ResponseFuture::executeInvokeCallback, responseFuture));
     } else {
-      responseFuture->putResponse(cmd);
+      responseFuture->putResponse(std::move(responseCommand));
     }
   } else {
     LOG_DEBUG("responseFuture was deleted by timeout of opaque:%d", opaque);
-    deleteAndZero(cmd);
   }
 }
 
-void TcpRemotingClient::processRequestCommand(RemotingCommand* cmd, const std::string& addr) {
-  std::unique_ptr<RemotingCommand> requestCommand(cmd);
+void TcpRemotingClient::processRequestCommand(std::unique_ptr<RemotingCommand> requestCommand,
+                                              const std::string& addr) {
   int requestCode = requestCommand->getCode();
   auto iter = m_processorTable.find(requestCode);
   if (iter != m_processorTable.end()) {
@@ -589,7 +612,7 @@ void TcpRemotingClient::processRequestCommand(RemotingCommand* cmd, const std::s
     } catch (std::exception& e) {
       LOG_ERROR_NEW("process request exception. {}", e.what());
 
-      if (!cmd->isOnewayRPC()) {
+      if (!requestCommand->isOnewayRPC()) {
         // TODO: send SYSTEM_ERROR response
       }
     }
