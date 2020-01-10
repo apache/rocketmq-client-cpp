@@ -256,6 +256,71 @@ TEST(commandHeader, SendMessageResponseHeader) {
   EXPECT_EQ(headerDecode->queueOffset, 4);
 }
 
+TEST(commandHeader, PullMessageRequestHeader) {
+  PullMessageRequestHeader header;
+  header.consumerGroup = "testConsumer";
+  header.topic = "testTopic";
+  header.queueId = 1;
+  header.maxMsgNums = 2;
+  header.sysFlag = 3;
+  header.subscription = "testSub";
+  header.queueOffset = 4;
+  header.commitOffset = 5;
+  header.suspendTimeoutMillis = 6;
+  header.subVersion = 7;
+  map<string, string> requestMap;
+  header.SetDeclaredFieldOfCommandHeader(requestMap);
+  EXPECT_EQ(requestMap["consumerGroup"], "testConsumer");
+  EXPECT_EQ(requestMap["topic"], "testTopic");
+  EXPECT_EQ(requestMap["queueId"], "1");
+  EXPECT_EQ(requestMap["maxMsgNums"], "2");
+  EXPECT_EQ(requestMap["sysFlag"], "3");
+  EXPECT_EQ(requestMap["subscription"], "testSub");
+  EXPECT_EQ(requestMap["queueOffset"], "4");
+  EXPECT_EQ(requestMap["commitOffset"], "5");
+  EXPECT_EQ(requestMap["suspendTimeoutMillis"], "6");
+  EXPECT_EQ(requestMap["subVersion"], "7");
+
+  Value outData;
+  header.Encode(outData);
+  EXPECT_EQ(outData["consumerGroup"], "testConsumer");
+  EXPECT_EQ(outData["topic"], "testTopic");
+  EXPECT_EQ(outData["queueId"], 1);
+  EXPECT_EQ(outData["maxMsgNums"], 2);
+  EXPECT_EQ(outData["sysFlag"], 3);
+  EXPECT_EQ(outData["subscription"], "testSub");
+  EXPECT_EQ(outData["queueOffset"], "4");
+  EXPECT_EQ(outData["commitOffset"], "5");
+  EXPECT_EQ(outData["suspendTimeoutMillis"], "6");
+  EXPECT_EQ(outData["subVersion"], "7");
+}
+
+TEST(commandHeader, PullMessageResponseHeader) {
+  PullMessageResponseHeader header;
+  header.suggestWhichBrokerId = 100;
+  header.nextBeginOffset = 200;
+  header.minOffset = 3000;
+  header.maxOffset = 5000;
+  map<string, string> requestMap;
+  header.SetDeclaredFieldOfCommandHeader(requestMap);
+  EXPECT_EQ(requestMap["suggestWhichBrokerId"], "100");
+  EXPECT_EQ(requestMap["nextBeginOffset"], "200");
+  EXPECT_EQ(requestMap["minOffset"], "3000");
+  EXPECT_EQ(requestMap["maxOffset"], "5000");
+
+  Value value;
+  value["suggestWhichBrokerId"] = "5";
+  value["nextBeginOffset"] = "102400";
+  value["minOffset"] = "1";
+  value["maxOffset"] = "123456789";
+  shared_ptr<PullMessageResponseHeader> headerDecode(
+      static_cast<PullMessageResponseHeader*>(PullMessageResponseHeader::Decode(value)));
+  EXPECT_EQ(headerDecode->suggestWhichBrokerId, 5);
+  EXPECT_EQ(headerDecode->nextBeginOffset, 102400);
+  EXPECT_EQ(headerDecode->minOffset, 1);
+  EXPECT_EQ(headerDecode->maxOffset, 123456789);
+}
+
 TEST(commandHeader, GetConsumerListByGroupResponseBody) {
   Value value;
   value[0] = "body";

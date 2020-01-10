@@ -225,15 +225,11 @@ void PullMessageRequestHeader::Encode(Json::Value& outData) {
   outData["topic"] = topic;
   outData["queueId"] = queueId;
   outData["queueOffset"] = UtilAll::to_string(queueOffset);
-  ;
   outData["maxMsgNums"] = maxMsgNums;
   outData["sysFlag"] = sysFlag;
   outData["commitOffset"] = UtilAll::to_string(commitOffset);
-  ;
   outData["subVersion"] = UtilAll::to_string(subVersion);
-  ;
   outData["suspendTimeoutMillis"] = UtilAll::to_string(suspendTimeoutMillis);
-  ;
   outData["subscription"] = subscription;
 }
 
