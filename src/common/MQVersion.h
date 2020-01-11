@@ -1527,6 +1527,7 @@ class MQVersion {
 
   static const char* GetVersionDesc(int value);
   static int s_CurrentVersion;
+  static std::string s_CurrentLanguage;
 };
 
 //<!***************************************************************************

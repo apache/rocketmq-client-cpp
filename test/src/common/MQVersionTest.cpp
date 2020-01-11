@@ -31,6 +31,7 @@ TEST(MQVersionTest, Version2String) {
     EXPECT_STREQ(MQVersion::GetVersionDesc(v), RocketMQCPPClientVersion[v]);
   }
   EXPECT_STREQ(MQVersion::GetVersionDesc(-100), MQVersion::GetVersionDesc(MQVersion::V3_0_0_SNAPSHOT));
+  EXPECT_STREQ(MQVersion::GetVersionDesc(MQVersion::V4_6_0), "V4_6_0");
   EXPECT_STREQ(MQVersion::GetVersionDesc(MQVersion::HIGHER_VERSION + 100),
                MQVersion::GetVersionDesc(MQVersion::HIGHER_VERSION));
 }
