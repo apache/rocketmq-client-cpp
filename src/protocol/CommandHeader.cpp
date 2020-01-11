@@ -198,7 +198,7 @@ void SendMessageRequestHeaderV2::Encode(Json::Value& outData) {
   outData["i"] = i;                      // string properties;
   outData["j"] = UtilAll::to_string(j);  // int reconsumeTimes;
   outData["k"] = UtilAll::to_string(k);  // bool unitMode;
-  outData["l"] = l;                   // int consumeRetryTimes;
+  outData["l"] = l;                      // int consumeRetryTimes;
   outData["m"] = UtilAll::to_string(m);  // bool batch;
 }
 
