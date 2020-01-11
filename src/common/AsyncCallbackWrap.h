@@ -20,15 +20,14 @@
 #include "AsyncArg.h"
 #include "AsyncCallback.h"
 #include "MQMessage.h"
-#include "UtilAll.h"
 #include "RemotingCommand.h"
+#include "UtilAll.h"
 
 namespace rocketmq {
 
 class ResponseFuture;
 class MQClientAPIImpl;
 class DefaultMQProducer;
-class SendMessageRequestHeader;
 //<!***************************************************************************
 enum asyncCallBackType { asyncCallbackWrap = 0, sendCallbackWrap = 1, pullCallbackWarp = 2 };
 
@@ -77,5 +76,5 @@ class PullCallbackWarp : public AsyncCallbackWrap {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
-#endif  //<! _AsyncCallbackWrap_H_
+}  // namespace rocketmq
+#endif  // __ASYNCCALLBACKWRAP_H__

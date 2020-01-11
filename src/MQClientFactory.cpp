@@ -18,6 +18,7 @@
 #include "ConsumerRunningInfo.h"
 #include "Logging.h"
 #include "MQClientManager.h"
+#include "MQVersion.h"
 #include "PullRequest.h"
 #include "Rebalance.h"
 #include "TopicPublishInfo.h"
@@ -1161,7 +1162,9 @@ ConsumerRunningInfo* MQClientFactory::consumerRunningInfo(const string& consumer
       } else {
         runningInfo->setProperty(ConsumerRunningInfo::PROP_CONSUME_TYPE, "CONSUME_ACTIVELY");
       }
-      runningInfo->setProperty(ConsumerRunningInfo::PROP_CLIENT_VERSION, "V3_1_8");  // MQVersion::s_CurrentVersion ));
+      runningInfo->setProperty(
+          ConsumerRunningInfo::PROP_CLIENT_VERSION,
+          MQVersion::GetVersionDesc(MQVersion::s_CurrentVersion));  // MQVersion::s_CurrentVersion ));
 
       return runningInfo;
     }

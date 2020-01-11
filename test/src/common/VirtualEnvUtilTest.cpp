@@ -29,23 +29,36 @@ using testing::Return;
 
 using rocketmq::VirtualEnvUtil;
 
-VirtualEnvUtil virtualEnvUtil;
-
 TEST(virtualEnvUtil, buildWithProjectGroup) {
   string origin = "origin";
-  string projectGroup;
-  EXPECT_EQ(virtualEnvUtil.buildWithProjectGroup(origin, string()), origin);
-
-  EXPECT_EQ(virtualEnvUtil.buildWithProjectGroup(origin, string("123")), origin);
+  string originWithGroupA = "origin%PROJECT_testGroupA%";
+  string originWithGroupB = "origin%PROJECT_testGroupB%";
+  string originWithGroupAB = "origin%PROJECT_testGroupA%%PROJECT_testGroupB%";
+  string projectGroupA = "testGroupA";
+  string projectGroupB = "testGroupB";
+  EXPECT_EQ(VirtualEnvUtil::buildWithProjectGroup(origin, string()), origin);
+  EXPECT_EQ(VirtualEnvUtil::buildWithProjectGroup(origin, projectGroupA), originWithGroupA);
+  EXPECT_EQ(VirtualEnvUtil::buildWithProjectGroup(originWithGroupA, projectGroupA), originWithGroupA);
+  EXPECT_EQ(VirtualEnvUtil::buildWithProjectGroup(originWithGroupA, projectGroupB), originWithGroupAB);
 }
 
-TEST(virtualEnvUtil, clearProjectGroup) {}
+TEST(virtualEnvUtil, clearProjectGroup) {
+  string origin = "origin";
+  string originWithGroup = "origin%PROJECT_testGroup%";
+  string projectGroup = "testGroup";
+  string projectGroupB = "testGroupB";
+  EXPECT_EQ(VirtualEnvUtil::clearProjectGroup(origin, string()), origin);
+  EXPECT_EQ(VirtualEnvUtil::clearProjectGroup(originWithGroup, string()), originWithGroup);
+  EXPECT_EQ(VirtualEnvUtil::clearProjectGroup(originWithGroup, projectGroupB), originWithGroup);
+  EXPECT_EQ(VirtualEnvUtil::clearProjectGroup(origin, projectGroup), origin);
+  EXPECT_EQ(VirtualEnvUtil::clearProjectGroup(originWithGroup, projectGroup), origin);
+}
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
 
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "messageExt.init";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "virtualEnvUtil.*";
+  int iTest = RUN_ALL_TESTS();
+  return iTest;
 }

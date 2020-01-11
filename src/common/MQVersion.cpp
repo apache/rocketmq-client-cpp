@@ -17,15 +17,19 @@
 #include "MQVersion.h"
 
 namespace rocketmq {
-int MQVersion::s_CurrentVersion = MQVersion::V3_1_8;
+int MQVersion::s_CurrentVersion = MQVersion::V4_6_0;
+std::string MQVersion::s_CurrentLanguage = "CPP";
 
 //<!************************************************************************
-const char* MQVersion::getVersionDesc(int value) {
-  switch (value) {
-    // case V1_0_0:
-    // return "V1_0_0";
+const char* MQVersion::GetVersionDesc(int value) {
+  int currentVersion = value;
+  if (value <= V3_0_0_SNAPSHOT) {
+    currentVersion = V3_0_0_SNAPSHOT;
   }
-  return "";
+  if (value >= HIGHER_VERSION) {
+    currentVersion = HIGHER_VERSION;
+  }
+  return RocketMQCPPClientVersion[currentVersion];
 }
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
