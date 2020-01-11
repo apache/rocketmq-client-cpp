@@ -230,7 +230,11 @@ SendResult MQClientAPIImpl::sendMessage(const string& addr,
                                         int communicationMode,
                                         SendCallback* pSendCallback,
                                         const SessionCredentials& sessionCredentials) {
-  RemotingCommand request(SEND_MESSAGE, pRequestHeader);
+  // RemotingCommand request(SEND_MESSAGE, pRequestHeader);
+  // Using MQ V2 Protocol to end messages.
+  SendMessageRequestHeaderV2* pRequestHeaderV2 = new SendMessageRequestHeaderV2(*pRequestHeader);
+  RemotingCommand request(SEND_MESSAGE_V2, pRequestHeaderV2);
+  delete pRequestHeader;  // delete to avoid memory leak.
   string body = msg.getBody();
   request.SetBody(body.c_str(), body.length());
   request.setMsgBody(body);

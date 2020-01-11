@@ -449,6 +449,7 @@ SendResult DefaultMQProducer::sendKernelImpl(MQMessage& msg,
       requestHeader->sysFlag = (msg.getSysFlag());
       requestHeader->bornTimestamp = UtilAll::currentTimeMillis();
       requestHeader->flag = (msg.getFlag());
+      requestHeader->consumeRetryTimes = 16;
       requestHeader->batch = isBatchMsg;
       requestHeader->properties = (MQDecoder::messageProperties2String(msg.getProperties()));
 

@@ -172,6 +172,6 @@ TEST(MQClientAPIImplTest, sendMessage) {
 }
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
-  testing::GTEST_FLAG(filter) = "MQClientAPIImplTest.*";
+  testing::GTEST_FLAG(filter) = "MQClientAPIImplTest.sendMessage";
   return RUN_ALL_TESTS();
 }

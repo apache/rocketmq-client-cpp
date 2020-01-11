@@ -61,6 +61,7 @@ using rocketmq::ResetOffsetRequestHeader;
 using rocketmq::SearchOffsetRequestHeader;
 using rocketmq::SearchOffsetResponseHeader;
 using rocketmq::SendMessageRequestHeader;
+using rocketmq::SendMessageRequestHeaderV2;
 using rocketmq::SendMessageResponseHeader;
 using rocketmq::UnregisterClientRequestHeader;
 using rocketmq::UpdateConsumerOffsetRequestHeader;
@@ -201,8 +202,6 @@ TEST(commandHeader, SendMessageRequestHeader) {
   header.reconsumeTimes = reconsumeTimes;
   header.unitMode = unitMode;
   header.batch = batch;
-  header.setReconsumeTimes(reconsumeTimes);
-  EXPECT_EQ(header.getReconsumeTimes(), reconsumeTimes);
   map<string, string> requestMap;
   header.SetDeclaredFieldOfCommandHeader(requestMap);
   EXPECT_EQ(requestMap["topic"], topic);
@@ -232,6 +231,76 @@ TEST(commandHeader, SendMessageRequestHeader) {
   EXPECT_EQ(outData["reconsumeTimes"], "6");
   EXPECT_EQ(outData["unitMode"], "1");
   EXPECT_EQ(outData["batch"], "0");
+}
+
+TEST(commandHeader, SendMessageRequestHeaderV2) {
+  string producerGroup = "testProducer";
+  string topic = "testTopic";
+  string defaultTopic = "defaultTopic";
+  int defaultTopicQueueNums = 1;
+  int queueId = 2;
+  int sysFlag = 3;
+  int64 bornTimestamp = 4;
+  int flag = 5;
+  string properties = "testProperty";
+  int reconsumeTimes = 6;
+  bool unitMode = true;
+  bool batch = false;
+
+  SendMessageRequestHeaderV2 header;
+  header.a = producerGroup;
+  header.b = topic;
+  header.c = defaultTopic;
+  header.d = defaultTopicQueueNums;
+  header.e = queueId;
+  header.f = sysFlag;
+  header.g = bornTimestamp;
+  header.h = flag;
+  header.i = properties;
+  header.j = reconsumeTimes;
+  header.k = unitMode;
+  header.m = batch;
+  map<string, string> requestMap;
+  header.SetDeclaredFieldOfCommandHeader(requestMap);
+  EXPECT_EQ(requestMap["a"], producerGroup);
+  EXPECT_EQ(requestMap["b"], topic);
+  EXPECT_EQ(requestMap["c"], defaultTopic);
+  EXPECT_EQ(requestMap["d"], "1");
+  EXPECT_EQ(requestMap["e"], "2");
+  EXPECT_EQ(requestMap["f"], "3");
+  EXPECT_EQ(requestMap["g"], "4");
+  EXPECT_EQ(requestMap["h"], "5");
+  EXPECT_EQ(requestMap["i"], properties);
+  EXPECT_EQ(requestMap["j"], "6");
+  EXPECT_EQ(requestMap["k"], "1");
+  EXPECT_EQ(requestMap["m"], "0");
+
+  Value outData;
+  header.Encode(outData);
+  EXPECT_EQ(outData["a"], producerGroup);
+  EXPECT_EQ(outData["b"], topic);
+  EXPECT_EQ(outData["c"], defaultTopic);
+  EXPECT_EQ(outData["d"], defaultTopicQueueNums);
+  EXPECT_EQ(outData["e"], queueId);
+  EXPECT_EQ(outData["f"], sysFlag);
+  EXPECT_EQ(outData["g"], "4");
+  EXPECT_EQ(outData["h"], flag);
+  EXPECT_EQ(outData["i"], properties);
+  EXPECT_EQ(outData["j"], "6");
+  EXPECT_EQ(outData["k"], "1");
+  EXPECT_EQ(outData["m"], "0");
+
+  SendMessageRequestHeader v1;
+  header.CreateSendMessageRequestHeaderV1(v1);
+  EXPECT_EQ(v1.producerGroup, producerGroup);
+  EXPECT_EQ(v1.queueId, queueId);
+  EXPECT_EQ(v1.batch, batch);
+
+  SendMessageRequestHeaderV2 v2(v1);
+  EXPECT_EQ(header.a, v2.a);
+  EXPECT_EQ(header.e, v2.e);
+  EXPECT_EQ(header.m, v2.m);
+  EXPECT_EQ(header.g, v2.g);
 }
 
 TEST(commandHeader, SendMessageResponseHeader) {

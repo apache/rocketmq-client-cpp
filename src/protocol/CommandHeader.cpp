@@ -160,14 +160,6 @@ void SendMessageRequestHeader::Encode(Json::Value& outData) {
   outData["batch"] = UtilAll::to_string(batch);
 }
 
-int SendMessageRequestHeader::getReconsumeTimes() {
-  return reconsumeTimes;
-}
-
-void SendMessageRequestHeader::setReconsumeTimes(int input_reconsumeTimes) {
-  reconsumeTimes = input_reconsumeTimes;
-}
-
 void SendMessageRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
   LOG_DEBUG(
       "SendMessageRequestHeader producerGroup is:%s,topic is:%s, defaulttopic "
@@ -193,6 +185,64 @@ void SendMessageRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, strin
   requestMap.insert(pair<string, string>("batch", UtilAll::to_string(batch)));
 }
 
+//<!************************************************************************
+void SendMessageRequestHeaderV2::Encode(Json::Value& outData) {
+  outData["a"] = a;                      // string producerGroup;
+  outData["b"] = b;                      // string topic;
+  outData["c"] = c;                      // string defaultTopic;
+  outData["d"] = d;                      // int defaultTopicQueueNums;
+  outData["e"] = e;                      // int queueId;
+  outData["f"] = f;                      // int sysFlag;
+  outData["g"] = UtilAll::to_string(g);  // int64 bornTimestamp;
+  outData["h"] = h;                      // int flag;
+  outData["i"] = i;                      // string properties;
+  outData["j"] = UtilAll::to_string(j);  // int reconsumeTimes;
+  outData["k"] = UtilAll::to_string(k);  // bool unitMode;
+  outData["l"] = l;                   // int consumeRetryTimes;
+  outData["m"] = UtilAll::to_string(m);  // bool batch;
+}
+
+void SendMessageRequestHeaderV2::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
+  LOG_DEBUG(
+      "SendMessageRequestHeaderV2 producerGroup is:%s,topic is:%s, defaulttopic "
+      "is:%s, properties is:%s,UtilAll::to_string( defaultTopicQueueNums) "
+      "is:%s,UtilAll::to_string( queueId):%s, UtilAll::to_string( sysFlag) "
+      "is:%s, UtilAll::to_string( bornTimestamp) is:%s,UtilAll::to_string( "
+      "flag) is:%s,UtilAll::to_string( reconsumeTimes) is:%s,UtilAll::to_string( unitMode) is:%s,UtilAll::to_string( "
+      "batch) is:%s",
+      a.c_str(), b.c_str(), c.c_str(), i.c_str(), UtilAll::to_string(d).c_str(), UtilAll::to_string(e).c_str(),
+      UtilAll::to_string(f).c_str(), UtilAll::to_string(g).c_str(), UtilAll::to_string(g).c_str(),
+      UtilAll::to_string(j).c_str(), UtilAll::to_string(k).c_str(), UtilAll::to_string(m).c_str());
+
+  requestMap.insert(pair<string, string>("a", a));
+  requestMap.insert(pair<string, string>("b", b));
+  requestMap.insert(pair<string, string>("c", c));
+  requestMap.insert(pair<string, string>("d", UtilAll::to_string(d)));
+  requestMap.insert(pair<string, string>("e", UtilAll::to_string(e)));
+  requestMap.insert(pair<string, string>("f", UtilAll::to_string(f)));
+  requestMap.insert(pair<string, string>("g", UtilAll::to_string(g)));
+  requestMap.insert(pair<string, string>("h", UtilAll::to_string(h)));
+  requestMap.insert(pair<string, string>("i", i));
+  requestMap.insert(pair<string, string>("j", UtilAll::to_string(j)));
+  requestMap.insert(pair<string, string>("k", UtilAll::to_string(k)));
+  requestMap.insert(pair<string, string>("l", UtilAll::to_string(l)));
+  requestMap.insert(pair<string, string>("m", UtilAll::to_string(m)));
+}
+void SendMessageRequestHeaderV2::CreateSendMessageRequestHeaderV1(SendMessageRequestHeader& v1) {
+  v1.producerGroup = a;
+  v1.topic = b;
+  v1.defaultTopic = c;
+  v1.defaultTopicQueueNums = d;
+  v1.queueId = e;
+  v1.sysFlag = f;
+  v1.bornTimestamp = g;
+  v1.flag = h;
+  v1.properties = i;
+  v1.reconsumeTimes = j;
+  v1.unitMode = k;
+  v1.consumeRetryTimes = l;
+  v1.batch = m;
+}
 //<!************************************************************************
 CommandHeader* SendMessageResponseHeader::Decode(Json::Value& ext) {
   SendMessageResponseHeader* h = new SendMessageResponseHeader();

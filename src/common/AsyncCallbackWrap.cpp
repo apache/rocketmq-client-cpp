@@ -20,7 +20,6 @@
 #include "MQClientAPIImpl.h"
 #include "MQDecoder.h"
 #include "MQMessageQueue.h"
-#include "MQProtos.h"
 #include "PullAPIWrapper.h"
 #include "PullResultExt.h"
 #include "ResponseFuture.h"

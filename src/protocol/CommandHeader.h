@@ -150,12 +150,11 @@ class SendMessageRequestHeader : public CommandHeader {
         flag(0),
         reconsumeTimes(0),
         unitMode(false),
+        consumeRetryTimes(0),
         batch(false) {}
   virtual ~SendMessageRequestHeader() {}
   virtual void Encode(Json::Value& outData);
   virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
-  int getReconsumeTimes();
-  void setReconsumeTimes(int input_reconsumeTimes);
 
  public:
   string producerGroup;
@@ -169,7 +168,48 @@ class SendMessageRequestHeader : public CommandHeader {
   string properties;
   int reconsumeTimes;
   bool unitMode;
+  int consumeRetryTimes;
   bool batch;
+};
+
+//<!************************************************************************
+class SendMessageRequestHeaderV2 : public CommandHeader {
+ public:
+  SendMessageRequestHeaderV2(SendMessageRequestHeader v1) {
+    a = v1.producerGroup;
+    b = v1.topic;
+    c = v1.defaultTopic;
+    d = v1.defaultTopicQueueNums;
+    e = v1.queueId;
+    f = v1.sysFlag;
+    g = v1.bornTimestamp;
+    h = v1.flag;
+    i = v1.properties;
+    j = v1.reconsumeTimes;
+    k = v1.unitMode;
+    l = v1.consumeRetryTimes;
+    m = v1.batch;
+  }
+  SendMessageRequestHeaderV2() : d(0), e(0), f(0), g(0), h(0), j(0), k(false), l(16), m(false) {}
+  virtual ~SendMessageRequestHeaderV2() {}
+  virtual void Encode(Json::Value& outData);
+  virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
+  virtual void CreateSendMessageRequestHeaderV1(SendMessageRequestHeader& v1);
+
+ public:
+  string a;  // producerGroup
+  string b;  // topic;
+  string c;  // defaultTopic;
+  int d;     // defaultTopicQueueNums;
+  int e;     // queueId;
+  int f;     // sysFlag;
+  int64 g;   // bornTimestamp;
+  int h;     // flag;
+  string i;  // properties;
+  int j;     // reconsumeTimes;
+  bool k;    // unitMode;
+  int l;     // consumeRetryTimes;
+  bool m;    // batch;
 };
 
 //<!************************************************************************

@@ -214,6 +214,7 @@ void RemotingCommand::SetExtHeader(int code) {
       m_pExtHeader = NULL;
       switch (code) {
         case SEND_MESSAGE:
+        case SEND_MESSAGE_V2:
           m_pExtHeader.reset(SendMessageResponseHeader::Decode(ext));
           break;
         case PULL_MESSAGE:
