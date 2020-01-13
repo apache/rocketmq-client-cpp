@@ -238,7 +238,7 @@ int BufferEvent::close() {
   bufferevent_lock(m_bufferEvent);
   auto fd = bufferevent_getfd(m_bufferEvent);
   int ret = -1;
-  if (fd != -1) {
+  if (fd >= 0) {
     ret = evutil_closesocket(fd);
   }
   bufferevent_unlock(m_bufferEvent);
