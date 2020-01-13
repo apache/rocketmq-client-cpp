@@ -25,7 +25,10 @@ namespace rocketmq {
 ConsumeMessageConcurrentlyService::ConsumeMessageConcurrentlyService(DefaultMQPushConsumerImpl* consumer,
                                                                      int threadCount,
                                                                      MQMessageListener* msgListener)
-    : m_consumer(consumer), m_messageListener(msgListener), m_consumeExecutor("ConsumeService", threadCount, false) {}
+    : m_consumer(consumer),
+      m_messageListener(msgListener),
+      m_consumeExecutor("ConsumeMessageThread", threadCount, false),
+      m_scheduledExecutorService("ConsumeMessageScheduledThread", false) {}
 
 ConsumeMessageConcurrentlyService::~ConsumeMessageConcurrentlyService() = default;
 
@@ -44,6 +47,14 @@ void ConsumeMessageConcurrentlyService::submitConsumeRequest(std::vector<MQMessa
                                                              const bool dispathToConsume) {
   m_consumeExecutor.submit(
       std::bind(&ConsumeMessageConcurrentlyService::ConsumeRequest, this, msgs, processQueue, messageQueue));
+}
+
+void ConsumeMessageConcurrentlyService::submitConsumeRequestLater(std::vector<MQMessageExtPtr2>& msgs,
+                                                                  ProcessQueuePtr processQueue,
+                                                                  const MQMessageQueue& messageQueue) {
+  m_scheduledExecutorService.schedule(
+      std::bind(&ConsumeMessageConcurrentlyService::submitConsumeRequest, this, msgs, processQueue, messageQueue, true),
+      5000L, time_unit::milliseconds);
 }
 
 void ConsumeMessageConcurrentlyService::ConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
@@ -116,8 +127,8 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(std::vector<MQMessageExtP
         }
 
         if (!msgBackFailed.empty()) {
-          // FIXME: send back failed
-          // m_pConsumer->submitConsumeRequestLater()
+          // send back failed, reconsume later
+          submitConsumeRequestLater(msgBackFailed, processQueue, messageQueue);
         }
       } break;
       default:

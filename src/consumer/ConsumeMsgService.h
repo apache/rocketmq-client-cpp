@@ -57,10 +57,16 @@ class ConsumeMessageConcurrentlyService : public ConsumeMsgService {
                       const MQMessageQueue& messageQueue);
 
  private:
+  void submitConsumeRequestLater(std::vector<MQMessageExtPtr2>& msgs,
+                                 ProcessQueuePtr processQueue,
+                                 const MQMessageQueue& messageQueue);
+
+ private:
   DefaultMQPushConsumerImpl* m_consumer;
   MQMessageListener* m_messageListener;
 
   thread_pool_executor m_consumeExecutor;
+  scheduled_thread_pool_executor m_scheduledExecutorService;
 };
 
 class ConsumeMessageOrderlyService : public ConsumeMsgService {
