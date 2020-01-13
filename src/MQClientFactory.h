@@ -129,17 +129,18 @@ class MQClientFactory {
 
   void startScheduledTask(bool startFetchNSService = true);
   //<!timer async callback
-  void fetchNameServerAddr(boost::system::error_code& ec, boost::asio::deadline_timer* t);
-  void updateTopicRouteInfo(boost::system::error_code& ec, boost::asio::deadline_timer* t);
-  void timerCB_sendHeartbeatToAllBroker(boost::system::error_code& ec, boost::asio::deadline_timer* t);
+  void fetchNameServerAddr(boost::system::error_code& ec, boost::shared_ptr<boost::asio::deadline_timer> t);
+  void updateTopicRouteInfo(boost::system::error_code& ec, boost::shared_ptr<boost::asio::deadline_timer> t);
+  void timerCB_sendHeartbeatToAllBroker(boost::system::error_code& ec,
+                                        boost::shared_ptr<boost::asio::deadline_timer> t);
 
-  void timerCB_cleanOfflineBrokers(boost::system::error_code& ec, boost::asio::deadline_timer* t);
+  void timerCB_cleanOfflineBrokers(boost::system::error_code& ec, boost::shared_ptr<boost::asio::deadline_timer> t);
 
   // consumer related operation
   void consumer_timerOperation();
-  void persistAllConsumerOffset(boost::system::error_code& ec, boost::asio::deadline_timer* t);
+  void persistAllConsumerOffset(boost::system::error_code& ec, boost::shared_ptr<boost::asio::deadline_timer> t);
   void doRebalance();
-  void timerCB_doRebalance(boost::system::error_code& ec, boost::asio::deadline_timer* t);
+  void timerCB_doRebalance(boost::system::error_code& ec, boost::shared_ptr<boost::asio::deadline_timer> t);
   bool getSessionCredentialFromConsumerTable(SessionCredentials& sessionCredentials);
   bool addConsumerToTable(const string& consumerName, MQConsumer* pMQConsumer);
   void eraseConsumerFromTable(const string& consumerName);

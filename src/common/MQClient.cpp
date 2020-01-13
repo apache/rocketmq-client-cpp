@@ -150,6 +150,7 @@ void MQClient::start() {
 }
 
 void MQClient::shutdown() {
+  m_clientFactory->shutdown();
   m_clientFactory = NULL;
 }
 
