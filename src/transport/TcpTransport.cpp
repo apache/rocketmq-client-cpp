@@ -175,9 +175,19 @@ void TcpTransport::EventCallback(BufferEvent* event, short what, TcpTransport* t
   if (what & BEV_EVENT_CONNECTED) {
     LOG_INFO("eventcb: connect to fd:%d successfully", fd);
 
+    int val;
+
     // disable Nagle
-    int val = 1;
-    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void*)&val, sizeof(val));
+    val = 1;
+    if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void*)&val, sizeof(val)) < 0) {
+      LOG_WARN_NEW("eventcb: disable Nagle failed. fd:{}", fd);
+    }
+
+    // disable Keep-Alive
+    val = 0;
+    if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void*)&val, sizeof(val)) < 0) {
+      LOG_WARN_NEW("eventcb: disable Keep-Alive failed. fd:{}", fd);
+    }
 
     TcpConnectStatus curStatus = TCP_CONNECT_STATUS_CONNECTING;
     transport->setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_CONNECTED);
