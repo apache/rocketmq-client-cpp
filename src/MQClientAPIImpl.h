@@ -174,6 +174,7 @@ class MQClientAPIImpl {
                                        const string& consumerGroup,
                                        int delayLevel,
                                        int timeoutMillis,
+                                       int maxReconsumeTimes,
                                        const SessionCredentials& sessionCredentials);
 
   virtual void lockBatchMQ(const string& addr,

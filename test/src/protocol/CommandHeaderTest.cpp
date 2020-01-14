@@ -67,6 +67,43 @@ using rocketmq::UnregisterClientRequestHeader;
 using rocketmq::UpdateConsumerOffsetRequestHeader;
 using rocketmq::ViewMessageRequestHeader;
 
+TEST(commandHeader, ConsumerSendMsgBackRequestHeader) {
+  string group = "testGroup";
+  int delayLevel = 2;
+  int64 offset = 3027;
+  bool unitMode = true;
+  string originMsgId = "testOriginMsgId";
+  string originTopic = "testTopic";
+  int maxReconsumeTimes = 12;
+  ConsumerSendMsgBackRequestHeader header;
+  header.group = group;
+  header.delayLevel = delayLevel;
+  header.offset = offset;
+  header.unitMode = unitMode;
+  header.originMsgId = originMsgId;
+  header.originTopic = originTopic;
+  header.maxReconsumeTimes = maxReconsumeTimes;
+  map<string, string> requestMap;
+  header.SetDeclaredFieldOfCommandHeader(requestMap);
+  EXPECT_EQ(requestMap["group"], group);
+  EXPECT_EQ(requestMap["delayLevel"], "2");
+  EXPECT_EQ(requestMap["offset"], "3027");
+  EXPECT_EQ(requestMap["unitMode"], "1");
+  EXPECT_EQ(requestMap["originMsgId"], originMsgId);
+  EXPECT_EQ(requestMap["originTopic"], originTopic);
+  EXPECT_EQ(requestMap["maxReconsumeTimes"], "12");
+
+  Value outData;
+  header.Encode(outData);
+  EXPECT_EQ(outData["group"], group);
+  EXPECT_EQ(outData["delayLevel"], "2");
+  EXPECT_EQ(outData["offset"], "3027");
+  EXPECT_EQ(outData["unitMode"], "1");
+  EXPECT_EQ(outData["originMsgId"], originMsgId);
+  EXPECT_EQ(outData["originTopic"], originTopic);
+  EXPECT_EQ(outData["maxReconsumeTimes"], "12");
+}
+
 TEST(commandHeader, GetRouteInfoRequestHeader) {
   GetRouteInfoRequestHeader header("testTopic");
   map<string, string> requestMap;
