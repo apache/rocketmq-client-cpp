@@ -115,14 +115,18 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(std::vector<MQMessageExtP
       case CLUSTERING: {
         // send back msg to broker
         std::vector<MQMessageExtPtr2> msgBackFailed;
-        for (size_t i = ackIndex + 1; i < msgs.size(); i++) {
+        int idx = ackIndex + 1;
+        for (auto iter = msgs.begin() + idx; iter != msgs.end(); idx++) {
           LOG_WARN_NEW("consume fail, MQ is:{}, its msgId is:{}, index is:{}, reconsume times is:{}",
-                       messageQueue.toString(), msgs[i]->getMsgId(), i, msgs[i]->getReconsumeTimes());
-          auto& msg = msgs[i];
+                       messageQueue.toString(), (*iter)->getMsgId(), idx, (*iter)->getReconsumeTimes());
+          auto& msg = (*iter);
           bool result = m_consumer->sendMessageBack(*msg, 0, messageQueue.getBrokerName());
           if (!result) {
             msg->setReconsumeTimes(msg->getReconsumeTimes() + 1);
             msgBackFailed.push_back(msg);
+            iter = msgs.erase(iter);
+          } else {
+            iter++;
           }
         }
 
