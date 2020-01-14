@@ -104,6 +104,7 @@ void EventLoop::runLoop() {
   freeBufferEvent();
 }
 
+#if ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
 void EventLoop::freeBufferEvent() {
   while (true) {
     auto event = _free_queue.pop_front();
@@ -117,6 +118,9 @@ void EventLoop::freeBufferEvent() {
 void EventLoop::freeBufferEvent(struct bufferevent* event) {
   _free_queue.push_back(event);
 }
+#else
+void EventLoop::freeBufferEvent() {}
+#endif  // ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
 
 #define OPT_UNLOCK_CALLBACKS (BEV_OPT_DEFER_CALLBACKS | BEV_OPT_UNLOCK_CALLBACKS)
 
@@ -150,7 +154,11 @@ BufferEvent::BufferEvent(struct bufferevent* event, bool unlockCallbacks, EventL
 
 BufferEvent::~BufferEvent() {
   if (m_bufferEvent != nullptr) {
+#if ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
     m_eventLoop->freeBufferEvent(m_bufferEvent);
+#else
+    bufferevent_free(m_bufferEvent);
+#endif  // ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
     m_bufferEvent = nullptr;
   }
 }
