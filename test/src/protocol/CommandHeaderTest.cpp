@@ -96,12 +96,12 @@ TEST(commandHeader, ConsumerSendMsgBackRequestHeader) {
   Value outData;
   header.Encode(outData);
   EXPECT_EQ(outData["group"], group);
-  EXPECT_EQ(outData["delayLevel"], "2");
+  EXPECT_EQ(outData["delayLevel"], 2);
   EXPECT_EQ(outData["offset"], "3027");
   EXPECT_EQ(outData["unitMode"], "1");
   EXPECT_EQ(outData["originMsgId"], originMsgId);
   EXPECT_EQ(outData["originTopic"], originTopic);
-  EXPECT_EQ(outData["maxReconsumeTimes"], "12");
+  EXPECT_EQ(outData["maxReconsumeTimes"], 12);
 }
 
 TEST(commandHeader, GetRouteInfoRequestHeader) {
