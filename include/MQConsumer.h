@@ -36,6 +36,7 @@ class ROCKETMQCLIENT_API MQConsumer {
   virtual void shutdown() = 0;
 
   virtual bool sendMessageBack(MQMessageExt& msg, int delayLevel) = 0;
+  virtual bool sendMessageBack(MQMessageExt& msg, int delayLevel, const std::string& brokerName) = 0;
   virtual void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) = 0;
 };
 

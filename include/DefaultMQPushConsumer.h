@@ -68,6 +68,9 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumerConfig : public DefaultMQConsumerC
   int getAsyncPullTimeout() const { return m_asyncPullTimeout; }
   void setAsyncPullTimeout(int asyncPullTimeout) { m_asyncPullTimeout = asyncPullTimeout; }
 
+  int getMaxReconsumeTimes() { return m_maxReconsumeTimes; }
+  void setMaxReconsumeTimes(int maxReconsumeTimes) { m_maxReconsumeTimes = maxReconsumeTimes; }
+
   AllocateMQStrategy* getAllocateMQStrategy() { return m_allocateMQStrategy.get(); }
   void setAllocateMQStrategy(AllocateMQStrategy* strategy) { m_allocateMQStrategy.reset(strategy); }
 
@@ -80,6 +83,7 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumerConfig : public DefaultMQConsumerC
   int m_maxMsgCacheSize;
 
   int m_asyncPullTimeout;  // 30s
+  int m_maxReconsumeTimes;
 
   std::unique_ptr<AllocateMQStrategy> m_allocateMQStrategy;
 };
@@ -95,6 +99,7 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQPushConsumer, public D
   void shutdown() override;
 
   bool sendMessageBack(MQMessageExt& msg, int delayLevel) override;
+  bool sendMessageBack(MQMessageExt& msg, int delayLevel, const std::string& brokerName) override;
   void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) override;
 
  public:  // MQPushConsumer

@@ -119,7 +119,7 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(std::vector<MQMessageExtP
           LOG_WARN_NEW("consume fail, MQ is:{}, its msgId is:{}, index is:{}, reconsume times is:{}",
                        messageQueue.toString(), msgs[i]->getMsgId(), i, msgs[i]->getReconsumeTimes());
           auto& msg = msgs[i];
-          bool result = m_consumer->sendMessageBack(*msg, 0);
+          bool result = m_consumer->sendMessageBack(*msg, 0, messageQueue.getBrokerName());
           if (!result) {
             msg->setReconsumeTimes(msg->getReconsumeTimes() + 1);
             msgBackFailed.push_back(msg);

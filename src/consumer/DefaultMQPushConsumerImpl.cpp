@@ -36,6 +36,7 @@
 #include "PullMessageService.h"
 #include "PullSysFlag.h"
 #include "RebalancePushImpl.h"
+#include "SocketUtil.h"
 #include "UtilAll.h"
 #include "Validators.h"
 
@@ -160,10 +161,26 @@ DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfig
 
 DefaultMQPushConsumerImpl::~DefaultMQPushConsumerImpl() = default;
 
+int DefaultMQPushConsumerImpl::getMaxReconsumeTimes() {
+  // default reconsume times: 16
+  if (m_pushConsumerConfig->getMaxReconsumeTimes() == -1) {
+    return 16;
+  } else {
+    return m_pushConsumerConfig->getMaxReconsumeTimes();
+  }
+}
+
 bool DefaultMQPushConsumerImpl::sendMessageBack(MQMessageExt& msg, int delayLevel) {
+  return sendMessageBack(msg, delayLevel, null);
+}
+
+bool DefaultMQPushConsumerImpl::sendMessageBack(MQMessageExt& msg, int delayLevel, const std::string& brokerName) {
   try {
-    m_clientInstance->getMQClientAPIImpl()->consumerSendMessageBack(msg, m_pushConsumerConfig->getGroupName(),
-                                                                    delayLevel, 3000);
+    std::string brokerAddr = brokerName.empty() ? socketAddress2IPPort(&msg.getStoreHost())
+                                                : m_clientInstance->findBrokerAddressInPublish(brokerName);
+
+    m_clientInstance->getMQClientAPIImpl()->consumerSendMessageBack(
+        brokerAddr, msg, m_pushConsumerConfig->getGroupName(), delayLevel, 5000, getMaxReconsumeTimes());
     return true;
   } catch (std::exception& e) {
     LOG_ERROR_NEW("sendMessageBack exception, group: {}, msg: {}. {}", m_pushConsumerConfig->getGroupName(),
@@ -540,7 +557,7 @@ void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pullRequest) {
                                      1000 * 15,                                    // 8
                                      m_pushConsumerConfig->getAsyncPullTimeout(),  // 9
                                      ComMode_ASYNC,                                // 10
-                                     callback);                                   // 11
+                                     callback);                                    // 11
   } catch (MQException& e) {
     LOG_ERROR_NEW("pullKernelImpl exception: {}", e.what());
     executePullRequestLater(pullRequest, 3000);

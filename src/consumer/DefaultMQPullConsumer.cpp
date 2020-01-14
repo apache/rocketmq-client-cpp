@@ -51,6 +51,10 @@ bool DefaultMQPullConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {
   return m_pullConsumerDelegate->sendMessageBack(msg, delayLevel);
 }
 
+bool DefaultMQPullConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel, const std::string& brokerName) {
+  return m_pullConsumerDelegate->sendMessageBack(msg, delayLevel, brokerName);
+}
+
 void DefaultMQPullConsumer::fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) {
   m_pullConsumerDelegate->fetchMessageQueuesInBalance(topic, mqs);
 }

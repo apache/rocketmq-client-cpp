@@ -29,6 +29,7 @@ DefaultMQPushConsumerConfig::DefaultMQPushConsumerConfig()
       m_consumeMessageBatchMaxSize(1),
       m_maxMsgCacheSize(1000),
       m_asyncPullTimeout(30 * 1000),
+      m_maxReconsumeTimes(-1),
       m_allocateMQStrategy(new AllocateMQAveragely()) {}
 
 DefaultMQPushConsumer::DefaultMQPushConsumer(const std::string& groupname)
@@ -58,6 +59,10 @@ void DefaultMQPushConsumer::shutdown() {
 
 bool DefaultMQPushConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {
   return m_pushConsumerDelegate->sendMessageBack(msg, delayLevel);
+}
+
+bool DefaultMQPushConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel, const std::string& brokerName) {
+  return m_pushConsumerDelegate->sendMessageBack(msg, delayLevel, brokerName);
 }
 
 void DefaultMQPushConsumer::fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) {

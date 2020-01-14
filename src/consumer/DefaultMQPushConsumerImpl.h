@@ -65,6 +65,7 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
 
  public:  // MQConsumer
   bool sendMessageBack(MQMessageExt& msg, int delayLevel) override;
+  bool sendMessageBack(MQMessageExt& msg, int delayLevel, const std::string& brokerName) override;
   void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) override;
 
  public:  // MQPushConsumer
@@ -128,6 +129,8 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
   void checkConfig();
   void copySubscription();
   void updateTopicSubscribeInfoWhenSubscriptionChanged();
+
+  int getMaxReconsumeTimes();
 
  private:
   DefaultMQPushConsumerConfig* m_pushConsumerConfig;

@@ -24,6 +24,7 @@
 #include "KVTable.h"
 #include "LockBatchBody.h"
 #include "MQClientException.h"
+#include "MQClientInstance.h"
 #include "MQMessageExt.h"
 #include "PullCallback.h"
 #include "SendCallback.h"
@@ -32,7 +33,6 @@
 #include "TopicList.h"
 #include "TopicPublishInfo.h"
 #include "TopicRouteData.h"
-#include "MQClientInstance.h"
 
 namespace rocketmq {
 
@@ -124,7 +124,12 @@ class MQClientAPIImpl {
                             EndTransactionRequestHeader* requestHeader,
                             const std::string& remark);
 
-  void consumerSendMessageBack(MQMessageExt& msg, const std::string& consumerGroup, int delayLevel, int timeoutMillis);
+  void consumerSendMessageBack(const std::string& addr,
+                               MQMessageExt& msg,
+                               const std::string& consumerGroup,
+                               int delayLevel,
+                               int timeoutMillis,
+                               int maxConsumeRetryTimes);
 
   void lockBatchMQ(const std::string& addr,
                    LockBatchRequestBody* requestBody,

@@ -536,17 +536,20 @@ void MQClientAPIImpl::endTransactionOneway(const std::string& addr,
   m_remotingClient->invokeOneway(addr, request);
 }
 
-void MQClientAPIImpl::consumerSendMessageBack(MQMessageExt& msg,
+void MQClientAPIImpl::consumerSendMessageBack(const std::string& addr,
+                                              MQMessageExt& msg,
                                               const std::string& consumerGroup,
                                               int delayLevel,
-                                              int timeoutMillis) {
+                                              int timeoutMillis,
+                                              int maxConsumeRetryTimes) {
   ConsumerSendMsgBackRequestHeader* requestHeader = new ConsumerSendMsgBackRequestHeader();
-  // TODO: more fields
   requestHeader->group = consumerGroup;
+  requestHeader->originTopic = msg.getTopic();
   requestHeader->offset = msg.getCommitLogOffset();
   requestHeader->delayLevel = delayLevel;
+  requestHeader->originMsgId = msg.getMsgId();
+  requestHeader->maxReconsumeTimes = maxConsumeRetryTimes;
 
-  std::string addr = socketAddress2IPPort(&msg.getStoreHost());
   RemotingCommand request(CONSUMER_SEND_MSG_BACK, requestHeader);
 
   std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(addr, request, timeoutMillis));
