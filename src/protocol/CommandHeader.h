@@ -456,6 +456,10 @@ class ConsumerSendMsgBackRequestHeader : public CommandHeader {
   string group;
   int delayLevel;
   int64 offset;
+  bool unitMode = false;
+  string originMsgId;
+  string originTopic;
+  int maxReconsumeTimes = 16;
 };
 
 //<!***************************************************************************

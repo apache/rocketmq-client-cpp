@@ -836,11 +836,16 @@ void MQClientAPIImpl::consumerSendMessageBack(const string addr,
                                               const string& consumerGroup,
                                               int delayLevel,
                                               int timeoutMillis,
+                                              int maxReconsumeTimes,
                                               const SessionCredentials& sessionCredentials) {
   ConsumerSendMsgBackRequestHeader* pRequestHeader = new ConsumerSendMsgBackRequestHeader();
   pRequestHeader->group = consumerGroup;
   pRequestHeader->offset = msg.getCommitLogOffset();
   pRequestHeader->delayLevel = delayLevel;
+  pRequestHeader->unitMode = false;
+  pRequestHeader->originTopic = msg.getTopic();
+  pRequestHeader->originMsgId = msg.getMsgId();
+  pRequestHeader->maxReconsumeTimes = maxReconsumeTimes;
 
   // string addr = socketAddress2IPPort(msg.getStoreHost());
   RemotingCommand request(CONSUMER_SEND_MSG_BACK, pRequestHeader);

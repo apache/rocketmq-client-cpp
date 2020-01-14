@@ -258,8 +258,8 @@ bool DefaultMQPushConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel, s
   else
     brokerAddr = socketAddress2IPPort(msg.getStoreHost());
   try {
-    getFactory()->getMQClientAPIImpl()->consumerSendMessageBack(brokerAddr, msg, getGroupName(), delayLevel, 3000,
-                                                                getSessionCredentials());
+    getFactory()->getMQClientAPIImpl()->consumerSendMessageBack(brokerAddr, msg, getGroupName(), delayLevel,
+                                                                getMaxReconsumeTimes(), 3000, getSessionCredentials());
   } catch (MQException& e) {
     LOG_ERROR(e.what());
     return false;
@@ -917,6 +917,21 @@ void DefaultMQPushConsumer::setConsumeThreadCount(int threadCount) {
 
 int DefaultMQPushConsumer::getConsumeThreadCount() const {
   return m_consumeThreadCount;
+}
+void DefaultMQPushConsumer::setMaxReconsumeTimes(int maxReconsumeTimes) {
+  if (maxReconsumeTimes > 0) {
+    m_maxReconsumeTimes = maxReconsumeTimes;
+  } else {
+    LOG_ERROR("set maxReconsumeTimes with invalid value");
+  }
+}
+
+int DefaultMQPushConsumer::getMaxReconsumeTimes() const {
+  if (m_maxReconsumeTimes >= 0) {
+    return m_maxReconsumeTimes;
+  }
+  // return 16 as default;
+  return 16;
 }
 
 void DefaultMQPushConsumer::setPullMsgThreadPoolCount(int threadCount) {

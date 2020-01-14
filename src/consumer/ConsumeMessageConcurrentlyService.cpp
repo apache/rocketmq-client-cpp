@@ -194,6 +194,9 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
                   msgs[i].getReconsumeTimes());
         if (m_pConsumer->getConsumeType() == CONSUME_PASSIVELY) {
           string brokerName = request->m_messageQueue.getBrokerName();
+          if (m_pConsumer->isUseNameSpaceMode()) {
+            MessageAccessor::withNameSpace(msgs[i], m_pConsumer->getNameSpace());
+          }
           if (!m_pConsumer->sendMessageBack(msgs[i], 0, brokerName)) {
             LOG_WARN("Send message back fail, MQ is:%s, its msgId is:%s, index is:%d, re-consume times is:%d",
                      (request->m_messageQueue).toString().c_str(), msgs[i].getMsgId().c_str(), i,

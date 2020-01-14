@@ -492,16 +492,20 @@ void ConsumerSendMsgBackRequestHeader::Encode(Json::Value& outData) {
   outData["group"] = group;
   outData["delayLevel"] = delayLevel;
   outData["offset"] = UtilAll::to_string(offset);
-#ifdef ONS
+  outData["unitMode"] = UtilAll::to_string(unitMode);
   outData["originMsgId"] = originMsgId;
   outData["originTopic"] = originTopic;
-#endif
+  outData["maxReconsumeTimes"] = maxReconsumeTimes;
 }
 
 void ConsumerSendMsgBackRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
   requestMap.insert(pair<string, string>("group", group));
   requestMap.insert(pair<string, string>("delayLevel", UtilAll::to_string(delayLevel)));
   requestMap.insert(pair<string, string>("offset", UtilAll::to_string(offset)));
+  requestMap.insert(pair<string, string>("unitMode", UtilAll::to_string(unitMode)));
+  requestMap.insert(pair<string, string>("originMsgId", originMsgId));
+  requestMap.insert(pair<string, string>("originTopic", originTopic));
+  requestMap.insert(pair<string, string>("maxReconsumeTimes", UtilAll::to_string(maxReconsumeTimes)));
 }
 //<!***************************************************************************
 void GetConsumerListByGroupResponseBody::Decode(const MemoryBlock* mem, vector<string>& cids) {

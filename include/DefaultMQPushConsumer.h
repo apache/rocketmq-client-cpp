@@ -111,6 +111,8 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
   */
   void setConsumeThreadCount(int threadCount);
   int getConsumeThreadCount() const;
+  void setMaxReconsumeTimes(int maxReconsumeTimes);
+  int getMaxReconsumeTimes() const;
 
   /*
     set pullMsg thread count, default value is cpu cores
@@ -144,6 +146,7 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
   MQMessageListener* m_pMessageListener;
   int m_consumeMessageBatchMaxSize;
   int m_maxMsgCacheSize;
+  int m_maxReconsumeTimes = -1;
   boost::asio::io_service m_async_ioService;
   boost::scoped_ptr<boost::thread> m_async_service_thread;
 

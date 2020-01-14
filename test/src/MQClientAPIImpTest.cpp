@@ -170,6 +170,26 @@ TEST(MQClientAPIImplTest, sendMessage) {
   EXPECT_EQ(result.getMessageQueue().getBrokerName(), "testBroker");
   EXPECT_EQ(result.getMessageQueue().getTopic(), "testTopic");
 }
+
+TEST(MQClientAPIImplTest, consumerSendMessageBack) {
+  SessionCredentials sc;
+  MQMessageExt msg;
+  MockMQClientAPIImpl* impl = MockMQClientAPIImplUtil::GetInstance()->GetGtestMockClientAPIImpl();
+  Mock::AllowLeak(impl);
+  MockTcpRemotingClient* pClient = MockMQClientAPIImplUtil::GetInstance()->GetGtestMockRemotingClient();
+  Mock::AllowLeak(pClient);
+  RemotingCommand* pCommandFailed = new RemotingCommand(SYSTEM_ERROR, nullptr);
+  RemotingCommand* pCommandSuccuss = new RemotingCommand(SUCCESS_VALUE, nullptr);
+  EXPECT_CALL(*pClient, invokeSync(_, _, _))
+      .Times(3)
+      .WillOnce(Return(nullptr))
+      .WillOnce(Return(pCommandFailed))
+      .WillOnce(Return(pCommandSuccuss));
+  EXPECT_ANY_THROW(impl->consumerSendMessageBack("127.0.0.0:10911", msg, "testGroup", 0, 1000, 16, sc));
+  EXPECT_ANY_THROW(impl->consumerSendMessageBack("127.0.0.0:10911", msg, "testGroup", 0, 1000, 16, sc));
+  EXPECT_NO_THROW(impl->consumerSendMessageBack("127.0.0.0:10911", msg, "testGroup", 0, 1000, 16, sc));
+}
+
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(filter) = "MQClientAPIImplTest.*";
