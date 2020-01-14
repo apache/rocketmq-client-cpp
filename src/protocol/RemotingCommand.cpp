@@ -36,7 +36,13 @@ int32_t RemotingCommand::createNewRequestId() {
 }
 
 RemotingCommand::RemotingCommand(int32_t code, CommandCustomHeader* customHeader)
-    : RemotingCommand(code, "CPP", MQVersion::s_CurrentVersion, createNewRequestId(), 0, "", customHeader) {}
+    : RemotingCommand(code,
+                      MQVersion::s_CurrentLanguage,
+                      MQVersion::s_CurrentVersion,
+                      createNewRequestId(),
+                      0,
+                      "",
+                      customHeader) {}
 
 RemotingCommand::RemotingCommand(int32_t code,
                                  const std::string& language,
@@ -70,7 +76,7 @@ RemotingCommand::~RemotingCommand() = default;
 MemoryBlockPtr RemotingCommand::encode() {
   Json::Value root;
   root["code"] = m_code;
-  root["language"] = "CPP";
+  root["language"] = m_language;
   root["version"] = m_version;
   root["opaque"] = m_opaque;
   root["flag"] = m_flag;

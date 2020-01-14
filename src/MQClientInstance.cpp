@@ -24,6 +24,7 @@
 #include "MQAdminImpl.h"
 #include "MQClientAPIImpl.h"
 #include "MQClientManager.h"
+#include "MQVersion.h"
 #include "PermName.h"
 #include "PullMessageService.h"
 #include "PullRequest.h"
@@ -923,7 +924,8 @@ ConsumerRunningInfo* MQClientInstance::consumerRunningInfo(const std::string& co
       } else {
         runningInfo->setProperty(ConsumerRunningInfo::PROP_CONSUME_TYPE, "CONSUME_ACTIVELY");
       }
-      runningInfo->setProperty(ConsumerRunningInfo::PROP_CLIENT_VERSION, "V3_1_8");  // MQVersion::s_CurrentVersion ));
+      runningInfo->setProperty(ConsumerRunningInfo::PROP_CLIENT_VERSION,
+                               MQVersion::GetVersionDesc(MQVersion::s_CurrentVersion));
 
       return runningInfo.release();
     }
