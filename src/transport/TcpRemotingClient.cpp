@@ -159,8 +159,8 @@ bool TcpRemotingClient::invokeHeartBeat(const string& addr, RemotingCommand& req
   if (pTcp != nullptr) {
     int code = request.getCode();
     int opaque = request.getOpaque();
-
-    std::shared_ptr<ResponseFuture> responseFuture(new ResponseFuture(code, opaque, this, timeoutMillis));
+    std::shared_ptr<AsyncCallbackWrap> cbw;
+    std::shared_ptr<ResponseFuture> responseFuture(new ResponseFuture(code, opaque, this, timeoutMillis, false, cbw));
     addResponseFuture(opaque, responseFuture);
 
     if (SendCommand(pTcp, request)) {
@@ -193,8 +193,8 @@ RemotingCommand* TcpRemotingClient::invokeSync(const string& addr, RemotingComma
   if (pTcp != nullptr) {
     int code = request.getCode();
     int opaque = request.getOpaque();
-
-    std::shared_ptr<ResponseFuture> responseFuture(new ResponseFuture(code, opaque, this, timeoutMillis));
+    std::shared_ptr<AsyncCallbackWrap> cbw;
+    std::shared_ptr<ResponseFuture> responseFuture(new ResponseFuture(code, opaque, this, timeoutMillis, false, cbw));
     addResponseFuture(opaque, responseFuture);
 
     if (SendCommand(pTcp, request)) {
@@ -224,7 +224,7 @@ RemotingCommand* TcpRemotingClient::invokeSync(const string& addr, RemotingComma
 
 bool TcpRemotingClient::invokeAsync(const string& addr,
                                     RemotingCommand& request,
-                                    AsyncCallbackWrap* callback,
+                                    std::shared_ptr<AsyncCallbackWrap> callback,
                                     int64 timeoutMillis,
                                     int maxRetrySendTimes,
                                     int retrySendTimes) {

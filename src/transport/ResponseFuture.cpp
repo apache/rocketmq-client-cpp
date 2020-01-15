@@ -29,7 +29,7 @@ ResponseFuture::ResponseFuture(int requestCode,
                                TcpRemotingClient* powner,
                                int64 timeout,
                                bool bAsync,
-                               AsyncCallbackWrap* pCallback)
+                               std::shared_ptr<AsyncCallbackWrap> pCallback)
     : m_requestCode(requestCode),
       m_opaque(opaque),
       m_timeout(timeout),
@@ -45,13 +45,7 @@ ResponseFuture::ResponseFuture(int requestCode,
   m_beginTimestamp = UtilAll::currentTimeMillis();
 }
 
-ResponseFuture::~ResponseFuture() {
-  deleteAndZero(m_pCallbackWrap);
-  /*
-    do not delete m_pResponseCommand when destruct, as m_pResponseCommand
-    is used by MQClientAPIImpl concurrently, and will be released by producer or consumer;
-   */
-}
+ResponseFuture::~ResponseFuture() {}
 
 void ResponseFuture::releaseThreadCondition() {
   m_defaultEvent.notify_all();
@@ -174,7 +168,7 @@ RemotingCommand* ResponseFuture::getCommand() const {
   return m_pResponseCommand;
 }
 
-AsyncCallbackWrap* ResponseFuture::getAsyncCallbackWrap() {
+std::shared_ptr<AsyncCallbackWrap> ResponseFuture::getAsyncCallbackWrap() {
   return m_pCallbackWrap;
 }
 

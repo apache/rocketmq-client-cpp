@@ -414,11 +414,12 @@ void MQClientAPIImpl::sendMessageAsync(const string& addr,
                                        int retrySendTimes) {
   int64 begin_time = UtilAll::currentTimeMillis();
   //<!delete in future;
-  AsyncCallbackWrap* cbw = new SendCallbackWrap(brokerName, msg, pSendCallback, this);
+  // AsyncCallbackWrap* cbw = new SendCallbackWrap(brokerName, msg, pSendCallback, this);
 
   LOG_DEBUG("sendMessageAsync request:%s, timeout:%lld, maxRetryTimes:%d retrySendTimes:%d", request.ToString().data(),
             timeoutMilliseconds, maxRetryTimes, retrySendTimes);
-
+  // Use smart ptr to control cbw.
+  std::shared_ptr<AsyncCallbackWrap> cbw = std::make_shared<SendCallbackWrap>(brokerName, msg, pSendCallback, this);
   if (m_pRemotingClient->invokeAsync(addr, request, cbw, timeoutMilliseconds, maxRetryTimes, retrySendTimes) == false) {
     LOG_WARN("invokeAsync failed to addr:%s,topic:%s, timeout:%lld, maxRetryTimes:%d, retrySendTimes:%d", addr.c_str(),
              msg.getTopic().data(), timeoutMilliseconds, maxRetryTimes, retrySendTimes);
@@ -441,9 +442,9 @@ void MQClientAPIImpl::sendMessageAsync(const string& addr,
     LOG_ERROR("sendMessageAsync failed to addr:%s,topic:%s, timeout:%lld, maxRetryTimes:%d, retrySendTimes:%d",
               addr.c_str(), msg.getTopic().data(), time_out, maxRetryTimes, retrySendTimes);
 
-    if (cbw) {
+    if (cbw && pSendCallback != nullptr) {
       cbw->onException();
-      deleteAndZero(cbw);
+      // deleteAndZero(cbw);
     } else {
       THROW_MQEXCEPTION(MQClientException, "sendMessageAsync failed", -1);
     }
@@ -481,12 +482,12 @@ void MQClientAPIImpl::pullMessageAsync(const string& addr,
                                        int timeoutMillis,
                                        PullCallback* pullCallback,
                                        void* pArg) {
-  //<!delete in future;
-  AsyncCallbackWrap* cbw = new PullCallbackWarp(pullCallback, this, pArg);
+  // AsyncCallbackWrap* cbw = new PullCallbackWrap(pullCallback, this, pArg);
+  std::shared_ptr<AsyncCallbackWrap> cbw = std::make_shared<PullCallbackWrap>(pullCallback, this, pArg);
   if (m_pRemotingClient->invokeAsync(addr, request, cbw, timeoutMillis) == false) {
     LOG_ERROR("pullMessageAsync failed of addr:%s, mq:%s", addr.c_str(),
               static_cast<AsyncArg*>(pArg)->mq.toString().data());
-    deleteAndZero(cbw);
+    // deleteAndZero(cbw);
     THROW_MQEXCEPTION(MQClientException, "pullMessageAsync failed", -1);
   }
 }
