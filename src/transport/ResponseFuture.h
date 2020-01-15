@@ -41,7 +41,7 @@ class ResponseFuture {
                  TcpRemotingClient* powner,
                  int64 timeoutMilliseconds,
                  bool bAsync = false,
-                 AsyncCallbackWrap* pCallback = nullptr);
+                 std::shared_ptr<AsyncCallbackWrap> pCallback = std::shared_ptr<AsyncCallbackWrap>());
   virtual ~ResponseFuture();
 
   void releaseThreadCondition();
@@ -63,7 +63,7 @@ class ResponseFuture {
   int getRetrySendTimes() const;
   int64 leftTime() const;
   const bool getAsyncFlag();
-  AsyncCallbackWrap* getAsyncCallbackWrap();
+  std::shared_ptr<AsyncCallbackWrap> getAsyncCallbackWrap();
 
   void setMaxRetrySendTimes(int maxRetryTimes);
   void setRetrySendTimes(int retryTimes);
@@ -78,7 +78,7 @@ class ResponseFuture {
   int64 m_timeout;  // ms
 
   const bool m_bAsync;
-  AsyncCallbackWrap* m_pCallbackWrap;
+  std::shared_ptr<AsyncCallbackWrap> m_pCallbackWrap;
 
   AsyncCallbackStatus m_asyncCallbackStatus;
   std::mutex m_asyncCallbackLock;

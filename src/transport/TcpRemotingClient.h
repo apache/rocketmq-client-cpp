@@ -49,7 +49,7 @@ class TcpRemotingClient {
 
   virtual bool invokeAsync(const string& addr,
                            RemotingCommand& request,
-                           AsyncCallbackWrap* cbw,
+                           std::shared_ptr<AsyncCallbackWrap> cbw,
                            int64 timeoutMilliseconds,
                            int maxRetrySendTimes = 1,
                            int retrySendTimes = 1);

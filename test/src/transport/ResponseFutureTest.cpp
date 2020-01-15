@@ -68,8 +68,8 @@ TEST(responseFuture, init) {
   EXPECT_TRUE(responseFuture.getAsyncCallbackWrap() == nullptr);
 
   // ~ResponseFuture  delete pcall
-  SendCallbackWrap* pcall = new SendCallbackWrap("", MQMessage(), nullptr, nullptr);
-  ResponseFuture twoResponseFuture(13, 4, nullptr, 1000, true, pcall);
+  std::shared_ptr<AsyncCallbackWrap> callBack = std::make_shared<SendCallbackWrap>("", MQMessage(), nullptr, nullptr);
+  ResponseFuture twoResponseFuture(13, 4, nullptr, 1000, true, callBack);
   EXPECT_TRUE(twoResponseFuture.getAsyncFlag());
   EXPECT_FALSE(twoResponseFuture.getAsyncCallbackWrap() == nullptr);
 }
@@ -104,10 +104,10 @@ TEST(responseFuture, response) {
   ResponseFuture twoResponseFuture(13, 4, NULL, 1000, true);
   EXPECT_TRUE(twoResponseFuture.getAsyncFlag());
 
-  ResponseFuture threeSesponseFuture(13, 4, NULL, 1000);
+  ResponseFuture threeResponseFuture(13, 4, NULL, 1000);
 
   uint64_t millis = UtilAll::currentTimeMillis();
-  RemotingCommand* remotingCommand = threeSesponseFuture.waitResponse(10);
+  RemotingCommand* remotingCommand = threeResponseFuture.waitResponse(10);
   uint64_t useTime = UtilAll::currentTimeMillis() - millis;
   EXPECT_LT(useTime, 30);
 

@@ -129,14 +129,14 @@ void SendCallbackWrap::operationComplete(ResponseFuture* pResponseFuture, bool b
 }
 
 //<!************************************************************************
-PullCallbackWarp::PullCallbackWarp(AsyncCallback* pAsyncCallback, MQClientAPIImpl* pclientAPI, void* pArg)
+PullCallbackWrap::PullCallbackWrap(AsyncCallback* pAsyncCallback, MQClientAPIImpl* pclientAPI, void* pArg)
     : AsyncCallbackWrap(pAsyncCallback, pclientAPI) {
   m_pArg = *static_cast<AsyncArg*>(pArg);
 }
 
-PullCallbackWarp::~PullCallbackWarp() {}
+PullCallbackWrap::~PullCallbackWrap() {}
 
-void PullCallbackWarp::onException() {
+void PullCallbackWrap::onException() {
   if (m_pAsyncCallBack == NULL)
     return;
 
@@ -149,7 +149,7 @@ void PullCallbackWarp::onException() {
   }
 }
 
-void PullCallbackWarp::operationComplete(ResponseFuture* pResponseFuture, bool bProducePullRequest) {
+void PullCallbackWrap::operationComplete(ResponseFuture* pResponseFuture, bool bProducePullRequest) {
   unique_ptr<RemotingCommand> pResponse(pResponseFuture->getCommand());
   if (m_pAsyncCallBack == NULL) {
     LOG_ERROR("m_pAsyncCallBack is NULL, AsyncPull could not continue");
