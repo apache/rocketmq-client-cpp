@@ -155,7 +155,7 @@ void TcpRemotingClient::scanResponseTable() {
   }
 
   for (auto rf : rfList) {
-    if (rf->getInvokeCallback() != nullptr) {
+    if (rf->hasInvokeCallback()) {
       m_handleExecutor.submit(std::bind(&ResponseFuture::executeInvokeCallback, rf));
     }
   }
@@ -274,7 +274,7 @@ void TcpRemotingClient::invokeAsyncImpl(TcpTransportPtr channel,
       if (responseFuture != nullptr) {
         responseFuture->setSendRequestOK(false);
         responseFuture->putResponse(nullptr);
-        if (responseFuture->getInvokeCallback() != nullptr) {
+        if (responseFuture->hasInvokeCallback()) {
           m_handleExecutor.submit(std::bind(&ResponseFuture::executeInvokeCallback, responseFuture));
         }
       }
@@ -567,7 +567,7 @@ void TcpRemotingClient::processResponseCommand(std::unique_ptr<RemotingCommand> 
     int code = responseFuture->getRequestCode();
     LOG_DEBUG_NEW("processResponseCommand, opaque:{}, code:{}", opaque, code);
 
-    if (responseFuture->getInvokeCallback() != nullptr) {
+    if (responseFuture->hasInvokeCallback()) {
       responseFuture->setResponseCommand(std::move(responseCommand));
       // bind shared_ptr can save object's life
       m_handleExecutor.submit(std::bind(&ResponseFuture::executeInvokeCallback, responseFuture));

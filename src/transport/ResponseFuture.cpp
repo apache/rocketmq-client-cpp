@@ -30,17 +30,11 @@ ResponseFuture::ResponseFuture(int requestCode, int opaque, int64_t timeoutMilli
       m_sendRequestOK(false),
       m_countDownLatch(nullptr) {
   if (nullptr == invokeCallback) {
-    m_countDownLatch = new latch(1);
+    m_countDownLatch.reset(new latch(1));
   }
 }
 
-ResponseFuture::~ResponseFuture() {
-  delete m_countDownLatch;
-  delete m_invokeCallback;
-
-  // do not delete m_pResponseCommand when destruct, as m_responseCommand
-  // is used by MQClientAPIImpl concurrently, and will be released by producer or consumer
-}
+ResponseFuture::~ResponseFuture() {}
 
 void ResponseFuture::releaseThreadCondition() {
   if (m_countDownLatch != nullptr) {
@@ -48,13 +42,13 @@ void ResponseFuture::releaseThreadCondition() {
   }
 }
 
-InvokeCallback* ResponseFuture::getInvokeCallback() {
+bool ResponseFuture::hasInvokeCallback() {
   // if m_invokeCallback is set, this is an async future.
-  return m_invokeCallback;
+  return m_invokeCallback != nullptr;
 }
 
-void ResponseFuture::releaseInvokeCallback() {
-  m_invokeCallback = nullptr;
+InvokeCallback* ResponseFuture::releaseInvokeCallback() {
+  return m_invokeCallback.release();
 }
 
 void ResponseFuture::executeInvokeCallback() noexcept {

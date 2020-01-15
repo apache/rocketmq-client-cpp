@@ -31,8 +31,8 @@ class ResponseFuture {
 
   void releaseThreadCondition();
 
-  InvokeCallback* getInvokeCallback();
-  void releaseInvokeCallback();
+  bool hasInvokeCallback();
+  InvokeCallback* releaseInvokeCallback();
 
   void executeInvokeCallback() noexcept;
 
@@ -59,14 +59,14 @@ class ResponseFuture {
   int m_requestCode;
   int m_opaque;
   int64_t m_timeoutMillis;
-  InvokeCallback* m_invokeCallback;
+  std::unique_ptr<InvokeCallback> m_invokeCallback;
 
   std::unique_ptr<RemotingCommand> m_responseCommand;
 
   int64_t m_beginTimestamp;
   bool m_sendRequestOK;
 
-  latch* m_countDownLatch;  // use for synchronization rpc
+  std::unique_ptr<latch> m_countDownLatch;  // use for synchronization rpc
 };
 
 }  // namespace rocketmq
