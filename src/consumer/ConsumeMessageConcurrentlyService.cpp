@@ -73,8 +73,11 @@ void ConsumeMessageConcurrentlyService::submitConsumeRequest(boost::weak_ptr<Pul
              request->m_messageQueue.toString().c_str());
     return;
   }
-  if (!request->isDropped()) {
+  if (!request->isDropped() && !m_ioService.stopped()) {
     m_ioService.post(boost::bind(&ConsumeMessageConcurrentlyService::ConsumeRequest, this, request, msgs));
+  } else {
+    LOG_INFO("IOService stopped or Pull request for %s is dropped, will not post ConsumeRequest.",
+             request->m_messageQueue.toString().c_str());
   }
 }
 void ConsumeMessageConcurrentlyService::submitConsumeRequestLater(boost::weak_ptr<PullRequest> pullRequest,
@@ -93,13 +96,16 @@ void ConsumeMessageConcurrentlyService::submitConsumeRequestLater(boost::weak_pt
              (request->m_messageQueue).toString().c_str());
     return;
   }
-  if (!request->isDropped()) {
+  if (!request->isDropped() && !m_ioService.stopped()) {
     boost::asio::deadline_timer* t =
         new boost::asio::deadline_timer(m_ioService, boost::posix_time::milliseconds(millis));
     t->async_wait(
         boost::bind(&(ConsumeMessageConcurrentlyService::static_submitConsumeRequest), this, t, request, msgs));
     LOG_INFO("Submit Message to Consumer [%s] Later and Sleep [%d]ms.", (request->m_messageQueue).toString().c_str(),
              millis);
+  } else {
+    LOG_INFO("IOService stopped or Pull request for %s is dropped, will not post delay ConsumeRequest.",
+             request->m_messageQueue.toString().c_str());
   }
 }
 
