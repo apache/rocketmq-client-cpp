@@ -575,11 +575,17 @@ bool DefaultMQPushConsumer::producePullMsgTaskLater(boost::weak_ptr<PullRequest>
     LOG_INFO("[Dropped]Remove pullmsg event of mq:%s", request->m_messageQueue.toString().c_str());
     return false;
   }
-  boost::asio::deadline_timer* t =
-      new boost::asio::deadline_timer(m_async_ioService, boost::posix_time::milliseconds(millis));
-  t->async_wait(boost::bind(&(DefaultMQPushConsumer::static_triggerNextPullRequest), this, t, request));
-  LOG_INFO("Produce Pull request [%s] Later and Sleep [%d]ms.", (request->m_messageQueue).toString().c_str(), millis);
-  return true;
+  if (m_pullmsgQueue->bTaskQueueStatusOK() && isServiceStateOk()) {
+    boost::asio::deadline_timer* t =
+        new boost::asio::deadline_timer(m_async_ioService, boost::posix_time::milliseconds(millis));
+    t->async_wait(boost::bind(&(DefaultMQPushConsumer::static_triggerNextPullRequest), this, t, request));
+    LOG_INFO("Produce Pull request [%s] Later and Sleep [%d]ms.", (request->m_messageQueue).toString().c_str(), millis);
+    return true;
+  } else {
+    LOG_WARN("Service or TaskQueue shutdown, produce PullRequest of mq:%s failed",
+             request->m_messageQueue.toString().c_str());
+    return false;
+  }
 }
 
 bool DefaultMQPushConsumer::producePullMsgTask(boost::weak_ptr<PullRequest> pullRequest) {
