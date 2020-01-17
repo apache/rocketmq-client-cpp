@@ -20,9 +20,11 @@
 #include <map>
 #include <string>
 
-#include <json/json.h>
-
 #include "RocketMQClient.h"
+
+namespace Json {
+class Value;
+}
 
 namespace rocketmq {
 
