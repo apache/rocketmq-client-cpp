@@ -19,7 +19,6 @@
 
 #include "MQClientInstance.h"
 #include "MQMessageQueue.h"
-#include "RemotingCommand.h"
 #include "RequestProcessor.h"
 
 namespace rocketmq {
@@ -45,18 +44,7 @@ class ResetOffsetBody {
   static ResetOffsetBody* Decode(MemoryBlock& mem);
 
   std::map<MQMessageQueue, int64_t> getOffsetTable();
-  void setOffsetTable(MQMessageQueue mq, int64_t offset);
-
- private:
-  std::map<MQMessageQueue, int64_t> m_offsetTable;
-};
-
-class CheckTransactionStateBody {
- public:
-  static CheckTransactionStateBody* Decode(MemoryBlock& mem);
-
-  std::map<MQMessageQueue, int64_t> getOffsetTable();
-  void setOffsetTable(MQMessageQueue mq, int64_t offset);
+  void setOffsetTable(const MQMessageQueue& mq, int64_t offset);
 
  private:
   std::map<MQMessageQueue, int64_t> m_offsetTable;
