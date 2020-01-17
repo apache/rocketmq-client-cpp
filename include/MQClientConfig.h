@@ -17,7 +17,9 @@
 #ifndef __MQ_CLIENT_CONFIG_H__
 #define __MQ_CLIENT_CONFIG_H__
 
-#include "RPCHook.h"
+#include <string>
+
+#include "RocketMQClient.h"
 
 namespace rocketmq {
 

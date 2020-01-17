@@ -22,7 +22,7 @@
 
 namespace rocketmq {
 
-class ClientRPCHook : public RPCHook {
+class ROCKETMQCLIENT_API ClientRPCHook : public RPCHook {
  public:
   ClientRPCHook(const SessionCredentials& sessionCredentials) : sessionCredentials_(sessionCredentials) {}
   ~ClientRPCHook() override = default;

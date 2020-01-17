@@ -36,6 +36,7 @@
 
 namespace rocketmq {
 
+class RPCHook;
 class MQClientAPIImpl;
 class MQAdminImpl;
 class ClientRemotingProcessor;

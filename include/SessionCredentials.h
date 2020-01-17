@@ -23,7 +23,7 @@
 
 namespace rocketmq {
 
-class SessionCredentials {
+class ROCKETMQCLIENT_API SessionCredentials {
  public:
   static const std::string AccessKey;
   static const std::string SecretKey;

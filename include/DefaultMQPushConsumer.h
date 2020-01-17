@@ -20,6 +20,7 @@
 #include "AllocateMQStrategy.h"
 #include "DefaultMQConsumer.h"
 #include "MQPushConsumer.h"
+#include "RPCHook.h"
 
 namespace rocketmq {
 

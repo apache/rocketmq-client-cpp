@@ -19,6 +19,7 @@
 
 #include "MQClientConfig.h"
 #include "MQProducer.h"
+#include "RPCHook.h"
 
 namespace rocketmq {
 

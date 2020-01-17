@@ -24,12 +24,10 @@
 
 namespace rocketmq {
 
-class RemotingCommand;
-
 class RPCHook;
 typedef std::shared_ptr<RPCHook> RPCHookPtr;
 
-class RPCHook {
+class ROCKETMQCLIENT_API RPCHook {
  public:
   RPCHook() = default;
   virtual ~RPCHook() = default;
