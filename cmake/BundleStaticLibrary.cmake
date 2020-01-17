@@ -15,8 +15,9 @@
 
 # ref: https://cristianadam.eu/20190501/bundling-together-static-libraries-with-cmake/
 
-set(STATIC_LIBRARY_REGEX "^.+${CMAKE_STATIC_LIBRARY_SUFFIX}$")
-string(REPLACE ".a", "\\.a", STATIC_LIBRARY_REGEX ${STATIC_LIBRARY_REGEX})
+set(STATIC_LIBRARY_REGEX "${CMAKE_STATIC_LIBRARY_SUFFIX}")
+string(REPLACE ".", "\\.", STATIC_LIBRARY_REGEX ${STATIC_LIBRARY_REGEX})
+set(STATIC_LIBRARY_REGEX "^.+${STATIC_LIBRARY_REGEX}$")
 
 function(bundle_static_library tgt_name bundled_tgt_name)
   list(APPEND static_libs ${tgt_name})
@@ -69,26 +70,26 @@ function(bundle_static_library tgt_name bundled_tgt_name)
   )
 
   if(CMAKE_CXX_COMPILER_ID MATCHES "^(Clang|GNU)$")
-    file(WRITE ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.ar.in
+    file(WRITE ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in
          "CREATE ${bundled_tgt_full_name}\n")
 
     foreach(tgt IN LISTS static_libs)
       if(TARGET ${tgt})
-        file(APPEND ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.ar.in
+        file(APPEND ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in
              "ADDLIB $<TARGET_FILE:${tgt}>\n")
       else()
-        file(APPEND ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.ar.in
+        file(APPEND ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in
              "ADDLIB ${tgt}\n")
       endif()
     endforeach()
 
-    file(APPEND ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.ar.in "SAVE\n")
-    file(APPEND ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.ar.in "END\n")
+    file(APPEND ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in "SAVE\n")
+    file(APPEND ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in "END\n")
 
     file(
       GENERATE
-      OUTPUT ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.ar
-      INPUT ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.ar.in)
+      OUTPUT ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri
+      INPUT ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in)
 
     set(ar_tool ${CMAKE_AR})
     if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
@@ -99,7 +100,7 @@ function(bundle_static_library tgt_name bundled_tgt_name)
       STATUS "** Bundled static library: ${bundled_tgt_full_name}")
     add_custom_command(
       OUTPUT ${bundled_tgt_full_name}
-      COMMAND ${ar_tool} -M < ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.ar
+      COMMAND ${ar_tool} -M < ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri
       COMMENT "Bundling ${bundled_tgt_name}"
       VERBATIM)
   elseif(MSVC)
