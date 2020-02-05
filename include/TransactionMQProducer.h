@@ -18,11 +18,6 @@
 #ifndef __TRANSACTIONMQPRODUCER_H__
 #define __TRANSACTIONMQPRODUCER_H__
 
-#include <boost/asio.hpp>
-#include <boost/asio/io_service.hpp>
-#include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/weak_ptr.hpp>
 #include <memory>
 #include <string>
 #include "DefaultMQProducer.h"
@@ -34,13 +29,12 @@ namespace rocketmq {
 
 class ROCKETMQCLIENT_API TransactionMQProducer : public DefaultMQProducer {
  public:
-  TransactionMQProducer(const std::string& producerGroup)
-      : DefaultMQProducer(producerGroup), m_thread_num(1), m_ioServiceWork(m_ioService) {}
+  TransactionMQProducer(const std::string& producerGroup);
   virtual ~TransactionMQProducer() {}
   void start();
   void shutdown();
-  std::shared_ptr<TransactionListener> getTransactionListener() { return m_transactionListener; }
-  void setTransactionListener(TransactionListener* listener) { m_transactionListener.reset(listener); }
+  std::shared_ptr<TransactionListener> getTransactionListener();
+  void setTransactionListener(TransactionListener* listener);
   TransactionSendResult sendMessageInTransaction(MQMessage& msg, void* arg);
   void checkTransactionState(const std::string& addr,
                              const MQMessageExt& message,
@@ -49,25 +43,6 @@ class ROCKETMQCLIENT_API TransactionMQProducer : public DefaultMQProducer {
                              const std::string& msgId,
                              const std::string& transactionId,
                              const std::string& offsetMsgId);
-
- private:
-  void initTransactionEnv();
-  void destroyTransactionEnv();
-  void endTransaction(SendResult& sendResult, LocalTransactionState& localTransactionState);
-  void checkTransactionStateImpl(const std::string& addr,
-                                 const MQMessageExt& message,
-                                 long tranStateTableOffset,
-                                 long commitLogOffset,
-                                 const std::string& msgId,
-                                 const std::string& transactionId,
-                                 const std::string& offsetMsgId);
-
- private:
-  std::shared_ptr<TransactionListener> m_transactionListener;
-  int m_thread_num;
-  boost::thread_group m_threadpool;
-  boost::asio::io_service m_ioService;
-  boost::asio::io_service::work m_ioServiceWork;
 };
 }  // namespace rocketmq
 

@@ -27,9 +27,10 @@
 #include "Logging.h"
 #include "MQMessageListener.h"
 #include "PullRequest.h"
-
+#include "MQConsumer.h"
+#include "DefaultMQPushConsumerImpl.h"
 namespace rocketmq {
-class MQConsumer;
+//class MQConsumer;
 //<!***************************************************************************
 class ConsumeMsgService {
  public:

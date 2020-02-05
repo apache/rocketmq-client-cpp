@@ -14,20 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TOPICFILTERTYPE_H__
-#define __TOPICFILTERTYPE_H__
+#ifndef __SENDMESSAGEHOOK_H__
+#define __SENDMESSAGEHOOK_H__
+
+#include "MQClientException.h"
+#include "MQMessage.h"
+#include "RocketMQClient.h"
+#include "MQMessageQueue.h"
+#include "SendResult.h"
 
 namespace rocketmq {
 //<!***************************************************************************
-enum TopicFilterType {
-  /**
-   * each msg could only have one tag
-   */
-  SINGLE_TAG,
-  /**
-   * not support now
-   */
-  MULTI_TAG
+class  SendMessageContext {
+ public:
+  std::string producerGroup;
+  MQMessage msg;
+  MQMessageQueue mq;
+    std::string brokerAddr;
+  int communicationMode;
+  SendResult sendResult;
+  MQException* pException;
+  void* pArg;
+};
+
+class  SendMessageHook {
+ public:
+  virtual ~SendMessageHook() {}
+  virtual std::string hookName() = 0;
+  virtual void sendMessageBefore(const SendMessageContext& context) = 0;
+  virtual void sendMessageAfter(const SendMessageContext& context) = 0;
 };
 //<!***************************************************************************
 }  // namespace rocketmq

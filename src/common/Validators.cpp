@@ -101,4 +101,4 @@ void Validators::checkMessage(const MQMessage& msg, int maxMessageSize) {
 }
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

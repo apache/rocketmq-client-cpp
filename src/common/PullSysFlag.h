@@ -36,5 +36,5 @@ class PullSysFlag {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

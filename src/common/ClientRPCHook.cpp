@@ -72,4 +72,4 @@ void ClientRPCHook::doBeforeRequest(const string& remoteAddr, RemotingCommand& r
     LOG_ERROR("signature for request failed");
   }
 }
-}
+}  // namespace rocketmq

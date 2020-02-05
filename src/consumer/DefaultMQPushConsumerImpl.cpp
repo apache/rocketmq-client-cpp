@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "DefaultMQPushConsumer.h"
+#include "DefaultMQPushConsumerImpl.h"
 #include "CommunicationMode.h"
 #include "ConsumeMsgService.h"
 #include "ConsumerRunningInfo.h"
@@ -36,7 +36,7 @@ namespace rocketmq {
 
 class AsyncPullCallback : public PullCallback {
  public:
-  AsyncPullCallback(DefaultMQPushConsumer* pushConsumer, boost::weak_ptr<PullRequest> request)
+  AsyncPullCallback(DefaultMQPushConsumerImpl* pushConsumer, boost::weak_ptr<PullRequest> request)
       : m_callbackOwner(pushConsumer), m_pullRequest(request), m_bShutdown(false) {}
 
   virtual ~AsyncPullCallback() { m_callbackOwner = NULL; }
@@ -185,7 +185,7 @@ class AsyncPullCallback : public PullCallback {
   void setPullRequest(boost::weak_ptr<PullRequest>& pullRequest) { m_pullRequest = pullRequest; }
 
  private:
-  DefaultMQPushConsumer* m_callbackOwner;
+  DefaultMQPushConsumerImpl* m_callbackOwner;
   boost::weak_ptr<PullRequest> m_pullRequest;
   bool m_bShutdown;
 };
@@ -193,7 +193,7 @@ class AsyncPullCallback : public PullCallback {
 //<!***************************************************************************
 static boost::mutex m_asyncCallbackLock;
 
-DefaultMQPushConsumer::DefaultMQPushConsumer(const string& groupname)
+DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(const string& groupname)
     : m_consumeFromWhere(CONSUME_FROM_LAST_OFFSET),
       m_pOffsetStore(NULL),
       m_pRebalance(NULL),
@@ -214,11 +214,11 @@ DefaultMQPushConsumer::DefaultMQPushConsumer(const string& groupname)
   m_startTime = UtilAll::currentTimeMillis();
   m_consumeThreadCount = std::thread::hardware_concurrency();
   m_pullMsgThreadPoolNum = std::thread::hardware_concurrency();
-  m_async_service_thread.reset(new boost::thread(boost::bind(&DefaultMQPushConsumer::boost_asio_work, this)));
+  m_async_service_thread.reset(new boost::thread(boost::bind(&DefaultMQPushConsumerImpl::boost_asio_work, this)));
 }
 
-void DefaultMQPushConsumer::boost_asio_work() {
-  LOG_INFO("DefaultMQPushConsumer::boost asio async service runing");
+void DefaultMQPushConsumerImpl::boost_asio_work() {
+  LOG_INFO("DefaultMQPushConsumerImpl::boost asio async service runing");
   boost::asio::io_service::work work(m_async_ioService);  // avoid async io
   // service stops after
   // first timer timeout
@@ -226,7 +226,7 @@ void DefaultMQPushConsumer::boost_asio_work() {
   m_async_ioService.run();
 }
 
-DefaultMQPushConsumer::~DefaultMQPushConsumer() {
+DefaultMQPushConsumerImpl::~DefaultMQPushConsumerImpl() {
   m_pMessageListener = NULL;
   if (m_pullmsgQueue != NULL) {
     deleteAndZero(m_pullmsgQueue);
@@ -251,7 +251,7 @@ DefaultMQPushConsumer::~DefaultMQPushConsumer() {
   m_subTopics.clear();
 }
 
-bool DefaultMQPushConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel, string& brokerName) {
+bool DefaultMQPushConsumerImpl::sendMessageBack(MQMessageExt& msg, int delayLevel, string& brokerName) {
   string brokerAddr;
   if (!brokerName.empty())
     brokerAddr = getFactory()->findBrokerAddressInPublish(brokerName);
@@ -267,7 +267,7 @@ bool DefaultMQPushConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel, s
   return true;
 }
 
-void DefaultMQPushConsumer::fetchSubscribeMessageQueues(const string& topic, vector<MQMessageQueue>& mqs) {
+void DefaultMQPushConsumerImpl::fetchSubscribeMessageQueues(const string& topic, vector<MQMessageQueue>& mqs) {
   mqs.clear();
   try {
     getFactory()->fetchSubscribeMessageQueues(topic, mqs, getSessionCredentials());
@@ -276,7 +276,7 @@ void DefaultMQPushConsumer::fetchSubscribeMessageQueues(const string& topic, vec
   }
 }
 
-void DefaultMQPushConsumer::doRebalance() {
+void DefaultMQPushConsumerImpl::doRebalance() {
   if (isServiceStateOk()) {
     try {
       m_pRebalance->doRebalance();
@@ -286,19 +286,19 @@ void DefaultMQPushConsumer::doRebalance() {
   }
 }
 
-void DefaultMQPushConsumer::persistConsumerOffset() {
+void DefaultMQPushConsumerImpl::persistConsumerOffset() {
   if (isServiceStateOk()) {
     m_pRebalance->persistConsumerOffset();
   }
 }
 
-void DefaultMQPushConsumer::persistConsumerOffsetByResetOffset() {
+void DefaultMQPushConsumerImpl::persistConsumerOffsetByResetOffset() {
   if (isServiceStateOk()) {
     m_pRebalance->persistConsumerOffsetByResetOffset();
   }
 }
 
-void DefaultMQPushConsumer::start() {
+void DefaultMQPushConsumerImpl::start() {
 #ifndef WIN32
   /* Ignore the SIGPIPE */
   struct sigaction sa;
@@ -312,8 +312,8 @@ void DefaultMQPushConsumer::start() {
   switch (m_serviceState) {
     case CREATE_JUST: {
       m_serviceState = START_FAILED;
-      MQClient::start();
-      LOG_INFO("DefaultMQPushConsumer:%s start", m_GroupName.c_str());
+      DefaultMQClient::start();
+      LOG_INFO("DefaultMQPushConsumerImpl:%s start", m_GroupName.c_str());
 
       //<!data;
       checkConfig();
@@ -338,7 +338,7 @@ void DefaultMQPushConsumer::start() {
 
       m_pullmsgQueue = new TaskQueue(m_pullMsgThreadPoolNum);
       m_pullmsgThread.reset(
-          new boost::thread(boost::bind(&DefaultMQPushConsumer::runPullMsgQueue, this, m_pullmsgQueue)));
+          new boost::thread(boost::bind(&DefaultMQPushConsumerImpl::runPullMsgQueue, this, m_pullmsgQueue)));
 
       copySubscription();
 
@@ -393,10 +393,10 @@ void DefaultMQPushConsumer::start() {
   getFactory()->rebalanceImmediately();
 }
 
-void DefaultMQPushConsumer::shutdown() {
+void DefaultMQPushConsumerImpl::shutdown() {
   switch (m_serviceState) {
     case RUNNING: {
-      LOG_INFO("DefaultMQPushConsumer shutdown");
+      LOG_INFO("DefaultMQPushConsumerImpl shutdown");
       m_async_ioService.stop();
       m_async_service_thread->interrupt();
       m_async_service_thread->join();
@@ -419,36 +419,36 @@ void DefaultMQPushConsumer::shutdown() {
   }
 }
 
-void DefaultMQPushConsumer::registerMessageListener(MQMessageListener* pMessageListener) {
+void DefaultMQPushConsumerImpl::registerMessageListener(MQMessageListener* pMessageListener) {
   if (NULL != pMessageListener) {
     m_pMessageListener = pMessageListener;
   }
 }
 
-MessageListenerType DefaultMQPushConsumer::getMessageListenerType() {
+MessageListenerType DefaultMQPushConsumerImpl::getMessageListenerType() {
   if (NULL != m_pMessageListener) {
     return m_pMessageListener->getMessageListenerType();
   }
   return messageListenerDefaultly;
 }
 
-ConsumeMsgService* DefaultMQPushConsumer::getConsumerMsgService() const {
+ConsumeMsgService* DefaultMQPushConsumerImpl::getConsumerMsgService() const {
   return m_consumerService;
 }
 
-OffsetStore* DefaultMQPushConsumer::getOffsetStore() const {
+OffsetStore* DefaultMQPushConsumerImpl::getOffsetStore() const {
   return m_pOffsetStore;
 }
 
-Rebalance* DefaultMQPushConsumer::getRebalance() const {
+Rebalance* DefaultMQPushConsumerImpl::getRebalance() const {
   return m_pRebalance;
 }
 
-void DefaultMQPushConsumer::subscribe(const string& topic, const string& subExpression) {
+void DefaultMQPushConsumerImpl::subscribe(const string& topic, const string& subExpression) {
   m_subTopics[topic] = subExpression;
 }
 
-void DefaultMQPushConsumer::checkConfig() {
+void DefaultMQPushConsumerImpl::checkConfig() {
   string groupname = getGroupName();
   // check consumerGroup
   Validators::checkGroup(groupname);
@@ -467,7 +467,7 @@ void DefaultMQPushConsumer::checkConfig() {
   }
 }
 
-void DefaultMQPushConsumer::copySubscription() {
+void DefaultMQPushConsumerImpl::copySubscription() {
   map<string, string>::iterator it = m_subTopics.begin();
   for (; it != m_subTopics.end(); ++it) {
     LOG_INFO("buildSubscriptionData,:%s,%s", it->first.c_str(), it->second.c_str());
@@ -493,11 +493,11 @@ void DefaultMQPushConsumer::copySubscription() {
   }
 }
 
-void DefaultMQPushConsumer::updateTopicSubscribeInfo(const string& topic, vector<MQMessageQueue>& info) {
+void DefaultMQPushConsumerImpl::updateTopicSubscribeInfo(const string& topic, vector<MQMessageQueue>& info) {
   m_pRebalance->setTopicSubscribeInfo(topic, info);
 }
 
-void DefaultMQPushConsumer::updateTopicSubscribeInfoWhenSubscriptionChanged() {
+void DefaultMQPushConsumerImpl::updateTopicSubscribeInfoWhenSubscriptionChanged() {
   map<string, SubscriptionData*>& subTable = m_pRebalance->getSubscriptionInner();
   map<string, SubscriptionData*>::iterator it = subTable.begin();
   for (; it != subTable.end(); ++it) {
@@ -508,19 +508,19 @@ void DefaultMQPushConsumer::updateTopicSubscribeInfoWhenSubscriptionChanged() {
   }
 }
 
-ConsumeType DefaultMQPushConsumer::getConsumeType() {
+ConsumeType DefaultMQPushConsumerImpl::getConsumeType() {
   return CONSUME_PASSIVELY;
 }
 
-ConsumeFromWhere DefaultMQPushConsumer::getConsumeFromWhere() {
+ConsumeFromWhere DefaultMQPushConsumerImpl::getConsumeFromWhere() {
   return m_consumeFromWhere;
 }
 
-void DefaultMQPushConsumer::setConsumeFromWhere(ConsumeFromWhere consumeFromWhere) {
+void DefaultMQPushConsumerImpl::setConsumeFromWhere(ConsumeFromWhere consumeFromWhere) {
   m_consumeFromWhere = consumeFromWhere;
 }
 
-void DefaultMQPushConsumer::getSubscriptions(vector<SubscriptionData>& result) {
+void DefaultMQPushConsumerImpl::getSubscriptions(vector<SubscriptionData>& result) {
   map<string, SubscriptionData*>& subTable = m_pRebalance->getSubscriptionInner();
   map<string, SubscriptionData*>::iterator it = subTable.begin();
   for (; it != subTable.end(); ++it) {
@@ -528,7 +528,7 @@ void DefaultMQPushConsumer::getSubscriptions(vector<SubscriptionData>& result) {
   }
 }
 
-void DefaultMQPushConsumer::updateConsumeOffset(const MQMessageQueue& mq, int64 offset) {
+void DefaultMQPushConsumerImpl::updateConsumeOffset(const MQMessageQueue& mq, int64 offset) {
   if (offset >= 0) {
     m_pOffsetStore->updateOffset(mq, offset);
   } else {
@@ -536,24 +536,24 @@ void DefaultMQPushConsumer::updateConsumeOffset(const MQMessageQueue& mq, int64 
   }
 }
 
-void DefaultMQPushConsumer::removeConsumeOffset(const MQMessageQueue& mq) {
+void DefaultMQPushConsumerImpl::removeConsumeOffset(const MQMessageQueue& mq) {
   m_pOffsetStore->removeOffset(mq);
 }
 
-void DefaultMQPushConsumer::static_triggerNextPullRequest(void* context,
+void DefaultMQPushConsumerImpl::static_triggerNextPullRequest(void* context,
                                                           boost::asio::deadline_timer* t,
                                                           boost::weak_ptr<PullRequest> pullRequest) {
   if (pullRequest.expired()) {
     LOG_WARN("Pull request has been released before.");
     return;
   }
-  DefaultMQPushConsumer* pDefaultMQPushConsumer = (DefaultMQPushConsumer*)context;
-  if (pDefaultMQPushConsumer) {
-    pDefaultMQPushConsumer->triggerNextPullRequest(t, pullRequest);
+  DefaultMQPushConsumerImpl* pDefaultMQPushConsumerImpl = (DefaultMQPushConsumerImpl*)context;
+  if (pDefaultMQPushConsumerImpl) {
+    pDefaultMQPushConsumerImpl->triggerNextPullRequest(t, pullRequest);
   }
 }
 
-void DefaultMQPushConsumer::triggerNextPullRequest(boost::asio::deadline_timer* t,
+void DefaultMQPushConsumerImpl::triggerNextPullRequest(boost::asio::deadline_timer* t,
                                                    boost::weak_ptr<PullRequest> pullRequest) {
   // delete first to avoild memleak
   deleteAndZero(t);
@@ -565,7 +565,7 @@ void DefaultMQPushConsumer::triggerNextPullRequest(boost::asio::deadline_timer* 
   producePullMsgTask(request);
 }
 
-bool DefaultMQPushConsumer::producePullMsgTaskLater(boost::weak_ptr<PullRequest> pullRequest, int millis) {
+bool DefaultMQPushConsumerImpl::producePullMsgTaskLater(boost::weak_ptr<PullRequest> pullRequest, int millis) {
   boost::shared_ptr<PullRequest> request = pullRequest.lock();
   if (!request) {
     LOG_INFO("Pull request is invalid. Maybe it is dropped before.");
@@ -578,7 +578,7 @@ bool DefaultMQPushConsumer::producePullMsgTaskLater(boost::weak_ptr<PullRequest>
   if (m_pullmsgQueue->bTaskQueueStatusOK() && isServiceStateOk()) {
     boost::asio::deadline_timer* t =
         new boost::asio::deadline_timer(m_async_ioService, boost::posix_time::milliseconds(millis));
-    t->async_wait(boost::bind(&(DefaultMQPushConsumer::static_triggerNextPullRequest), this, t, request));
+    t->async_wait(boost::bind(&(DefaultMQPushConsumerImpl::static_triggerNextPullRequest), this, t, request));
     LOG_INFO("Produce Pull request [%s] Later and Sleep [%d]ms.", (request->m_messageQueue).toString().c_str(), millis);
     return true;
   } else {
@@ -588,7 +588,7 @@ bool DefaultMQPushConsumer::producePullMsgTaskLater(boost::weak_ptr<PullRequest>
   }
 }
 
-bool DefaultMQPushConsumer::producePullMsgTask(boost::weak_ptr<PullRequest> pullRequest) {
+bool DefaultMQPushConsumerImpl::producePullMsgTask(boost::weak_ptr<PullRequest> pullRequest) {
   boost::shared_ptr<PullRequest> request = pullRequest.lock();
   if (!request) {
     LOG_WARN("Pull request has been released.");
@@ -600,9 +600,9 @@ bool DefaultMQPushConsumer::producePullMsgTask(boost::weak_ptr<PullRequest> pull
   }
   if (m_pullmsgQueue->bTaskQueueStatusOK() && isServiceStateOk()) {
     if (m_asyncPull) {
-      m_pullmsgQueue->produce(TaskBinder::gen(&DefaultMQPushConsumer::pullMessageAsync, this, request));
+      m_pullmsgQueue->produce(TaskBinder::gen(&DefaultMQPushConsumerImpl::pullMessageAsync, this, request));
     } else {
-      m_pullmsgQueue->produce(TaskBinder::gen(&DefaultMQPushConsumer::pullMessage, this, request));
+      m_pullmsgQueue->produce(TaskBinder::gen(&DefaultMQPushConsumerImpl::pullMessage, this, request));
     }
   } else {
     LOG_WARN("produce PullRequest of mq:%s failed", request->m_messageQueue.toString().c_str());
@@ -611,11 +611,11 @@ bool DefaultMQPushConsumer::producePullMsgTask(boost::weak_ptr<PullRequest> pull
   return true;
 }
 
-void DefaultMQPushConsumer::runPullMsgQueue(TaskQueue* pTaskQueue) {
+void DefaultMQPushConsumerImpl::runPullMsgQueue(TaskQueue* pTaskQueue) {
   pTaskQueue->run();
 }
 
-void DefaultMQPushConsumer::pullMessage(boost::weak_ptr<PullRequest> pullRequest) {
+void DefaultMQPushConsumerImpl::pullMessage(boost::weak_ptr<PullRequest> pullRequest) {
   boost::shared_ptr<PullRequest> request = pullRequest.lock();
   if (!request) {
     LOG_ERROR("Pull request is released, return");
@@ -771,7 +771,7 @@ void DefaultMQPushConsumer::pullMessage(boost::weak_ptr<PullRequest> pullRequest
   }
 }
 
-AsyncPullCallback* DefaultMQPushConsumer::getAsyncPullCallBack(boost::weak_ptr<PullRequest> pullRequest,
+AsyncPullCallback* DefaultMQPushConsumerImpl::getAsyncPullCallBack(boost::weak_ptr<PullRequest> pullRequest,
                                                                MQMessageQueue msgQueue) {
   boost::shared_ptr<PullRequest> request = pullRequest.lock();
   if (!request) {
@@ -794,7 +794,7 @@ AsyncPullCallback* DefaultMQPushConsumer::getAsyncPullCallBack(boost::weak_ptr<P
   return NULL;
 }
 
-void DefaultMQPushConsumer::shutdownAsyncPullCallBack() {
+void DefaultMQPushConsumerImpl::shutdownAsyncPullCallBack() {
   boost::lock_guard<boost::mutex> lock(m_asyncCallbackLock);
   if (m_asyncPull) {
     PullMAP::iterator it = m_PullCallback.begin();
@@ -808,7 +808,7 @@ void DefaultMQPushConsumer::shutdownAsyncPullCallBack() {
   }
 }
 
-void DefaultMQPushConsumer::pullMessageAsync(boost::weak_ptr<PullRequest> pullRequest) {
+void DefaultMQPushConsumerImpl::pullMessageAsync(boost::weak_ptr<PullRequest> pullRequest) {
   boost::shared_ptr<PullRequest> request = pullRequest.lock();
   if (!request) {
     LOG_ERROR("Pull request is released, return");
@@ -904,7 +904,7 @@ void DefaultMQPushConsumer::pullMessageAsync(boost::weak_ptr<PullRequest> pullRe
   }
 }
 
-void DefaultMQPushConsumer::setAsyncPull(bool asyncFlag) {
+void DefaultMQPushConsumerImpl::setAsyncPull(bool asyncFlag) {
   if (asyncFlag) {
     LOG_INFO("set pushConsumer:%s to async default pull mode", getGroupName().c_str());
   } else {
@@ -913,7 +913,7 @@ void DefaultMQPushConsumer::setAsyncPull(bool asyncFlag) {
   m_asyncPull = asyncFlag;
 }
 
-void DefaultMQPushConsumer::setConsumeThreadCount(int threadCount) {
+void DefaultMQPushConsumerImpl::setConsumeThreadCount(int threadCount) {
   if (threadCount > 0) {
     m_consumeThreadCount = threadCount;
   } else {
@@ -921,10 +921,10 @@ void DefaultMQPushConsumer::setConsumeThreadCount(int threadCount) {
   }
 }
 
-int DefaultMQPushConsumer::getConsumeThreadCount() const {
+int DefaultMQPushConsumerImpl::getConsumeThreadCount() const {
   return m_consumeThreadCount;
 }
-void DefaultMQPushConsumer::setMaxReconsumeTimes(int maxReconsumeTimes) {
+void DefaultMQPushConsumerImpl::setMaxReconsumeTimes(int maxReconsumeTimes) {
   if (maxReconsumeTimes > 0) {
     m_maxReconsumeTimes = maxReconsumeTimes;
   } else {
@@ -932,7 +932,7 @@ void DefaultMQPushConsumer::setMaxReconsumeTimes(int maxReconsumeTimes) {
   }
 }
 
-int DefaultMQPushConsumer::getMaxReconsumeTimes() const {
+int DefaultMQPushConsumerImpl::getMaxReconsumeTimes() const {
   if (m_maxReconsumeTimes >= 0) {
     return m_maxReconsumeTimes;
   }
@@ -940,35 +940,35 @@ int DefaultMQPushConsumer::getMaxReconsumeTimes() const {
   return 16;
 }
 
-void DefaultMQPushConsumer::setPullMsgThreadPoolCount(int threadCount) {
+void DefaultMQPushConsumerImpl::setPullMsgThreadPoolCount(int threadCount) {
   m_pullMsgThreadPoolNum = threadCount;
 }
 
-int DefaultMQPushConsumer::getPullMsgThreadPoolCount() const {
+int DefaultMQPushConsumerImpl::getPullMsgThreadPoolCount() const {
   return m_pullMsgThreadPoolNum;
 }
 
-int DefaultMQPushConsumer::getConsumeMessageBatchMaxSize() const {
+int DefaultMQPushConsumerImpl::getConsumeMessageBatchMaxSize() const {
   return m_consumeMessageBatchMaxSize;
 }
 
-void DefaultMQPushConsumer::setConsumeMessageBatchMaxSize(int consumeMessageBatchMaxSize) {
+void DefaultMQPushConsumerImpl::setConsumeMessageBatchMaxSize(int consumeMessageBatchMaxSize) {
   if (consumeMessageBatchMaxSize >= 1)
     m_consumeMessageBatchMaxSize = consumeMessageBatchMaxSize;
 }
 
-void DefaultMQPushConsumer::setMaxCacheMsgSizePerQueue(int maxCacheSize) {
+void DefaultMQPushConsumerImpl::setMaxCacheMsgSizePerQueue(int maxCacheSize) {
   if (maxCacheSize > 0 && maxCacheSize < 65535) {
     LOG_INFO("set maxCacheSize to:%d for consumer:%s", maxCacheSize, getGroupName().c_str());
     m_maxMsgCacheSize = maxCacheSize;
   }
 }
 
-int DefaultMQPushConsumer::getMaxCacheMsgSizePerQueue() const {
+int DefaultMQPushConsumerImpl::getMaxCacheMsgSizePerQueue() const {
   return m_maxMsgCacheSize;
 }
 
-ConsumerRunningInfo* DefaultMQPushConsumer::getConsumerRunningInfo() {
+ConsumerRunningInfo* DefaultMQPushConsumerImpl::getConsumerRunningInfo() {
   auto* info = new ConsumerRunningInfo();
   if (m_consumerService->getConsumeMsgSerivceListenerType() == messageListenerOrderly) {
     info->setProperty(ConsumerRunningInfo::PROP_CONSUME_ORDERLY, "true");
@@ -1005,7 +1005,7 @@ ConsumerRunningInfo* DefaultMQPushConsumer::getConsumerRunningInfo() {
   return info;
 }
 // we should deal with name space before producer start.
-bool DefaultMQPushConsumer::dealWithNameSpace() {
+bool DefaultMQPushConsumerImpl::dealWithNameSpace() {
   string ns = getNameSpace();
   if (ns.empty()) {
     string nsAddr = getNamesrvAddr();

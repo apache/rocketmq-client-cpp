@@ -41,5 +41,5 @@ class ClientRPCHook : public RPCHook {
 
   virtual void doAfterResponse(RemotingCommand& request, RemotingCommand& response) {}
 };
-}
+}  // namespace rocketmq
 #endif

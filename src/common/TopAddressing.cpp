@@ -102,4 +102,4 @@ string TopAddressing::clearNewLine(const string& str) {
 
   return newString;
 }
-}  //<!end namespace;
+}  // namespace rocketmq

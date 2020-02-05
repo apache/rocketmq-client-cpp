@@ -20,19 +20,21 @@
 
 #include <set>
 #include <string>
-#include "MQConsumer.h"
+#include "AsyncCallback.h"
+#include "ConsumeType.h"
+#include "MQClient.h"
+#include "MQMessage.h"
+#include "MQMessageExt.h"
 #include "MQMessageQueue.h"
 #include "MQueueListener.h"
+#include "PullResult.h"
 #include "RocketMQClient.h"
 
 namespace rocketmq {
-class Rebalance;
 class SubscriptionData;
-class OffsetStore;
-class PullAPIWrapper;
 class ConsumerRunningInfo;
 //<!***************************************************************************
-class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
+class ROCKETMQCLIENT_API DefaultMQPullConsumer {
  public:
   DefaultMQPullConsumer(const std::string& groupname);
   virtual ~DefaultMQPullConsumer();
@@ -41,9 +43,28 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
   virtual void start();
   virtual void shutdown();
   //<!end mqadmin;
+  const std::string& getNamesrvAddr() const;
+  void setNamesrvAddr(const std::string& namesrvAddr);
+  const std::string& getNamesrvDomain() const;
+  void setNamesrvDomain(const std::string& namesrvDomain);
+  const std::string& getInstanceName() const;
+  void setInstanceName(const std::string& instanceName);
+  // nameSpace
+  const std::string& getNameSpace() const;
+  void setNameSpace(const std::string& nameSpace);
+  const std::string& getGroupName() const;
+  void setGroupName(const std::string& groupname);
 
+  // log configuration interface, default LOG_LEVEL is LOG_LEVEL_INFO, default
+  // log file num is 3, each log size is 100M
+  void setLogLevel(elogLevel inputLevel);
+  elogLevel getLogLevel();
+  void setLogFileSizeAndNum(int fileNum, long perFileSize);  // perFileSize is MB unit
+
+  void setSessionCredentials(const std::string& accessKey,
+                             const std::string& secretKey,
+                             const std::string& accessChannel);
   //<!begin MQConsumer
-  virtual bool sendMessageBack(MQMessageExt& msg, int delayLevel, std::string& brokerName);
   virtual void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs);
   virtual void doRebalance();
   virtual void persistConsumerOffset();
@@ -54,8 +75,6 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
   virtual void getSubscriptions(std::vector<SubscriptionData>&);
   virtual void updateConsumeOffset(const MQMessageQueue& mq, int64 offset);
   virtual void removeConsumeOffset(const MQMessageQueue& mq);
-  virtual bool producePullMsgTask(boost::weak_ptr<PullRequest> pullRequest);
-  virtual Rebalance* getRebalance() const;
   //<!end MQConsumer;
 
   void registerMessageQueueListener(const std::string& topic, MQueueListener* pListener);
@@ -114,34 +133,6 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
   // temp persist consumer offset interface, only valid with
   // RemoteBrokerOffsetStore, updateConsumeOffset should be called before.
   void persistConsumerOffset4PullConsumer(const MQMessageQueue& mq);
-
- private:
-  void checkConfig();
-  void copySubscription();
-  bool dealWithNameSpace();
-
-  PullResult pullSyncImpl(const MQMessageQueue& mq,
-                          const std::string& subExpression,
-                          int64 offset,
-                          int maxNums,
-                          bool block);
-
-  void pullAsyncImpl(const MQMessageQueue& mq,
-                     const std::string& subExpression,
-                     int64 offset,
-                     int maxNums,
-                     bool block,
-                     PullCallback* pPullCallback);
-
-  void subscriptionAutomatically(const std::string& topic);
-
- private:
-  std::set<std::string> m_registerTopics;
-
-  MQueueListener* m_pMessageQueueListener;
-  OffsetStore* m_pOffsetStore;
-  Rebalance* m_pRebalance;
-  PullAPIWrapper* m_pPullAPIWrapper;
 };
 //<!***************************************************************************
 }  // namespace rocketmq

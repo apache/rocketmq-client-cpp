@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 #include "Rebalance.h"
-#include "DefaultMQPushConsumer.h"
+#include "DefaultMQPushConsumerImpl.h"
 #include "LockBatchBody.h"
 #include "Logging.h"
 #include "MQClientAPIImpl.h"
@@ -150,7 +150,7 @@ void Rebalance::doRebalance() {
 }
 
 void Rebalance::persistConsumerOffset() {
-  DefaultMQPushConsumer* pConsumer = static_cast<DefaultMQPushConsumer*>(m_pConsumer);
+    DefaultMQPushConsumerImpl* pConsumer = static_cast<DefaultMQPushConsumerImpl*>(m_pConsumer);
   OffsetStore* pOffsetStore = pConsumer->getOffsetStore();
   vector<MQMessageQueue> mqs;
   {
@@ -174,7 +174,7 @@ void Rebalance::persistConsumerOffset() {
 }
 
 void Rebalance::persistConsumerOffsetByResetOffset() {
-  DefaultMQPushConsumer* pConsumer = static_cast<DefaultMQPushConsumer*>(m_pConsumer);
+    DefaultMQPushConsumerImpl* pConsumer = static_cast<DefaultMQPushConsumerImpl*>(m_pConsumer);
   OffsetStore* pOffsetStore = pConsumer->getOffsetStore();
   vector<MQMessageQueue> mqs;
   {
@@ -552,7 +552,7 @@ bool RebalancePush::updateRequestTableInRebalance(const string& topic, vector<MQ
 
 int64 RebalancePush::computePullFromWhere(const MQMessageQueue& mq) {
   int64 result = -1;
-  DefaultMQPushConsumer* pConsumer = dynamic_cast<DefaultMQPushConsumer*>(m_pConsumer);
+    DefaultMQPushConsumerImpl* pConsumer = dynamic_cast<DefaultMQPushConsumerImpl*>(m_pConsumer);
   if (!pConsumer) {
     LOG_ERROR("Cast consumer pointer to DefaultMQPushConsumer pointer failed when computePullFromWhere %s",
               mq.toString().c_str());
@@ -639,7 +639,7 @@ void RebalancePush::messageQueueChanged(const string& topic,
 
 void RebalancePush::removeUnnecessaryMessageQueue(const MQMessageQueue& mq) {
   // DefaultMQPushConsumer *pConsumer = static_cast<DefaultMQPushConsumer *>(m_pConsumer);
-  DefaultMQPushConsumer* pConsumer = dynamic_cast<DefaultMQPushConsumer*>(m_pConsumer);
+    DefaultMQPushConsumerImpl* pConsumer = dynamic_cast<DefaultMQPushConsumerImpl*>(m_pConsumer);
   if (!pConsumer) {
     LOG_ERROR("Cast  MQConsumer* to DefaultMQPushConsumer* failed when remove %s", mq.toString().c_str());
     return;

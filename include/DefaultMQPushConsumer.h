@@ -18,35 +18,20 @@
 #ifndef __DEFAULTMQPUSHCONSUMER_H__
 #define __DEFAULTMQPUSHCONSUMER_H__
 
-#include <boost/asio.hpp>
-#include <boost/asio/io_service.hpp>
-#include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/thread/thread.hpp>
 #include <string>
 #include "AsyncCallback.h"
-#include "MQConsumer.h"
+#include "ConsumeType.h"
+#include "MQClient.h"
 #include "MQMessageListener.h"
 #include "MQMessageQueue.h"
 
 namespace rocketmq {
 
-class Rebalance;
-class SubscriptionData;
-class OffsetStore;
-class PullAPIWrapper;
-class PullRequest;
-class ConsumeMsgService;
-class TaskQueue;
-class TaskThread;
-class AsyncPullCallback;
-class ConsumerRunningInfo;
 //<!***************************************************************************
-class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
+class ROCKETMQCLIENT_API DefaultMQPushConsumer {
  public:
   DefaultMQPushConsumer(const std::string& groupname);
-  void boost_asio_work();
+
   virtual ~DefaultMQPushConsumer();
 
   //<!begin mqadmin;
@@ -64,40 +49,12 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
   virtual ConsumeType getConsumeType();
   virtual ConsumeFromWhere getConsumeFromWhere();
   void setConsumeFromWhere(ConsumeFromWhere consumeFromWhere);
-  virtual void getSubscriptions(std::vector<SubscriptionData>&);
   virtual void updateConsumeOffset(const MQMessageQueue& mq, int64 offset);
   virtual void removeConsumeOffset(const MQMessageQueue& mq);
-  virtual PullResult pull(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums) {
-    return PullResult();
-  }
-  virtual void pull(const MQMessageQueue& mq,
-                    const std::string& subExpression,
-                    int64 offset,
-                    int maxNums,
-                    PullCallback* pPullCallback) {}
-  virtual ConsumerRunningInfo* getConsumerRunningInfo();
-  //<!end MQConsumer;
 
   void registerMessageListener(MQMessageListener* pMessageListener);
   MessageListenerType getMessageListenerType();
   void subscribe(const std::string& topic, const std::string& subExpression);
-
-  OffsetStore* getOffsetStore() const;
-  virtual Rebalance* getRebalance() const;
-  ConsumeMsgService* getConsumerMsgService() const;
-
-  virtual bool producePullMsgTask(boost::weak_ptr<PullRequest>);
-  virtual bool producePullMsgTaskLater(boost::weak_ptr<PullRequest>, int millis);
-  static void static_triggerNextPullRequest(void* context,
-                                            boost::asio::deadline_timer* t,
-                                            boost::weak_ptr<PullRequest>);
-  void triggerNextPullRequest(boost::asio::deadline_timer* t, boost::weak_ptr<PullRequest>);
-  void runPullMsgQueue(TaskQueue* pTaskQueue);
-  void pullMessage(boost::weak_ptr<PullRequest> pullrequest);
-  void pullMessageAsync(boost::weak_ptr<PullRequest> pullrequest);
-  void setAsyncPull(bool asyncFlag);
-  AsyncPullCallback* getAsyncPullCallBack(boost::weak_ptr<PullRequest>, MQMessageQueue msgQueue);
-  void shutdownAsyncPullCallBack();
 
   /*
     for orderly consume, set the pull num of message size by each pullMsg,
@@ -128,37 +85,63 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
   void setMaxCacheMsgSizePerQueue(int maxCacheSize);
   int getMaxCacheMsgSizePerQueue() const;
 
- private:
-  void checkConfig();
-  void copySubscription();
-  void updateTopicSubscribeInfoWhenSubscriptionChanged();
-  bool dealWithNameSpace();
+  MessageModel getMessageModel() const;
+  void setMessageModel(MessageModel messageModel);
+  const std::string& getNamesrvAddr() const;
+  void setNamesrvAddr(const std::string& namesrvAddr);
+  const std::string& getNamesrvDomain() const;
+  void setNamesrvDomain(const std::string& namesrvDomain);
+  const std::string& getInstanceName() const;
+  void setInstanceName(const std::string& instanceName);
+  // nameSpace
+  const std::string& getNameSpace() const;
+  void setNameSpace(const std::string& nameSpace);
+  const std::string& getGroupName() const;
+  void setGroupName(const std::string& groupname);
 
- private:
-  uint64_t m_startTime;
-  ConsumeFromWhere m_consumeFromWhere;
-  std::map<std::string, std::string> m_subTopics;
-  int m_consumeThreadCount;
-  OffsetStore* m_pOffsetStore;
-  Rebalance* m_pRebalance;
-  PullAPIWrapper* m_pPullAPIWrapper;
-  ConsumeMsgService* m_consumerService;
-  MQMessageListener* m_pMessageListener;
-  int m_consumeMessageBatchMaxSize;
-  int m_maxMsgCacheSize;
-  int m_maxReconsumeTimes = -1;
-  boost::asio::io_service m_async_ioService;
-  boost::scoped_ptr<boost::thread> m_async_service_thread;
+  // log configuration interface, default LOG_LEVEL is LOG_LEVEL_INFO, default
+  // log file num is 3, each log size is 100M
+  void setLogLevel(elogLevel inputLevel);
+  elogLevel getLogLevel();
+  void setLogFileSizeAndNum(int fileNum, long perFileSize);  // perFileSize is MB unit
 
-  typedef std::map<MQMessageQueue, AsyncPullCallback*> PullMAP;
-  PullMAP m_PullCallback;
-  bool m_asyncPull;
-  int m_asyncPullTimeout;
-  int m_pullMsgThreadPoolNum;
+  /** set TcpTransport pull thread num, which dermine the num of threads to
+   *  distribute network data,
+   *  1. its default value is CPU num, it must be setted before producer/consumer
+   *     start, minimum value is CPU num;
+   *  2. this pullThread num must be tested on your environment to find the best
+   *     value for RT of sendMsg or delay time of consume msg before you change it;
+   *  3. producer and consumer need different pullThread num, if set this num,
+   *     producer and consumer must set different instanceName.
+   **/
+  void setTcpTransportPullThreadNum(int num);
+  const int getTcpTransportPullThreadNum() const;
 
- private:
-  TaskQueue* m_pullmsgQueue;
-  std::unique_ptr<boost::thread> m_pullmsgThread;
+  /** timeout of tcp connect, it is same meaning for both producer and consumer;
+   *    1. default value is 3000ms
+   *    2. input parameter could only be milliSecond, suggestion value is
+   *       1000-3000ms;
+   **/
+  void setTcpTransportConnectTimeout(uint64_t timeout);  // ms
+  const uint64_t getTcpTransportConnectTimeout() const;
+
+  /** timeout of tryLock tcpTransport before sendMsg/pullMsg, if timeout,
+   *  returns NULL
+   *    1. paremeter unit is ms, default value is 3000ms, the minimun value is 1000ms
+   *       suggestion value is 3000ms;
+   *    2. if configured with value smaller than 1000ms, the tryLockTimeout value
+   *       will be setted to 1000ms
+   **/
+  void setTcpTransportTryLockTimeout(uint64_t timeout);  // ms
+  const uint64_t getTcpTransportTryLockTimeout() const;
+
+  void setUnitName(std::string unitName);
+  const std::string& getUnitName() const;
+
+  void setSessionCredentials(const std::string& accessKey,
+                             const std::string& secretKey,
+                             const std::string& accessChannel);
+  const SessionCredentials& getSessionCredentials() const;
 };
 //<!***************************************************************************
 }  // namespace rocketmq

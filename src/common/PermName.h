@@ -35,5 +35,5 @@ class PermName {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

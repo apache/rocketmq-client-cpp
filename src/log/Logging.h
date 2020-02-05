@@ -31,7 +31,7 @@
 #include <boost/log/utility/setup/file.hpp>
 #include <boost/scoped_array.hpp>
 #include <boost/shared_ptr.hpp>
-#include "MQClient.h"
+#include "include/DefaultMQClient.h"
 
 namespace logging = boost::log;
 namespace src = boost::log::sources;

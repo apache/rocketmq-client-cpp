@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "DefaultMQPullConsumer.h"
+#include "DefaultMQPullConsumerImpl.h"
 #include "AsyncArg.h"
 #include "CommunicationMode.h"
 #include "FilterAPI.h"
@@ -31,7 +31,7 @@
 
 namespace rocketmq {
 //<!***************************************************************************
-DefaultMQPullConsumer::DefaultMQPullConsumer(const string& groupname)
+DefaultMQPullConsumerImpl::DefaultMQPullConsumerImpl(const string& groupname)
     : m_pMessageQueueListener(NULL),
       m_pOffsetStore(NULL),
       m_pRebalance(NULL),
@@ -45,7 +45,7 @@ DefaultMQPullConsumer::DefaultMQPullConsumer(const string& groupname)
   setMessageModel(CLUSTERING);
 }
 
-DefaultMQPullConsumer::~DefaultMQPullConsumer() {
+DefaultMQPullConsumerImpl::~DefaultMQPullConsumerImpl() {
   m_pMessageQueueListener = NULL;
   deleteAndZero(m_pRebalance);
   deleteAndZero(m_pOffsetStore);
@@ -54,7 +54,7 @@ DefaultMQPullConsumer::~DefaultMQPullConsumer() {
 
 // MQConsumer
 //<!************************************************************************
-void DefaultMQPullConsumer::start() {
+void DefaultMQPullConsumerImpl::start() {
 #ifndef WIN32
   /* Ignore the SIGPIPE */
   struct sigaction sa;
@@ -67,8 +67,8 @@ void DefaultMQPullConsumer::start() {
   switch (m_serviceState) {
     case CREATE_JUST: {
       m_serviceState = START_FAILED;
-      MQClient::start();
-      LOG_INFO("DefaultMQPullConsumer:%s start", m_GroupName.c_str());
+      DefaultMQClient::start();
+      LOG_INFO("DefaultMQPullConsumerImpl:%s start", m_GroupName.c_str());
 
       //<!create rebalance;
       m_pRebalance = new RebalancePull(this, getFactory());
@@ -124,10 +124,10 @@ void DefaultMQPullConsumer::start() {
   }
 }
 
-void DefaultMQPullConsumer::shutdown() {
+void DefaultMQPullConsumerImpl::shutdown() {
   switch (m_serviceState) {
     case RUNNING: {
-      LOG_INFO("DefaultMQPullConsumer:%s shutdown", m_GroupName.c_str());
+      LOG_INFO("DefaultMQPullConsumerImpl:%s shutdown", m_GroupName.c_str());
       persistConsumerOffset();
       getFactory()->unregisterConsumer(this);
       getFactory()->shutdown();
@@ -142,11 +142,11 @@ void DefaultMQPullConsumer::shutdown() {
   }
 }
 
-bool DefaultMQPullConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel, string& brokerName) {
+bool DefaultMQPullConsumerImpl::sendMessageBack(MQMessageExt& msg, int delayLevel, string& brokerName) {
   return true;
 }
 
-void DefaultMQPullConsumer::fetchSubscribeMessageQueues(const string& topic, vector<MQMessageQueue>& mqs) {
+void DefaultMQPullConsumerImpl::fetchSubscribeMessageQueues(const string& topic, vector<MQMessageQueue>& mqs) {
   mqs.clear();
   try {
     const string localTopic = NameSpaceUtil::withNameSpace(topic, getNameSpace());
@@ -156,23 +156,23 @@ void DefaultMQPullConsumer::fetchSubscribeMessageQueues(const string& topic, vec
   }
 }
 
-void DefaultMQPullConsumer::updateTopicSubscribeInfo(const string& topic, vector<MQMessageQueue>& info) {}
+void DefaultMQPullConsumerImpl::updateTopicSubscribeInfo(const string& topic, vector<MQMessageQueue>& info) {}
 
-void DefaultMQPullConsumer::registerMessageQueueListener(const string& topic, MQueueListener* pListener) {
+void DefaultMQPullConsumerImpl::registerMessageQueueListener(const string& topic, MQueueListener* pListener) {
   m_registerTopics.insert(topic);
   if (pListener) {
     m_pMessageQueueListener = pListener;
   }
 }
 
-PullResult DefaultMQPullConsumer::pull(const MQMessageQueue& mq,
+PullResult DefaultMQPullConsumerImpl::pull(const MQMessageQueue& mq,
                                        const string& subExpression,
                                        int64 offset,
                                        int maxNums) {
   return pullSyncImpl(mq, subExpression, offset, maxNums, false);
 }
 
-void DefaultMQPullConsumer::pull(const MQMessageQueue& mq,
+void DefaultMQPullConsumerImpl::pull(const MQMessageQueue& mq,
                                  const string& subExpression,
                                  int64 offset,
                                  int maxNums,
@@ -180,14 +180,14 @@ void DefaultMQPullConsumer::pull(const MQMessageQueue& mq,
   pullAsyncImpl(mq, subExpression, offset, maxNums, false, pPullCallback);
 }
 
-PullResult DefaultMQPullConsumer::pullBlockIfNotFound(const MQMessageQueue& mq,
+PullResult DefaultMQPullConsumerImpl::pullBlockIfNotFound(const MQMessageQueue& mq,
                                                       const string& subExpression,
                                                       int64 offset,
                                                       int maxNums) {
   return pullSyncImpl(mq, subExpression, offset, maxNums, true);
 }
 
-void DefaultMQPullConsumer::pullBlockIfNotFound(const MQMessageQueue& mq,
+void DefaultMQPullConsumerImpl::pullBlockIfNotFound(const MQMessageQueue& mq,
                                                 const string& subExpression,
                                                 int64 offset,
                                                 int maxNums,
@@ -195,7 +195,7 @@ void DefaultMQPullConsumer::pullBlockIfNotFound(const MQMessageQueue& mq,
   pullAsyncImpl(mq, subExpression, offset, maxNums, true, pPullCallback);
 }
 
-PullResult DefaultMQPullConsumer::pullSyncImpl(const MQMessageQueue& mq,
+PullResult DefaultMQPullConsumerImpl::pullSyncImpl(const MQMessageQueue& mq,
                                                const string& subExpression,
                                                int64 offset,
                                                int maxNums,
@@ -240,7 +240,7 @@ PullResult DefaultMQPullConsumer::pullSyncImpl(const MQMessageQueue& mq,
   return PullResult(BROKER_TIMEOUT);
 }
 
-void DefaultMQPullConsumer::pullAsyncImpl(const MQMessageQueue& mq,
+void DefaultMQPullConsumerImpl::pullAsyncImpl(const MQMessageQueue& mq,
                                           const string& subExpression,
                                           int64 offset,
                                           int maxNums,
@@ -289,7 +289,7 @@ void DefaultMQPullConsumer::pullAsyncImpl(const MQMessageQueue& mq,
   }
 }
 
-void DefaultMQPullConsumer::subscriptionAutomatically(const string& topic) {
+void DefaultMQPullConsumerImpl::subscriptionAutomatically(const string& topic) {
   SubscriptionData* pSdata = m_pRebalance->getSubscriptionData(topic);
   if (pSdata == NULL) {
     unique_ptr<SubscriptionData> subscriptionData(FilterAPI::buildSubscriptionData(topic, SUB_ALL));
@@ -297,19 +297,19 @@ void DefaultMQPullConsumer::subscriptionAutomatically(const string& topic) {
   }
 }
 
-void DefaultMQPullConsumer::updateConsumeOffset(const MQMessageQueue& mq, int64 offset) {
+void DefaultMQPullConsumerImpl::updateConsumeOffset(const MQMessageQueue& mq, int64 offset) {
   m_pOffsetStore->updateOffset(mq, offset);
 }
 
-void DefaultMQPullConsumer::removeConsumeOffset(const MQMessageQueue& mq) {
+void DefaultMQPullConsumerImpl::removeConsumeOffset(const MQMessageQueue& mq) {
   m_pOffsetStore->removeOffset(mq);
 }
 
-int64 DefaultMQPullConsumer::fetchConsumeOffset(const MQMessageQueue& mq, bool fromStore) {
+int64 DefaultMQPullConsumerImpl::fetchConsumeOffset(const MQMessageQueue& mq, bool fromStore) {
   return m_pOffsetStore->readOffset(mq, fromStore ? READ_FROM_STORE : MEMORY_FIRST_THEN_STORE, getSessionCredentials());
 }
 
-void DefaultMQPullConsumer::persistConsumerOffset() {
+void DefaultMQPullConsumerImpl::persistConsumerOffset() {
   /*As do not execute rebalance for pullConsumer now, requestTable is always
   empty
   map<MQMessageQueue, PullRequest*> requestTable =
@@ -326,17 +326,17 @@ void DefaultMQPullConsumer::persistConsumerOffset() {
   m_pOffsetStore->persistAll(mqs);*/
 }
 
-void DefaultMQPullConsumer::persistConsumerOffsetByResetOffset() {}
+void DefaultMQPullConsumerImpl::persistConsumerOffsetByResetOffset() {}
 
-void DefaultMQPullConsumer::persistConsumerOffset4PullConsumer(const MQMessageQueue& mq) {
+void DefaultMQPullConsumerImpl::persistConsumerOffset4PullConsumer(const MQMessageQueue& mq) {
   if (isServiceStateOk()) {
     m_pOffsetStore->persist(mq, getSessionCredentials());
   }
 }
 
-void DefaultMQPullConsumer::fetchMessageQueuesInBalance(const string& topic, vector<MQMessageQueue> mqs) {}
+void DefaultMQPullConsumerImpl::fetchMessageQueuesInBalance(const string& topic, vector<MQMessageQueue> mqs) {}
 
-void DefaultMQPullConsumer::checkConfig() {
+void DefaultMQPullConsumerImpl::checkConfig() {
   string groupname = getGroupName();
   // check consumerGroup
   Validators::checkGroup(groupname);
@@ -351,9 +351,9 @@ void DefaultMQPullConsumer::checkConfig() {
   }
 }
 
-void DefaultMQPullConsumer::doRebalance() {}
+void DefaultMQPullConsumerImpl::doRebalance() {}
 
-void DefaultMQPullConsumer::copySubscription() {
+void DefaultMQPullConsumerImpl::copySubscription() {
   set<string>::iterator it = m_registerTopics.begin();
   for (; it != m_registerTopics.end(); ++it) {
     unique_ptr<SubscriptionData> subscriptionData(FilterAPI::buildSubscriptionData((*it), SUB_ALL));
@@ -361,15 +361,15 @@ void DefaultMQPullConsumer::copySubscription() {
   }
 }
 
-ConsumeType DefaultMQPullConsumer::getConsumeType() {
+ConsumeType DefaultMQPullConsumerImpl::getConsumeType() {
   return CONSUME_ACTIVELY;
 }
 
-ConsumeFromWhere DefaultMQPullConsumer::getConsumeFromWhere() {
+ConsumeFromWhere DefaultMQPullConsumerImpl::getConsumeFromWhere() {
   return CONSUME_FROM_LAST_OFFSET;
 }
 
-void DefaultMQPullConsumer::getSubscriptions(vector<SubscriptionData>& result) {
+void DefaultMQPullConsumerImpl::getSubscriptions(vector<SubscriptionData>& result) {
   set<string>::iterator it = m_registerTopics.begin();
   for (; it != m_registerTopics.end(); ++it) {
     SubscriptionData ms(*it, SUB_ALL);
@@ -377,15 +377,15 @@ void DefaultMQPullConsumer::getSubscriptions(vector<SubscriptionData>& result) {
   }
 }
 
-bool DefaultMQPullConsumer::producePullMsgTask(boost::weak_ptr<PullRequest> pullRequest) {
+bool DefaultMQPullConsumerImpl::producePullMsgTask(boost::weak_ptr<PullRequest> pullRequest) {
   return true;
 }
 
-Rebalance* DefaultMQPullConsumer::getRebalance() const {
+Rebalance* DefaultMQPullConsumerImpl::getRebalance() const {
   return NULL;
 }
 // we should deal with name space before producer start.
-bool DefaultMQPullConsumer::dealWithNameSpace() {
+bool DefaultMQPullConsumerImpl::dealWithNameSpace() {
   string ns = getNameSpace();
   if (ns.empty()) {
     string nsAddr = getNamesrvAddr();

@@ -26,9 +26,9 @@
 #include "Logging.h"
 #include "url.h"
 
-using boost::lambda::var;
-using boost::asio::ip::tcp;
 using boost::asio::deadline_timer;
+using boost::asio::ip::tcp;
+using boost::lambda::var;
 
 namespace {
 void check_deadline(deadline_timer* deadline, tcp::socket* socket, const boost::system::error_code& ec) {
@@ -148,4 +148,4 @@ bool SyncfetchNsAddr(const Url& url_s, std::string& body) {
 
   return ret;
 }
-}  // end of namespace ons
+}  // namespace rocketmq

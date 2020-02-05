@@ -31,6 +31,7 @@
 #include "TransactionListener.h"
 #include "TransactionMQProducer.h"
 #include "TransactionSendResult.h"
+#include "MQClient.h"
 #include "UtilAll.h"
 
 #ifdef __cplusplus

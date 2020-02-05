@@ -14,20 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TOPICFILTERTYPE_H__
-#define __TOPICFILTERTYPE_H__
+#ifndef __QUERYRESULT_H__
+#define __QUERYRESULT_H__
+
+#include "MQMessageExt.h"
+#include "RocketMQClient.h"
 
 namespace rocketmq {
-//<!***************************************************************************
-enum TopicFilterType {
-  /**
-   * each msg could only have one tag
-   */
-  SINGLE_TAG,
-  /**
-   * not support now
-   */
-  MULTI_TAG
+//<!************************************************************************
+class ROCKETMQCLIENT_API QueryResult {
+ public:
+  QueryResult(uint64 indexLastUpdateTimestamp, const std::vector<MQMessageExt*>& messageList) {
+    m_indexLastUpdateTimestamp = indexLastUpdateTimestamp;
+    m_messageList = messageList;
+  }
+
+  uint64 getIndexLastUpdateTimestamp() { return m_indexLastUpdateTimestamp; }
+
+  std::vector<MQMessageExt*>& getMessageList() { return m_messageList; }
+
+ private:
+  uint64 m_indexLastUpdateTimestamp;
+  std::vector<MQMessageExt*> m_messageList;
 };
 //<!***************************************************************************
 }  // namespace rocketmq

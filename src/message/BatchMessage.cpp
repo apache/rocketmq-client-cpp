@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "BatchMessage.h"
+#include "include/BatchMessage.h"
 
 #include "MQDecoder.h"
 #include "StringIdMaker.h"

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "TransactionMQProducer.h"
+#include "TransactionMQProducerImpl.h"
 #include <string>
 #include "CommandHeader.h"
 #include "Logging.h"
@@ -28,18 +28,18 @@
 using namespace std;
 namespace rocketmq {
 
-void TransactionMQProducer::initTransactionEnv() {
+void TransactionMQProducerImpl::initTransactionEnv() {
   for (int i = 0; i < m_thread_num; ++i) {
     m_threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &m_ioService));
   }
 }
 
-void TransactionMQProducer::destroyTransactionEnv() {
+void TransactionMQProducerImpl::destroyTransactionEnv() {
   m_ioService.stop();
   m_threadpool.join_all();
 }
 
-TransactionSendResult TransactionMQProducer::sendMessageInTransaction(MQMessage& msg, void* arg) {
+TransactionSendResult TransactionMQProducerImpl::sendMessageInTransaction(MQMessage& msg, void* arg) {
   if (!m_transactionListener) {
     THROW_MQEXCEPTION(MQClientException, "transactionListener is null", -1);
   }
@@ -98,7 +98,7 @@ TransactionSendResult TransactionMQProducer::sendMessageInTransaction(MQMessage&
   return transactionSendResult;
 }
 
-void TransactionMQProducer::endTransaction(SendResult& sendResult, LocalTransactionState& localTransactionState) {
+void TransactionMQProducerImpl::endTransaction(SendResult& sendResult, LocalTransactionState& localTransactionState) {
   MQMessageId id;
   if (sendResult.getOffsetMsgId() != "") {
     id = MQDecoder::decodeMessageId(sendResult.getOffsetMsgId());
@@ -130,7 +130,7 @@ void TransactionMQProducer::endTransaction(SendResult& sendResult, LocalTransact
   getFactory()->endTransactionOneway(sendResult.getMessageQueue(), requestHeader, getSessionCredentials());
 }
 
-void TransactionMQProducer::checkTransactionState(const std::string& addr,
+void TransactionMQProducerImpl::checkTransactionState(const std::string& addr,
                                                   const MQMessageExt& message,
                                                   long tranStateTableOffset,
                                                   long commitLogOffset,
@@ -143,11 +143,11 @@ void TransactionMQProducer::checkTransactionState(const std::string& addr,
     THROW_MQEXCEPTION(MQClientException, "checkTransactionState, transactionListener null", -1);
   }
 
-  m_ioService.post(boost::bind(&TransactionMQProducer::checkTransactionStateImpl, this, addr, message,
+  m_ioService.post(boost::bind(&TransactionMQProducerImpl::checkTransactionStateImpl, this, addr, message,
                                tranStateTableOffset, commitLogOffset, msgId, transactionId, offsetMsgId));
 }
 
-void TransactionMQProducer::checkTransactionStateImpl(const std::string& addr,
+void TransactionMQProducerImpl::checkTransactionStateImpl(const std::string& addr,
                                                       const MQMessageExt& message,
                                                       long tranStateTableOffset,
                                                       long commitLogOffset,
@@ -203,13 +203,13 @@ void TransactionMQProducer::checkTransactionStateImpl(const std::string& addr,
   }
 }
 
-void TransactionMQProducer::start() {
+void TransactionMQProducerImpl::start() {
   initTransactionEnv();
-  DefaultMQProducer::start();
+  DefaultMQProducerImpl::start();
 }
 
-void TransactionMQProducer::shutdown() {
-  DefaultMQProducer::shutdown();
+void TransactionMQProducerImpl::shutdown() {
+    DefaultMQProducerImpl::shutdown();
   destroyTransactionEnv();
 }
 

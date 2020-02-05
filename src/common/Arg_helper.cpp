@@ -64,4 +64,4 @@ string Arg_helper::get_option_value(string opt_) const {
 }
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

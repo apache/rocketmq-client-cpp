@@ -37,5 +37,5 @@ class Validators {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

@@ -97,6 +97,6 @@ class BigEndianWriter {
   char* end_;
 };
 
-}  // namespace base
+}  // namespace rocketmq
 
 #endif  // BASE_BIG_ENDIAN_H_

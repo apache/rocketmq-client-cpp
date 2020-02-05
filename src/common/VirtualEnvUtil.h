@@ -30,5 +30,5 @@ class VirtualEnvUtil {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

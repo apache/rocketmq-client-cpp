@@ -93,4 +93,4 @@ bool BigEndianWriter::WriteU64(uint64_t value) {
   return Write(value);
 }
 
-}  // namespace base
+}  // namespace rocketmq

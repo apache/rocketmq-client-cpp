@@ -56,5 +56,5 @@ class TopicConfig {
   TopicFilterType m_topicFilterType;
 };
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

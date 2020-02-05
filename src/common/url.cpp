@@ -62,4 +62,4 @@ void Url::parse(const std::string& url_s) {
   query_.assign(query_i, url_s.end());
 }
 
-}  // namespace ons
+}  // namespace rocketmq
