@@ -26,9 +26,10 @@
 #include "MQMessageQueue.h"
 
 namespace rocketmq {
-
+    class DefaultMQPushConsumerImpl;
 //<!***************************************************************************
 class ROCKETMQCLIENT_API DefaultMQPushConsumer {
+
  public:
   DefaultMQPushConsumer(const std::string& groupname);
 
@@ -37,20 +38,10 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer {
   //<!begin mqadmin;
   virtual void start();
   virtual void shutdown();
-  //<!end mqadmin;
 
-  //<!begin MQConsumer
-  virtual bool sendMessageBack(MQMessageExt& msg, int delayLevel, std::string& brokerName);
-  virtual void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs);
-  virtual void doRebalance();
-  virtual void persistConsumerOffset();
-  virtual void persistConsumerOffsetByResetOffset();
-  virtual void updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info);
-  virtual ConsumeType getConsumeType();
+virtual ConsumeType getConsumeType();
   virtual ConsumeFromWhere getConsumeFromWhere();
   void setConsumeFromWhere(ConsumeFromWhere consumeFromWhere);
-  virtual void updateConsumeOffset(const MQMessageQueue& mq, int64 offset);
-  virtual void removeConsumeOffset(const MQMessageQueue& mq);
 
   void registerMessageListener(MQMessageListener* pMessageListener);
   MessageListenerType getMessageListenerType();
@@ -142,6 +133,9 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer {
                              const std::string& secretKey,
                              const std::string& accessChannel);
   const SessionCredentials& getSessionCredentials() const;
+
+private:
+    DefaultMQPushConsumerImpl * impl;
 };
 //<!***************************************************************************
 }  // namespace rocketmq
