@@ -166,40 +166,40 @@ void DefaultMQPullConsumerImpl::registerMessageQueueListener(const string& topic
 }
 
 PullResult DefaultMQPullConsumerImpl::pull(const MQMessageQueue& mq,
-                                       const string& subExpression,
-                                       int64 offset,
-                                       int maxNums) {
+                                           const string& subExpression,
+                                           int64 offset,
+                                           int maxNums) {
   return pullSyncImpl(mq, subExpression, offset, maxNums, false);
 }
 
 void DefaultMQPullConsumerImpl::pull(const MQMessageQueue& mq,
-                                 const string& subExpression,
-                                 int64 offset,
-                                 int maxNums,
-                                 PullCallback* pPullCallback) {
+                                     const string& subExpression,
+                                     int64 offset,
+                                     int maxNums,
+                                     PullCallback* pPullCallback) {
   pullAsyncImpl(mq, subExpression, offset, maxNums, false, pPullCallback);
 }
 
 PullResult DefaultMQPullConsumerImpl::pullBlockIfNotFound(const MQMessageQueue& mq,
-                                                      const string& subExpression,
-                                                      int64 offset,
-                                                      int maxNums) {
+                                                          const string& subExpression,
+                                                          int64 offset,
+                                                          int maxNums) {
   return pullSyncImpl(mq, subExpression, offset, maxNums, true);
 }
 
 void DefaultMQPullConsumerImpl::pullBlockIfNotFound(const MQMessageQueue& mq,
-                                                const string& subExpression,
-                                                int64 offset,
-                                                int maxNums,
-                                                PullCallback* pPullCallback) {
+                                                    const string& subExpression,
+                                                    int64 offset,
+                                                    int maxNums,
+                                                    PullCallback* pPullCallback) {
   pullAsyncImpl(mq, subExpression, offset, maxNums, true, pPullCallback);
 }
 
 PullResult DefaultMQPullConsumerImpl::pullSyncImpl(const MQMessageQueue& mq,
-                                               const string& subExpression,
-                                               int64 offset,
-                                               int maxNums,
-                                               bool block) {
+                                                   const string& subExpression,
+                                                   int64 offset,
+                                                   int maxNums,
+                                                   bool block) {
   if (offset < 0)
     THROW_MQEXCEPTION(MQClientException, "offset < 0", -1);
 
@@ -241,11 +241,11 @@ PullResult DefaultMQPullConsumerImpl::pullSyncImpl(const MQMessageQueue& mq,
 }
 
 void DefaultMQPullConsumerImpl::pullAsyncImpl(const MQMessageQueue& mq,
-                                          const string& subExpression,
-                                          int64 offset,
-                                          int maxNums,
-                                          bool block,
-                                          PullCallback* pPullCallback) {
+                                              const string& subExpression,
+                                              int64 offset,
+                                              int maxNums,
+                                              bool block,
+                                              PullCallback* pPullCallback) {
   if (offset < 0)
     THROW_MQEXCEPTION(MQClientException, "offset < 0", -1);
 

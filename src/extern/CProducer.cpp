@@ -27,11 +27,11 @@
 #include "CMessage.h"
 #include "CSendResult.h"
 #include "DefaultMQProducer.h"
+#include "MQClient.h"
 #include "MQClientErrorContainer.h"
 #include "TransactionListener.h"
 #include "TransactionMQProducer.h"
 #include "TransactionSendResult.h"
-#include "MQClient.h"
 #include "UtilAll.h"
 
 #ifdef __cplusplus

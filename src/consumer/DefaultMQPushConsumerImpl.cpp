@@ -541,8 +541,8 @@ void DefaultMQPushConsumerImpl::removeConsumeOffset(const MQMessageQueue& mq) {
 }
 
 void DefaultMQPushConsumerImpl::static_triggerNextPullRequest(void* context,
-                                                          boost::asio::deadline_timer* t,
-                                                          boost::weak_ptr<PullRequest> pullRequest) {
+                                                              boost::asio::deadline_timer* t,
+                                                              boost::weak_ptr<PullRequest> pullRequest) {
   if (pullRequest.expired()) {
     LOG_WARN("Pull request has been released before.");
     return;
@@ -554,7 +554,7 @@ void DefaultMQPushConsumerImpl::static_triggerNextPullRequest(void* context,
 }
 
 void DefaultMQPushConsumerImpl::triggerNextPullRequest(boost::asio::deadline_timer* t,
-                                                   boost::weak_ptr<PullRequest> pullRequest) {
+                                                       boost::weak_ptr<PullRequest> pullRequest) {
   // delete first to avoild memleak
   deleteAndZero(t);
   boost::shared_ptr<PullRequest> request = pullRequest.lock();
@@ -772,7 +772,7 @@ void DefaultMQPushConsumerImpl::pullMessage(boost::weak_ptr<PullRequest> pullReq
 }
 
 AsyncPullCallback* DefaultMQPushConsumerImpl::getAsyncPullCallBack(boost::weak_ptr<PullRequest> pullRequest,
-                                                               MQMessageQueue msgQueue) {
+                                                                   MQMessageQueue msgQueue) {
   boost::shared_ptr<PullRequest> request = pullRequest.lock();
   if (!request) {
     return NULL;

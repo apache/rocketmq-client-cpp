@@ -29,7 +29,7 @@ class PullRequest;
 class Rebalance;
 class ConsumerRunningInfo;
 //<!************************************************************************
-class  MQConsumer : public DefaultMQClient {
+class MQConsumer : public DefaultMQClient {
  public:
   virtual ~MQConsumer() {}
   virtual bool sendMessageBack(MQMessageExt& msg, int delayLevel, std::string& brokerName) = 0;

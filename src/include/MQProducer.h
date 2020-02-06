@@ -26,7 +26,7 @@
 
 namespace rocketmq {
 //<!***************************************************************************
-class  MQProducer : public DefaultMQClient {
+class MQProducer : public DefaultMQClient {
  public:
   MQProducer() {}
   virtual ~MQProducer() {}

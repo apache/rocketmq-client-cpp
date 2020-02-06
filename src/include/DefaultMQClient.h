@@ -23,19 +23,18 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
+#include "MQClient.h"
 #include "MQMessageExt.h"
 #include "MQMessageQueue.h"
 #include "QueryResult.h"
 #include "RocketMQClient.h"
 #include "SessionCredentials.h"
-#include "MQClient.h"
 
 namespace rocketmq {
 class MQClientFactory;
 //<!***************************************************************************
 
-
-class  DefaultMQClient {
+class DefaultMQClient {
  public:
   DefaultMQClient();
   virtual ~DefaultMQClient();

@@ -19,25 +19,25 @@
 
 #include "MQClientException.h"
 #include "MQMessage.h"
-#include "RocketMQClient.h"
 #include "MQMessageQueue.h"
+#include "RocketMQClient.h"
 #include "SendResult.h"
 
 namespace rocketmq {
 //<!***************************************************************************
-class  SendMessageContext {
+class SendMessageContext {
  public:
   std::string producerGroup;
   MQMessage msg;
   MQMessageQueue mq;
-    std::string brokerAddr;
+  std::string brokerAddr;
   int communicationMode;
   SendResult sendResult;
   MQException* pException;
   void* pArg;
 };
 
-class  SendMessageHook {
+class SendMessageHook {
  public:
   virtual ~SendMessageHook() {}
   virtual std::string hookName() = 0;

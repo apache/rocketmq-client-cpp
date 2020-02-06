@@ -43,9 +43,9 @@ class TaskThread;
 class AsyncPullCallback;
 class ConsumerRunningInfo;
 //<!***************************************************************************
-class  DefaultMQPushConsumerImpl : public MQConsumer {
+class DefaultMQPushConsumerImpl : public MQConsumer {
  public:
-    DefaultMQPushConsumerImpl(const std::string& groupname);
+  DefaultMQPushConsumerImpl(const std::string& groupname);
   void boost_asio_work();
   virtual ~DefaultMQPushConsumerImpl();
 

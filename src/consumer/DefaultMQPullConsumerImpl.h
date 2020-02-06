@@ -32,9 +32,9 @@ class OffsetStore;
 class PullAPIWrapper;
 class ConsumerRunningInfo;
 //<!***************************************************************************
-class  DefaultMQPullConsumerImpl : public MQConsumer {
+class DefaultMQPullConsumerImpl : public MQConsumer {
  public:
-    DefaultMQPullConsumerImpl(const std::string& groupname);
+  DefaultMQPullConsumerImpl(const std::string& groupname);
   virtual ~DefaultMQPullConsumerImpl();
 
   //<!begin mqadmin;
