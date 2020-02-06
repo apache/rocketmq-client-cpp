@@ -32,9 +32,9 @@
 
 namespace rocketmq {
 
-class  TransactionMQProducerImpl : public DefaultMQProducerImpl {
+class TransactionMQProducerImpl : public DefaultMQProducerImpl {
  public:
-    TransactionMQProducerImpl(const std::string& producerGroup)
+  TransactionMQProducerImpl(const std::string& producerGroup)
       : DefaultMQProducerImpl(producerGroup), m_thread_num(1), m_ioServiceWork(m_ioService) {}
   virtual ~TransactionMQProducerImpl() {}
   void start();
