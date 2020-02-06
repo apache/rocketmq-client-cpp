@@ -276,10 +276,10 @@ SendResult DefaultMQProducerImpl::send(MQMessage& msg, MessageQueueSelector* pSe
 }
 
 SendResult DefaultMQProducerImpl::send(MQMessage& msg,
-                                   MessageQueueSelector* pSelector,
-                                   void* arg,
-                                   int autoRetryTimes,
-                                   bool bActiveBroker) {
+                                       MessageQueueSelector* pSelector,
+                                       void* arg,
+                                       int autoRetryTimes,
+                                       bool bActiveBroker) {
   try {
     if (!NameSpaceUtil::hasNameSpace(msg.getTopic(), getNameSpace())) {
       MessageAccessor::withNameSpace(msg, getNameSpace());
@@ -292,7 +292,10 @@ SendResult DefaultMQProducerImpl::send(MQMessage& msg,
   return SendResult();
 }
 
-void DefaultMQProducerImpl::send(MQMessage& msg, MessageQueueSelector* pSelector, void* arg, SendCallback* pSendCallback) {
+void DefaultMQProducerImpl::send(MQMessage& msg,
+                                 MessageQueueSelector* pSelector,
+                                 void* arg,
+                                 SendCallback* pSendCallback) {
   try {
     if (!NameSpaceUtil::hasNameSpace(msg.getTopic(), getNameSpace())) {
       MessageAccessor::withNameSpace(msg, getNameSpace());
@@ -352,9 +355,9 @@ void DefaultMQProducerImpl::setCompressLevel(int compressLevel) {
 
 //<!************************************************************************
 SendResult DefaultMQProducerImpl::sendDefaultImpl(MQMessage& msg,
-                                              int communicationMode,
-                                              SendCallback* pSendCallback,
-                                              bool bActiveMQ) {
+                                                  int communicationMode,
+                                                  SendCallback* pSendCallback,
+                                                  bool bActiveMQ) {
   MQMessageQueue lastmq;
   int mq_index = 0;
   for (int times = 1; times <= m_retryTimes; times++) {
@@ -416,9 +419,9 @@ SendResult DefaultMQProducerImpl::sendDefaultImpl(MQMessage& msg,
 }
 
 SendResult DefaultMQProducerImpl::sendKernelImpl(MQMessage& msg,
-                                             const MQMessageQueue& mq,
-                                             int communicationMode,
-                                             SendCallback* sendCallback) {
+                                                 const MQMessageQueue& mq,
+                                                 int communicationMode,
+                                                 SendCallback* sendCallback) {
   string brokerAddr = getFactory()->findBrokerAddressInPublish(mq.getBrokerName());
 
   if (brokerAddr.empty()) {
@@ -464,10 +467,10 @@ SendResult DefaultMQProducerImpl::sendKernelImpl(MQMessage& msg,
 }
 
 SendResult DefaultMQProducerImpl::sendSelectImpl(MQMessage& msg,
-                                             MessageQueueSelector* pSelector,
-                                             void* pArg,
-                                             int communicationMode,
-                                             SendCallback* sendCallback) {
+                                                 MessageQueueSelector* pSelector,
+                                                 void* pArg,
+                                                 int communicationMode,
+                                                 SendCallback* sendCallback) {
   Validators::checkMessage(msg, getMaxMessageSize());
 
   boost::weak_ptr<TopicPublishInfo> weak_topicPublishInfo(
@@ -482,12 +485,12 @@ SendResult DefaultMQProducerImpl::sendSelectImpl(MQMessage& msg,
 }
 
 SendResult DefaultMQProducerImpl::sendAutoRetrySelectImpl(MQMessage& msg,
-                                                      MessageQueueSelector* pSelector,
-                                                      void* pArg,
-                                                      int communicationMode,
-                                                      SendCallback* pSendCallback,
-                                                      int autoRetryTimes,
-                                                      bool bActiveMQ) {
+                                                          MessageQueueSelector* pSelector,
+                                                          void* pArg,
+                                                          int communicationMode,
+                                                          SendCallback* pSendCallback,
+                                                          int autoRetryTimes,
+                                                          bool bActiveMQ) {
   Validators::checkMessage(msg, getMaxMessageSize());
 
   MQMessageQueue lastmq;

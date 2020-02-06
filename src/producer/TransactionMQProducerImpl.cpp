@@ -131,12 +131,12 @@ void TransactionMQProducerImpl::endTransaction(SendResult& sendResult, LocalTran
 }
 
 void TransactionMQProducerImpl::checkTransactionState(const std::string& addr,
-                                                  const MQMessageExt& message,
-                                                  long tranStateTableOffset,
-                                                  long commitLogOffset,
-                                                  const std::string& msgId,
-                                                  const std::string& transactionId,
-                                                  const std::string& offsetMsgId) {
+                                                      const MQMessageExt& message,
+                                                      long tranStateTableOffset,
+                                                      long commitLogOffset,
+                                                      const std::string& msgId,
+                                                      const std::string& transactionId,
+                                                      const std::string& offsetMsgId) {
   LOG_DEBUG("checkTransactionState: msgId:%s, transactionId:%s", msgId.data(), transactionId.data());
   if (!m_transactionListener) {
     LOG_WARN("checkTransactionState, transactionListener null");
@@ -148,12 +148,12 @@ void TransactionMQProducerImpl::checkTransactionState(const std::string& addr,
 }
 
 void TransactionMQProducerImpl::checkTransactionStateImpl(const std::string& addr,
-                                                      const MQMessageExt& message,
-                                                      long tranStateTableOffset,
-                                                      long commitLogOffset,
-                                                      const std::string& msgId,
-                                                      const std::string& transactionId,
-                                                      const std::string& offsetMsgId) {
+                                                          const MQMessageExt& message,
+                                                          long tranStateTableOffset,
+                                                          long commitLogOffset,
+                                                          const std::string& msgId,
+                                                          const std::string& transactionId,
+                                                          const std::string& offsetMsgId) {
   LOG_DEBUG("checkTransactionStateImpl: msgId:%s, transactionId:%s", msgId.data(), transactionId.data());
   LocalTransactionState localTransactionState = UNKNOWN;
   try {
@@ -209,7 +209,7 @@ void TransactionMQProducerImpl::start() {
 }
 
 void TransactionMQProducerImpl::shutdown() {
-    DefaultMQProducerImpl::shutdown();
+  DefaultMQProducerImpl::shutdown();
   destroyTransactionEnv();
 }
 

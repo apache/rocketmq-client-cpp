@@ -64,7 +64,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer {
   void setSessionCredentials(const std::string& accessKey,
                              const std::string& secretKey,
                              const std::string& accessChannel);
-    const SessionCredentials& getSessionCredentials() const;
+  const SessionCredentials& getSessionCredentials() const;
   //<!begin MQConsumer
   virtual void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs);
   virtual void persistConsumerOffset();
@@ -132,8 +132,8 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer {
   // RemoteBrokerOffsetStore, updateConsumeOffset should be called before.
   void persistConsumerOffset4PullConsumer(const MQMessageQueue& mq);
 
-private:
-    DefaultMQPullConsumerImpl* impl;
+ private:
+  DefaultMQPullConsumerImpl* impl;
 };
 //<!***************************************************************************
 }  // namespace rocketmq

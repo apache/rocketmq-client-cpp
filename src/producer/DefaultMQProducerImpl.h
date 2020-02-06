@@ -26,9 +26,9 @@
 
 namespace rocketmq {
 //<!***************************************************************************
-class  DefaultMQProducerImpl : public MQProducer {
+class DefaultMQProducerImpl : public MQProducer {
  public:
-    DefaultMQProducerImpl(const std::string& groupname);
+  DefaultMQProducerImpl(const std::string& groupname);
   virtual ~DefaultMQProducerImpl();
 
   //<!begin mqadmin;
