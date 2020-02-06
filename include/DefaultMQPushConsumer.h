@@ -26,10 +26,9 @@
 #include "MQMessageQueue.h"
 
 namespace rocketmq {
-    class DefaultMQPushConsumerImpl;
+class DefaultMQPushConsumerImpl;
 //<!***************************************************************************
 class ROCKETMQCLIENT_API DefaultMQPushConsumer {
-
  public:
   DefaultMQPushConsumer(const std::string& groupname);
 
@@ -39,7 +38,7 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer {
   virtual void start();
   virtual void shutdown();
 
-virtual ConsumeType getConsumeType();
+  virtual ConsumeType getConsumeType();
   virtual ConsumeFromWhere getConsumeFromWhere();
   void setConsumeFromWhere(ConsumeFromWhere consumeFromWhere);
 
@@ -128,14 +127,14 @@ virtual ConsumeType getConsumeType();
 
   void setUnitName(std::string unitName);
   const std::string& getUnitName() const;
-
+  void setAsyncPull(bool asyncFlag);
   void setSessionCredentials(const std::string& accessKey,
                              const std::string& secretKey,
                              const std::string& accessChannel);
   const SessionCredentials& getSessionCredentials() const;
 
-private:
-    DefaultMQPushConsumerImpl * impl;
+ private:
+  DefaultMQPushConsumerImpl* impl;
 };
 //<!***************************************************************************
 }  // namespace rocketmq

@@ -191,6 +191,8 @@ void DefaultMQPushConsumer::setTcpTransportTryLockTimeout(uint64_t timeout) {
 const uint64_t DefaultMQPushConsumer::getTcpTransportTryLockTimeout() const {
   return impl->getTcpTransportTryLockTimeout();
 }
-
+void DefaultMQPushConsumer::setAsyncPull(bool asyncFlag) {
+  impl->setAsyncPull(asyncFlag);
+}
 //<!************************************************************************
 }  // namespace rocketmq
