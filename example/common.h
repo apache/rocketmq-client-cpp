@@ -17,28 +17,29 @@
 #ifndef ROCKETMQ_CLIENT4CPP_EXAMPLE_COMMON_H_
 #define ROCKETMQ_CLIENT4CPP_EXAMPLE_COMMON_H_
 
-#include <boost/atomic.hpp>
-#include <boost/chrono.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread.hpp>
+#include <atomic>
+#include <chrono>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <thread>
 #include <vector>
-
+#ifndef WIN32
+#include "unistd.h"
+#endif
 #include "Arg_helper.h"
 #include "DefaultMQProducer.h"
 #include "DefaultMQPullConsumer.h"
 #include "DefaultMQPushConsumer.h"
 using namespace std;
 
-boost::atomic<int> g_msgCount(1);
+std::atomic<int> g_msgCount(1);
 
 class RocketmqSendAndConsumerArgs {
  public:
   RocketmqSendAndConsumerArgs()
       : body("msgbody for test"),
-        thread_count(boost::thread::hardware_concurrency()),
+        thread_count(std::thread::hardware_concurrency()),
         broadcasting(false),
         syncpush(false),
         SelectUnactiveBroker(false),
@@ -69,7 +70,7 @@ class TpsReportService {
       std::cout << "tps_thread_ is null" << std::endl;
       return;
     }
-    tps_thread_.reset(new boost::thread(boost::bind(&TpsReportService::TpsReport, this)));
+    tps_thread_.reset(new std::thread(std::bind(&TpsReportService::TpsReport, this)));
   }
 
   ~TpsReportService() {
@@ -86,17 +87,17 @@ class TpsReportService {
 
   void TpsReport() {
     while (!quit_flag_.load()) {
-      boost::this_thread::sleep_for(tps_interval_);
+      std::this_thread::sleep_for(tps_interval_);
       std::cout << "tps: " << tps_count_.load() << std::endl;
       tps_count_.store(0);
     }
   }
 
  private:
-  boost::chrono::seconds tps_interval_;
-  boost::shared_ptr<boost::thread> tps_thread_;
-  boost::atomic<bool> quit_flag_;
-  boost::atomic<long> tps_count_;
+  std::chrono::seconds tps_interval_;
+  std::shared_ptr<std::thread> tps_thread_;
+  std::atomic<bool> quit_flag_;
+  std::atomic<long> tps_count_;
 };
 
 void PrintPullResult(rocketmq::PullResult* result) {

@@ -31,8 +31,8 @@ using namespace rocketmq;
 
 std::condition_variable g_finished;
 std::mutex g_mtx;
-boost::atomic<int> g_consumedCount(0);
-boost::atomic<bool> g_quit(false);
+std::atomic<int> g_consumedCount(0);
+std::atomic<bool> g_quit(false);
 TpsReportService g_tps;
 
 class MyMsgListener : public MessageListenerOrderly {

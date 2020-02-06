@@ -20,9 +20,6 @@
 #include <condition_variable>
 #include <iomanip>
 #include <iostream>
-#include <map>
-#include <mutex>
-#include <string>
 #include <vector>
 
 #include "common.h"

@@ -69,7 +69,7 @@ void DefaultMQPushConsumer::setConsumeThreadCount(int threadCount) {
   impl->setConsumeThreadCount(threadCount);
 }
 int DefaultMQPushConsumer::getConsumeThreadCount() const {
-  impl->getConsumeThreadCount();
+  return impl->getConsumeThreadCount();
 }
 void DefaultMQPushConsumer::setMaxReconsumeTimes(int maxReconsumeTimes) {
   impl->setMaxReconsumeTimes(maxReconsumeTimes);
@@ -97,7 +97,7 @@ void DefaultMQPushConsumer::setMaxCacheMsgSizePerQueue(int maxCacheSize) {
   impl->setMaxCacheMsgSizePerQueue(maxCacheSize);
 }
 int DefaultMQPushConsumer::getMaxCacheMsgSizePerQueue() const {
-  impl->getMaxCacheMsgSizePerQueue();
+  return impl->getMaxCacheMsgSizePerQueue();
 }
 
 MessageModel DefaultMQPushConsumer::getMessageModel() const {

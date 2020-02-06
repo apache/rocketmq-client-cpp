@@ -14,14 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <stdio.h>
+
 #include <stdlib.h>
 #include <string.h>
 
 #include <condition_variable>
 #include <iomanip>
 #include <iostream>
-#include <mutex>
 #include <thread>
 
 #include "common.h"
@@ -30,7 +29,7 @@ using namespace rocketmq;
 
 std::condition_variable g_finished;
 std::mutex g_mtx;
-boost::atomic<bool> g_quit(false);
+std::atomic<bool> g_quit(false);
 
 class SelectMessageQueueByHash : public MessageQueueSelector {
  public:

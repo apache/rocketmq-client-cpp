@@ -29,7 +29,7 @@
 
 using namespace rocketmq;
 
-boost::atomic<bool> g_quit;
+std::atomic<bool> g_quit;
 std::mutex g_mtx;
 std::condition_variable g_finished;
 SendCallback* g_callback = NULL;
