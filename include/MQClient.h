@@ -17,10 +17,6 @@
 
 #ifndef __MQADMIN_H__
 #define __MQADMIN_H__
-#include "MQMessageExt.h"
-#include "MQMessageQueue.h"
-#include "RocketMQClient.h"
-#include "SessionCredentials.h"
 
 namespace rocketmq {
 

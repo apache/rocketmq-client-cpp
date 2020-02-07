@@ -22,7 +22,6 @@
 #include <ostream>
 #include <sstream>
 #include <string>
-#include "CCommon.h"
 #include "RocketMQClient.h"
 
 namespace rocketmq {

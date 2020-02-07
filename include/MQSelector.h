@@ -29,4 +29,4 @@ class ROCKETMQCLIENT_API MessageQueueSelector {
 };
 //<!***************************************************************************
 }  // namespace rocketmq
-#endif  //<! _MQSELECTOR_H_
+#endif

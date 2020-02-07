@@ -114,9 +114,7 @@ void DefaultMQPullConsumer::persistConsumerOffsetByResetOffset() {
 void DefaultMQPullConsumer::updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info) {
   impl->updateTopicSubscribeInfo(topic, info);
 }
-ConsumeType DefaultMQPullConsumer::getConsumeType() {
-  return impl->getConsumeType();
-}
+
 ConsumeFromWhere DefaultMQPullConsumer::getConsumeFromWhere() {
   return impl->getConsumeFromWhere();
 }

@@ -29,29 +29,36 @@
 #include "MQueueListener.h"
 #include "PullResult.h"
 #include "RocketMQClient.h"
+#include "SessionCredentials.h"
 
 namespace rocketmq {
 class SubscriptionData;
 class DefaultMQPullConsumerImpl;
-//<!***************************************************************************
 class ROCKETMQCLIENT_API DefaultMQPullConsumer {
  public:
   DefaultMQPullConsumer(const std::string& groupname);
   virtual ~DefaultMQPullConsumer();
 
-  //<!begin mqadmin;
-  virtual void start();
-  virtual void shutdown();
-  //<!end mqadmin;
+  void start();
+  void shutdown();
+
   const std::string& getNamesrvAddr() const;
   void setNamesrvAddr(const std::string& namesrvAddr);
+
+  void setSessionCredentials(const std::string& accessKey,
+                             const std::string& secretKey,
+                             const std::string& accessChannel);
+  const SessionCredentials& getSessionCredentials() const;
+
   const std::string& getNamesrvDomain() const;
   void setNamesrvDomain(const std::string& namesrvDomain);
+
   const std::string& getInstanceName() const;
   void setInstanceName(const std::string& instanceName);
-  // nameSpace
+
   const std::string& getNameSpace() const;
   void setNameSpace(const std::string& nameSpace);
+
   const std::string& getGroupName() const;
   void setGroupName(const std::string& groupname);
 
@@ -59,25 +66,11 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer {
   // log file num is 3, each log size is 100M
   void setLogLevel(elogLevel inputLevel);
   elogLevel getLogLevel();
+  void setLogPath(const std::string& logPath);
   void setLogFileSizeAndNum(int fileNum, long perFileSize);  // perFileSize is MB unit
 
-  void setSessionCredentials(const std::string& accessKey,
-                             const std::string& secretKey,
-                             const std::string& accessChannel);
-  const SessionCredentials& getSessionCredentials() const;
-  //<!begin MQConsumer
-  virtual void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs);
-  virtual void persistConsumerOffset();
-  virtual void persistConsumerOffsetByResetOffset();
-  virtual void updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info);
-  virtual ConsumeType getConsumeType();
-  virtual ConsumeFromWhere getConsumeFromWhere();
-  virtual void getSubscriptions(std::vector<SubscriptionData>&);
-  virtual void updateConsumeOffset(const MQMessageQueue& mq, int64 offset);
-  virtual void removeConsumeOffset(const MQMessageQueue& mq);
-  //<!end MQConsumer;
+  void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs);
 
-  void registerMessageQueueListener(const std::string& topic, MQueueListener* pListener);
   /**
    * Pull message from specified queue, if no msg in queue, return directly
    *
@@ -94,12 +87,12 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer {
    * @return
    *            PullResult
    */
-  virtual PullResult pull(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums);
-  virtual void pull(const MQMessageQueue& mq,
-                    const std::string& subExpression,
-                    int64 offset,
-                    int maxNums,
-                    PullCallback* pPullCallback);
+  PullResult pull(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums);
+  void pull(const MQMessageQueue& mq,
+            const std::string& subExpression,
+            int64 offset,
+            int maxNums,
+            PullCallback* pPullCallback);
 
   /**
    * pull msg from specified queue, if no msg, broker will suspend the pull request 20s
@@ -124,6 +117,16 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer {
                            int maxNums,
                            PullCallback* pPullCallback);
 
+  void persistConsumerOffset();
+  void persistConsumerOffsetByResetOffset();
+  void updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info);
+  ConsumeFromWhere getConsumeFromWhere();
+  void getSubscriptions(std::vector<SubscriptionData>&);
+  void updateConsumeOffset(const MQMessageQueue& mq, int64 offset);
+  void removeConsumeOffset(const MQMessageQueue& mq);
+
+  void registerMessageQueueListener(const std::string& topic, MQueueListener* pListener);
+
   int64 fetchConsumeOffset(const MQMessageQueue& mq, bool fromStore);
 
   void fetchMessageQueuesInBalance(const std::string& topic, std::vector<MQMessageQueue> mqs);
@@ -135,6 +138,5 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer {
  private:
   DefaultMQPullConsumerImpl* impl;
 };
-//<!***************************************************************************
 }  // namespace rocketmq
 #endif

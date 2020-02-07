@@ -23,6 +23,7 @@
 #include "MQClient.h"
 #include "MQMessage.h"
 #include "MQMessageExt.h"
+#include "SessionCredentials.h"
 #include "TransactionListener.h"
 #include "TransactionSendResult.h"
 

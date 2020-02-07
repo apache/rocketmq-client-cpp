@@ -28,31 +28,54 @@
 
 namespace rocketmq {
 class DefaultMQProducerImpl;
-//<!***************************************************************************
 class ROCKETMQCLIENT_API DefaultMQProducer {
  public:
   DefaultMQProducer(const std::string& groupname);
   virtual ~DefaultMQProducer();
 
-  virtual void start();
-  virtual void shutdown();
+  void start();
+  void shutdown();
 
-  virtual SendResult send(MQMessage& msg, bool bSelectActiveBroker = false);
-  virtual SendResult send(MQMessage& msg, const MQMessageQueue& mq);
-  virtual SendResult send(MQMessage& msg, MessageQueueSelector* selector, void* arg);
-  virtual SendResult send(MQMessage& msg,
-                          MessageQueueSelector* selector,
-                          void* arg,
-                          int autoRetryTimes,
-                          bool bActiveBroker = false);
-  virtual SendResult send(std::vector<MQMessage>& msgs);
-  virtual SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq);
-  virtual void send(MQMessage& msg, SendCallback* pSendCallback, bool bSelectActiveBroker = false);
-  virtual void send(MQMessage& msg, const MQMessageQueue& mq, SendCallback* pSendCallback);
-  virtual void send(MQMessage& msg, MessageQueueSelector* selector, void* arg, SendCallback* pSendCallback);
-  virtual void sendOneway(MQMessage& msg, bool bSelectActiveBroker = false);
-  virtual void sendOneway(MQMessage& msg, const MQMessageQueue& mq);
-  virtual void sendOneway(MQMessage& msg, MessageQueueSelector* selector, void* arg);
+  SendResult send(MQMessage& msg, bool bSelectActiveBroker = false);
+  SendResult send(MQMessage& msg, const MQMessageQueue& mq);
+  SendResult send(MQMessage& msg, MessageQueueSelector* selector, void* arg);
+  SendResult send(MQMessage& msg,
+                  MessageQueueSelector* selector,
+                  void* arg,
+                  int autoRetryTimes,
+                  bool bActiveBroker = false);
+  SendResult send(std::vector<MQMessage>& msgs);
+  SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq);
+  void send(MQMessage& msg, SendCallback* pSendCallback, bool bSelectActiveBroker = false);
+  void send(MQMessage& msg, const MQMessageQueue& mq, SendCallback* pSendCallback);
+  void send(MQMessage& msg, MessageQueueSelector* selector, void* arg, SendCallback* pSendCallback);
+  void sendOneway(MQMessage& msg, bool bSelectActiveBroker = false);
+  void sendOneway(MQMessage& msg, const MQMessageQueue& mq);
+  void sendOneway(MQMessage& msg, MessageQueueSelector* selector, void* arg);
+
+  const std::string& getNamesrvAddr() const;
+  void setNamesrvAddr(const std::string& namesrvAddr);
+
+  void setSessionCredentials(const std::string& accessKey,
+                             const std::string& secretKey,
+                             const std::string& accessChannel);
+  const SessionCredentials& getSessionCredentials() const;
+
+  const std::string& getNamesrvDomain() const;
+  void setNamesrvDomain(const std::string& namesrvDomain);
+
+  const std::string& getNameSpace() const;
+  void setNameSpace(const std::string& nameSpace);
+
+  const std::string& getGroupName() const;
+  void setGroupName(const std::string& groupname);
+
+  // log configuration interface, default LOG_LEVEL is LOG_LEVEL_INFO, default
+  // log file num is 3, each log size is 100M
+  void setLogLevel(elogLevel inputLevel);
+  elogLevel getLogLevel();
+  void setLogPath(const std::string& logPath);
+  void setLogFileSizeAndNum(int fileNum, long perFileSize);  // perFileSize is MB unit
 
   int getSendMsgTimeout() const;
   void setSendMsgTimeout(int sendMsgTimeout);
@@ -76,23 +99,6 @@ class ROCKETMQCLIENT_API DefaultMQProducer {
 
   int getRetryTimes4Async() const;
   void setRetryTimes4Async(int times);
-  const std::string& getNamesrvAddr() const;
-  void setNamesrvAddr(const std::string& namesrvAddr);
-  const std::string& getNamesrvDomain() const;
-  void setNamesrvDomain(const std::string& namesrvDomain);
-  const std::string& getInstanceName() const;
-  void setInstanceName(const std::string& instanceName);
-  // nameSpace
-  const std::string& getNameSpace() const;
-  void setNameSpace(const std::string& nameSpace);
-  const std::string& getGroupName() const;
-  void setGroupName(const std::string& groupname);
-
-  // log configuration interface, default LOG_LEVEL is LOG_LEVEL_INFO, default
-  // log file num is 3, each log size is 100M
-  void setLogLevel(elogLevel inputLevel);
-  elogLevel getLogLevel();
-  void setLogFileSizeAndNum(int fileNum, long perFileSize);  // perFileSize is MB unit
 
   /** set TcpTransport pull thread num, which dermine the num of threads to
    *  distribute network data,
@@ -127,14 +133,8 @@ class ROCKETMQCLIENT_API DefaultMQProducer {
   void setUnitName(std::string unitName);
   const std::string& getUnitName() const;
 
-  void setSessionCredentials(const std::string& accessKey,
-                             const std::string& secretKey,
-                             const std::string& accessChannel);
-  const SessionCredentials& getSessionCredentials() const;
-
  private:
   DefaultMQProducerImpl* impl;
 };
-//<!***************************************************************************
 }  // namespace rocketmq
 #endif

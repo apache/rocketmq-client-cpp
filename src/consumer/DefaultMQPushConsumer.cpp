@@ -35,9 +35,10 @@ void DefaultMQPushConsumer::shutdown() {
   impl->shutdown();
 }
 
-ConsumeType DefaultMQPushConsumer::getConsumeType() {
-  return impl->getConsumeType();
-}
+// ConsumeType DefaultMQPushConsumer::getConsumeType() {
+//  return impl->getConsumeType();
+//}
+
 ConsumeFromWhere DefaultMQPushConsumer::getConsumeFromWhere() {
   return impl->getConsumeFromWhere();
 }
