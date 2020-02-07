@@ -34,4 +34,4 @@ int MessageSysFlag::resetTransactionValue(int flag, int type) {
 }
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

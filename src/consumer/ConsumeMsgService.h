@@ -24,12 +24,13 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread/thread.hpp>
+#include "DefaultMQPushConsumerImpl.h"
 #include "Logging.h"
+#include "MQConsumer.h"
 #include "MQMessageListener.h"
 #include "PullRequest.h"
-
 namespace rocketmq {
-class MQConsumer;
+// class MQConsumer;
 //<!***************************************************************************
 class ConsumeMsgService {
  public:

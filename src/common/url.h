@@ -34,5 +34,5 @@ class Url {
   std::string path_;
   std::string query_;
 };
-}
+}  // namespace rocketmq
 #endif  // ROCKETMQ_CLIENT4CPP_URL_HH_

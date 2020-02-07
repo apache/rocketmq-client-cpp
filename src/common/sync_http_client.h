@@ -24,6 +24,6 @@ class Url;
 
 extern bool SyncfetchNsAddr(const Url& url_s, std::string& body);
 
-}  // namespace ons
+}  // namespace rocketmq
 
 #endif  // ROCKETMQ_CLIENT4CPP__SYNC_HTTP_CLIENT_H_

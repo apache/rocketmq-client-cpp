@@ -34,5 +34,5 @@ class MessageSysFlag {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

@@ -111,4 +111,4 @@ void TopicConfig::setTopicFilterType(TopicFilterType topicFilterType) {
   m_topicFilterType = topicFilterType;
 }
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

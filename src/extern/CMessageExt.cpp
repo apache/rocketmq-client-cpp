@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-#include "MQMessageExt.h"
 #include "CMessageExt.h"
 #include "CCommon.h"
+#include "MQMessageExt.h"
 
 #ifdef __cplusplus
 extern "C" {

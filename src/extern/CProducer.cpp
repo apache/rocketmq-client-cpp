@@ -27,6 +27,7 @@
 #include "CMessage.h"
 #include "CSendResult.h"
 #include "DefaultMQProducer.h"
+#include "MQClient.h"
 #include "MQClientErrorContainer.h"
 #include "TransactionListener.h"
 #include "TransactionMQProducer.h"

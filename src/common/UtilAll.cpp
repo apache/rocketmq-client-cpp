@@ -353,4 +353,4 @@ bool UtilAll::ReplaceFile(const std::string& from_path, const std::string& to_pa
   return false;
 #endif
 }
-}
+}  // namespace rocketmq

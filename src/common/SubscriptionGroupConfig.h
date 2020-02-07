@@ -45,5 +45,5 @@ class SubscriptionGroupConfig {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

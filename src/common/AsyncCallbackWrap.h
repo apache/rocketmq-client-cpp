@@ -27,7 +27,7 @@ namespace rocketmq {
 
 class ResponseFuture;
 class MQClientAPIImpl;
-class DefaultMQProducer;
+// class DefaultMQProducer;
 //<!***************************************************************************
 enum asyncCallBackType { asyncCallbackWrap = 0, sendCallbackWrap = 1, pullCallbackWrap = 2 };
 

@@ -139,5 +139,5 @@ class UtilAll {
   static std::string s_localIpAddress;
 };
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

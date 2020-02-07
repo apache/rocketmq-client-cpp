@@ -30,5 +30,5 @@ enum TopicFilterType {
   MULTI_TAG
 };
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif

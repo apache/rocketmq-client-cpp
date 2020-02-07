@@ -66,4 +66,4 @@ bool PullSysFlag::hasClassFilterFlag(int sysFlag) {
 }
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

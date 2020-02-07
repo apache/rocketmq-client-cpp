@@ -54,4 +54,4 @@ string PermName::perm2String(int perm) {
 }
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

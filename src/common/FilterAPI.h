@@ -57,5 +57,5 @@ class FilterAPI {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 #endif
