@@ -21,7 +21,6 @@
 #include "RocketMQClient.h"
 
 namespace rocketmq {
-//<!***************************************************************************
 class ROCKETMQCLIENT_API MQueueListener {
  public:
   virtual ~MQueueListener() {}
@@ -29,6 +28,5 @@ class ROCKETMQCLIENT_API MQueueListener {
                                    std::vector<MQMessageQueue>& mqAll,
                                    std::vector<MQMessageQueue>& mqDivided) = 0;
 };
-//<!***************************************************************************
 }  // namespace rocketmq
 #endif

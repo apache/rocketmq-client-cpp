@@ -29,7 +29,6 @@
 
 namespace rocketmq {
 //<!message extend class, which was generated on broker;
-//<!***************************************************************************
 class ROCKETMQCLIENT_API MQMessageExt : public MQMessage {
  public:
   MQMessageExt();
@@ -112,6 +111,5 @@ class ROCKETMQCLIENT_API MQMessageExt : public MQMessage {
   std::string m_msgId;
   std::string m_offsetMsgId;
 };
-//<!***************************************************************************
 }  // namespace rocketmq
 #endif

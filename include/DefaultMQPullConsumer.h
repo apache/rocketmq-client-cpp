@@ -62,8 +62,10 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer {
   const std::string& getGroupName() const;
   void setGroupName(const std::string& groupname);
 
-  // log configuration interface, default LOG_LEVEL is LOG_LEVEL_INFO, default
-  // log file num is 3, each log size is 100M
+  /**
+   * Log configuration interface, default LOG_LEVEL is LOG_LEVEL_INFO, default
+   * log file num is 3, each log size is 100M
+   **/
   void setLogLevel(elogLevel inputLevel);
   elogLevel getLogLevel();
   void setLogPath(const std::string& logPath);
@@ -95,7 +97,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer {
             PullCallback* pPullCallback);
 
   /**
-   * pull msg from specified queue, if no msg, broker will suspend the pull request 20s
+   * Pull msg from specified queue, if no msg, broker will suspend the pull request 20s
    *
    * @param mq
    *            specify the pulled queue
@@ -131,8 +133,6 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer {
 
   void fetchMessageQueuesInBalance(const std::string& topic, std::vector<MQMessageQueue> mqs);
 
-  // temp persist consumer offset interface, only valid with
-  // RemoteBrokerOffsetStore, updateConsumeOffset should be called before.
   void persistConsumerOffset4PullConsumer(const MQMessageQueue& mq);
 
  private:

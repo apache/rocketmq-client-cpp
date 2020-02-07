@@ -22,7 +22,6 @@
 #include "RocketMQClient.h"
 
 namespace rocketmq {
-//<!***************************************************************************
 enum PullStatus {
   FOUND,
   NO_NEW_MSG,
@@ -33,7 +32,6 @@ enum PullStatus {
 
 static const char* EnumStrings[] = {"FOUND", "NO_NEW_MSG", "NO_MATCHED_MSG", "OFFSET_ILLEGAL", "BROKER_TIMEOUT"};
 
-//<!***************************************************************************
 class ROCKETMQCLIENT_API PullResult {
  public:
   PullResult();
@@ -63,6 +61,5 @@ class ROCKETMQCLIENT_API PullResult {
   int64 maxOffset;
   std::vector<MQMessageExt> msgFoundList;
 };
-//<!***************************************************************************
 }  // namespace rocketmq
 #endif

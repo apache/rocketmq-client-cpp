@@ -24,7 +24,6 @@
 #include "RocketMQClient.h"
 
 namespace rocketmq {
-//<!***************************************************************************
 class ROCKETMQCLIENT_API MQMessage {
  public:
   MQMessage();
@@ -138,6 +137,5 @@ class ROCKETMQCLIENT_API MQMessage {
   std::string m_transactionId;
   std::map<std::string, std::string> m_properties;
 };
-//<!***************************************************************************
 }  // namespace rocketmq
 #endif

@@ -45,12 +45,15 @@ TEST(messageId, id) {
   EXPECT_EQ(host, inet_addr("127.0.0.2"));
   EXPECT_EQ(port, 10092);
   EXPECT_EQ(id.getOffset(), 2048);
+
+  MQMessageId id2 = id;
+  EXPECT_EQ(id2.getOffset(), 2048);
 }
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
 
-  testing::GTEST_FLAG(filter) = "messageId.id";
+  testing::GTEST_FLAG(filter) = "messageId.*";
   int itestts = RUN_ALL_TESTS();
   return itestts;
 }

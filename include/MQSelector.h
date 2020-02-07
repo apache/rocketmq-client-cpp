@@ -21,12 +21,10 @@
 #include "RocketMQClient.h"
 
 namespace rocketmq {
-//<!***************************************************************************
 class ROCKETMQCLIENT_API MessageQueueSelector {
  public:
   virtual ~MessageQueueSelector() {}
   virtual MQMessageQueue select(const std::vector<MQMessageQueue>& mqs, const MQMessage& msg, void* arg) = 0;
 };
-//<!***************************************************************************
 }  // namespace rocketmq
 #endif

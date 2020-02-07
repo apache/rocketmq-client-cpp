@@ -25,7 +25,6 @@
 #include "RocketMQClient.h"
 
 namespace rocketmq {
-//<!***************************************************************************
 class ROCKETMQCLIENT_API MQException : public std::exception {
  public:
   MQException(const std::string& msg, int error, const char* file, int line) throw()
@@ -85,6 +84,5 @@ DEFINE_MQCLIENTEXCEPTION(UnknownHostException)
 #define THROW_MQEXCEPTION(e, msg, err) throw e(msg, err, __FILE__, __LINE__)
 #define NEW_MQEXCEPTION(e, msg, err) e(msg, err, __FILE__, __LINE__)
 
-//<!***************************************************************************
 }  // namespace rocketmq
 #endif

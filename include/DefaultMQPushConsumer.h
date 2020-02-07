@@ -68,44 +68,36 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer {
   const std::string& getGroupName() const;
   void setGroupName(const std::string& groupname);
 
-  // log configuration interface, default LOG_LEVEL is LOG_LEVEL_INFO, default
-  // log file num is 3, each log size is 100M
+  /**
+   * Log configuration interface, default LOG_LEVEL is LOG_LEVEL_INFO, default
+   * log file num is 3, each log size is 100M
+   **/
   void setLogLevel(elogLevel inputLevel);
   elogLevel getLogLevel();
   void setLogPath(const std::string& logPath);
   void setLogFileSizeAndNum(int fileNum, long perFileSize);  // perFileSize is MB unit
 
-  /*
-  set consuming thread count, default value is cpu cores
-*/
   void setConsumeThreadCount(int threadCount);
   int getConsumeThreadCount() const;
 
   void setMaxReconsumeTimes(int maxReconsumeTimes);
   int getMaxReconsumeTimes() const;
 
-  /*
-    set pullMsg thread count, default value is cpu cores
-  */
   void setPullMsgThreadPoolCount(int threadCount);
   int getPullMsgThreadPoolCount() const;
 
-  /*
-  for orderly consume, set the pull num of message size by each pullMsg,
-  default value is 1;
-*/
   void setConsumeMessageBatchMaxSize(int consumeMessageBatchMaxSize);
   int getConsumeMessageBatchMaxSize() const;
 
-  /*
-    set max cache msg size perQueue in memory if consumer could not consume msgs
-    immediately
-    default maxCacheMsgSize perQueue is 1000, set range is:1~65535
-  */
+  /**
+   * Set max cache msg size perQueue in memory if consumer could not consume msgs
+   * immediately
+   * default maxCacheMsgSize perQueue is 1000, set range is:1~65535
+   **/
   void setMaxCacheMsgSizePerQueue(int maxCacheSize);
   int getMaxCacheMsgSizePerQueue() const;
 
-  /** set TcpTransport pull thread num, which dermine the num of threads to
+  /** Set TcpTransport pull thread num, which dermine the num of threads to
    *  distribute network data,
    *  1. its default value is CPU num, it must be setted before producer/consumer
    *     start, minimum value is CPU num;
@@ -117,7 +109,7 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer {
   void setTcpTransportPullThreadNum(int num);
   const int getTcpTransportPullThreadNum() const;
 
-  /** timeout of tcp connect, it is same meaning for both producer and consumer;
+  /** Timeout of tcp connect, it is same meaning for both producer and consumer;
    *    1. default value is 3000ms
    *    2. input parameter could only be milliSecond, suggestion value is
    *       1000-3000ms;
@@ -125,7 +117,7 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer {
   void setTcpTransportConnectTimeout(uint64_t timeout);  // ms
   const uint64_t getTcpTransportConnectTimeout() const;
 
-  /** timeout of tryLock tcpTransport before sendMsg/pullMsg, if timeout,
+  /** Timeout of tryLock tcpTransport before sendMsg/pullMsg, if timeout,
    *  returns NULL
    *    1. paremeter unit is ms, default value is 3000ms, the minimun value is 1000ms
    *       suggestion value is 3000ms;

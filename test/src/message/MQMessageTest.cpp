@@ -70,6 +70,13 @@ TEST(message, Init) {
   EXPECT_EQ(messageSix.getTags(), "tagTest");
   EXPECT_EQ(messageSix.getKeys(), "testKey");
   EXPECT_EQ(messageSix.getFlag(), 1);
+
+  MQMessage messageSeven = messageSix;
+  EXPECT_EQ(messageSeven.getTopic(), "test");
+  EXPECT_EQ(messageSeven.getBody(), "testBody");
+  EXPECT_EQ(messageSeven.getTags(), "tagTest");
+  EXPECT_EQ(messageSeven.getKeys(), "testKey");
+  EXPECT_EQ(messageSeven.getFlag(), 1);
 }
 
 TEST(message, info) {
@@ -145,6 +152,15 @@ TEST(message, properties) {
   EXPECT_EQ(message.getProperty(MQMessage::PROPERTY_TRANSACTION_PREPARED), "false");
 }
 
+TEST(message, Keys) {
+  MQMessage message;
+  vector<string> keys;
+  keys.push_back("abc");
+  keys.push_back("efg");
+  keys.push_back("hij");
+  message.setKeys(keys);
+  EXPECT_EQ(message.getKeys(), "abc efg hij");
+}
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
 
