@@ -23,7 +23,6 @@
 #include "RocketMQClient.h"
 
 namespace rocketmq {
-//<!***************************************************************************
 class ROCKETMQCLIENT_API Arg_helper {
  public:
   Arg_helper(int argc, char* argv[]);
@@ -36,7 +35,6 @@ class ROCKETMQCLIENT_API Arg_helper {
   std::vector<std::string> m_args;
 };
 
-//<!***************************************************************************
 }  // namespace rocketmq
 
 #endif  //<!_ARG_HELPER_H_;

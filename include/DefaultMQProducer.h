@@ -28,7 +28,6 @@
 
 namespace rocketmq {
 class DefaultMQProducerImpl;
-//<!***************************************************************************
 class ROCKETMQCLIENT_API DefaultMQProducer {
  public:
   DefaultMQProducer(const std::string& groupname);
@@ -54,11 +53,40 @@ class ROCKETMQCLIENT_API DefaultMQProducer {
   virtual void sendOneway(MQMessage& msg, const MQMessageQueue& mq);
   virtual void sendOneway(MQMessage& msg, MessageQueueSelector* selector, void* arg);
 
+  const std::string& getNamesrvAddr() const;
+  void setNamesrvAddr(const std::string& namesrvAddr);
+
+  void setSessionCredentials(const std::string& accessKey,
+                             const std::string& secretKey,
+                             const std::string& accessChannel);
+  const SessionCredentials& getSessionCredentials() const;
+
+  const std::string& getNamesrvDomain() const;
+  void setNamesrvDomain(const std::string& namesrvDomain);
+
+  const std::string& getNameSpace() const;
+  void setNameSpace(const std::string& nameSpace);
+
+  const std::string& getGroupName() const;
+  void setGroupName(const std::string& groupname);
+
+  const std::string& getInstanceName() const;
+  void setInstanceName(const std::string& instanceName);
+
+  /**
+   * Log configuration interface, default LOG_LEVEL is LOG_LEVEL_INFO, default
+   * log file num is 3, each log size is 100M
+   **/
+  void setLogLevel(elogLevel inputLevel);
+  elogLevel getLogLevel();
+  void setLogPath(const std::string& logPath);
+  void setLogFileSizeAndNum(int fileNum, long perFileSize);  // perFileSize is MB unit
+
   int getSendMsgTimeout() const;
   void setSendMsgTimeout(int sendMsgTimeout);
 
   /*
-   *  if msgBody size is large than m_compressMsgBodyOverHowmuch
+   *  If msgBody size is large than compressMsgBodyOverHowmuch
    *  rocketmq cpp will compress msgBody according to compressLevel
    */
   int getCompressMsgBodyOverHowmuch() const;
@@ -66,35 +94,16 @@ class ROCKETMQCLIENT_API DefaultMQProducer {
   int getCompressLevel() const;
   void setCompressLevel(int compressLevel);
 
-  // if msgbody size larger than maxMsgBodySize, exception will be throwed
   int getMaxMessageSize() const;
   void setMaxMessageSize(int maxMessageSize);
 
-  // set msg max retry times, default retry times is 5
   int getRetryTimes() const;
   void setRetryTimes(int times);
 
   int getRetryTimes4Async() const;
   void setRetryTimes4Async(int times);
-  const std::string& getNamesrvAddr() const;
-  void setNamesrvAddr(const std::string& namesrvAddr);
-  const std::string& getNamesrvDomain() const;
-  void setNamesrvDomain(const std::string& namesrvDomain);
-  const std::string& getInstanceName() const;
-  void setInstanceName(const std::string& instanceName);
-  // nameSpace
-  const std::string& getNameSpace() const;
-  void setNameSpace(const std::string& nameSpace);
-  const std::string& getGroupName() const;
-  void setGroupName(const std::string& groupname);
 
-  // log configuration interface, default LOG_LEVEL is LOG_LEVEL_INFO, default
-  // log file num is 3, each log size is 100M
-  void setLogLevel(elogLevel inputLevel);
-  elogLevel getLogLevel();
-  void setLogFileSizeAndNum(int fileNum, long perFileSize);  // perFileSize is MB unit
-
-  /** set TcpTransport pull thread num, which dermine the num of threads to
+  /** Set TcpTransport pull thread num, which dermine the num of threads to
    *  distribute network data,
    *  1. its default value is CPU num, it must be setted before producer/consumer
    *     start, minimum value is CPU num;
@@ -106,7 +115,7 @@ class ROCKETMQCLIENT_API DefaultMQProducer {
   void setTcpTransportPullThreadNum(int num);
   const int getTcpTransportPullThreadNum() const;
 
-  /** timeout of tcp connect, it is same meaning for both producer and consumer;
+  /** Timeout of tcp connect, it is same meaning for both producer and consumer;
    *    1. default value is 3000ms
    *    2. input parameter could only be milliSecond, suggestion value is
    *       1000-3000ms;
@@ -114,7 +123,7 @@ class ROCKETMQCLIENT_API DefaultMQProducer {
   void setTcpTransportConnectTimeout(uint64_t timeout);  // ms
   const uint64_t getTcpTransportConnectTimeout() const;
 
-  /** timeout of tryLock tcpTransport before sendMsg/pullMsg, if timeout,
+  /** Timeout of tryLock tcpTransport before sendMsg/pullMsg, if timeout,
    *  returns NULL
    *    1. paremeter unit is ms, default value is 3000ms, the minimun value is 1000ms
    *       suggestion value is 3000ms;
@@ -127,14 +136,8 @@ class ROCKETMQCLIENT_API DefaultMQProducer {
   void setUnitName(std::string unitName);
   const std::string& getUnitName() const;
 
-  void setSessionCredentials(const std::string& accessKey,
-                             const std::string& secretKey,
-                             const std::string& accessChannel);
-  const SessionCredentials& getSessionCredentials() const;
-
  private:
   DefaultMQProducerImpl* impl;
 };
-//<!***************************************************************************
 }  // namespace rocketmq
 #endif

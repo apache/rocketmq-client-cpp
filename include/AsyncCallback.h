@@ -24,9 +24,7 @@
 #include "SendResult.h"
 
 namespace rocketmq {
-//<!***************************************************************************
 struct AsyncCallback {};
-//<!***************************************************************************
 typedef enum sendCallbackType { noAutoDeleteSendCallback = 0, autoDeleteSendCallback = 1 } sendCallbackType;
 
 class ROCKETMQCLIENT_API SendCallback : public AsyncCallback {
@@ -46,13 +44,11 @@ class ROCKETMQCLIENT_API AutoDeleteSendCallBack : public SendCallback {
   virtual sendCallbackType getSendCallbackType() { return autoDeleteSendCallback; }
 };
 
-//<!************************************************************************
 class ROCKETMQCLIENT_API PullCallback : public AsyncCallback {
  public:
   virtual ~PullCallback() {}
   virtual void onSuccess(MQMessageQueue& mq, PullResult& result, bool bProducePullRequest) = 0;
   virtual void onException(MQException& e) = 0;
 };
-//<!***************************************************************************
 }  // namespace rocketmq
 #endif

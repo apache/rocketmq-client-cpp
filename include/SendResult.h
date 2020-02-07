@@ -21,11 +21,9 @@
 #include "RocketMQClient.h"
 
 namespace rocketmq {
-//<!***************************************************************************
-//<!all to Master;
+
 enum SendStatus { SEND_OK, SEND_FLUSH_DISK_TIMEOUT, SEND_FLUSH_SLAVE_TIMEOUT, SEND_SLAVE_NOT_AVAILABLE };
 
-//<!***************************************************************************
 class ROCKETMQCLIENT_API SendResult {
  public:
   SendResult();
@@ -59,6 +57,5 @@ class ROCKETMQCLIENT_API SendResult {
   std::string m_transactionId;
 };
 
-//<!***************************************************************************
 }  // namespace rocketmq
 #endif
