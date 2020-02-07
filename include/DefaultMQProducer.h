@@ -33,25 +33,25 @@ class ROCKETMQCLIENT_API DefaultMQProducer {
   DefaultMQProducer(const std::string& groupname);
   virtual ~DefaultMQProducer();
 
-  void start();
-  void shutdown();
+  virtual void start();
+  virtual void shutdown();
 
-  SendResult send(MQMessage& msg, bool bSelectActiveBroker = false);
-  SendResult send(MQMessage& msg, const MQMessageQueue& mq);
-  SendResult send(MQMessage& msg, MessageQueueSelector* selector, void* arg);
-  SendResult send(MQMessage& msg,
-                  MessageQueueSelector* selector,
-                  void* arg,
-                  int autoRetryTimes,
-                  bool bActiveBroker = false);
-  SendResult send(std::vector<MQMessage>& msgs);
-  SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq);
-  void send(MQMessage& msg, SendCallback* pSendCallback, bool bSelectActiveBroker = false);
-  void send(MQMessage& msg, const MQMessageQueue& mq, SendCallback* pSendCallback);
-  void send(MQMessage& msg, MessageQueueSelector* selector, void* arg, SendCallback* pSendCallback);
-  void sendOneway(MQMessage& msg, bool bSelectActiveBroker = false);
-  void sendOneway(MQMessage& msg, const MQMessageQueue& mq);
-  void sendOneway(MQMessage& msg, MessageQueueSelector* selector, void* arg);
+  virtual SendResult send(MQMessage& msg, bool bSelectActiveBroker = false);
+  virtual SendResult send(MQMessage& msg, const MQMessageQueue& mq);
+  virtual SendResult send(MQMessage& msg, MessageQueueSelector* selector, void* arg);
+  virtual SendResult send(MQMessage& msg,
+                          MessageQueueSelector* selector,
+                          void* arg,
+                          int autoRetryTimes,
+                          bool bActiveBroker = false);
+  virtual SendResult send(std::vector<MQMessage>& msgs);
+  virtual SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq);
+  virtual void send(MQMessage& msg, SendCallback* pSendCallback, bool bSelectActiveBroker = false);
+  virtual void send(MQMessage& msg, const MQMessageQueue& mq, SendCallback* pSendCallback);
+  virtual void send(MQMessage& msg, MessageQueueSelector* selector, void* arg, SendCallback* pSendCallback);
+  virtual void sendOneway(MQMessage& msg, bool bSelectActiveBroker = false);
+  virtual void sendOneway(MQMessage& msg, const MQMessageQueue& mq);
+  virtual void sendOneway(MQMessage& msg, MessageQueueSelector* selector, void* arg);
 
   const std::string& getNamesrvAddr() const;
   void setNamesrvAddr(const std::string& namesrvAddr);

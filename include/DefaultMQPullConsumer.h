@@ -39,8 +39,8 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer {
   DefaultMQPullConsumer(const std::string& groupname);
   virtual ~DefaultMQPullConsumer();
 
-  void start();
-  void shutdown();
+  virtual void start();
+  virtual void shutdown();
 
   const std::string& getNamesrvAddr() const;
   void setNamesrvAddr(const std::string& namesrvAddr);
@@ -71,7 +71,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer {
   void setLogPath(const std::string& logPath);
   void setLogFileSizeAndNum(int fileNum, long perFileSize);  // perFileSize is MB unit
 
-  void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs);
+  virtual void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs);
 
   /**
    * Pull message from specified queue, if no msg in queue, return directly
@@ -89,12 +89,12 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer {
    * @return
    *            PullResult
    */
-  PullResult pull(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums);
-  void pull(const MQMessageQueue& mq,
-            const std::string& subExpression,
-            int64 offset,
-            int maxNums,
-            PullCallback* pPullCallback);
+  virtual PullResult pull(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums);
+  virtual void pull(const MQMessageQueue& mq,
+                    const std::string& subExpression,
+                    int64 offset,
+                    int maxNums,
+                    PullCallback* pPullCallback);
 
   /**
    * Pull msg from specified queue, if no msg, broker will suspend the pull request 20s
@@ -112,12 +112,15 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer {
    * @return
    *            accroding to PullResult
    */
-  PullResult pullBlockIfNotFound(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums);
-  void pullBlockIfNotFound(const MQMessageQueue& mq,
-                           const std::string& subExpression,
-                           int64 offset,
-                           int maxNums,
-                           PullCallback* pPullCallback);
+  virtual PullResult pullBlockIfNotFound(const MQMessageQueue& mq,
+                                         const std::string& subExpression,
+                                         int64 offset,
+                                         int maxNums);
+  virtual void pullBlockIfNotFound(const MQMessageQueue& mq,
+                                   const std::string& subExpression,
+                                   int64 offset,
+                                   int maxNums,
+                                   PullCallback* pPullCallback);
 
   void persistConsumerOffset();
   void persistConsumerOffsetByResetOffset();
