@@ -170,7 +170,7 @@ BuildLibevent() {
     exit 1
   fi
 
-  libevent_dir=$(ls | grep libevent | grep .*[^zip]$)
+  libevent_dir=$(ls | grep libevent | grep .*[^zip^txt]$)
   cd ${libevent_dir}
   if [ $? -ne 0 ]; then
     exit 1
