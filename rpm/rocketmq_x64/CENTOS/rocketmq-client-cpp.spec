@@ -1,6 +1,15 @@
 
 Summary: A C++ Client of Apache RocketMQ
 
+Name: rocketmq
+Version: 1.2.5
+Release: centos
+Group: Apache
+License: APLv2
+Source: https://github.com/apache/rocketmq-client-cpp
+URL: http://rocketmq.apache.org/
+Distribution: Linux
+
 %define _prefix /usr/local
 
 AutoReqProv: no
@@ -18,14 +27,6 @@ OS_VERSION=`cat /etc/redhat-release|sed -r 's/.* ([0-9]+)\..*/\1/'`
 
 echo "OS_VERSION=${OS_VERSION}"
 
-Name: rocketmq
-Version: 1.2.5
-Release: el${OS_VERSION}
-Group: Apache
-License: APLv2
-Source: https://github.com/apache/rocketmq-client-cpp
-URL: http://rocketmq.apache.org/
-Distribution: Linux
 
 %build
 
