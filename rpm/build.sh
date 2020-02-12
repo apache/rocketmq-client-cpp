@@ -14,3 +14,5 @@ cp ${BASEDIR}/../bin/librocketmq.a      /root/rpmbuild/SOURCES/rocketmq/bin
 cp ${BASEDIR}/rocketmq_x64/CENTOS/rocketmq-client-cpp.spec      /root/rpmbuild/SPECS
 
 rpmbuild -bb /root/rpmbuild/SPECS/rocketmq-client-cpp.spec
+
+cp /root/rpmbuild/RPMS/*.rpm ${BASEDIR}/rocketmq_x64
