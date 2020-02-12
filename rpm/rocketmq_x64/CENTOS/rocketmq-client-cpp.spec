@@ -39,9 +39,9 @@ mkdir -p $RPM_BUILD_ROOT%{_prefix}/lib
 mkdir -p $RPM_BUILD_ROOT%{_prefix}/include/rocketmq
 
 # copy files
-cp -f ${RPM_SOURCE_DIR}/bin/librocketmq.so     $RPM_BUILD_ROOT%{_prefix}/lib
-cp -f ${RPM_SOURCE_DIR}/bin/librocketmq.a     $RPM_BUILD_ROOT%{_prefix}/lib
-cp -rf ${RPM_SOURCE_DIR}/include/*             $RPM_BUILD_ROOT%{_prefix}/include/rocketmq
+cp -f ${RPM_SOURCE_DIR}/rocketmq/bin/librocketmq.so     $RPM_BUILD_ROOT%{_prefix}/lib
+cp -f ${RPM_SOURCE_DIR}/rocketmq/bin/librocketmq.a     $RPM_BUILD_ROOT%{_prefix}/lib
+cp -rf ${RPM_SOURCE_DIR}/rocketmq/include/*             $RPM_BUILD_ROOT%{_prefix}/include/rocketmq
 
 # package information
 %files
