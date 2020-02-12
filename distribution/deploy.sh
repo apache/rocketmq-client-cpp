@@ -37,8 +37,8 @@ fi
 cp -rf ${CWD_DIR}/../include    ${DEPLOY_BUILD_HOME}/
 cp -rf ${CWD_DIR}/../example    ${DEPLOY_BUILD_HOME}/
 cp -rf ${CWD_DIR}/../README.md  ${DEPLOY_BUILD_HOME}/
-cp -rf ${CWD_DIR}/LICENSE-BIN  ${DEPLOY_BUILD_HOME}/LICENSE
-cp -rf ${CWD_DIR}/NOTICE-BIN  ${DEPLOY_BUILD_HOME}/NOTICE
+cp -rf ${CWD_DIR}/../LICENSE  ${DEPLOY_BUILD_HOME}/LICENSE
+cp -rf ${CWD_DIR}/../NOTICE ${DEPLOY_BUILD_HOME}/NOTICE
 
 cd ${CWD_DIR} && tar -cvzf ./${PKG_NAME}-${VERSION}-bin-release.tar.gz ./${PKG_NAME}  >/dev/null 2>&1
 rm -rf ${DEPLOY_BUILD_HOME}
