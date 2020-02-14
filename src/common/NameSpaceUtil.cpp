@@ -41,11 +41,11 @@ string NameSpaceUtil::getNameSpaceFromNsURL(string nameServerAddr) {
   LOG_DEBUG("Try to get Name Space from nameServerAddr [%s]", nameServerAddr.c_str());
   string nsAddr = formatNameServerURL(nameServerAddr);
   string nameSpace;
-  auto index = nameServerAddr.find(NAMESPACE_PREFIX);
+  auto index = nsAddr.find(NAMESPACE_PREFIX);
   if (index != string::npos) {
-    auto indexDot = nameServerAddr.find('.');
-    if (indexDot != string::npos) {
-      nameSpace = nameServerAddr.substr(index, indexDot);
+    auto indexDot = nsAddr.find('.');
+    if (indexDot != string::npos && indexDot > index) {
+      nameSpace = nsAddr.substr(index, indexDot - index);
       LOG_INFO("Get Name Space [%s] from nameServerAddr [%s]", nameSpace.c_str(), nameServerAddr.c_str());
       return nameSpace;
     }
@@ -83,7 +83,7 @@ string NameSpaceUtil::withNameSpace(string source, string ns) {
 }
 
 bool NameSpaceUtil::hasNameSpace(string source, string ns) {
-  if (source.length() >= ns.length() && source.find(ns) != string::npos) {
+  if (!ns.empty() && source.length() >= ns.length() && source.find(ns) != string::npos) {
     return true;
   }
   return false;
