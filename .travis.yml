@@ -7,7 +7,7 @@ addons:
     packages: lcov
 
 install:
-  - sudo apt-get update
+  #- sudo apt-get update
   - sudo apt-get install -y git gcc-4.8 g++-4.8 autoconf cmake libtool wget unzip libbz2-dev zlib1g-dev
   - echo 'MAVEN_OPTS="$MAVEN_OPTS -Xmx1024m -XX:MaxPermSize=512m -XX:+BytecodeVerificationLocal"' >> ~/.mavenrc
   - cat ~/.mavenrc
@@ -52,7 +52,7 @@ matrix:
       dist: trusty
       env: LINT=1 PYTHON=2.7
       before_install:
-        - sudo apt-get update -qq
+        #- sudo apt-get update -qq
         - sudo apt-get install -qq clang-format-3.8
       install: []
       script:
