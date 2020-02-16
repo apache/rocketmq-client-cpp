@@ -511,7 +511,7 @@ void ConsumerSendMsgBackRequestHeader::SetDeclaredFieldOfCommandHeader(map<strin
 void GetConsumerListByGroupResponseBody::Decode(const MemoryBlock* mem, vector<string>& cids) {
   cids.clear();
   //<! decode;
-  const char* const pData = static_cast<const char*>(mem->getData());
+  const std::string pData(mem->getData(), mem->getSize());
 
   Json::Reader reader;
   Json::Value root;
