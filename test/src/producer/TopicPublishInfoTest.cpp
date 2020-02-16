@@ -79,10 +79,14 @@ TEST(TopicPublishInfoTest, testAll) {
   MQMessageQueue mqSelect3 = info->selectOneMessageQueue(MQMessageQueue(), index);
   EXPECT_EQ(index, 0);
   EXPECT_EQ(mqSelect3, mqA);
-  MQMessageQueue mqActiveSelect5 = info->selectOneActiveMessageQueue(mqB, index);
   index = 0;
-  EXPECT_EQ(index, 0);
+  MQMessageQueue mqActiveSelect5 = info->selectOneActiveMessageQueue(MQMessageQueue(), index);
+  EXPECT_EQ(index, 1);
   EXPECT_EQ(mqActiveSelect5, mqA);
+  index = 0;
+  MQMessageQueue mqActiveSelect6 = info->selectOneActiveMessageQueue(mqB, index);
+  EXPECT_EQ(index, 0);
+  EXPECT_EQ(mqActiveSelect6, mqA);
   info->updateMessageQueueList(mqSelect3);
   info->resumeNonServiceMessageQueueList();
 }
