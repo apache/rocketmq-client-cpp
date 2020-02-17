@@ -27,6 +27,7 @@
 
 namespace rocketmq {
 //<!************************************************************************
+MQClientAPIImpl::MQClientAPIImpl(const string& mqClientId) : m_firstFetchNameSrv(true), m_mqClientId(mqClientId) {}
 MQClientAPIImpl::MQClientAPIImpl(const string& mqClientId,
                                  ClientRemotingProcessor* clientRemotingProcessor,
                                  int pullThreadNum,
