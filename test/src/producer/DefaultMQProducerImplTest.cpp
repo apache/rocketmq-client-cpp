@@ -36,6 +36,11 @@ using ::testing::InitGoogleMock;
 using ::testing::InitGoogleTest;
 using testing::Return;
 
+class MySendCallback : public SendCallback {
+  virtual void onSuccess(SendResult& sendResult) {}
+  virtual void onException(MQException& e) {}
+};
+
 class MyMessageQueueSelector : public MessageQueueSelector {
   virtual MQMessageQueue select(const std::vector<MQMessageQueue>& mqs, const MQMessage& msg, void* arg) {
     return MQMessageQueue("TestTopic", "BrokerA", 0);
@@ -119,6 +124,7 @@ TEST(DefaultMQProducerImplTest, Sends) {
 
   SendResult okMQAResult(SEND_OK, "MSSAGEID", "OFFSETID", mqA, 1024);
   SendResult okMQBResult(SEND_OK, "MSSAGEID", "OFFSETID", mqB, 2048);
+  SendResult errorMQBResult(SEND_SLAVE_NOT_AVAILABLE, "MSSAGEID", "OFFSETID", mqB, 2048);
 
   EXPECT_CALL(*mockFactory, start()).Times(1).WillOnce(Return());
   EXPECT_CALL(*mockFactory, shutdown()).Times(1).WillOnce(Return());
@@ -130,12 +136,12 @@ TEST(DefaultMQProducerImplTest, Sends) {
   EXPECT_CALL(*mockFactory, getMQClientAPIImpl()).WillRepeatedly(Return(apiImpl));
 
   EXPECT_CALL(*apiImpl, sendMessage(_, _, _, _, _, _, _, _, _))
-      .Times(5)
       .WillOnce(Return(okMQAResult))
       .WillOnce(Return(okMQBResult))
+      .WillOnce(Return(errorMQBResult))
       .WillOnce(Return(okMQAResult))
       .WillOnce(Return(okMQAResult))
-      .WillOnce(Return(okMQAResult));
+      .WillRepeatedly(Return(okMQAResult));
 
   // Start Producer.
   impl->start();
@@ -151,8 +157,19 @@ TEST(DefaultMQProducerImplTest, Sends) {
   SendResult s3 = impl->send(msg, pSelect, nullptr, 3, true);
   EXPECT_EQ(s3.getSendStatus(), SEND_OK);
   EXPECT_EQ(s3.getQueueOffset(), 1024);
+  SendResult s33 = impl->send(msg, pSelect, nullptr);
+  EXPECT_EQ(s33.getSendStatus(), SEND_OK);
+  EXPECT_EQ(s33.getQueueOffset(), 1024);
 
-  EXPECT_NO_THROW(impl->send(msg, pSelect, nullptr, nullptr));
+  SendCallback* pCallback = new MySendCallback();
+  EXPECT_NO_THROW(impl->send(msg, pCallback, true));
+  EXPECT_NO_THROW(impl->send(msg, pSelect, nullptr, pCallback));
+  EXPECT_NO_THROW(impl->send(msg, mqA, pCallback));
+
+  EXPECT_NO_THROW(impl->sendOneway(msg));
+  EXPECT_NO_THROW(impl->sendOneway(msg, mqA));
+  EXPECT_NO_THROW(impl->sendOneway(msg, pSelect, nullptr));
+
   MQMessage msgB("testTopic", "testTag", "testKey", "testBodysB");
   vector<MQMessage> msgs;
   msgs.push_back(msg);
@@ -160,6 +177,9 @@ TEST(DefaultMQProducerImplTest, Sends) {
   SendResult s4 = impl->send(msgs, mqA);
   EXPECT_EQ(s4.getSendStatus(), SEND_OK);
   EXPECT_EQ(s4.getQueueOffset(), 1024);
+  SendResult s5 = impl->send(msgs, mqA);
+  EXPECT_EQ(s5.getSendStatus(), SEND_OK);
+  EXPECT_EQ(s5.getQueueOffset(), 1024);
 
   impl->shutdown();
   delete mockFactory;
