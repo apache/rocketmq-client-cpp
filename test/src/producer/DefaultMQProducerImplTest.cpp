@@ -174,7 +174,7 @@ TEST(DefaultMQProducerImplTest, Sends) {
   vector<MQMessage> msgs;
   msgs.push_back(msg);
   msgs.push_back(msgB);
-  SendResult s4 = impl->send(msgs, mqA);
+  SendResult s4 = impl->send(msgs);
   EXPECT_EQ(s4.getSendStatus(), SEND_OK);
   EXPECT_EQ(s4.getQueueOffset(), 1024);
   SendResult s5 = impl->send(msgs, mqA);
