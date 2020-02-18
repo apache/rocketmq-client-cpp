@@ -261,10 +261,6 @@ int DestroyProducer(CProducer* pProducer) {
       delete defaultMQProducer->innerTransactionProducer;
       defaultMQProducer->innerTransactionProducer = NULL;
     }
-    if (defaultMQProducer->listenerInner != NULL) {
-      delete defaultMQProducer->listenerInner;
-      defaultMQProducer->listenerInner = NULL;
-    }
   } else {
     if (defaultMQProducer->innerProducer != NULL) {
       delete defaultMQProducer->innerProducer;
