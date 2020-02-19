@@ -30,6 +30,9 @@
 
 namespace rocketmq {
 //<!***************************************************************************
+MQClientFactory::MQClientFactory(const string& clientID) : m_bFetchNSService(true) {
+  m_clientId = clientID;
+}
 MQClientFactory::MQClientFactory(const string& clientID,
                                  int pullThreadNum,
                                  uint64_t tcpConnectTimeout,
@@ -716,7 +719,7 @@ void MQClientFactory::checkTransactionState(const std::string& addr,
   }
 }
 
-MQClientAPIImpl* MQClientFactory::getMQClientAPIImpl() const {
+MQClientAPIImpl* MQClientFactory::getMQClientAPIImpl() {
   return m_pClientAPIImpl.get();
 }
 

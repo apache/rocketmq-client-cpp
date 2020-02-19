@@ -112,8 +112,8 @@ class UtilAll {
   static int Split(vector<string>& ret_, const string& strIn, const char sep);
   static int Split(vector<string>& ret_, const string& strIn, const string& sep);
 
-  static int32_t StringToInt32(const std::string& str, int32_t& out);
-  static int64_t StringToInt64(const std::string& str, int64_t& val);
+  static bool StringToInt32(const std::string& str, int32_t& out);
+  static bool StringToInt64(const std::string& str, int64_t& val);
 
   static string getLocalHostName();
   static string getLocalAddress();

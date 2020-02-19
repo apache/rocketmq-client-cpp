@@ -46,14 +46,15 @@ class MQClientFactory {
                   uint64_t tcpConnectTimeout,
                   uint64_t tcpTransportTryLockTimeout,
                   string unitName);
+  MQClientFactory(const string& clientID);
   virtual ~MQClientFactory();
 
-  void start();
-  void shutdown();
-  bool registerProducer(MQProducer* pProducer);
-  void unregisterProducer(MQProducer* pProducer);
-  bool registerConsumer(MQConsumer* pConsumer);
-  void unregisterConsumer(MQConsumer* pConsumer);
+  virtual void start();
+  virtual void shutdown();
+  virtual bool registerProducer(MQProducer* pProducer);
+  virtual void unregisterProducer(MQProducer* pProducer);
+  virtual bool registerConsumer(MQConsumer* pConsumer);
+  virtual void unregisterConsumer(MQConsumer* pConsumer);
 
   void createTopic(const string& key,
                    const string& newTopic,
@@ -76,7 +77,7 @@ class MQClientFactory {
   void checkTransactionState(const std::string& addr,
                              const MQMessageExt& message,
                              const CheckTransactionStateRequestHeader& checkRequestHeader);
-  MQClientAPIImpl* getMQClientAPIImpl() const;
+  virtual MQClientAPIImpl* getMQClientAPIImpl();
   MQProducer* selectProducer(const string& group);
   MQConsumer* selectConsumer(const string& group);
 
@@ -88,10 +89,10 @@ class MQClientFactory {
 
   FindBrokerResult* findBrokerAddressInAdmin(const string& brokerName);
 
-  string findBrokerAddressInPublish(const string& brokerName);
+  virtual string findBrokerAddressInPublish(const string& brokerName);
 
-  boost::shared_ptr<TopicPublishInfo> tryToFindTopicPublishInfo(const string& topic,
-                                                                const SessionCredentials& session_credentials);
+  virtual boost::shared_ptr<TopicPublishInfo> tryToFindTopicPublishInfo(const string& topic,
+                                                                        const SessionCredentials& session_credentials);
 
   void fetchSubscribeMessageQueues(const string& topic,
                                    vector<MQMessageQueue>& mqs,
@@ -102,7 +103,7 @@ class MQClientFactory {
                                           bool isDefault = false);
   void rebalanceImmediately();
   void doRebalanceByConsumerGroup(const string& consumerGroup);
-  void sendHeartbeatToAllBroker();
+  virtual void sendHeartbeatToAllBroker();
 
   void cleanOfflineBrokers();
 

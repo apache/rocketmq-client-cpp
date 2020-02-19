@@ -24,8 +24,12 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread/thread.hpp>
+#include <map>
+#include <string>
+#include <vector>
 #include "Logging.h"
 #include "MQMessageQueue.h"
+#include "UtilAll.h"
 
 namespace rocketmq {
 //<!************************************************************************/
@@ -257,6 +261,6 @@ class TopicPublishInfo {
 };
 
 //<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif

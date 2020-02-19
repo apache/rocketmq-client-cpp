@@ -176,7 +176,7 @@ int UtilAll::Split(vector<string>& ret_, const string& strIn, const string& sep)
   return ret_.size();
 }
 
-int32_t UtilAll::StringToInt32(const std::string& str, int32_t& out) {
+bool UtilAll::StringToInt32(const std::string& str, int32_t& out) {
   out = 0;
   if (str.empty()) {
     return false;
@@ -196,7 +196,7 @@ int32_t UtilAll::StringToInt32(const std::string& str, int32_t& out) {
   return true;
 }
 
-int64_t UtilAll::StringToInt64(const std::string& str, int64_t& val) {
+bool UtilAll::StringToInt64(const std::string& str, int64_t& val) {
   char* endptr = NULL;
   errno = 0; /* To distinguish success/failure after call */
   val = strtoll(str.c_str(), &endptr, 10);

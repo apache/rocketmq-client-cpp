@@ -42,6 +42,7 @@ namespace rocketmq {
 //<!************************************************************************
 class MQClientAPIImpl {
  public:
+  MQClientAPIImpl(const string& mqClientId);
   MQClientAPIImpl(const string& mqClientId,
                   ClientRemotingProcessor* clientRemotingProcessor,
                   int pullThreadNum,

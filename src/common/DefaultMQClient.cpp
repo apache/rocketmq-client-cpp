@@ -157,6 +157,9 @@ void DefaultMQClient::shutdown() {
 MQClientFactory* DefaultMQClient::getFactory() const {
   return m_clientFactory;
 }
+void DefaultMQClient::setFactory(MQClientFactory* factory) {
+  m_clientFactory = factory;
+}
 
 bool DefaultMQClient::isServiceStateOk() {
   return m_serviceState == RUNNING;

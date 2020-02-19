@@ -167,6 +167,8 @@ class DefaultMQClient {
                              const std::string& input_onsChannel);
   const SessionCredentials& getSessionCredentials() const;
 
+  virtual void setFactory(MQClientFactory*);
+
  protected:
   virtual void start();
   virtual void shutdown();
