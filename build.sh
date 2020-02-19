@@ -170,7 +170,7 @@ BuildLibevent() {
     exit 1
   fi
 
-  libevent_dir=$(ls | grep libevent | grep .*[^zip^txt]$)
+  libevent_dir=$(ls | grep ^libevent | grep .*[^zip^txt]$)
   cd ${libevent_dir}
   if [ $? -ne 0 ]; then
     exit 1
@@ -264,7 +264,7 @@ BuildBoost() {
     wget http://sourceforge.net/projects/boost/files/boost/${fname_boost_down}
   fi
   tar -zxvf ${fname_boost} >unzipboost.txt 2>&1
-  boost_dir=$(ls | grep boost | grep .*[^gz]$)
+  boost_dir=$(ls | grep ^boost | grep .*[^gz]$)
   cd ${boost_dir}
   if [ $? -ne 0 ]; then
     exit 1
