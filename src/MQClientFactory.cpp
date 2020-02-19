@@ -22,7 +22,7 @@
 #include "PullRequest.h"
 #include "Rebalance.h"
 #include "TopicPublishInfo.h"
-#include "TransactionMQProducer.h"
+#include "TransactionMQProducerImpl.h"
 
 #define MAX_BUFF_SIZE 8192
 #define SAFE_BUFF_SIZE 7936  // 8192 - 256 = 7936
@@ -698,7 +698,7 @@ void MQClientFactory::checkTransactionState(const std::string& addr,
   if (!group.empty()) {
     MQProducer* producer = selectProducer(group);
     if (producer != nullptr) {
-      TransactionMQProducer* transProducer = dynamic_cast<TransactionMQProducer*>(producer);
+      TransactionMQProducerImpl* transProducer = dynamic_cast<TransactionMQProducerImpl*>(producer);
       if (transProducer != nullptr) {
         transProducer->checkTransactionState(addr, messageExt, checkRequestHeader.m_tranStateTableOffset,
                                              checkRequestHeader.m_commitLogOffset, checkRequestHeader.m_msgId,
