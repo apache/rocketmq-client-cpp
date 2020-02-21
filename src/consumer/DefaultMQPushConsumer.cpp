@@ -176,20 +176,20 @@ const std::string& DefaultMQPushConsumer::getUnitName() const {
 void DefaultMQPushConsumer::setTcpTransportPullThreadNum(int num) {
   impl->setTcpTransportPullThreadNum(num);
 }
-const int DefaultMQPushConsumer::getTcpTransportPullThreadNum() const {
+int DefaultMQPushConsumer::getTcpTransportPullThreadNum() const {
   return impl->getTcpTransportPullThreadNum();
 }
 
 void DefaultMQPushConsumer::setTcpTransportConnectTimeout(uint64_t timeout) {
   impl->setTcpTransportConnectTimeout(timeout);
 }
-const uint64_t DefaultMQPushConsumer::getTcpTransportConnectTimeout() const {
+uint64_t DefaultMQPushConsumer::getTcpTransportConnectTimeout() const {
   return impl->getTcpTransportConnectTimeout();
 }
 void DefaultMQPushConsumer::setTcpTransportTryLockTimeout(uint64_t timeout) {
   impl->setTcpTransportTryLockTimeout(timeout);
 }
-const uint64_t DefaultMQPushConsumer::getTcpTransportTryLockTimeout() const {
+uint64_t DefaultMQPushConsumer::getTcpTransportTryLockTimeout() const {
   return impl->getTcpTransportTryLockTimeout();
 }
 void DefaultMQPushConsumer::setAsyncPull(bool asyncFlag) {

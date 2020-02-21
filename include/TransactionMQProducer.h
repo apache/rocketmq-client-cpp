@@ -59,13 +59,13 @@ class ROCKETMQCLIENT_API TransactionMQProducer {
   int getSendMsgTimeout() const;
   void setSendMsgTimeout(int sendMsgTimeout);
   void setTcpTransportPullThreadNum(int num);
-  const int getTcpTransportPullThreadNum() const;
+  int getTcpTransportPullThreadNum() const;
 
   void setTcpTransportConnectTimeout(uint64_t timeout);  // ms
-  const uint64_t getTcpTransportConnectTimeout() const;
+  uint64_t getTcpTransportConnectTimeout() const;
 
   void setTcpTransportTryLockTimeout(uint64_t timeout);  // ms
-  const uint64_t getTcpTransportTryLockTimeout() const;
+  uint64_t getTcpTransportTryLockTimeout() const;
 
   int getCompressMsgBodyOverHowmuch() const;
   void setCompressMsgBodyOverHowmuch(int compressMsgBodyOverHowmuch);

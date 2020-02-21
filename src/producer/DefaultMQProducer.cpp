@@ -145,20 +145,20 @@ void DefaultMQProducer::setLogFileSizeAndNum(int fileNum, long perFileSize) {
 void DefaultMQProducer::setTcpTransportPullThreadNum(int num) {
   impl->setTcpTransportPullThreadNum(num);
 }
-const int DefaultMQProducer::getTcpTransportPullThreadNum() const {
+int DefaultMQProducer::getTcpTransportPullThreadNum() const {
   return impl->getTcpTransportPullThreadNum();
 }
 
 void DefaultMQProducer::setTcpTransportConnectTimeout(uint64_t timeout) {
   impl->setTcpTransportConnectTimeout(timeout);
 }
-const uint64_t DefaultMQProducer::getTcpTransportConnectTimeout() const {
+uint64_t DefaultMQProducer::getTcpTransportConnectTimeout() const {
   return impl->getTcpTransportConnectTimeout();
 }
 void DefaultMQProducer::setTcpTransportTryLockTimeout(uint64_t timeout) {
   impl->setTcpTransportTryLockTimeout(timeout);
 }
-const uint64_t DefaultMQProducer::getTcpTransportTryLockTimeout() const {
+uint64_t DefaultMQProducer::getTcpTransportTryLockTimeout() const {
   return impl->getTcpTransportTryLockTimeout();
 }
 
