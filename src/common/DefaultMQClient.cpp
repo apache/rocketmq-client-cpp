@@ -183,14 +183,14 @@ void DefaultMQClient::setTcpTransportPullThreadNum(int num) {
   }
 }
 
-const int DefaultMQClient::getTcpTransportPullThreadNum() const {
+int DefaultMQClient::getTcpTransportPullThreadNum() const {
   return m_pullThreadNum;
 }
 
 void DefaultMQClient::setTcpTransportConnectTimeout(uint64_t timeout) {
   m_tcpConnectTimeout = timeout;
 }
-const uint64_t DefaultMQClient::getTcpTransportConnectTimeout() const {
+uint64_t DefaultMQClient::getTcpTransportConnectTimeout() const {
   return m_tcpConnectTimeout;
 }
 
@@ -200,7 +200,7 @@ void DefaultMQClient::setTcpTransportTryLockTimeout(uint64_t timeout) {
   }
   m_tcpTransportTryLockTimeout = timeout / 1000;
 }
-const uint64_t DefaultMQClient::getTcpTransportTryLockTimeout() const {
+uint64_t DefaultMQClient::getTcpTransportTryLockTimeout() const {
   return m_tcpTransportTryLockTimeout;
 }
 

@@ -107,7 +107,7 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer {
    *     producer and consumer must set different instanceName.
    **/
   void setTcpTransportPullThreadNum(int num);
-  const int getTcpTransportPullThreadNum() const;
+  int getTcpTransportPullThreadNum() const;
 
   /** Timeout of tcp connect, it is same meaning for both producer and consumer;
    *    1. default value is 3000ms
@@ -115,7 +115,7 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer {
    *       1000-3000ms;
    **/
   void setTcpTransportConnectTimeout(uint64_t timeout);  // ms
-  const uint64_t getTcpTransportConnectTimeout() const;
+  uint64_t getTcpTransportConnectTimeout() const;
 
   /** Timeout of tryLock tcpTransport before sendMsg/pullMsg, if timeout,
    *  returns NULL
@@ -125,7 +125,7 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer {
    *       will be setted to 1000ms
    **/
   void setTcpTransportTryLockTimeout(uint64_t timeout);  // ms
-  const uint64_t getTcpTransportTryLockTimeout() const;
+  uint64_t getTcpTransportTryLockTimeout() const;
 
   void setUnitName(std::string unitName);
   const std::string& getUnitName() const;

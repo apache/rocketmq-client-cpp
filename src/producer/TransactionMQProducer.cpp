@@ -93,20 +93,20 @@ int TransactionMQProducer::getSendMsgTimeout() const {
 void TransactionMQProducer::setTcpTransportPullThreadNum(int num) {
   impl->setTcpTransportPullThreadNum(num);
 }
-const int TransactionMQProducer::getTcpTransportPullThreadNum() const {
+int TransactionMQProducer::getTcpTransportPullThreadNum() const {
   return impl->getTcpTransportPullThreadNum();
 }
 
 void TransactionMQProducer::setTcpTransportConnectTimeout(uint64_t timeout) {
   impl->setTcpTransportConnectTimeout(timeout);
 }
-const uint64_t TransactionMQProducer::getTcpTransportConnectTimeout() const {
+uint64_t TransactionMQProducer::getTcpTransportConnectTimeout() const {
   return impl->getTcpTransportConnectTimeout();
 }
 void TransactionMQProducer::setTcpTransportTryLockTimeout(uint64_t timeout) {
   impl->setTcpTransportTryLockTimeout(timeout);
 }
-const uint64_t TransactionMQProducer::getTcpTransportTryLockTimeout() const {
+uint64_t TransactionMQProducer::getTcpTransportTryLockTimeout() const {
   return impl->getTcpTransportTryLockTimeout();
 }
 int TransactionMQProducer::getCompressMsgBodyOverHowmuch() const {
