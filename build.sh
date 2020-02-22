@@ -381,13 +381,40 @@ ExecutionTesting() {
 }
 
 PackageRocketMQStatic() {
+  echo ">>>>>>>>>Start package static rocketmq library."
   if test "$(uname)" = "Linux"; then
-    echo "package static library."
     #packet libevent,jsoncpp,boost,rocketmq,Signature to one librocketmq.a
     cp -f ${basepath}/libs/signature/lib/libSignature.a ${install_lib_dir}/lib
     ar -M <${basepath}/package_rocketmq.mri
     cp -f librocketmq.a ${install_lib_dir}
+  elif test "$(uname)" = "Darwin" ; then
+    mkdir ${static_package_dir}
+    cd ${static_package_dir}
+    cp -f ${basepath}/libs/signature/lib/libSignature.a .
+    cp -f ${install_lib_dir}/lib/lib*.a .
+    cp -f ${install_lib_dir}/librocketmq.a .
+    echo "Md5 Hash RocketMQ Before:"
+    md5sum librocketmq.a
+    dir=`ls *.a | grep -v  gtest | grep -v gmock `
+    for i in $dir
+    do
+      echo $i
+      ar x $i
+    done
+    echo "At last, ar libboost_filesystem"
+    ar x libboost_filesystem.a
+    ar cru librocketmq.a *.o
+    ranlib librocketmq.a
+    echo "Md5 Hash RocketMQ After:"
+    md5sum librocketmq.a
+    echo "Try to copy $(pwd)/librocketmq to ${install_lib_dir}/"
+    cp -f librocketmq.a  ${install_lib_dir}/
+    rm -rf *.o
+    rm -rf __.*
+    cd ${basepath}
+    rm -rf ${static_package_dir}
   fi
+  echo "<<<<<<<<Success package static rocketmq library."
 }
 
 PrintParams
