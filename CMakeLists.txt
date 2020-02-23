@@ -173,6 +173,20 @@ ELSE ()
     string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
     string(REPLACE ";" " " CMAKE_C_FLAGS "${C_FLAGS}")
 
+    option(ENABLE_ASAN "Enable asan reporting" OFF)
+    if (ENABLE_ASAN)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -static-libasan")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer -static-libasan")
+        message(STATUS "** ENABLE_ASAN: ${ENABLE_ASAN} Enable asan reporting")
+    endif ()
+
+    option(ENABLE_LSAN "Enable lsan reporting" OFF)
+    if (ENABLE_LSAN)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=leak -fno-omit-frame-pointer -static-liblsan")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=leak -fno-omit-frame-pointer -static-liblsan")
+        message(STATUS "** ENABLE_LSAN: ${ENABLE_LSAN} Enable lsan reporting")
+    endif ()
+
     set(CMAKE_CXX_FLAGS_DEBUG "-O0 -DDEBUG")
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 

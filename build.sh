@@ -19,16 +19,16 @@ basepath=$(
   cd $(dirname $0)
   pwd
 )
-down_dir="${basepath}/tmp_down_dir"
-build_dir="${basepath}/tmp_build_dir"
-packet_dir="${basepath}/tmp_packet_dir"
-install_lib_dir="${basepath}/bin"
-fname_libevent="libevent*.zip"
-fname_jsoncpp="jsoncpp*.zip"
-fname_boost="boost*.tar.gz"
-fname_libevent_down="release-2.1.11-stable.zip"
-fname_jsoncpp_down="0.10.6.zip"
-fname_boost_down="1.58.0/boost_1_58_0.tar.gz"
+declare down_dir="${basepath}/tmp_down_dir"
+declare build_dir="${basepath}/tmp_build_dir"
+declare packet_dir="${basepath}/tmp_packet_dir"
+declare install_lib_dir="${basepath}/bin"
+declare fname_libevent="libevent*.zip"
+declare fname_jsoncpp="jsoncpp*.zip"
+declare fname_boost="boost*.tar.gz"
+declare fname_libevent_down="release-2.1.11-stable.zip"
+declare fname_jsoncpp_down="0.10.6.zip"
+declare fname_boost_down="1.58.0/boost_1_58_0.tar.gz"
 
 PrintParams() {
   echo "=========================================one key build help============================================"
@@ -38,13 +38,15 @@ PrintParams() {
   echo ""
 }
 
-need_build_jsoncpp=1
-need_build_libevent=1
-need_build_boost=1
-test=0
-verbose=1
-codecov=0
-cpu_num=4
+declare need_build_jsoncpp=1
+declare need_build_libevent=1
+declare need_build_boost=1
+declare enable_asan=0
+declare enable_lsan=0
+declare verbose=1
+declare codecov=0
+declare cpu_num=4
+declare test=0
 
 pasres_arguments() {
   for var in "$@"; do
@@ -57,6 +59,12 @@ pasres_arguments() {
       ;;
     noBoost)
       need_build_boost=0
+      ;;
+    asan)
+      enable_asan=1
+      ;;
+    lsan)
+      enable_lsan=1
       ;;
     noVerbose)
       verbose=0
@@ -80,17 +88,25 @@ PrintParams() {
   else
     echo "need build libevent lib"
   fi
-
   if [ $need_build_jsoncpp -eq 0 ]; then
     echo "no need build jsoncpp lib"
   else
     echo "need build jsoncpp lib"
   fi
-
   if [ $need_build_boost -eq 0 ]; then
     echo "no need build boost lib"
   else
     echo "need build boost lib"
+  fi
+  if [ $enable_asan -eq 1 ]; then
+    echo "enable asan reporting"
+  else
+    echo "disable asan reporting"
+  fi
+  if [ $enable_lsan -eq 1 ]; then
+    echo "enable lsan reporting"
+  else
+    echo "disable lsan reporting"
   fi
   if [ $test -eq 1 ]; then
     echo "build unit tests"
@@ -289,15 +305,27 @@ BuildBoost() {
 BuildRocketMQClient() {
   cd ${build_dir}
   echo "============start to build rocketmq client cpp.========="
-  if [ $test -eq 0 ]; then
-    cmake ..
-  else
+  local ROCKETMQ_CMAKE_FLAG=""
+  if [ $test -eq 1 ]; then
     if [ $codecov -eq 1 ]; then
-      cmake .. -DRUN_UNIT_TEST=ON -DCODE_COVERAGE=ON
+      ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DRUN_UNIT_TEST=ON -DCODE_COVERAGE=ON"
     else
-      cmake .. -DRUN_UNIT_TEST=ON
+      ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DRUN_UNIT_TEST=ON -DCODE_COVERAGE=OFF"
     fi
+  else
+      ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DRUN_UNIT_TEST=OFF -DCODE_COVERAGE=OFF"
   fi
+  if [ $enable_asan -eq 1 ]; then
+      ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DENABLE_ASAN=ON"
+  else
+      ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DENABLE_ASAN=OFF"
+  fi
+  if [ $enable_lsan -eq 1 ]; then
+      ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DENABLE_LSAN=ON"
+  else
+      ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DENABLE_LSAN=OFF"
+  fi
+  cmake .. $ROCKETMQ_CMAKE_FLAG
   if [ $verbose -eq 0 ]; then
     echo "build rocketmq without detail log."
     make -j $cpu_num >buildclient.txt 2>&1
@@ -317,12 +345,10 @@ BuildGoogleTest() {
     echo "no need build google test lib"
     return 0
   fi
-
   if [ -f ./bin/lib/libgtest.a ]; then
     echo "libgteest already exist no need build test"
     return 0
   fi
-
   cd ${down_dir}
   if [ -e release-1.8.1.tar.gz ]; then
     echo "${fname_boost} is exist"
@@ -333,7 +359,7 @@ BuildGoogleTest() {
     tar -zxvf release-1.8.1.tar.gz >googletest.txt 2>&1
   fi
   cd googletest-release-1.8.1
-  mkdir build
+  mkdir -p build
   cd build
   echo "build googletest static #####################"
   if [ $verbose -eq 0 ]; then
