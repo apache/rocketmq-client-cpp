@@ -181,7 +181,7 @@ BuildLibevent() {
   else
     wget https://github.com/libevent/libevent/archive/${fname_libevent_down} -O libevent-${fname_libevent_down}
   fi
-  unzip -o ${fname_libevent} >unziplibevent.txt 2>&1
+  unzip -o ${fname_libevent} &> unziplibevent.txt
   if [ $? -ne 0 ]; then
     exit 1
   fi
@@ -197,7 +197,7 @@ BuildLibevent() {
   fi
   echo "build libevent static #####################"
   if [ $verbose -eq 0 ]; then
-    ./configure --disable-openssl --enable-static=yes --enable-shared=no CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} >libeventconfig.txt 2>&1
+    ./configure --disable-openssl --enable-static=yes --enable-shared=no CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} &> libeventconfig.txt
   else
     ./configure --disable-openssl --enable-static=yes --enable-shared=no CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir}
   fi
@@ -206,7 +206,7 @@ BuildLibevent() {
   fi
   if [ $verbose -eq 0 ]; then
     echo "build libevent without detail log."
-    make -j $cpu_num >libeventbuild.txt 2>&1
+    make -j $cpu_num &> libeventbuild.txt
   else
     make -j $cpu_num
   fi
@@ -230,7 +230,7 @@ BuildJsonCPP() {
   else
     wget https://github.com/open-source-parsers/jsoncpp/archive/${fname_jsoncpp_down} -O jsoncpp-${fname_jsoncpp_down}
   fi
-  unzip -o ${fname_jsoncpp} >unzipjsoncpp.txt 2>&1
+  unzip -o ${fname_jsoncpp} &> unzipjsoncpp.txt
   if [ $? -ne 0 ]; then
     exit 1
   fi
@@ -244,7 +244,7 @@ BuildJsonCPP() {
   echo "build jsoncpp static ######################"
   if [ $verbose -eq 0 ]; then
     echo "build jsoncpp without detail log."
-    cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${install_lib_dir} >jsoncppbuild.txt 2>&1
+    cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${install_lib_dir} &> jsoncppbuild.txt
   else
     cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${install_lib_dir}
   fi
@@ -252,7 +252,7 @@ BuildJsonCPP() {
     exit 1
   fi
   if [ $verbose -eq 0 ]; then
-    make -j $cpu_num >jsoncppbuild.txt 2>&1
+    make -j $cpu_num &> jsoncppbuild.txt
   else
     make -j $cpu_num
   fi
@@ -279,7 +279,7 @@ BuildBoost() {
   else
     wget http://sourceforge.net/projects/boost/files/boost/${fname_boost_down}
   fi
-  tar -zxvf ${fname_boost} >unzipboost.txt 2>&1
+  tar -zxvf ${fname_boost} &> unzipboost.txt
   boost_dir=$(ls | grep ^boost | grep .*[^gz]$)
   cd ${boost_dir}
   if [ $? -ne 0 ]; then
@@ -293,7 +293,7 @@ BuildBoost() {
   pwd
   if [ $verbose -eq 0 ]; then
     echo "build boost without detail log."
-    ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static release install --prefix=${install_lib_dir} >boostbuild.txt 2>&1
+    ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static release install --prefix=${install_lib_dir} &> boostbuild.txt
   else
     ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static release install --prefix=${install_lib_dir}
   fi
@@ -328,7 +328,7 @@ BuildRocketMQClient() {
   cmake .. $ROCKETMQ_CMAKE_FLAG
   if [ $verbose -eq 0 ]; then
     echo "build rocketmq without detail log."
-    make -j $cpu_num >buildclient.txt 2>&1
+    make -j $cpu_num &> buildclient.txt
   else
     make -j $cpu_num
   fi
@@ -356,7 +356,7 @@ BuildGoogleTest() {
     wget https://github.com/abseil/googletest/archive/release-1.8.1.tar.gz
   fi
   if [ ! -d "googletest-release-1.8.1" ]; then
-    tar -zxvf release-1.8.1.tar.gz >googletest.txt 2>&1
+    tar -zxvf release-1.8.1.tar.gz &> googletest.txt
   fi
   cd googletest-release-1.8.1
   mkdir -p build
@@ -364,7 +364,7 @@ BuildGoogleTest() {
   echo "build googletest static #####################"
   if [ $verbose -eq 0 ]; then
     echo "build googletest without detail log."
-    cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${install_lib_dir} >googletestbuild.txt 2>&1
+    cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${install_lib_dir} &> googletestbuild.txt
   else
     cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${install_lib_dir}
   fi
@@ -372,7 +372,7 @@ BuildGoogleTest() {
     exit 1
   fi
   if [ $verbose -eq 0 ]; then
-    make -j $cpu_num >gtestbuild.txt 2>&1
+    make -j $cpu_num &> gtestbuild.txt
   else
     make -j $cpu_num
   fi

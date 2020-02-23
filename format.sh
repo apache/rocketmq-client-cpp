@@ -26,7 +26,7 @@ function Usage
 }
 
 #Setp1 check clang-format support
-if ! which clang-format &>/dev/null; then
+if ! which clang-format &> /dev/null; then
     echo -e "\033[32m !!!!!!please install clang-format  \033[0m"
     exit 1
 fi
