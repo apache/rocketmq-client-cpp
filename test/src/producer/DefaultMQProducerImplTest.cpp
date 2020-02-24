@@ -122,8 +122,10 @@ TEST(DefaultMQProducerImplTest, Sends) {
   topicPublishInfo->updateMessageQueueList(mqA);
   topicPublishInfo->updateMessageQueueList(mqB);
 
-  SendResult okMQAResult(SEND_OK, "MSSAGEID", "OFFSETID", mqA, 1024);
+  SendResult okMQAResult(SEND_OK, "MSSAGEID", "OFFSETID", mqA, 1024, "DEFAULT_REGION");
   SendResult okMQBResult(SEND_OK, "MSSAGEID", "OFFSETID", mqB, 2048);
+  okMQBResult.setRegionId("DEFAULT_REGION");
+  okMQBResult.toString();
   SendResult errorMQBResult(SEND_SLAVE_NOT_AVAILABLE, "MSSAGEID", "OFFSETID", mqB, 2048);
 
   EXPECT_CALL(*mockFactory, start()).Times(1).WillOnce(Return());

@@ -34,12 +34,26 @@ SendResult::SendResult(const SendStatus& sendStatus,
       m_messageQueue(messageQueue),
       m_queueOffset(queueOffset) {}
 
+SendResult::SendResult(const SendStatus& sendStatus,
+                       const std::string& msgId,
+                       const std::string& offsetMsgId,
+                       const MQMessageQueue& messageQueue,
+                       int64 queueOffset,
+                       const string& regionId)
+    : m_sendStatus(sendStatus),
+      m_msgId(msgId),
+      m_offsetMsgId(offsetMsgId),
+      m_messageQueue(messageQueue),
+      m_queueOffset(queueOffset),
+      m_regionId(regionId) {}
+
 SendResult::SendResult(const SendResult& other) {
   m_sendStatus = other.m_sendStatus;
   m_msgId = other.m_msgId;
   m_offsetMsgId = other.m_offsetMsgId;
   m_messageQueue = other.m_messageQueue;
   m_queueOffset = other.m_queueOffset;
+  m_regionId = other.m_regionId;
 }
 
 SendResult& SendResult::operator=(const SendResult& other) {
@@ -49,6 +63,7 @@ SendResult& SendResult::operator=(const SendResult& other) {
     m_offsetMsgId = other.m_offsetMsgId;
     m_messageQueue = other.m_messageQueue;
     m_queueOffset = other.m_queueOffset;
+    m_regionId = other.m_regionId;
   }
   return *this;
 }
@@ -63,6 +78,12 @@ const string& SendResult::getOffsetMsgId() const {
   return m_offsetMsgId;
 }
 
+const string& SendResult::getRegionId() const {
+  return m_regionId;
+}
+void SendResult::setRegionId(const string& regionId) {
+  m_regionId = regionId;
+}
 SendStatus SendResult::getSendStatus() const {
   return m_sendStatus;
 }
