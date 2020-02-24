@@ -40,7 +40,7 @@ cp -rf ${CWD_DIR}/../README.md  ${DEPLOY_BUILD_HOME}/
 cp -rf ${CWD_DIR}/../LICENSE  ${DEPLOY_BUILD_HOME}/LICENSE
 cp -rf ${CWD_DIR}/../NOTICE ${DEPLOY_BUILD_HOME}/NOTICE
 
-cd ${CWD_DIR} && tar -cvzf ./${PKG_NAME}-${VERSION}-bin-release.tar.gz ./${PKG_NAME}  >/dev/null 2>&1
+cd ${CWD_DIR} && tar -cvzf ./${PKG_NAME}-${VERSION}-bin-release.tar.gz ./${PKG_NAME}  &> /dev/null
 rm -rf ${DEPLOY_BUILD_HOME}
 # # ##====================================================================
 #make clean
