@@ -408,7 +408,7 @@ ExecutionTesting() {
 }
 
 PackageRocketMQStatic() {
-  echo ">>>>>>>>>Start package static rocketmq library."
+  echo "############# Start package static rocketmq library. #############"
   if test "$(uname)" = "Linux"; then
     #packet libevent,jsoncpp,boost,rocketmq,Signature to one librocketmq.a
     cp -f ${basepath}/libs/signature/lib/libSignature.a ${install_lib_dir}/lib
@@ -441,7 +441,7 @@ PackageRocketMQStatic() {
     cd ${basepath}
     rm -rf ${static_package_dir}
   fi
-  echo "<<<<<<<<Success package static rocketmq library."
+  echo "############# Package static rocketmq library success.#############"
 }
 
 PrintParams
