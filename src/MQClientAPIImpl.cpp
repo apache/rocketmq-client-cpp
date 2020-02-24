@@ -537,7 +537,9 @@ SendResult MQClientAPIImpl::processSendResponse(const string& brokerName,
     SendMessageResponseHeader* responseHeader = (SendMessageResponseHeader*)pResponse->getCommandHeader();
     MQMessageQueue messageQueue(msg.getTopic(), brokerName, responseHeader->queueId);
     string unique_msgId = msg.getProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);
-    return SendResult(sendStatus, unique_msgId, responseHeader->msgId, messageQueue, responseHeader->queueOffset);
+    //set region id
+    string regionId = msg.getProperty(MQMessage::PROPERTY_MSG_REGION);
+    return SendResult(sendStatus, unique_msgId, responseHeader->msgId, messageQueue, responseHeader->queueOffset,regionId);
   }
   LOG_ERROR("processSendResponse error remark:%s, error code:%d", (pResponse->getRemark()).c_str(),
             pResponse->getCode());

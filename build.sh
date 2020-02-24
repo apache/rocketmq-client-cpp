@@ -23,6 +23,7 @@ declare down_dir="${basepath}/tmp_down_dir"
 declare build_dir="${basepath}/tmp_build_dir"
 declare packet_dir="${basepath}/tmp_packet_dir"
 declare install_lib_dir="${basepath}/bin"
+declare static_package_dir="${basepath}/tmp_static_package_dir"
 declare fname_libevent="libevent*.zip"
 declare fname_jsoncpp="jsoncpp*.zip"
 declare fname_boost="boost*.tar.gz"
@@ -414,14 +415,14 @@ PackageRocketMQStatic() {
     ar -M <${basepath}/package_rocketmq.mri
     cp -f librocketmq.a ${install_lib_dir}
   elif test "$(uname)" = "Darwin" ; then
-    mkdir ${static_package_dir}
+    mkdir -p ${static_package_dir}
     cd ${static_package_dir}
     cp -f ${basepath}/libs/signature/lib/libSignature.a .
     cp -f ${install_lib_dir}/lib/lib*.a .
     cp -f ${install_lib_dir}/librocketmq.a .
     echo "Md5 Hash RocketMQ Before:"
     md5sum librocketmq.a
-    dir=`ls *.a | grep -v  gtest | grep -v gmock `
+    local dir=`ls *.a | grep -v  gtest | grep -v gmock `
     for i in $dir
     do
       echo $i
@@ -433,7 +434,7 @@ PackageRocketMQStatic() {
     ranlib librocketmq.a
     echo "Md5 Hash RocketMQ After:"
     md5sum librocketmq.a
-    echo "Try to copy $(pwd)/librocketmq to ${install_lib_dir}/"
+    echo "Try to copy $(pwd)/librocketmq.a to ${install_lib_dir}/"
     cp -f librocketmq.a  ${install_lib_dir}/
     rm -rf *.o
     rm -rf __.*
