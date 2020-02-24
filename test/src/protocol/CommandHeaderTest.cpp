@@ -345,21 +345,29 @@ TEST(commandHeader, SendMessageResponseHeader) {
   header.msgId = "ABCDEFG";
   header.queueId = 1;
   header.queueOffset = 2;
+  header.transactionId = "ID";
+  header.regionId = "public";
   map<string, string> requestMap;
   header.SetDeclaredFieldOfCommandHeader(requestMap);
   EXPECT_EQ(requestMap["msgId"], "ABCDEFG");
   EXPECT_EQ(requestMap["queueId"], "1");
   EXPECT_EQ(requestMap["queueOffset"], "2");
+  EXPECT_EQ(requestMap["transactionId"], "ID");
+  EXPECT_EQ(requestMap["MSG_REGION"], "public");
 
   Value value;
   value["msgId"] = "EFGHIJK";
   value["queueId"] = "3";
   value["queueOffset"] = "4";
+  value["transactionId"] = "transactionId";
+  value["MSG_REGION"] = "MSG_REGION";
   shared_ptr<SendMessageResponseHeader> headerDecode(
       static_cast<SendMessageResponseHeader*>(SendMessageResponseHeader::Decode(value)));
   EXPECT_EQ(headerDecode->msgId, "EFGHIJK");
   EXPECT_EQ(headerDecode->queueId, 3);
   EXPECT_EQ(headerDecode->queueOffset, 4);
+  EXPECT_EQ(headerDecode->transactionId, "transactionId");
+  EXPECT_EQ(headerDecode->regionId, "MSG_REGION");
 }
 
 TEST(commandHeader, PullMessageRequestHeader) {

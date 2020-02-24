@@ -261,6 +261,16 @@ CommandHeader* SendMessageResponseHeader::Decode(Json::Value& ext) {
   if (tempValue.isString()) {
     h->queueOffset = UtilAll::str2ll(tempValue.asCString());
   }
+
+  tempValue = ext["transactionId"];
+  if (tempValue.isString()) {
+    h->transactionId = tempValue.asCString();
+  }
+
+  tempValue = ext["MSG_REGION"];
+  if (tempValue.isString()) {
+    h->regionId = tempValue.asCString();
+  }
   return h;
 }
 
@@ -268,6 +278,8 @@ void SendMessageResponseHeader::SetDeclaredFieldOfCommandHeader(map<string, stri
   requestMap.insert(pair<string, string>("msgId", msgId));
   requestMap.insert(pair<string, string>("queueId", UtilAll::to_string(queueId)));
   requestMap.insert(pair<string, string>("queueOffset", UtilAll::to_string(queueOffset)));
+  requestMap.insert(pair<string, string>("transactionId", transactionId));
+  requestMap.insert(pair<string, string>("MSG_REGION", regionId));
 }
 //<!************************************************************************
 void PullMessageRequestHeader::Encode(Json::Value& outData) {

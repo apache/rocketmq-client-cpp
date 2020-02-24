@@ -215,7 +215,10 @@ class SendMessageRequestHeaderV2 : public CommandHeader {
 //<!************************************************************************
 class SendMessageResponseHeader : public CommandHeader {
  public:
-  SendMessageResponseHeader() : queueId(0), queueOffset(0) { msgId.clear(); }
+  SendMessageResponseHeader() : queueId(0), queueOffset(0) {
+    msgId.clear();
+    regionId.clear();
+  }
   virtual ~SendMessageResponseHeader() {}
   static CommandHeader* Decode(Json::Value& ext);
   virtual void SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap);
@@ -224,6 +227,8 @@ class SendMessageResponseHeader : public CommandHeader {
   string msgId;
   int queueId;
   int64 queueOffset;
+  string regionId;
+  string transactionId;
 };
 
 //<!************************************************************************
