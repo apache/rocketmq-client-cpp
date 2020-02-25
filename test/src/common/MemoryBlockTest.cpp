@@ -48,8 +48,8 @@ TEST(memoryBlock, init) {
 
   char* buf = (char*)malloc(sizeof(char) * 9);
   strcpy(buf, "RocketMQ");
-  MemoryBlock fiveMemoryBlock(buf, -1);
-  EXPECT_EQ(fiveMemoryBlock.getSize(), -1);
+  MemoryBlock fiveMemoryBlock(buf, 0);
+  EXPECT_EQ(fiveMemoryBlock.getSize(), 0);
   EXPECT_TRUE(fiveMemoryBlock.getData() == nullptr);
 
   char* bufNull = NULL;
@@ -57,6 +57,7 @@ TEST(memoryBlock, init) {
   EXPECT_EQ(sixMemoryBlock.getSize(), 16);
   EXPECT_TRUE(sixMemoryBlock.getData() != nullptr);
 
+  buf = (char*)realloc(buf, 20);
   MemoryBlock sevenMemoryBlock(buf, 20);
   EXPECT_EQ(sevenMemoryBlock.getSize(), 20);
   sevenMemoryBlock.getData();
