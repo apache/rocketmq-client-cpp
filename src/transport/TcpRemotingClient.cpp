@@ -28,6 +28,8 @@
 namespace rocketmq {
 
 //<!************************************************************************
+TcpRemotingClient::TcpRemotingClient()
+    : m_dispatchServiceWork(m_dispatchService), m_handleServiceWork(m_handleService) {}
 TcpRemotingClient::TcpRemotingClient(int pullThreadNum, uint64_t tcpConnectTimeout, uint64_t tcpTransportTryLockTimeout)
     : m_dispatchThreadNum(1),
       m_pullThreadNum(pullThreadNum),

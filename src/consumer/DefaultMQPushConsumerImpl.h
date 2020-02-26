@@ -45,6 +45,7 @@ class ConsumerRunningInfo;
 //<!***************************************************************************
 class DefaultMQPushConsumerImpl : public MQConsumer {
  public:
+  DefaultMQPushConsumerImpl();
   DefaultMQPushConsumerImpl(const std::string& groupname);
   void boost_asio_work();
   virtual ~DefaultMQPushConsumerImpl();

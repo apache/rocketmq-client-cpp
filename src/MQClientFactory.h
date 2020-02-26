@@ -143,7 +143,6 @@ class MQClientFactory {
   void doRebalance();
   void timerCB_doRebalance(boost::system::error_code& ec, boost::shared_ptr<boost::asio::deadline_timer> t);
   bool getSessionCredentialFromConsumerTable(SessionCredentials& sessionCredentials);
-  bool addConsumerToTable(const string& consumerName, MQConsumer* pMQConsumer);
   void eraseConsumerFromTable(const string& consumerName);
   int getConsumerTableSize();
   void getTopicListFromConsumerSubscription(set<string>& topicList);
@@ -152,7 +151,6 @@ class MQClientFactory {
 
   // producer related operation
   bool getSessionCredentialFromProducerTable(SessionCredentials& sessionCredentials);
-  bool addProducerToTable(const string& producerName, MQProducer* pMQProducer);
   void eraseProducerFromTable(const string& producerName);
   int getProducerTableSize();
   void insertProducerInfoToHeartBeatData(HeartbeatData* pHeartbeatData);
@@ -170,6 +168,9 @@ class MQClientFactory {
   string m_clientId;
   unique_ptr<MQClientAPIImpl> m_pClientAPIImpl;
   unique_ptr<ClientRemotingProcessor> m_pClientRemotingProcessor;
+
+  bool addProducerToTable(const string& producerName, MQProducer* pMQProducer);
+  bool addConsumerToTable(const string& consumerName, MQConsumer* pMQConsumer);
 
  private:
   string m_nameSrvDomain;  // per clientId

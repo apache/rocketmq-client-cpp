@@ -193,6 +193,7 @@ class AsyncPullCallback : public PullCallback {
 //<!***************************************************************************
 static boost::mutex m_asyncCallbackLock;
 
+DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl() {}
 DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(const string& groupname)
     : m_consumeFromWhere(CONSUME_FROM_LAST_OFFSET),
       m_pOffsetStore(NULL),
