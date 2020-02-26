@@ -147,7 +147,12 @@ TEST(cPushComsumer, null) {
   EXPECT_EQ(SetPushConsumerLogLevel(NULL, E_LOG_LEVEL_LEVEL_NUM), NULL_POINTER);
   EXPECT_EQ(SetPushConsumerMessageModel(NULL, BROADCASTING), NULL_POINTER);
 }
-
+TEST(cPushComsumer, version) {
+  CPushConsumer* pushConsumer = CreatePushConsumer("groupTestVersion");
+  EXPECT_TRUE(pushConsumer != NULL);
+  string version(ShowPushConsumerVersion(pushConsumer));
+  EXPECT_GT(version.length(), 0);
+}
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(filter) = "cPushComsumer.*";

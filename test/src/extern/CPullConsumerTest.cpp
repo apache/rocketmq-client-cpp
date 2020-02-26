@@ -196,7 +196,12 @@ TEST(cpullConsumer, null) {
   EXPECT_EQ(StartPullConsumer(NULL), NULL_POINTER);
   EXPECT_EQ(ShutdownPullConsumer(NULL), NULL_POINTER);
 }
-
+TEST(cpullConsumer, version) {
+  CPullConsumer* pullConsumer = CreatePullConsumer("groupTestVersion");
+  EXPECT_TRUE(pullConsumer != NULL);
+  string version(ShowPullConsumerVersion(pullConsumer));
+  EXPECT_GT(version.length(), 0);
+}
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
