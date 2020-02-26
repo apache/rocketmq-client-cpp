@@ -37,10 +37,10 @@ void DefaultMQPullConsumer::shutdown() {
 }
 std::string DefaultMQPullConsumer::version() {
   std::string versions = impl->getClientVersionString();
-  versions.append(", PROTOCOL VERSION: ")
+  /*versions.append(", PROTOCOL VERSION: ")
       .append(MQVersion::GetVersionDesc(MQVersion::s_CurrentVersion))
       .append(", LANGUAGE: ")
-      .append(MQVersion::s_CurrentLanguage);
+      .append(MQVersion::s_CurrentLanguage);*/
   return versions;
 }
 // start mqclient set

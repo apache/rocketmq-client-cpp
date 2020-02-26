@@ -63,6 +63,7 @@ void DefaultMQProducerImpl::start() {
   sa.sa_flags = 0;
   sigaction(SIGPIPE, &sa, 0);
 #endif
+  LOG_INFO("###Current Producer@", getClientVersionString().c_str());
   // we should deal with namespaced before start.
   dealWithNameSpace();
   switch (m_serviceState) {

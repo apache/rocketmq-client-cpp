@@ -308,6 +308,7 @@ void DefaultMQPushConsumerImpl::start() {
   sa.sa_flags = 0;
   sigaction(SIGPIPE, &sa, 0);
 #endif
+  LOG_INFO("###Current Push Consumer@", getClientVersionString().c_str());
   // deal with name space before start
   dealWithNameSpace();
   switch (m_serviceState) {

@@ -39,10 +39,12 @@ void DefaultMQProducer::shutdown() {
 
 std::string DefaultMQProducer::version() {
   std::string versions = impl->getClientVersionString();
+  /*
   versions.append(", PROTOCOL VERSION: ")
       .append(MQVersion::GetVersionDesc(MQVersion::s_CurrentVersion))
       .append(", LANGUAGE: ")
       .append(MQVersion::s_CurrentLanguage);
+  */
   return versions;
 }
 

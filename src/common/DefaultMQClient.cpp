@@ -24,11 +24,11 @@
 #include "UtilAll.h"
 
 namespace rocketmq {
-
-#define ROCKETMQCPP_VERSION "V2.0.0"
-#define BUILD_DATE "02-14-2020"
+// hard code first.
+#define ROCKETMQCPP_VERSION "2.0.0"
+#define BUILD_DATE "22:50:18 02-14-2020"
 // display version: strings bin/librocketmq.so |grep VERSION
-const char* rocketmq_build_time = "SDK VERSION: " ROCKETMQCPP_VERSION ", BUILD DATE: " BUILD_DATE;
+const char* rocketmq_build_time = "CPP CORE VERSION: " ROCKETMQCPP_VERSION ", BUILD TIME: " BUILD_DATE;
 
 //<!************************************************************************
 DefaultMQClient::DefaultMQClient() {

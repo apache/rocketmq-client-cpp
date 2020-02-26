@@ -23,7 +23,7 @@ const string ConsumerRunningInfo::PROP_THREADPOOL_CORE_SIZE = "PROP_THREADPOOL_C
 const string ConsumerRunningInfo::PROP_CONSUME_ORDERLY = "PROP_CONSUMEORDERLY";
 const string ConsumerRunningInfo::PROP_CONSUME_TYPE = "PROP_CONSUME_TYPE";
 const string ConsumerRunningInfo::PROP_CLIENT_VERSION = "PROP_CLIENT_VERSION";
-const string ConsumerRunningInfo::PROP_CLIENT_SDK_VERSION = "PROP_CLIENT_SDK_VERSION";
+const string ConsumerRunningInfo::PROP_CLIENT_SDK_VERSION = "PROP_CLIENT_CORE_VERSION";
 const string ConsumerRunningInfo::PROP_CONSUMER_START_TIMESTAMP = "PROP_CONSUMER_START_TIMESTAMP";
 
 const map<string, string> ConsumerRunningInfo::getProperties() const {

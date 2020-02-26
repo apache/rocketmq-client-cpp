@@ -63,6 +63,7 @@ void DefaultMQPullConsumerImpl::start() {
   sa.sa_flags = 0;
   sigaction(SIGPIPE, &sa, 0);
 #endif
+  LOG_INFO("###Current Pull Consumer@", getClientVersionString().c_str());
   dealWithNameSpace();
   switch (m_serviceState) {
     case CREATE_JUST: {
