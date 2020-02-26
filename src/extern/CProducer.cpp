@@ -558,6 +558,9 @@ int SendMessageOrderlyByShardingKey(CProducer* producer, CMessage* msg, const ch
   }
   DefaultProducer* defaultMQProducer = (DefaultProducer*)producer;
   MQMessage* message = (MQMessage*)msg;
+
+  string sKey(shardingKey);
+  message->setProperty("__SHARDINGKEY", sKey);
   try {
     // Constructing SelectMessageQueue objects through function pointer callback
     int retryTimes = 3;
