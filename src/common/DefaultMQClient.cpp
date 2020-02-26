@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "include/DefaultMQClient.h"
+#include "DefaultMQClient.h"
 #include "Logging.h"
 #include "MQClientFactory.h"
 #include "MQClientManager.h"
@@ -25,10 +25,10 @@
 
 namespace rocketmq {
 
-#define ROCKETMQCPP_VERSION "2.0.0"
+#define ROCKETMQCPP_VERSION "V2.0.0"
 #define BUILD_DATE "02-14-2020"
 // display version: strings bin/librocketmq.so |grep VERSION
-const char* rocketmq_build_time = "VERSION: " ROCKETMQCPP_VERSION ", BUILD DATE: " BUILD_DATE " ";
+const char* rocketmq_build_time = "SDK VERSION: " ROCKETMQCPP_VERSION ", BUILD DATE: " BUILD_DATE " ";
 
 //<!************************************************************************
 DefaultMQClient::DefaultMQClient() {
@@ -55,6 +55,11 @@ string DefaultMQClient::getMQClientId() const {
   string processId = UtilAll::to_string(getpid());
   // return processId + "-" + clientIP + "@" + m_instanceName;
   return clientIP + "@" + processId + "#" + m_instanceName;
+}
+// version
+string DefaultMQClient::getClientVersionString() const {
+  string version(rocketmq_build_time);
+  return version;
 }
 
 //<!groupName;

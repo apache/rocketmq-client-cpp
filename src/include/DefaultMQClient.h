@@ -41,6 +41,7 @@ class DefaultMQClient {
 
  public:
   // clientid=processId-ipAddr@instanceName;
+  std::string getClientVersionString() const;
   std::string getMQClientId() const;
   const std::string& getNamesrvAddr() const;
   void setNamesrvAddr(const std::string& namesrvAddr);

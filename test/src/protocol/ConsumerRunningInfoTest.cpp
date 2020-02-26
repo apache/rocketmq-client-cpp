@@ -99,6 +99,7 @@ TEST(ConsumerRunningInfo, init) {
   info.setProperty(ConsumerRunningInfo::PROP_CONSUME_TYPE, "consume_type");
   info.setProperty(ConsumerRunningInfo::PROP_CLIENT_VERSION, "client_version");
   info.setProperty(ConsumerRunningInfo::PROP_CONSUMER_START_TIMESTAMP, "127");
+  info.setProperty(ConsumerRunningInfo::PROP_CLIENT_SDK_VERSION, "sdk_version");
 
   // encode
   string outStr = info.encode();

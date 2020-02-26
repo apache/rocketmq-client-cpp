@@ -47,6 +47,7 @@ ROCKETMQCLIENT_API CProducer* CreateTransactionProducer(const char* groupId,
 ROCKETMQCLIENT_API int DestroyProducer(CProducer* producer);
 ROCKETMQCLIENT_API int StartProducer(CProducer* producer);
 ROCKETMQCLIENT_API int ShutdownProducer(CProducer* producer);
+ROCKETMQCLIENT_API const char* ShowProducerVersion(CProducer* producer);
 
 ROCKETMQCLIENT_API int SetProducerNameServerAddress(CProducer* producer, const char* namesrv);
 ROCKETMQCLIENT_API int SetProducerNameServerDomain(CProducer* producer, const char* domain);

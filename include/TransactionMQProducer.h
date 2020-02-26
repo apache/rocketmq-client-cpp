@@ -36,6 +36,7 @@ class ROCKETMQCLIENT_API TransactionMQProducer {
 
   void start();
   void shutdown();
+  std::string version();
 
   const std::string& getNamesrvAddr() const;
   void setNamesrvAddr(const std::string& namesrvAddr);

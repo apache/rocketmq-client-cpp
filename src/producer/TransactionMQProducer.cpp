@@ -16,6 +16,7 @@
  */
 
 #include "TransactionMQProducer.h"
+#include <MQVersion.h>
 
 #include "TransactionMQProducerImpl.h"
 
@@ -35,7 +36,12 @@ void TransactionMQProducer::start() {
 void TransactionMQProducer::shutdown() {
   impl->shutdown();
 }
-
+std::string TransactionMQProducer::version() {
+  std::string versions = impl->getClientVersionString() +
+                         ", PROTOCOL VERSION:" + MQVersion::GetVersionDesc(MQVersion::s_CurrentVersion) +
+                         ", LANGUAGE: " + MQVersion::s_CurrentLanguage;
+  return versions;
+}
 // start mqclient set
 const std::string& TransactionMQProducer::getNamesrvAddr() const {
   return impl->getNamesrvAddr();

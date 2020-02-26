@@ -16,6 +16,7 @@
  */
 
 #include "DefaultMQPushConsumer.h"
+#include <MQVersion.h>
 #include "DefaultMQPushConsumerImpl.h"
 
 namespace rocketmq {
@@ -34,7 +35,12 @@ void DefaultMQPushConsumer::start() {
 void DefaultMQPushConsumer::shutdown() {
   impl->shutdown();
 }
-
+std::string DefaultMQPushConsumer::version() {
+  std::string versions = impl->getClientVersionString() +
+                         ", PROTOCOL VERSION:" + MQVersion::GetVersionDesc(MQVersion::s_CurrentVersion) +
+                         ", LANGUAGE: " + MQVersion::s_CurrentLanguage;
+  return versions;
+}
 // ConsumeType DefaultMQPushConsumer::getConsumeType() {
 //  return impl->getConsumeType();
 //}

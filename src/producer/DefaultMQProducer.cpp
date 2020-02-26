@@ -16,6 +16,7 @@
  */
 
 #include "DefaultMQProducer.h"
+#include <MQVersion.h>
 
 #include "DefaultMQProducerImpl.h"
 
@@ -34,6 +35,13 @@ void DefaultMQProducer::start() {
 
 void DefaultMQProducer::shutdown() {
   impl->shutdown();
+}
+
+std::string DefaultMQProducer::version() {
+  std::string versions = impl->getClientVersionString() +
+                         ", PROTOCOL VERSION:" + MQVersion::GetVersionDesc(MQVersion::s_CurrentVersion) +
+                         ", LANGUAGE: " + MQVersion::s_CurrentLanguage;
+  return versions;
 }
 
 // start mqclient set

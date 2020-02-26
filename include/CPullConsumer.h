@@ -33,6 +33,8 @@ ROCKETMQCLIENT_API CPullConsumer* CreatePullConsumer(const char* groupId);
 ROCKETMQCLIENT_API int DestroyPullConsumer(CPullConsumer* consumer);
 ROCKETMQCLIENT_API int StartPullConsumer(CPullConsumer* consumer);
 ROCKETMQCLIENT_API int ShutdownPullConsumer(CPullConsumer* consumer);
+ROCKETMQCLIENT_API const char* ShowPullConsumerVersion(CPullConsumer* consumer);
+
 ROCKETMQCLIENT_API int SetPullConsumerGroupID(CPullConsumer* consumer, const char* groupId);
 ROCKETMQCLIENT_API const char* GetPullConsumerGroupID(CPullConsumer* consumer);
 ROCKETMQCLIENT_API int SetPullConsumerNameServerAddress(CPullConsumer* consumer, const char* namesrv);
