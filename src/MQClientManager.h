@@ -14,37 +14,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQCLIENTMANAGER_H__
-#define __MQCLIENTMANAGER_H__
+#ifndef __MQ_CLIENT_MANAGER_H__
+#define __MQ_CLIENT_MANAGER_H__
 
 #include <map>
+#include <memory>
 #include <string>
-#include "Logging.h"
-#include "MQClientFactory.h"
+
+#include "MQClientInstance.h"
 
 namespace rocketmq {
-//<!***************************************************************************
+
 class MQClientManager {
  public:
-  virtual ~MQClientManager();
-  virtual MQClientFactory* getMQClientFactory(const string& clientId,
-                                              int pullThreadNum,
-                                              uint64_t tcpConnectTimeout,
-                                              uint64_t tcpTransportTryLockTimeout,
-                                              string unitName);
-  void removeClientFactory(const string& clientId);
-
   static MQClientManager* getInstance();
+
+  virtual ~MQClientManager();
+
+  MQClientInstancePtr getOrCreateMQClientInstance(const MQClientConfig* clientConfig);
+  MQClientInstancePtr getOrCreateMQClientInstance(const MQClientConfig* clientConfig, std::shared_ptr<RPCHook> rpcHook);
+
+  void removeMQClientInstance(const std::string& clientId);
 
  private:
   MQClientManager();
 
  private:
-  typedef map<string, MQClientFactory*> FTMAP;
-  FTMAP m_factoryTable;
+  std::map<std::string, MQClientInstancePtr> m_instanceTable;
+  std::mutex m_mutex;
 };
 
-//<!***************************************************************************
 }  // namespace rocketmq
 
-#endif
+#endif  // __MQ_CLIENT_MANAGER_H__

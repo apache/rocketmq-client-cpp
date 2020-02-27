@@ -14,25 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TOPICCONFIG_H__
-#define __TOPICCONFIG_H__
+#ifndef __TOPIC_CONFIG_H__
+#define __TOPIC_CONFIG_H__
 
 #include <string>
+
 #include "TopicFilterType.h"
 #include "UtilAll.h"
+
 namespace rocketmq {
-//<!************************************************************************
+
 class TopicConfig {
  public:
   TopicConfig();
-  TopicConfig(const string& topicName);
-  TopicConfig(const string& topicName, int readQueueNums, int writeQueueNums, int perm);
+  TopicConfig(const std::string& topicName);
+  TopicConfig(const std::string& topicName, int readQueueNums, int writeQueueNums, int perm);
   ~TopicConfig();
 
-  string encode();
-  bool decode(const string& in);
-  const string& getTopicName();
-  void setTopicName(const string& topicName);
+  std::string encode();
+  bool decode(const std::string& in);
+  const std::string& getTopicName();
+  void setTopicName(const std::string& topicName);
   int getReadQueueNums();
   void setReadQueueNums(int readQueueNums);
   int getWriteQueueNums();
@@ -47,14 +49,15 @@ class TopicConfig {
   static int DefaultWriteQueueNums;
 
  private:
-  static string SEPARATOR;
+  static std::string SEPARATOR;
 
-  string m_topicName;
+  std::string m_topicName;
   int m_readQueueNums;
   int m_writeQueueNums;
   int m_perm;
   TopicFilterType m_topicFilterType;
 };
-//<!***************************************************************************
-}  //<!end namespace;
-#endif
+
+}  // namespace rocketmq
+
+#endif  // __TOPIC_CONFIG_H__

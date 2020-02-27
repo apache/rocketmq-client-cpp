@@ -14,45 +14,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "c/CMessageExt.h"
 
 #include "MQMessageExt.h"
-#include "CMessageExt.h"
-#include "CCommon.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 using namespace rocketmq;
+
 const char* GetMessageTopic(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL;
   }
   return ((MQMessageExt*)msg)->getTopic().c_str();
 }
+
 const char* GetMessageTags(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL;
   }
   return ((MQMessageExt*)msg)->getTags().c_str();
 }
+
 const char* GetMessageKeys(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL;
   }
   return ((MQMessageExt*)msg)->getKeys().c_str();
 }
+
 const char* GetMessageBody(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL;
   }
   return ((MQMessageExt*)msg)->getBody().c_str();
 }
+
 const char* GetMessageProperty(CMessageExt* msg, const char* key) {
   if (msg == NULL) {
     return NULL;
   }
   return ((MQMessageExt*)msg)->getProperty(key).c_str();
 }
+
 const char* GetMessageId(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL;
@@ -122,6 +124,3 @@ long long GetMessagePreparedTransactionOffset(CMessageExt* msg) {
   }
   return ((MQMessageExt*)msg)->getPreparedTransactionOffset();
 }
-#ifdef __cplusplus
-};
-#endif

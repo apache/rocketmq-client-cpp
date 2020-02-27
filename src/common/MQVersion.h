@@ -14,13 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQVERSION_H__
-#define __MQVERSION_H__
+#ifndef __MQ_VERSION_H__
+#define __MQ_VERSION_H__
 
 #include <string>
 
 namespace rocketmq {
-//<!***************************************************************************
 
 static const char* RocketMQCPPClientVersion[] = {"V3_0_0_SNAPSHOT",  "V3_0_0_ALPHA1",
                                                  "V3_0_0_BETA1",     "V3_0_0_BETA2",
@@ -1522,6 +1521,7 @@ class MQVersion {
 
     V5_9_9_SNAPSHOT,
     V5_9_9,
+
     HIGHER_VERSION
   };
 
@@ -1530,6 +1530,6 @@ class MQVersion {
   static std::string s_CurrentLanguage;
 };
 
-//<!***************************************************************************
 }  // namespace rocketmq
-#endif
+
+#endif  // __MQ_VERSION_H__

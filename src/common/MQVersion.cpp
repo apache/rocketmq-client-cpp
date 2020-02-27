@@ -17,10 +17,10 @@
 #include "MQVersion.h"
 
 namespace rocketmq {
+
 int MQVersion::s_CurrentVersion = MQVersion::V4_6_0;
 std::string MQVersion::s_CurrentLanguage = "CPP";
 
-//<!************************************************************************
 const char* MQVersion::GetVersionDesc(int value) {
   int currentVersion = value;
   if (value <= V3_0_0_SNAPSHOT) {
@@ -31,5 +31,5 @@ const char* MQVersion::GetVersionDesc(int value) {
   }
   return RocketMQCPPClientVersion[currentVersion];
 }
-//<!***************************************************************************
+
 }  // namespace rocketmq

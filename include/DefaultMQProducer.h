@@ -14,105 +14,126 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __DEFAULT_MQ_PRODUCER_H__
+#define __DEFAULT_MQ_PRODUCER_H__
 
-#ifndef __DEFAULTMQPRODUCER_H__
-#define __DEFAULTMQPRODUCER_H__
-
-#include "BatchMessage.h"
-#include "MQMessageQueue.h"
+#include "MQClientConfig.h"
 #include "MQProducer.h"
-#include "RocketMQClient.h"
-#include "SendResult.h"
+#include "RPCHook.h"
 
 namespace rocketmq {
-//<!***************************************************************************
-class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer {
+
+class ROCKETMQCLIENT_API DefaultMQProducerConfig : public MQClientConfig {
  public:
-  DefaultMQProducer(const std::string& groupname);
-  virtual ~DefaultMQProducer();
-
-  //<!begin mqadmin;
-  virtual void start();
-  virtual void shutdown();
-  //<!end mqadmin;
-
-  //<! begin MQProducer;
-  virtual SendResult send(MQMessage& msg, bool bSelectActiveBroker = false);
-  virtual SendResult send(MQMessage& msg, const MQMessageQueue& mq);
-  virtual SendResult send(MQMessage& msg, MessageQueueSelector* selector, void* arg);
-  virtual SendResult send(MQMessage& msg,
-                          MessageQueueSelector* selector,
-                          void* arg,
-                          int autoRetryTimes,
-                          bool bActiveBroker = false);
-  virtual SendResult send(std::vector<MQMessage>& msgs);
-  virtual SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq);
-  virtual void send(MQMessage& msg, SendCallback* pSendCallback, bool bSelectActiveBroker = false);
-  virtual void send(MQMessage& msg, const MQMessageQueue& mq, SendCallback* pSendCallback);
-  virtual void send(MQMessage& msg, MessageQueueSelector* selector, void* arg, SendCallback* pSendCallback);
-  virtual void sendOneway(MQMessage& msg, bool bSelectActiveBroker = false);
-  virtual void sendOneway(MQMessage& msg, const MQMessageQueue& mq);
-  virtual void sendOneway(MQMessage& msg, MessageQueueSelector* selector, void* arg);
-  //<! end MQProducer;
-
-  // set and get timeout of per msg
-  int getSendMsgTimeout() const;
-  void setSendMsgTimeout(int sendMsgTimeout);
-
-  /*
-  *  if msgBody size is large than m_compressMsgBodyOverHowmuch
-      rocketmq cpp will compress msgBody according to compressLevel
-  */
-  int getCompressMsgBodyOverHowmuch() const;
-  void setCompressMsgBodyOverHowmuch(int compressMsgBodyOverHowmuch);
-  int getCompressLevel() const;
-  void setCompressLevel(int compressLevel);
+  DefaultMQProducerConfig();
+  virtual ~DefaultMQProducerConfig() = default;
 
   // if msgbody size larger than maxMsgBodySize, exception will be throwed
-  int getMaxMessageSize() const;
-  void setMaxMessageSize(int maxMessageSize);
+  int getMaxMessageSize() const { return m_maxMessageSize; }
+  void setMaxMessageSize(int maxMessageSize) { m_maxMessageSize = maxMessageSize; }
+
+  /*
+   * if msgBody size is large than m_compressMsgBodyOverHowmuch
+   *  rocketmq cpp will compress msgBody according to compressLevel
+   */
+  int getCompressMsgBodyOverHowmuch() const { return m_compressMsgBodyOverHowmuch; }
+  void setCompressMsgBodyOverHowmuch(int compressMsgBodyOverHowmuch) {
+    m_compressMsgBodyOverHowmuch = compressMsgBodyOverHowmuch;
+  }
+
+  int getCompressLevel() const { return m_compressLevel; }
+  void setCompressLevel(int compressLevel) {
+    if ((compressLevel >= 0 && compressLevel <= 9) || compressLevel == -1) {
+      m_compressLevel = compressLevel;
+    }
+  }
+
+  // set and get timeout of per msg
+  int getSendMsgTimeout() const { return m_sendMsgTimeout; }
+  void setSendMsgTimeout(int sendMsgTimeout) { m_sendMsgTimeout = sendMsgTimeout; }
 
   // set msg max retry times, default retry times is 5
-  int getRetryTimes() const;
-  void setRetryTimes(int times);
+  int getRetryTimes() const { return m_retryTimes; }
+  void setRetryTimes(int times) { m_retryTimes = std::min(std::max(0, times), 15); }
 
-  int getRetryTimes4Async() const;
-  void setRetryTimes4Async(int times);
+  int getRetryTimes4Async() const { return m_retryTimes4Async; }
+  void setRetryTimes4Async(int times) { m_retryTimes4Async = std::min(std::max(0, times), 15); }
+
+  bool isRetryAnotherBrokerWhenNotStoreOK() const { return m_retryAnotherBrokerWhenNotStoreOK; }
+  void setRetryAnotherBrokerWhenNotStoreOK(bool retryAnotherBrokerWhenNotStoreOK) {
+    m_retryAnotherBrokerWhenNotStoreOK = retryAnotherBrokerWhenNotStoreOK;
+  }
+
+  virtual bool isSendLatencyFaultEnable() const = 0;
+  virtual void setSendLatencyFaultEnable(bool sendLatencyFaultEnable) = 0;
 
  protected:
-  SendResult sendAutoRetrySelectImpl(MQMessage& msg,
-                                     MessageQueueSelector* pSelector,
-                                     void* pArg,
-                                     int communicationMode,
-                                     SendCallback* pSendCallback,
-                                     int retryTimes,
-                                     bool bActiveBroker = false);
-  SendResult sendSelectImpl(MQMessage& msg,
-                            MessageQueueSelector* pSelector,
-                            void* pArg,
-                            int communicationMode,
-                            SendCallback* sendCallback);
-  SendResult sendDefaultImpl(MQMessage& msg,
-                             int communicationMode,
-                             SendCallback* pSendCallback,
-                             bool bActiveBroker = false);
-  SendResult sendKernelImpl(MQMessage& msg,
-                            const MQMessageQueue& mq,
-                            int communicationMode,
-                            SendCallback* pSendCallback);
-  bool tryToCompressMessage(MQMessage& msg);
-  BatchMessage buildBatchMessage(std::vector<MQMessage>& msgs);
-  bool dealWithNameSpace();
-
- private:
-  int m_sendMsgTimeout;
-  int m_compressMsgBodyOverHowmuch;
-  int m_maxMessageSize;  //<! default:128K;
-  // bool m_retryAnotherBrokerWhenNotStoreOK;
+  int m_maxMessageSize;              // default: 4 MB
+  int m_compressMsgBodyOverHowmuch;  // default: 4 KB
   int m_compressLevel;
+  int m_sendMsgTimeout;
   int m_retryTimes;
   int m_retryTimes4Async;
+  bool m_retryAnotherBrokerWhenNotStoreOK;
 };
-//<!***************************************************************************
+
+class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer, public DefaultMQProducerConfig {
+ public:
+  DefaultMQProducer(const std::string& groupname);
+  DefaultMQProducer(const std::string& groupname, RPCHookPtr rpcHook);
+  virtual ~DefaultMQProducer();
+
+ public:  // MQProducer
+  void start() override;
+  void shutdown() override;
+
+  // Sync: caller will be responsible for the lifecycle of messages.
+  SendResult send(MQMessagePtr msg) override;
+  SendResult send(MQMessagePtr msg, long timeout) override;
+  SendResult send(MQMessagePtr msg, const MQMessageQueue& mq) override;
+  SendResult send(MQMessagePtr msg, const MQMessageQueue& mq, long timeout) override;
+
+  // Async: don't delete msg object, until callback occur.
+  void send(MQMessagePtr msg, SendCallback* sendCallback) noexcept override;
+  void send(MQMessagePtr msg, SendCallback* sendCallback, long timeout) noexcept override;
+  void send(MQMessagePtr msg, const MQMessageQueue& mq, SendCallback* sendCallback) noexcept override;
+  void send(MQMessagePtr msg, const MQMessageQueue& mq, SendCallback* sendCallback, long timeout) noexcept override;
+
+  // Oneyway: same as sync send, but don't care its result.
+  void sendOneway(MQMessagePtr msg) override;
+  void sendOneway(MQMessagePtr msg, const MQMessageQueue& mq) override;
+
+  // Select
+  SendResult send(MQMessagePtr msg, MessageQueueSelector* selector, void* arg) override;
+  SendResult send(MQMessagePtr msg, MessageQueueSelector* selector, void* arg, long timeout) override;
+  void send(MQMessagePtr msg, MessageQueueSelector* selector, void* arg, SendCallback* sendCallback) noexcept override;
+  void send(MQMessagePtr msg,
+            MessageQueueSelector* selector,
+            void* arg,
+            SendCallback* sendCallback,
+            long timeout) noexcept override;
+  void sendOneway(MQMessagePtr msg, MessageQueueSelector* selector, void* arg) override;
+
+  // Transaction
+  TransactionSendResult sendMessageInTransaction(MQMessagePtr msg, void* arg) override;
+
+  // Batch: power by sync send, caller will be responsible for the lifecycle of messages.
+  SendResult send(std::vector<MQMessagePtr>& msgs) override;
+  SendResult send(std::vector<MQMessagePtr>& msgs, long timeout) override;
+  SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq) override;
+  SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq, long timeout) override;
+
+ public:  // DefaultMQProducerConfig
+  bool isSendLatencyFaultEnable() const override;
+  void setSendLatencyFaultEnable(bool sendLatencyFaultEnable) override;
+
+ public:
+  void setRPCHook(std::shared_ptr<RPCHook> rpcHook);
+
+ protected:
+  std::shared_ptr<MQProducer> m_producerDelegate;
+};
+
 }  // namespace rocketmq
-#endif
+
+#endif  // __DEFAULT_MQ_PRODUCER_H__

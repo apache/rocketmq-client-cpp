@@ -14,25 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __NAMESRVCONFIG_H__
-#define __NAMESRVCONFIG_H__
+#ifndef __NAMESRV_CONFIG_H__
+#define __NAMESRV_CONFIG_H__
 
 #include <stdlib.h>
 #include <string>
 #include "UtilAll.h"
 
 namespace rocketmq {
-//<!***************************************************************************
+
 class NamesrvConfig {
  public:
   NamesrvConfig() {
-    m_kvConfigPath = "";
-
-    char* home = getenv(rocketmq::ROCKETMQ_HOME_ENV.c_str());
-    if (home) {
+    char* home = std::getenv(ROCKETMQ_HOME_ENV.c_str());
+    if (home != nullptr) {
       m_rocketmqHome = home;
-    } else {
-      m_rocketmqHome = "";
     }
   }
 
@@ -49,6 +45,6 @@ class NamesrvConfig {
   string m_kvConfigPath;
 };
 
-//<!***************************************************************************
 }  // namespace rocketmq
-#endif
+
+#endif  // __NAMESRV_CONFIG_H__

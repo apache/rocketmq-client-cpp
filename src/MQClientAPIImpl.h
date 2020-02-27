@@ -14,217 +14,187 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __MQ_CLIENT_API_IMPL_H__
+#define __MQ_CLIENT_API_IMPL_H__
 
-#ifndef __MQCLIENTAPIIMPL_H__
-#define __MQCLIENTAPIIMPL_H__
-#include "AsyncCallback.h"
-#include "ClientRPCHook.h"
-#include "ClientRemotingProcessor.h"
 #include "CommandHeader.h"
+#include "CommunicationMode.h"
+#include "DefaultMQProducerImpl.h"
 #include "HeartbeatData.h"
 #include "KVTable.h"
 #include "LockBatchBody.h"
 #include "MQClientException.h"
+#include "MQClientInstance.h"
 #include "MQMessageExt.h"
-#include "MQProtos.h"
+#include "PullCallback.h"
+#include "SendCallback.h"
 #include "SendResult.h"
-#include "SocketUtil.h"
-#include "TcpRemotingClient.h"
-#include "TopAddressing.h"
 #include "TopicConfig.h"
 #include "TopicList.h"
+#include "TopicPublishInfo.h"
 #include "TopicRouteData.h"
-#include "UtilAll.h"
-#include "VirtualEnvUtil.h"
 
 namespace rocketmq {
-//<!wrap all API to net ;
-//<!************************************************************************
+
+class TcpRemotingClient;
+class ClientRemotingProcessor;
+class RPCHook;
+class SendCallbackWrap;
+
+/**
+ * wrap all RPC API
+ */
 class MQClientAPIImpl {
  public:
-  MQClientAPIImpl(const string& mqClientId,
-                  ClientRemotingProcessor* clientRemotingProcessor,
-                  int pullThreadNum,
-                  uint64_t tcpConnectTimeout,
-                  uint64_t tcpTransportTryLockTimeout,
-                  string unitName);
+  MQClientAPIImpl(ClientRemotingProcessor* clientRemotingProcessor,
+                  std::shared_ptr<RPCHook> rpcHook,
+                  const MQClientConfig* clientConfig);
   virtual ~MQClientAPIImpl();
-  virtual void stopAllTcpTransportThread();
-  virtual bool writeDataToFile(string filename, string data, bool isSync);
-  virtual string fetchNameServerAddr(const string& NSDomain);
-  virtual void updateNameServerAddr(const string& addrs);
 
-  virtual void callSignatureBeforeRequest(const string& addr,
-                                          RemotingCommand& request,
-                                          const SessionCredentials& session_credentials);
-  virtual void createTopic(const string& addr,
-                           const string& defaultTopic,
-                           TopicConfig topicConfig,
-                           const SessionCredentials& sessionCredentials);
-  virtual void endTransactionOneway(std::string addr,
-                                    EndTransactionRequestHeader* requestHeader,
-                                    std::string remark,
-                                    const SessionCredentials& sessionCredentials);
+  void start();
+  void shutdown();
 
-  virtual SendResult sendMessage(const string& addr,
-                                 const string& brokerName,
-                                 const MQMessage& msg,
-                                 SendMessageRequestHeader* pRequestHeader,
-                                 int timeoutMillis,
-                                 int maxRetrySendTimes,
-                                 int communicationMode,
-                                 SendCallback* pSendCallback,
-                                 const SessionCredentials& sessionCredentials);
+  void updateNameServerAddr(const std::string& addrs);
 
-  virtual PullResult* pullMessage(const string& addr,
-                                  PullMessageRequestHeader* pRequestHeader,
-                                  int timeoutMillis,
-                                  int communicationMode,
-                                  PullCallback* pullCallback,
-                                  void* pArg,
-                                  const SessionCredentials& sessionCredentials);
+  void createTopic(const std::string& addr, const std::string& defaultTopic, TopicConfig topicConfig);
 
-  virtual void sendHeartbeat(const string& addr,
-                             HeartbeatData* pHeartbeatData,
-                             const SessionCredentials& sessionCredentials);
+  SendResult* sendMessage(const std::string& addr,
+                          const std::string& brokerName,
+                          const MQMessagePtr msg,
+                          std::unique_ptr<SendMessageRequestHeader> requestHeader,
+                          int timeoutMillis,
+                          CommunicationMode communicationMode,
+                          DefaultMQProducerImplPtr producer);
+  SendResult* sendMessage(const std::string& addr,
+                          const std::string& brokerName,
+                          const MQMessagePtr msg,
+                          std::unique_ptr<SendMessageRequestHeader> requestHeader,
+                          int timeoutMillis,
+                          CommunicationMode communicationMode,
+                          SendCallback* sendCallback,
+                          TopicPublishInfoPtr topicPublishInfo,
+                          MQClientInstancePtr instance,
+                          int retryTimesWhenSendFailed,
+                          DefaultMQProducerImplPtr producer);
+  SendResult* processSendResponse(const std::string& brokerName, const MQMessagePtr msg, RemotingCommand* pResponse);
 
-  virtual void unregisterClient(const string& addr,
-                                const string& clientID,
-                                const string& producerGroup,
-                                const string& consumerGroup,
-                                const SessionCredentials& sessionCredentials);
+  PullResult* pullMessage(const std::string& addr,
+                          PullMessageRequestHeader* pRequestHeader,
+                          int timeoutMillis,
+                          CommunicationMode communicationMode,
+                          PullCallback* pullCallback);
+  PullResult* processPullResponse(RemotingCommand* pResponse);
 
-  virtual TopicRouteData* getTopicRouteInfoFromNameServer(const string& topic,
-                                                          int timeoutMillis,
-                                                          const SessionCredentials& sessionCredentials);
+  MQMessageExtPtr viewMessage(const std::string& addr, int64_t phyoffset, int timeoutMillis);
 
-  virtual TopicList* getTopicListFromNameServer(const SessionCredentials& sessionCredentials);
+  int64_t searchOffset(const std::string& addr,
+                       const std::string& topic,
+                       int queueId,
+                       uint64_t timestamp,
+                       int timeoutMillis);
 
-  virtual int wipeWritePermOfBroker(const string& namesrvAddr, const string& brokerName, int timeoutMillis);
+  int64_t getMaxOffset(const std::string& addr, const std::string& topic, int queueId, int timeoutMillis);
+  int64_t getMinOffset(const std::string& addr, const std::string& topic, int queueId, int timeoutMillis);
 
-  virtual void deleteTopicInBroker(const string& addr, const string& topic, int timeoutMillis);
+  int64_t getEarliestMsgStoretime(const std::string& addr, const std::string& topic, int queueId, int timeoutMillis);
 
-  virtual void deleteTopicInNameServer(const string& addr, const string& topic, int timeoutMillis);
+  void getConsumerIdListByGroup(const std::string& addr,
+                                const std::string& consumerGroup,
+                                std::vector<std::string>& cids,
+                                int timeoutMillis);
 
-  virtual void deleteSubscriptionGroup(const string& addr, const string& groupName, int timeoutMillis);
+  int64_t queryConsumerOffset(const std::string& addr,
+                              QueryConsumerOffsetRequestHeader* pRequestHeader,
+                              int timeoutMillis);
 
-  virtual string getKVConfigByValue(const string& projectNamespace, const string& projectGroup, int timeoutMillis);
+  void updateConsumerOffset(const std::string& addr,
+                            UpdateConsumerOffsetRequestHeader* pRequestHeader,
+                            int timeoutMillis);
+  void updateConsumerOffsetOneway(const std::string& addr,
+                                  UpdateConsumerOffsetRequestHeader* pRequestHeader,
+                                  int timeoutMillis);
 
-  virtual KVTable getKVListByNamespace(const string& projectNamespace, int timeoutMillis);
+  void sendHearbeat(const std::string& addr, HeartbeatData* pHeartbeatData);
+  void unregisterClient(const std::string& addr,
+                        const std::string& clientID,
+                        const std::string& producerGroup,
+                        const std::string& consumerGroup);
 
-  virtual void deleteKVConfigByValue(const string& projectNamespace, const string& projectGroup, int timeoutMillis);
+  void endTransactionOneway(const std::string& addr,
+                            EndTransactionRequestHeader* requestHeader,
+                            const std::string& remark);
 
-  virtual SendResult processSendResponse(const string& brokerName, const MQMessage& msg, RemotingCommand* pResponse);
+  void consumerSendMessageBack(const std::string& addr,
+                               MQMessageExt& msg,
+                               const std::string& consumerGroup,
+                               int delayLevel,
+                               int timeoutMillis,
+                               int maxConsumeRetryTimes);
 
-  virtual PullResult* processPullResponse(RemotingCommand* pResponse);
+  void lockBatchMQ(const std::string& addr,
+                   LockBatchRequestBody* requestBody,
+                   std::vector<MQMessageQueue>& mqs,
+                   int timeoutMillis);
+  void unlockBatchMQ(const std::string& addr,
+                     UnlockBatchRequestBody* requestBody,
+                     int timeoutMillis,
+                     bool oneway = false);
 
-  virtual int64 getMinOffset(const string& addr,
-                             const string& topic,
-                             int queueId,
-                             int timeoutMillis,
-                             const SessionCredentials& sessionCredentials);
+  TopicRouteData* getTopicRouteInfoFromNameServer(const std::string& topic, int timeoutMillis);
 
-  virtual int64 getMaxOffset(const string& addr,
-                             const string& topic,
-                             int queueId,
-                             int timeoutMillis,
-                             const SessionCredentials& sessionCredentials);
+  TopicList* getTopicListFromNameServer();
 
-  virtual int64 searchOffset(const string& addr,
-                             const string& topic,
-                             int queueId,
-                             uint64_t timestamp,
-                             int timeoutMillis,
-                             const SessionCredentials& sessionCredentials);
+  int wipeWritePermOfBroker(const std::string& namesrvAddr, const std::string& brokerName, int timeoutMillis);
 
-  virtual MQMessageExt* viewMessage(const string& addr,
-                                    int64 phyoffset,
-                                    int timeoutMillis,
-                                    const SessionCredentials& sessionCredentials);
+  void deleteTopicInBroker(const std::string& addr, const std::string& topic, int timeoutMillis);
+  void deleteTopicInNameServer(const std::string& addr, const std::string& topic, int timeoutMillis);
 
-  virtual int64 getEarliestMsgStoretime(const string& addr,
-                                        const string& topic,
-                                        int queueId,
-                                        int timeoutMillis,
-                                        const SessionCredentials& sessionCredentials);
+  void deleteSubscriptionGroup(const std::string& addr, const std::string& groupName, int timeoutMillis);
 
-  virtual void getConsumerIdListByGroup(const string& addr,
-                                        const string& consumerGroup,
-                                        vector<string>& cids,
-                                        int timeoutMillis,
-                                        const SessionCredentials& sessionCredentials);
+  std::string getKVConfigByValue(const std::string& projectNamespace,
+                                 const std::string& projectGroup,
+                                 int timeoutMillis);
+  void deleteKVConfigByValue(const std::string& projectNamespace, const std::string& projectGroup, int timeoutMillis);
 
-  virtual int64 queryConsumerOffset(const string& addr,
-                                    QueryConsumerOffsetRequestHeader* pRequestHeader,
-                                    int timeoutMillis,
-                                    const SessionCredentials& sessionCredentials);
+  KVTable getKVListByNamespace(const std::string& projectNamespace, int timeoutMillis);
 
-  virtual void updateConsumerOffset(const string& addr,
-                                    UpdateConsumerOffsetRequestHeader* pRequestHeader,
-                                    int timeoutMillis,
-                                    const SessionCredentials& sessionCredentials);
-
-  virtual void updateConsumerOffsetOneway(const string& addr,
-                                          UpdateConsumerOffsetRequestHeader* pRequestHeader,
-                                          int timeoutMillis,
-                                          const SessionCredentials& sessionCredentials);
-
-  virtual void consumerSendMessageBack(const string addr,
-                                       MQMessageExt& msg,
-                                       const string& consumerGroup,
-                                       int delayLevel,
-                                       int timeoutMillis,
-                                       int maxReconsumeTimes,
-                                       const SessionCredentials& sessionCredentials);
-
-  virtual void lockBatchMQ(const string& addr,
-                           LockBatchRequestBody* requestBody,
-                           vector<MQMessageQueue>& mqs,
-                           int timeoutMillis,
-                           const SessionCredentials& sessionCredentials);
-
-  virtual void unlockBatchMQ(const string& addr,
-                             UnlockBatchRequestBody* requestBody,
-                             int timeoutMillis,
-                             const SessionCredentials& sessionCredentials);
-
-  virtual void sendMessageAsync(const string& addr,
-                                const string& brokerName,
-                                const MQMessage& msg,
-                                RemotingCommand& request,
-                                SendCallback* pSendCallback,
-                                int64 timeoutMilliseconds,
-                                int maxRetryTimes = 1,
-                                int retrySendTimes = 1);
+ public:
+  TcpRemotingClient* getRemotingClient() { return m_remotingClient.get(); }
 
  private:
-  SendResult sendMessageSync(const string& addr,
-                             const string& brokerName,
-                             const MQMessage& msg,
-                             RemotingCommand& request,
-                             int timeoutMillis);
-  /*
-  void sendMessageAsync(const string& addr, const string& brokerName,
-                        const MQMessage& msg, RemotingCommand& request,
-                        SendCallback* pSendCallback, int64 timeoutMilliseconds);
-  */
-  PullResult* pullMessageSync(const string& addr, RemotingCommand& request, int timeoutMillis);
+  friend class SendCallbackWrap;
 
-  void pullMessageAsync(const string& addr,
+  SendResult* sendMessageSync(const std::string& addr,
+                              const std::string& brokerName,
+                              const MQMessagePtr msg,
+                              RemotingCommand& request,
+                              int timeoutMillis);
+
+  void sendMessageAsync(const std::string& addr,
+                        const std::string& brokerName,
+                        const MQMessagePtr msg,
+                        RemotingCommand&& request,
+                        SendCallback* sendCallback,
+                        TopicPublishInfoPtr topicPublishInfo,
+                        MQClientInstancePtr instance,
+                        int64_t timeoutMilliseconds,
+                        int retryTimesWhenSendFailed,
+                        DefaultMQProducerImplPtr producer) throw(RemotingException);
+
+  void sendMessageAsyncImpl(SendCallbackWrap* cbw, int64_t timeoutMillis) throw(RemotingException);
+
+  PullResult* pullMessageSync(const std::string& addr, RemotingCommand& request, int timeoutMillis);
+
+  void pullMessageAsync(const std::string& addr,
                         RemotingCommand& request,
                         int timeoutMillis,
-                        PullCallback* pullCallback,
-                        void* pArg);
-
- protected:
-  unique_ptr<TcpRemotingClient> m_pRemotingClient;
+                        PullCallback* pullCallback);
 
  private:
-  unique_ptr<TopAddressing> m_topAddressing;
-  string m_nameSrvAddr;
-  bool m_firstFetchNameSrv;
-  string m_mqClientId;
+  std::unique_ptr<TcpRemotingClient> m_remotingClient;
+  std::string m_nameSrvAddr;
 };
+
 }  // namespace rocketmq
-//<!***************************************************************************
-#endif
+
+#endif  // __MQ_CLIENT_API_IMPL_H__

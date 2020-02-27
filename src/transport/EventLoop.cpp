@@ -16,13 +16,16 @@
  */
 #include "EventLoop.h"
 
-#if !defined(WIN32) && !defined(__APPLE__)
-#include <sys/prctl.h>
-#endif
-
 #include <event2/thread.h>
 
+#ifndef WIN32
+#include <arpa/inet.h>
+#else
+#include <Winsock2.h>
+#endif
+
 #include "Logging.h"
+#include "SocketUtil.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
@@ -33,7 +36,7 @@ EventLoop* EventLoop::GetDefaultEventLoop() {
 }
 
 EventLoop::EventLoop(const struct event_config* config, bool run_immediately)
-    : m_eventBase(nullptr), m_loopThread(nullptr), _is_running(false) {
+    : m_eventBase(nullptr), m_loopThread("EventLoop"), _is_running(false) {
   // tell libevent support multi-threads
 #ifdef WIN32
   evthread_use_windows_threads();
@@ -48,12 +51,14 @@ EventLoop::EventLoop(const struct event_config* config, bool run_immediately)
   }
 
   if (m_eventBase == nullptr) {
-    // failure...
+    // FIXME: failure...
     LOG_ERROR("Failed to create event base!");
-    return;
+    exit(-1);
   }
 
   evthread_make_base_notifiable(m_eventBase);
+
+  m_loopThread.set_target(&EventLoop::runLoop, this);
 
   if (run_immediately) {
     start();
@@ -63,6 +68,8 @@ EventLoop::EventLoop(const struct event_config* config, bool run_immediately)
 EventLoop::~EventLoop() {
   stop();
 
+  freeBufferEvent();
+
   if (m_eventBase != nullptr) {
     event_base_free(m_eventBase);
     m_eventBase = nullptr;
@@ -70,60 +77,69 @@ EventLoop::~EventLoop() {
 }
 
 void EventLoop::start() {
-  if (m_loopThread == nullptr) {
-    // start event loop
-#if !defined(WIN32) && !defined(__APPLE__)
-    string taskName = UtilAll::getProcessName();
-    prctl(PR_SET_NAME, "EventLoop", 0, 0, 0);
-#endif
-    m_loopThread = new std::thread(&EventLoop::runLoop, this);
-#if !defined(WIN32) && !defined(__APPLE__)
-    prctl(PR_SET_NAME, taskName.c_str(), 0, 0, 0);
-#endif
+  if (!_is_running) {
+    _is_running = true;
+    m_loopThread.start();
   }
 }
 
 void EventLoop::stop() {
-  if (m_loopThread != nullptr /*&& m_loopThread.joinable()*/) {
+  if (_is_running) {
     _is_running = false;
-    m_loopThread->join();
-
-    delete m_loopThread;
-    m_loopThread = nullptr;
+    m_loopThread.join();
   }
 }
 
 void EventLoop::runLoop() {
-  _is_running = true;
-
   while (_is_running) {
-    int ret;
+    freeBufferEvent();
 
-    ret = event_base_dispatch(m_eventBase);
-    //    ret = event_base_loop(m_eventBase, EVLOOP_NONBLOCK);
-
+    int ret = event_base_dispatch(m_eventBase);
     if (ret == 1) {
       // no event
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
   }
+
+  freeBufferEvent();
 }
+
+#if ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
+void EventLoop::freeBufferEvent() {
+  while (true) {
+    auto event = _free_queue.pop_front();
+    if (event == nullptr) {
+      break;
+    }
+    bufferevent_free(*event);
+  }
+}
+
+void EventLoop::freeBufferEvent(struct bufferevent* event) {
+  _free_queue.push_back(event);
+}
+#else
+void EventLoop::freeBufferEvent() {}
+#endif  // ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
 
 #define OPT_UNLOCK_CALLBACKS (BEV_OPT_DEFER_CALLBACKS | BEV_OPT_UNLOCK_CALLBACKS)
 
 BufferEvent* EventLoop::createBufferEvent(socket_t fd, int options) {
   struct bufferevent* event = bufferevent_socket_new(m_eventBase, fd, options);
   if (event == nullptr) {
+    auto ev_errno = EVUTIL_SOCKET_ERROR();
+    LOG_ERROR_NEW("create bufferevent failed: {}", evutil_socket_error_to_string(ev_errno));
     return nullptr;
   }
 
   bool unlock = (options & OPT_UNLOCK_CALLBACKS) == OPT_UNLOCK_CALLBACKS;
 
-  return new BufferEvent(event, unlock);
+  return new BufferEvent(event, unlock, this);
 }
 
-BufferEvent::BufferEvent(struct bufferevent* event, bool unlockCallbacks)
-    : m_bufferEvent(event),
+BufferEvent::BufferEvent(struct bufferevent* event, bool unlockCallbacks, EventLoop* loop)
+    : m_eventLoop(loop),
+      m_bufferEvent(event),
       m_unlockCallbacks(unlockCallbacks),
       m_readCallback(nullptr),
       m_writeCallback(nullptr),
@@ -138,8 +154,11 @@ BufferEvent::BufferEvent(struct bufferevent* event, bool unlockCallbacks)
 
 BufferEvent::~BufferEvent() {
   if (m_bufferEvent != nullptr) {
-    // free function will set all callbacks to NULL first.
+#if ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
+    m_eventLoop->freeBufferEvent(m_bufferEvent);
+#else
     bufferevent_free(m_bufferEvent);
+#endif  // ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
     m_bufferEvent = nullptr;
   }
 }
@@ -171,16 +190,18 @@ void BufferEvent::setCallback(BufferEventDataCallback readCallback,
 void BufferEvent::read_callback(struct bufferevent* bev, void* ctx) {
   auto event = static_cast<BufferEvent*>(ctx);
 
-  if (event->m_unlockCallbacks)
+  if (event->m_unlockCallbacks) {
     bufferevent_lock(event->m_bufferEvent);
+  }
 
   BufferEventDataCallback callback = event->m_readCallback;
   std::shared_ptr<TcpTransport> transport = event->m_callbackTransport.lock();
 
-  if (event->m_unlockCallbacks)
+  if (event->m_unlockCallbacks) {
     bufferevent_unlock(event->m_bufferEvent);
+  }
 
-  if (callback) {
+  if (callback != nullptr) {
     callback(event, transport.get());
   }
 }
@@ -188,16 +209,18 @@ void BufferEvent::read_callback(struct bufferevent* bev, void* ctx) {
 void BufferEvent::write_callback(struct bufferevent* bev, void* ctx) {
   auto event = static_cast<BufferEvent*>(ctx);
 
-  if (event->m_unlockCallbacks)
+  if (event->m_unlockCallbacks) {
     bufferevent_lock(event->m_bufferEvent);
+  }
 
   BufferEventDataCallback callback = event->m_writeCallback;
   std::shared_ptr<TcpTransport> transport = event->m_callbackTransport.lock();
 
-  if (event->m_unlockCallbacks)
+  if (event->m_unlockCallbacks) {
     bufferevent_unlock(event->m_bufferEvent);
+  }
 
-  if (callback) {
+  if (callback != nullptr) {
     callback(event, transport.get());
   }
 }
@@ -208,32 +231,48 @@ static std::string buildPeerAddrPort(socket_t fd) {
 
   getpeername(fd, (struct sockaddr*)&addr, &len);
 
-  LOG_DEBUG("socket: %d, addr: %s, port: %d", fd, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
-  std::string addrPort(inet_ntoa(addr.sin_addr));
-  addrPort.append(":");
-  addrPort.append(UtilAll::to_string(ntohs(addr.sin_port)));
+  std::string addrPort = socketAddress2IPPort((struct sockaddr*)&addr);
+  LOG_DEBUG("socket: %d, addr: %s", fd, addrPort);
 
   return addrPort;
+}
+
+int BufferEvent::connect(const struct sockaddr* addr, int socklen) {
+  m_peerAddrPort = socketAddress2IPPort(addr);
+  return bufferevent_socket_connect(m_bufferEvent, (struct sockaddr*)addr, socklen);
+}
+
+int BufferEvent::close() {
+  bufferevent_lock(m_bufferEvent);
+  auto fd = bufferevent_getfd(m_bufferEvent);
+  int ret = -1;
+  if (fd >= 0) {
+    ret = evutil_closesocket(fd);
+  }
+  bufferevent_unlock(m_bufferEvent);
+  return ret;
 }
 
 void BufferEvent::event_callback(struct bufferevent* bev, short what, void* ctx) {
   auto event = static_cast<BufferEvent*>(ctx);
 
-  if (what & BEV_EVENT_CONNECTED) {
-    socket_t fd = event->getfd();
-    event->m_peerAddrPort = buildPeerAddrPort(fd);
-  }
+  // if (what & BEV_EVENT_CONNECTED) {
+  //   socket_t fd = event->getfd();
+  //   event->m_peerAddrPort = buildPeerAddrPort(fd);
+  // }
 
-  if (event->m_unlockCallbacks)
+  if (event->m_unlockCallbacks) {
     bufferevent_lock(event->m_bufferEvent);
+  }
 
   BufferEventEventCallback callback = event->m_eventCallback;
   std::shared_ptr<TcpTransport> transport = event->m_callbackTransport.lock();
 
-  if (event->m_unlockCallbacks)
+  if (event->m_unlockCallbacks) {
     bufferevent_unlock(event->m_bufferEvent);
+  }
 
-  if (callback) {
+  if (callback != nullptr) {
     callback(event, what, transport.get());
   }
 }

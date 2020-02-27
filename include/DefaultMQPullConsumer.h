@@ -14,135 +14,80 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef __DEFAULTMQPULLCONSUMER_H__
-#define __DEFAULTMQPULLCONSUMER_H__
+#ifndef __DEFAULT_MQ_PULL_CONSUMER_H__
+#define __DEFAULT_MQ_PULL_CONSUMER_H__
 
 #include <set>
 #include <string>
-#include "MQConsumer.h"
-#include "MQMessageQueue.h"
-#include "MQueueListener.h"
-#include "RocketMQClient.h"
+
+#include "AllocateMQStrategy.h"
+#include "DefaultMQConsumer.h"
+#include "MQPullConsumer.h"
+#include "RPCHook.h"
 
 namespace rocketmq {
-class Rebalance;
-class SubscriptionData;
-class OffsetStore;
-class PullAPIWrapper;
-class ConsumerRunningInfo;
-//<!***************************************************************************
-class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQConsumer {
+
+class ROCKETMQCLIENT_API DefaultMQPullConsumerConfig : public DefaultMQConsumerConfig {
+ public:
+  DefaultMQPullConsumerConfig();
+  virtual ~DefaultMQPullConsumerConfig() = default;
+
+  AllocateMQStrategy* getAllocateMQStrategy() { return m_allocateMQStrategy.get(); }
+  void setAllocateMQStrategy(AllocateMQStrategy* strategy) { m_allocateMQStrategy.reset(strategy); }
+
+ protected:
+  std::unique_ptr<AllocateMQStrategy> m_allocateMQStrategy;
+};
+
+class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQPullConsumer, public DefaultMQPullConsumerConfig {
  public:
   DefaultMQPullConsumer(const std::string& groupname);
+  DefaultMQPullConsumer(const std::string& groupname, RPCHookPtr rpcHook);
   virtual ~DefaultMQPullConsumer();
 
-  //<!begin mqadmin;
-  virtual void start();
-  virtual void shutdown();
-  //<!end mqadmin;
+ public:  // MQConsumer
+  void start() override;
+  void shutdown() override;
 
-  //<!begin MQConsumer
-  virtual bool sendMessageBack(MQMessageExt& msg, int delayLevel, std::string& brokerName);
-  virtual void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs);
-  virtual void doRebalance();
-  virtual void persistConsumerOffset();
-  virtual void persistConsumerOffsetByResetOffset();
-  virtual void updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info);
-  virtual ConsumeType getConsumeType();
-  virtual ConsumeFromWhere getConsumeFromWhere();
-  virtual void getSubscriptions(std::vector<SubscriptionData>&);
-  virtual void updateConsumeOffset(const MQMessageQueue& mq, int64 offset);
-  virtual void removeConsumeOffset(const MQMessageQueue& mq);
-  virtual bool producePullMsgTask(boost::weak_ptr<PullRequest> pullRequest);
-  virtual Rebalance* getRebalance() const;
-  //<!end MQConsumer;
+  bool sendMessageBack(MQMessageExt& msg, int delayLevel) override;
+  bool sendMessageBack(MQMessageExt& msg, int delayLevel, const std::string& brokerName) override;
+  void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) override;
 
-  void registerMessageQueueListener(const std::string& topic, MQueueListener* pListener);
-  /**
-   * Pull message from specified queue, if no msg in queue, return directly
-   *
-   * @param mq
-   *            specify the pulled queue
-   * @param subExpression
-   *            set filter expression for pulled msg, broker will filter msg actively
-   *            Now only OR operation is supported, eg: "tag1 || tag2 || tag3"
-   *            if subExpression is setted to "null" or "*", all msg will be subscribed
-   * @param offset
-   *            specify the started pull offset
-   * @param maxNums
-   *            specify max msg num by per pull
-   * @return
-   *            PullResult
-   */
-  virtual PullResult pull(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums);
-  virtual void pull(const MQMessageQueue& mq,
-                    const std::string& subExpression,
-                    int64 offset,
-                    int maxNums,
-                    PullCallback* pPullCallback);
+ public:  // MQPullConsumer
+  void registerMessageQueueListener(const std::string& topic, MQueueListener* pListener) override;
 
-  /**
-   * pull msg from specified queue, if no msg, broker will suspend the pull request 20s
-   *
-   * @param mq
-   *            specify the pulled queue
-   * @param subExpression
-   *            set filter expression for pulled msg, broker will filter msg actively
-   *            Now only OR operation is supported, eg: "tag1 || tag2 || tag3"
-   *            if subExpression is setted to "null" or "*", all msg will be subscribed
-   * @param offset
-   *            specify the started pull offset
-   * @param maxNums
-   *            specify max msg num by per pull
-   * @return
-   *            accroding to PullResult
-   */
-  PullResult pullBlockIfNotFound(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums);
+  PullResult pull(const MQMessageQueue& mq, const std::string& subExpression, int64_t offset, int maxNums) override;
+
+  void pull(const MQMessageQueue& mq,
+            const std::string& subExpression,
+            int64_t offset,
+            int maxNums,
+            PullCallback* pullCallback) override;
+
+  PullResult pullBlockIfNotFound(const MQMessageQueue& mq,
+                                 const std::string& subExpression,
+                                 int64_t offset,
+                                 int maxNums) override;
+
   void pullBlockIfNotFound(const MQMessageQueue& mq,
                            const std::string& subExpression,
-                           int64 offset,
+                           int64_t offset,
                            int maxNums,
-                           PullCallback* pPullCallback);
+                           PullCallback* pullCallback) override;
 
-  virtual ConsumerRunningInfo* getConsumerRunningInfo() { return NULL; }
+  void updateConsumeOffset(const MQMessageQueue& mq, int64_t offset) override;
 
-  int64 fetchConsumeOffset(const MQMessageQueue& mq, bool fromStore);
+  int64_t fetchConsumeOffset(const MQMessageQueue& mq, bool fromStore) override;
 
-  void fetchMessageQueuesInBalance(const std::string& topic, std::vector<MQMessageQueue> mqs);
+  void fetchMessageQueuesInBalance(const std::string& topic, std::vector<MQMessageQueue>& mqs) override;
 
-  // temp persist consumer offset interface, only valid with
-  // RemoteBrokerOffsetStore, updateConsumeOffset should be called before.
-  void persistConsumerOffset4PullConsumer(const MQMessageQueue& mq);
+ public:
+  void setRPCHook(std::shared_ptr<RPCHook> rpcHook);
 
- private:
-  void checkConfig();
-  void copySubscription();
-  bool dealWithNameSpace();
-
-  PullResult pullSyncImpl(const MQMessageQueue& mq,
-                          const std::string& subExpression,
-                          int64 offset,
-                          int maxNums,
-                          bool block);
-
-  void pullAsyncImpl(const MQMessageQueue& mq,
-                     const std::string& subExpression,
-                     int64 offset,
-                     int maxNums,
-                     bool block,
-                     PullCallback* pPullCallback);
-
-  void subscriptionAutomatically(const std::string& topic);
-
- private:
-  std::set<std::string> m_registerTopics;
-
-  MQueueListener* m_pMessageQueueListener;
-  OffsetStore* m_pOffsetStore;
-  Rebalance* m_pRebalance;
-  PullAPIWrapper* m_pPullAPIWrapper;
+ protected:
+  std::shared_ptr<MQPullConsumer> m_pullConsumerDelegate;
 };
-//<!***************************************************************************
+
 }  // namespace rocketmq
-#endif
+
+#endif  // __DEFAULT_MQ_PULL_CONSUMER_H__

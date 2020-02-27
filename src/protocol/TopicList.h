@@ -14,22 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TOPICLIST_H__
-#define __TOPICLIST_H__
+#ifndef __TOPIC_LIST_H__
+#define __TOPIC_LIST_H__
+
 #include <string>
 #include <vector>
-#include "dataBlock.h"
+
+#include "DataBlock.h"
 
 namespace rocketmq {
-//<!***************************************************************************
+
 class TopicList {
  public:
-  static TopicList* Decode(const MemoryBlock* mem) { return new TopicList(); }
+  static TopicList* Decode(MemoryBlock& mem) { return new TopicList(); }
 
  private:
-  vector<string> m_topicList;
+  std::vector<std::string> m_topicList;
 };
-//<!************************************************************************
-}  //<!end namespace;
 
-#endif
+}  // namespace rocketmq
+
+#endif  // __TOPIC_LIST_H__

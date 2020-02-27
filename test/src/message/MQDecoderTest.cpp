@@ -52,18 +52,17 @@ using rocketmq::SendMessageRequestHeader;
 using rocketmq::UtilAll;
 
 // TODO
-TEST(decoder, messageId) {
+TEST(decoders, messageId) {
   int host;
   int port;
-  int64 offset = 1234567890;
   string msgIdStr =
-      MQDecoder::createMessageId(rocketmq::IPPort2socketAddress(ntohl(inet_addr("127.0.0.1")), 10091), offset);
+      MQDecoder::createMessageId(rocketmq::IPPort2socketAddress(inet_addr("127.0.0.1"), 10091), (int64)1024);
   MQMessageId msgId = MQDecoder::decodeMessageId(msgIdStr);
 
-  EXPECT_EQ(msgId.getOffset(), offset);
+  EXPECT_EQ(msgId.getOffset(), 1024);
 
   rocketmq::socketAddress2IPPort(msgId.getAddress(), host, port);
-  EXPECT_EQ(host, ntohl(inet_addr("127.0.0.1")));
+  EXPECT_EQ(host, inet_addr("127.0.0.1"));
   EXPECT_EQ(port, 10091);
 }
 
@@ -100,16 +99,16 @@ TEST(decoder, decoder) {
   memoryOut->writeInt64BigEndian((int64)4096);
   mext.setBornTimestamp(4096);
   // 10 BORNHOST 56= 48+8
-  memoryOut->writeIntBigEndian(ntohl(inet_addr("127.0.0.1")));
+  memoryOut->writeIntBigEndian(inet_addr("127.0.0.1"));
   memoryOut->writeIntBigEndian(10091);
-  mext.setBornHost(rocketmq::IPPort2socketAddress(ntohl(inet_addr("127.0.0.1")), 10091));
+  mext.setBornHost(rocketmq::IPPort2socketAddress(inet_addr("127.0.0.1"), 10091));
   // 11 STORETIMESTAMP 64 =56+8
   memoryOut->writeInt64BigEndian((int64)4096);
   mext.setStoreTimestamp(4096);
   // 12 STOREHOST 72 = 64+8
-  memoryOut->writeIntBigEndian(ntohl(inet_addr("127.0.0.2")));
+  memoryOut->writeIntBigEndian(inet_addr("127.0.0.2"));
   memoryOut->writeIntBigEndian(10092);
-  mext.setStoreHost(rocketmq::IPPort2socketAddress(ntohl(inet_addr("127.0.0.2")), 10092));
+  mext.setStoreHost(rocketmq::IPPort2socketAddress(inet_addr("127.0.0.2"), 10092));
   // 13 RECONSUMETIMES 76 = 72+4
   mext.setReconsumeTimes(111111);
   memoryOut->writeIntBigEndian(mext.getReconsumeTimes());

@@ -14,14 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include <stdio.h>
 #include <string.h>
-#include "CBatchMessage.h"
-#include "CCommon.h"
-#include "CMessage.h"
-#include "CProducer.h"
-#include "CSendResult.h"
+
+#include "c/CProducer.h"
 
 void StartSendMessage(CProducer* producer) {
   int i = 0;

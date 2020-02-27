@@ -14,531 +14,671 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "CommandHeader.h"
-#include <cstdlib>
+
 #include <sstream>
+
 #include "Logging.h"
+#include "MQClientException.h"
+#include "RemotingSerializable.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
-//<!************************************************************************
-void GetRouteInfoRequestHeader::Encode(Json::Value& outData) {
-  outData["topic"] = topic;
+
+//######################################
+// GetRouteInfoRequestHeader
+//######################################
+
+void GetRouteInfoRequestHeader::Encode(Json::Value& extFields) {
+  extFields["topic"] = topic;
 }
 
-void GetRouteInfoRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("topic", topic));
-}
-//<!***************************************************************************
-void UnregisterClientRequestHeader::Encode(Json::Value& outData) {
-  outData["clientID"] = clientID;
-  outData["producerGroup"] = producerGroup;
-  outData["consumerGroup"] = consumerGroup;
+void GetRouteInfoRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  requestMap.emplace("topic", topic);
 }
 
-void UnregisterClientRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("clientID", clientID));
-  requestMap.insert(pair<string, string>("producerGroup", producerGroup));
-  requestMap.insert(pair<string, string>("consumerGroup", consumerGroup));
-}
-//<!************************************************************************
-void CreateTopicRequestHeader::Encode(Json::Value& outData) {
-  outData["topic"] = topic;
-  outData["defaultTopic"] = defaultTopic;
-  outData["readQueueNums"] = readQueueNums;
-  outData["writeQueueNums"] = writeQueueNums;
-  outData["perm"] = perm;
-  outData["topicFilterType"] = topicFilterType;
-}
-void CreateTopicRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("topic", topic));
-  requestMap.insert(pair<string, string>("defaultTopic", defaultTopic));
-  requestMap.insert(pair<string, string>("readQueueNums", UtilAll::to_string(readQueueNums)));
-  requestMap.insert(pair<string, string>("writeQueueNums", UtilAll::to_string(writeQueueNums)));
-  requestMap.insert(pair<string, string>("perm", UtilAll::to_string(perm)));
-  requestMap.insert(pair<string, string>("topicFilterType", topicFilterType));
+//######################################
+// UnregisterClientRequestHeader
+//######################################
+
+void UnregisterClientRequestHeader::Encode(Json::Value& extFields) {
+  extFields["clientID"] = clientID;
+  if (!producerGroup.empty()) {
+    extFields["producerGroup"] = producerGroup;
+  }
+  if (!consumerGroup.empty()) {
+    extFields["consumerGroup"] = consumerGroup;
+  }
 }
 
-void CheckTransactionStateRequestHeader::Encode(Json::Value& outData) {}
+void UnregisterClientRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  requestMap.emplace("clientID", clientID);
+  if (!producerGroup.empty()) {
+    requestMap.emplace("producerGroup", producerGroup);
+  }
+  if (!consumerGroup.empty()) {
+    requestMap.emplace("consumerGroup", consumerGroup);
+  }
+}
 
-CommandHeader* CheckTransactionStateRequestHeader::Decode(Json::Value& ext) {
-  CheckTransactionStateRequestHeader* h = new CheckTransactionStateRequestHeader();
-  Json::Value& tempValue = ext["msgId"];
-  if (tempValue.isString()) {
-    h->m_msgId = tempValue.asString();
+//######################################
+// CreateTopicRequestHeader
+//######################################
+
+void CreateTopicRequestHeader::Encode(Json::Value& extFields) {
+  extFields["topic"] = topic;
+  extFields["defaultTopic"] = defaultTopic;
+  extFields["readQueueNums"] = UtilAll::to_string(readQueueNums);
+  extFields["writeQueueNums"] = UtilAll::to_string(writeQueueNums);
+  extFields["perm"] = UtilAll::to_string(perm);
+  extFields["topicFilterType"] = topicFilterType;
+  if (topicSysFlag != -1) {
+    extFields["topicSysFlag"] = UtilAll::to_string(topicSysFlag);
+  }
+  extFields["order"] = UtilAll::to_string(order);
+}
+
+void CreateTopicRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  requestMap.emplace("topic", topic);
+  requestMap.emplace("defaultTopic", defaultTopic);
+  requestMap.emplace("readQueueNums", UtilAll::to_string(readQueueNums));
+  requestMap.emplace("writeQueueNums", UtilAll::to_string(writeQueueNums));
+  requestMap.emplace("perm", UtilAll::to_string(perm));
+  requestMap.emplace("topicFilterType", topicFilterType);
+  if (topicSysFlag != -1) {
+    requestMap.emplace("topicSysFlag", UtilAll::to_string(topicSysFlag));
+  }
+  requestMap.emplace("order", UtilAll::to_string(order));
+}
+
+//######################################
+// CheckTransactionStateRequestHeader
+//######################################
+
+CheckTransactionStateRequestHeader* CheckTransactionStateRequestHeader::Decode(
+    std::map<std::string, std::string>& extFields) {
+  std::unique_ptr<CheckTransactionStateRequestHeader> header(new CheckTransactionStateRequestHeader());
+  header->tranStateTableOffset = std::stoll(extFields.at("tranStateTableOffset"));
+  header->commitLogOffset = std::stoll(extFields.at("commitLogOffset"));
+
+  auto it = extFields.find("msgId");
+  if (it != extFields.end()) {
+    header->msgId = it->second;
   }
 
-  tempValue = ext["transactionId"];
-  if (tempValue.isString()) {
-    h->m_transactionId = tempValue.asString();
+  it = extFields.find("transactionId");
+  if (it != extFields.end()) {
+    header->transactionId = it->second;
   }
 
-  tempValue = ext["offsetMsgId"];
-  if (tempValue.isString()) {
-    h->m_offsetMsgId = tempValue.asString();
+  it = extFields.find("offsetMsgId");
+  if (it != extFields.end()) {
+    header->offsetMsgId = it->second;
   }
 
-  tempValue = ext["tranStateTableOffset"];
-  if (tempValue.isString()) {
-    h->m_tranStateTableOffset = UtilAll::str2ll(tempValue.asCString());
-  }
-
-  tempValue = ext["commitLogOffset"];
-  if (tempValue.isString()) {
-    h->m_commitLogOffset = UtilAll::str2ll(tempValue.asCString());
-  }
-
-  return h;
+  return header.release();
 }
 
-void CheckTransactionStateRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("msgId", m_msgId));
-  requestMap.insert(pair<string, string>("transactionId", m_transactionId));
-  requestMap.insert(pair<string, string>("offsetMsgId", m_offsetMsgId));
-  requestMap.insert(pair<string, string>("commitLogOffset", UtilAll::to_string(m_commitLogOffset)));
-  requestMap.insert(pair<string, string>("tranStateTableOffset", UtilAll::to_string(m_tranStateTableOffset)));
+void CheckTransactionStateRequestHeader::SetDeclaredFieldOfCommandHeader(
+    std::map<std::string, std::string>& requestMap) {
+  // TODO: unnecessary
+  requestMap.emplace("tranStateTableOffset", UtilAll::to_string(tranStateTableOffset));
+  requestMap.emplace("commitLogOffset", UtilAll::to_string(commitLogOffset));
+  requestMap.emplace("msgId", msgId);
+  requestMap.emplace("transactionId", transactionId);
+  requestMap.emplace("offsetMsgId", offsetMsgId);
 }
 
-std::string CheckTransactionStateRequestHeader::toString() {
-  stringstream ss;
+std::string CheckTransactionStateRequestHeader::toString() const {
+  std::stringstream ss;
   ss << "CheckTransactionStateRequestHeader:";
-  ss << " msgId:" << m_msgId;
-  ss << " transactionId:" << m_transactionId;
-  ss << " offsetMsgId:" << m_offsetMsgId;
-  ss << " commitLogOffset:" << m_commitLogOffset;
-  ss << " tranStateTableOffset:" << m_tranStateTableOffset;
+  ss << " tranStateTableOffset:" << tranStateTableOffset;
+  ss << " commitLogOffset:" << commitLogOffset;
+  ss << " msgId:" << msgId;
+  ss << " transactionId:" << transactionId;
+  ss << " offsetMsgId:" << offsetMsgId;
   return ss.str();
 }
 
-void EndTransactionRequestHeader::Encode(Json::Value& outData) {
-  outData["msgId"] = m_msgId;
-  outData["transactionId"] = m_transactionId;
-  outData["producerGroup"] = m_producerGroup;
-  outData["tranStateTableOffset"] = UtilAll::to_string(m_tranStateTableOffset);
-  outData["commitLogOffset"] = UtilAll::to_string(m_commitLogOffset);
-  outData["commitOrRollback"] = UtilAll::to_string(m_commitOrRollback);
-  outData["fromTransactionCheck"] = UtilAll::to_string(m_fromTransactionCheck);
+//######################################
+// EndTransactionRequestHeader
+//######################################
+
+void EndTransactionRequestHeader::Encode(Json::Value& extFields) {
+  extFields["producerGroup"] = producerGroup;
+  extFields["tranStateTableOffset"] = UtilAll::to_string(tranStateTableOffset);
+  extFields["commitLogOffset"] = UtilAll::to_string(commitLogOffset);
+  extFields["commitOrRollback"] = UtilAll::to_string(commitOrRollback);
+  extFields["fromTransactionCheck"] = UtilAll::to_string(fromTransactionCheck);
+  extFields["msgId"] = msgId;
+  if (!transactionId.empty()) {
+    extFields["transactionId"] = transactionId;
+  }
 }
 
-void EndTransactionRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("msgId", m_msgId));
-  requestMap.insert(pair<string, string>("transactionId", m_transactionId));
-  requestMap.insert(pair<string, string>("producerGroup", m_producerGroup));
-  requestMap.insert(pair<string, string>("tranStateTableOffset", UtilAll::to_string(m_tranStateTableOffset)));
-  requestMap.insert(pair<string, string>("commitLogOffset", UtilAll::to_string(m_commitLogOffset)));
-  requestMap.insert(pair<string, string>("commitOrRollback", UtilAll::to_string(m_commitOrRollback)));
-  requestMap.insert(pair<string, string>("fromTransactionCheck", UtilAll::to_string(m_fromTransactionCheck)));
+void EndTransactionRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  requestMap.emplace("producerGroup", producerGroup);
+  requestMap.emplace("tranStateTableOffset", UtilAll::to_string(tranStateTableOffset));
+  requestMap.emplace("commitLogOffset", UtilAll::to_string(commitLogOffset));
+  requestMap.emplace("commitOrRollback", UtilAll::to_string(commitOrRollback));
+  requestMap.emplace("fromTransactionCheck", UtilAll::to_string(fromTransactionCheck));
+  requestMap.emplace("msgId", msgId);
+  if (!transactionId.empty()) {
+    requestMap.emplace("transactionId", transactionId);
+  }
 }
 
-std::string EndTransactionRequestHeader::toString() {
-  stringstream ss;
+std::string EndTransactionRequestHeader::toString() const {
+  std::stringstream ss;
   ss << "EndTransactionRequestHeader:";
-  ss << " m_msgId:" << m_msgId;
-  ss << " m_transactionId:" << m_transactionId;
-  ss << " m_producerGroup:" << m_producerGroup;
-  ss << " m_tranStateTableOffset:" << m_tranStateTableOffset;
-  ss << " m_commitLogOffset:" << m_commitLogOffset;
-  ss << " m_commitOrRollback:" << m_commitOrRollback;
-  ss << " m_fromTransactionCheck:" << m_fromTransactionCheck;
+  ss << " m_producerGroup:" << producerGroup;
+  ss << " m_tranStateTableOffset:" << tranStateTableOffset;
+  ss << " m_commitLogOffset:" << commitLogOffset;
+  ss << " m_commitOrRollback:" << commitOrRollback;
+  ss << " m_fromTransactionCheck:" << fromTransactionCheck;
+  ss << " m_msgId:" << msgId;
+  ss << " m_transactionId:" << transactionId;
   return ss.str();
 }
 
-//<!************************************************************************
-void SendMessageRequestHeader::Encode(Json::Value& outData) {
-  outData["producerGroup"] = producerGroup;
-  outData["topic"] = topic;
-  outData["defaultTopic"] = defaultTopic;
-  outData["defaultTopicQueueNums"] = defaultTopicQueueNums;
-  outData["queueId"] = queueId;
-  outData["sysFlag"] = sysFlag;
-  outData["bornTimestamp"] = UtilAll::to_string(bornTimestamp);
-  outData["flag"] = flag;
-  outData["properties"] = properties;
-  outData["reconsumeTimes"] = UtilAll::to_string(reconsumeTimes);
-  outData["unitMode"] = UtilAll::to_string(unitMode);
-  outData["batch"] = UtilAll::to_string(batch);
+//######################################
+// SendMessageRequestHeader
+//######################################
+
+void SendMessageRequestHeader::Encode(Json::Value& extFields) {
+  extFields["producerGroup"] = producerGroup;
+  extFields["topic"] = topic;
+  extFields["defaultTopic"] = defaultTopic;
+  extFields["defaultTopicQueueNums"] = UtilAll::to_string(defaultTopicQueueNums);
+  extFields["queueId"] = UtilAll::to_string(queueId);
+  extFields["sysFlag"] = UtilAll::to_string(sysFlag);
+  extFields["bornTimestamp"] = UtilAll::to_string(bornTimestamp);
+  extFields["flag"] = UtilAll::to_string(flag);
+  if (!properties.empty()) {
+    extFields["properties"] = properties;
+  }
+  if (reconsumeTimes != -1) {
+    extFields["reconsumeTimes"] = UtilAll::to_string(reconsumeTimes);
+  }
+  extFields["unitMode"] = UtilAll::to_string(unitMode);
+  extFields["batch"] = UtilAll::to_string(batch);
+  if (maxReconsumeTimes != -1) {
+    extFields["maxReconsumeTimes"] = UtilAll::to_string(maxReconsumeTimes);
+  }
 }
 
-void SendMessageRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  LOG_DEBUG(
-      "SendMessageRequestHeader producerGroup is:%s,topic is:%s, defaulttopic "
-      "is:%s, properties is:%s,UtilAll::to_string( defaultTopicQueueNums) "
-      "is:%s,UtilAll::to_string( queueId):%s, UtilAll::to_string( sysFlag) "
-      "is:%s, UtilAll::to_string( bornTimestamp) is:%s,UtilAll::to_string( "
-      "flag) is:%s",
-      producerGroup.c_str(), topic.c_str(), defaultTopic.c_str(), properties.c_str(),
-      UtilAll::to_string(defaultTopicQueueNums).c_str(), UtilAll::to_string(queueId).c_str(),
-      UtilAll::to_string(sysFlag).c_str(), UtilAll::to_string(bornTimestamp).c_str(), UtilAll::to_string(flag).c_str());
+void SendMessageRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  LOG_DEBUG_NEW(
+      "SendMessageRequestHeader producerGroup:{}, topic:%s, defaulttopic:{}, properties:{}, "
+      "defaultTopicQueueNums:{}, queueId:{}, sysFlag:{}, bornTimestamp:{}, flag:{}",
+      producerGroup, topic, defaultTopic, properties, defaultTopicQueueNums, queueId, sysFlag, bornTimestamp, flag);
 
-  requestMap.insert(pair<string, string>("producerGroup", producerGroup));
-  requestMap.insert(pair<string, string>("topic", topic));
-  requestMap.insert(pair<string, string>("defaultTopic", defaultTopic));
-  requestMap.insert(pair<string, string>("defaultTopicQueueNums", UtilAll::to_string(defaultTopicQueueNums)));
-  requestMap.insert(pair<string, string>("queueId", UtilAll::to_string(queueId)));
-  requestMap.insert(pair<string, string>("sysFlag", UtilAll::to_string(sysFlag)));
-  requestMap.insert(pair<string, string>("bornTimestamp", UtilAll::to_string(bornTimestamp)));
-  requestMap.insert(pair<string, string>("flag", UtilAll::to_string(flag)));
-  requestMap.insert(pair<string, string>("properties", properties));
-  requestMap.insert(pair<string, string>("reconsumeTimes", UtilAll::to_string(reconsumeTimes)));
-  requestMap.insert(pair<string, string>("unitMode", UtilAll::to_string(unitMode)));
-  requestMap.insert(pair<string, string>("batch", UtilAll::to_string(batch)));
+  requestMap.emplace("producerGroup", producerGroup);
+  requestMap.emplace("topic", topic);
+  requestMap.emplace("defaultTopic", defaultTopic);
+  requestMap.emplace("defaultTopicQueueNums", UtilAll::to_string(defaultTopicQueueNums));
+  requestMap.emplace("queueId", UtilAll::to_string(queueId));
+  requestMap.emplace("sysFlag", UtilAll::to_string(sysFlag));
+  requestMap.emplace("bornTimestamp", UtilAll::to_string(bornTimestamp));
+  requestMap.emplace("flag", UtilAll::to_string(flag));
+  if (!properties.empty()) {
+    requestMap.emplace("properties", properties);
+  }
+  if (reconsumeTimes != -1) {
+    requestMap.emplace("reconsumeTimes", UtilAll::to_string(reconsumeTimes));
+  }
+  requestMap.emplace("unitMode", UtilAll::to_string(unitMode));
+  requestMap.emplace("batch", UtilAll::to_string(batch));
+  if (maxReconsumeTimes != -1) {
+    requestMap.emplace("maxReconsumeTimes", UtilAll::to_string(maxReconsumeTimes));
+  }
 }
 
-//<!************************************************************************
-void SendMessageRequestHeaderV2::Encode(Json::Value& outData) {
-  outData["a"] = a;                      // string producerGroup;
-  outData["b"] = b;                      // string topic;
-  outData["c"] = c;                      // string defaultTopic;
-  outData["d"] = d;                      // int defaultTopicQueueNums;
-  outData["e"] = e;                      // int queueId;
-  outData["f"] = f;                      // int sysFlag;
-  outData["g"] = UtilAll::to_string(g);  // int64 bornTimestamp;
-  outData["h"] = h;                      // int flag;
-  outData["i"] = i;                      // string properties;
-  outData["j"] = UtilAll::to_string(j);  // int reconsumeTimes;
-  outData["k"] = UtilAll::to_string(k);  // bool unitMode;
-  outData["l"] = l;                      // int consumeRetryTimes;
-  outData["m"] = UtilAll::to_string(m);  // bool batch;
+int SendMessageRequestHeader::getReconsumeTimes() {
+  return reconsumeTimes;
 }
 
-void SendMessageRequestHeaderV2::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  LOG_DEBUG(
-      "SendMessageRequestHeaderV2 producerGroup is:%s,topic is:%s, defaulttopic "
-      "is:%s, properties is:%s,UtilAll::to_string( defaultTopicQueueNums) "
-      "is:%s,UtilAll::to_string( queueId):%s, UtilAll::to_string( sysFlag) "
-      "is:%s, UtilAll::to_string( bornTimestamp) is:%s,UtilAll::to_string( "
-      "flag) is:%s,UtilAll::to_string( reconsumeTimes) is:%s,UtilAll::to_string( unitMode) is:%s,UtilAll::to_string( "
-      "batch) is:%s",
-      a.c_str(), b.c_str(), c.c_str(), i.c_str(), UtilAll::to_string(d).c_str(), UtilAll::to_string(e).c_str(),
-      UtilAll::to_string(f).c_str(), UtilAll::to_string(g).c_str(), UtilAll::to_string(g).c_str(),
-      UtilAll::to_string(j).c_str(), UtilAll::to_string(k).c_str(), UtilAll::to_string(m).c_str());
-
-  requestMap.insert(pair<string, string>("a", a));
-  requestMap.insert(pair<string, string>("b", b));
-  requestMap.insert(pair<string, string>("c", c));
-  requestMap.insert(pair<string, string>("d", UtilAll::to_string(d)));
-  requestMap.insert(pair<string, string>("e", UtilAll::to_string(e)));
-  requestMap.insert(pair<string, string>("f", UtilAll::to_string(f)));
-  requestMap.insert(pair<string, string>("g", UtilAll::to_string(g)));
-  requestMap.insert(pair<string, string>("h", UtilAll::to_string(h)));
-  requestMap.insert(pair<string, string>("i", i));
-  requestMap.insert(pair<string, string>("j", UtilAll::to_string(j)));
-  requestMap.insert(pair<string, string>("k", UtilAll::to_string(k)));
-  requestMap.insert(pair<string, string>("l", UtilAll::to_string(l)));
-  requestMap.insert(pair<string, string>("m", UtilAll::to_string(m)));
+void SendMessageRequestHeader::setReconsumeTimes(int _reconsumeTimes) {
+  reconsumeTimes = _reconsumeTimes;
 }
-void SendMessageRequestHeaderV2::CreateSendMessageRequestHeaderV1(SendMessageRequestHeader& v1) {
-  v1.producerGroup = a;
-  v1.topic = b;
-  v1.defaultTopic = c;
-  v1.defaultTopicQueueNums = d;
-  v1.queueId = e;
-  v1.sysFlag = f;
-  v1.bornTimestamp = g;
-  v1.flag = h;
-  v1.properties = i;
-  v1.reconsumeTimes = j;
-  v1.unitMode = k;
-  v1.consumeRetryTimes = l;
-  v1.batch = m;
-}
-//<!************************************************************************
-CommandHeader* SendMessageResponseHeader::Decode(Json::Value& ext) {
-  SendMessageResponseHeader* h = new SendMessageResponseHeader();
 
-  Json::Value& tempValue = ext["msgId"];
-  if (tempValue.isString()) {
-    h->msgId = tempValue.asString();
+//######################################
+// SendMessageRequestHeaderV2
+//######################################
+
+SendMessageRequestHeaderV2* SendMessageRequestHeaderV2::createSendMessageRequestHeaderV2(SendMessageRequestHeader* v1) {
+  SendMessageRequestHeaderV2* v2 = new SendMessageRequestHeaderV2();
+  v2->a = v1->producerGroup;
+  v2->b = v1->topic;
+  v2->c = v1->defaultTopic;
+  v2->d = v1->defaultTopicQueueNums;
+  v2->e = v1->queueId;
+  v2->f = v1->sysFlag;
+  v2->g = v1->bornTimestamp;
+  v2->h = v1->flag;
+  v2->i = v1->properties;
+  v2->j = v1->reconsumeTimes;
+  v2->k = v1->unitMode;
+  v2->l = v1->maxReconsumeTimes;
+  v2->m = v1->batch;
+  return v2;
+}
+
+void SendMessageRequestHeaderV2::Encode(Json::Value& extFields) {
+  extFields["a"] = a;
+  extFields["b"] = b;
+  extFields["c"] = c;
+  extFields["d"] = UtilAll::to_string(d);
+  extFields["e"] = UtilAll::to_string(e);
+  extFields["f"] = UtilAll::to_string(f);
+  extFields["g"] = UtilAll::to_string(g);
+  extFields["h"] = UtilAll::to_string(h);
+  if (!i.empty()) {
+    extFields["i"] = i;
+  }
+  if (j != -1) {
+    extFields["j"] = UtilAll::to_string(j);
+  }
+  extFields["k"] = UtilAll::to_string(k);
+  if (l != -1) {
+    extFields["l"] = UtilAll::to_string(l);
+  }
+  extFields["m"] = UtilAll::to_string(m);
+}
+
+void SendMessageRequestHeaderV2::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  requestMap.emplace("a", a);
+  requestMap.emplace("b", b);
+  requestMap.emplace("c", c);
+  requestMap.emplace("d", UtilAll::to_string(d));
+  requestMap.emplace("e", UtilAll::to_string(e));
+  requestMap.emplace("f", UtilAll::to_string(f));
+  requestMap.emplace("g", UtilAll::to_string(g));
+  requestMap.emplace("h", UtilAll::to_string(h));
+  if (!i.empty()) {
+    requestMap.emplace("i", i);
+  }
+  if (j != -1) {
+    requestMap.emplace("j", UtilAll::to_string(j));
+  }
+  requestMap.emplace("k", UtilAll::to_string(k));
+  if (l != -1) {
+    requestMap.emplace("l", UtilAll::to_string(l));
+  }
+  requestMap.emplace("m", UtilAll::to_string(m));
+}
+
+//######################################
+// SendMessageResponseHeader
+//######################################
+
+SendMessageResponseHeader* SendMessageResponseHeader::Decode(std::map<std::string, std::string>& extFields) {
+  std::unique_ptr<SendMessageResponseHeader> header(new SendMessageResponseHeader());
+  header->msgId = extFields.at("msgId");
+  header->queueId = std::stoi(extFields.at("queueId"));
+  header->queueOffset = std::stoll(extFields.at("queueOffset"));
+
+  auto it = extFields.find("transactionId");
+  if (it != extFields.end()) {
+    header->transactionId = it->second;
   }
 
-  tempValue = ext["queueId"];
-  if (tempValue.isString()) {
-    h->queueId = atoi(tempValue.asCString());
+  return header.release();
+}
+
+void SendMessageResponseHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  // TODO: unnecessary
+  requestMap.emplace("msgId", msgId);
+  requestMap.emplace("queueId", UtilAll::to_string(queueId));
+  requestMap.emplace("queueOffset", UtilAll::to_string(queueOffset));
+  requestMap.emplace("transactionId", transactionId);
+}
+
+//######################################
+// PullMessageRequestHeader
+//######################################
+
+void PullMessageRequestHeader::Encode(Json::Value& extFields) {
+  extFields["consumerGroup"] = consumerGroup;
+  extFields["topic"] = topic;
+  extFields["queueId"] = queueId;
+  extFields["queueOffset"] = UtilAll::to_string(queueOffset);
+  extFields["maxMsgNums"] = maxMsgNums;
+  extFields["sysFlag"] = sysFlag;
+  extFields["commitOffset"] = UtilAll::to_string(commitOffset);
+  extFields["suspendTimeoutMillis"] = UtilAll::to_string(suspendTimeoutMillis);
+  if (!subscription.empty()) {
+    extFields["subscription"] = subscription;
   }
-
-  tempValue = ext["queueOffset"];
-  if (tempValue.isString()) {
-    h->queueOffset = UtilAll::str2ll(tempValue.asCString());
+  extFields["subVersion"] = UtilAll::to_string(subVersion);
+  if (!expressionType.empty()) {
+    extFields["expressionType"] = expressionType;
   }
-  return h;
 }
 
-void SendMessageResponseHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("msgId", msgId));
-  requestMap.insert(pair<string, string>("queueId", UtilAll::to_string(queueId)));
-  requestMap.insert(pair<string, string>("queueOffset", UtilAll::to_string(queueOffset)));
-}
-//<!************************************************************************
-void PullMessageRequestHeader::Encode(Json::Value& outData) {
-  outData["consumerGroup"] = consumerGroup;
-  outData["topic"] = topic;
-  outData["queueId"] = queueId;
-  outData["queueOffset"] = UtilAll::to_string(queueOffset);
-  outData["maxMsgNums"] = maxMsgNums;
-  outData["sysFlag"] = sysFlag;
-  outData["commitOffset"] = UtilAll::to_string(commitOffset);
-  outData["subVersion"] = UtilAll::to_string(subVersion);
-  outData["suspendTimeoutMillis"] = UtilAll::to_string(suspendTimeoutMillis);
-  outData["subscription"] = subscription;
-}
-
-void PullMessageRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("consumerGroup", consumerGroup));
-  requestMap.insert(pair<string, string>("topic", topic));
-  requestMap.insert(pair<string, string>("queueId", UtilAll::to_string(queueId)));
-  requestMap.insert(pair<string, string>("queueOffset", UtilAll::to_string(queueOffset)));
-  requestMap.insert(pair<string, string>("maxMsgNums", UtilAll::to_string(maxMsgNums)));
-  requestMap.insert(pair<string, string>("sysFlag", UtilAll::to_string(sysFlag)));
-  requestMap.insert(pair<string, string>("commitOffset", UtilAll::to_string(commitOffset)));
-  requestMap.insert(pair<string, string>("subVersion", UtilAll::to_string(subVersion)));
-  requestMap.insert(pair<string, string>("suspendTimeoutMillis", UtilAll::to_string(suspendTimeoutMillis)));
-  requestMap.insert(pair<string, string>("subscription", subscription));
-}
-//<!************************************************************************
-CommandHeader* PullMessageResponseHeader::Decode(Json::Value& ext) {
-  PullMessageResponseHeader* h = new PullMessageResponseHeader();
-
-  Json::Value& tempValue = ext["suggestWhichBrokerId"];
-  if (tempValue.isString()) {
-    h->suggestWhichBrokerId = UtilAll::str2ll(tempValue.asCString());
+void PullMessageRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  requestMap.emplace("consumerGroup", consumerGroup);
+  requestMap.emplace("topic", topic);
+  requestMap.emplace("queueId", UtilAll::to_string(queueId));
+  requestMap.emplace("queueOffset", UtilAll::to_string(queueOffset));
+  requestMap.emplace("maxMsgNums", UtilAll::to_string(maxMsgNums));
+  requestMap.emplace("sysFlag", UtilAll::to_string(sysFlag));
+  requestMap.emplace("commitOffset", UtilAll::to_string(commitOffset));
+  requestMap.emplace("suspendTimeoutMillis", UtilAll::to_string(suspendTimeoutMillis));
+  if (!subscription.empty()) {
+    requestMap.emplace("subscription", subscription);
   }
-
-  tempValue = ext["nextBeginOffset"];
-  if (tempValue.isString()) {
-    h->nextBeginOffset = UtilAll::str2ll(tempValue.asCString());
+  requestMap.emplace("subVersion", UtilAll::to_string(subVersion));
+  if (!expressionType.empty()) {
+    requestMap.emplace("expressionType", expressionType);
   }
+}
 
-  tempValue = ext["minOffset"];
-  if (tempValue.isString()) {
-    h->minOffset = UtilAll::str2ll(tempValue.asCString());
+//######################################
+// PullMessageResponseHeader
+//######################################
+
+PullMessageResponseHeader* PullMessageResponseHeader::Decode(std::map<std::string, std::string>& extFields) {
+  std::unique_ptr<PullMessageResponseHeader> header(new PullMessageResponseHeader());
+  header->suggestWhichBrokerId = std::stoll(extFields.at("suggestWhichBrokerId"));
+  header->nextBeginOffset = std::stoll(extFields.at("nextBeginOffset"));
+  header->minOffset = std::stoll(extFields.at("minOffset"));
+  header->maxOffset = std::stoll(extFields.at("maxOffset"));
+  return header.release();
+}
+
+void PullMessageResponseHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  // TODO: unnecessary
+  requestMap.emplace("suggestWhichBrokerId", UtilAll::to_string(suggestWhichBrokerId));
+  requestMap.emplace("nextBeginOffset", UtilAll::to_string(nextBeginOffset));
+  requestMap.emplace("minOffset", UtilAll::to_string(minOffset));
+  requestMap.emplace("maxOffset", UtilAll::to_string(maxOffset));
+}
+
+//######################################
+// GetConsumerListByGroupResponseHeader
+//######################################
+
+void GetConsumerListByGroupResponseHeader::Encode(Json::Value& extFields) {}
+
+void GetConsumerListByGroupResponseHeader::SetDeclaredFieldOfCommandHeader(
+    std::map<std::string, std::string>& requestMap) {}
+
+//######################################
+// GetMinOffsetRequestHeader
+//######################################
+
+void GetMinOffsetRequestHeader::Encode(Json::Value& extFields) {
+  extFields["topic"] = topic;
+  extFields["queueId"] = UtilAll::to_string(queueId);
+}
+
+void GetMinOffsetRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  requestMap.emplace("topic", topic);
+  requestMap.emplace("queueId", UtilAll::to_string(queueId));
+}
+
+//######################################
+// GetMinOffsetResponseHeader
+//######################################
+
+GetMinOffsetResponseHeader* GetMinOffsetResponseHeader::Decode(std::map<std::string, std::string>& extFields) {
+  std::unique_ptr<GetMinOffsetResponseHeader> header(new GetMinOffsetResponseHeader());
+  header->offset = std::stoll(extFields.at("offset"));
+  return header.release();
+}
+
+void GetMinOffsetResponseHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  // TODO: unnecessary
+  requestMap.emplace("offset", UtilAll::to_string(offset));
+}
+
+//######################################
+// GetMaxOffsetRequestHeader
+//######################################
+
+void GetMaxOffsetRequestHeader::Encode(Json::Value& extFields) {
+  extFields["topic"] = topic;
+  extFields["queueId"] = UtilAll::to_string(queueId);
+}
+
+void GetMaxOffsetRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  requestMap.emplace("topic", topic);
+  requestMap.emplace("queueId", UtilAll::to_string(queueId));
+}
+
+//######################################
+// GetMaxOffsetResponseHeader
+//######################################
+
+GetMaxOffsetResponseHeader* GetMaxOffsetResponseHeader::Decode(std::map<std::string, std::string>& extFields) {
+  std::unique_ptr<GetMaxOffsetResponseHeader> header(new GetMaxOffsetResponseHeader());
+  header->offset = std::stoll(extFields.at("offset"));
+  return header.release();
+}
+
+void GetMaxOffsetResponseHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  // TODO: unnecessary
+  requestMap.emplace("offset", UtilAll::to_string(offset));
+}
+
+//######################################
+// SearchOffsetRequestHeader
+//######################################
+
+void SearchOffsetRequestHeader::Encode(Json::Value& extFields) {
+  extFields["topic"] = topic;
+  extFields["queueId"] = UtilAll::to_string(queueId);
+  extFields["timestamp"] = UtilAll::to_string(timestamp);
+}
+
+void SearchOffsetRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  requestMap.emplace("topic", topic);
+  requestMap.emplace("queueId", UtilAll::to_string(queueId));
+  requestMap.emplace("timestamp", UtilAll::to_string(timestamp));
+}
+
+//######################################
+// SearchOffsetResponseHeader
+//######################################
+
+SearchOffsetResponseHeader* SearchOffsetResponseHeader::Decode(std::map<std::string, std::string>& extFields) {
+  std::unique_ptr<SearchOffsetResponseHeader> header(new SearchOffsetResponseHeader());
+  header->offset = std::stoll(extFields.at("offset"));
+  return header.release();
+}
+
+void SearchOffsetResponseHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  // TODO: unnecessary
+  requestMap.emplace("offset", UtilAll::to_string(offset));
+}
+
+//######################################
+// ViewMessageRequestHeader
+//######################################
+
+void ViewMessageRequestHeader::Encode(Json::Value& extFields) {
+  extFields["offset"] = UtilAll::to_string(offset);
+}
+
+void ViewMessageRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  requestMap.emplace("offset", UtilAll::to_string(offset));
+}
+
+//######################################
+// GetEarliestMsgStoretimeRequestHeader
+//######################################
+
+void GetEarliestMsgStoretimeRequestHeader::Encode(Json::Value& extFields) {
+  extFields["topic"] = topic;
+  extFields["queueId"] = UtilAll::to_string(queueId);
+}
+
+void GetEarliestMsgStoretimeRequestHeader::SetDeclaredFieldOfCommandHeader(
+    std::map<std::string, std::string>& requestMap) {
+  requestMap.emplace("topic", topic);
+  requestMap.emplace("queueId", UtilAll::to_string(queueId));
+}
+
+//######################################
+// GetEarliestMsgStoretimeResponseHeader
+//######################################
+
+GetEarliestMsgStoretimeResponseHeader* GetEarliestMsgStoretimeResponseHeader::Decode(
+    std::map<std::string, std::string>& extFields) {
+  std::unique_ptr<GetEarliestMsgStoretimeResponseHeader> header(new GetEarliestMsgStoretimeResponseHeader());
+  header->timestamp = std::stoll(extFields.at("timestamp"));
+  return header.release();
+}
+
+void GetEarliestMsgStoretimeResponseHeader::SetDeclaredFieldOfCommandHeader(
+    std::map<std::string, std::string>& requestMap) {
+  // TODO: unnecessary
+  requestMap.emplace("timestamp", UtilAll::to_string(timestamp));
+}
+
+//######################################
+// GetConsumerListByGroupRequestHeader
+//######################################
+
+void GetConsumerListByGroupRequestHeader::Encode(Json::Value& extFields) {
+  extFields["consumerGroup"] = consumerGroup;
+}
+
+void GetConsumerListByGroupRequestHeader::SetDeclaredFieldOfCommandHeader(
+    std::map<std::string, std::string>& requestMap) {
+  requestMap.emplace("consumerGroup", consumerGroup);
+}
+
+//######################################
+// QueryConsumerOffsetRequestHeader
+//######################################
+
+void QueryConsumerOffsetRequestHeader::Encode(Json::Value& extFields) {
+  extFields["consumerGroup"] = consumerGroup;
+  extFields["topic"] = topic;
+  extFields["queueId"] = UtilAll::to_string(queueId);
+}
+
+void QueryConsumerOffsetRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  requestMap.emplace("consumerGroup", consumerGroup);
+  requestMap.emplace("topic", topic);
+  requestMap.emplace("queueId", UtilAll::to_string(queueId));
+}
+
+//######################################
+// QueryConsumerOffsetResponseHeader
+//######################################
+
+QueryConsumerOffsetResponseHeader* QueryConsumerOffsetResponseHeader::Decode(
+    std::map<std::string, std::string>& extFields) {
+  std::unique_ptr<QueryConsumerOffsetResponseHeader> header(new QueryConsumerOffsetResponseHeader());
+  header->offset = std::stoll(extFields.at("offset"));
+  return header.release();
+}
+
+void QueryConsumerOffsetResponseHeader::SetDeclaredFieldOfCommandHeader(
+    std::map<std::string, std::string>& requestMap) {
+  // TODO: unnecessary
+  requestMap.emplace("offset", UtilAll::to_string(offset));
+}
+
+//######################################
+// UpdateConsumerOffsetRequestHeader
+//######################################
+
+void UpdateConsumerOffsetRequestHeader::Encode(Json::Value& extFields) {
+  extFields["consumerGroup"] = consumerGroup;
+  extFields["topic"] = topic;
+  extFields["queueId"] = UtilAll::to_string(queueId);
+  extFields["commitOffset"] = UtilAll::to_string(commitOffset);
+}
+
+void UpdateConsumerOffsetRequestHeader::SetDeclaredFieldOfCommandHeader(
+    std::map<std::string, std::string>& requestMap) {
+  requestMap.emplace("consumerGroup", consumerGroup);
+  requestMap.emplace("topic", topic);
+  requestMap.emplace("queueId", std::to_string(queueId));
+  requestMap.emplace("commitOffset", std::to_string(commitOffset));
+}
+
+//######################################
+// ConsumerSendMsgBackRequestHeader
+//######################################
+
+void ConsumerSendMsgBackRequestHeader::Encode(Json::Value& extFields) {
+  extFields["offset"] = std::to_string(offset);
+  extFields["group"] = group;
+  extFields["delayLevel"] = std::to_string(delayLevel);
+  if (!originMsgId.empty()) {
+    extFields["originMsgId"] = originMsgId;
   }
-
-  tempValue = ext["maxOffset"];
-  if (tempValue.isString()) {
-    h->maxOffset = UtilAll::str2ll(tempValue.asCString());
+  if (!originTopic.empty()) {
+    extFields["originTopic"] = originTopic;
   }
-
-  return h;
-}
-
-void PullMessageResponseHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("suggestWhichBrokerId", UtilAll::to_string(suggestWhichBrokerId)));
-  requestMap.insert(pair<string, string>("nextBeginOffset", UtilAll::to_string(nextBeginOffset)));
-  requestMap.insert(pair<string, string>("minOffset", UtilAll::to_string(minOffset)));
-  requestMap.insert(pair<string, string>("maxOffset", UtilAll::to_string(maxOffset)));
-}
-//<!************************************************************************
-void GetConsumerListByGroupResponseHeader::Encode(Json::Value& outData) {
-  // outData = "{}";
-}
-
-void GetConsumerListByGroupResponseHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {}
-//<!***************************************************************************
-void GetMinOffsetRequestHeader::Encode(Json::Value& outData) {
-  outData["topic"] = topic;
-  outData["queueId"] = queueId;
-}
-
-void GetMinOffsetRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("topic", topic));
-  requestMap.insert(pair<string, string>("queueId", UtilAll::to_string(queueId)));
-}
-//<!***************************************************************************
-CommandHeader* GetMinOffsetResponseHeader::Decode(Json::Value& ext) {
-  GetMinOffsetResponseHeader* h = new GetMinOffsetResponseHeader();
-
-  Json::Value& tempValue = ext["offset"];
-  if (tempValue.isString()) {
-    h->offset = UtilAll::str2ll(tempValue.asCString());
+  extFields["unitMode"] = std::to_string(unitMode);
+  if (maxReconsumeTimes != -1) {
+    extFields["maxReconsumeTimes"] = std::to_string(maxReconsumeTimes);
   }
-  return h;
 }
 
-void GetMinOffsetResponseHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("offset", UtilAll::to_string(offset)));
-}
-//<!***************************************************************************
-void GetMaxOffsetRequestHeader::Encode(Json::Value& outData) {
-  outData["topic"] = topic;
-  outData["queueId"] = queueId;
-}
-
-void GetMaxOffsetRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("topic", topic));
-  requestMap.insert(pair<string, string>("queueId", UtilAll::to_string(queueId)));
-}
-//<!***************************************************************************
-CommandHeader* GetMaxOffsetResponseHeader::Decode(Json::Value& ext) {
-  GetMaxOffsetResponseHeader* h = new GetMaxOffsetResponseHeader();
-
-  Json::Value& tempValue = ext["offset"];
-  if (tempValue.isString()) {
-    h->offset = UtilAll::str2ll(tempValue.asCString());
+void ConsumerSendMsgBackRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
+  requestMap.emplace("offset", std::to_string(offset));
+  requestMap.emplace("group", group);
+  requestMap.emplace("delayLevel", std::to_string(delayLevel));
+  if (!originMsgId.empty()) {
+    requestMap.emplace("originMsgId", originMsgId);
   }
-  return h;
-}
-
-void GetMaxOffsetResponseHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("offset", UtilAll::to_string(offset)));
-}
-//<!***************************************************************************
-void SearchOffsetRequestHeader::Encode(Json::Value& outData) {
-  outData["topic"] = topic;
-  outData["queueId"] = queueId;
-  outData["timestamp"] = UtilAll::to_string(timestamp);
-}
-
-void SearchOffsetRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("topic", topic));
-  requestMap.insert(pair<string, string>("queueId", UtilAll::to_string(queueId)));
-  requestMap.insert(pair<string, string>("timestamp", UtilAll::to_string(timestamp)));
-}
-//<!***************************************************************************
-CommandHeader* SearchOffsetResponseHeader::Decode(Json::Value& ext) {
-  SearchOffsetResponseHeader* h = new SearchOffsetResponseHeader();
-
-  Json::Value& tempValue = ext["offset"];
-  if (tempValue.isString()) {
-    h->offset = UtilAll::str2ll(tempValue.asCString());
+  if (!originTopic.empty()) {
+    requestMap.emplace("originTopic", originTopic);
   }
-  return h;
-}
-
-void SearchOffsetResponseHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("offset", UtilAll::to_string(offset)));
-}
-//<!***************************************************************************
-void ViewMessageRequestHeader::Encode(Json::Value& outData) {
-  outData["offset"] = UtilAll::to_string(offset);
-}
-
-void ViewMessageRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("offset", UtilAll::to_string(offset)));
-}
-//<!***************************************************************************
-void GetEarliestMsgStoretimeRequestHeader::Encode(Json::Value& outData) {
-  outData["topic"] = topic;
-  outData["queueId"] = queueId;
-}
-
-void GetEarliestMsgStoretimeRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("topic", topic));
-  requestMap.insert(pair<string, string>("queueId", UtilAll::to_string(queueId)));
-}
-//<!***************************************************************************
-CommandHeader* GetEarliestMsgStoretimeResponseHeader::Decode(Json::Value& ext) {
-  GetEarliestMsgStoretimeResponseHeader* h = new GetEarliestMsgStoretimeResponseHeader();
-
-  Json::Value& tempValue = ext["timestamp"];
-  if (tempValue.isString()) {
-    h->timestamp = UtilAll::str2ll(tempValue.asCString());
+  requestMap.emplace("unitMode", std::to_string(unitMode));
+  if (maxReconsumeTimes != -1) {
+    requestMap.emplace("maxReconsumeTimes", std::to_string(maxReconsumeTimes));
   }
-  return h;
 }
 
-void GetEarliestMsgStoretimeResponseHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("timestamp", UtilAll::to_string(timestamp)));
-}
-//<!***************************************************************************
-void GetConsumerListByGroupRequestHeader::Encode(Json::Value& outData) {
-  outData["consumerGroup"] = consumerGroup;
-}
+//######################################
+// GetConsumerListByGroupResponseBody
+//######################################
 
-void GetConsumerListByGroupRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("consumerGroup", consumerGroup));
-}
-//<!***************************************************************************
-void QueryConsumerOffsetRequestHeader::Encode(Json::Value& outData) {
-  outData["consumerGroup"] = consumerGroup;
-  outData["topic"] = topic;
-  outData["queueId"] = queueId;
-}
-
-void QueryConsumerOffsetRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("consumerGroup", consumerGroup));
-  requestMap.insert(pair<string, string>("topic", topic));
-  requestMap.insert(pair<string, string>("queueId", UtilAll::to_string(queueId)));
-}
-//<!***************************************************************************
-CommandHeader* QueryConsumerOffsetResponseHeader::Decode(Json::Value& ext) {
-  QueryConsumerOffsetResponseHeader* h = new QueryConsumerOffsetResponseHeader();
-  Json::Value& tempValue = ext["offset"];
-  if (tempValue.isString()) {
-    h->offset = UtilAll::str2ll(tempValue.asCString());
-  }
-  return h;
-}
-
-void QueryConsumerOffsetResponseHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("offset", UtilAll::to_string(offset)));
-}
-//<!***************************************************************************
-void UpdateConsumerOffsetRequestHeader::Encode(Json::Value& outData) {
-  outData["consumerGroup"] = consumerGroup;
-  outData["topic"] = topic;
-  outData["queueId"] = queueId;
-  outData["commitOffset"] = UtilAll::to_string(commitOffset);
-}
-
-void UpdateConsumerOffsetRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("consumerGroup", consumerGroup));
-  requestMap.insert(pair<string, string>("topic", topic));
-  requestMap.insert(pair<string, string>("queueId", UtilAll::to_string(queueId)));
-  requestMap.insert(pair<string, string>("commitOffset", UtilAll::to_string(commitOffset)));
-}
-//<!***************************************************************************
-void ConsumerSendMsgBackRequestHeader::Encode(Json::Value& outData) {
-  outData["group"] = group;
-  outData["delayLevel"] = delayLevel;
-  outData["offset"] = UtilAll::to_string(offset);
-  outData["unitMode"] = UtilAll::to_string(unitMode);
-  outData["originMsgId"] = originMsgId;
-  outData["originTopic"] = originTopic;
-  outData["maxReconsumeTimes"] = maxReconsumeTimes;
-}
-
-void ConsumerSendMsgBackRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("group", group));
-  requestMap.insert(pair<string, string>("delayLevel", UtilAll::to_string(delayLevel)));
-  requestMap.insert(pair<string, string>("offset", UtilAll::to_string(offset)));
-  requestMap.insert(pair<string, string>("unitMode", UtilAll::to_string(unitMode)));
-  requestMap.insert(pair<string, string>("originMsgId", originMsgId));
-  requestMap.insert(pair<string, string>("originTopic", originTopic));
-  requestMap.insert(pair<string, string>("maxReconsumeTimes", UtilAll::to_string(maxReconsumeTimes)));
-}
-//<!***************************************************************************
-void GetConsumerListByGroupResponseBody::Decode(const MemoryBlock* mem, vector<string>& cids) {
-  cids.clear();
-  //<! decode;
-  const char* const pData = static_cast<const char*>(mem->getData());
-
-  Json::Reader reader;
-  Json::Value root;
-  if (!reader.parse(pData, root)) {
-    LOG_ERROR("GetConsumerListByGroupResponse error");
-    return;
-  }
-
-  Json::Value ids = root["consumerIdList"];
+GetConsumerListByGroupResponseBody* GetConsumerListByGroupResponseBody::Decode(MemoryBlock& mem) {
+  Json::Value root = RemotingSerializable::fromJson(mem);
+  auto& ids = root["consumerIdList"];
+  std::unique_ptr<GetConsumerListByGroupResponseBody> body(new GetConsumerListByGroupResponseBody());
   for (unsigned int i = 0; i < ids.size(); i++) {
-    if (ids[i].isString()) {
-      cids.push_back(ids[i].asString());
-    }
+    body->consumerIdList.push_back(ids[i].asString());
   }
+  return body.release();
 }
 
-void GetConsumerListByGroupResponseBody::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {}
+void GetConsumerListByGroupResponseBody::SetDeclaredFieldOfCommandHeader(
+    std::map<std::string, std::string>& requestMap) {}
 
-void ResetOffsetRequestHeader::setTopic(const string& tmp) {
+//######################################
+// ResetOffsetRequestHeader
+//######################################
+
+ResetOffsetRequestHeader* ResetOffsetRequestHeader::Decode(std::map<std::string, std::string>& extFields) {
+  std::unique_ptr<ResetOffsetRequestHeader> header(new ResetOffsetRequestHeader());
+  header->topic = extFields.at("topic");
+  header->group = extFields.at("group");
+  header->timestamp = std::stoll(extFields.at("timestamp"));
+  header->isForce = UtilAll::stob(extFields.at("isForce"));
+  LOG_INFO("topic:%s, group:%s, timestamp:%lld, isForce:%d", header->topic.c_str(), header->group.c_str(),
+           header->timestamp, header->isForce);
+  return header.release();
+}
+
+void ResetOffsetRequestHeader::setTopic(const std::string& tmp) {
   topic = tmp;
 }
 
-void ResetOffsetRequestHeader::setGroup(const string& tmp) {
+void ResetOffsetRequestHeader::setGroup(const std::string& tmp) {
   group = tmp;
 }
 
-void ResetOffsetRequestHeader::setTimeStamp(const int64& tmp) {
+void ResetOffsetRequestHeader::setTimeStamp(const int64_t& tmp) {
   timestamp = tmp;
 }
 
@@ -546,15 +686,15 @@ void ResetOffsetRequestHeader::setForceFlag(const bool& tmp) {
   isForce = tmp;
 }
 
-const string ResetOffsetRequestHeader::getTopic() const {
+const std::string ResetOffsetRequestHeader::getTopic() const {
   return topic;
 }
 
-const string ResetOffsetRequestHeader::getGroup() const {
+const std::string ResetOffsetRequestHeader::getGroup() const {
   return group;
 }
 
-const int64 ResetOffsetRequestHeader::getTimeStamp() const {
+const int64_t ResetOffsetRequestHeader::getTimeStamp() const {
   return timestamp;
 }
 
@@ -562,110 +702,75 @@ const bool ResetOffsetRequestHeader::getForceFlag() const {
   return isForce;
 }
 
-CommandHeader* ResetOffsetRequestHeader::Decode(Json::Value& ext) {
-  ResetOffsetRequestHeader* h = new ResetOffsetRequestHeader();
+//######################################
+// GetConsumerRunningInfoRequestHeader
+//######################################
 
-  Json::Value& tempValue = ext["topic"];
-  if (tempValue.isString()) {
-    h->topic = tempValue.asString();
-  }
-
-  tempValue = ext["group"];
-  if (tempValue.isString()) {
-    h->group = tempValue.asString();
-  }
-
-  tempValue = ext["timestamp"];
-  if (tempValue.isString()) {
-    h->timestamp = UtilAll::str2ll(tempValue.asCString());
-  }
-
-  tempValue = ext["isForce"];
-  if (tempValue.isString()) {
-    h->isForce = UtilAll::to_bool(tempValue.asCString());
-  }
-  LOG_INFO("topic:%s, group:%s, timestamp:%lld, isForce:%d", h->topic.c_str(), h->group.c_str(), h->timestamp,
-           h->isForce);
-  return h;
+GetConsumerRunningInfoRequestHeader* GetConsumerRunningInfoRequestHeader::Decode(
+    std::map<std::string, std::string>& extFields) {
+  std::unique_ptr<GetConsumerRunningInfoRequestHeader> header(new GetConsumerRunningInfoRequestHeader());
+  header->consumerGroup = extFields.at("consumerGroup");
+  header->clientId = extFields.at("clientId");
+  header->jstackEnable = UtilAll::stob(extFields.at("jstackEnable"));
+  LOG_INFO("consumerGroup:%s, clientId:%s,  jstackEnable:%d", header->consumerGroup.c_str(), header->clientId.c_str(),
+           header->jstackEnable);
+  return header.release();
 }
 
-CommandHeader* GetConsumerRunningInfoRequestHeader::Decode(Json::Value& ext) {
-  GetConsumerRunningInfoRequestHeader* h = new GetConsumerRunningInfoRequestHeader();
-
-  Json::Value& tempValue = ext["consumerGroup"];
-  if (tempValue.isString()) {
-    h->consumerGroup = tempValue.asString();
-  }
-
-  tempValue = ext["clientId"];
-  if (tempValue.isString()) {
-    h->clientId = tempValue.asString();
-  }
-
-  tempValue = ext["jstackEnable"];
-  if (tempValue.isBool()) {
-    h->jstackEnable = tempValue.asBool();
-  } else if (tempValue.isString()) {
-    h->jstackEnable = UtilAll::to_bool(tempValue.asCString());
-  }
-  LOG_INFO("consumerGroup:%s, clientId:%s,  jstackEnable:%d", h->consumerGroup.c_str(), h->clientId.c_str(),
-           h->jstackEnable);
-  return h;
+void GetConsumerRunningInfoRequestHeader::Encode(Json::Value& extFields) {
+  extFields["consumerGroup"] = consumerGroup;
+  extFields["clientId"] = clientId;
+  extFields["jstackEnable"] = UtilAll::to_string(jstackEnable);
 }
 
-void GetConsumerRunningInfoRequestHeader::Encode(Json::Value& outData) {
-  outData["consumerGroup"] = consumerGroup;
-  outData["clientId"] = clientId;
-  outData["jstackEnable"] = jstackEnable;
+void GetConsumerRunningInfoRequestHeader::SetDeclaredFieldOfCommandHeader(
+    std::map<std::string, std::string>& requestMap) {
+  requestMap.emplace("consumerGroup", consumerGroup);
+  requestMap.emplace("clientId", clientId);
+  requestMap.emplace("jstackEnable", std::to_string(jstackEnable));
 }
 
-void GetConsumerRunningInfoRequestHeader::SetDeclaredFieldOfCommandHeader(map<string, string>& requestMap) {
-  requestMap.insert(pair<string, string>("consumerGroup", consumerGroup));
-  requestMap.insert(pair<string, string>("clientId", clientId));
-  requestMap.insert(pair<string, string>("jstackEnable", UtilAll::to_string(jstackEnable)));
-}
-
-const string GetConsumerRunningInfoRequestHeader::getConsumerGroup() const {
+const std::string GetConsumerRunningInfoRequestHeader::getConsumerGroup() const {
   return consumerGroup;
 }
 
-void GetConsumerRunningInfoRequestHeader::setConsumerGroup(const string& Group) {
-  consumerGroup = Group;
+void GetConsumerRunningInfoRequestHeader::setConsumerGroup(const std::string& consumerGroup) {
+  this->consumerGroup = consumerGroup;
 }
 
-const string GetConsumerRunningInfoRequestHeader::getClientId() const {
+const std::string GetConsumerRunningInfoRequestHeader::getClientId() const {
   return clientId;
 }
 
-void GetConsumerRunningInfoRequestHeader::setClientId(const string& input_clientId) {
-  clientId = input_clientId;
+void GetConsumerRunningInfoRequestHeader::setClientId(const std::string& clientId) {
+  this->clientId = clientId;
 }
 
 const bool GetConsumerRunningInfoRequestHeader::isJstackEnable() const {
   return jstackEnable;
 }
 
-void GetConsumerRunningInfoRequestHeader::setJstackEnable(const bool& input_jstackEnable) {
-  jstackEnable = input_jstackEnable;
+void GetConsumerRunningInfoRequestHeader::setJstackEnable(const bool& jstackEnable) {
+  this->jstackEnable = jstackEnable;
 }
 
-CommandHeader* NotifyConsumerIdsChangedRequestHeader::Decode(Json::Value& ext) {
-  NotifyConsumerIdsChangedRequestHeader* h = new NotifyConsumerIdsChangedRequestHeader();
+//######################################
+// NotifyConsumerIdsChangedRequestHeader
+//######################################
 
-  Json::Value& tempValue = ext["consumerGroup"];
-  if (tempValue.isString()) {
-    h->consumerGroup = tempValue.asString();
-  }
-
-  return h;
+NotifyConsumerIdsChangedRequestHeader* NotifyConsumerIdsChangedRequestHeader::Decode(
+    std::map<std::string, std::string>& extFields) {
+  std::unique_ptr<NotifyConsumerIdsChangedRequestHeader> header(new NotifyConsumerIdsChangedRequestHeader());
+  header->consumerGroup = extFields.at("consumerGroup");
+  return header.release();
 }
 
-void NotifyConsumerIdsChangedRequestHeader::setGroup(const string& tmp) {
-  consumerGroup = tmp;
-}
-const string NotifyConsumerIdsChangedRequestHeader::getGroup() const {
+const std::string NotifyConsumerIdsChangedRequestHeader::getConsumerGroup() const {
   return consumerGroup;
 }
 
-//<!************************************************************************
+void NotifyConsumerIdsChangedRequestHeader::setConsumerGroup(const std::string& consumerGroup) {
+  this->consumerGroup = consumerGroup;
+}
+
 }  // namespace rocketmq

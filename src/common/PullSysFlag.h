@@ -14,10 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PULLSYSFLAG_H__
-#define __PULLSYSFLAG_H__
+#ifndef __PULL_SYS_FLAG_H__
+#define __PULL_SYS_FLAG_H__
+
 namespace rocketmq {
-//<!************************************************************************
+
 class PullSysFlag {
  public:
   static int buildSysFlag(bool commitOffset, bool suspend, bool subscription, bool classFilter);
@@ -35,6 +36,6 @@ class PullSysFlag {
   static int FLAG_CLASS_FILTER;
 };
 
-//<!***************************************************************************
-}  //<!end namespace;
-#endif
+}  // namespace rocketmq
+
+#endif  // __PULL_SYS_FLAG_H__

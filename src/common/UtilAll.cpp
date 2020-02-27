@@ -17,40 +17,58 @@
 #include "UtilAll.h"
 
 #include <chrono>
+#include <iostream>
+
+#ifndef WIN32
+#include <netdb.h>     // gethostbyname
+#include <pwd.h>       // getpwuid
+#include <sys/stat.h>  // mkdir
+#include <unistd.h>    // gethostname, access, getpid
+#else
+#include <Winsock2.h>
+#include <direct.h>
+#include <io.h>
+#endif
+
+#include <zlib.h>
+
+#define ZLIB_CHUNK 16384
+
+#include "Logging.h"
+#include "SocketUtil.h"
 
 namespace rocketmq {
-//<!************************************************************************
+
 std::string UtilAll::s_localHostName;
 std::string UtilAll::s_localIpAddress;
 
-bool UtilAll::startsWith_retry(const string& topic) {
-  return topic.find(RETRY_GROUP_TOPIC_PREFIX) == 0;
-}
-
-string UtilAll::getRetryTopic(const string& consumerGroup) {
-  return RETRY_GROUP_TOPIC_PREFIX + consumerGroup;
-}
-
-void UtilAll::Trim(string& str) {
-  str.erase(0, str.find_first_not_of(' '));  // prefixing spaces
-  str.erase(str.find_last_not_of(' ') + 1);  // surfixing spaces
-}
-
-bool UtilAll::isBlank(const string& str) {
-  if (str.empty()) {
-    return true;
+bool UtilAll::try_lock_for(std::timed_mutex& mutex, long timeout) {
+  auto now = std::chrono::steady_clock::now();
+  auto deadline = now + std::chrono::milliseconds(timeout);
+  for (;;) {
+    if (mutex.try_lock_until(deadline)) {
+      return true;
+    }
+    now = std::chrono::steady_clock::now();
+    if (now > deadline) {
+      return false;
+    }
+    std::this_thread::yield();
   }
-
-  string::size_type left = str.find_first_not_of(WHITESPACE);
-
-  if (left == string::npos) {
-    return true;
-  }
-
-  return false;
 }
 
-const int hex2int[256] = {
+int32_t UtilAll::HashCode(const std::string& str) {
+  // FIXME: don't equal to String#hashCode in Java
+  int32 h = 0;
+  if (!str.empty()) {
+    for (const auto& c : str) {
+      h = 31 * h + c;
+    }
+  }
+  return h;
+}
+
+static const int hex2int[256] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
     -1, -1, -1, -1, -1, -1, -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -61,8 +79,8 @@ const int hex2int[256] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
-uint64 UtilAll::hexstr2ull(const char* str) {
-  uint64 num = 0;
+uint64_t UtilAll::hexstr2ull(const char* str) {
+  uint64_t num = 0;
   unsigned char* ch = (unsigned char*)str;
   while (*ch != '\0') {
     num = (num << 4) + hex2int[*ch];
@@ -71,43 +89,53 @@ uint64 UtilAll::hexstr2ull(const char* str) {
   return num;
 }
 
-int64 UtilAll::str2ll(const char* str) {
-  return boost::lexical_cast<int64>(str);
+static const char sHexAlphabet[] = "0123456789ABCDEF";
+
+std::string UtilAll::bytes2string(const char* bytes, size_t len) {
+  if (bytes == nullptr || len <= 0) {
+    return std::string();
+  }
+
+  std::string buffer;
+  buffer.reserve(len * 2 + 1);
+  for (std::size_t i = 0; i < len; i++) {
+    unsigned char v = (unsigned char)bytes[i];
+    buffer.append(1, sHexAlphabet[v >> 4]);
+    buffer.append(1, sHexAlphabet[v & 0x0FU]);
+  }
+  return buffer;
 }
 
-string UtilAll::bytes2string(const char* bytes, int len) {
-  if (bytes == NULL || len <= 0) {
-    return string();
-  }
-
-#ifdef WIN32
-  string buffer;
-  for (int i = 0; i < len; i++) {
-    char tmp[3];
-    sprintf(tmp, "%02X", (unsigned char)bytes[i]);
-    buffer.append(tmp);
-  }
-
-  return buffer;
-#else
-  static const char hex_str[] = "0123456789ABCDEF";
-
-  char result[len * 2 + 1];
-
-  result[len * 2] = 0;
-  for (int i = 0; i < len; i++) {
-    result[i * 2 + 0] = hex_str[(bytes[i] >> 4) & 0x0F];
-    result[i * 2 + 1] = hex_str[(bytes[i]) & 0x0F];
-  }
-
-  string buffer(result);
-  return buffer;
-#endif
+bool UtilAll::isRetryTopic(const std::string& topic) {
+  return topic.find(RETRY_GROUP_TOPIC_PREFIX) == 0;
 }
 
-bool UtilAll::SplitURL(const string& serverURL, string& addr, short& nPort) {
-  size_t pos = serverURL.find(':');
-  if (pos == string::npos) {
+std::string UtilAll::getRetryTopic(const std::string& consumerGroup) {
+  return RETRY_GROUP_TOPIC_PREFIX + consumerGroup;
+}
+
+void UtilAll::Trim(std::string& str) {
+  str.erase(0, str.find_first_not_of(' '));  // prefixing spaces
+  str.erase(str.find_last_not_of(' ') + 1);  // surfixing spaces
+}
+
+bool UtilAll::isBlank(const std::string& str) {
+  if (str.empty()) {
+    return true;
+  }
+
+  std::string::size_type left = str.find_first_not_of(WHITESPACE);
+
+  if (left == std::string::npos) {
+    return true;
+  }
+
+  return false;
+}
+
+bool UtilAll::SplitURL(const std::string& serverURL, std::string& addr, short& nPort) {
+  auto pos = serverURL.find(':');
+  if (pos == std::string::npos) {
     return false;
   }
 
@@ -117,7 +145,7 @@ bool UtilAll::SplitURL(const string& serverURL, string& addr, short& nPort) {
   }
 
   pos++;
-  string port = serverURL.substr(pos, serverURL.length() - pos);
+  std::string port = serverURL.substr(pos, serverURL.length() - pos);
   nPort = atoi(port.c_str());
   if (nPort == 0) {
     return false;
@@ -125,17 +153,17 @@ bool UtilAll::SplitURL(const string& serverURL, string& addr, short& nPort) {
   return true;
 }
 
-int UtilAll::Split(vector<string>& ret_, const string& strIn, const char sep) {
+int UtilAll::Split(std::vector<std::string>& ret_, const std::string& strIn, const char sep) {
   if (strIn.empty())
     return 0;
 
-  string tmp;
-  string::size_type pos_begin = strIn.find_first_not_of(sep);
-  string::size_type comma_pos = 0;
+  std::string tmp;
+  std::string::size_type pos_begin = strIn.find_first_not_of(sep);
+  std::string::size_type comma_pos = 0;
 
-  while (pos_begin != string::npos) {
+  while (pos_begin != std::string::npos) {
     comma_pos = strIn.find(sep, pos_begin);
-    if (comma_pos != string::npos) {
+    if (comma_pos != std::string::npos) {
       tmp = strIn.substr(pos_begin, comma_pos - pos_begin);
       pos_begin = comma_pos + 1;
     } else {
@@ -150,17 +178,18 @@ int UtilAll::Split(vector<string>& ret_, const string& strIn, const char sep) {
   }
   return ret_.size();
 }
-int UtilAll::Split(vector<string>& ret_, const string& strIn, const string& sep) {
+
+int UtilAll::Split(std::vector<std::string>& ret_, const std::string& strIn, const std::string& sep) {
   if (strIn.empty())
     return 0;
 
-  string tmp;
-  string::size_type pos_begin = strIn.find_first_not_of(sep);
-  string::size_type comma_pos = 0;
+  std::string tmp;
+  std::string::size_type pos_begin = strIn.find_first_not_of(sep);
+  std::string::size_type comma_pos = 0;
 
-  while (pos_begin != string::npos) {
+  while (pos_begin != std::string::npos) {
     comma_pos = strIn.find(sep, pos_begin);
-    if (comma_pos != string::npos) {
+    if (comma_pos != std::string::npos) {
       tmp = strIn.substr(pos_begin, comma_pos - pos_begin);
       pos_begin = comma_pos + sep.length();
     } else {
@@ -176,104 +205,120 @@ int UtilAll::Split(vector<string>& ret_, const string& strIn, const string& sep)
   return ret_.size();
 }
 
-int32_t UtilAll::StringToInt32(const std::string& str, int32_t& out) {
-  out = 0;
-  if (str.empty()) {
-    return false;
-  }
-
-  char* end = NULL;
-  errno = 0;
-  long l = strtol(str.c_str(), &end, 10);
-  /* Both checks are needed because INT_MAX == LONG_MAX is possible. */
-  if (l > INT_MAX || (errno == ERANGE && l == LONG_MAX))
-    return false;
-  if (l < INT_MIN || (errno == ERANGE && l == LONG_MIN))
-    return false;
-  if (*end != '\0')
-    return false;
-  out = l;
-  return true;
-}
-
-int64_t UtilAll::StringToInt64(const std::string& str, int64_t& val) {
-  char* endptr = NULL;
-  errno = 0; /* To distinguish success/failure after call */
-  val = strtoll(str.c_str(), &endptr, 10);
-
-  /* Check for various possible errors */
-  if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN)) || (errno != 0 && val == 0)) {
-    return false;
-  }
-  /*no digit was found Or  Further characters after number*/
-  if (endptr == str.c_str()) {
-    return false;
-  }
-  /*no digit was found Or  Further characters after number*/
-  if (*endptr != '\0') {
-    return false;
-  }
-  /* If we got here, strtol() successfully parsed a number */
-  return true;
-}
-
-string UtilAll::getLocalHostName() {
+std::string UtilAll::getLocalHostName() {
   if (s_localHostName.empty()) {
-    // boost::system::error_code error;
-    // s_localHostName = boost::asio::ip::host_name(error);
-
     char name[1024];
-    boost::system::error_code ec;
-    if (boost::asio::detail::socket_ops::gethostname(name, sizeof(name), ec) != 0) {
-      return std::string();
+    if (::gethostname(name, sizeof(name)) != 0) {
+      return null;
     }
     s_localHostName.append(name, strlen(name));
   }
   return s_localHostName;
 }
 
-string UtilAll::getLocalAddress() {
+std::string UtilAll::getLocalAddress() {
   if (s_localIpAddress.empty()) {
-    boost::asio::io_service io_service;
-    boost::asio::ip::tcp::resolver resolver(io_service);
-    boost::asio::ip::tcp::resolver::query query(getLocalHostName(), "");
-    boost::system::error_code error;
-    boost::asio::ip::tcp::resolver::iterator iter = resolver.resolve(query, error);
-    if (error) {
-      return "";
+    auto hostname = getLocalHostName();
+    if (!hostname.empty()) {
+      try {
+        s_localIpAddress = lookupNameServers(hostname);
+      } catch (std::exception& e) {
+        LOG_WARN(e.what());
+        s_localIpAddress = "127.0.0.1";
+      }
     }
-    boost::asio::ip::tcp::resolver::iterator end;  // End marker.
-    boost::asio::ip::tcp::endpoint ep;
-    while (iter != end) {
-      ep = *iter++;
-    }
-    s_localIpAddress = ep.address().to_string();
   }
   return s_localIpAddress;
 }
 
-string UtilAll::getHomeDirectory() {
+uint32_t UtilAll::getIP() {
+  std::string ip = UtilAll::getLocalAddress();
+  if (ip.empty()) {
+    return 0;
+  }
+
+  char* ip_str = new char[ip.length() + 1];
+  std::strncpy(ip_str, ip.c_str(), ip.length());
+  ip_str[ip.length()] = '\0';
+
+  int i = 3;
+  uint32_t nResult = 0;
+  for (char* token = std::strtok(ip_str, "."); token != nullptr && i >= 0; token = std::strtok(nullptr, ".")) {
+    uint32_t n = std::atoi(token);
+    nResult |= n << (8 * i--);
+  }
+
+  delete[] ip_str;
+
+  return nResult;
+}
+
+std::string UtilAll::getHomeDirectory() {
 #ifndef WIN32
-  char* homeEnv = getenv("HOME");
-  string homeDir;
+  char* homeEnv = std::getenv("HOME");
+  std::string homeDir;
   if (homeEnv == NULL) {
     homeDir.append(getpwuid(getuid())->pw_dir);
   } else {
     homeDir.append(homeEnv);
   }
 #else
-  string homeDir(getenv("USERPROFILE"));
+  std::string homeDir(std::getenv("USERPROFILE"));
 #endif
   return homeDir;
 }
 
-string UtilAll::getProcessName() {
-#ifndef WIN32
-  char buf[PATH_MAX + 1] = {0};
-  int count = PATH_MAX + 1;
-  char procpath[PATH_MAX + 1] = {0};
-  sprintf(procpath, "/proc/%d/exe", getpid());
+static bool createDirectoryInner(const char* dir) {
+  if (dir == nullptr) {
+    std::cerr << "directory is nullptr" << std::endl;
+    return false;
+  }
+  if (access(dir, F_OK) == -1) {
+#ifdef _WIN32
+    int flag = mkdir(dir);
+#else
+    int flag = mkdir(dir, 0755);
+#endif
+    return flag == 0;
+  }
+  return true;
+}
 
+void UtilAll::createDirectory(std::string const& dir) {
+  const char* ptr = dir.c_str();
+  if (access(ptr, F_OK) == 0) {
+    return;
+  }
+  char buff[2048] = {0};
+  for (unsigned int i = 0; i < dir.size(); i++) {
+    if (i != 0 && (*(ptr + i) == '/' || *(ptr + i) == '\\')) {
+      memcpy(buff, ptr, i);
+      createDirectoryInner(buff);
+      memset(buff, 0, 1024);
+    }
+  }
+  return;
+}
+
+bool UtilAll::existDirectory(std::string const& dir) {
+  return access(dir.c_str(), F_OK) == 0;
+}
+
+int UtilAll::getProcessId() {
+#ifndef WIN32
+  return getpid();
+#else
+  return ::GetCurrentProcessId();
+#endif
+}
+
+std::string UtilAll::getProcessName() {
+#ifndef WIN32
+  char buf[PATH_MAX] = {0};
+  char procpath[PATH_MAX] = {0};
+  int count = PATH_MAX;
+
+  sprintf(procpath, "/proc/%d/exe", getpid());
   if (access(procpath, F_OK) == -1) {
     return "";
   }
@@ -294,51 +339,121 @@ string UtilAll::getProcessName() {
     return "";
   }
 #else
-  TCHAR szFileName[MAX_PATH + 1];
-  GetModuleFileName(NULL, szFileName, MAX_PATH + 1);
+  TCHAR szFileName[MAX_PATH];
+  ::GetModuleFileName(NULL, szFileName, MAX_PATH);
   return std::string(szFileName);
 #endif
 }
 
-uint64_t UtilAll::currentTimeMillis() {
+int64_t UtilAll::currentTimeMillis() {
   auto since_epoch =
       std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-  return static_cast<uint64_t>(since_epoch.count());
+  return static_cast<int64_t>(since_epoch.count());
 }
 
-uint64_t UtilAll::currentTimeSeconds() {
+int64_t UtilAll::currentTimeSeconds() {
   auto since_epoch =
       std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch());
-  return static_cast<uint64_t>(since_epoch.count());
+  return static_cast<int64_t>(since_epoch.count());
 }
 
-bool UtilAll::deflate(std::string& input, std::string& out, int level) {
-  boost::iostreams::zlib_params zlibParams(level, boost::iostreams::zlib::deflated);
-  boost::iostreams::filtering_ostream compressingStream;
-  compressingStream.push(boost::iostreams::zlib_compressor(zlibParams));
-  compressingStream.push(boost::iostreams::back_inserter(out));
-  compressingStream << input;
-  boost::iostreams::close(compressingStream);
+bool UtilAll::deflate(const std::string& input, std::string& out, int level) {
+  return deflate(input.data(), input.length(), out, level);
+}
+
+bool UtilAll::deflate(const char* input, size_t len, std::string& out, int level) {
+  int ret;
+  unsigned have;
+  z_stream strm;
+  unsigned char buf[ZLIB_CHUNK];
+
+  /* allocate deflate state */
+  strm.zalloc = Z_NULL;
+  strm.zfree = Z_NULL;
+  strm.opaque = Z_NULL;
+  ret = ::deflateInit(&strm, level);
+  if (ret != Z_OK) {
+    return false;
+  }
+
+  strm.avail_in = len;
+  strm.next_in = (z_const Bytef*)input;
+
+  /* run deflate() on input until output buffer not full, finish
+     compression if all of source has been read in */
+  do {
+    strm.avail_out = ZLIB_CHUNK;
+    strm.next_out = buf;
+    ret = ::deflate(&strm, Z_FINISH); /* no bad return value */
+    assert(ret != Z_STREAM_ERROR);    /* state not clobbered */
+    have = ZLIB_CHUNK - strm.avail_out;
+    out.append((char*)buf, have);
+  } while (strm.avail_out == 0);
+  assert(strm.avail_in == 0);  /* all input will be used */
+  assert(ret == Z_STREAM_END); /* stream will be complete */
+
+  /* clean up and return */
+  (void)::deflateEnd(&strm);
 
   return true;
 }
 
-bool UtilAll::inflate(std::string& input, std::string& out) {
-  boost::iostreams::filtering_ostream decompressingStream;
-  decompressingStream.push(boost::iostreams::zlib_decompressor());
-  decompressingStream.push(boost::iostreams::back_inserter(out));
-  decompressingStream << input;
-  boost::iostreams::close(decompressingStream);
+bool UtilAll::inflate(const std::string& input, std::string& out) {
+  return inflate(input.data(), input.length(), out);
+}
 
-  return true;
+bool UtilAll::inflate(const char* input, size_t len, std::string& out) {
+  int ret;
+  unsigned have;
+  z_stream strm;
+  unsigned char buf[ZLIB_CHUNK];
+
+  /* allocate inflate state */
+  strm.zalloc = Z_NULL;
+  strm.zfree = Z_NULL;
+  strm.opaque = Z_NULL;
+  strm.avail_in = 0;
+  strm.next_in = Z_NULL;
+  ret = ::inflateInit(&strm);
+  if (ret != Z_OK) {
+    return false;
+  }
+
+  strm.avail_in = len;
+  strm.next_in = (z_const Bytef*)input;
+
+  /* run inflate() on input until output buffer not full */
+  do {
+    strm.avail_out = ZLIB_CHUNK;
+    strm.next_out = buf;
+    ret = ::inflate(&strm, Z_NO_FLUSH);
+    assert(ret != Z_STREAM_ERROR); /* state not clobbered */
+    switch (ret) {
+      case Z_NEED_DICT:
+        ret = Z_DATA_ERROR; /* and fall through */
+      case Z_DATA_ERROR:
+      case Z_MEM_ERROR:
+        (void)inflateEnd(&strm);
+        return false;
+    }
+    have = ZLIB_CHUNK - strm.avail_out;
+    out.append((char*)buf, have);
+  } while (strm.avail_out == 0);
+
+  /* clean up and return */
+  (void)::inflateEnd(&strm);
+
+  return ret == Z_STREAM_END;
 }
 
 bool UtilAll::ReplaceFile(const std::string& from_path, const std::string& to_path) {
 #ifdef WIN32
   // Try a simple move first.  It will only succeed when |to_path| doesn't
   // already exist.
-  if (::MoveFile(from_path.c_str(), to_path.c_str()))
+  if (::MoveFile(from_path.c_str(), to_path.c_str())) {
     return true;
+  }
+
   // Try the full-blown replace if the move fails, as ReplaceFile will only
   // succeed when |to_path| does exist. When writing to a network share, we may
   // not be able to change the ACLs. Ignore ACL errors then
@@ -346,11 +461,11 @@ bool UtilAll::ReplaceFile(const std::string& from_path, const std::string& to_pa
   if (::ReplaceFile(to_path.c_str(), from_path.c_str(), NULL, REPLACEFILE_IGNORE_MERGE_ERRORS, NULL, NULL)) {
     return true;
   }
+
   return false;
 #else
-  if (rename(from_path.c_str(), to_path.c_str()) == 0)
-    return true;
-  return false;
+  return rename(from_path.c_str(), to_path.c_str()) == 0;
 #endif
 }
-}
+
+}  // namespace rocketmq

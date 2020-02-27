@@ -14,88 +14,56 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PULLREQUEST_H__
-#define __PULLREQUEST_H__
+#ifndef __PULL_REQUEST_H__
+#define __PULL_REQUEST_H__
 
-#include <boost/atomic.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
-#include "MQMessageExt.h"
+#include <atomic>
+#include <memory>
+#include <mutex>
+
 #include "MQMessageQueue.h"
-#include "UtilAll.h"
+#include "ProcessQueue.h"
+
 namespace rocketmq {
-//<!***************************************************************************
-class PullRequest {
+
+class PullRequest;
+typedef std::shared_ptr<PullRequest> PullRequestPtr;
+
+class ROCKETMQCLIENT_API PullRequest {
  public:
-  PullRequest(const string& groupname);
+  PullRequest();
   virtual ~PullRequest();
 
-  void putMessage(vector<MQMessageExt>& msgs);
-  void getMessage(vector<MQMessageExt>& msgs);
-  int64 getCacheMinOffset();
-  int64 getCacheMaxOffset();
-  int getCacheMsgCount();
-  void getMessageByQueueOffset(vector<MQMessageExt>& msgs, int64 minQueueOffset, int64 maxQueueOffset);
-  int64 removeMessage(vector<MQMessageExt>& msgs);
-  void clearAllMsgs();
+  bool isLockedFirst() const;
+  void setLockedFirst(bool lockedFirst);
 
-  PullRequest& operator=(const PullRequest& other);
+  const std::string& getConsumerGroup() const;
+  void setConsumerGroup(const std::string& consumerGroup);
 
-  void setDropped(bool dropped);
-  bool isDropped() const;
+  const MQMessageQueue& getMessageQueue();
+  void setMessageQueue(const MQMessageQueue& messageQueue);
 
-  int64 getNextOffset();
-  void setNextOffset(int64 nextoffset);
+  int64_t getNextOffset();
+  void setNextOffset(int64_t nextOffset);
 
-  string getGroupName() const;
+  ProcessQueuePtr getProcessQueue();
+  void setProcessQueue(ProcessQueuePtr processQueue);
 
-  void updateQueueMaxOffset(int64 queueOffset);
-
-  void setLocked(bool Locked);
-  bool isLocked() const;
-  bool isLockExpired() const;
-  void setLastLockTimestamp(int64 time);
-  int64 getLastLockTimestamp() const;
-  void setLastPullTimestamp(uint64 time);
-  uint64 getLastPullTimestamp() const;
-  bool isPullRequestExpired() const;
-  void setLastConsumeTimestamp(uint64 time);
-  uint64 getLastConsumeTimestamp() const;
-  void setTryUnlockTimes(int time);
-  int getTryUnlockTimes() const;
-  void takeMessages(vector<MQMessageExt>& msgs, int batchSize);
-  int64 commit();
-  void makeMessageToCosumeAgain(vector<MQMessageExt>& msgs);
-  boost::timed_mutex& getPullRequestCriticalSection();
-  bool removePullMsgEvent(bool force = false);
-  bool addPullMsgEvent();
-  /**
-   * Check if there is an in-flight pull request.
-   */
-  bool hasInFlightPullRequest() const;
-
- public:
-  MQMessageQueue m_messageQueue;
-  static const uint64 RebalanceLockInterval;     // ms
-  static const uint64 RebalanceLockMaxLiveTime;  // ms
-  static const uint64 MAX_PULL_IDLE_TIME;        // ms
+  std::string toString() const {
+    std::stringstream ss;
+    ss << "PullRequest [consumerGroup=" << m_consumerGroup << ", messageQueue=" << m_messageQueue.toString()
+       << ", nextOffset=" << m_nextOffset << "]";
+    return ss.str();
+  }
 
  private:
-  string m_groupname;
-  int64 m_nextOffset;
-  int64 m_queueOffsetMax;
-  boost::atomic<bool> m_bDropped;
-  boost::atomic<bool> m_bLocked;
-  map<int64, MQMessageExt> m_msgTreeMap;
-  map<int64, MQMessageExt> m_msgTreeMapTemp;
-  boost::mutex m_pullRequestLock;
-  uint64 m_lastLockTimestamp;  // ms
-  // uint64 m_tryUnlockTimes;
-  uint64 m_lastPullTimestamp;
-  uint64 m_lastConsumeTimestamp;
-  boost::timed_mutex m_consumeLock;
+  std::string m_consumerGroup;
+  MQMessageQueue m_messageQueue;
+  ProcessQueuePtr m_processQueue;
+  int64_t m_nextOffset;
+  bool m_lockedFirst;
 };
-//<!************************************************************************
+
 }  // namespace rocketmq
 
-#endif
+#endif  // __PULL_REQUEST_H__

@@ -14,31 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __KV_TABLE_H__
+#define __KV_TABLE_H__
 
-#ifndef __KVTABLE_H__
-#define __KVTABLE_H__
 #include <map>
 #include <string>
+
 #include "RemotingSerializable.h"
 
-using std::map;
-using std::string;
-
 namespace rocketmq {
-//<!***************************************************************************
+
 class KVTable : public RemotingSerializable {
  public:
   virtual ~KVTable() { m_table.clear(); }
 
-  void Encode(string& outData) {}
+  const std::map<std::string, std::string>& getTable() { return m_table; }
 
-  const map<string, string>& getTable() { return m_table; }
-
-  void setTable(const map<string, string>& table) { m_table = table; }
+  void setTable(const std::map<std::string, std::string>& table) { m_table = table; }
 
  private:
-  map<string, string> m_table;
+  std::map<std::string, std::string> m_table;
 };
+
 }  // namespace rocketmq
 
-#endif
+#endif  // __KV_TABLE_H__

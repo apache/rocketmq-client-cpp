@@ -14,104 +14,119 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MESSAGEEXT_H__
-#define __MESSAGEEXT_H__
+#ifndef __MQ_MESSAGE_EXT_H__
+#define __MQ_MESSAGE_EXT_H__
 
 #ifdef WIN32
-#include <Windows.h>
+// clang-format off
 #include <Winsock2.h>
+#include <Windows.h>
+// clang-format on
 #else
 #include <sys/socket.h>
 #endif
 
 #include "MQMessage.h"
-#include "RocketMQClient.h"
+#include "TopicFilterType.h"
 
 namespace rocketmq {
-//<!message extend class, which was generated on broker;
-//<!***************************************************************************
+
+class MQMessageExt;
+
+typedef MQMessageExt* MQMessageExtPtr;
+typedef std::shared_ptr<MQMessageExt> MQMessageExtPtr2;
+
+// message extend class, which was generated on broker
 class ROCKETMQCLIENT_API MQMessageExt : public MQMessage {
  public:
   MQMessageExt();
   MQMessageExt(int queueId,
-               int64 bornTimestamp,
+               int64_t bornTimestamp,
                sockaddr bornHost,
-               int64 storeTimestamp,
+               int64_t storeTimestamp,
                sockaddr storeHost,
                std::string msgId);
 
   virtual ~MQMessageExt();
 
-  static int parseTopicFilterType(int sysFlag);
+  static TopicFilterType parseTopicFilterType(int32_t sysFlag);
 
-  int getQueueId() const;
-  void setQueueId(int queueId);
+  int32_t getStoreSize() const;
+  void setStoreSize(int32_t storeSize);
 
-  int64 getBornTimestamp() const;
-  void setBornTimestamp(int64 bornTimestamp);
+  int32_t getBodyCRC() const;
+  void setBodyCRC(int32_t bodyCRC);
 
-  sockaddr getBornHost() const;
+  int32_t getQueueId() const;
+  void setQueueId(int32_t queueId);
+
+  int64_t getQueueOffset() const;
+  void setQueueOffset(int64_t queueOffset);
+
+  int64_t getCommitLogOffset() const;
+  void setCommitLogOffset(int64_t physicOffset);
+
+  int32_t getSysFlag() const;
+  void setSysFlag(int32_t sysFlag);
+
+  int64_t getBornTimestamp() const;
+  void setBornTimestamp(int64_t bornTimestamp);
+
+  const sockaddr& getBornHost() const;
   std::string getBornHostString() const;
-  std::string getBornHostNameString() const;
   void setBornHost(const sockaddr& bornHost);
 
-  int64 getStoreTimestamp() const;
-  void setStoreTimestamp(int64 storeTimestamp);
+  int64_t getStoreTimestamp() const;
+  void setStoreTimestamp(int64_t storeTimestamp);
 
-  sockaddr getStoreHost() const;
+  const sockaddr& getStoreHost() const;
   std::string getStoreHostString() const;
   void setStoreHost(const sockaddr& storeHost);
 
-  const std::string& getMsgId() const;
-  void setMsgId(const std::string& msgId);
+  int32_t getReconsumeTimes() const;
+  void setReconsumeTimes(int32_t reconsumeTimes);
 
-  const std::string& getOffsetMsgId() const;
-  void setOffsetMsgId(const std::string& offsetMsgId);
+  int64_t getPreparedTransactionOffset() const;
+  void setPreparedTransactionOffset(int64_t preparedTransactionOffset);
 
-  int getBodyCRC() const;
-  void setBodyCRC(int bodyCRC);
+  virtual const std::string& getMsgId() const;
+  virtual void setMsgId(const std::string& msgId);
 
-  int64 getQueueOffset() const;
-  void setQueueOffset(int64 queueOffset);
-
-  int64 getCommitLogOffset() const;
-  void setCommitLogOffset(int64 physicOffset);
-
-  int getStoreSize() const;
-  void setStoreSize(int storeSize);
-
-  int getReconsumeTimes() const;
-  void setReconsumeTimes(int reconsumeTimes);
-
-  int64 getPreparedTransactionOffset() const;
-  void setPreparedTransactionOffset(int64 preparedTransactionOffset);
-
-  std::string toString() const {
+  std::string toString() const override {
     std::stringstream ss;
     ss << "MessageExt [queueId=" << m_queueId << ", storeSize=" << m_storeSize << ", queueOffset=" << m_queueOffset
        << ", sysFlag=" << m_sysFlag << ", bornTimestamp=" << m_bornTimestamp << ", bornHost=" << getBornHostString()
-       << ", storeTimestamp=" << m_storeTimestamp << ", storeHost=" << getStoreHostString() << ", msgId=" << m_msgId
+       << ", storeTimestamp=" << m_storeTimestamp << ", storeHost=" << getStoreHostString() << ", msgId=" << getMsgId()
        << ", commitLogOffset=" << m_commitLogOffset << ", bodyCRC=" << m_bodyCRC
        << ", reconsumeTimes=" << m_reconsumeTimes << ", preparedTransactionOffset=" << m_preparedTransactionOffset
-       << ",  " << MQMessage::toString() << "]";
+       << ", toString()=" << MQMessage::toString() << "]";
     return ss.str();
   }
 
  private:
-  int64 m_queueOffset;
-  int64 m_commitLogOffset;
-  int64 m_bornTimestamp;
-  int64 m_storeTimestamp;
-  int64 m_preparedTransactionOffset;
-  int m_queueId;
-  int m_storeSize;
-  int m_bodyCRC;
-  int m_reconsumeTimes;
+  int32_t m_storeSize;
+  int32_t m_bodyCRC;
+  int32_t m_queueId;
+  int64_t m_queueOffset;
+  int64_t m_commitLogOffset;
+  int32_t m_sysFlag;
+  int64_t m_bornTimestamp;
   sockaddr m_bornHost;
+  int64_t m_storeTimestamp;
   sockaddr m_storeHost;
+  int32_t m_reconsumeTimes;
+  int64_t m_preparedTransactionOffset;
   std::string m_msgId;
-  std::string m_offsetMsgId;
 };
-//<!***************************************************************************
+
+class ROCKETMQCLIENT_API MQMessageClientExt : public MQMessageExt {
+  const std::string& getOffsetMsgId() const;
+  void setOffsetMsgId(const std::string& offsetMsgId);
+
+  const std::string& getMsgId() const override;
+  void setMsgId(const std::string& msgId) override;
+};
+
 }  // namespace rocketmq
-#endif
+
+#endif  // __MQ_MESSAGE_EXT_H__

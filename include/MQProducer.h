@@ -14,48 +14,68 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQPRODUCER_H__
-#define __MQPRODUCER_H__
+#ifndef __MQ_PRODUCER_H__
+#define __MQ_PRODUCER_H__
 
-#include "AsyncCallback.h"
-#include "MQClient.h"
-#include "MQMessageQueue.h"
 #include "MQSelector.h"
-#include "RocketMQClient.h"
+#include "SendCallback.h"
 #include "SendResult.h"
+#include "TransactionSendResult.h"
 
 namespace rocketmq {
-//<!***************************************************************************
-class ROCKETMQCLIENT_API MQProducer : public MQClient {
+
+/**
+ * MQ Producer API
+ */
+class ROCKETMQCLIENT_API MQProducer {
  public:
-  MQProducer() {}
-  virtual ~MQProducer() {}
-  // if setted bActiveBroker, will search brokers with best service state
-  // firstly, then search brokers that had been sent failed by last time;
-  virtual SendResult send(MQMessage& msg, bool bSelectActiveBroker = false) = 0;
-  virtual SendResult send(MQMessage& msg, const MQMessageQueue& mq) = 0;
-  // strict order msg, if send failed on seleted MessageQueue, throw exception
-  // to up layer
-  virtual SendResult send(MQMessage& msg, MessageQueueSelector* selector, void* arg) = 0;
-  // non-strict order msg, if send failed on seleted MessageQueue, will auto
-  // retry others Broker queues with autoRetryTimes;
-  // if setted bActiveBroker, if send failed on seleted MessageQueue, , and then
-  // search brokers with best service state, lastly will search brokers that had
-  // been sent failed by last time;
-  virtual SendResult send(MQMessage& msg,
-                          MessageQueueSelector* selector,
-                          void* arg,
-                          int autoRetryTimes,
-                          bool bActiveBroker = false) = 0;
-  virtual void send(MQMessage& msg, SendCallback* sendCallback, bool bSelectActiveBroker = false) = 0;
-  virtual void send(MQMessage& msg, const MQMessageQueue& mq, SendCallback* sendCallback) = 0;
-  virtual void send(MQMessage& msg, MessageQueueSelector* selector, void* arg, SendCallback* sendCallback) = 0;
-  virtual SendResult send(std::vector<MQMessage>& msgs) = 0;
-  virtual SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq) = 0;
-  virtual void sendOneway(MQMessage& msg, bool bSelectActiveBroker = false) = 0;
-  virtual void sendOneway(MQMessage& msg, const MQMessageQueue& mq) = 0;
-  virtual void sendOneway(MQMessage& msg, MessageQueueSelector* selector, void* arg) = 0;
+  virtual ~MQProducer() = default;
+
+ public:  // MQProducer
+  virtual void start() = 0;
+  virtual void shutdown() = 0;
+
+  // Sync
+  virtual SendResult send(MQMessagePtr msg) = 0;
+  virtual SendResult send(MQMessagePtr msg, long timeout) = 0;
+  virtual SendResult send(MQMessagePtr msg, const MQMessageQueue& mq) = 0;
+  virtual SendResult send(MQMessagePtr msg, const MQMessageQueue& mq, long timeout) = 0;
+
+  // Async
+  // TODO: replace MQMessagePtr by MQMessagePtr2(shared_ptr)
+  virtual void send(MQMessagePtr msg, SendCallback* sendCallback) noexcept = 0;
+  virtual void send(MQMessagePtr msg, SendCallback* sendCallback, long timeout) noexcept = 0;
+  virtual void send(MQMessagePtr msg, const MQMessageQueue& mq, SendCallback* sendCallback) noexcept = 0;
+  virtual void send(MQMessagePtr msg, const MQMessageQueue& mq, SendCallback* sendCallback, long timeout) noexcept = 0;
+
+  // Oneyway
+  virtual void sendOneway(MQMessagePtr msg) = 0;
+  virtual void sendOneway(MQMessagePtr msg, const MQMessageQueue& mq) = 0;
+
+  // Select
+  virtual SendResult send(MQMessagePtr msg, MessageQueueSelector* selector, void* arg) = 0;
+  virtual SendResult send(MQMessagePtr msg, MessageQueueSelector* selector, void* arg, long timeout) = 0;
+  virtual void send(MQMessagePtr msg,
+                    MessageQueueSelector* selector,
+                    void* arg,
+                    SendCallback* sendCallback) noexcept = 0;
+  virtual void send(MQMessagePtr msg,
+                    MessageQueueSelector* selector,
+                    void* arg,
+                    SendCallback* sendCallback,
+                    long timeout) noexcept = 0;
+  virtual void sendOneway(MQMessagePtr msg, MessageQueueSelector* selector, void* arg) = 0;
+
+  // Transaction
+  virtual TransactionSendResult sendMessageInTransaction(MQMessagePtr msg, void* arg) = 0;
+
+  // Batch
+  virtual SendResult send(std::vector<MQMessagePtr>& msgs) = 0;
+  virtual SendResult send(std::vector<MQMessagePtr>& msgs, long timeout) = 0;
+  virtual SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq) = 0;
+  virtual SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq, long timeout) = 0;
 };
-//<!***************************************************************************
+
 }  // namespace rocketmq
-#endif
+
+#endif  // __MQ_PRODUCER_H__

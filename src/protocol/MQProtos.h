@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQPROTOS_H__
-#define __MQPROTOS_H__
+#ifndef __MQ_PROTOS_H__
+#define __MQ_PROTOS_H__
 
 namespace rocketmq {
-//<!***************************************************************************
+
 enum MQRequestCode {
   // send msg to Broker
   SEND_MESSAGE = 10,
@@ -139,10 +139,11 @@ enum MQRequestCode {
 
   CLONE_GROUP_OFFSET = 314,
 
-  VIEW_BROKER_STATS_DATA = 315
+  VIEW_BROKER_STATS_DATA = 315,
+
+  SEND_BATCH_MESSAGE = 320
 };
 
-//<!***************************************************************************
 enum MQResponseCode {
   // rcv success response from broker
   SUCCESS_VALUE = 0,
@@ -192,7 +193,7 @@ enum MQResponseCode {
   CONSUMER_NOT_ONLINE = 206,
   CONSUME_MSG_TIMEOUT = 207
 };
-//<!************************************************************************
-}  //<!end namespace;
 
-#endif
+}  // namespace rocketmq
+
+#endif  // __MQ_PROTOS_H__

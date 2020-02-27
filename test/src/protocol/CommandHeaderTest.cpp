@@ -16,6 +16,7 @@
  */
 
 #include <memory>
+#include <string>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -24,7 +25,11 @@
 #include "json/writer.h"
 
 #include "CommandHeader.h"
+#include "MQClientException.h"
+#include "MessageSysFlag.h"
+#include "UtilAll.h"
 #include "dataBlock.h"
+#include "json/json.h"
 
 using std::shared_ptr;
 
@@ -35,11 +40,9 @@ using testing::Return;
 using Json::FastWriter;
 using Json::Value;
 
-using rocketmq::CheckTransactionStateRequestHeader;
 using rocketmq::CommandHeader;
 using rocketmq::ConsumerSendMsgBackRequestHeader;
 using rocketmq::CreateTopicRequestHeader;
-using rocketmq::EndTransactionRequestHeader;
 using rocketmq::GetConsumerListByGroupRequestHeader;
 using rocketmq::GetConsumerListByGroupResponseBody;
 using rocketmq::GetConsumerListByGroupResponseHeader;
@@ -61,371 +64,12 @@ using rocketmq::ResetOffsetRequestHeader;
 using rocketmq::SearchOffsetRequestHeader;
 using rocketmq::SearchOffsetResponseHeader;
 using rocketmq::SendMessageRequestHeader;
-using rocketmq::SendMessageRequestHeaderV2;
 using rocketmq::SendMessageResponseHeader;
 using rocketmq::UnregisterClientRequestHeader;
 using rocketmq::UpdateConsumerOffsetRequestHeader;
 using rocketmq::ViewMessageRequestHeader;
 
-TEST(commandHeader, ConsumerSendMsgBackRequestHeader) {
-  string group = "testGroup";
-  int delayLevel = 2;
-  int64 offset = 3027;
-  bool unitMode = true;
-  string originMsgId = "testOriginMsgId";
-  string originTopic = "testTopic";
-  int maxReconsumeTimes = 12;
-  ConsumerSendMsgBackRequestHeader header;
-  header.group = group;
-  header.delayLevel = delayLevel;
-  header.offset = offset;
-  header.unitMode = unitMode;
-  header.originMsgId = originMsgId;
-  header.originTopic = originTopic;
-  header.maxReconsumeTimes = maxReconsumeTimes;
-  map<string, string> requestMap;
-  header.SetDeclaredFieldOfCommandHeader(requestMap);
-  EXPECT_EQ(requestMap["group"], group);
-  EXPECT_EQ(requestMap["delayLevel"], "2");
-  EXPECT_EQ(requestMap["offset"], "3027");
-  EXPECT_EQ(requestMap["unitMode"], "1");
-  EXPECT_EQ(requestMap["originMsgId"], originMsgId);
-  EXPECT_EQ(requestMap["originTopic"], originTopic);
-  EXPECT_EQ(requestMap["maxReconsumeTimes"], "12");
-
-  Value outData;
-  header.Encode(outData);
-  EXPECT_EQ(outData["group"], group);
-  EXPECT_EQ(outData["delayLevel"], 2);
-  EXPECT_EQ(outData["offset"], "3027");
-  EXPECT_EQ(outData["unitMode"], "1");
-  EXPECT_EQ(outData["originMsgId"], originMsgId);
-  EXPECT_EQ(outData["originTopic"], originTopic);
-  EXPECT_EQ(outData["maxReconsumeTimes"], 12);
-}
-
-TEST(commandHeader, GetRouteInfoRequestHeader) {
-  GetRouteInfoRequestHeader header("testTopic");
-  map<string, string> requestMap;
-  header.SetDeclaredFieldOfCommandHeader(requestMap);
-  EXPECT_EQ(requestMap["topic"], "testTopic");
-
-  Value outData;
-  header.Encode(outData);
-  EXPECT_EQ(outData["topic"], "testTopic");
-}
-
-TEST(commandHeader, UnregisterClientRequestHeader) {
-  UnregisterClientRequestHeader header("testGroup", "testProducer", "testConsumer");
-  map<string, string> requestMap;
-  header.SetDeclaredFieldOfCommandHeader(requestMap);
-  EXPECT_EQ(requestMap["clientID"], "testGroup");
-  EXPECT_EQ(requestMap["producerGroup"], "testProducer");
-  EXPECT_EQ(requestMap["consumerGroup"], "testConsumer");
-
-  Value outData;
-  header.Encode(outData);
-  EXPECT_EQ(outData["clientID"], "testGroup");
-  EXPECT_EQ(outData["producerGroup"], "testProducer");
-  EXPECT_EQ(outData["consumerGroup"], "testConsumer");
-}
-
-TEST(commandHeader, CreateTopicRequestHeader) {
-  string topic = "testTopic";
-  string defaultTopic = "defaultTopic";
-  int readQueueNums = 4;
-  int writeQueueNums = 6;
-  int perm = 8;
-  string topicFilterType = "filterType";
-  CreateTopicRequestHeader header;
-  header.topic = topic;
-  header.defaultTopic = defaultTopic;
-  header.readQueueNums = readQueueNums;
-  header.writeQueueNums = writeQueueNums;
-  header.perm = perm;
-  header.topicFilterType = topicFilterType;
-  map<string, string> requestMap;
-  header.SetDeclaredFieldOfCommandHeader(requestMap);
-  EXPECT_EQ(requestMap["topic"], topic);
-  EXPECT_EQ(requestMap["defaultTopic"], defaultTopic);
-  EXPECT_EQ(requestMap["readQueueNums"], "4");
-  EXPECT_EQ(requestMap["writeQueueNums"], "6");
-  EXPECT_EQ(requestMap["perm"], "8");
-  EXPECT_EQ(requestMap["topicFilterType"], topicFilterType);
-
-  Value outData;
-  header.Encode(outData);
-  EXPECT_EQ(outData["topic"], topic);
-  EXPECT_EQ(outData["defaultTopic"], defaultTopic);
-  EXPECT_EQ(outData["readQueueNums"], readQueueNums);
-  EXPECT_EQ(outData["writeQueueNums"], writeQueueNums);
-  EXPECT_EQ(outData["perm"], perm);
-  EXPECT_EQ(outData["topicFilterType"], topicFilterType);
-}
-
-TEST(commandHeader, CheckTransactionStateRequestHeader) {
-  CheckTransactionStateRequestHeader header(2000, 1000, "ABC", "DEF", "GHI");
-  map<string, string> requestMap;
-  header.SetDeclaredFieldOfCommandHeader(requestMap);
-  EXPECT_EQ(requestMap["msgId"], "ABC");
-  EXPECT_EQ(requestMap["transactionId"], "DEF");
-  EXPECT_EQ(requestMap["offsetMsgId"], "GHI");
-  EXPECT_EQ(requestMap["commitLogOffset"], "1000");
-  EXPECT_EQ(requestMap["tranStateTableOffset"], "2000");
-
-  Value value;
-  value["msgId"] = "ABC";
-  value["transactionId"] = "DEF";
-  value["offsetMsgId"] = "GHI";
-  value["commitLogOffset"] = "1000";
-  value["tranStateTableOffset"] = "2000";
-  shared_ptr<CheckTransactionStateRequestHeader> headerDecode(
-      static_cast<CheckTransactionStateRequestHeader*>(CheckTransactionStateRequestHeader::Decode(value)));
-  EXPECT_EQ(headerDecode->m_msgId, "ABC");
-  EXPECT_EQ(headerDecode->m_commitLogOffset, 1000);
-  EXPECT_EQ(headerDecode->m_tranStateTableOffset, 2000);
-  EXPECT_EQ(headerDecode->toString(), header.toString());
-}
-
-TEST(commandHeader, EndTransactionRequestHeader) {
-  EndTransactionRequestHeader header("testProducer", 1000, 2000, 3000, true, "ABC", "DEF");
-  map<string, string> requestMap;
-  header.SetDeclaredFieldOfCommandHeader(requestMap);
-  EXPECT_EQ(requestMap["msgId"], "ABC");
-  EXPECT_EQ(requestMap["transactionId"], "DEF");
-  EXPECT_EQ(requestMap["producerGroup"], "testProducer");
-  EXPECT_EQ(requestMap["tranStateTableOffset"], "1000");
-  EXPECT_EQ(requestMap["commitLogOffset"], "2000");
-  EXPECT_EQ(requestMap["commitOrRollback"], "3000");
-  EXPECT_EQ(requestMap["fromTransactionCheck"], "1");
-
-  Value outData;
-  header.Encode(outData);
-  EXPECT_EQ(outData["msgId"], "ABC");
-  EXPECT_EQ(outData["transactionId"], "DEF");
-  EXPECT_EQ(outData["producerGroup"], "testProducer");
-  EXPECT_EQ(outData["tranStateTableOffset"], "1000");
-  EXPECT_EQ(outData["commitLogOffset"], "2000");
-  EXPECT_EQ(outData["commitOrRollback"], "3000");
-  EXPECT_EQ(outData["fromTransactionCheck"], "1");
-
-  EXPECT_NO_THROW(header.toString());
-}
-
-TEST(commandHeader, SendMessageRequestHeader) {
-  string producerGroup = "testProducer";
-  string topic = "testTopic";
-  string defaultTopic = "defaultTopic";
-  int defaultTopicQueueNums = 1;
-  int queueId = 2;
-  int sysFlag = 3;
-  int64 bornTimestamp = 4;
-  int flag = 5;
-  string properties = "testProperty";
-  int reconsumeTimes = 6;
-  bool unitMode = true;
-  bool batch = false;
-
-  SendMessageRequestHeader header;
-  header.producerGroup = producerGroup;
-  header.topic = topic;
-  header.defaultTopic = defaultTopic;
-  header.defaultTopicQueueNums = defaultTopicQueueNums;
-  header.queueId = queueId;
-  header.sysFlag = sysFlag;
-  header.bornTimestamp = bornTimestamp;
-  header.flag = flag;
-  header.properties = properties;
-  header.reconsumeTimes = reconsumeTimes;
-  header.unitMode = unitMode;
-  header.batch = batch;
-  map<string, string> requestMap;
-  header.SetDeclaredFieldOfCommandHeader(requestMap);
-  EXPECT_EQ(requestMap["topic"], topic);
-  EXPECT_EQ(requestMap["producerGroup"], producerGroup);
-  EXPECT_EQ(requestMap["defaultTopic"], defaultTopic);
-  EXPECT_EQ(requestMap["defaultTopicQueueNums"], "1");
-  EXPECT_EQ(requestMap["queueId"], "2");
-  EXPECT_EQ(requestMap["sysFlag"], "3");
-  EXPECT_EQ(requestMap["bornTimestamp"], "4");
-  EXPECT_EQ(requestMap["flag"], "5");
-  EXPECT_EQ(requestMap["properties"], properties);
-  EXPECT_EQ(requestMap["reconsumeTimes"], "6");
-  EXPECT_EQ(requestMap["unitMode"], "1");
-  EXPECT_EQ(requestMap["batch"], "0");
-
-  Value outData;
-  header.Encode(outData);
-  EXPECT_EQ(outData["topic"], topic);
-  EXPECT_EQ(outData["producerGroup"], producerGroup);
-  EXPECT_EQ(outData["defaultTopic"], defaultTopic);
-  EXPECT_EQ(outData["defaultTopicQueueNums"], defaultTopicQueueNums);
-  EXPECT_EQ(outData["queueId"], queueId);
-  EXPECT_EQ(outData["sysFlag"], sysFlag);
-  EXPECT_EQ(outData["bornTimestamp"], "4");
-  EXPECT_EQ(outData["flag"], flag);
-  EXPECT_EQ(outData["properties"], properties);
-  EXPECT_EQ(outData["reconsumeTimes"], "6");
-  EXPECT_EQ(outData["unitMode"], "1");
-  EXPECT_EQ(outData["batch"], "0");
-}
-
-TEST(commandHeader, SendMessageRequestHeaderV2) {
-  string producerGroup = "testProducer";
-  string topic = "testTopic";
-  string defaultTopic = "defaultTopic";
-  int defaultTopicQueueNums = 1;
-  int queueId = 2;
-  int sysFlag = 3;
-  int64 bornTimestamp = 4;
-  int flag = 5;
-  string properties = "testProperty";
-  int reconsumeTimes = 6;
-  bool unitMode = true;
-  bool batch = false;
-
-  SendMessageRequestHeaderV2 header;
-  header.a = producerGroup;
-  header.b = topic;
-  header.c = defaultTopic;
-  header.d = defaultTopicQueueNums;
-  header.e = queueId;
-  header.f = sysFlag;
-  header.g = bornTimestamp;
-  header.h = flag;
-  header.i = properties;
-  header.j = reconsumeTimes;
-  header.k = unitMode;
-  header.m = batch;
-  map<string, string> requestMap;
-  header.SetDeclaredFieldOfCommandHeader(requestMap);
-  EXPECT_EQ(requestMap["a"], producerGroup);
-  EXPECT_EQ(requestMap["b"], topic);
-  EXPECT_EQ(requestMap["c"], defaultTopic);
-  EXPECT_EQ(requestMap["d"], "1");
-  EXPECT_EQ(requestMap["e"], "2");
-  EXPECT_EQ(requestMap["f"], "3");
-  EXPECT_EQ(requestMap["g"], "4");
-  EXPECT_EQ(requestMap["h"], "5");
-  EXPECT_EQ(requestMap["i"], properties);
-  EXPECT_EQ(requestMap["j"], "6");
-  EXPECT_EQ(requestMap["k"], "1");
-  EXPECT_EQ(requestMap["m"], "0");
-
-  Value outData;
-  header.Encode(outData);
-  EXPECT_EQ(outData["a"], producerGroup);
-  EXPECT_EQ(outData["b"], topic);
-  EXPECT_EQ(outData["c"], defaultTopic);
-  EXPECT_EQ(outData["d"], defaultTopicQueueNums);
-  EXPECT_EQ(outData["e"], queueId);
-  EXPECT_EQ(outData["f"], sysFlag);
-  EXPECT_EQ(outData["g"], "4");
-  EXPECT_EQ(outData["h"], flag);
-  EXPECT_EQ(outData["i"], properties);
-  EXPECT_EQ(outData["j"], "6");
-  EXPECT_EQ(outData["k"], "1");
-  EXPECT_EQ(outData["m"], "0");
-
-  SendMessageRequestHeader v1;
-  header.CreateSendMessageRequestHeaderV1(v1);
-  EXPECT_EQ(v1.producerGroup, producerGroup);
-  EXPECT_EQ(v1.queueId, queueId);
-  EXPECT_EQ(v1.batch, batch);
-
-  SendMessageRequestHeaderV2 v2(v1);
-  EXPECT_EQ(header.a, v2.a);
-  EXPECT_EQ(header.e, v2.e);
-  EXPECT_EQ(header.m, v2.m);
-  EXPECT_EQ(header.g, v2.g);
-}
-
-TEST(commandHeader, SendMessageResponseHeader) {
-  SendMessageResponseHeader header;
-  header.msgId = "ABCDEFG";
-  header.queueId = 1;
-  header.queueOffset = 2;
-  map<string, string> requestMap;
-  header.SetDeclaredFieldOfCommandHeader(requestMap);
-  EXPECT_EQ(requestMap["msgId"], "ABCDEFG");
-  EXPECT_EQ(requestMap["queueId"], "1");
-  EXPECT_EQ(requestMap["queueOffset"], "2");
-
-  Value value;
-  value["msgId"] = "EFGHIJK";
-  value["queueId"] = "3";
-  value["queueOffset"] = "4";
-  shared_ptr<SendMessageResponseHeader> headerDecode(
-      static_cast<SendMessageResponseHeader*>(SendMessageResponseHeader::Decode(value)));
-  EXPECT_EQ(headerDecode->msgId, "EFGHIJK");
-  EXPECT_EQ(headerDecode->queueId, 3);
-  EXPECT_EQ(headerDecode->queueOffset, 4);
-}
-
-TEST(commandHeader, PullMessageRequestHeader) {
-  PullMessageRequestHeader header;
-  header.consumerGroup = "testConsumer";
-  header.topic = "testTopic";
-  header.queueId = 1;
-  header.maxMsgNums = 2;
-  header.sysFlag = 3;
-  header.subscription = "testSub";
-  header.queueOffset = 4;
-  header.commitOffset = 5;
-  header.suspendTimeoutMillis = 6;
-  header.subVersion = 7;
-  map<string, string> requestMap;
-  header.SetDeclaredFieldOfCommandHeader(requestMap);
-  EXPECT_EQ(requestMap["consumerGroup"], "testConsumer");
-  EXPECT_EQ(requestMap["topic"], "testTopic");
-  EXPECT_EQ(requestMap["queueId"], "1");
-  EXPECT_EQ(requestMap["maxMsgNums"], "2");
-  EXPECT_EQ(requestMap["sysFlag"], "3");
-  EXPECT_EQ(requestMap["subscription"], "testSub");
-  EXPECT_EQ(requestMap["queueOffset"], "4");
-  EXPECT_EQ(requestMap["commitOffset"], "5");
-  EXPECT_EQ(requestMap["suspendTimeoutMillis"], "6");
-  EXPECT_EQ(requestMap["subVersion"], "7");
-
-  Value outData;
-  header.Encode(outData);
-  EXPECT_EQ(outData["consumerGroup"], "testConsumer");
-  EXPECT_EQ(outData["topic"], "testTopic");
-  EXPECT_EQ(outData["queueId"], 1);
-  EXPECT_EQ(outData["maxMsgNums"], 2);
-  EXPECT_EQ(outData["sysFlag"], 3);
-  EXPECT_EQ(outData["subscription"], "testSub");
-  EXPECT_EQ(outData["queueOffset"], "4");
-  EXPECT_EQ(outData["commitOffset"], "5");
-  EXPECT_EQ(outData["suspendTimeoutMillis"], "6");
-  EXPECT_EQ(outData["subVersion"], "7");
-}
-
-TEST(commandHeader, PullMessageResponseHeader) {
-  PullMessageResponseHeader header;
-  header.suggestWhichBrokerId = 100;
-  header.nextBeginOffset = 200;
-  header.minOffset = 3000;
-  header.maxOffset = 5000;
-  map<string, string> requestMap;
-  header.SetDeclaredFieldOfCommandHeader(requestMap);
-  EXPECT_EQ(requestMap["suggestWhichBrokerId"], "100");
-  EXPECT_EQ(requestMap["nextBeginOffset"], "200");
-  EXPECT_EQ(requestMap["minOffset"], "3000");
-  EXPECT_EQ(requestMap["maxOffset"], "5000");
-
-  Value value;
-  value["suggestWhichBrokerId"] = "5";
-  value["nextBeginOffset"] = "102400";
-  value["minOffset"] = "1";
-  value["maxOffset"] = "123456789";
-  shared_ptr<PullMessageResponseHeader> headerDecode(
-      static_cast<PullMessageResponseHeader*>(PullMessageResponseHeader::Decode(value)));
-  EXPECT_EQ(headerDecode->suggestWhichBrokerId, 5);
-  EXPECT_EQ(headerDecode->nextBeginOffset, 102400);
-  EXPECT_EQ(headerDecode->minOffset, 1);
-  EXPECT_EQ(headerDecode->maxOffset, 123456789);
-}
+TEST(commandHeader, ConsumerSendMsgBackRequestHeader) {}
 
 TEST(commandHeader, GetConsumerListByGroupResponseBody) {
   Value value;

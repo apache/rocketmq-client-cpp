@@ -15,29 +15,33 @@
  * limitations under the License.
  */
 #include "PullAPIWrapper.h"
-#include "CommunicationMode.h"
-#include "MQClientFactory.h"
+
+#include "MQClientAPIImpl.h"
+#include "MQClientInstance.h"
+#include "MQDecoder.h"
+#include "MessageAccessor.h"
 #include "PullResultExt.h"
 #include "PullSysFlag.h"
+
 namespace rocketmq {
-//<!************************************************************************
-PullAPIWrapper::PullAPIWrapper(MQClientFactory* mQClientFactory, const string& consumerGroup) {
-  m_MQClientFactory = mQClientFactory;
+
+PullAPIWrapper::PullAPIWrapper(MQClientInstance* instance, const std::string& consumerGroup) {
+  m_clientInstance = instance;
   m_consumerGroup = consumerGroup;
 }
 
 PullAPIWrapper::~PullAPIWrapper() {
-  m_MQClientFactory = NULL;
+  m_clientInstance = nullptr;
   m_pullFromWhichNodeTable.clear();
 }
 
 void PullAPIWrapper::updatePullFromWhichNode(const MQMessageQueue& mq, int brokerId) {
-  boost::lock_guard<boost::mutex> lock(m_lock);
+  std::lock_guard<std::mutex> lock(m_lock);
   m_pullFromWhichNodeTable[mq] = brokerId;
 }
 
 int PullAPIWrapper::recalculatePullFromWhichNode(const MQMessageQueue& mq) {
-  boost::lock_guard<boost::mutex> lock(m_lock);
+  std::lock_guard<std::mutex> lock(m_lock);
   if (m_pullFromWhichNodeTable.find(mq) != m_pullFromWhichNodeTable.end()) {
     return m_pullFromWhichNodeTable[mq];
   }
@@ -45,69 +49,69 @@ int PullAPIWrapper::recalculatePullFromWhichNode(const MQMessageQueue& mq) {
 }
 
 PullResult PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
-                                             PullResult* pullResult,
-                                             SubscriptionData* subscriptionData) {
-  PullResultExt* pResultExt = static_cast<PullResultExt*>(pullResult);
-  if (pResultExt == NULL) {
-    string errMsg("The pullResult NULL of");
-    errMsg.append(mq.toString());
-    THROW_MQEXCEPTION(MQClientException, errMsg, -1);
-  }
+                                             PullResult& pullResult,
+                                             SubscriptionDataPtr subscriptionData) {
+  assert(std::type_index(typeid(pullResult)) == std::type_index(typeid(PullResultExt)));
+  auto& pullResultExt = dynamic_cast<PullResultExt&>(pullResult);
 
-  //<!update;
-  updatePullFromWhichNode(mq, pResultExt->suggestWhichBrokerId);
+  // update node
+  updatePullFromWhichNode(mq, pullResultExt.suggestWhichBrokerId);
 
-  vector<MQMessageExt> msgFilterList;
-  if (pResultExt->pullStatus == FOUND) {
-    //<!decode all msg list;
-    vector<MQMessageExt> msgAllList;
-    MQDecoder::decodes(&pResultExt->msgMemBlock, msgAllList);
+  std::vector<MQMessageExtPtr2> msgListFilterAgain;
+  if (FOUND == pullResultExt.pullStatus) {
+    // decode all msg list
+    auto msgList = MQDecoder::decodes(*pullResultExt.msgMemBlock);
 
-    //<!filter msg list again;
-    if (subscriptionData != NULL && !subscriptionData->getTagsSet().empty()) {
-      msgFilterList.reserve(msgAllList.size());
-      vector<MQMessageExt>::iterator it = msgAllList.begin();
-      for (; it != msgAllList.end(); ++it) {
-        string msgTag = (*it).getTags();
+    // filter msg list again
+    if (subscriptionData != nullptr && !subscriptionData->getTagsSet().empty()) {
+      msgListFilterAgain.reserve(msgList.size());
+      for (const auto& msg : msgList) {
+        const auto& msgTag = msg->getTags();
         if (subscriptionData->containTag(msgTag)) {
-          msgFilterList.push_back(*it);
+          msgListFilterAgain.push_back(msg);
         }
       }
     } else {
-      msgFilterList.swap(msgAllList);
+      msgListFilterAgain.swap(msgList);
+    }
+
+    for (auto& msg : msgListFilterAgain) {
+      const auto& traFlag = msg->getProperty(MQMessageConst::PROPERTY_TRANSACTION_PREPARED);
+      if (UtilAll::stob(traFlag)) {
+        msg->setTransactionId(msg->getProperty(MQMessageConst::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX));
+      }
+      MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_MIN_OFFSET, UtilAll::to_string(pullResult.minOffset));
+      MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_MAX_OFFSET, UtilAll::to_string(pullResult.maxOffset));
     }
   }
 
-  return PullResult(pResultExt->pullStatus, pResultExt->nextBeginOffset, pResultExt->minOffset, pResultExt->maxOffset,
-                    msgFilterList);
+  return PullResult(pullResultExt.pullStatus, pullResultExt.nextBeginOffset, pullResultExt.minOffset,
+                    pullResultExt.maxOffset, std::move(msgListFilterAgain));
 }
 
-PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,        // 1
-                                           string subExpression,            // 2
-                                           int64 subVersion,                // 3
-                                           int64 offset,                    // 4
-                                           int maxNums,                     // 5
-                                           int sysFlag,                     // 6
-                                           int64 commitOffset,              // 7
-                                           int brokerSuspendMaxTimeMillis,  // 8
-                                           int timeoutMillis,               // 9
-                                           int communicationMode,           // 10
-                                           PullCallback* pullCallback,
-                                           const SessionCredentials& session_credentials,
-                                           void* pArg /*= NULL*/) {
-  unique_ptr<FindBrokerResult> pFindBrokerResult(
-      m_MQClientFactory->findBrokerAddressInSubscribe(mq.getBrokerName(), recalculatePullFromWhichNode(mq), false));
-  //<!goto nameserver;
-  if (pFindBrokerResult == NULL) {
-    m_MQClientFactory->updateTopicRouteInfoFromNameServer(mq.getTopic(), session_credentials);
-    pFindBrokerResult.reset(
-        m_MQClientFactory->findBrokerAddressInSubscribe(mq.getBrokerName(), recalculatePullFromWhichNode(mq), false));
+PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,             // 1
+                                           const std::string& subExpression,     // 2
+                                           int64_t subVersion,                   // 3
+                                           int64_t offset,                       // 4
+                                           int maxNums,                          // 5
+                                           int sysFlag,                          // 6
+                                           int64_t commitOffset,                 // 7
+                                           int brokerSuspendMaxTimeMillis,       // 8
+                                           int timeoutMillis,                    // 9
+                                           CommunicationMode communicationMode,  // 10
+                                           PullCallback* pullCallback) {
+  std::unique_ptr<FindBrokerResult> findBrokerResult(
+      m_clientInstance->findBrokerAddressInSubscribe(mq.getBrokerName(), recalculatePullFromWhichNode(mq), false));
+  if (findBrokerResult == nullptr) {
+    m_clientInstance->updateTopicRouteInfoFromNameServer(mq.getTopic());
+    findBrokerResult.reset(
+        m_clientInstance->findBrokerAddressInSubscribe(mq.getBrokerName(), recalculatePullFromWhichNode(mq), false));
   }
 
-  if (pFindBrokerResult != NULL) {
+  if (findBrokerResult != nullptr) {
     int sysFlagInner = sysFlag;
 
-    if (pFindBrokerResult->slave) {
+    if (findBrokerResult->slave) {
       sysFlagInner = PullSysFlag::clearCommitOffsetFlag(sysFlagInner);
     }
 
@@ -123,11 +127,11 @@ PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,        // 1
     pRequestHeader->subscription = subExpression;
     pRequestHeader->subVersion = subVersion;
 
-    return m_MQClientFactory->getMQClientAPIImpl()->pullMessage(pFindBrokerResult->brokerAddr, pRequestHeader,
-                                                                timeoutMillis, communicationMode, pullCallback, pArg,
-                                                                session_credentials);
+    return m_clientInstance->getMQClientAPIImpl()->pullMessage(findBrokerResult->brokerAddr, pRequestHeader,
+                                                               timeoutMillis, communicationMode, pullCallback);
   }
-  THROW_MQEXCEPTION(MQClientException, "The broker not exist", -1);
+
+  THROW_MQEXCEPTION(MQClientException, "The broker [" + mq.getBrokerName() + "] not exist", -1);
 }
 
 }  // namespace rocketmq

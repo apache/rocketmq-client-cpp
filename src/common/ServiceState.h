@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SERVICESTATE_H__
-#define __SERVICESTATE_H__
+#ifndef __SERVICE_STATE_H__
+#define __SERVICE_STATE_H__
+
 namespace rocketmq {
-//<!***************************************************************************
+
 enum ServiceState { CREATE_JUST, RUNNING, SHUTDOWN_ALREADY, START_FAILED };
 
-//<!***************************************************************************
-}  //<!end namespace;
-#endif
+}  // namespace rocketmq
+
+#endif  // __SERVICE_STATE_H__

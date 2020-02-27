@@ -28,14 +28,10 @@ extern "C" {
 namespace rocketmqSignature {
 #endif
 
-#define SPAS_MAX_KEY_LEN 128 /* max access_key/secret_key length */
-#define SPAS_MAX_PATH 256    /* max credential file path length */
-#define SPAS_ACCESS_KEY_TAG                        \
-  "accessKey" /* access_key tag in credential file \
-                 */
-#define SPAS_SECRET_KEY_TAG                                                        \
-  "secretKey"                                 /* secret_key tag in credential file \
-                                                 */
+#define SPAS_MAX_KEY_LEN 128                  /* max access_key/secret_key length */
+#define SPAS_MAX_PATH 256                     /* max credential file path length */
+#define SPAS_ACCESS_KEY_TAG "accessKey"       /* access_key tag in credential file */
+#define SPAS_SECRET_KEY_TAG "secretKey"       /* secret_key tag in credential file */
 #define SPAS_CREDENTIAL_ENV "SPAS_CREDENTIAL" /* credential file environment variable */
 
 typedef enum {

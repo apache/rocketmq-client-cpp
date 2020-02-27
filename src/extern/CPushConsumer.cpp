@@ -14,16 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "c/CPushConsumer.h"
 
-#include "CPushConsumer.h"
 #include <map>
-#include "CCommon.h"
-#include "CMessageExt.h"
+
+#include "ClientRPCHook.h"
 #include "DefaultMQPushConsumer.h"
+#include "Logging.h"
 #include "MQClientErrorContainer.h"
 
 using namespace rocketmq;
-using namespace std;
 
 class MessageListenerInner : public MessageListenerConcurrently {
  public:
@@ -36,16 +36,16 @@ class MessageListenerInner : public MessageListenerConcurrently {
 
   ~MessageListenerInner() {}
 
-  ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) {
+  ConsumeStatus consumeMessage(const std::vector<MQMessageExt*>& msgs) {
     // to do user call back
-    if (m_pMsgReceiveCallback == NULL) {
+    if (m_pMsgReceiveCallback == nullptr) {
       return RECONSUME_LATER;
     }
     for (size_t i = 0; i < msgs.size(); ++i) {
-      MQMessageExt* msg = const_cast<MQMessageExt*>(&msgs[i]);
-      CMessageExt* message = (CMessageExt*)(msg);
-      if (m_pMsgReceiveCallback(m_pconsumer, message) != E_CONSUME_SUCCESS)
+      CMessageExt* message = (CMessageExt*)msgs[i];
+      if (m_pMsgReceiveCallback(m_pconsumer, message) != E_CONSUME_SUCCESS) {
         return RECONSUME_LATER;
+      }
     }
     return CONSUME_SUCCESS;
   }
@@ -62,15 +62,15 @@ class MessageListenerOrderlyInner : public MessageListenerOrderly {
     m_pMsgReceiveCallback = pCallback;
   }
 
-  ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) {
-    if (m_pMsgReceiveCallback == NULL) {
+  ConsumeStatus consumeMessage(const std::vector<MQMessageExt*>& msgs) {
+    if (m_pMsgReceiveCallback == nullptr) {
       return RECONSUME_LATER;
     }
     for (size_t i = 0; i < msgs.size(); ++i) {
-      MQMessageExt* msg = const_cast<MQMessageExt*>(&msgs[i]);
-      CMessageExt* message = (CMessageExt*)(msg);
-      if (m_pMsgReceiveCallback(m_pconsumer, message) != E_CONSUME_SUCCESS)
+      CMessageExt* message = (CMessageExt*)msgs[i];
+      if (m_pMsgReceiveCallback(m_pconsumer, message) != E_CONSUME_SUCCESS) {
         return RECONSUME_LATER;
+      }
     }
     return CONSUME_SUCCESS;
   }
@@ -80,20 +80,18 @@ class MessageListenerOrderlyInner : public MessageListenerOrderly {
   CPushConsumer* m_pconsumer;
 };
 
-map<CPushConsumer*, MessageListenerInner*> g_ListenerMap;
-map<CPushConsumer*, MessageListenerOrderlyInner*> g_OrderListenerMap;
-#ifdef __cplusplus
-extern "C" {
-#endif
+std::map<CPushConsumer*, MessageListenerInner*> g_ListenerMap;
+std::map<CPushConsumer*, MessageListenerOrderlyInner*> g_OrderListenerMap;
 
 CPushConsumer* CreatePushConsumer(const char* groupId) {
   if (groupId == NULL) {
     return NULL;
   }
-  DefaultMQPushConsumer* defaultMQPushConsumer = new DefaultMQPushConsumer(groupId);
+  auto* defaultMQPushConsumer = new DefaultMQPushConsumer(groupId);
   defaultMQPushConsumer->setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
-  return (CPushConsumer*)defaultMQPushConsumer;
+  return reinterpret_cast<CPushConsumer*>(defaultMQPushConsumer);
 }
+
 int DestroyPushConsumer(CPushConsumer* consumer) {
   if (consumer == NULL) {
     return NULL_POINTER;
@@ -101,57 +99,64 @@ int DestroyPushConsumer(CPushConsumer* consumer) {
   delete reinterpret_cast<DefaultMQPushConsumer*>(consumer);
   return OK;
 }
+
 int StartPushConsumer(CPushConsumer* consumer) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
   try {
-    ((DefaultMQPushConsumer*)consumer)->start();
-  } catch (exception& e) {
-    MQClientErrorContainer::setErr(string(e.what()));
+    reinterpret_cast<DefaultMQPushConsumer*>(consumer)->start();
+  } catch (std::exception& e) {
+    MQClientErrorContainer::setErr(std::string(e.what()));
     return PUSHCONSUMER_START_FAILED;
   }
   return OK;
 }
+
 int ShutdownPushConsumer(CPushConsumer* consumer) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPushConsumer*)consumer)->shutdown();
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->shutdown();
   return OK;
 }
+
 int SetPushConsumerGroupID(CPushConsumer* consumer, const char* groupId) {
   if (consumer == NULL || groupId == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPushConsumer*)consumer)->setGroupName(groupId);
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->setGroupName(groupId);
   return OK;
 }
+
 const char* GetPushConsumerGroupID(CPushConsumer* consumer) {
   if (consumer == NULL) {
     return NULL;
   }
-  return ((DefaultMQPushConsumer*)consumer)->getGroupName().c_str();
+  return reinterpret_cast<DefaultMQPushConsumer*>(consumer)->getGroupName().c_str();
 }
+
 int SetPushConsumerNameServerAddress(CPushConsumer* consumer, const char* namesrv) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPushConsumer*)consumer)->setNamesrvAddr(namesrv);
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->setNamesrvAddr(namesrv);
   return OK;
 }
+
+// Deprecated
 int SetPushConsumerNameServerDomain(CPushConsumer* consumer, const char* domain) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPushConsumer*)consumer)->setNamesrvDomain(domain);
-  return OK;
+  return NOT_SUPPORT_NOW;
 }
+
 int Subscribe(CPushConsumer* consumer, const char* topic, const char* expression) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPushConsumer*)consumer)->subscribe(topic, expression);
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->subscribe(topic, expression);
   return OK;
 }
 
@@ -160,7 +165,7 @@ int RegisterMessageCallback(CPushConsumer* consumer, MessageCallBack pCallback) 
     return NULL_POINTER;
   }
   MessageListenerInner* listenerInner = new MessageListenerInner(consumer, pCallback);
-  ((DefaultMQPushConsumer*)consumer)->registerMessageListener(listenerInner);
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->registerMessageListener(listenerInner);
   g_ListenerMap[consumer] = listenerInner;
   return OK;
 }
@@ -170,7 +175,7 @@ int RegisterMessageCallbackOrderly(CPushConsumer* consumer, MessageCallBack pCal
     return NULL_POINTER;
   }
   MessageListenerOrderlyInner* messageListenerOrderlyInner = new MessageListenerOrderlyInner(consumer, pCallback);
-  ((DefaultMQPushConsumer*)consumer)->registerMessageListener(messageListenerOrderlyInner);
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->registerMessageListener(messageListenerOrderlyInner);
   g_OrderListenerMap[consumer] = messageListenerOrderlyInner;
   return OK;
 }
@@ -179,7 +184,7 @@ int UnregisterMessageCallbackOrderly(CPushConsumer* consumer) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  map<CPushConsumer*, MessageListenerOrderlyInner*>::iterator iter;
+  std::map<CPushConsumer*, MessageListenerOrderlyInner*>::iterator iter;
   iter = g_OrderListenerMap.find(consumer);
   if (iter != g_OrderListenerMap.end()) {
     MessageListenerOrderlyInner* listenerInner = iter->second;
@@ -195,7 +200,7 @@ int UnregisterMessageCallback(CPushConsumer* consumer) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  map<CPushConsumer*, MessageListenerInner*>::iterator iter;
+  std::map<CPushConsumer*, MessageListenerInner*>::iterator iter;
   iter = g_ListenerMap.find(consumer);
 
   if (iter != g_ListenerMap.end()) {
@@ -212,28 +217,31 @@ int SetPushConsumerMessageModel(CPushConsumer* consumer, CMessageModel messageMo
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPushConsumer*)consumer)->setMessageModel(MessageModel((int)messageModel));
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->setMessageModel(MessageModel((int)messageModel));
   return OK;
 }
+
 int SetPushConsumerThreadCount(CPushConsumer* consumer, int threadCount) {
   if (consumer == NULL || threadCount == 0) {
     return NULL_POINTER;
   }
-  ((DefaultMQPushConsumer*)consumer)->setConsumeThreadCount(threadCount);
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->setConsumeThreadNum(threadCount);
   return OK;
 }
+
 int SetPushConsumerMessageBatchMaxSize(CPushConsumer* consumer, int batchSize) {
   if (consumer == NULL || batchSize == 0) {
     return NULL_POINTER;
   }
-  ((DefaultMQPushConsumer*)consumer)->setConsumeMessageBatchMaxSize(batchSize);
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->setConsumeMessageBatchMaxSize(batchSize);
   return OK;
 }
+
 int SetPushConsumerMaxCacheMessageSize(CPushConsumer* consumer, int maxCacheSize) {
   if (consumer == NULL || maxCacheSize <= 0) {
     return NULL_POINTER;
   }
-  ((DefaultMQPushConsumer*)consumer)->setMaxCacheMsgSizePerQueue(maxCacheSize);
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->setMaxCacheMsgSizePerQueue(maxCacheSize);
   return OK;
 }
 
@@ -241,13 +249,13 @@ int SetPushConsumerMaxCacheMessageSizeInMb(CPushConsumer* consumer, int maxCache
   if (consumer == NULL || maxCacheSizeInMb <= 0) {
     return NULL_POINTER;
   }
-  return Not_Support;
+  return NOT_SUPPORT_NOW;
 }
 int SetPushConsumerInstanceName(CPushConsumer* consumer, const char* instanceName) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPushConsumer*)consumer)->setInstanceName(instanceName);
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->setInstanceName(instanceName);
   return OK;
 }
 
@@ -258,7 +266,8 @@ int SetPushConsumerSessionCredentials(CPushConsumer* consumer,
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPushConsumer*)consumer)->setSessionCredentials(accessKey, secretKey, channel);
+  auto rpcHook = std::make_shared<ClientRPCHook>(SessionCredentials(accessKey, secretKey, channel));
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->setRPCHook(rpcHook);
   return OK;
 }
 
@@ -267,7 +276,7 @@ int SetPushConsumerLogPath(CPushConsumer* consumer, const char* logPath) {
     return NULL_POINTER;
   }
   // Todo, This api should be implemented by core api.
-  //((DefaultMQPushConsumer *) consumer)->setInstanceName(instanceName);
+  // reinterpret_cast<DefaultMQPushConsumer*>(consumer)->setInstanceName(instanceName);
   return OK;
 }
 
@@ -275,7 +284,7 @@ int SetPushConsumerLogFileNumAndSize(CPushConsumer* consumer, int fileNum, long 
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPushConsumer*)consumer)->setLogFileSizeAndNum(fileNum, fileSize);
+  ALOG_ADAPTER->setLogFileNumAndSize(fileNum, fileSize);
   return OK;
 }
 
@@ -283,10 +292,6 @@ int SetPushConsumerLogLevel(CPushConsumer* consumer, CLogLevel level) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ((DefaultMQPushConsumer*)consumer)->setLogLevel((elogLevel)level);
+  ALOG_ADAPTER->setLogLevel((elogLevel)level);
   return OK;
 }
-
-#ifdef __cplusplus
-};
-#endif

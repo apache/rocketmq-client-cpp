@@ -14,50 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SOCKETUTIL_H__
-#define __SOCKETUTIL_H__
+#ifndef __SOCKET_UTIL_H__
+#define __SOCKET_UTIL_H__
 
-#ifdef WIN32
-#include <WS2tcpip.h>
-#include <Winsock2.h>
-#include <Windows.h>
-#pragma comment(lib, "ws2_32.lib")
+#include <cstdint>
+#include <string>
+
+#ifndef WIN32
+#include <sys/socket.h>
 #else
-#include <arpa/inet.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <net/if.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <signal.h>
-#include <sys/ioctl.h>
-#include <sys/select.h>
-#include <sys/socket.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
+#include <Winsock2.h>
+#pragma comment(lib, "ws2_32.lib")
 #endif
-
-#include "UtilAll.h"
 
 namespace rocketmq {
-//<!************************************************************************
-/**
-* IP:PORT
-*/
-sockaddr IPPort2socketAddress(int host, int port);
-string socketAddress2IPPort(sockaddr addr);
-void socketAddress2IPPort(sockaddr addr, int& host, int& port);
 
-string socketAddress2String(sockaddr addr);
-string getHostName(sockaddr addr);
+struct sockaddr IPPort2socketAddress(int host, int port);
 
-uint64 h2nll(uint64 v);
-uint64 n2hll(uint64 v);
+std::string socketAddress2IPPort(const struct sockaddr* addr);
+void socketAddress2IPPort(const struct sockaddr*, int& host, int& port);
 
-//<!************************************************************************
-}  //<!end namespace;
+std::string socketAddress2String(const struct sockaddr* addr);
 
-#endif
+std::string getHostName(const struct sockaddr* addr);
+
+std::string lookupNameServers(const std::string& hostname);
+
+uint64_t h2nll(uint64_t v);
+uint64_t n2hll(uint64_t v);
+
+}  // namespace rocketmq
+
+#endif  // __SOCKET_UTIL_H__

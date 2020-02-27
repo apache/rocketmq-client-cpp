@@ -14,42 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MESSAGEQUEUE_H__
-#define __MESSAGEQUEUE_H__
+#ifndef __MESSAGE_QUEUE_H__
+#define __MESSAGE_QUEUE_H__
 
-#include <string>
-#include "json/json.h"
+#include <json/json.h>
+
+#include "MQMessageQueue.h"
 
 namespace rocketmq {
-//<!************************************************************************/
-//<!* MQ(T,B,ID);
-//<!************************************************************************/
-class MessageQueue {
- public:
-  MessageQueue();
-  MessageQueue(const std::string& topic, const std::string& brokerName, int queueId);
-  MessageQueue(const MessageQueue& other);
-  MessageQueue& operator=(const MessageQueue& other);
 
-  std::string getTopic() const;
-  void setTopic(const std::string& topic);
+Json::Value toJson(const MQMessageQueue& mq);
 
-  std::string getBrokerName() const;
-  void setBrokerName(const std::string& brokerName);
+}  // namespace rocketmq
 
-  int getQueueId() const;
-  void setQueueId(int queueId);
-
-  bool operator==(const MessageQueue& mq) const;
-  bool operator<(const MessageQueue& mq) const;
-  int compareTo(const MessageQueue& mq) const;
-  Json::Value toJson() const;
-
- private:
-  std::string m_topic;
-  std::string m_brokerName;
-  int m_queueId;
-};
-//<!***************************************************************************
-}  //<!end namespace;
-#endif
+#endif  // __MESSAGE_QUEUE_H__

@@ -14,17 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MESSAGE_H__
-#define __MESSAGE_H__
+#ifndef __MQ_MESSAGE_H__
+#define __MQ_MESSAGE_H__
 
 #include <map>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
-#include "RocketMQClient.h"
+
+#include "MQMessageConst.h"
 
 namespace rocketmq {
-//<!***************************************************************************
+
+class MQMessage;
+typedef MQMessage* MQMessagePtr;
+typedef std::shared_ptr<MQMessage> MQMessagePtr2;
+
 class ROCKETMQCLIENT_API MQMessage {
  public:
   MQMessage();
@@ -38,12 +44,14 @@ class ROCKETMQCLIENT_API MQMessage {
             const std::string& body,
             bool waitStoreMsgOK);
 
-  virtual ~MQMessage();
   MQMessage(const MQMessage& other);
   MQMessage& operator=(const MQMessage& other);
 
-  void setProperty(const std::string& name, const std::string& value);
+  virtual ~MQMessage();
+
   const std::string& getProperty(const std::string& name) const;
+  void putProperty(const std::string& name, const std::string& value);
+  void clearProperty(const std::string& name);
 
   const std::string& getTopic() const;
   void setTopic(const std::string& topic);
@@ -65,79 +73,35 @@ class ROCKETMQCLIENT_API MQMessage {
   int getFlag() const;
   void setFlag(int flag);
 
-  int getSysFlag() const;
-  void setSysFlag(int sysFlag);
-
   const std::string& getBody() const;
-
   void setBody(const char* body, int len);
   void setBody(const std::string& body);
+  void setBody(std::string&& body);
 
-  void setTransactionId(const std::string& id) { m_transactionId = id; }
-  std::string getTransactionId() const { return m_transactionId; }
+  const std::string& getTransactionId() const;
+  void setTransactionId(const std::string& transactionId);
 
-  std::map<std::string, std::string> getProperties() const;
-  void setProperties(std::map<std::string, std::string>& properties);
+  const std::map<std::string, std::string>& getProperties() const;
+  void setProperties(const std::map<std::string, std::string>& properties);
+  void setProperties(std::map<std::string, std::string>&& properties);
 
-  const std::string toString() const {
+  virtual bool isBatch() { return false; }
+
+  virtual std::string toString() const {
     std::stringstream ss;
-    std::string tags = getTags();
-    ss << "Message [topic=" << m_topic << ", flag=" << m_flag << ", tag=" << tags << "]";
+    ss << "Message [topic=" << m_topic << ", flag=" << m_flag << ", tag=" << getTags() << ", transactionId='"
+       << m_transactionId + "']";
     return ss.str();
   }
 
  protected:
-  friend class MQDecoder;
-  void setPropertyInternal(const std::string& name, const std::string& value);
-  void setPropertiesInternal(std::map<std::string, std::string>& properties);
-
-  void Init(const std::string& topic,
-            const std::string& tags,
-            const std::string& keys,
-            const int flag,
-            const std::string& body,
-            bool waitStoreMsgOK);
-
- public:
-  static const std::string PROPERTY_KEYS;
-  static const std::string PROPERTY_TAGS;
-  static const std::string PROPERTY_WAIT_STORE_MSG_OK;
-  static const std::string PROPERTY_DELAY_TIME_LEVEL;
-  static const std::string PROPERTY_RETRY_TOPIC;
-  static const std::string PROPERTY_REAL_TOPIC;
-  static const std::string PROPERTY_REAL_QUEUE_ID;
-  static const std::string PROPERTY_TRANSACTION_PREPARED;
-  static const std::string PROPERTY_PRODUCER_GROUP;
-  static const std::string PROPERTY_MIN_OFFSET;
-  static const std::string PROPERTY_MAX_OFFSET;
-
-  static const std::string PROPERTY_BUYER_ID;
-  static const std::string PROPERTY_ORIGIN_MESSAGE_ID;
-  static const std::string PROPERTY_TRANSFER_FLAG;
-  static const std::string PROPERTY_CORRECTION_FLAG;
-  static const std::string PROPERTY_MQ2_FLAG;
-  static const std::string PROPERTY_RECONSUME_TIME;
-  static const std::string PROPERTY_MSG_REGION;
-  static const std::string PROPERTY_TRACE_SWITCH;
-  static const std::string PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX;
-  static const std::string PROPERTY_MAX_RECONSUME_TIMES;
-  static const std::string PROPERTY_CONSUME_START_TIMESTAMP;
-  static const std::string PROPERTY_TRANSACTION_PREPARED_QUEUE_OFFSET;
-  static const std::string PROPERTY_TRANSACTION_CHECK_TIMES;
-  static const std::string PROPERTY_CHECK_IMMUNITY_TIME_IN_SECONDS;
-
-  static const std::string KEY_SEPARATOR;
-
- protected:
-  int m_sysFlag;
-
- private:
   std::string m_topic;
   int m_flag;
+  std::map<std::string, std::string> m_properties;
   std::string m_body;
   std::string m_transactionId;
-  std::map<std::string, std::string> m_properties;
 };
-//<!***************************************************************************
+
 }  // namespace rocketmq
-#endif
+
+#endif  // __MQ_MESSAGE_H__

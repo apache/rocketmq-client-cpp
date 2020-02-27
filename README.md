@@ -20,6 +20,86 @@ RocketMQ-Client-CPP is the C/C++ client of Apache RocketMQ, a distributed messag
 
 ## Build and Install
 
+### CentOS
+
+```bash
+# install toolchain
+yum install -y gcc gcc-c++ cmake
+
+# install dependencies
+yum install -y spdlog-devel libevent-devel jsoncpp-devel zlib-devel
+
+# configure porject
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
+  -DLibevent_USE_STATIC_LIBS=OFF -DJSONCPP_USE_STATIC_LIBS=OFF \
+  -DBUILD_ROCKETMQ_STATIC=OFF -DBUILD_ROCKETMQ_SHARED=ON \
+  -DRUN_UNIT_TEST=OFF ..
+
+# build librocketmq.so
+make rocketmq_shared -j 6
+
+# build example: SyncProducer, PushConsumer, etc.
+make SyncProducer
+make PushConsumer
+```
+
+If encounter error about "fmt/format.h" header file, modify "printf.h" as shown below.
+
+```bash
+sed -i "s/#include \"fmt\/format.h\"/#include \"format.h\"/" /usr/include/spdlog/fmt/bundled/printf.h
+```
+
+### Ubuntu
+
+```bash
+# install toolchain
+apt install -y gcc g++ cmake
+
+# install dependencies
+apt install -y libspdlog-dev libevent-dev libjsoncpp-dev zlib1g-dev
+
+# configure porject
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
+  -DLibevent_USE_STATIC_LIBS=OFF -DJSONCPP_USE_STATIC_LIBS=OFF \
+  -DBUILD_ROCKETMQ_STATIC=OFF -DBUILD_ROCKETMQ_SHARED=ON \
+  -DRUN_UNIT_TEST=OFF ..
+
+# build librocketmq.so
+make rocketmq_shared -j 6
+
+# build example: SyncProducer, PushConsumer, etc.
+make SyncProducer
+make PushConsumer
+```
+
+### macOS
+
+```bash
+# install toolchain
+brew install cmake
+
+# dependencies
+brew install spdlog libevent jsoncpp zlib
+
+# configure porject
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
+  -DLibevent_USE_STATIC_LIBS=OFF -DJSONCPP_USE_STATIC_LIBS=OFF \
+  -DBUILD_ROCKETMQ_STATIC=OFF -DBUILD_ROCKETMQ_SHARED=ON \
+  -DRUN_UNIT_TEST=OFF ..
+
+# build librocketmq.so
+make rocketmq_shared -j 4
+
+# build example: SyncProducer, PushConsumer, etc.
+make SyncProducer
+make PushConsumer
+```
+
+## Build and Install (Old SDK)
+
 ### Linux and Mac OS
 
 **note**: make sure the following compile tools or libraries have been installed before running the build script **build.sh**.

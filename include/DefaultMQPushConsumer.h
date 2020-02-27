@@ -14,152 +14,112 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __DEFAULT_MQ_PUSH_CONSUMER_H__
+#define __DEFAULT_MQ_PUSH_CONSUMER_H__
 
-#ifndef __DEFAULTMQPUSHCONSUMER_H__
-#define __DEFAULTMQPUSHCONSUMER_H__
-
-#include <boost/asio.hpp>
-#include <boost/asio/io_service.hpp>
-#include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/thread/thread.hpp>
-#include <string>
-#include "AsyncCallback.h"
-#include "MQConsumer.h"
-#include "MQMessageListener.h"
-#include "MQMessageQueue.h"
+#include "AllocateMQStrategy.h"
+#include "DefaultMQConsumer.h"
+#include "MQPushConsumer.h"
+#include "RPCHook.h"
 
 namespace rocketmq {
 
-class Rebalance;
-class SubscriptionData;
-class OffsetStore;
-class PullAPIWrapper;
-class PullRequest;
-class ConsumeMsgService;
-class TaskQueue;
-class TaskThread;
-class AsyncPullCallback;
-class ConsumerRunningInfo;
-//<!***************************************************************************
-class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQConsumer {
+class ROCKETMQCLIENT_API DefaultMQPushConsumerConfig : public DefaultMQConsumerConfig {
  public:
-  DefaultMQPushConsumer(const std::string& groupname);
-  void boost_asio_work();
-  virtual ~DefaultMQPushConsumer();
+  DefaultMQPushConsumerConfig();
+  virtual ~DefaultMQPushConsumerConfig() = default;
 
-  //<!begin mqadmin;
-  virtual void start();
-  virtual void shutdown();
-  //<!end mqadmin;
+  ConsumeFromWhere getConsumeFromWhere() const { return m_consumeFromWhere; }
+  void setConsumeFromWhere(ConsumeFromWhere consumeFromWhere) { m_consumeFromWhere = consumeFromWhere; }
 
-  //<!begin MQConsumer
-  virtual bool sendMessageBack(MQMessageExt& msg, int delayLevel, std::string& brokerName);
-  virtual void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs);
-  virtual void doRebalance();
-  virtual void persistConsumerOffset();
-  virtual void persistConsumerOffsetByResetOffset();
-  virtual void updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info);
-  virtual ConsumeType getConsumeType();
-  virtual ConsumeFromWhere getConsumeFromWhere();
-  void setConsumeFromWhere(ConsumeFromWhere consumeFromWhere);
-  virtual void getSubscriptions(std::vector<SubscriptionData>&);
-  virtual void updateConsumeOffset(const MQMessageQueue& mq, int64 offset);
-  virtual void removeConsumeOffset(const MQMessageQueue& mq);
-  virtual PullResult pull(const MQMessageQueue& mq, const std::string& subExpression, int64 offset, int maxNums) {
-    return PullResult();
+  std::string getConsumeTimestamp() { return m_consumeTimestamp; }
+  void setConsumeTimestamp(std::string consumeTimestamp) { m_consumeTimestamp = consumeTimestamp; }
+
+  /**
+   * consuming thread count, default value is cpu cores
+   */
+  int getConsumeThreadNum() const { return m_consumeThreadNum; }
+  void setConsumeThreadNum(int threadNum) {
+    if (threadNum > 0) {
+      m_consumeThreadNum = threadNum;
+    }
   }
-  virtual void pull(const MQMessageQueue& mq,
-                    const std::string& subExpression,
-                    int64 offset,
-                    int maxNums,
-                    PullCallback* pPullCallback) {}
-  virtual ConsumerRunningInfo* getConsumerRunningInfo();
-  //<!end MQConsumer;
 
-  void registerMessageListener(MQMessageListener* pMessageListener);
-  MessageListenerType getMessageListenerType();
-  void subscribe(const std::string& topic, const std::string& subExpression);
+  /**
+   * the pull number of message size by each pullMsg for orderly consume, default value is 1
+   */
+  int getConsumeMessageBatchMaxSize() const { return m_consumeMessageBatchMaxSize; }
+  void setConsumeMessageBatchMaxSize(int consumeMessageBatchMaxSize) {
+    if (consumeMessageBatchMaxSize >= 1) {
+      m_consumeMessageBatchMaxSize = consumeMessageBatchMaxSize;
+    }
+  }
 
-  OffsetStore* getOffsetStore() const;
-  virtual Rebalance* getRebalance() const;
-  ConsumeMsgService* getConsumerMsgService() const;
+  /**
+   * max cache msg size per Queue in memory if consumer could not consume msgs immediately,
+   * default maxCacheMsgSize per Queue is 1000, set range is:1~65535
+   */
+  int getMaxCacheMsgSizePerQueue() const { return m_maxMsgCacheSize; }
+  void setMaxCacheMsgSizePerQueue(int maxCacheSize) {
+    if (maxCacheSize > 0 && maxCacheSize < 65535) {
+      m_maxMsgCacheSize = maxCacheSize;
+    }
+  }
 
-  virtual bool producePullMsgTask(boost::weak_ptr<PullRequest>);
-  virtual bool producePullMsgTaskLater(boost::weak_ptr<PullRequest>, int millis);
-  static void static_triggerNextPullRequest(void* context,
-                                            boost::asio::deadline_timer* t,
-                                            boost::weak_ptr<PullRequest>);
-  void triggerNextPullRequest(boost::asio::deadline_timer* t, boost::weak_ptr<PullRequest>);
-  void runPullMsgQueue(TaskQueue* pTaskQueue);
-  void pullMessage(boost::weak_ptr<PullRequest> pullrequest);
-  void pullMessageAsync(boost::weak_ptr<PullRequest> pullrequest);
-  void setAsyncPull(bool asyncFlag);
-  AsyncPullCallback* getAsyncPullCallBack(boost::weak_ptr<PullRequest>, MQMessageQueue msgQueue);
-  void shutdownAsyncPullCallBack();
+  int getAsyncPullTimeout() const { return m_asyncPullTimeout; }
+  void setAsyncPullTimeout(int asyncPullTimeout) { m_asyncPullTimeout = asyncPullTimeout; }
 
-  /*
-    for orderly consume, set the pull num of message size by each pullMsg,
-    default value is 1;
-  */
-  void setConsumeMessageBatchMaxSize(int consumeMessageBatchMaxSize);
-  int getConsumeMessageBatchMaxSize() const;
+  int getMaxReconsumeTimes() { return m_maxReconsumeTimes; }
+  void setMaxReconsumeTimes(int maxReconsumeTimes) { m_maxReconsumeTimes = maxReconsumeTimes; }
 
-  /*
-    set consuming thread count, default value is cpu cores
-  */
-  void setConsumeThreadCount(int threadCount);
-  int getConsumeThreadCount() const;
-  void setMaxReconsumeTimes(int maxReconsumeTimes);
-  int getMaxReconsumeTimes() const;
+  AllocateMQStrategy* getAllocateMQStrategy() { return m_allocateMQStrategy.get(); }
+  void setAllocateMQStrategy(AllocateMQStrategy* strategy) { m_allocateMQStrategy.reset(strategy); }
 
-  /*
-    set pullMsg thread count, default value is cpu cores
-  */
-  void setPullMsgThreadPoolCount(int threadCount);
-  int getPullMsgThreadPoolCount() const;
-
-  /*
-    set max cache msg size perQueue in memory if consumer could not consume msgs
-    immediately
-    default maxCacheMsgSize perQueue is 1000, set range is:1~65535
-  */
-  void setMaxCacheMsgSizePerQueue(int maxCacheSize);
-  int getMaxCacheMsgSizePerQueue() const;
-
- private:
-  void checkConfig();
-  void copySubscription();
-  void updateTopicSubscribeInfoWhenSubscriptionChanged();
-  bool dealWithNameSpace();
-
- private:
-  uint64_t m_startTime;
+ protected:
   ConsumeFromWhere m_consumeFromWhere;
-  std::map<std::string, std::string> m_subTopics;
-  int m_consumeThreadCount;
-  OffsetStore* m_pOffsetStore;
-  Rebalance* m_pRebalance;
-  PullAPIWrapper* m_pPullAPIWrapper;
-  ConsumeMsgService* m_consumerService;
-  MQMessageListener* m_pMessageListener;
+  std::string m_consumeTimestamp;
+
+  int m_consumeThreadNum;
   int m_consumeMessageBatchMaxSize;
   int m_maxMsgCacheSize;
-  int m_maxReconsumeTimes = -1;
-  boost::asio::io_service m_async_ioService;
-  boost::scoped_ptr<boost::thread> m_async_service_thread;
 
-  typedef std::map<MQMessageQueue, AsyncPullCallback*> PullMAP;
-  PullMAP m_PullCallback;
-  bool m_asyncPull;
-  int m_asyncPullTimeout;
-  int m_pullMsgThreadPoolNum;
+  int m_asyncPullTimeout;  // 30s
+  int m_maxReconsumeTimes;
 
- private:
-  TaskQueue* m_pullmsgQueue;
-  std::unique_ptr<boost::thread> m_pullmsgThread;
+  std::unique_ptr<AllocateMQStrategy> m_allocateMQStrategy;
 };
-//<!***************************************************************************
+
+class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQPushConsumer, public DefaultMQPushConsumerConfig {
+ public:
+  DefaultMQPushConsumer(const std::string& groupname);
+  DefaultMQPushConsumer(const std::string& groupname, RPCHookPtr rpcHook);
+  virtual ~DefaultMQPushConsumer();
+
+ public:  // MQConsumer
+  void start() override;
+  void shutdown() override;
+
+  bool sendMessageBack(MQMessageExt& msg, int delayLevel) override;
+  bool sendMessageBack(MQMessageExt& msg, int delayLevel, const std::string& brokerName) override;
+  void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) override;
+
+ public:  // MQPushConsumer
+  void registerMessageListener(MQMessageListener* messageListener) override;
+  void registerMessageListener(MessageListenerConcurrently* messageListener) override;
+  void registerMessageListener(MessageListenerOrderly* messageListener) override;
+
+  void subscribe(const std::string& topic, const std::string& subExpression) override;
+
+  void suspend() override;
+  void resume() override;
+
+ public:
+  void setRPCHook(std::shared_ptr<RPCHook> rpcHook);
+
+ protected:
+  std::shared_ptr<MQPushConsumer> m_pushConsumerDelegate;
+};
+
 }  // namespace rocketmq
-#endif
+
+#endif  // __DEFAULT_MQ_PUSH_CONSUMER_H__

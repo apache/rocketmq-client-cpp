@@ -17,7 +17,7 @@
 #include "MQMessageQueue.h"
 
 namespace rocketmq {
-//<!************************************************************************
+
 MQMessageQueue::MQMessageQueue() {
   m_queueId = -1;  // invalide mq
   m_topic.clear();
@@ -39,7 +39,7 @@ MQMessageQueue& MQMessageQueue::operator=(const MQMessageQueue& other) {
   return *this;
 }
 
-std::string MQMessageQueue::getTopic() const {
+const std::string& MQMessageQueue::getTopic() const {
   return m_topic;
 }
 
@@ -47,10 +47,11 @@ void MQMessageQueue::setTopic(const std::string& topic) {
   m_topic = topic;
 }
 
-std::string MQMessageQueue::getBrokerName() const {
+const std::string& MQMessageQueue::getBrokerName() const {
   return m_brokerName;
 }
 
+// NOTE: only use to initial the mq
 void MQMessageQueue::setBrokerName(const std::string& brokerName) {
   m_brokerName = brokerName;
 }
@@ -101,5 +102,4 @@ bool MQMessageQueue::operator<(const MQMessageQueue& mq) const {
   return compareTo(mq) < 0;
 }
 
-//<!***************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq

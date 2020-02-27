@@ -14,18 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __TRANSACTION_LISTENER_H__
+#define __TRANSACTION_LISTENER_H__
 
-#ifndef __TRANSACTIONLISTENER_H__
-#define __TRANSACTIONLISTENER_H__
-
-#include "MQMessage.h"
 #include "MQMessageExt.h"
 #include "TransactionSendResult.h"
 
 namespace rocketmq {
+
 class ROCKETMQCLIENT_API TransactionListener {
  public:
-  virtual ~TransactionListener() {}
+  virtual ~TransactionListener() = default;
+
   /**
    * When send transactional prepare(half) message succeed, this method will be invoked to execute local transaction.
    *
@@ -44,5 +44,7 @@ class ROCKETMQCLIENT_API TransactionListener {
    */
   virtual LocalTransactionState checkLocalTransaction(const MQMessageExt& msg) = 0;
 };
+
 }  // namespace rocketmq
-#endif
+
+#endif  // __TRANSACTION_LISTENER_H__

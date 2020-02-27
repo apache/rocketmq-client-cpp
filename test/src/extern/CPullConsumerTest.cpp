@@ -65,10 +65,11 @@ TEST(cpullConsumer, pull) {
   MockDefaultMQPullConsumer* mqPullConsumer = new MockDefaultMQPullConsumer("groudId");
   CPullConsumer* pullConsumer = (CPullConsumer*)mqPullConsumer;
 
-  CMessageQueue cMessageQueue;
-  strncpy(cMessageQueue.topic, "testTopic", 8);
-  strncpy(cMessageQueue.brokerName, "testBroker", 9);
-  cMessageQueue.queueId = 1;
+  CMessageQueue* cMessageQueue;
+  cMessageQueue = (CMessageQueue*)malloc(sizeof(CMessageQueue));
+  strncpy(cMessageQueue->topic, "testTopic", 8);
+  strncpy(cMessageQueue->brokerName, "testBroker", 9);
+  cMessageQueue->queueId = 1;
 
   PullResult timeOutPullResult(PullStatus::BROKER_TIMEOUT, 1, 2, 3);
 
@@ -87,30 +88,34 @@ TEST(cpullConsumer, pull) {
   }
 
   PullResult foundPullResult(PullStatus::FOUND, 1, 2, 3, src);
+
   EXPECT_CALL(*mqPullConsumer, pull(_, _, _, _))
       .WillOnce(Return(timeOutPullResult))
       .WillOnce(Return(noNewMsgPullResult))
       .WillOnce(Return(noMatchedMsgPullResult))
       .WillOnce(Return(offsetIllegalPullResult))
       .WillOnce(Return(defaultPullResult))
-      //.WillOnce(Return(timeOutPullResult)) //will not called
-      .WillOnce(Return(foundPullResult));
-  CPullResult timeOutcPullResult = Pull(pullConsumer, &cMessageQueue, "123123", 0, 0);
+      /*.WillOnce(Return(timeOutPullResult))*/.WillOnce(Return(foundPullResult));
+
+  CPullResult timeOutcPullResult = Pull(pullConsumer, cMessageQueue, "123123", 0, 0);
   EXPECT_EQ(timeOutcPullResult.pullStatus, E_BROKER_TIMEOUT);
-  CPullResult noNewMsgcPullResult = Pull(pullConsumer, &cMessageQueue, "123123", 0, 0);
+
+  CPullResult noNewMsgcPullResult = Pull(pullConsumer, cMessageQueue, "123123", 0, 0);
   EXPECT_EQ(noNewMsgcPullResult.pullStatus, E_NO_NEW_MSG);
 
-  CPullResult noMatchedMsgcPullResult = Pull(pullConsumer, &cMessageQueue, "123123", 0, 0);
+  CPullResult noMatchedMsgcPullResult = Pull(pullConsumer, cMessageQueue, "123123", 0, 0);
   EXPECT_EQ(noMatchedMsgcPullResult.pullStatus, E_NO_MATCHED_MSG);
 
-  CPullResult offsetIllegalcPullResult = Pull(pullConsumer, &cMessageQueue, "123123", 0, 0);
+  CPullResult offsetIllegalcPullResult = Pull(pullConsumer, cMessageQueue, "123123", 0, 0);
   EXPECT_EQ(offsetIllegalcPullResult.pullStatus, E_OFFSET_ILLEGAL);
 
-  CPullResult defaultcPullResult = Pull(pullConsumer, &cMessageQueue, "123123", 0, 0);
+  CPullResult defaultcPullResult = Pull(pullConsumer, cMessageQueue, "123123", 0, 0);
   EXPECT_EQ(defaultcPullResult.pullStatus, E_NO_NEW_MSG);
-  CPullResult exceptionPullResult = Pull(pullConsumer, &cMessageQueue, NULL, 0, 0);
+
+  CPullResult exceptionPullResult = Pull(pullConsumer, cMessageQueue, NULL, 0, 0);
   EXPECT_EQ(exceptionPullResult.pullStatus, E_BROKER_TIMEOUT);
-  CPullResult foundcPullResult = Pull(pullConsumer, &cMessageQueue, "123123", 0, 0);
+
+  CPullResult foundcPullResult = Pull(pullConsumer, cMessageQueue, "123123", 0, 0);
   EXPECT_EQ(foundcPullResult.pullStatus, E_FOUND);
 
   delete mqPullConsumer;
@@ -158,9 +163,6 @@ TEST(cpullConsumer, init) {
   EXPECT_EQ(SetPullConsumerNameServerAddress(pullConsumer, "127.0.0.1:10091"), OK);
   EXPECT_EQ(defaultMQPullConsumer->getNamesrvAddr(), "127.0.0.1:10091");
 
-  EXPECT_EQ(SetPullConsumerNameServerDomain(pullConsumer, "domain"), OK);
-  EXPECT_EQ(defaultMQPullConsumer->getNamesrvDomain(), "domain");
-
   EXPECT_EQ(SetPullConsumerSessionCredentials(pullConsumer, "accessKey", "secretKey", "channel"), OK);
   SessionCredentials sessionCredentials = defaultMQPullConsumer->getSessionCredentials();
   EXPECT_EQ(sessionCredentials.getAccessKey(), "accessKey");
@@ -181,9 +183,6 @@ TEST(cpullConsumer, null) {
 
   EXPECT_EQ(SetPullConsumerNameServerAddress(pullConsumer, "127.0.0.1:10091"), OK);
   EXPECT_EQ(defaultMQPullConsumer->getNamesrvAddr(), "127.0.0.1:10091");
-
-  EXPECT_EQ(SetPullConsumerNameServerDomain(pullConsumer, "domain"), OK);
-  EXPECT_EQ(defaultMQPullConsumer->getNamesrvDomain(), "domain");
 
   EXPECT_EQ(SetPullConsumerSessionCredentials(pullConsumer, "accessKey", "secretKey", "channel"), OK);
   SessionCredentials sessionCredentials = defaultMQPullConsumer->getSessionCredentials();

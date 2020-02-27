@@ -14,13 +14,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+#include <stdio.h>
+
 #ifndef WIN32
 #include <unistd.h>
 #endif
-#include <stdio.h>
-#include "CPushConsumer.h"
-#include "CCommon.h"
-#include "CMessageExt.h"
+
+#include "c/CPushConsumer.h"
 
 int doConsumeMessage(struct CPushConsumer* consumer, CMessageExt* msgExt) {
   printf("Hello,doConsumeMessage by Application!\n");
