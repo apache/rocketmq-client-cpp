@@ -39,7 +39,11 @@ PrintParams() {
   echo ""
 }
 
-declare cpu_num=$(cat /proc/cpuinfo | grep "processor" | wc -l)
+if test "$(uname)" = "Linux"; then
+  declare cpu_num=$(cat /proc/cpuinfo | grep "processor" | wc -l)
+elif test "$(uname)" = "Darwin" ; then
+  declare cpu_num=$(sysctl -n machdep.cpu.thread_count)
+fi
 declare need_build_jsoncpp=1
 declare need_build_libevent=1
 declare need_build_boost=1
