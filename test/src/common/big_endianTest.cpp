@@ -62,7 +62,7 @@ TEST(big_endian, bigEndianObject) {
 
   char* newBuf = (char*)malloc(sizeof(char) * 8);
   char* writeBuf = (char*)malloc(sizeof(char) * 8);
-  strcpy(writeBuf, "RocketMQ");
+  strncpy(writeBuf, "RocketMQ", 8);
   EXPECT_TRUE(writer.WriteBytes(writeBuf, (size_t)8));
   EXPECT_TRUE(reader.ReadBytes(newBuf, (size_t)8));
   EXPECT_EQ(*writeBuf, *newBuf);
@@ -76,7 +76,7 @@ TEST(big_endian, bigEndian) {
 
   /*TODO
       char *newBuf = (char *) malloc(sizeof(char) * 8);
-      strcpy(newBuf, "RocketMQ");
+      strncpy(newBuf, "RocketMQ", 8);
 
       char readBuf[8];
       rocketmq::WriteBigEndian(writeBuf, newBuf);
