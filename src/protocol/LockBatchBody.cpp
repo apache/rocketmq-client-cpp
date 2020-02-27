@@ -69,7 +69,7 @@ void LockBatchResponseBody::setLockOKMQSet(vector<MQMessageQueue> in_lockOKMQSet
 void LockBatchResponseBody::Decode(const MemoryBlock* mem, vector<MQMessageQueue>& messageQueues) {
   messageQueues.clear();
   //<! decode;
-  const char* const pData = static_cast<const char*>(mem->getData());
+  const std::string pData(mem->getData(), mem->getSize());
 
   Json::Reader reader;
   Json::Value root;
