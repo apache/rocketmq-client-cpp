@@ -65,6 +65,7 @@ void DefaultMQPullConsumerImpl::start() {
 #endif
   LOG_INFO("###Current Pull Consumer@%s", getClientVersionString().c_str());
   dealWithNameSpace();
+  showClientConfigs();
   switch (m_serviceState) {
     case CREATE_JUST: {
       m_serviceState = START_FAILED;

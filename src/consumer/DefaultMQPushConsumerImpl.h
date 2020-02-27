@@ -134,6 +134,7 @@ class DefaultMQPushConsumerImpl : public MQConsumer {
   void copySubscription();
   void updateTopicSubscribeInfoWhenSubscriptionChanged();
   bool dealWithNameSpace();
+  void logConfigs();
 
  private:
   uint64_t m_startTime;

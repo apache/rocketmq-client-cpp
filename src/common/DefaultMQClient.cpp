@@ -227,6 +227,19 @@ void DefaultMQClient::setSessionCredentials(const string& input_accessKey,
 const SessionCredentials& DefaultMQClient::getSessionCredentials() const {
   return m_SessionCredentials;
 }
-
+void DefaultMQClient::showClientConfigs() {
+  //LOG_WARN("*****************************************************************************");
+  LOG_WARN("ClientID:%s", getMQClientId().c_str());
+  LOG_WARN("GroupName:%s", m_GroupName.c_str());
+  LOG_WARN("NameServer:%s", m_namesrvAddr.c_str());
+  LOG_WARN("NameServerDomain:%s", m_namesrvDomain.c_str());
+  LOG_WARN("NameSpace:%s", m_nameSpace.c_str());
+  LOG_WARN("InstanceName:%s", m_instanceName.c_str());
+  LOG_WARN("UnitName:%s", m_unitName.c_str());
+  LOG_WARN("PullThreadNum:%d", m_pullThreadNum);
+  LOG_WARN("TcpConnectTimeout:%lld ms", m_tcpConnectTimeout);
+  LOG_WARN("TcpTransportTryLockTimeout:%lld s", m_tcpTransportTryLockTimeout);
+  //LOG_WARN("*****************************************************************************");
+}
 //<!************************************************************************
 }  // namespace rocketmq

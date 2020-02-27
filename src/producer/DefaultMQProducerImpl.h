@@ -103,6 +103,7 @@ class DefaultMQProducerImpl : public MQProducer {
   bool tryToCompressMessage(MQMessage& msg);
   BatchMessage buildBatchMessage(std::vector<MQMessage>& msgs);
   bool dealWithNameSpace();
+  void logConfigs();
 
  private:
   int m_sendMsgTimeout;

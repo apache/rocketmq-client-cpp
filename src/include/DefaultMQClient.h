@@ -175,6 +175,7 @@ class DefaultMQClient {
   virtual void shutdown();
   MQClientFactory* getFactory() const;
   virtual bool isServiceStateOk();
+  void showClientConfigs();
 
  protected:
   std::string m_namesrvAddr;
