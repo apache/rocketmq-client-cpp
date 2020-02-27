@@ -1,20 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include <stdlib.h>
 #include <string.h>
 
@@ -35,7 +34,7 @@ void putMessageQueueOffset(MQMessageQueue mq, uint64_t offset) {
 }
 
 uint64_t getMessageQueueOffset(MQMessageQueue mq) {
-  map<MQMessageQueue, uint64_t>::iterator it = g_offseTable.find(mq);
+  auto it = g_offseTable.find(mq);
   if (it != g_offseTable.end()) {
     return it->second;
   }
@@ -50,9 +49,7 @@ int main(int argc, char* argv[]) {
   PrintRocketmqSendAndConsumerArgs(info);
   DefaultMQPullConsumer consumer("please_rename_unique_group_name");
   consumer.setNamesrvAddr(info.namesrv);
-  consumer.setNamesrvDomain(info.namesrv_domain);
   consumer.setGroupName(info.groupname);
-  consumer.setInstanceName(info.groupname);
   consumer.registerMessageQueueListener(info.topic, NULL);
   consumer.start();
   std::vector<MQMessageQueue> mqs;
@@ -61,10 +58,10 @@ int main(int argc, char* argv[]) {
     consumer.fetchSubscribeMessageQueues(info.topic, mqs);
     auto iter = mqs.begin();
     for (; iter != mqs.end(); ++iter) {
-      std::cout << "mq:" << (*iter).toString() << endl;
+      std::cout << "mq:" << iter->toString() << std::endl;
     }
   } catch (MQException& e) {
-    std::cout << e << endl;
+    std::cout << e << std::endl;
   }
 
   auto start = std::chrono::system_clock::now();
@@ -89,7 +86,7 @@ int main(int argc, char* argv[]) {
           putMessageQueueOffset(mq, result.nextBeginOffset);
           PrintPullResult(&result);
         } else {
-          cout << "broker timeout occur" << endl;
+          std::cout << "broker timeout occur" << std::endl;
         }
         switch (result.pullStatus) {
           case FOUND:
@@ -117,5 +114,6 @@ int main(int argc, char* argv[]) {
             << "========================finished==============================\n";
 
   consumer.shutdown();
+
   return 0;
 }

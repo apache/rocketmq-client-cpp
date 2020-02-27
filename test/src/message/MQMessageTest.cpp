@@ -78,18 +78,16 @@ TEST(message, info) {
   EXPECT_EQ(message.getTopic(), "");
   message.setTopic("testTopic");
   EXPECT_EQ(message.getTopic(), "testTopic");
-  string topic = "testTopic";
-  const char* ctopic = topic.c_str();
-  message.setTopic(ctopic, 5);
+  char* topic = "testTopic";
+  message.setTopic(topic, 5);
   EXPECT_EQ(message.getTopic(), "testT");
 
   EXPECT_EQ(message.getBody(), "");
   message.setBody("testBody");
   EXPECT_EQ(message.getBody(), "testBody");
 
-  string body = "testBody";
-  const char* b = body.c_str();
-  message.setBody(b, 5);
+  char* body = "testBody";
+  message.setBody(body, 5);
   EXPECT_EQ(message.getBody(), "testB");
 
   string tags(message.getTags());
@@ -148,7 +146,7 @@ TEST(message, properties) {
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
 
-  // testing::GTEST_FLAG(filter) = "message.info";
+  testing::GTEST_FLAG(filter) = "message.info";
   int itestts = RUN_ALL_TESTS();
   return itestts;
 }

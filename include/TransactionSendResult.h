@@ -14,9 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef __TRANSACTIONSENDRESULT_H__
-#define __TRANSACTIONSENDRESULT_H__
+#ifndef __TRANSACTION_SEND_RESULT_H__
+#define __TRANSACTION_SEND_RESULT_H__
 
 #include "SendResult.h"
 
@@ -26,14 +25,7 @@ enum LocalTransactionState { COMMIT_MESSAGE, ROLLBACK_MESSAGE, UNKNOWN };
 
 class ROCKETMQCLIENT_API TransactionSendResult : public SendResult {
  public:
-  TransactionSendResult() {}
-
-  TransactionSendResult(const SendStatus& sendStatus,
-                        const std::string& msgId,
-                        const std::string& offsetMsgId,
-                        const MQMessageQueue& messageQueue,
-                        int64 queueOffset)
-      : SendResult(sendStatus, msgId, offsetMsgId, messageQueue, queueOffset) {}
+  TransactionSendResult(const SendResult& sendResult) : SendResult(sendResult), m_localTransactionState(UNKNOWN) {}
 
   LocalTransactionState getLocalTransactionState() { return m_localTransactionState; }
 
@@ -44,5 +36,7 @@ class ROCKETMQCLIENT_API TransactionSendResult : public SendResult {
  private:
   LocalTransactionState m_localTransactionState;
 };
+
 }  // namespace rocketmq
-#endif
+
+#endif  // __TRANSACTION_SEND_RESULT_H__

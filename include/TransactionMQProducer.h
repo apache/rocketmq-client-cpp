@@ -14,61 +14,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __TRANSACTION_MQ_PRODUCER_H__
+#define __TRANSACTION_MQ_PRODUCER_H__
 
-#ifndef __TRANSACTIONMQPRODUCER_H__
-#define __TRANSACTIONMQPRODUCER_H__
-
-#include <boost/asio.hpp>
-#include <boost/asio/io_service.hpp>
-#include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/weak_ptr.hpp>
-#include <memory>
-#include <string>
 #include "DefaultMQProducer.h"
-#include "MQMessageExt.h"
 #include "TransactionListener.h"
-#include "TransactionSendResult.h"
 
 namespace rocketmq {
 
-class ROCKETMQCLIENT_API TransactionMQProducer : public DefaultMQProducer {
+class ROCKETMQCLIENT_API TransactionMQProducerConfig {
  public:
-  TransactionMQProducer(const std::string& producerGroup)
-      : DefaultMQProducer(producerGroup), m_thread_num(1), m_ioServiceWork(m_ioService) {}
-  virtual ~TransactionMQProducer() {}
-  void start();
-  void shutdown();
-  std::shared_ptr<TransactionListener> getTransactionListener() { return m_transactionListener; }
-  void setTransactionListener(TransactionListener* listener) { m_transactionListener.reset(listener); }
-  TransactionSendResult sendMessageInTransaction(MQMessage& msg, void* arg);
-  void checkTransactionState(const std::string& addr,
-                             const MQMessageExt& message,
-                             long tranStateTableOffset,
-                             long commitLogOffset,
-                             const std::string& msgId,
-                             const std::string& transactionId,
-                             const std::string& offsetMsgId);
+  TransactionMQProducerConfig();
+  virtual ~TransactionMQProducerConfig() = default;
 
- private:
-  void initTransactionEnv();
-  void destroyTransactionEnv();
-  void endTransaction(SendResult& sendResult, LocalTransactionState& localTransactionState);
-  void checkTransactionStateImpl(const std::string& addr,
-                                 const MQMessageExt& message,
-                                 long tranStateTableOffset,
-                                 long commitLogOffset,
-                                 const std::string& msgId,
-                                 const std::string& transactionId,
-                                 const std::string& offsetMsgId);
+ public:  // TransactionMQProducerConfig
+  TransactionListener* getTransactionListener() const { return m_transactionListener; }
+  void setTransactionListener(TransactionListener* transactionListener) { m_transactionListener = transactionListener; }
 
- private:
-  std::shared_ptr<TransactionListener> m_transactionListener;
-  int m_thread_num;
-  boost::thread_group m_threadpool;
-  boost::asio::io_service m_ioService;
-  boost::asio::io_service::work m_ioServiceWork;
+ protected:
+  TransactionListener* m_transactionListener;
 };
+
+class ROCKETMQCLIENT_API TransactionMQProducer : public DefaultMQProducer, public TransactionMQProducerConfig {
+ public:
+  TransactionMQProducer(const std::string& groupname);
+  TransactionMQProducer(const std::string& groupname, RPCHookPtr rpcHook);
+  virtual ~TransactionMQProducer();
+
+ public:  // MQProducer
+  void start() override;
+  void shutdown() override;
+
+  // Transaction
+  TransactionSendResult sendMessageInTransaction(MQMessagePtr msg, void* arg) override;
+};
+
 }  // namespace rocketmq
 
-#endif
+#endif  // __TRANSACTION_MQ_PRODUCER_H__

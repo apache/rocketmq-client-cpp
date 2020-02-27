@@ -14,29 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __QUERYRESULT_H__
-#define __QUERYRESULT_H__
+#ifndef __QUERY_RESULT_H__
+#define __QUERY_RESULT_H__
 
 #include "MQMessageExt.h"
-#include "RocketMQClient.h"
 
 namespace rocketmq {
-//<!************************************************************************
+
 class ROCKETMQCLIENT_API QueryResult {
  public:
-  QueryResult(uint64 indexLastUpdateTimestamp, const std::vector<MQMessageExt*>& messageList) {
+  QueryResult(uint64_t indexLastUpdateTimestamp, const std::vector<MQMessageExtPtr>& messageList) {
     m_indexLastUpdateTimestamp = indexLastUpdateTimestamp;
     m_messageList = messageList;
   }
 
-  uint64 getIndexLastUpdateTimestamp() { return m_indexLastUpdateTimestamp; }
+  uint64_t getIndexLastUpdateTimestamp() { return m_indexLastUpdateTimestamp; }
 
-  std::vector<MQMessageExt*>& getMessageList() { return m_messageList; }
+  std::vector<MQMessageExtPtr>& getMessageList() { return m_messageList; }
 
  private:
-  uint64 m_indexLastUpdateTimestamp;
-  std::vector<MQMessageExt*> m_messageList;
+  uint64_t m_indexLastUpdateTimestamp;
+  std::vector<MQMessageExtPtr> m_messageList;
 };
-//<!***************************************************************************
+
 }  // namespace rocketmq
-#endif
+
+#endif  // __QUERY_RESULT_H__

@@ -14,19 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __OFFSETSTORE_H__
-#define __OFFSETSTORE_H__
+#ifndef __OFFSET_STORE_H__
+#define __OFFSET_STORE_H__
 
-#include <boost/asio.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
 #include <map>
+#include <mutex>
+#include <vector>
+
+#include "MQClientInstance.h"
 #include "MQMessageQueue.h"
-#include "SessionCredentials.h"
 
 namespace rocketmq {
-class MQClientFactory;
-//<!***************************************************************************
+
 enum ReadOffsetType {
   // read offset from memory
   READ_FROM_MEMORY,
@@ -36,71 +35,69 @@ enum ReadOffsetType {
   MEMORY_FIRST_THEN_STORE,
 };
 
-//<!***************************************************************************
 class OffsetStore {
  public:
-  OffsetStore(const std::string& groupName, MQClientFactory*);
-  virtual ~OffsetStore();
+  virtual ~OffsetStore() = default;
 
   virtual void load() = 0;
-  virtual void updateOffset(const MQMessageQueue& mq, int64 offset) = 0;
-  virtual int64 readOffset(const MQMessageQueue& mq,
-                           ReadOffsetType type,
-                           const SessionCredentials& session_credentials) = 0;
-  virtual void persist(const MQMessageQueue& mq, const SessionCredentials& session_credentials) = 0;
+  virtual void updateOffset(const MQMessageQueue& mq, int64_t offset, bool increaseOnly) = 0;
+  virtual int64_t readOffset(const MQMessageQueue& mq, ReadOffsetType type) = 0;
+  virtual void persist(const MQMessageQueue& mq) = 0;
   virtual void persistAll(const std::vector<MQMessageQueue>& mq) = 0;
   virtual void removeOffset(const MQMessageQueue& mq) = 0;
-
- protected:
-  std::string m_groupName;
-  typedef std::map<MQMessageQueue, int64> MQ2OFFSET;
-  MQ2OFFSET m_offsetTable;
-  MQClientFactory* m_pClientFactory;
-  boost::mutex m_lock;
 };
 
-//<!***************************************************************************
 class LocalFileOffsetStore : public OffsetStore {
  public:
-  LocalFileOffsetStore(const std::string& groupName, MQClientFactory*);
+  LocalFileOffsetStore(MQClientInstance* instance, const std::string& groupName);
   virtual ~LocalFileOffsetStore();
 
-  virtual void load();
-  virtual void updateOffset(const MQMessageQueue& mq, int64 offset);
-  virtual int64 readOffset(const MQMessageQueue& mq,
-                           ReadOffsetType type,
-                           const SessionCredentials& session_credentials);
-  virtual void persist(const MQMessageQueue& mq, const SessionCredentials& session_credentials);
-  virtual void persistAll(const std::vector<MQMessageQueue>& mq);
-  virtual void removeOffset(const MQMessageQueue& mq);
+  void load() override;
+  void updateOffset(const MQMessageQueue& mq, int64_t offset, bool increaseOnly) override;
+  int64_t readOffset(const MQMessageQueue& mq, ReadOffsetType type) override;
+  void persist(const MQMessageQueue& mq) override;
+  void persistAll(const std::vector<MQMessageQueue>& mq) override;
+  void removeOffset(const MQMessageQueue& mq) override;
 
  private:
+  std::map<MQMessageQueue, int64_t> readLocalOffset();
+  std::map<MQMessageQueue, int64_t> readLocalOffsetBak();
+
+ private:
+  MQClientInstance* m_clientInstance;
+  std::string m_groupName;
+
+  std::map<MQMessageQueue, int64_t> m_offsetTable;
+  std::mutex m_lock;
+
   std::string m_storePath;
-  std::string m_storeFile;
+  std::mutex m_fileMutex;
 };
 
-//<!***************************************************************************
 class RemoteBrokerOffsetStore : public OffsetStore {
  public:
-  RemoteBrokerOffsetStore(const std::string& groupName, MQClientFactory*);
+  RemoteBrokerOffsetStore(MQClientInstance* instance, const std::string& groupName);
   virtual ~RemoteBrokerOffsetStore();
 
-  virtual void load();
-  virtual void updateOffset(const MQMessageQueue& mq, int64 offset);
-  virtual int64 readOffset(const MQMessageQueue& mq,
-                           ReadOffsetType type,
-                           const SessionCredentials& session_credentials);
-  virtual void persist(const MQMessageQueue& mq, const SessionCredentials& session_credentials);
-  virtual void persistAll(const std::vector<MQMessageQueue>& mq);
-  virtual void removeOffset(const MQMessageQueue& mq);
+  void load() override;
+  void updateOffset(const MQMessageQueue& mq, int64_t offset, bool increaseOnly) override;
+  int64_t readOffset(const MQMessageQueue& mq, ReadOffsetType type) override;
+  void persist(const MQMessageQueue& mq) override;
+  void persistAll(const std::vector<MQMessageQueue>& mq) override;
+  void removeOffset(const MQMessageQueue& mq) override;
 
  private:
-  void updateConsumeOffsetToBroker(const MQMessageQueue& mq,
-                                   int64 offset,
-                                   const SessionCredentials& session_credentials);
-  int64 fetchConsumeOffsetFromBroker(const MQMessageQueue& mq, const SessionCredentials& session_credentials);
+  void updateConsumeOffsetToBroker(const MQMessageQueue& mq, int64_t offset);
+  int64_t fetchConsumeOffsetFromBroker(const MQMessageQueue& mq);
+
+ private:
+  MQClientInstance* m_clientInstance;
+  std::string m_groupName;
+
+  std::map<MQMessageQueue, int64_t> m_offsetTable;
+  std::mutex m_lock;
 };
-//<!***************************************************************************
+
 }  // namespace rocketmq
 
-#endif
+#endif  // __OFFSET_STORE_H__

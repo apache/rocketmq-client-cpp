@@ -15,20 +15,22 @@
  * limitations under the License.
  */
 #include "VirtualEnvUtil.h"
+
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "UtilAll.h"
 
 namespace rocketmq {
+
 const char* VirtualEnvUtil::VIRTUAL_APPGROUP_PREFIX = "%%PROJECT_%s%%";
 
-//<!***************************************************************************
-string VirtualEnvUtil::buildWithProjectGroup(const string& origin, const string& projectGroup) {
+std::string VirtualEnvUtil::buildWithProjectGroup(const std::string& origin, const std::string& projectGroup) {
   if (!UtilAll::isBlank(projectGroup)) {
     char prefix[1024];
     sprintf(prefix, VIRTUAL_APPGROUP_PREFIX, projectGroup.c_str());
 
-    if (origin.find(prefix) == string::npos) {
+    if (origin.find_last_of(prefix) == std::string::npos) {
       return origin + prefix;
     } else {
       return origin;
@@ -38,17 +40,16 @@ string VirtualEnvUtil::buildWithProjectGroup(const string& origin, const string&
   }
 }
 
-string VirtualEnvUtil::clearProjectGroup(const string& origin, const string& projectGroup) {
+std::string VirtualEnvUtil::clearProjectGroup(const std::string& origin, const std::string& projectGroup) {
   char prefix[1024];
   sprintf(prefix, VIRTUAL_APPGROUP_PREFIX, projectGroup.c_str());
-  auto pos = origin.find(prefix);
+  std::string::size_type pos = origin.find_last_of(prefix);
 
-  if (!UtilAll::isBlank(prefix) && pos != string::npos) {
+  if (!UtilAll::isBlank(prefix) && pos != std::string::npos) {
     return origin.substr(0, pos);
   } else {
     return origin;
   }
 }
 
-//<!***************************************************************************
 }  // namespace rocketmq

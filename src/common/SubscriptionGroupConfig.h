@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SUBSCRIPTIONGROUPCONFIG_H__
-#define __SUBSCRIPTIONGROUPCONFIG_H__
+#ifndef __SUBSCRIPTION_GROUP_CONFIG_H__
+#define __SUBSCRIPTION_GROUP_CONFIG_H__
 
 #include <string>
 
 namespace rocketmq {
-//<!***************************************************************************
+
 class SubscriptionGroupConfig {
  public:
   SubscriptionGroupConfig(const string& groupName) {
@@ -34,7 +34,8 @@ class SubscriptionGroupConfig {
     whichBrokerWhenConsumeSlowly = 1;
   }
 
-  string groupName;
+ public:
+  std::string groupName;
   bool consumeEnable;
   bool consumeFromMinEnable;
   bool consumeBroadcastEnable;
@@ -44,6 +45,6 @@ class SubscriptionGroupConfig {
   int whichBrokerWhenConsumeSlowly;
 };
 
-//<!***************************************************************************
-}  //<!end namespace;
-#endif
+}  // namespace rocketmq
+
+#endif  // __SUBSCRIPTION_GROUP_CONFIG_H__

@@ -17,13 +17,14 @@
 #include "MessageSysFlag.h"
 
 namespace rocketmq {
-int MessageSysFlag::CompressedFlag = (0x1 << 0);
-int MessageSysFlag::MultiTagsFlag = (0x1 << 1);
 
-int MessageSysFlag::TransactionNotType = (0x0 << 2);
-int MessageSysFlag::TransactionPreparedType = (0x1 << 2);
-int MessageSysFlag::TransactionCommitType = (0x2 << 2);
-int MessageSysFlag::TransactionRollbackType = (0x3 << 2);
+const int MessageSysFlag::CompressedFlag = 0x1 << 0;
+const int MessageSysFlag::MultiTagsFlag = 0x1 << 1;
+
+const int MessageSysFlag::TransactionNotType = 0x0;
+const int MessageSysFlag::TransactionPreparedType = 0x1 << 2;
+const int MessageSysFlag::TransactionCommitType = 0x2 << 2;
+const int MessageSysFlag::TransactionRollbackType = 0x3 << 2;
 
 int MessageSysFlag::getTransactionValue(int flag) {
   return flag & TransactionRollbackType;
@@ -33,5 +34,8 @@ int MessageSysFlag::resetTransactionValue(int flag, int type) {
   return (flag & (~TransactionRollbackType)) | type;
 }
 
-//<!***************************************************************************
-}  //<!end namespace;
+int MessageSysFlag::clearCompressedFlag(int flag) {
+  return flag & (~CompressedFlag);
+}
+
+}  // namespace rocketmq

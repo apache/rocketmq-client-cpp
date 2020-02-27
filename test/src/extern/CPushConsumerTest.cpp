@@ -88,9 +88,6 @@ TEST(cPushComsumer, info) {
   EXPECT_EQ(SetPushConsumerNameServerAddress(cpushConsumer, "127.0.0.1:9876"), OK);
   EXPECT_EQ(mqPushConsumer->getNamesrvAddr(), "127.0.0.1:9876");
 
-  EXPECT_EQ(SetPushConsumerNameServerDomain(cpushConsumer, "domain"), OK);
-  EXPECT_EQ(mqPushConsumer->getNamesrvDomain(), "domain");
-
   EXPECT_EQ(Subscribe(cpushConsumer, "testTopic", "testSub"), OK);
 
   EXPECT_EQ(RegisterMessageCallbackOrderly(cpushConsumer, MessageCallBackFunc), OK);
@@ -131,7 +128,6 @@ TEST(cPushComsumer, null) {
   EXPECT_EQ(SetPushConsumerGroupID(NULL, "testGroup"), NULL_POINTER);
   EXPECT_TRUE(GetPushConsumerGroupID(NULL) == NULL);
   EXPECT_EQ(SetPushConsumerNameServerAddress(NULL, NULL), NULL_POINTER);
-  EXPECT_EQ(SetPushConsumerNameServerDomain(NULL, NULL), NULL_POINTER);
   EXPECT_EQ(Subscribe(NULL, NULL, NULL), NULL_POINTER);
   EXPECT_EQ(RegisterMessageCallbackOrderly(NULL, NULL), NULL_POINTER);
   EXPECT_EQ(RegisterMessageCallbackOrderly(cpushConsumer, NULL), NULL_POINTER);

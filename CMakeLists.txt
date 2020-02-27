@@ -37,72 +37,28 @@ project(rocketmq-client-cpp)
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif ()
-set(CMAKE_CONFIGURATION_TYPES "Release")
+if (NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_CONFIGURATION_TYPES "Release")
+endif ()
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
 set(CMAKE_VERBOSE_MAKEFILE 1)
-option(BUILD_ROCKETMQ_STATIC "build rocketmq-client static library" ON)
+
+option(BUILD_ROCKETMQ_STATIC "build rocketmq-client static library" OFF)
 option(BUILD_ROCKETMQ_SHARED "build rocketmq-client shared library" ON)
 
-#Find dependency 
-option(Boost_USE_STATIC_LIBS "only find boost static libs" ON) # only find static libs
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_STATIC_RUNTIME ON)
-if (WIN32)
-    find_package(Boost 1.56 REQUIRED COMPONENTS atomic thread system chrono date_time
-            log log_setup regex serialization filesystem locale iostreams zlib)
-    if (Boost_FOUND)
-        message(STATUS "** Boost Include dir: ${Boost_INCLUDE_DIR}")
-        message(STATUS "** Boost Libraries dir: ${Boost_LIBRARY_DIRS}")
-        message(STATUS "** Boost Libraries: ${Boost_LIBRARIES}")
-        include_directories(${Boost_INCLUDE_DIRS})
-    endif ()
-else ()
-    #find_package(Boost 1.56 REQUIRED COMPONENTS atomic thread system chrono date_time log log_setup regex serialization filesystem locale iostreams) 
-    set(Boost_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/bin/include)
-    set(Boost_LIBRARY_DIRS ${PROJECT_SOURCE_DIR}/bin/lib)
-    set(Boost_LIBRARIES ${Boost_LIBRARY_DIRS}/libboost_atomic.a;${Boost_LIBRARY_DIRS}/libboost_thread.a;${Boost_LIBRARY_DIRS}/libboost_system.a;${Boost_LIBRARY_DIRS}/libboost_chrono.a;
-            ${Boost_LIBRARY_DIRS}/libboost_date_time.a;${Boost_LIBRARY_DIRS}/libboost_log.a;${Boost_LIBRARY_DIRS}/libboost_log_setup.a;
-            ${Boost_LIBRARY_DIRS}/libboost_regex.a;${Boost_LIBRARY_DIRS}/libboost_serialization.a;${Boost_LIBRARY_DIRS}/libboost_filesystem.a;
-            ${Boost_LIBRARY_DIRS}/libboost_locale.a;${Boost_LIBRARY_DIRS}/libboost_iostreams.a)
-    include_directories(${Boost_INCLUDE_DIRS})
-endif ()
+# Find dependency
+#find_package(spdlog REQUIRED)
 
-message(STATUS "** Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
-message(STATUS "** Boost_LIBRARIES: ${Boost_LIBRARIES}")
-
-option(Libevent_USE_STATIC_LIBS "only find libevent static libs" ON) # only find static libs
-if (WIN32)
-    find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
-    if (LIBEVENT_FOUND)
-        include_directories(${LIBEVENT_INCLUDE_DIRS})
-        message(STATUS "** libevent Include dir: ${LIBEVENT_INCLUDE_DIR}")
-        message(STATUS "** libevent Libraries: ${LIBEVENT_LIBRARIES}")
-    endif ()
-else ()
-    #find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
-    set(LIBEVENT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/bin/include)
-    set(LIBEVENT_LIBRARIES_DIR ${PROJECT_SOURCE_DIR}/bin/lib)
-    set(LIBEVENT_LIBRARIES ${LIBEVENT_LIBRARIES_DIR}/libevent.a;${LIBEVENT_LIBRARIES_DIR}/libevent_core.a;${LIBEVENT_LIBRARIES_DIR}/libevent_extra.a;${LIBEVENT_LIBRARIES_DIR}/libevent_pthreads.a)
-    include_directories(${LIBEVENT_INCLUDE_DIRS})
-endif ()
-
+option(Libevent_USE_STATIC_LIBS "only find libevent static libs" OFF) # only find static libs
+find_package(Libevent 2.0.21 REQUIRED)
+include_directories(${LIBEVENT_INCLUDE_DIRS})
 message(STATUS "** LIBEVENT_INCLUDE_DIR: ${LIBEVENT_INCLUDE_DIR}")
 message(STATUS "** LIBEVENT_LIBRARIES: ${LIBEVENT_LIBRARIES}")
 
-option(JSONCPP_USE_STATIC_LIBS "only find jsoncpp static libs" ON) # only find static libs
-if (WIN32)
-    find_package(Jsoncpp 0.10.6)
-    if (JSONCPP_FOUND)
-        include_directories(${JSONCPP_INCLUDE_DIRS})
-    endif ()
-else ()
-    set(JSONCPP_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/bin/include/jsoncpp)
-    set(JSONCPP_LIBRARIES_DIR ${PROJECT_SOURCE_DIR}/bin/lib)
-    set(JSONCPP_LIBRARIES ${JSONCPP_LIBRARIES_DIR}/libjsoncpp.a)
-    include_directories(${JSONCPP_INCLUDE_DIRS})
-endif ()
-
+option(JSONCPP_USE_STATIC_LIBS "only find jsoncpp static libs" OFF) # only find static libs
+find_package(Jsoncpp 0.10.6 REQUIRED)
+include_directories(${JSONCPP_INCLUDE_DIRS})
 message(STATUS "** JSONCPP_INCLUDE_DIRS: ${JSONCPP_INCLUDE_DIRS}")
 message(STATUS "** JSONCPP_LIBRARIES: ${JSONCPP_LIBRARIES}")
 
@@ -126,14 +82,12 @@ IF (WIN32)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 ELSE ()
     set(C_FLAGS
-            #-g
             -Wall
             -Wno-deprecated
             -fPIC
             -fno-strict-aliasing
             )
     set(CXX_FLAGS
-            #-g
             -Wall
             -Wno-deprecated
             -fPIC
@@ -173,8 +127,8 @@ ELSE ()
     string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
     string(REPLACE ";" " " CMAKE_C_FLAGS "${C_FLAGS}")
 
-    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -DDEBUG")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -DDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 
 
     # Declare deplibs, so we can use list in linker later. There's probably
@@ -191,24 +145,7 @@ ELSE ()
         list(APPEND deplibs rt)
     endif ()
     list(APPEND deplibs z)
-    # Code Coverage Configuration
-    add_library(coverage_config INTERFACE)
 
-    option(CODE_COVERAGE "Enable coverage reporting" OFF)
-    if (CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        # Add required flags (GCC & LLVM/Clang)
-        target_compile_options(coverage_config INTERFACE
-                -O0        # no optimization
-                -g         # generate debug info
-                --coverage # sets all required flags
-                )
-        if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
-            target_link_options(coverage_config INTERFACE --coverage)
-        else ()
-            target_link_libraries(coverage_config INTERFACE --coverage)
-        endif ()
-        list(APPEND deplibs coverage_config)
-    endif (CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     # add include dir for bsd (posix uses /usr/include/)
     set(CMAKE_INCLUDE_PATH "${CMAKE_INCLUDE_PATH}:/usr/local/include")
 ENDIF ()
@@ -242,8 +179,7 @@ add_subdirectory(example)
 option(RUN_UNIT_TEST "RUN_UNIT_TEST" OFF)
 
 if (RUN_UNIT_TEST)
-    message(STATUS "** RUN_UNIT_TEST: ${RUN_UNIT_TEST} Do execution testing")
-    enable_testing()
+    message(STATUS "** RUN_UNIT_TEST: Do execution testing")
     add_subdirectory(test)
 endif ()
 

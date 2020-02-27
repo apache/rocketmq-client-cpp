@@ -16,80 +16,89 @@
  */
 #include "ResponseFuture.h"
 
-#include <chrono>
-
-#include "Logging.h"
-#include "TcpRemotingClient.h"
+#include "UtilAll.h"
 
 namespace rocketmq {
 
-//<!************************************************************************
-ResponseFuture::ResponseFuture(int requestCode,
-                               int opaque,
-                               TcpRemotingClient* powner,
-                               int64 timeout,
-                               bool bAsync,
-                               AsyncCallbackWrap* pCallback)
+ResponseFuture::ResponseFuture(int requestCode, int opaque, int64_t timeoutMillis, InvokeCallback* invokeCallback)
     : m_requestCode(requestCode),
       m_opaque(opaque),
-      m_timeout(timeout),
-      m_bAsync(bAsync),
-      m_pCallbackWrap(pCallback),
-      m_asyncCallbackStatus(ASYNC_CALLBACK_STATUS_INIT),
-      m_haveResponse(false),
+      m_timeoutMillis(timeoutMillis),
+      m_invokeCallback(invokeCallback),
+      m_responseCommand(nullptr),
+      m_beginTimestamp(UtilAll::currentTimeMillis()),
       m_sendRequestOK(false),
-      m_pResponseCommand(nullptr),
-      m_maxRetrySendTimes(1),
-      m_retrySendTimes(1) {
-  m_brokerAddr = "";
-  m_beginTimestamp = UtilAll::currentTimeMillis();
+      m_countDownLatch(nullptr) {
+  if (nullptr == invokeCallback) {
+    m_countDownLatch.reset(new latch(1));
+  }
 }
 
-ResponseFuture::~ResponseFuture() {
-  deleteAndZero(m_pCallbackWrap);
-  /*
-    do not delete m_pResponseCommand when destruct, as m_pResponseCommand
-    is used by MQClientAPIImpl concurrently, and will be released by producer or consumer;
-   */
-}
+ResponseFuture::~ResponseFuture() {}
 
 void ResponseFuture::releaseThreadCondition() {
-  m_defaultEvent.notify_all();
+  if (m_countDownLatch != nullptr) {
+    m_countDownLatch->count_down();
+  }
 }
 
-RemotingCommand* ResponseFuture::waitResponse(int timeoutMillis) {
-  std::unique_lock<std::mutex> eventLock(m_defaultEventLock);
-  if (!m_haveResponse) {
+bool ResponseFuture::hasInvokeCallback() {
+  // if m_invokeCallback is set, this is an async future.
+  return m_invokeCallback != nullptr;
+}
+
+InvokeCallback* ResponseFuture::releaseInvokeCallback() {
+  return m_invokeCallback.release();
+}
+
+void ResponseFuture::executeInvokeCallback() noexcept {
+  if (m_invokeCallback != nullptr) {
+    m_invokeCallback->operationComplete(this);
+  }
+}
+
+std::unique_ptr<RemotingCommand> ResponseFuture::waitResponse(int timeoutMillis) {
+  if (m_countDownLatch != nullptr) {
     if (timeoutMillis <= 0) {
-      timeoutMillis = m_timeout;
+      timeoutMillis = m_timeoutMillis;
     }
-    if (m_defaultEvent.wait_for(eventLock, std::chrono::milliseconds(timeoutMillis)) == std::cv_status::timeout) {
-      LOG_WARN("waitResponse of code:%d with opaque:%d timeout", m_requestCode, m_opaque);
-      m_haveResponse = true;
-    }
+    m_countDownLatch->wait(timeoutMillis, time_unit::milliseconds);
   }
-  return m_pResponseCommand;
+  return std::move(m_responseCommand);
 }
 
-bool ResponseFuture::setResponse(RemotingCommand* pResponseCommand) {
-  std::unique_lock<std::mutex> eventLock(m_defaultEventLock);
-
-  if (m_haveResponse) {
-    return false;
+void ResponseFuture::putResponse(std::unique_ptr<RemotingCommand> responseCommand) {
+  m_responseCommand = std::move(responseCommand);
+  if (m_countDownLatch != nullptr) {
+    m_countDownLatch->count_down();
   }
-
-  m_pResponseCommand = pResponseCommand;
-  m_haveResponse = true;
-
-  if (!getAsyncFlag()) {
-    m_defaultEvent.notify_all();
-  }
-
-  return true;
 }
 
-const bool ResponseFuture::getAsyncFlag() {
-  return m_bAsync;
+std::unique_ptr<RemotingCommand> ResponseFuture::getResponseCommand() {
+  return std::move(m_responseCommand);
+}
+
+void ResponseFuture::setResponseCommand(std::unique_ptr<RemotingCommand> responseCommand) {
+  m_responseCommand = std::move(responseCommand);
+}
+
+int64_t ResponseFuture::getBeginTimestamp() {
+  return m_beginTimestamp;
+}
+
+int64_t ResponseFuture::getTimeoutMillis() {
+  return m_timeoutMillis;
+}
+
+bool ResponseFuture::isTimeout() const {
+  auto diff = UtilAll::currentTimeMillis() - m_beginTimestamp;
+  return diff > m_timeoutMillis;
+}
+
+int64_t ResponseFuture::leftTime() const {
+  auto diff = UtilAll::currentTimeMillis() - m_beginTimestamp;
+  auto left = m_timeoutMillis - diff;
+  return left < 0 ? 0 : left;
 }
 
 bool ResponseFuture::isSendRequestOK() const {
@@ -108,75 +117,4 @@ int ResponseFuture::getRequestCode() const {
   return m_requestCode;
 }
 
-void ResponseFuture::invokeCompleteCallback() {
-  if (m_pCallbackWrap == nullptr) {
-    deleteAndZero(m_pResponseCommand);
-    return;
-  } else {
-    m_pCallbackWrap->operationComplete(this, true);
-  }
-}
-
-void ResponseFuture::invokeExceptionCallback() {
-  if (m_pCallbackWrap == nullptr) {
-    LOG_ERROR("m_pCallbackWrap is NULL, critical error");
-    return;
-  } else {
-    // here no need retrySendTimes process because of it have timeout
-    LOG_ERROR("send msg, callback timeout, opaque:%d, sendTimes:%d, maxRetryTimes:%d", getOpaque(), getRetrySendTimes(),
-              getMaxRetrySendTimes());
-
-    m_pCallbackWrap->onException();
-  }
-}
-
-bool ResponseFuture::isTimeOut() const {
-  int64 diff = UtilAll::currentTimeMillis() - m_beginTimestamp;
-  //<!only async;
-  return m_bAsync && diff > m_timeout;
-}
-
-int ResponseFuture::getMaxRetrySendTimes() const {
-  return m_maxRetrySendTimes;
-}
-int ResponseFuture::getRetrySendTimes() const {
-  return m_retrySendTimes;
-}
-
-void ResponseFuture::setMaxRetrySendTimes(int maxRetryTimes) {
-  m_maxRetrySendTimes = maxRetryTimes;
-}
-void ResponseFuture::setRetrySendTimes(int retryTimes) {
-  m_retrySendTimes = retryTimes;
-}
-
-void ResponseFuture::setBrokerAddr(const std::string& brokerAddr) {
-  m_brokerAddr = brokerAddr;
-}
-
-std::string ResponseFuture::getBrokerAddr() const {
-  return m_brokerAddr;
-}
-
-void ResponseFuture::setRequestCommand(const RemotingCommand& requestCommand) {
-  m_requestCommand = requestCommand;
-}
-const RemotingCommand& ResponseFuture::getRequestCommand() {
-  return m_requestCommand;
-}
-
-int64 ResponseFuture::leftTime() const {
-  int64 diff = UtilAll::currentTimeMillis() - m_beginTimestamp;
-  return m_timeout - diff;
-}
-
-RemotingCommand* ResponseFuture::getCommand() const {
-  return m_pResponseCommand;
-}
-
-AsyncCallbackWrap* ResponseFuture::getAsyncCallbackWrap() {
-  return m_pCallbackWrap;
-}
-
-//<!************************************************************************
 }  // namespace rocketmq

@@ -67,27 +67,7 @@ TEST(lockBatchBody, LockBatchRequestBody) {
   EXPECT_EQ(root["consumerGroup"], "testGroup");
 }
 
-TEST(lockBatchBody, UnlockBatchRequestBody) {
-  UnlockBatchRequestBody uRB;
-  uRB.setClientId("testClient");
-  EXPECT_EQ(uRB.getClientId(), "testClient");
-  uRB.setConsumerGroup("testGroup");
-  EXPECT_EQ(uRB.getConsumerGroup(), "testGroup");
-
-  // message queue
-  EXPECT_TRUE(uRB.getMqSet().empty());
-  vector<MQMessageQueue> mqs;
-  MQMessageQueue mqA("testTopic", "testBrokerA", 1);
-  mqs.push_back(mqA);
-  MQMessageQueue mqB("testTopic", "testBrokerB", 2);
-  mqs.push_back(mqB);
-  uRB.setMqSet(mqs);
-  EXPECT_EQ(uRB.getMqSet().size(), 2);
-  string outData;
-  uRB.Encode(outData);
-  EXPECT_GT(outData.length(), 1);
-  EXPECT_NE(outData.find("testTopic"), string::npos);
-}
+TEST(lockBatchBody, UnlockBatchRequestBody) {}
 
 TEST(lockBatchBody, LockBatchResponseBody) {
   Json::Value root;

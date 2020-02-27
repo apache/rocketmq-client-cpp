@@ -14,91 +14,61 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __RESPONSEFUTURE_H__
-#define __RESPONSEFUTURE_H__
+#ifndef __RESPONSE_FUTURE_H__
+#define __RESPONSE_FUTURE_H__
 
-#include <atomic>
-#include <condition_variable>
+#include "concurrent/latch.hpp"
 
-#include "AsyncCallbackWrap.h"
+#include "InvokeCallback.h"
 #include "RemotingCommand.h"
-#include "UtilAll.h"
 
 namespace rocketmq {
 
-typedef enum AsyncCallbackStatus {
-  ASYNC_CALLBACK_STATUS_INIT = 0,
-  ASYNC_CALLBACK_STATUS_RESPONSE = 1,
-  ASYNC_CALLBACK_STATUS_TIMEOUT = 2
-} AsyncCallbAackStatus;
-
-class TcpRemotingClient;
-//<!***************************************************************************
 class ResponseFuture {
  public:
-  ResponseFuture(int requestCode,
-                 int opaque,
-                 TcpRemotingClient* powner,
-                 int64 timeoutMilliseconds,
-                 bool bAsync = false,
-                 AsyncCallbackWrap* pCallback = nullptr);
+  ResponseFuture(int requestCode, int opaque, int64_t timeoutMillis, InvokeCallback* invokeCallback = nullptr);
   virtual ~ResponseFuture();
 
   void releaseThreadCondition();
-  RemotingCommand* waitResponse(int timeoutMillis = 0);
-  RemotingCommand* getCommand() const;
 
-  bool setResponse(RemotingCommand* pResponseCommand);
+  bool hasInvokeCallback();
+  InvokeCallback* releaseInvokeCallback();
+
+  void executeInvokeCallback() noexcept;
+
+  // for sync request
+  std::unique_ptr<RemotingCommand> waitResponse(int timeoutMillis = 0);
+  void putResponse(std::unique_ptr<RemotingCommand> responseCommand);
+
+  // for async request
+  std::unique_ptr<RemotingCommand> getResponseCommand();
+  void setResponseCommand(std::unique_ptr<RemotingCommand> responseCommand);
+
+  int64_t getBeginTimestamp();
+  int64_t getTimeoutMillis();
+  bool isTimeout() const;
+  int64_t leftTime() const;
 
   bool isSendRequestOK() const;
-  void setSendRequestOK(bool sendRequestOK);
+  void setSendRequestOK(bool sendRequestOK = true);
+
   int getRequestCode() const;
   int getOpaque() const;
-
-  //<!callback;
-  void invokeCompleteCallback();
-  void invokeExceptionCallback();
-  bool isTimeOut() const;
-  int getMaxRetrySendTimes() const;
-  int getRetrySendTimes() const;
-  int64 leftTime() const;
-  const bool getAsyncFlag();
-  AsyncCallbackWrap* getAsyncCallbackWrap();
-
-  void setMaxRetrySendTimes(int maxRetryTimes);
-  void setRetrySendTimes(int retryTimes);
-  void setBrokerAddr(const std::string& brokerAddr);
-  void setRequestCommand(const RemotingCommand& requestCommand);
-  const RemotingCommand& getRequestCommand();
-  std::string getBrokerAddr() const;
 
  private:
   int m_requestCode;
   int m_opaque;
-  int64 m_timeout;  // ms
+  int64_t m_timeoutMillis;
+  std::unique_ptr<InvokeCallback> m_invokeCallback;
 
-  const bool m_bAsync;
-  AsyncCallbackWrap* m_pCallbackWrap;
+  std::unique_ptr<RemotingCommand> m_responseCommand;
 
-  AsyncCallbackStatus m_asyncCallbackStatus;
-  std::mutex m_asyncCallbackLock;
-
-  bool m_haveResponse;
-  std::mutex m_defaultEventLock;
-  std::condition_variable m_defaultEvent;
-
-  int64 m_beginTimestamp;
+  int64_t m_beginTimestamp;
   bool m_sendRequestOK;
-  RemotingCommand* m_pResponseCommand;  //<!delete outside;
 
-  int m_maxRetrySendTimes;
-  int m_retrySendTimes;
-
-  std::string m_brokerAddr;
-  RemotingCommand m_requestCommand;
+  std::unique_ptr<latch> m_countDownLatch;  // use for synchronization rpc
 };
 
-//<!************************************************************************
 }  // namespace rocketmq
 
-#endif
+#endif  // __RESPONSE_FUTURE_H__

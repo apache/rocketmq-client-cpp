@@ -14,15 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PULLRESULT_H__
-#define __PULLRESULT_H__
+#ifndef __PULL_RESULT_H__
+#define __PULL_RESULT_H__
 
+#include <memory>
 #include <sstream>
+
 #include "MQMessageExt.h"
-#include "RocketMQClient.h"
 
 namespace rocketmq {
-//<!***************************************************************************
+
 enum PullStatus {
   FOUND,
   NO_NEW_MSG,
@@ -33,22 +34,26 @@ enum PullStatus {
 
 static const char* EnumStrings[] = {"FOUND", "NO_NEW_MSG", "NO_MATCHED_MSG", "OFFSET_ILLEGAL", "BROKER_TIMEOUT"};
 
-//<!***************************************************************************
 class ROCKETMQCLIENT_API PullResult {
  public:
   PullResult();
   PullResult(PullStatus status);
-  PullResult(PullStatus pullStatus, int64 nextBeginOffset, int64 minOffset, int64 maxOffset);
+  PullResult(PullStatus pullStatus, int64_t nextBeginOffset, int64_t minOffset, int64_t maxOffset);
 
   PullResult(PullStatus pullStatus,
-             int64 nextBeginOffset,
-             int64 minOffset,
-             int64 maxOffset,
-             const std::vector<MQMessageExt>& src);
+             int64_t nextBeginOffset,
+             int64_t minOffset,
+             int64_t maxOffset,
+             const std::vector<MQMessageExtPtr2>& src);
+  PullResult(PullStatus pullStatus,
+             int64_t nextBeginOffset,
+             int64_t minOffset,
+             int64_t maxOffset,
+             std::vector<MQMessageExtPtr2>&& src);
 
   virtual ~PullResult();
 
-  std::string toString() {
+  std::string toString() const {
     std::stringstream ss;
     ss << "PullResult [ pullStatus=" << EnumStrings[pullStatus] << ", nextBeginOffset=" << nextBeginOffset
        << ", minOffset=" << minOffset << ", maxOffset=" << maxOffset << ", msgFoundList=" << msgFoundList.size()
@@ -58,11 +63,12 @@ class ROCKETMQCLIENT_API PullResult {
 
  public:
   PullStatus pullStatus;
-  int64 nextBeginOffset;
-  int64 minOffset;
-  int64 maxOffset;
-  std::vector<MQMessageExt> msgFoundList;
+  int64_t nextBeginOffset;
+  int64_t minOffset;
+  int64_t maxOffset;
+  std::vector<MQMessageExtPtr2> msgFoundList;
 };
-//<!***************************************************************************
+
 }  // namespace rocketmq
-#endif
+
+#endif  // __PULL_RESULT_H__

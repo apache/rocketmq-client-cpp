@@ -14,15 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __SESSION_CREDENTIALS_H__
+#define __SESSION_CREDENTIALS_H__
 
-#ifndef __SESSIONCREDENTIALS_H__
-#define __SESSIONCREDENTIALS_H__
+#include <string>
 
 #include "RocketMQClient.h"
 
 namespace rocketmq {
 
-class SessionCredentials {
+class ROCKETMQCLIENT_API SessionCredentials {
  public:
   static const std::string AccessKey;
   static const std::string SecretKey;
@@ -30,44 +31,37 @@ class SessionCredentials {
   static const std::string SignatureMethod;
   static const std::string ONSChannelKey;
 
-  SessionCredentials(std::string input_accessKey, std::string input_secretKey, const std::string& input_authChannel)
-      : accessKey(input_accessKey), secretKey(input_secretKey), authChannel(input_authChannel) {}
-  SessionCredentials() : authChannel("ALIYUN") {}
-  ~SessionCredentials() {}
+  SessionCredentials() : authChannel_("ALIYUN") {}
+  SessionCredentials(const std::string& accessKey, const std::string& secretKey, const std::string& authChannel)
+      : accessKey_(accessKey), secretKey_(secretKey), authChannel_(authChannel) {}
 
-  std::string getAccessKey() const { return accessKey; }
+  ~SessionCredentials() = default;
 
-  void setAccessKey(std::string input_accessKey) { accessKey = input_accessKey; }
+  const std::string& getAccessKey() const { return accessKey_; }
+  void setAccessKey(const std::string& accessKey) { accessKey_ = accessKey; }
 
-  std::string getSecretKey() const { return secretKey; }
+  const std::string& getSecretKey() const { return secretKey_; }
+  void setSecretKey(const std::string& secretKey) { secretKey_ = secretKey; }
 
-  void setSecretKey(std::string input_secretKey) { secretKey = input_secretKey; }
+  const std::string& getSignature() const { return signature_; }
+  void setSignature(const std::string& signature) { signature_ = signature; }
 
-  std::string getSignature() const { return signature; }
+  const std::string& getSignatureMethod() const { return signatureMethod_; }
+  void setSignatureMethod(const std::string& signatureMethod) { signatureMethod_ = signatureMethod; }
 
-  void setSignature(std::string input_signature) { signature = input_signature; }
+  const std::string& getAuthChannel() const { return authChannel_; }
+  void setAuthChannel(const std::string& channel) { authChannel_ = channel; }
 
-  std::string getSignatureMethod() const { return signatureMethod; }
-
-  void setSignatureMethod(std::string input_signatureMethod) { signatureMethod = input_signatureMethod; }
-
-  std::string getAuthChannel() const { return authChannel; }
-
-  void setAuthChannel(std::string input_channel) { authChannel = input_channel; }
-
-  bool isValid() const {
-    if (accessKey.empty() || secretKey.empty() || authChannel.empty())
-      return false;
-
-    return true;
-  }
+  bool isValid() const { return !accessKey_.empty() && !secretKey_.empty() && !authChannel_.empty(); }
 
  private:
-  std::string accessKey;
-  std::string secretKey;
-  std::string signature;
-  std::string signatureMethod;
-  std::string authChannel;
+  std::string accessKey_;
+  std::string secretKey_;
+  std::string signature_;
+  std::string signatureMethod_;
+  std::string authChannel_;
 };
+
 }  // namespace rocketmq
-#endif
+
+#endif  // __SESSION_CREDENTIALS_H__

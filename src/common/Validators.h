@@ -18,24 +18,26 @@
 #define __VALIDATORST_H__
 
 #include <string>
+
 #include "MQClientException.h"
 #include "MQMessage.h"
 #include "UtilAll.h"
+
 namespace rocketmq {
-//<!***************************************************************************
+
 class Validators {
  public:
-  static bool regularExpressionMatcher(const string& origin, const string& patternStr);
-  static string getGroupWithRegularExpression(const string& origin, const string& patternStr);
-  static void checkTopic(const string& topic);
-  static void checkGroup(const string& group);
+  static bool regularExpressionMatcher(const std::string& origin, const std::string& patternStr);
+  static std::string getGroupWithRegularExpression(const std::string& origin, const std::string& patternStr);
+  static void checkTopic(const std::string& topic);
+  static void checkGroup(const std::string& group);
   static void checkMessage(const MQMessage& msg, int maxMessageSize);
 
  public:
-  static const string validPatternStr;
+  static const std::string validPatternStr;
   static const int CHARACTER_MAX_LENGTH;
 };
 
-//<!***************************************************************************
-}  //<!end namespace;
-#endif
+}  // namespace rocketmq
+
+#endif  // __VALIDATORST_H__

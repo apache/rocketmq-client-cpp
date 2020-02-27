@@ -14,25 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MESSAGESYSFLAG_H__
-#define __MESSAGESYSFLAG_H__
+#ifndef __MESSAGE_SYS_FLAG_H__
+#define __MESSAGE_SYS_FLAG_H__
 
 namespace rocketmq {
-//<!************************************************************************
+
 class MessageSysFlag {
  public:
   static int getTransactionValue(int flag);
   static int resetTransactionValue(int flag, int type);
 
+  static int clearCompressedFlag(int flag);
+
  public:
-  static int CompressedFlag;
-  static int MultiTagsFlag;
-  static int TransactionNotType;
-  static int TransactionPreparedType;
-  static int TransactionCommitType;
-  static int TransactionRollbackType;
+  static const int CompressedFlag;
+  static const int MultiTagsFlag;
+
+  static const int TransactionNotType;
+  static const int TransactionPreparedType;
+  static const int TransactionCommitType;
+  static const int TransactionRollbackType;
 };
 
-//<!***************************************************************************
-}  //<!end namespace;
-#endif
+}  // namespace rocketmq
+
+#endif  // __MESSAGE_SYS_FLAG_H__

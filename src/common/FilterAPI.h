@@ -14,48 +14,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef __FILTERAPI_H__
-#define __FILTERAPI_H__
+#ifndef __FILTER_API_H__
+#define __FILTER_API_H__
 
 #include <string>
+
 #include "MQClientException.h"
 #include "SubscriptionData.h"
 #include "UtilAll.h"
+
 namespace rocketmq {
-//<!***************************************************************************
+
 class FilterAPI {
  public:
-  static SubscriptionData* buildSubscriptionData(const string topic, const string& subString) {
-    //<!delete in balance;
-    SubscriptionData* subscriptionData = new SubscriptionData(topic, subString);
+  static SubscriptionDataPtr buildSubscriptionData(const std::string& topic, const std::string& subString) {
+    // delete in Rebalance
+    std::unique_ptr<SubscriptionData> subscriptionData(new SubscriptionData(topic, subString));
 
     if (subString.empty() || !subString.compare(SUB_ALL)) {
       subscriptionData->setSubString(SUB_ALL);
     } else {
-      vector<string> out;
-      UtilAll::Split(out, subString, "||");
+      std::vector<std::string> tags;
+      UtilAll::Split(tags, subString, "||");
 
-      if (out.empty()) {
-        THROW_MQEXCEPTION(MQClientException, "FilterAPI subString split error", -1);
-      }
-
-      for (size_t i = 0; i < out.size(); i++) {
-        string tag = out[i];
-        if (!tag.empty()) {
-          UtilAll::Trim(tag);
+      if (!tags.empty()) {
+        for (auto tag : tags) {
           if (!tag.empty()) {
-            subscriptionData->putTagsSet(tag);
-            subscriptionData->putCodeSet(tag);
+            UtilAll::Trim(tag);
+            if (!tag.empty()) {
+              subscriptionData->putTagsSet(tag);
+              subscriptionData->putCodeSet(UtilAll::HashCode(tag));
+            }
           }
         }
+      } else {
+        THROW_MQEXCEPTION(MQClientException, "FilterAPI subString split error", -1);
       }
     }
 
-    return subscriptionData;
+    return subscriptionData.release();
   }
 };
 
-//<!***************************************************************************
-}  //<!end namespace;
-#endif
+}  // namespace rocketmq
+
+#endif  // __FILTER_API_H__

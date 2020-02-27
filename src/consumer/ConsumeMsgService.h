@@ -14,101 +14,97 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __CONSUME_MESSAGE_SERVICE_H__
+#define __CONSUME_MESSAGE_SERVICE_H__
 
-#ifndef _CONSUMEMESSAGESERVICE_H_
-#define _CONSUMEMESSAGESERVICE_H_
-
-#include <boost/asio.hpp>
-#include <boost/asio/io_service.hpp>
-#include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/thread/thread.hpp>
+#include "DefaultMQPushConsumerImpl.h"
 #include "Logging.h"
 #include "MQMessageListener.h"
+#include "MessageQueueLock.hpp"
 #include "PullRequest.h"
+#include "concurrent/executor.hpp"
 
 namespace rocketmq {
-class MQConsumer;
-//<!***************************************************************************
+
 class ConsumeMsgService {
  public:
-  ConsumeMsgService() {}
-  virtual ~ConsumeMsgService() {}
+  ConsumeMsgService() = default;
+  virtual ~ConsumeMsgService() = default;
+
   virtual void start() {}
   virtual void shutdown() {}
-  virtual void stopThreadPool() {}
-  virtual void submitConsumeRequest(boost::weak_ptr<PullRequest> request, vector<MQMessageExt>& msgs) {}
-  virtual MessageListenerType getConsumeMsgSerivceListenerType() { return messageListenerDefaultly; }
+  virtual void submitConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
+                                    ProcessQueuePtr processQueue,
+                                    const MQMessageQueue& messageQueue,
+                                    const bool dispathToConsume) = 0;
 };
 
 class ConsumeMessageConcurrentlyService : public ConsumeMsgService {
  public:
-  ConsumeMessageConcurrentlyService(MQConsumer*, int threadCount, MQMessageListener* msgListener);
-  virtual ~ConsumeMessageConcurrentlyService();
-  virtual void start();
-  virtual void shutdown();
-  virtual void submitConsumeRequest(boost::weak_ptr<PullRequest> request, vector<MQMessageExt>& msgs);
-  virtual MessageListenerType getConsumeMsgSerivceListenerType();
-  virtual void stopThreadPool();
+  ConsumeMessageConcurrentlyService(DefaultMQPushConsumerImpl*, int threadCount, MQMessageListener* msgListener);
+  ~ConsumeMessageConcurrentlyService() override;
 
-  void ConsumeRequest(boost::weak_ptr<PullRequest> request, vector<MQMessageExt>& msgs);
-  void submitConsumeRequestLater(boost::weak_ptr<PullRequest> request, vector<MQMessageExt>& msgs, int millis);
+  void start() override;
+  void shutdown() override;
 
-  void triggersubmitConsumeRequestLater(boost::asio::deadline_timer* t,
-                                        boost::weak_ptr<PullRequest> pullRequest,
-                                        vector<MQMessageExt>& msgs);
-  static void static_submitConsumeRequest(void* context,
-                                          boost::asio::deadline_timer* t,
-                                          boost::weak_ptr<PullRequest> pullRequest,
-                                          vector<MQMessageExt>& msgs);
+  void submitConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
+                            ProcessQueuePtr processQueue,
+                            const MQMessageQueue& messageQueue,
+                            const bool dispathToConsume) override;
+
+  void ConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
+                      ProcessQueuePtr processQueue,
+                      const MQMessageQueue& messageQueue);
 
  private:
-  void resetRetryTopic(vector<MQMessageExt>& msgs);
+  void submitConsumeRequestLater(std::vector<MQMessageExtPtr2>& msgs,
+                                 ProcessQueuePtr processQueue,
+                                 const MQMessageQueue& messageQueue);
 
  private:
-  MQConsumer* m_pConsumer;
-  MQMessageListener* m_pMessageListener;
-  boost::asio::io_service m_ioService;
-  boost::thread_group m_threadpool;
-  boost::asio::io_service::work m_ioServiceWork;
+  DefaultMQPushConsumerImpl* m_consumer;
+  MQMessageListener* m_messageListener;
+
+  thread_pool_executor m_consumeExecutor;
+  scheduled_thread_pool_executor m_scheduledExecutorService;
 };
 
 class ConsumeMessageOrderlyService : public ConsumeMsgService {
  public:
-  ConsumeMessageOrderlyService(MQConsumer*, int threadCount, MQMessageListener* msgListener);
-  virtual ~ConsumeMessageOrderlyService();
-  virtual void start();
-  virtual void shutdown();
-  virtual void submitConsumeRequest(boost::weak_ptr<PullRequest> request, vector<MQMessageExt>& msgs);
-  virtual void stopThreadPool();
-  virtual MessageListenerType getConsumeMsgSerivceListenerType();
+  ConsumeMessageOrderlyService(DefaultMQPushConsumerImpl*, int threadCount, MQMessageListener* msgListener);
+  ~ConsumeMessageOrderlyService() override;
 
-  void boost_asio_work();
-  // void tryLockLaterAndReconsume(boost::weak_ptr<PullRequest> request, bool tryLockMQ);
-  void tryLockLaterAndReconsumeDelay(boost::weak_ptr<PullRequest> request, bool tryLockMQ, int millisDelay);
-  static void static_submitConsumeRequestLater(void* context,
-                                               boost::weak_ptr<PullRequest> request,
-                                               bool tryLockMQ,
-                                               boost::asio::deadline_timer* t);
-  void ConsumeRequest(boost::weak_ptr<PullRequest> request);
-  void lockMQPeriodically(boost::system::error_code& ec, boost::asio::deadline_timer* t);
+  void start() override;
+  void shutdown() override;
+  void stopThreadPool();
+
+  void submitConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
+                            ProcessQueuePtr processQueue,
+                            const MQMessageQueue& messageQueue,
+                            const bool dispathToConsume) override;
+  void submitConsumeRequestLater(ProcessQueuePtr processQueue,
+                                 const MQMessageQueue& messageQueue,
+                                 const long suspendTimeMillis);
+  void tryLockLaterAndReconsume(const MQMessageQueue& mq, ProcessQueuePtr processQueue, const long delayMills);
+
+  void ConsumeRequest(ProcessQueuePtr processQueue, const MQMessageQueue& messageQueue);
+
+  void lockMQPeriodically();
   void unlockAllMQ();
   bool lockOneMQ(const MQMessageQueue& mq);
 
  private:
-  MQConsumer* m_pConsumer;
-  bool m_shutdownInprogress;
-  MQMessageListener* m_pMessageListener;
-  uint64_t m_MaxTimeConsumeContinuously;
-  boost::asio::io_service m_ioService;
-  boost::thread_group m_threadpool;
-  boost::asio::io_service::work m_ioServiceWork;
-  boost::asio::io_service m_async_ioService;
-  boost::scoped_ptr<boost::thread> m_async_service_thread;
+  static const uint64_t MaxTimeConsumeContinuously;
+
+ private:
+  DefaultMQPushConsumerImpl* m_consumer;
+  MQMessageListener* m_messageListener;
+
+  MessageQueueLock m_messageQueueLock;
+  thread_pool_executor m_consumeExecutor;
+  scheduled_thread_pool_executor m_scheduledExecutorService;
 };
 
-//<!***************************************************************************
 }  // namespace rocketmq
 
-#endif  //<! _CONSUMEMESSAGESERVICE_H_
+#endif  // __CONSUME_MESSAGE_SERVICE_H__

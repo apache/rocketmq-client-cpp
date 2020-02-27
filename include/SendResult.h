@@ -14,18 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SENDRESULT_H__
-#define __SENDRESULT_H__
+#ifndef __SEND_RESULT_H__
+#define __SEND_RESULT_H__
 
 #include "MQMessageQueue.h"
-#include "RocketMQClient.h"
 
 namespace rocketmq {
-//<!***************************************************************************
-//<!all to Master;
+
+// all to Master;
 enum SendStatus { SEND_OK, SEND_FLUSH_DISK_TIMEOUT, SEND_FLUSH_SLAVE_TIMEOUT, SEND_SLAVE_NOT_AVAILABLE };
 
-//<!***************************************************************************
 class ROCKETMQCLIENT_API SendResult {
  public:
   SendResult();
@@ -33,21 +31,22 @@ class ROCKETMQCLIENT_API SendResult {
              const std::string& msgId,
              const std::string& offsetMsgId,
              const MQMessageQueue& messageQueue,
-             int64 queueOffset);
+             int64_t queueOffset);
 
-  virtual ~SendResult();
   SendResult(const SendResult& other);
   SendResult& operator=(const SendResult& other);
 
-  void setTransactionId(const std::string& id) { m_transactionId = id; }
+  virtual ~SendResult();
 
-  std::string getTransactionId() { return m_transactionId; }
-
+  SendStatus getSendStatus() const;
   const std::string& getMsgId() const;
   const std::string& getOffsetMsgId() const;
-  SendStatus getSendStatus() const;
-  MQMessageQueue getMessageQueue() const;
-  int64 getQueueOffset() const;
+  const MQMessageQueue& getMessageQueue() const;
+  int64_t getQueueOffset() const;
+
+  const std::string& getTransactionId() const { return m_transactionId; }
+  void setTransactionId(const std::string& id) { m_transactionId = id; }
+
   std::string toString() const;
 
  private:
@@ -55,10 +54,10 @@ class ROCKETMQCLIENT_API SendResult {
   std::string m_msgId;
   std::string m_offsetMsgId;
   MQMessageQueue m_messageQueue;
-  int64 m_queueOffset;
+  int64_t m_queueOffset;
   std::string m_transactionId;
 };
 
-//<!***************************************************************************
 }  // namespace rocketmq
-#endif
+
+#endif  // __SEND_RESULT_H__

@@ -14,18 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TOPICROUTEDATA_H__
-#define __TOPICROUTEDATA_H__
+#ifndef __TOPIC_ROUTE_DATA_H__
+#define __TOPIC_ROUTE_DATA_H__
+
 #include <algorithm>
 #include <cstdlib>
+#include <memory>
+
+#include <json/json.h>
+
+#include "DataBlock.h"
 #include "Logging.h"
+#include "RemotingSerializable.h"
 #include "UtilAll.h"
-#include "dataBlock.h"
-#include "json/json.h"
 
 namespace rocketmq {
 
-//<!***************************************************************************
 struct QueueData {
   std::string brokerName;
   int readQueueNums;
@@ -40,10 +44,9 @@ struct QueueData {
   }
 };
 
-//<!***************************************************************************
 struct BrokerData {
   std::string brokerName;
-  std::map<int, string> brokerAddrs;  //<!0:master,1,2.. slave
+  std::map<int, std::string> brokerAddrs;  // master:0; slave:1,2,3,etc.
 
   bool operator<(const BrokerData& other) const { return brokerName < other.brokerName; }
 
@@ -52,37 +55,18 @@ struct BrokerData {
   }
 };
 
-//<!************************************************************************/
+class TopicRouteData;
+typedef std::shared_ptr<TopicRouteData> TopicRouteDataPtr;
+
 class TopicRouteData {
  public:
-  virtual ~TopicRouteData() {
-    m_brokerDatas.clear();
-    m_queueDatas.clear();
-  }
+  static TopicRouteData* Decode(MemoryBlock& mem) {
+    Json::Value root = RemotingSerializable::fromJson(mem);
 
-  static TopicRouteData* Decode(const MemoryBlock* mem) {
-    //<!see doc/TopicRouteData.json;
-    const char* const pData = static_cast<const char*>(mem->getData());
-    string data(pData, mem->getSize());
-
-    Json::CharReaderBuilder charReaderBuilder;
-    charReaderBuilder.settings_["allowNumericKeys"] = true;
-    unique_ptr<Json::CharReader> pCharReaderPtr(charReaderBuilder.newCharReader());
-
-    const char* begin = pData;
-    const char* end = pData + mem->getSize();
-    Json::Value root;
-    string errs;
-
-    if (!pCharReaderPtr->parse(begin, end, &root, &errs)) {
-      LOG_ERROR("parse json error:%s, value isArray:%d, isObject:%d", errs.c_str(), root.isArray(), root.isObject());
-      return nullptr;
-    }
-
-    auto* trd = new TopicRouteData();
+    std::unique_ptr<TopicRouteData> trd(new TopicRouteData());
     trd->setOrderTopicConf(root["orderTopicConf"].asString());
 
-    Json::Value qds = root["queueDatas"];
+    auto& qds = root["queueDatas"];
     for (auto qd : qds) {
       QueueData d;
       d.brokerName = qd["brokerName"].asString();
@@ -93,7 +77,7 @@ class TopicRouteData {
     }
     sort(trd->getQueueDatas().begin(), trd->getQueueDatas().end());
 
-    Json::Value bds = root["brokerDatas"];
+    auto& bds = root["brokerDatas"];
     for (auto bd : bds) {
       BrokerData d;
       d.brokerName = bd["brokerName"].asString();
@@ -101,8 +85,8 @@ class TopicRouteData {
       Json::Value bas = bd["brokerAddrs"];
       Json::Value::Members mbs = bas.getMemberNames();
       for (const auto& key : mbs) {
-        int id = atoi(key.c_str());
-        string addr = bas[key].asString();
+        int id = std::stoi(key);
+        std::string addr = bas[key].asString();
         d.brokerAddrs[id] = addr;
         LOG_DEBUG("brokerId:%d, brokerAddr:%s", id, addr.c_str());
       }
@@ -110,7 +94,7 @@ class TopicRouteData {
     }
     sort(trd->getBrokerDatas().begin(), trd->getBrokerDatas().end());
 
-    return trd;
+    return trd.release();
   }
 
   /**
@@ -144,7 +128,7 @@ class TopicRouteData {
 
   const std::string& getOrderTopicConf() const { return m_orderTopicConf; }
 
-  void setOrderTopicConf(const string& orderTopicConf) { m_orderTopicConf = orderTopicConf; }
+  void setOrderTopicConf(const std::string& orderTopicConf) { m_orderTopicConf = orderTopicConf; }
 
   bool operator==(const TopicRouteData& other) const {
     return m_brokerDatas == other.m_brokerDatas && m_orderTopicConf == other.m_orderTopicConf &&
@@ -159,4 +143,4 @@ class TopicRouteData {
 
 }  // namespace rocketmq
 
-#endif
+#endif  // __TOPIC_ROUTE_DATA_H__

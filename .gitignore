@@ -1,7 +1,15 @@
-.idea
+# clion
+.idea/
+
+# visual studio code
+.vscode/
+.VSCodeCounter
+
+# cmake
 cmake-build-debug/
+
+# project
 bin
 build
 libs/signature/lib
 tmp_*
-Testing

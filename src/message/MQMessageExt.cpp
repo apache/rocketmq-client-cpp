@@ -15,167 +15,192 @@
  * limitations under the License.
  */
 #include "MQMessageExt.h"
+
+#include <cstring>
+
+#include "MessageClientIDSetter.h"
 #include "MessageSysFlag.h"
 #include "SocketUtil.h"
 #include "TopicFilterType.h"
 
 namespace rocketmq {
-//<!************************************************************************
+
 MQMessageExt::MQMessageExt()
-    : m_queueOffset(0),
+    : m_storeSize(0),
+      m_bodyCRC(0),
+      m_queueId(0),
+      m_queueOffset(0),
       m_commitLogOffset(0),
+      m_sysFlag(0),
       m_bornTimestamp(0),
       m_storeTimestamp(0),
-      m_preparedTransactionOffset(0),
-      m_queueId(0),
-      m_storeSize(0),
-      m_bodyCRC(0),
       m_reconsumeTimes(3),
-      m_msgId("") {}
+      m_preparedTransactionOffset(0) {
+  memset(&m_bornHost, 0, sizeof(m_bornHost));
+  memset(&m_storeHost, 0, sizeof(m_storeHost));
+}
 
 MQMessageExt::MQMessageExt(int queueId,
-                           int64 bornTimestamp,
+                           int64_t bornTimestamp,
                            sockaddr bornHost,
-                           int64 storeTimestamp,
+                           int64_t storeTimestamp,
                            sockaddr storeHost,
-                           string msgId)
-    : m_queueOffset(0),
-      m_commitLogOffset(0),
-      m_bornTimestamp(bornTimestamp),
-      m_storeTimestamp(storeTimestamp),
-      m_preparedTransactionOffset(0),
-      m_queueId(queueId),
-      m_storeSize(0),
+                           std::string msgId)
+    : m_storeSize(0),
       m_bodyCRC(0),
-      m_reconsumeTimes(3),
+      m_queueId(queueId),
+      m_queueOffset(0),
+      m_commitLogOffset(0),
+      m_sysFlag(0),
+      m_bornTimestamp(bornTimestamp),
       m_bornHost(bornHost),
+      m_storeTimestamp(storeTimestamp),
       m_storeHost(storeHost),
+      m_reconsumeTimes(3),
+      m_preparedTransactionOffset(0),
       m_msgId(msgId) {}
 
-MQMessageExt::~MQMessageExt() {}
+MQMessageExt::~MQMessageExt() = default;
 
-int MQMessageExt::getQueueId() const {
-  return m_queueId;
-}
-
-void MQMessageExt::setQueueId(int queueId) {
-  m_queueId = queueId;
-}
-
-int64 MQMessageExt::getBornTimestamp() const {
-  return m_bornTimestamp;
-}
-
-void MQMessageExt::setBornTimestamp(int64 bornTimestamp) {
-  m_bornTimestamp = bornTimestamp;
-}
-
-sockaddr MQMessageExt::getBornHost() const {
-  return m_bornHost;
-}
-
-string MQMessageExt::getBornHostString() const {
-  return socketAddress2String(m_bornHost);
-}
-
-string MQMessageExt::getBornHostNameString() const {
-  return getHostName(m_bornHost);
-}
-
-void MQMessageExt::setBornHost(const sockaddr& bornHost) {
-  m_bornHost = bornHost;
-}
-
-int64 MQMessageExt::getStoreTimestamp() const {
-  return m_storeTimestamp;
-}
-
-void MQMessageExt::setStoreTimestamp(int64 storeTimestamp) {
-  m_storeTimestamp = storeTimestamp;
-}
-
-sockaddr MQMessageExt::getStoreHost() const {
-  return m_storeHost;
-}
-
-string MQMessageExt::getStoreHostString() const {
-  return socketAddress2String(m_storeHost);
-}
-
-void MQMessageExt::setStoreHost(const sockaddr& storeHost) {
-  m_storeHost = storeHost;
-}
-
-const string& MQMessageExt::getMsgId() const {
-  return m_msgId;
-}
-
-void MQMessageExt::setMsgId(const string& msgId) {
-  m_msgId = msgId;
-}
-
-const string& MQMessageExt::getOffsetMsgId() const {
-  return m_offsetMsgId;
-}
-
-void MQMessageExt::setOffsetMsgId(const string& offsetMsgId) {
-  m_offsetMsgId = offsetMsgId;
-}
-
-int MQMessageExt::getBodyCRC() const {
-  return m_bodyCRC;
-}
-
-void MQMessageExt::setBodyCRC(int bodyCRC) {
-  m_bodyCRC = bodyCRC;
-}
-
-int64 MQMessageExt::getQueueOffset() const {
-  return m_queueOffset;
-}
-
-void MQMessageExt::setQueueOffset(int64 queueOffset) {
-  m_queueOffset = queueOffset;
-}
-
-int64 MQMessageExt::getCommitLogOffset() const {
-  return m_commitLogOffset;
-}
-
-void MQMessageExt::setCommitLogOffset(int64 physicOffset) {
-  m_commitLogOffset = physicOffset;
-}
-
-int MQMessageExt::getStoreSize() const {
-  return m_storeSize;
-}
-
-void MQMessageExt::setStoreSize(int storeSize) {
-  m_storeSize = storeSize;
-}
-
-int MQMessageExt::parseTopicFilterType(int sysFlag) {
+TopicFilterType MQMessageExt::parseTopicFilterType(int32_t sysFlag) {
   if ((sysFlag & MessageSysFlag::MultiTagsFlag) == MessageSysFlag::MultiTagsFlag) {
     return MULTI_TAG;
   }
   return SINGLE_TAG;
 }
 
-int MQMessageExt::getReconsumeTimes() const {
+int32_t MQMessageExt::getStoreSize() const {
+  return m_storeSize;
+}
+
+void MQMessageExt::setStoreSize(int32_t storeSize) {
+  m_storeSize = storeSize;
+}
+
+int32_t MQMessageExt::getBodyCRC() const {
+  return m_bodyCRC;
+}
+
+void MQMessageExt::setBodyCRC(int32_t bodyCRC) {
+  m_bodyCRC = bodyCRC;
+}
+
+int32_t MQMessageExt::getQueueId() const {
+  return m_queueId;
+}
+
+void MQMessageExt::setQueueId(int32_t queueId) {
+  m_queueId = queueId;
+}
+
+int64_t MQMessageExt::getQueueOffset() const {
+  return m_queueOffset;
+}
+
+void MQMessageExt::setQueueOffset(int64_t queueOffset) {
+  m_queueOffset = queueOffset;
+}
+
+int64_t MQMessageExt::getCommitLogOffset() const {
+  return m_commitLogOffset;
+}
+
+void MQMessageExt::setCommitLogOffset(int64_t physicOffset) {
+  m_commitLogOffset = physicOffset;
+}
+
+int32_t MQMessageExt::getSysFlag() const {
+  return m_sysFlag;
+}
+
+void MQMessageExt::setSysFlag(int32_t sysFlag) {
+  m_sysFlag = sysFlag;
+}
+
+int64_t MQMessageExt::getBornTimestamp() const {
+  return m_bornTimestamp;
+}
+
+void MQMessageExt::setBornTimestamp(int64_t bornTimestamp) {
+  m_bornTimestamp = bornTimestamp;
+}
+
+const sockaddr& MQMessageExt::getBornHost() const {
+  return m_bornHost;
+}
+
+std::string MQMessageExt::getBornHostString() const {
+  return socketAddress2String(&m_bornHost);
+}
+
+void MQMessageExt::setBornHost(const sockaddr& bornHost) {
+  m_bornHost = bornHost;
+}
+
+int64_t MQMessageExt::getStoreTimestamp() const {
+  return m_storeTimestamp;
+}
+
+void MQMessageExt::setStoreTimestamp(int64_t storeTimestamp) {
+  m_storeTimestamp = storeTimestamp;
+}
+
+const sockaddr& MQMessageExt::getStoreHost() const {
+  return m_storeHost;
+}
+
+std::string MQMessageExt::getStoreHostString() const {
+  return socketAddress2String(&m_storeHost);
+}
+
+void MQMessageExt::setStoreHost(const sockaddr& storeHost) {
+  m_storeHost = storeHost;
+}
+
+const std::string& MQMessageExt::getMsgId() const {
+  return m_msgId;
+}
+
+void MQMessageExt::setMsgId(const std::string& msgId) {
+  m_msgId = msgId;
+}
+
+int32_t MQMessageExt::getReconsumeTimes() const {
   return m_reconsumeTimes;
 }
 
-void MQMessageExt::setReconsumeTimes(int reconsumeTimes) {
+void MQMessageExt::setReconsumeTimes(int32_t reconsumeTimes) {
   m_reconsumeTimes = reconsumeTimes;
 }
 
-int64 MQMessageExt::getPreparedTransactionOffset() const {
+int64_t MQMessageExt::getPreparedTransactionOffset() const {
   return m_preparedTransactionOffset;
 }
 
-void MQMessageExt::setPreparedTransactionOffset(int64 preparedTransactionOffset) {
+void MQMessageExt::setPreparedTransactionOffset(int64_t preparedTransactionOffset) {
   m_preparedTransactionOffset = preparedTransactionOffset;
 }
 
-//<!***************************************************************************
-}  //<!end namespace;
+const std::string& MQMessageClientExt::getOffsetMsgId() const {
+  return MQMessageExt::getMsgId();
+}
+
+void MQMessageClientExt::setOffsetMsgId(const std::string& offsetMsgId) {
+  return MQMessageExt::setMsgId(offsetMsgId);
+}
+
+const std::string& MQMessageClientExt::getMsgId() const {
+  const auto& uniqID = MessageClientIDSetter::getUniqID(*this);
+  if (uniqID.empty()) {
+    return getOffsetMsgId();
+  } else {
+    return uniqID;
+  }
+}
+
+void MQMessageClientExt::setMsgId(const std::string& msgId) {
+  // DO NOTHING
+  // MessageClientIDSetter::setUniqID(*this);
+}
+
+}  // namespace rocketmq

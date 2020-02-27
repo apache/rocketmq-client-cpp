@@ -14,14 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "c/CErrorMessage.h"
 
-#include "CErrorMessage.h"
-#include "CCommon.h"
 #include "MQClientErrorContainer.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 using namespace rocketmq;
 
 const char* GetLatestErrorMessage() {
@@ -29,5 +29,5 @@ const char* GetLatestErrorMessage() {
 }
 
 #ifdef __cplusplus
-};
+}
 #endif

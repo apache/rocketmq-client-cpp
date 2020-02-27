@@ -14,36 +14,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef __CONSUMETYPE_H__
-#define __CONSUMETYPE_H__
+#ifndef __CONSUME_TYPE_H__
+#define __CONSUME_TYPE_H__
 
 namespace rocketmq {
-//<!***************************************************************************
+
 enum ConsumeType {
   CONSUME_ACTIVELY,
   CONSUME_PASSIVELY,
 };
 
-//<!***************************************************************************
 enum ConsumeFromWhere {
   /**
-   *new consumer will consume from end offset of queue,
+   * new consumer will consume from end offset of queue,
    * and then consume from last consumed offset of queue follow-up
    */
   CONSUME_FROM_LAST_OFFSET,
 
-  // @Deprecated
+  // [[deprecated]]
   CONSUME_FROM_LAST_OFFSET_AND_FROM_MIN_WHEN_BOOT_FIRST,
-  // @Deprecated
+
+  // [[deprecated]]
   CONSUME_FROM_MIN_OFFSET,
-  // @Deprecated
+
+  // [[deprecated]]
   CONSUME_FROM_MAX_OFFSET,
+
   /**
-   *new consumer will consume from first offset of queue,
+   * new consumer will consume from first offset of queue,
    * and then consume from last consumed offset of queue follow-up
    */
   CONSUME_FROM_FIRST_OFFSET,
+
   /**
    *new consumer will consume from the queue offset specified by timestamp,
    * and then consume from last consumed offset of queue follow-up
@@ -51,11 +53,11 @@ enum ConsumeFromWhere {
   CONSUME_FROM_TIMESTAMP,
 };
 
-//<!***************************************************************************
 enum MessageModel {
   BROADCASTING,
   CLUSTERING,
 };
-//<!***************************************************************************
+
 }  // namespace rocketmq
-#endif
+
+#endif  // __CONSUME_TYPE_H__
