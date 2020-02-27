@@ -39,6 +39,7 @@ PrintParams() {
   echo ""
 }
 
+declare cpu_num=$(cat /proc/cpuinfo | grep "processor" | wc -l)
 declare need_build_jsoncpp=1
 declare need_build_libevent=1
 declare need_build_boost=1
@@ -46,7 +47,6 @@ declare enable_asan=0
 declare enable_lsan=0
 declare verbose=1
 declare codecov=0
-declare cpu_num=4
 declare test=0
 
 pasres_arguments() {
