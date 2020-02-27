@@ -216,6 +216,7 @@ typedef struct __DefaultProducer__ {
   TransactionMQProducer* innerTransactionProducer;
   LocalTransactionListenerInner* listenerInner;
   int producerType;
+  char* version;
 } DefaultProducer;
 CProducer* CreateProducer(const char* groupId) {
   if (groupId == NULL) {
@@ -224,6 +225,9 @@ CProducer* CreateProducer(const char* groupId) {
   DefaultProducer* defaultMQProducer = new DefaultProducer();
   defaultMQProducer->producerType = CAPI_C_PRODUCER_TYPE_COMMON;
   defaultMQProducer->innerProducer = new DefaultMQProducer(groupId);
+  defaultMQProducer->version = new char[MAX_SDK_VERSION_LENGTH];
+  strncpy(defaultMQProducer->version, defaultMQProducer->innerProducer->version().c_str(), MAX_SDK_VERSION_LENGTH - 1);
+  defaultMQProducer->version[MAX_SDK_VERSION_LENGTH - 1] = 0;
   defaultMQProducer->innerTransactionProducer = NULL;
   defaultMQProducer->listenerInner = NULL;
   return (CProducer*)defaultMQProducer;
@@ -236,6 +240,10 @@ CProducer* CreateOrderlyProducer(const char* groupId) {
   DefaultProducer* defaultMQProducer = new DefaultProducer();
   defaultMQProducer->producerType = CAPI_C_PRODUCER_TYPE_ORDERLY;
   defaultMQProducer->innerProducer = new DefaultMQProducer(groupId);
+
+  defaultMQProducer->version = new char[MAX_SDK_VERSION_LENGTH];
+  strncpy(defaultMQProducer->version, defaultMQProducer->innerProducer->version().c_str(), MAX_SDK_VERSION_LENGTH - 1);
+  defaultMQProducer->version[MAX_SDK_VERSION_LENGTH - 1] = 0;
   defaultMQProducer->innerTransactionProducer = NULL;
   defaultMQProducer->listenerInner = NULL;
   return (CProducer*)defaultMQProducer;
@@ -252,6 +260,11 @@ CProducer* CreateTransactionProducer(const char* groupId, CLocalTransactionCheck
   defaultMQProducer->listenerInner =
       new LocalTransactionListenerInner((CProducer*)defaultMQProducer, callback, userData);
   defaultMQProducer->innerTransactionProducer->setTransactionListener(defaultMQProducer->listenerInner);
+
+  defaultMQProducer->version = new char[MAX_SDK_VERSION_LENGTH];
+  strncpy(defaultMQProducer->version, defaultMQProducer->innerTransactionProducer->version().c_str(),
+          MAX_SDK_VERSION_LENGTH - 1);
+  defaultMQProducer->version[MAX_SDK_VERSION_LENGTH - 1] = 0;
   return (CProducer*)defaultMQProducer;
 }
 int DestroyProducer(CProducer* pProducer) {
@@ -259,6 +272,10 @@ int DestroyProducer(CProducer* pProducer) {
     return NULL_POINTER;
   }
   DefaultProducer* defaultMQProducer = (DefaultProducer*)pProducer;
+  if (defaultMQProducer->version != NULL) {
+    delete defaultMQProducer->version;
+    defaultMQProducer->version = NULL;
+  }
   if (CAPI_C_PRODUCER_TYPE_TRANSACTION == defaultMQProducer->producerType) {
     if (defaultMQProducer->innerTransactionProducer != NULL) {
       delete defaultMQProducer->innerTransactionProducer;
@@ -306,6 +323,14 @@ int ShutdownProducer(CProducer* producer) {
     return PRODUCER_START_FAILED;
   }
   return OK;
+}
+const char* ShowProducerVersion(CProducer* producer) {
+  if (producer == NULL) {
+    return DEFAULT_SDK_VERSION;
+  }
+  DefaultProducer* defaultMQProducer = (DefaultProducer*)producer;
+
+  return defaultMQProducer->version;
 }
 int SetProducerNameServerAddress(CProducer* producer, const char* namesrv) {
   if (producer == NULL) {

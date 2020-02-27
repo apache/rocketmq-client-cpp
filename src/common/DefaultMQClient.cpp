@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "include/DefaultMQClient.h"
+#include "DefaultMQClient.h"
 #include "Logging.h"
 #include "MQClientFactory.h"
 #include "MQClientManager.h"
@@ -24,11 +24,11 @@
 #include "UtilAll.h"
 
 namespace rocketmq {
-
+// hard code first.
 #define ROCKETMQCPP_VERSION "2.0.0"
-#define BUILD_DATE "02-14-2020"
+#define BUILD_DATE "22:50:18 02-14-2020"
 // display version: strings bin/librocketmq.so |grep VERSION
-const char* rocketmq_build_time = "VERSION: " ROCKETMQCPP_VERSION ", BUILD DATE: " BUILD_DATE " ";
+const char* rocketmq_build_time = "CPP CORE VERSION: " ROCKETMQCPP_VERSION ", BUILD TIME: " BUILD_DATE;
 
 //<!************************************************************************
 DefaultMQClient::DefaultMQClient() {
@@ -55,6 +55,11 @@ string DefaultMQClient::getMQClientId() const {
   string processId = UtilAll::to_string(getpid());
   // return processId + "-" + clientIP + "@" + m_instanceName;
   return clientIP + "@" + processId + "#" + m_instanceName;
+}
+// version
+string DefaultMQClient::getClientVersionString() const {
+  string version(rocketmq_build_time);
+  return version;
 }
 
 //<!groupName;
@@ -222,6 +227,19 @@ void DefaultMQClient::setSessionCredentials(const string& input_accessKey,
 const SessionCredentials& DefaultMQClient::getSessionCredentials() const {
   return m_SessionCredentials;
 }
-
+void DefaultMQClient::showClientConfigs() {
+  // LOG_WARN("*****************************************************************************");
+  LOG_WARN("ClientID:%s", getMQClientId().c_str());
+  LOG_WARN("GroupName:%s", m_GroupName.c_str());
+  LOG_WARN("NameServer:%s", m_namesrvAddr.c_str());
+  LOG_WARN("NameServerDomain:%s", m_namesrvDomain.c_str());
+  LOG_WARN("NameSpace:%s", m_nameSpace.c_str());
+  LOG_WARN("InstanceName:%s", m_instanceName.c_str());
+  LOG_WARN("UnitName:%s", m_unitName.c_str());
+  LOG_WARN("PullThreadNum:%d", m_pullThreadNum);
+  LOG_WARN("TcpConnectTimeout:%lld ms", m_tcpConnectTimeout);
+  LOG_WARN("TcpTransportTryLockTimeout:%lld s", m_tcpTransportTryLockTimeout);
+  // LOG_WARN("*****************************************************************************");
+}
 //<!************************************************************************
 }  // namespace rocketmq

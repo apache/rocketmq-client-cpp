@@ -41,6 +41,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer {
 
   virtual void start();
   virtual void shutdown();
+  virtual std::string version();
 
   const std::string& getNamesrvAddr() const;
   void setNamesrvAddr(const std::string& namesrvAddr);

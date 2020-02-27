@@ -35,6 +35,7 @@ class ROCKETMQCLIENT_API DefaultMQProducer {
 
   virtual void start();
   virtual void shutdown();
+  virtual std::string version();
 
   virtual SendResult send(MQMessage& msg, bool bSelectActiveBroker = false);
   virtual SendResult send(MQMessage& msg, const MQMessageQueue& mq);

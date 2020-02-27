@@ -45,6 +45,7 @@ class ConsumerRunningInfo;
 //<!***************************************************************************
 class DefaultMQPushConsumerImpl : public MQConsumer {
  public:
+  DefaultMQPushConsumerImpl();
   DefaultMQPushConsumerImpl(const std::string& groupname);
   void boost_asio_work();
   virtual ~DefaultMQPushConsumerImpl();
@@ -133,6 +134,7 @@ class DefaultMQPushConsumerImpl : public MQConsumer {
   void copySubscription();
   void updateTopicSubscribeInfoWhenSubscriptionChanged();
   bool dealWithNameSpace();
+  void logConfigs();
 
  private:
   uint64_t m_startTime;

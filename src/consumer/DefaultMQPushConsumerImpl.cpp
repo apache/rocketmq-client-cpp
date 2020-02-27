@@ -193,6 +193,7 @@ class AsyncPullCallback : public PullCallback {
 //<!***************************************************************************
 static boost::mutex m_asyncCallbackLock;
 
+DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl() {}
 DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(const string& groupname)
     : m_consumeFromWhere(CONSUME_FROM_LAST_OFFSET),
       m_pOffsetStore(NULL),
@@ -307,8 +308,10 @@ void DefaultMQPushConsumerImpl::start() {
   sa.sa_flags = 0;
   sigaction(SIGPIPE, &sa, 0);
 #endif
+  LOG_WARN("###Current Push Consumer@%s", getClientVersionString().c_str());
   // deal with name space before start
   dealWithNameSpace();
+  logConfigs();
   switch (m_serviceState) {
     case CREATE_JUST: {
       m_serviceState = START_FAILED;
@@ -1037,6 +1040,45 @@ bool DefaultMQPushConsumerImpl::dealWithNameSpace() {
   m_subTopics.swap(subTmp);
 
   return true;
+}
+void DefaultMQPushConsumerImpl::logConfigs() {
+  showClientConfigs();
+
+  LOG_WARN("MessageModel:%d", m_messageModel);
+  LOG_WARN("MessageModel:%s", m_messageModel == BROADCASTING ? "BROADCASTING" : "CLUSTERING");
+
+  LOG_WARN("ConsumeFromWhere:%d", m_consumeFromWhere);
+  switch (m_consumeFromWhere) {
+    case CONSUME_FROM_FIRST_OFFSET:
+      LOG_WARN("ConsumeFromWhere:%s", "CONSUME_FROM_FIRST_OFFSET");
+      break;
+    case CONSUME_FROM_LAST_OFFSET:
+      LOG_WARN("ConsumeFromWhere:%s", "CONSUME_FROM_LAST_OFFSET");
+      break;
+
+    case CONSUME_FROM_TIMESTAMP:
+      LOG_WARN("ConsumeFromWhere:%s", "CONSUME_FROM_TIMESTAMP");
+      break;
+    case CONSUME_FROM_LAST_OFFSET_AND_FROM_MIN_WHEN_BOOT_FIRST:
+      LOG_WARN("ConsumeFromWhere:%s", "CONSUME_FROM_LAST_OFFSET_AND_FROM_MIN_WHEN_BOOT_FIRST");
+      break;
+    case CONSUME_FROM_MAX_OFFSET:
+      LOG_WARN("ConsumeFromWhere:%s", "CONSUME_FROM_MAX_OFFSET");
+      break;
+    case CONSUME_FROM_MIN_OFFSET:
+      LOG_WARN("ConsumeFromWhere:%s", "CONSUME_FROM_MAX_OFFSET");
+      break;
+    default:
+      LOG_WARN("ConsumeFromWhere:%s", "UnKnown.");
+      break;
+  }
+  LOG_WARN("ConsumeThreadCount:%d", m_consumeThreadCount);
+  LOG_WARN("ConsumeMessageBatchMaxSize:%d", m_consumeMessageBatchMaxSize);
+  LOG_WARN("MaxMsgCacheSizePerQueue:%d", m_maxMsgCacheSize);
+  LOG_WARN("MaxReconsumeTimes:%d", m_maxReconsumeTimes);
+  LOG_WARN("PullMsgThreadPoolNum:%d", m_pullMsgThreadPoolNum);
+  LOG_WARN("AsyncPullMode:%s", m_asyncPull ? "true" : "false");
+  LOG_WARN("AsyncPullTimeout:%d ms", m_asyncPullTimeout);
 }
 //<!************************************************************************
 }  // namespace rocketmq

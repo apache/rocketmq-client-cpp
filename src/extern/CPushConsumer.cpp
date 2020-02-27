@@ -85,13 +85,16 @@ map<CPushConsumer*, MessageListenerOrderlyInner*> g_OrderListenerMap;
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+char VERSION_FOR_PUSH_CONSUMER[MAX_SDK_VERSION_LENGTH];
 CPushConsumer* CreatePushConsumer(const char* groupId) {
   if (groupId == NULL) {
     return NULL;
   }
   DefaultMQPushConsumer* defaultMQPushConsumer = new DefaultMQPushConsumer(groupId);
   defaultMQPushConsumer->setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
+
+  strncpy(VERSION_FOR_PUSH_CONSUMER, defaultMQPushConsumer->version().c_str(), MAX_SDK_VERSION_LENGTH - 1);
+  VERSION_FOR_PUSH_CONSUMER[MAX_SDK_VERSION_LENGTH - 1] = 0;
   return (CPushConsumer*)defaultMQPushConsumer;
 }
 int DestroyPushConsumer(CPushConsumer* consumer) {
@@ -119,6 +122,13 @@ int ShutdownPushConsumer(CPushConsumer* consumer) {
   }
   ((DefaultMQPushConsumer*)consumer)->shutdown();
   return OK;
+}
+
+const char* ShowPushConsumerVersion(CPushConsumer* consumer) {
+  if (consumer == NULL) {
+    return NULL;
+  }
+  return VERSION_FOR_PUSH_CONSUMER;
 }
 int SetPushConsumerGroupID(CPushConsumer* consumer, const char* groupId) {
   if (consumer == NULL || groupId == NULL) {

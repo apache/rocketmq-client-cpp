@@ -20,16 +20,27 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
+#include "ConsumerRunningInfo.h"
+#include "DefaultMQPushConsumerImpl.h"
 #include "MQClientFactory.h"
 
 using namespace std;
 using namespace rocketmq;
+using rocketmq::ConsumerRunningInfo;
+using rocketmq::DefaultMQPushConsumerImpl;
 using rocketmq::MQClientFactory;
 using rocketmq::TopicRouteData;
 using testing::_;
 using ::testing::InitGoogleMock;
 using ::testing::InitGoogleTest;
+using testing::Mock;
 using testing::Return;
+
+class MockPushConsumerImpl : public DefaultMQPushConsumerImpl {
+ public:
+  MockPushConsumerImpl(const std::string& groupname) : DefaultMQPushConsumerImpl() {}
+  MOCK_METHOD0(getConsumerRunningInfo, ConsumerRunningInfo*());
+};
 
 class MockMQClientAPIImpl : public MQClientAPIImpl {
  public:
@@ -39,12 +50,7 @@ class MockMQClientAPIImpl : public MQClientAPIImpl {
                       uint64_t tcpConnectTimeout,
                       uint64_t tcpTransportTryLockTimeout,
                       string unitName)
-      : MQClientAPIImpl(mqClientId,
-                        clientRemotingProcessor,
-                        pullThreadNum,
-                        tcpConnectTimeout,
-                        tcpTransportTryLockTimeout,
-                        unitName) {}
+      : MQClientAPIImpl(mqClientId) {}
 
   MOCK_METHOD5(getMinOffset, int64(const string&, const string&, int, int, const SessionCredentials&));
   MOCK_METHOD3(getTopicRouteInfoFromNameServer, TopicRouteData*(const string&, int, const SessionCredentials&));
@@ -56,10 +62,11 @@ class MockMQClientFactory : public MQClientFactory {
                       uint64_t tcpConnectTimeout,
                       uint64_t tcpTransportTryLockTimeout,
                       string unitName)
-      : MQClientFactory(mqClientId, pullThreadNum, tcpConnectTimeout, tcpTransportTryLockTimeout, unitName) {}
+      : MQClientFactory(mqClientId) {}
   void reInitClientImpl(MQClientAPIImpl* pImpl) { m_pClientAPIImpl.reset(pImpl); }
-  void reInitRemotingProcessor(ClientRemotingProcessor* pImpl) { m_pClientRemotingProcessor.reset(pImpl); }
-  ClientRemotingProcessor* getRemotingProcessor() { return m_pClientRemotingProcessor.release(); }
+  void addTestConsumer(const string& consumerName, MQConsumer* pMQConsumer) {
+    addConsumerToTable(consumerName, pMQConsumer);
+  }
 };
 
 TEST(MQClientFactoryTest, minOffset) {
@@ -70,8 +77,8 @@ TEST(MQClientFactoryTest, minOffset) {
   string unitName = "central";
   MockMQClientFactory* factory =
       new MockMQClientFactory(clientId, pullThreadNum, tcpConnectTimeout, tcpTransportTryLockTimeout, unitName);
-  MockMQClientAPIImpl* pImpl = new MockMQClientAPIImpl(clientId, factory->getRemotingProcessor(), pullThreadNum,
-                                                       tcpConnectTimeout, tcpTransportTryLockTimeout, unitName);
+  MockMQClientAPIImpl* pImpl = new MockMQClientAPIImpl(clientId, nullptr, pullThreadNum, tcpConnectTimeout,
+                                                       tcpTransportTryLockTimeout, unitName);
   factory->reInitClientImpl(pImpl);
   MQMessageQueue mq;
   mq.setTopic("testTopic");
@@ -97,6 +104,25 @@ TEST(MQClientFactoryTest, minOffset) {
   EXPECT_CALL(*pImpl, getTopicRouteInfoFromNameServer(_, _, _)).Times(1).WillOnce(Return(pData));
   int64 offset = factory->minOffset(mq, session_credentials);
   EXPECT_EQ(1024, offset);
+  delete factory;
+}
+
+TEST(MQClientFactoryTest, consumerRunningInfo) {
+  string clientId = "testClientId";
+  int pullThreadNum = 1;
+  uint64_t tcpConnectTimeout = 3000;
+  uint64_t tcpTransportTryLockTimeout = 3000;
+  string unitName = "central";
+  MockMQClientFactory* factory =
+      new MockMQClientFactory(clientId, pullThreadNum, tcpConnectTimeout, tcpTransportTryLockTimeout, unitName);
+  MockPushConsumerImpl* mockPushConsumer = new MockPushConsumerImpl(clientId);
+  Mock::AllowLeak(mockPushConsumer);
+  factory->addTestConsumer(clientId, mockPushConsumer);
+  ConsumerRunningInfo* info = new ConsumerRunningInfo();
+  info->setJstack("Hello,JStack");
+  EXPECT_CALL(*mockPushConsumer, getConsumerRunningInfo()).Times(1).WillOnce(Return(info));
+  ConsumerRunningInfo* info2 = factory->consumerRunningInfo(clientId);
+  EXPECT_EQ(info2->getJstack(), "Hello,JStack");
   delete factory;
 }
 

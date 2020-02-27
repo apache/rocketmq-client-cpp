@@ -36,6 +36,7 @@ namespace rocketmq {
 
 class TcpRemotingClient {
  public:
+  TcpRemotingClient();
   TcpRemotingClient(int pullThreadNum, uint64_t tcpConnectTimeout, uint64_t tcpTransportTryLockTimeout);
   virtual ~TcpRemotingClient();
 

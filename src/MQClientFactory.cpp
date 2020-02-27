@@ -1179,6 +1179,8 @@ ConsumerRunningInfo* MQClientFactory::consumerRunningInfo(const string& consumer
       runningInfo->setProperty(
           ConsumerRunningInfo::PROP_CLIENT_VERSION,
           MQVersion::GetVersionDesc(MQVersion::s_CurrentVersion));  // MQVersion::s_CurrentVersion ));
+      runningInfo->setProperty(ConsumerRunningInfo::PROP_CLIENT_SDK_VERSION,
+                               pConsumer->getClientVersionString());  // in DefaultMQClient.cpp;
 
       return runningInfo;
     }

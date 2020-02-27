@@ -247,7 +247,21 @@ TEST(cProducer, null) {
   EXPECT_EQ(SetProducerLogLevel(NULL, E_LOG_LEVEL_FATAL), NULL_POINTER);
   EXPECT_EQ(DestroyProducer(NULL), NULL_POINTER);
 }
+TEST(cProducer, version) {
+  CProducer* cProducer = CreateProducer("groupTestVersion");
+  EXPECT_TRUE(cProducer != NULL);
+  string version(ShowProducerVersion(cProducer));
+  EXPECT_GT(version.length(), 0);
+  CProducer* cProducer2 = CreateOrderlyProducer("orderGroupTestVersion");
+  EXPECT_TRUE(cProducer2 != NULL);
+  string version2(ShowProducerVersion(cProducer2));
+  EXPECT_GT(version2.length(), 0);
 
+  CProducer* cProducer3 = CreateTransactionProducer("tranGroupTestVersion", NULL, NULL);
+  EXPECT_TRUE(cProducer3 != NULL);
+  string version3(ShowProducerVersion(cProducer3));
+  EXPECT_GT(version3.length(), 0);
+}
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;

@@ -17,6 +17,7 @@
 
 #include "DefaultMQPullConsumer.h"
 #include "DefaultMQPullConsumerImpl.h"
+#include "MQVersion.h"
 
 namespace rocketmq {
 
@@ -34,7 +35,14 @@ void DefaultMQPullConsumer::start() {
 void DefaultMQPullConsumer::shutdown() {
   impl->shutdown();
 }
-
+std::string DefaultMQPullConsumer::version() {
+  std::string versions = impl->getClientVersionString();
+  /*versions.append(", PROTOCOL VERSION: ")
+      .append(MQVersion::GetVersionDesc(MQVersion::s_CurrentVersion))
+      .append(", LANGUAGE: ")
+      .append(MQVersion::s_CurrentLanguage);*/
+  return versions;
+}
 // start mqclient set
 const std::string& DefaultMQPullConsumer::getNamesrvAddr() const {
   return impl->getNamesrvAddr();

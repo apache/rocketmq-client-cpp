@@ -27,12 +27,14 @@ using namespace std;
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+char VERSION_FOR_PULL_CONSUMER[MAX_SDK_VERSION_LENGTH];
 CPullConsumer* CreatePullConsumer(const char* groupId) {
   if (groupId == NULL) {
     return NULL;
   }
   DefaultMQPullConsumer* defaultMQPullConsumer = new DefaultMQPullConsumer(groupId);
+  strncpy(VERSION_FOR_PULL_CONSUMER, defaultMQPullConsumer->version().c_str(), MAX_SDK_VERSION_LENGTH - 1);
+  VERSION_FOR_PULL_CONSUMER[MAX_SDK_VERSION_LENGTH - 1] = 0;
   return (CPullConsumer*)defaultMQPullConsumer;
 }
 int DestroyPullConsumer(CPullConsumer* consumer) {
@@ -61,6 +63,13 @@ int ShutdownPullConsumer(CPullConsumer* consumer) {
   ((DefaultMQPullConsumer*)consumer)->shutdown();
   return OK;
 }
+const char* ShowPullConsumerVersion(CPullConsumer* consumer) {
+  if (consumer == NULL) {
+    return NULL;
+  }
+  return VERSION_FOR_PULL_CONSUMER;
+}
+
 int SetPullConsumerGroupID(CPullConsumer* consumer, const char* groupId) {
   if (consumer == NULL || groupId == NULL) {
     return NULL_POINTER;

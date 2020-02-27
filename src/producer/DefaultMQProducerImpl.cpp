@@ -63,8 +63,10 @@ void DefaultMQProducerImpl::start() {
   sa.sa_flags = 0;
   sigaction(SIGPIPE, &sa, 0);
 #endif
+  LOG_WARN("###Current Producer@%s", getClientVersionString().c_str());
   // we should deal with namespaced before start.
   dealWithNameSpace();
+  logConfigs();
   switch (m_serviceState) {
     case CREATE_JUST: {
       m_serviceState = START_FAILED;
@@ -633,6 +635,16 @@ bool DefaultMQProducerImpl::dealWithNameSpace() {
     setGroupName(fullGID);
   }
   return true;
+}
+void DefaultMQProducerImpl::logConfigs() {
+  showClientConfigs();
+
+  LOG_WARN("SendMsgTimeout:%d ms", m_sendMsgTimeout);
+  LOG_WARN("CompressMsgBodyOverHowmuch:%d", m_compressMsgBodyOverHowmuch);
+  LOG_WARN("MaxMessageSize:%d", m_maxMessageSize);
+  LOG_WARN("CompressLevel:%d", m_compressLevel);
+  LOG_WARN("RetryTimes:%d", m_retryTimes);
+  LOG_WARN("RetryTimes4Async:%d", m_retryTimes4Async);
 }
 //<!***************************************************************************
 }  // namespace rocketmq
