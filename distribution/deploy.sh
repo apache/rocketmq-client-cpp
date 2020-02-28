@@ -16,7 +16,7 @@
 # limitations under the License.
 
 
-VERSION="2.0.0"
+VERSION="2.0.1"
 PKG_NAME="rocketmq-client-cpp"
 CWD_DIR=$(cd "$(dirname "$0")"; pwd)
 DEPLOY_BUILD_HOME=${CWD_DIR}/${PKG_NAME}
