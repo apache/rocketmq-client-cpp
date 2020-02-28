@@ -232,8 +232,8 @@ boost::shared_ptr<TopicPublishInfo> MQClientFactory::topicRouteData2TopicPublish
     for (size_t i = 0; i < brokers.size(); i++) {
       vector<string> item;
       UtilAll::Split(item, brokers[i], ':');
-      int nums = atoi(item[1].c_str());
-      for (int i = 0; i < nums; i++) {
+      size_t nums = (item.size() > 1) ? atoi(item[1].c_str()) : 0;
+      for (size_t i = 0; i < nums; i++) {
         MQMessageQueue mq(topic, item[0], i);
         info->updateMessageQueueList(mq);
       }
