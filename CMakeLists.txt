@@ -83,7 +83,8 @@ else ()
     #find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
     set(LIBEVENT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/bin/include)
     set(LIBEVENT_LIBRARIES_DIR ${PROJECT_SOURCE_DIR}/bin/lib)
-    set(LIBEVENT_LIBRARIES ${LIBEVENT_LIBRARIES_DIR}/libevent.a;${LIBEVENT_LIBRARIES_DIR}/libevent_core.a;${LIBEVENT_LIBRARIES_DIR}/libevent_extra.a;${LIBEVENT_LIBRARIES_DIR}/libevent_pthreads.a)
+    set(LIBEVENT_LIBRARIES ${LIBEVENT_LIBRARIES_DIR}/libevent.a;${LIBEVENT_LIBRARIES_DIR}/libevent_core.a;${LIBEVENT_LIBRARIES_DIR}/libevent_extra.a;${LIBEVENT_LIBRARIES_DIR}/libevent_pthreads.a;
+        ${LIBEVENT_LIBRARIES_DIR}/libevent_openssl.a)
     include_directories(${LIBEVENT_INCLUDE_DIRS})
 endif ()
 
@@ -178,6 +179,12 @@ ELSE ()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -static-libasan")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer -static-libasan")
         message(STATUS "** ENABLE_ASAN: ${ENABLE_ASAN} Enable asan reporting")
+    endif ()
+
+    option(ENABLE_OPENSSL "Enable openssl" OFF)
+    if (ENABLE_OPENSSL)
+        add_definitions(-DENABLE_OPENSSL)
+        message(STATUS "** ENABLE_OPENSSL: ${ENABLE_OPENSSL} Enable openssl")
     endif ()
 
     option(ENABLE_LSAN "Enable lsan reporting" OFF)

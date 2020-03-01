@@ -47,10 +47,12 @@ fi
 declare need_build_jsoncpp=1
 declare need_build_libevent=1
 declare need_build_boost=1
+declare enable_openssl=0
 declare enable_asan=0
 declare enable_lsan=0
 declare verbose=1
 declare codecov=0
+declare debug=0
 declare test=0
 
 pasres_arguments() {
@@ -65,6 +67,9 @@ pasres_arguments() {
     noBoost)
       need_build_boost=0
       ;;
+    openssl)
+      enable_openssl=1
+      ;;
     asan)
       enable_asan=1
       ;;
@@ -77,6 +82,9 @@ pasres_arguments() {
     codecov)
       codecov=1
       ;;
+    debug)
+      debug=1
+      ;;
     test)
       test=1
       ;;
@@ -88,20 +96,25 @@ pasres_arguments $@
 
 PrintParams() {
   echo "###########################################################################"
-  if [ $need_build_libevent -eq 0 ]; then
-    echo "no need build libevent lib"
-  else
-    echo "need build libevent lib"
-  fi
   if [ $need_build_jsoncpp -eq 0 ]; then
     echo "no need build jsoncpp lib"
   else
     echo "need build jsoncpp lib"
   fi
+  if [ $need_build_libevent -eq 0 ]; then
+    echo "no need build libevent lib"
+  else
+    echo "need build libevent lib"
+  fi
   if [ $need_build_boost -eq 0 ]; then
     echo "no need build boost lib"
   else
     echo "need build boost lib"
+  fi
+  if [ $enable_openssl -eq 1 ]; then
+    echo "enable openssl"
+  else
+    echo "disable openssl"
   fi
   if [ $enable_asan -eq 1 ]; then
     echo "enable asan reporting"
@@ -113,18 +126,25 @@ PrintParams() {
   else
     echo "disable lsan reporting"
   fi
-  if [ $test -eq 1 ]; then
-    echo "build unit tests"
-  else
-    echo "without build unit tests"
-  fi
-  if [ $codecov -eq 1 ]; then
-    echo "run unit tests with code coverage"
-  fi
   if [ $verbose -eq 0 ]; then
     echo "no need print detail logs"
   else
     echo "need print detail logs"
+  fi
+  if [ $codecov -eq 1 ]; then
+    echo "run unit tests with code coverage"
+  else
+    echo "run unit tests without code coverage"
+  fi
+  if [ $debug -eq 1 ]; then
+    echo "enable debug"
+  else
+    echo "disable debug"
+  fi
+  if [ $test -eq 1 ]; then
+    echo "build unit tests"
+  else
+    echo "without build unit tests"
   fi
 
   echo "###########################################################################"
@@ -202,9 +222,9 @@ BuildLibevent() {
   fi
   echo "build libevent static #####################"
   if [ $verbose -eq 0 ]; then
-    ./configure --disable-openssl --enable-static=yes --enable-shared=no CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} &> libeventconfig.txt
+    ./configure --enable-static=yes --enable-shared=no CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} &> libeventconfig.txt
   else
-    ./configure --disable-openssl --enable-static=yes --enable-shared=no CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir}
+    ./configure --enable-static=yes --enable-shared=no CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir}
   fi
   if [ $? -ne 0 ]; then
     exit 1
@@ -320,6 +340,11 @@ BuildRocketMQClient() {
   else
       ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DRUN_UNIT_TEST=OFF -DCODE_COVERAGE=OFF"
   fi
+  if [ $enable_openssl -eq 1 ]; then
+      ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DENABLE_OPENSSL=ON"
+  else
+      ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DENABLE_OPENSSL=OFF"
+  fi
   if [ $enable_asan -eq 1 ]; then
       ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DENABLE_ASAN=ON"
   else
@@ -329,6 +354,11 @@ BuildRocketMQClient() {
       ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DENABLE_LSAN=ON"
   else
       ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DENABLE_LSAN=OFF"
+  fi
+  if [ $debug -eq 1 ]; then
+      ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DCMAKE_BUILD_TYPE=Debug"
+  else
+      ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DCMAKE_BUILD_TYPE=Release"
   fi
   cmake .. $ROCKETMQ_CMAKE_FLAG
   if [ $verbose -eq 0 ]; then
