@@ -83,8 +83,7 @@ else ()
     #find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
     set(LIBEVENT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/bin/include)
     set(LIBEVENT_LIBRARIES_DIR ${PROJECT_SOURCE_DIR}/bin/lib)
-    set(LIBEVENT_LIBRARIES ${LIBEVENT_LIBRARIES_DIR}/libevent.a;${LIBEVENT_LIBRARIES_DIR}/libevent_core.a;${LIBEVENT_LIBRARIES_DIR}/libevent_extra.a;${LIBEVENT_LIBRARIES_DIR}/libevent_pthreads.a;
-        ${LIBEVENT_LIBRARIES_DIR}/libevent_openssl.a)
+    set(LIBEVENT_LIBRARIES ${LIBEVENT_LIBRARIES_DIR}/libevent.a;${LIBEVENT_LIBRARIES_DIR}/libevent_core.a;${LIBEVENT_LIBRARIES_DIR}/libevent_extra.a;${LIBEVENT_LIBRARIES_DIR}/libevent_pthreads.a)
     include_directories(${LIBEVENT_INCLUDE_DIRS})
 endif ()
 
@@ -183,6 +182,7 @@ ELSE ()
 
     option(ENABLE_OPENSSL "Enable openssl" OFF)
     if (ENABLE_OPENSSL)
+        list(APPEND LIBEVENT_LIBRARIES ${LIBEVENT_LIBRARIES_DIR}/libevent_openssl.a)
         add_definitions(-DENABLE_OPENSSL)
         message(STATUS "** ENABLE_OPENSSL: ${ENABLE_OPENSSL} Enable openssl")
     endif ()
@@ -206,6 +206,9 @@ ELSE ()
     # For some reason, the check_function_exists macro doesn't detect
     # the inet_aton on some pure Unix platforms (e.g. sunos5). So we
     # need to do a more detailed check and also include some extra deplibs.
+    if (ENABLE_OPENSSL)
+        list(APPEND deplibs ssl crypto)
+    endif ()
     list(APPEND deplibs dl)
     list(APPEND deplibs pthread)
     if (NOT APPLE)

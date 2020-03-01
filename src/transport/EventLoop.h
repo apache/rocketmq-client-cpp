@@ -20,9 +20,15 @@
 #include <memory>
 #include <thread>
 
+#ifdef ENABLE_OPENSSL
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <event2/bufferevent_ssl.h>
+#endif
+
+#include <event2/event.h>
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
-#include <event2/event.h>
 
 #include "noncopyable.h"
 
@@ -49,10 +55,13 @@ class EventLoop : public noncopyable {
   void runLoop();
 
  private:
-  struct event_base* m_eventBase;
-  std::thread* m_loopThread;
-
-  bool _is_running;  // aotmic is unnecessary
+  struct event_base* m_eventBase { nullptr };
+  std::thread* m_loopThread { nullptr };
+#ifdef ENABLE_OPENSSL
+  SSL* m_ssl { nullptr };
+  SSL_CTX* m_ssl_ctx { nullptr };
+#endif
+  bool _is_running { false };  // aotmic is unnecessary
 };
 
 class TcpTransport;

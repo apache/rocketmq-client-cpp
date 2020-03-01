@@ -32,8 +32,7 @@ EventLoop* EventLoop::GetDefaultEventLoop() {
   return &defaultEventLoop;
 }
 
-EventLoop::EventLoop(const struct event_config* config, bool run_immediately)
-    : m_eventBase(nullptr), m_loopThread(nullptr), _is_running(false) {
+EventLoop::EventLoop(const struct event_config* config, bool run_immediately) {
   // tell libevent support multi-threads
 #ifdef WIN32
   evthread_use_windows_threads();
@@ -67,6 +66,17 @@ EventLoop::~EventLoop() {
     event_base_free(m_eventBase);
     m_eventBase = nullptr;
   }
+
+#ifdef ENABLE_OPENSSL
+  if (m_ssl != nullptr) {
+    SSL_free(m_ssl);
+  }
+
+  if (m_ssl_ctx != nullptr) {
+    SSL_CTX_free(m_ssl_ctx);
+  }
+#endif
+
 }
 
 void EventLoop::start() {
@@ -112,7 +122,39 @@ void EventLoop::runLoop() {
 #define OPT_UNLOCK_CALLBACKS (BEV_OPT_DEFER_CALLBACKS | BEV_OPT_UNLOCK_CALLBACKS)
 
 BufferEvent* EventLoop::createBufferEvent(socket_t fd, int options) {
+
+#ifdef ENABLE_OPENSSL
+  // init ssl context.
+  SSL_library_init();
+  OpenSSL_add_all_algorithms();
+  ERR_load_crypto_strings();
+  SSL_load_error_strings();
+
+  m_ssl_ctx = SSL_CTX_new(SSLv23_client_method());
+  if (m_ssl_ctx == nullptr) {
+    LOG_ERROR("Failed to create ssl context!");
+    return nullptr;
+  }
+
+  m_ssl = SSL_new(m_ssl_ctx);
+  if (m_ssl == nullptr) {
+    LOG_ERROR("Failed to create ssl handle!");
+    return nullptr;
+  }
+
+  // create ssl bufferevent
+  struct bufferevent* event = bufferevent_openssl_socket_new(m_eventBase, fd, m_ssl,
+                                                             BUFFEREVENT_SSL_CONNECTING, options);
+  
+  /* create filter ssl bufferevent 
+  struct bufferevent *bev = bufferevent_socket_new(m_eventBase, fd, options);
+  struct bufferevent* event = bufferevent_openssl_filter_new(m_eventBase, bev, m_ssl,
+                                                             BUFFEREVENT_SSL_CONNECTING, options);
+  */
+#else
   struct bufferevent* event = bufferevent_socket_new(m_eventBase, fd, options);
+#endif
+
   if (event == nullptr) {
     return nullptr;
   }
