@@ -194,7 +194,7 @@ ELSE ()
         message(STATUS "** ENABLE_LSAN: ${ENABLE_LSAN} Enable lsan reporting")
     endif ()
 
-    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -DDEBUG")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 
