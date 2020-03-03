@@ -58,7 +58,6 @@ class EventLoop : public noncopyable {
   struct event_base* m_eventBase { nullptr };
   std::thread* m_loopThread { nullptr };
 #ifdef ENABLE_OPENSSL
-  SSL* m_ssl { nullptr };
   SSL_CTX* m_ssl_ctx { nullptr };
 #endif
   bool _is_running { false };  // aotmic is unnecessary

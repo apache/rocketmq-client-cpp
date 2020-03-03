@@ -51,8 +51,6 @@ link_directories(${JSONCPP_LIBRARY})
 set(ROCKETMQ_LIBRARIES ${CMAKE_SOURCE_DIR}/bin/librocketmq.a)
 message(STATUS "** ROCKETMQ_LIBRARIES ${ROCKETMQ_LIBRARIES}")
 
-set(CMAKE_BUILD_TYPE "Debug")
-
 function(compile files)
     foreach (file ${files})
         get_filename_component(basename ${file} NAME_WE)

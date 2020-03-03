@@ -54,6 +54,18 @@ EventLoop::EventLoop(const struct event_config* config, bool run_immediately) {
 
   evthread_make_base_notifiable(m_eventBase);
 
+#ifdef ENABLE_OPENSSL
+  SSL_library_init();
+  OpenSSL_add_all_algorithms();
+  ERR_load_crypto_strings();
+  SSL_load_error_strings();
+
+  if ((m_ssl_ctx = SSL_CTX_new(SSLv23_client_method())) == nullptr) {
+    LOG_ERROR("Failed to create ssl context!");
+    return ;
+  }
+#endif
+
   if (run_immediately) {
     start();
   }
@@ -68,10 +80,6 @@ EventLoop::~EventLoop() {
   }
 
 #ifdef ENABLE_OPENSSL
-  if (m_ssl != nullptr) {
-    SSL_free(m_ssl);
-  }
-
   if (m_ssl_ctx != nullptr) {
     SSL_CTX_free(m_ssl_ctx);
   }
@@ -124,31 +132,19 @@ void EventLoop::runLoop() {
 BufferEvent* EventLoop::createBufferEvent(socket_t fd, int options) {
 
 #ifdef ENABLE_OPENSSL
-  // init ssl context.
-  SSL_library_init();
-  OpenSSL_add_all_algorithms();
-  ERR_load_crypto_strings();
-  SSL_load_error_strings();
-
-  m_ssl_ctx = SSL_CTX_new(SSLv23_client_method());
-  if (m_ssl_ctx == nullptr) {
-    LOG_ERROR("Failed to create ssl context!");
-    return nullptr;
-  }
-
-  m_ssl = SSL_new(m_ssl_ctx);
-  if (m_ssl == nullptr) {
+  SSL* ssl = SSL_new(m_ssl_ctx);
+  if (ssl == nullptr) {
     LOG_ERROR("Failed to create ssl handle!");
     return nullptr;
   }
 
   // create ssl bufferevent
-  struct bufferevent* event = bufferevent_openssl_socket_new(m_eventBase, fd, m_ssl,
+  struct bufferevent* event = bufferevent_openssl_socket_new(m_eventBase, fd, ssl,
                                                              BUFFEREVENT_SSL_CONNECTING, options);
   
   /* create filter ssl bufferevent 
   struct bufferevent *bev = bufferevent_socket_new(m_eventBase, fd, options);
-  struct bufferevent* event = bufferevent_openssl_filter_new(m_eventBase, bev, m_ssl,
+  struct bufferevent* event = bufferevent_openssl_filter_new(m_eventBase, bev, ssl,
                                                              BUFFEREVENT_SSL_CONNECTING, options);
   */
 #else
@@ -156,6 +152,7 @@ BufferEvent* EventLoop::createBufferEvent(socket_t fd, int options) {
 #endif
 
   if (event == nullptr) {
+    LOG_ERROR("Failed to create bufferevent!");
     return nullptr;
   }
 
