@@ -126,14 +126,14 @@ IF (WIN32)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 ELSE ()
     set(C_FLAGS
-            #-g
+            -g
             -Wall
             -Wno-deprecated
             -fPIC
             -fno-strict-aliasing
             )
     set(CXX_FLAGS
-            #-g
+            -g
             -Wall
             -Wno-deprecated
             -fPIC
@@ -188,7 +188,7 @@ ELSE ()
     endif ()
 
     set(CMAKE_CXX_FLAGS_DEBUG "-O0 -DDEBUG")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O0 -DNDEBUG")
 
 
     # Declare deplibs, so we can use list in linker later. There's probably
