@@ -683,7 +683,7 @@ void DefaultMQPushConsumerImpl::pullMessage(boost::weak_ptr<PullRequest> pullReq
                                                                     subExpression,             // 2
                                                                     pSdata->getSubVersion(),   // 3
                                                                     request->getNextOffset(),  // 4
-                                                                    32,                        // 5
+                                                                    1,                        // 5
                                                                     sysFlag,                   // 6
                                                                     commitOffsetValue,         // 7
                                                                     1000 * 15,                 // 8
@@ -887,7 +887,7 @@ void DefaultMQPushConsumerImpl::pullMessageAsync(boost::weak_ptr<PullRequest> pu
                                       subExpression,             // 2
                                       pSdata->getSubVersion(),   // 3
                                       request->getNextOffset(),  // 4
-                                      32,                        // 5
+                                      1,                        // 5
                                       sysFlag,                   // 6
                                       commitOffsetValue,         // 7
                                       1000 * 15,                 // 8
