@@ -53,12 +53,16 @@ class EventLoop : public noncopyable {
 
  private:
   void runLoop();
+#ifdef ENABLE_OPENSSL
+  bool CreateSslContext();
+#endif
 
  private:
   struct event_base* m_eventBase { nullptr };
   std::thread* m_loopThread { nullptr };
 #ifdef ENABLE_OPENSSL
-  SSL_CTX* m_ssl_ctx { nullptr };
+  using SSL_CTX_ptr = std::unique_ptr<SSL_CTX, decltype(::SSL_CTX_free)&>;
+  SSL_CTX_ptr m_ssl_ctx { nullptr, ::SSL_CTX_free };
 #endif
   bool _is_running { false };  // aotmic is unnecessary
 };

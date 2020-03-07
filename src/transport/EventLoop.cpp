@@ -22,6 +22,8 @@
 
 #include <event2/thread.h>
 
+#include <boost/filesystem.hpp>
+
 #include "Logging.h"
 #include "UtilAll.h"
 
@@ -55,14 +57,9 @@ EventLoop::EventLoop(const struct event_config* config, bool run_immediately) {
   evthread_make_base_notifiable(m_eventBase);
 
 #ifdef ENABLE_OPENSSL
-  SSL_library_init();
-  OpenSSL_add_all_algorithms();
-  ERR_load_crypto_strings();
-  SSL_load_error_strings();
-
-  if ((m_ssl_ctx = SSL_CTX_new(SSLv23_client_method())) == nullptr) {
+  if (!CreateSslContext()) {
     LOG_ERROR("Failed to create ssl context!");
-    return ;
+    return;
   }
 #endif
 
@@ -78,13 +75,6 @@ EventLoop::~EventLoop() {
     event_base_free(m_eventBase);
     m_eventBase = nullptr;
   }
-
-#ifdef ENABLE_OPENSSL
-  if (m_ssl_ctx != nullptr) {
-    SSL_CTX_free(m_ssl_ctx);
-  }
-#endif
-
 }
 
 void EventLoop::start() {
@@ -127,12 +117,89 @@ void EventLoop::runLoop() {
   }
 }
 
+#ifdef ENABLE_OPENSSL
+bool EventLoop::CreateSslContext() {
+  ERR_load_crypto_strings();
+  SSL_load_error_strings();
+  SSL_library_init();
+  OpenSSL_add_all_algorithms();
+
+  m_ssl_ctx.reset(SSL_CTX_new(SSLv23_client_method()));
+  if (m_ssl_ctx.get() == nullptr) {
+    LOG_ERROR("Failed to create ssl context!");
+    return false;
+  }
+
+  const char* CA_CERT_FILE_DEFAULT     = "/etc/rocketmq/ca.pem";
+  const char* CLIENT_CERT_FILE_DEFAULT = "/etc/rocketmq/client.pem";
+  const char* CLIENT_KEY_FILE_DEFAULT  = "/etc/rocketmq/client.key";
+
+  const char* CA_CERT_FILE     = std::getenv("CA_CERT_FILE");
+  const char* CLIENT_CERT_FILE = std::getenv("CLIENT_CERT_FILE");
+  const char* CLIENT_KEY_FILE  = std::getenv("CLIENT_KEY_FILE");
+  const char* PASS_PHRASE      = std::getenv("PASS_PHRASE");
+
+  if (!CA_CERT_FILE)     { CA_CERT_FILE     = CA_CERT_FILE_DEFAULT; }
+  if (!CLIENT_CERT_FILE) { CLIENT_CERT_FILE = CLIENT_CERT_FILE_DEFAULT; }
+  if (!CLIENT_KEY_FILE)  { CLIENT_KEY_FILE  = CLIENT_KEY_FILE_DEFAULT; }
+
+  SSL_CTX_set_verify(m_ssl_ctx.get(), SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);  
+  SSL_CTX_set_mode(m_ssl_ctx.get(), SSL_MODE_AUTO_RETRY);
+
+  if (!PASS_PHRASE) {
+    LOG_WARN("The pass phrase is not specified. Set it by modifying the environment variable 'PASS_PHRASE'.", CA_CERT_FILE);
+  } else {
+    SSL_CTX_set_default_passwd_cb_userdata(m_ssl_ctx.get(), (void*)PASS_PHRASE);
+  }
+
+  bool check_flag { true };
+  if (!boost::filesystem::exists(CA_CERT_FILE)) {
+    check_flag = false;
+    LOG_WARN("'%s' does not exist. Please apply for a certificate from the relevant authority "
+        "or modify the environment variable 'CA_CERT_FILE' to point to its location.", CA_CERT_FILE);
+  } else if (SSL_CTX_load_verify_locations(m_ssl_ctx.get(), CA_CERT_FILE, NULL) <= 0) {
+    LOG_ERROR("SSL_CTX_load_verify_locations error!");
+    ERR_print_errors_fp(stderr);
+    return false;
+  }
+
+  if (!boost::filesystem::exists(CLIENT_CERT_FILE)) {
+    check_flag = false;
+    LOG_WARN("'%s' does not exist. Please apply for a certificate from the relevant authority "
+        "or modify the environment variable 'CLIENT_CERT_FILE' to point to its location.", CLIENT_CERT_FILE);
+  } else if (SSL_CTX_use_certificate_file(m_ssl_ctx.get(), CLIENT_CERT_FILE, SSL_FILETYPE_PEM) <= 0) {
+    LOG_ERROR("SSL_CTX_use_certificate_file error!");
+    ERR_print_errors_fp(stderr);
+    return false;
+  }
+
+  if (!boost::filesystem::exists(CLIENT_KEY_FILE)) {
+    check_flag = false;
+    LOG_WARN("'%s' does not exist. Please apply for a certificate from the relevant authority "
+        "or modify the environment variable 'CLIENT_KEY_FILE' to point to its location.", CLIENT_KEY_FILE);
+  } else if (SSL_CTX_use_PrivateKey_file(m_ssl_ctx.get(), CLIENT_KEY_FILE, SSL_FILETYPE_PEM) <= 0) {
+    LOG_ERROR("SSL_CTX_use_PrivateKey_file error!");
+    ERR_print_errors_fp(stderr);
+    return false;
+  }
+
+  if(check_flag && SSL_CTX_check_private_key(m_ssl_ctx.get()) <= 0)
+  {
+    LOG_ERROR("SSL_CTX_check_private_key error!");
+    ERR_print_errors_fp(stderr);
+    return false;
+  }
+
+  return true;
+}
+#endif
+
 #define OPT_UNLOCK_CALLBACKS (BEV_OPT_DEFER_CALLBACKS | BEV_OPT_UNLOCK_CALLBACKS)
 
 BufferEvent* EventLoop::createBufferEvent(socket_t fd, int options) {
 
 #ifdef ENABLE_OPENSSL
-  SSL* ssl = SSL_new(m_ssl_ctx);
+  SSL* ssl = SSL_new(m_ssl_ctx.get());
   if (ssl == nullptr) {
     LOG_ERROR("Failed to create ssl handle!");
     return nullptr;
