@@ -45,6 +45,7 @@ set(Gmock_LIBRARIES ${Gtest_LIBRARY_DIRS}/libgmock_main.a;${Gtest_LIBRARY_DIRS}/
 message(STATUS "** Gmock_LIBRARIES: ${Gmock_LIBRARIES}")
 
 link_directories(${Boost_LIBRARY_DIRS})
+link_directories(${OPENSSL_LIBRARIES_DIR})
 link_directories(${LIBEVENT_LIBRARY})
 link_directories(${JSONCPP_LIBRARY})
 
@@ -67,10 +68,10 @@ function(compile files)
         if (MSVC)
             if (BUILD_ROCKETMQ_SHARED)
                 target_link_libraries(${basename} rocketmq_shared ${deplibs}
-                        ${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES} ${x`})
+                        ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES} ${x`})
             else ()
                 target_link_libraries(${basename} rocketmq_static ${deplibs}
-                        ${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES} ${Gtest_LIBRARIES})
+                        ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES} ${Gtest_LIBRARIES})
             endif ()
         else ()
             target_link_libraries(${basename} rocketmq_shared ${deplibs})

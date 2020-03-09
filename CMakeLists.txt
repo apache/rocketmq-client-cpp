@@ -44,6 +44,24 @@ set(CMAKE_VERBOSE_MAKEFILE 1)
 option(BUILD_ROCKETMQ_STATIC "build rocketmq-client static library" ON)
 option(BUILD_ROCKETMQ_SHARED "build rocketmq-client shared library" ON)
 
+option(OPENSSL_USE_STATIC_LIBS "only find openssl static libs" ON) # only find static libs
+if (WIN32)
+    find_package(OpenSSL 1.1.1 REQUIRED COMPONENTS)
+    if (OPENSSL_FOUND)
+        include_directories(${OPENSSL_INCLUDE_DIR})
+        message(STATUS "** OpenSSL Include dir: ${OPENSSL_INCLUDE_DIR}")
+        message(STATUS "** OpenSSL Libraries: ${OPENSSL_LIBRARIES}")
+    endif ()
+else ()
+    #find_package(OpenSSL 1.1.1 REQUIRED COMPONENTS)
+    set(OPENSSL_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/bin/include)
+    set(OPENSSL_LIBRARIES_DIR ${PROJECT_SOURCE_DIR}/bin/lib64)
+    set(OPENSSL_LIBRARIES ${OPENSSL_LIBRARIES_DIR}/libssl.a;${OPENSSL_LIBRARIES_DIR}/libcrypto.a)
+    include_directories(${OPENSSL_INCLUDE_DIR})
+endif ()
+message(STATUS "** OpenSSL_INCLUDE_DIR: ${OPENSSL_INCLUDE_DIR}")
+message(STATUS "** OpenSSL_LIBRARIES: ${OPENSSL_LIBRARIES}")
+
 #Find dependency 
 option(Boost_USE_STATIC_LIBS "only find boost static libs" ON) # only find static libs
 set(Boost_USE_MULTITHREADED ON)
@@ -61,11 +79,11 @@ else ()
     #find_package(Boost 1.56 REQUIRED COMPONENTS atomic thread system chrono date_time log log_setup regex serialization filesystem locale iostreams) 
     set(Boost_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/bin/include)
     set(Boost_LIBRARY_DIRS ${PROJECT_SOURCE_DIR}/bin/lib)
-    set(Boost_LIBRARIES ${Boost_LIBRARY_DIRS}/libboost_atomic.a;${Boost_LIBRARY_DIRS}/libboost_thread.a;${Boost_LIBRARY_DIRS}/libboost_system.a;${Boost_LIBRARY_DIRS}/libboost_chrono.a;
-            ${Boost_LIBRARY_DIRS}/libboost_date_time.a;${Boost_LIBRARY_DIRS}/libboost_log.a;${Boost_LIBRARY_DIRS}/libboost_log_setup.a;
-            ${Boost_LIBRARY_DIRS}/libboost_regex.a;${Boost_LIBRARY_DIRS}/libboost_serialization.a;${Boost_LIBRARY_DIRS}/libboost_filesystem.a;
-            ${Boost_LIBRARY_DIRS}/libboost_locale.a;${Boost_LIBRARY_DIRS}/libboost_iostreams.a)
-    include_directories(${Boost_INCLUDE_DIRS})
+    set(Boost_LIBRARIES ${Boost_LIBRARY_DIRS}/libboost_atomic.a;${Boost_LIBRARY_DIRS}/libboost_thread.a;${Boost_LIBRARY_DIRS}/libboost_system.a;
+            ${Boost_LIBRARY_DIRS}/libboost_chrono.a;${Boost_LIBRARY_DIRS}/libboost_date_time.a;${Boost_LIBRARY_DIRS}/libboost_log.a;
+            ${Boost_LIBRARY_DIRS}/libboost_log_setup.a;${Boost_LIBRARY_DIRS}/libboost_regex.a;${Boost_LIBRARY_DIRS}/libboost_serialization.a;
+            ${Boost_LIBRARY_DIRS}/libboost_filesystem.a;${Boost_LIBRARY_DIRS}/libboost_locale.a;${Boost_LIBRARY_DIRS}/libboost_iostreams.a)
+    include_directories(${Boost_INCLUDE_DIR})
 endif ()
 
 message(STATUS "** Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
@@ -76,18 +94,19 @@ if (WIN32)
     find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
     if (LIBEVENT_FOUND)
         include_directories(${LIBEVENT_INCLUDE_DIRS})
-        message(STATUS "** libevent Include dir: ${LIBEVENT_INCLUDE_DIR}")
+        message(STATUS "** libevent Include dir: ${LIBEVENT_INCLUDE_DIRS}")
         message(STATUS "** libevent Libraries: ${LIBEVENT_LIBRARIES}")
     endif ()
 else ()
     #find_package(Libevent 2.0.22 REQUIRED COMPONENTS)
     set(LIBEVENT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/bin/include)
     set(LIBEVENT_LIBRARIES_DIR ${PROJECT_SOURCE_DIR}/bin/lib)
-    set(LIBEVENT_LIBRARIES ${LIBEVENT_LIBRARIES_DIR}/libevent.a;${LIBEVENT_LIBRARIES_DIR}/libevent_core.a;${LIBEVENT_LIBRARIES_DIR}/libevent_extra.a;${LIBEVENT_LIBRARIES_DIR}/libevent_pthreads.a)
+    set(LIBEVENT_LIBRARIES ${LIBEVENT_LIBRARIES_DIR}/libevent.a;${LIBEVENT_LIBRARIES_DIR}/libevent_core.a;${LIBEVENT_LIBRARIES_DIR}/libevent_extra.a;
+            ${LIBEVENT_LIBRARIES_DIR}/libevent_pthreads.a;${LIBEVENT_LIBRARIES_DIR}/libevent_openssl.a)
     include_directories(${LIBEVENT_INCLUDE_DIRS})
 endif ()
 
-message(STATUS "** LIBEVENT_INCLUDE_DIR: ${LIBEVENT_INCLUDE_DIR}")
+message(STATUS "** LIBEVENT_INCLUDE_DIR: ${LIBEVENT_INCLUDE_DIRS}")
 message(STATUS "** LIBEVENT_LIBRARIES: ${LIBEVENT_LIBRARIES}")
 
 option(JSONCPP_USE_STATIC_LIBS "only find jsoncpp static libs" ON) # only find static libs
@@ -182,7 +201,6 @@ ELSE ()
 
     option(ENABLE_OPENSSL "Enable openssl" OFF)
     if (ENABLE_OPENSSL)
-        list(APPEND LIBEVENT_LIBRARIES ${LIBEVENT_LIBRARIES_DIR}/libevent_openssl.a)
         add_definitions(-DENABLE_OPENSSL)
         message(STATUS "** ENABLE_OPENSSL: ${ENABLE_OPENSSL} Enable openssl")
     endif ()
@@ -208,9 +226,6 @@ ELSE ()
     # For some reason, the check_function_exists macro doesn't detect
     # the inet_aton on some pure Unix platforms (e.g. sunos5). So we
     # need to do a more detailed check and also include some extra deplibs.
-    if (ENABLE_OPENSSL)
-        list(APPEND deplibs ssl crypto)
-    endif ()
     list(APPEND deplibs dl)
     list(APPEND deplibs pthread)
     if (NOT APPLE)

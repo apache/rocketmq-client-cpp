@@ -24,9 +24,12 @@ declare build_dir="${basepath}/tmp_build_dir"
 declare packet_dir="${basepath}/tmp_packet_dir"
 declare install_lib_dir="${basepath}/bin"
 declare static_package_dir="${basepath}/tmp_static_package_dir"
+declare fname_openssl="openssl*.tar.gz"
+
 declare fname_libevent="libevent*.zip"
 declare fname_jsoncpp="jsoncpp*.zip"
 declare fname_boost="boost*.tar.gz"
+declare fname_openssl_down="openssl-1.1.1d.tar.gz"
 declare fname_libevent_down="release-2.1.11-stable.zip"
 declare fname_jsoncpp_down="0.10.7.zip"
 declare fname_boost_down="1.58.0/boost_1_58_0.tar.gz"
@@ -44,8 +47,10 @@ if test "$(uname)" = "Linux"; then
 elif test "$(uname)" = "Darwin" ; then
   declare cpu_num=$(sysctl -n machdep.cpu.thread_count)
 fi
-declare need_build_jsoncpp=1
+
+declare need_build_openssl=1
 declare need_build_libevent=1
+declare need_build_jsoncpp=1
 declare need_build_boost=1
 declare enable_openssl=0
 declare enable_asan=0
@@ -58,11 +63,14 @@ declare test=0
 pasres_arguments() {
   for var in "$@"; do
     case "$var" in
-    noJson)
-      need_build_jsoncpp=0
+    noOpenSSL)
+      need_build_openssl=0
       ;;
     noEvent)
       need_build_libevent=0
+      ;;
+    noJson)
+      need_build_jsoncpp=0
       ;;
     noBoost)
       need_build_boost=0
@@ -96,6 +104,11 @@ pasres_arguments $@
 
 PrintParams() {
   echo "###########################################################################"
+  if [ $need_build_openssl -eq 0 ]; then
+    echo "no need build openssl lib"
+  else
+    echo "need build openssl lib"
+  fi
   if [ $need_build_jsoncpp -eq 0 ]; then
     echo "no need build jsoncpp lib"
   else
@@ -161,6 +174,10 @@ Prepare() {
   fi
 
   cd ${basepath}
+  if [ -e ${fname_openssl} ]; then
+    mv -f ${basepath}/${fname_openssl} ${down_dir}
+  fi
+
   if [ -e ${fname_libevent} ]; then
     mv -f ${basepath}/${fname_libevent} ${down_dir}
   fi
@@ -192,6 +209,52 @@ Prepare() {
   else
     mkdir -p ${install_lib_dir}
   fi
+}
+
+BuildOpenSSL() {
+  if [ $need_build_openssl -eq 0 ]; then
+    echo "no need build openssl lib"
+    return 0
+  fi
+
+  cd ${down_dir}
+  if [ -e ${fname_openssl} ]; then
+    echo "${fname_openssl} is exist"
+  else
+    wget https://www.openssl.org/source/${fname_openssl_down} -O ${fname_openssl_down}
+  fi
+  tar -zxvf ${fname_openssl} &> unzipopenssl.txt
+  if [ $? -ne 0 ]; then
+    exit 1
+  fi
+
+  openssl_dir=$(ls | grep ^openssl | grep .*[^gz]$)
+  cd ${openssl_dir}
+  if [ $? -ne 0 ]; then
+    exit 1
+  fi
+  echo "build openssl static #####################"
+  if [ $verbose -eq 0 ]; then
+    ./config shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir} &> opensslconfig.txt
+  else
+    ./config shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir}
+  fi
+  if [ $? -ne 0 ]; then
+    exit 1
+  fi
+  if [ $verbose -eq 0 ]; then
+    echo "build openssl without detail log."
+    make depend
+    make -j $cpu_num &> opensslbuild.txt
+  else
+    make depend
+    make -j $cpu_num
+  fi
+  if [ $? -ne 0 ]; then
+    exit 1
+  fi
+  make install
+  echo "build openssl success."
 }
 
 BuildLibevent() {
@@ -480,6 +543,7 @@ PackageRocketMQStatic() {
 
 PrintParams
 Prepare
+BuildOpenSSL
 BuildLibevent
 BuildJsonCPP
 BuildBoost
