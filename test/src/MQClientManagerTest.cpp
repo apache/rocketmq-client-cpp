@@ -33,8 +33,8 @@ using testing::Return;
 TEST(MQClientManagerTest, getClientFactory) {
   string clientId = "testClientId";
   string unitName = "central";
-  MQClientFactory* factory = MQClientManager::getInstance()->getMQClientFactory(clientId, 1, 1000, 3000, unitName);
-  MQClientFactory* factory2 = MQClientManager::getInstance()->getMQClientFactory(clientId, 1, 1000, 3000, unitName);
+  MQClientFactory* factory = MQClientManager::getInstance()->getMQClientFactory(clientId, 1, 1000, 3000, unitName, true, DEFAULT_SSL_PROPERTY_FILE);
+  MQClientFactory* factory2 = MQClientManager::getInstance()->getMQClientFactory(clientId, 1, 1000, 3000, unitName, true, DEFAULT_SSL_PROPERTY_FILE);
   EXPECT_EQ(factory, factory2);
 
   MQClientManager::getInstance()->removeClientFactory(clientId);

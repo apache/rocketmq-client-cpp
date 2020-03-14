@@ -91,6 +91,22 @@ void DefaultMQPullConsumer::setGroupName(const std::string& groupName) {
   impl->setGroupName(groupName);
 }
 
+void DefaultMQPullConsumer::setEnableSsl(bool enableSsl) {
+  impl->setEnableSsl(enableSsl);
+}
+
+bool DefaultMQPullConsumer::getEnableSsl() const {
+  return impl->getEnableSsl();
+}
+
+void DefaultMQPullConsumer::setSslPropertyFile(const std::string& sslPropertyFile) {
+  impl->setSslPropertyFile(sslPropertyFile);
+}
+
+const std::string& DefaultMQPullConsumer::getSslPropertyFile() const {
+  return impl->getSslPropertyFile();
+}
+
 void DefaultMQPullConsumer::setLogLevel(elogLevel inputLevel) {
   impl->setLogLevel(inputLevel);
 }

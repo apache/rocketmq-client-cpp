@@ -23,6 +23,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
+#include "UtilAll.h"
 #include "MQClient.h"
 #include "MQMessageExt.h"
 #include "MQMessageQueue.h"
@@ -170,6 +171,12 @@ class DefaultMQClient {
 
   virtual void setFactory(MQClientFactory*);
 
+  void setEnableSsl(bool enableSsl);
+  bool getEnableSsl() const;
+
+  void setSslPropertyFile(const std::string& sslPropertyFile);
+  const std::string& getSslPropertyFile() const;
+
  protected:
   virtual void start();
   virtual void shutdown();
@@ -183,6 +190,8 @@ class DefaultMQClient {
   std::string m_instanceName;
   std::string m_nameSpace;
   std::string m_GroupName;
+  std::string m_sslPropertyFile { DEFAULT_SSL_PROPERTY_FILE };
+  bool m_enableSsl { true };
   MQClientFactory* m_clientFactory;
   int m_serviceState;
   int m_pullThreadNum;

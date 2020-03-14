@@ -69,6 +69,12 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer {
   const std::string& getGroupName() const;
   void setGroupName(const std::string& groupname);
 
+  void setEnableSsl(bool enableSsl);
+  bool getEnableSsl() const;
+
+  void setSslPropertyFile(const std::string& sslPropertyFile);
+  const std::string& getSslPropertyFile() const;
+
   /**
    * Log configuration interface, default LOG_LEVEL is LOG_LEVEL_INFO, default
    * log file num is 3, each log size is 100M

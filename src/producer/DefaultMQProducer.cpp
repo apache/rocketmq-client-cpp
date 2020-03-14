@@ -233,4 +233,20 @@ void DefaultMQProducer::sendOneway(MQMessage& msg, MessageQueueSelector* selecto
   impl->sendOneway(msg, selector, arg);
 }
 
+void DefaultMQProducer::setEnableSsl(bool enableSsl) {
+  impl->setEnableSsl(enableSsl);
+}
+
+bool DefaultMQProducer::getEnableSsl() const {
+  return impl->getEnableSsl();
+}
+
+void DefaultMQProducer::setSslPropertyFile(const std::string& sslPropertyFile) {
+  impl->setSslPropertyFile(sslPropertyFile);
+}
+
+const std::string& DefaultMQProducer::getSslPropertyFile() const {
+  return impl->getSslPropertyFile();
+}
+
 }  // namespace rocketmq

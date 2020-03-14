@@ -146,7 +146,7 @@ vector<MQMessageQueue> DefaultMQClient::getTopicMessageQueueInfo(const string& t
 void DefaultMQClient::start() {
   if (getFactory() == NULL) {
     m_clientFactory = MQClientManager::getInstance()->getMQClientFactory(
-        getMQClientId(), m_pullThreadNum, m_tcpConnectTimeout, m_tcpTransportTryLockTimeout, m_unitName);
+        getMQClientId(), m_pullThreadNum, m_tcpConnectTimeout, m_tcpTransportTryLockTimeout, m_unitName, m_enableSsl, m_sslPropertyFile);
   }
   LOG_INFO(
       "MQClient "
@@ -227,6 +227,23 @@ void DefaultMQClient::setSessionCredentials(const string& input_accessKey,
 const SessionCredentials& DefaultMQClient::getSessionCredentials() const {
   return m_SessionCredentials;
 }
+
+void DefaultMQClient::setEnableSsl(bool enableSsl) {
+  m_enableSsl = enableSsl;
+}
+
+bool DefaultMQClient::getEnableSsl() const {
+  return m_enableSsl;
+}
+
+void DefaultMQClient::setSslPropertyFile(const std::string& sslPropertyFile) {
+  m_sslPropertyFile = sslPropertyFile;
+}
+
+const std::string& DefaultMQClient::getSslPropertyFile() const {
+  return m_sslPropertyFile;
+}
+
 void DefaultMQClient::showClientConfigs() {
   // LOG_WARN("*****************************************************************************");
   LOG_WARN("ClientID:%s", getMQClientId().c_str());
@@ -239,6 +256,8 @@ void DefaultMQClient::showClientConfigs() {
   LOG_WARN("PullThreadNum:%d", m_pullThreadNum);
   LOG_WARN("TcpConnectTimeout:%lld ms", m_tcpConnectTimeout);
   LOG_WARN("TcpTransportTryLockTimeout:%lld s", m_tcpTransportTryLockTimeout);
+  LOG_WARN("EnableSsl:%s", m_enableSsl ? "true" : "false");
+  LOG_WARN("SslPropertyFile:%s", m_sslPropertyFile.c_str());
   // LOG_WARN("*****************************************************************************");
 }
 //<!************************************************************************

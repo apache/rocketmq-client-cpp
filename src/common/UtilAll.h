@@ -34,17 +34,20 @@
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/locale/conversion.hpp>
 #include <boost/locale/encoding.hpp>
 #include <sstream>
+#include <fstream>
+#include <map>
 #include "RocketMQClient.h"
 
 using namespace std;
 namespace rocketmq {
 //<!************************************************************************
+const string null = "";
 const string WHITESPACE = " \t\r\n";
-const int MASTER_ID = 0;
 const string SUB_ALL = "*";
 const string DEFAULT_TOPIC = "TBW102";
 const string BENCHMARK_TOPIC = "BenchmarkTest";
@@ -58,22 +61,25 @@ const string DLQ_GROUP_TOPIC_PREFIX = "%DLQ%";
 const string ROCKETMQ_HOME_ENV = "ROCKETMQ_HOME";
 const string ROCKETMQ_HOME_PROPERTY = "rocketmq.home.dir";
 const string MESSAGE_COMPRESS_LEVEL = "rocketmq.message.compressLevel";
-const int POLL_NAMESERVER_INTEVAL = 1000 * 30;
-const int HEARTBEAT_BROKER_INTERVAL = 1000 * 30;
-const int PERSIST_CONSUMER_OFFSET_INTERVAL = 1000 * 5;
+const string DEFAULT_SSL_PROPERTY_FILE = "/etc/rocketmq/tls.properties";
+const string DEFAULT_CLIENT_KEY_PASSWD = null;
+const string DEFAULT_CLIENT_KEY_FILE = "/etc/rocketmq/client.key";
+const string DEFAULT_CLIENT_CERT_FILE = "/etc/rocketmq/client.pem";
+const string DEFAULT_CA_CERT_FILE = "/etc/rocketmq/ca.pem";
 const string WS_ADDR =
     "please set nameserver domain by setDomainName, there is no default "
     "nameserver domain";
-
+const int POLL_NAMESERVER_INTEVAL = 1000 * 30;
+const int HEARTBEAT_BROKER_INTERVAL = 1000 * 30;
+const int PERSIST_CONSUMER_OFFSET_INTERVAL = 1000 * 5;
 const int LINE_SEPARATOR = 1;  // rocketmq::UtilAll::charToString((char) 1);
 const int WORD_SEPARATOR = 2;  // rocketmq::UtilAll::charToString((char) 2);
-
 const int HTTP_TIMEOUT = 3000;  // 3S
 const int HTTP_CONFLICT = 409;
 const int HTTP_OK = 200;
 const int HTTP_NOTFOUND = 404;
 const int CONNETERROR = -1;
-const string null = "";
+const int MASTER_ID = 0;
 
 template <typename Type>
 inline void deleteAndZero(Type& pointer) {
@@ -133,6 +139,8 @@ class UtilAll {
   // Returns true on success.
   // Returns false on failure..
   static bool ReplaceFile(const std::string& from_path, const std::string& to_path);
+
+  static std::map<std::string, std::string> ReadProperties(const std::string& path);
 
  private:
   static std::string s_localHostName;

@@ -52,7 +52,6 @@ declare need_build_openssl=1
 declare need_build_libevent=1
 declare need_build_jsoncpp=1
 declare need_build_boost=1
-declare enable_openssl=0
 declare enable_asan=0
 declare enable_lsan=0
 declare verbose=1
@@ -74,9 +73,6 @@ pasres_arguments() {
       ;;
     noBoost)
       need_build_boost=0
-      ;;
-    openssl)
-      enable_openssl=1
       ;;
     asan)
       enable_asan=1
@@ -123,11 +119,6 @@ PrintParams() {
     echo "no need build boost lib"
   else
     echo "need build boost lib"
-  fi
-  if [ $enable_openssl -eq 1 ]; then
-    echo "enable openssl"
-  else
-    echo "disable openssl"
   fi
   if [ $enable_asan -eq 1 ]; then
     echo "enable asan reporting"
@@ -402,11 +393,6 @@ BuildRocketMQClient() {
     fi
   else
       ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DRUN_UNIT_TEST=OFF -DCODE_COVERAGE=OFF"
-  fi
-  if [ $enable_openssl -eq 1 ]; then
-      ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DENABLE_OPENSSL=ON"
-  else
-      ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DENABLE_OPENSSL=OFF"
   fi
   if [ $enable_asan -eq 1 ]; then
       ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DENABLE_ASAN=ON"

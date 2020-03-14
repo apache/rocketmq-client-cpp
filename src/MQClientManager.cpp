@@ -34,13 +34,16 @@ MQClientFactory* MQClientManager::getMQClientFactory(const string& clientId,
                                                      int pullThreadNum,
                                                      uint64_t tcpConnectTimeout,
                                                      uint64_t tcpTransportTryLockTimeout,
-                                                     string unitName) {
+                                                     string unitName,
+                                                     bool enableSsl,
+                                                     const std::string& sslPropertyFile) {
   FTMAP::iterator it = m_factoryTable.find(clientId);
   if (it != m_factoryTable.end()) {
     return it->second;
   } else {
     MQClientFactory* factory =
-        new MQClientFactory(clientId, pullThreadNum, tcpConnectTimeout, tcpTransportTryLockTimeout, unitName);
+        new MQClientFactory(clientId, pullThreadNum, tcpConnectTimeout,
+                            tcpTransportTryLockTimeout, unitName, enableSsl, sslPropertyFile);
     m_factoryTable[clientId] = factory;
     return factory;
   }

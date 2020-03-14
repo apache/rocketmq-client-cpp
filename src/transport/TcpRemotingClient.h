@@ -36,8 +36,8 @@ namespace rocketmq {
 
 class TcpRemotingClient {
  public:
-  TcpRemotingClient();
-  TcpRemotingClient(int pullThreadNum, uint64_t tcpConnectTimeout, uint64_t tcpTransportTryLockTimeout);
+  TcpRemotingClient(bool enableSsl, const string& sslPropertyFile);
+  TcpRemotingClient(int pullThreadNum, uint64_t tcpConnectTimeout, uint64_t tcpTransportTryLockTimeout, bool enableSsl, const string& sslPropertyFile);
   virtual ~TcpRemotingClient();
 
   virtual void stopAllTcpTransportThread();
@@ -108,6 +108,9 @@ class TcpRemotingClient {
   int m_pullThreadNum;
   uint64_t m_tcpConnectTimeout;           // ms
   uint64_t m_tcpTransportTryLockTimeout;  // s
+
+  bool m_enableSsl;
+  std::string m_sslPropertyFile;
 
   //<! NameServer
   std::timed_mutex m_namesrvLock;

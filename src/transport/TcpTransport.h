@@ -41,9 +41,10 @@ class TcpRemotingClient;
 class TcpTransport : public std::enable_shared_from_this<TcpTransport> {
  public:
   static std::shared_ptr<TcpTransport> CreateTransport(TcpRemotingClient* pTcpRemotingClient,
+                                                       bool enableSsl, const std::string& sslPropertyFile,
                                                        TcpTransportReadCallback handle = nullptr) {
     // transport must be managed by smart pointer
-    std::shared_ptr<TcpTransport> transport(new TcpTransport(pTcpRemotingClient, handle));
+    std::shared_ptr<TcpTransport> transport(new TcpTransport(pTcpRemotingClient, enableSsl, sslPropertyFile, handle));
     return transport;
   }
 
@@ -59,7 +60,7 @@ class TcpTransport : public std::enable_shared_from_this<TcpTransport> {
   const uint64_t getStartTime() const;
 
  private:
-  TcpTransport(TcpRemotingClient* pTcpRemotingClient, TcpTransportReadCallback handle = nullptr);
+  TcpTransport(TcpRemotingClient* pTcpRemotingClient, bool enableSsl, const std::string& sslPropertyFile, TcpTransportReadCallback handle = nullptr);
 
   static void readNextMessageIntCallback(BufferEvent* event, TcpTransport* transport);
   static void eventCallback(BufferEvent* event, short what, TcpTransport* transport);
@@ -85,6 +86,9 @@ class TcpTransport : public std::enable_shared_from_this<TcpTransport> {
   //<! read data callback
   TcpTransportReadCallback m_readCallback;
   TcpRemotingClient* m_tcpRemotingClient;
+
+  bool m_enableSsl;
+  std::string m_sslPropertyFile;
 };
 
 //<!************************************************************************

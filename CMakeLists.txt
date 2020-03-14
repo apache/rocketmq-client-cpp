@@ -199,12 +199,6 @@ ELSE ()
         message(STATUS "** ENABLE_ASAN: ${ENABLE_ASAN} Enable asan reporting")
     endif ()
 
-    option(ENABLE_OPENSSL "Enable openssl" OFF)
-    if (ENABLE_OPENSSL)
-        add_definitions(-DENABLE_OPENSSL)
-        message(STATUS "** ENABLE_OPENSSL: ${ENABLE_OPENSSL} Enable openssl")
-    endif ()
-
     option(ENABLE_LSAN "Enable lsan reporting" OFF)
     if (ENABLE_LSAN)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=leak -fno-omit-frame-pointer -static-liblsan")
