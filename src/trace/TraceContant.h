@@ -14,36 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SENDMESSAGEHOOK_H__
-#define __SENDMESSAGEHOOK_H__
 
-#include "MQClientException.h"
-#include "MQMessage.h"
-#include "MQMessageQueue.h"
-#include "RocketMQClient.h"
-#include "SendResult.h"
+#ifndef __ROCKETMQ_TRACE_CONTANT_H_
+#define __ROCKETMQ_TRACE_CONTANT_H_
+
+#include <string>
 
 namespace rocketmq {
-//<!***************************************************************************
-class SendMessageContext {
+class TraceContant {
  public:
-  std::string producerGroup;
-  MQMessage msg;
-  MQMessageQueue mq;
-  std::string brokerAddr;
-  int communicationMode;
-  SendResult sendResult;
-  MQException* pException;
-  void* pArg;
+  static std::string GROUP_NAME;
+  static std::string TRACE_TOPIC;
+  static std::string DEFAULT_REDION;
+  static char CONTENT_SPLITOR;
+  static char FIELD_SPLITOR;
+  static std::string TRACE_TYPE_PUB;
+  static std::string TRACE_TYPE_BEFORE;
+  static std::string TRACE_TYPE_AFTER;
 };
-
-class SendMessageHook {
- public:
-  virtual ~SendMessageHook() {}
-  virtual std::string hookName() = 0;
-  virtual void sendMessageBefore(const SendMessageContext& context) = 0;
-  virtual void sendMessageAfter(const SendMessageContext& context) = 0;
+enum TraceMessageType {
+  TRACE_NORMAL_MSG = 0,
+  TRACE_TRANS_HALF_MSG,
+  TRACE_TRANS_COMMIT_MSG,
+  TRACE_DELAY_MSG,
 };
-//<!***************************************************************************
+enum TraceType {
+  Pub,        // for send message
+  SubBefore,  // for consume message before
+  SubAfter,   // for consum message after
+};
 }  // namespace rocketmq
-#endif
+#endif  //

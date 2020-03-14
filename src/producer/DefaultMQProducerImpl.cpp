@@ -24,16 +24,15 @@
 #include "CommandHeader.h"
 #include "CommunicationMode.h"
 #include "Logging.h"
-#include "MQClientAPIImpl.h"
 #include "MQClientException.h"
 #include "MQClientFactory.h"
-#include "MQClientManager.h"
 #include "MQDecoder.h"
-#include "MQProtos.h"
 #include "MessageAccessor.h"
 #include "NameSpaceUtil.h"
+#include "SendMessageHookImpl.h"
 #include "StringIdMaker.h"
 #include "TopicPublishInfo.h"
+#include "TraceContant.h"
 #include "Validators.h"
 
 namespace rocketmq {
@@ -46,7 +45,8 @@ DefaultMQProducerImpl::DefaultMQProducerImpl(const string& groupname)
       // m_retryAnotherBrokerWhenNotStoreOK(false),
       m_compressLevel(5),
       m_retryTimes(5),
-      m_retryTimes4Async(1) {
+      m_retryTimes4Async(1),
+      m_trace_ioService_work(m_trace_ioService) {
   //<!set default group name;
   string gname = groupname.empty() ? DEFAULT_PRODUCER_GROUP : groupname;
   setGroupName(gname);
@@ -67,6 +67,7 @@ void DefaultMQProducerImpl::start() {
   // we should deal with namespaced before start.
   dealWithNameSpace();
   logConfigs();
+  dealWithMessageTrace();
   switch (m_serviceState) {
     case CREATE_JUST: {
       m_serviceState = START_FAILED;
@@ -99,6 +100,11 @@ void DefaultMQProducerImpl::shutdown() {
   switch (m_serviceState) {
     case RUNNING: {
       LOG_INFO("DefaultMQProducerImpl shutdown");
+      if (getMessageTrace()) {
+        LOG_INFO("DefaultMQProducerImpl message trace thread pool shutdown.");
+        m_trace_ioService.stop();
+        m_trace_threadpool.join_all();
+      }
       getFactory()->unregisterProducer(this);
       getFactory()->shutdown();
       m_serviceState = SHUTDOWN_ALREADY;
@@ -432,6 +438,7 @@ SendResult DefaultMQProducerImpl::sendKernelImpl(MQMessage& msg,
   }
 
   if (!brokerAddr.empty()) {
+    boost::scoped_ptr<SendMessageContext> pSendMesgContext(new SendMessageContext());
     try {
       bool isBatchMsg = std::type_index(typeid(msg)) == std::type_index(typeid(BatchMessage));
       // msgId is produced by client, offsetMsgId produced by broker. (same with java sdk)
@@ -444,7 +451,28 @@ SendResult DefaultMQProducerImpl::sendKernelImpl(MQMessage& msg,
       }
 
       LOG_DEBUG("produce before:%s to %s", msg.toString().c_str(), mq.toString().c_str());
+      if (!isMessageTraceTopic(msg.getTopic()) && getMessageTrace() && hasSendMessageHook()) {
+        pSendMesgContext.reset(new SendMessageContext);
+        pSendMesgContext->setDefaultMqProducer(this);
+        pSendMesgContext->setProducerGroup(getGroupName());
+        pSendMesgContext->setCommunicationMode(static_cast<CommunicationMode>(communicationMode));
+        pSendMesgContext->setBornHost(UtilAll::getLocalAddress());
+        pSendMesgContext->setBrokerAddr(brokerAddr);
+        pSendMesgContext->setMessage(msg);
+        pSendMesgContext->setMessageQueue(mq);
+        pSendMesgContext->setMsgType(TRACE_NORMAL_MSG);
+        pSendMesgContext->setNameSpace(getNameSpace());
+        string tranMsg = msg.getProperty(MQMessage::PROPERTY_TRANSACTION_PREPARED);
+        if (!tranMsg.empty() && tranMsg == "true") {
+          pSendMesgContext->setMsgType(TRACE_TRANS_HALF_MSG);
+        }
 
+        if (msg.getProperty("__STARTDELIVERTIME") != "" ||
+            msg.getProperty(MQMessage::PROPERTY_DELAY_TIME_LEVEL) != "") {
+          pSendMesgContext->setMsgType(TRACE_DELAY_MSG);
+        }
+        executeSendMessageHookBefore(pSendMesgContext.get());
+      }
       SendMessageRequestHeader* requestHeader = new SendMessageRequestHeader();
       requestHeader->producerGroup = getGroupName();
       requestHeader->topic = (msg.getTopic());
@@ -458,9 +486,15 @@ SendResult DefaultMQProducerImpl::sendKernelImpl(MQMessage& msg,
       requestHeader->batch = isBatchMsg;
       requestHeader->properties = (MQDecoder::messageProperties2String(msg.getProperties()));
 
-      return getFactory()->getMQClientAPIImpl()->sendMessage(brokerAddr, mq.getBrokerName(), msg, requestHeader,
-                                                             getSendMsgTimeout(), getRetryTimes4Async(),
-                                                             communicationMode, sendCallback, getSessionCredentials());
+      SendResult sendResult = getFactory()->getMQClientAPIImpl()->sendMessage(
+          brokerAddr, mq.getBrokerName(), msg, requestHeader, getSendMsgTimeout(), getRetryTimes4Async(),
+          communicationMode, sendCallback, getSessionCredentials());
+      if (!isMessageTraceTopic(msg.getTopic()) && getMessageTrace() && hasSendMessageHook() && sendCallback == NULL &&
+          communicationMode == ComMode_SYNC) {
+        pSendMesgContext->setSendResult(sendResult);
+        executeSendMessageHookAfter(pSendMesgContext.get());
+      }
+      return sendResult;
     } catch (MQException& e) {
       throw e;
     }
@@ -636,6 +670,7 @@ bool DefaultMQProducerImpl::dealWithNameSpace() {
   }
   return true;
 }
+
 void DefaultMQProducerImpl::logConfigs() {
   showClientConfigs();
 
@@ -645,6 +680,71 @@ void DefaultMQProducerImpl::logConfigs() {
   LOG_WARN("CompressLevel:%d", m_compressLevel);
   LOG_WARN("RetryTimes:%d", m_retryTimes);
   LOG_WARN("RetryTimes4Async:%d", m_retryTimes4Async);
+}
+
+// we should create trace message poll before producer send messages.
+bool DefaultMQProducerImpl::dealWithMessageTrace() {
+  if (!getMessageTrace()) {
+    LOG_INFO("Message Trace set to false, Will not send trace messages.");
+    return false;
+  }
+  size_t threadpool_size = boost::thread::hardware_concurrency();
+  LOG_INFO("Create send message trace threadpool: %d", threadpool_size);
+  for (size_t i = 0; i < threadpool_size; ++i) {
+    m_trace_threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &m_trace_ioService));
+  }
+  LOG_INFO("DefaultMQProducer Open meassage trace..");
+  std::shared_ptr<SendMessageHook> hook(new SendMessageHookImpl);
+  registerSendMessageHook(hook);
+  return true;
+}
+bool DefaultMQProducerImpl::isMessageTraceTopic(string source) {
+  return source.find(TraceContant::TRACE_TOPIC) != string::npos;
+}
+bool DefaultMQProducerImpl::hasSendMessageHook() {
+  return !m_sendMessageHookList.empty();
+}
+
+void DefaultMQProducerImpl::registerSendMessageHook(std::shared_ptr<SendMessageHook>& hook) {
+  m_sendMessageHookList.push_back(hook);
+  LOG_INFO("Register sendMessageHook success,hookname is %s", hook->getHookName().c_str());
+}
+
+void DefaultMQProducerImpl::executeSendMessageHookBefore(SendMessageContext* context) {
+  if (!m_sendMessageHookList.empty()) {
+    std::vector<std::shared_ptr<SendMessageHook> >::iterator it = m_sendMessageHookList.begin();
+    for (; it != m_sendMessageHookList.end(); ++it) {
+      try {
+        (*it)->executeHookBefore(context);
+      } catch (exception e) {
+      }
+    }
+  }
+}
+
+void DefaultMQProducerImpl::executeSendMessageHookAfter(SendMessageContext* context) {
+  if (!m_sendMessageHookList.empty()) {
+    std::vector<std::shared_ptr<SendMessageHook> >::iterator it = m_sendMessageHookList.begin();
+    for (; it != m_sendMessageHookList.end(); ++it) {
+      try {
+        (*it)->executeHookAfter(context);
+      } catch (exception e) {
+      }
+    }
+  }
+}
+
+void DefaultMQProducerImpl::submitSendTraceRequest(const MQMessage& msg, SendCallback* pSendCallback) {
+  m_trace_ioService.post(boost::bind(&DefaultMQProducerImpl::sendTraceMessage, this, msg, pSendCallback));
+}
+
+void DefaultMQProducerImpl::sendTraceMessage(MQMessage& msg, SendCallback* pSendCallback) {
+  try {
+    send(msg, pSendCallback, true);
+  } catch (MQException e) {
+    LOG_ERROR(e.what());
+    // throw e;
+  }
 }
 //<!***************************************************************************
 }  // namespace rocketmq
