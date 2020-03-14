@@ -36,6 +36,7 @@ TEST(MQClientManagerTest, getClientFactory) {
   MQClientFactory* factory = MQClientManager::getInstance()->getMQClientFactory(clientId, 1, 1000, 3000, unitName);
   MQClientFactory* factory2 = MQClientManager::getInstance()->getMQClientFactory(clientId, 1, 1000, 3000, unitName);
   EXPECT_EQ(factory, factory2);
+  factory->shutdown();
 
   MQClientManager::getInstance()->removeClientFactory(clientId);
 }
