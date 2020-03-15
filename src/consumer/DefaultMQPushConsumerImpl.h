@@ -133,6 +133,9 @@ class DefaultMQPushConsumerImpl : public MQConsumer {
   int getMaxCacheMsgSizePerQueue() const;
   void submitSendTraceRequest(MQMessage& msg, SendCallback* pSendCallback);
   bool hasConsumeMessageHook();
+
+  void registerConsumeMessageHook(std::shared_ptr<ConsumeMessageHook>& hook);
+  void setDefaultMqProducerImpl(DefaultMQProducerImpl* DefaultMqProducerImpl);
   void executeConsumeMessageHookBefore(ConsumeMessageContext* context);
   void executeConsumeMessageHookAfter(ConsumeMessageContext* context);
 
@@ -146,7 +149,6 @@ class DefaultMQPushConsumerImpl : public MQConsumer {
   bool dealWithMessageTrace();
   void createMessageTraceInnerProducer();
   void shutdownMessageTraceInnerProducer();
-  void registerConsumeMessageHook(std::shared_ptr<ConsumeMessageHook>& hook);
 
  private:
   uint64_t m_startTime;

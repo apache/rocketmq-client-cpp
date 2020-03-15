@@ -1160,5 +1160,8 @@ void DefaultMQPushConsumerImpl::submitSendTraceRequest(MQMessage& msg, SendCallb
     }
   }
 }
-//<!************************************************************************
+
+void DefaultMQPushConsumerImpl::setDefaultMqProducerImpl(DefaultMQProducerImpl* DefaultMqProducerImpl) {
+  m_DefaultMQProducerImpl.reset(DefaultMqProducerImpl);
+}
 }  // namespace rocketmq

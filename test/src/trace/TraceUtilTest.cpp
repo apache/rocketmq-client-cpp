@@ -41,6 +41,7 @@ TEST(TraceUtil, CovertTraceTypeToString) {
   EXPECT_EQ(TraceUtil::CovertTraceTypeToString(TraceType::Pub), TraceContant::TRACE_TYPE_PUB);
   EXPECT_EQ(TraceUtil::CovertTraceTypeToString(TraceType::SubBefore), TraceContant::TRACE_TYPE_BEFORE);
   EXPECT_EQ(TraceUtil::CovertTraceTypeToString(TraceType::SubAfter), TraceContant::TRACE_TYPE_AFTER);
+  EXPECT_EQ(TraceUtil::CovertTraceTypeToString((TraceType)5), TraceContant::TRACE_TYPE_PUB);
 }
 TEST(TraceUtil, CovertTraceContextToTransferBean) {
   TraceContext context;
@@ -55,6 +56,7 @@ TEST(TraceUtil, CovertTraceContextToTransferBean) {
   context.setCostTime(50);
   context.setStatus(true);
   context.setTraceBean(bean);
+  context.setTraceBeanIndex(1);
   TraceTransferBean beanPub = TraceUtil::CovertTraceContextToTransferBean(&context);
   EXPECT_GT(beanPub.getTransKey().size(), 0);
   context.setTraceType(TraceType::SubBefore);
@@ -64,6 +66,15 @@ TEST(TraceUtil, CovertTraceContextToTransferBean) {
   context.setTraceType(TraceType::SubAfter);
   TraceTransferBean beanAfter = TraceUtil::CovertTraceContextToTransferBean(&context);
   EXPECT_GT(beanAfter.getTransKey().size(), 0);
+
+  TraceContext contextFailed("testGroup");
+  contextFailed.setMsgType(context.getMsgType());
+  contextFailed.setTraceType((TraceType)5);
+  contextFailed.setRequestId(context.getRegionId());
+  contextFailed.setTimeStamp(context.getTimeStamp());
+  contextFailed.setTraceBeanIndex(context.getTraceBeanIndex());
+  TraceTransferBean beanWrong = TraceUtil::CovertTraceContextToTransferBean(&contextFailed);
+  EXPECT_EQ(beanWrong.getTransKey().size(), 0);
 }
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
