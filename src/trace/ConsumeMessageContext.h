@@ -17,13 +17,70 @@
 #ifndef __ROCKETMQ_CONSUME_MESSAGE_CONTEXT_H__
 #define __ROCKETMQ_CONSUME_MESSAGE_CONTEXT_H__
 
+#include <memory>
 #include <string>
+#include <vector>
+#include "MQMessageExt.h"
+#include "MQMessageQueue.h"
+#include "TraceBean.h"
+#include "TraceContant.h"
+#include "TraceContext.h"
 
 namespace rocketmq {
+class DefaultMQPushConsumerImpl;
 class ConsumeMessageContext {
  public:
-  virtual ~ConsumeMessageContext() {}
-  std::string m_context;
+  ConsumeMessageContext();
+
+  virtual ~ConsumeMessageContext();
+
+  std::string getConsumerGroup();
+
+  void setConsumerGroup(const std::string& mConsumerGroup);
+
+  bool getSuccess();
+
+  void setSuccess(bool mSuccess);
+
+  std::vector<MQMessageExt> getMsgList();
+
+  void setMsgList(std::vector<MQMessageExt> mMsgList);
+
+  std::string getStatus();
+
+  void setStatus(const std::string& mStatus);
+
+  int getMsgIndex();
+
+  void setMsgIndex(int mMsgIndex);
+
+  MQMessageQueue getMessageQueue();
+
+  void setMessageQueue(const MQMessageQueue& mMessageQueue);
+
+  DefaultMQPushConsumerImpl* getDefaultMQPushConsumer();
+
+  void setDefaultMQPushConsumer(DefaultMQPushConsumerImpl* mDefaultMqPushConsumer);
+
+  std::shared_ptr<TraceContext> getTraceContext();
+
+  void setTraceContext(TraceContext* mTraceContext);
+
+  std::string getNameSpace();
+
+  void setNameSpace(const std::string& mNameSpace);
+
+ private:
+  std::string m_consumerGroup;
+  bool m_success;
+  std::vector<MQMessageExt> m_msgList;
+  std::string m_status;
+  int m_msgIndex;
+  MQMessageQueue m_messageQueue;
+  DefaultMQPushConsumerImpl* m_defaultMQPushConsumer;
+  // TraceContext* m_traceContext;
+  std::shared_ptr<TraceContext> m_traceContext;
+  std::string m_nameSpace;
 };
 }  // namespace rocketmq
 #endif

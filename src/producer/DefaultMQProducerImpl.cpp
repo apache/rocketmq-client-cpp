@@ -55,6 +55,9 @@ DefaultMQProducerImpl::DefaultMQProducerImpl(const string& groupname)
 DefaultMQProducerImpl::~DefaultMQProducerImpl() {}
 
 void DefaultMQProducerImpl::start() {
+  start(true);
+}
+void DefaultMQProducerImpl::start(bool factoryStart) {
 #ifndef WIN32
   /* Ignore the SIGPIPE */
   struct sigaction sa;
@@ -67,10 +70,10 @@ void DefaultMQProducerImpl::start() {
   // we should deal with namespaced before start.
   dealWithNameSpace();
   logConfigs();
-  dealWithMessageTrace();
   switch (m_serviceState) {
     case CREATE_JUST: {
       m_serviceState = START_FAILED;
+      dealWithMessageTrace();
       DefaultMQClient::start();
       LOG_INFO("DefaultMQProducerImpl:%s start", m_GroupName.c_str());
 
@@ -81,9 +84,10 @@ void DefaultMQProducerImpl::start() {
             MQClientException,
             "The producer group[" + getGroupName() + "] has been created before, specify another name please.", -1);
       }
-
-      getFactory()->start();
-      getFactory()->sendHeartbeatToAllBroker();
+      if (factoryStart) {
+        getFactory()->start();
+        getFactory()->sendHeartbeatToAllBroker();
+      }
       m_serviceState = RUNNING;
       break;
     }
@@ -97,6 +101,9 @@ void DefaultMQProducerImpl::start() {
 }
 
 void DefaultMQProducerImpl::shutdown() {
+  shutdown(true);
+}
+void DefaultMQProducerImpl::shutdown(bool factoryStart) {
   switch (m_serviceState) {
     case RUNNING: {
       LOG_INFO("DefaultMQProducerImpl shutdown");
@@ -106,7 +113,9 @@ void DefaultMQProducerImpl::shutdown() {
         m_trace_threadpool.join_all();
       }
       getFactory()->unregisterProducer(this);
-      getFactory()->shutdown();
+      if (factoryStart) {
+        getFactory()->shutdown();
+      }
       m_serviceState = SHUTDOWN_ALREADY;
       break;
     }
@@ -740,6 +749,7 @@ void DefaultMQProducerImpl::submitSendTraceRequest(const MQMessage& msg, SendCal
 
 void DefaultMQProducerImpl::sendTraceMessage(MQMessage& msg, SendCallback* pSendCallback) {
   try {
+    LOG_DEBUG("=====Send Trace Messages,Topic[%s],Body[%s]", msg.getTopic().c_str(), msg.getBody().c_str());
     send(msg, pSendCallback, true);
   } catch (MQException e) {
     LOG_ERROR(e.what());

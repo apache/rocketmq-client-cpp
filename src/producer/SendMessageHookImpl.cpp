@@ -87,7 +87,7 @@ void SendMessageHookImpl::executeHookAfter(SendMessageContext* context) {
 
   traceContext->setRegionId(context->getSendResult()->getRegionId());
   traceBean.setMsgId(context->getMessage()->getProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX));
-  traceBean.setOffsetMsgId(context->getSendResult()->getMsgId());
+  traceBean.setOffsetMsgId(context->getSendResult()->getOffsetMsgId());
   traceBean.setStoreTime(traceContext->getTimeStamp() + (costTime / 2));
 
   traceContext->setTraceBean(traceBean);

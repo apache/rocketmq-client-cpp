@@ -36,6 +36,8 @@ class DefaultMQProducerImpl : public MQProducer {
   //<!begin mqadmin;
   virtual void start();
   virtual void shutdown();
+  virtual void start(bool factoryStart);
+  virtual void shutdown(bool factoryStart);
   //<!end mqadmin;
 
   //<! begin MQProducer;

@@ -36,29 +36,29 @@ std::string TraceUtil::CovertTraceTypeToString(TraceType type) {
 
 TraceTransferBean TraceUtil::CovertTraceContextToTransferBean(TraceContext* ctx) {
   std::ostringstream ss;
-  std::vector<TraceBean> bens = ctx->getTraceBeans();
+  std::vector<TraceBean> beans = ctx->getTraceBeans();
   switch (ctx->getTraceType()) {
     case Pub: {
-      TraceBean* ben = &bens[0];
+      std::vector<TraceBean>::iterator it = beans.begin();
       ss << TraceUtil::CovertTraceTypeToString(ctx->getTraceType()) << TraceContant::CONTENT_SPLITOR;
       ss << ctx->getTimeStamp() << TraceContant::CONTENT_SPLITOR;
       ss << ctx->getRegionId() << TraceContant::CONTENT_SPLITOR;
       ss << ctx->getGroupName() << TraceContant::CONTENT_SPLITOR;
-      ss << ben->getTopic() << TraceContant::CONTENT_SPLITOR;
-      ss << ben->getMsgId() << TraceContant::CONTENT_SPLITOR;
-      ss << ben->getTags() << TraceContant::CONTENT_SPLITOR;
-      ss << ben->getKeys() << TraceContant::CONTENT_SPLITOR;
-      ss << ben->getStoreHost() << TraceContant::CONTENT_SPLITOR;
-      ss << ben->getBodyLength() << TraceContant::CONTENT_SPLITOR;
+      ss << it->getTopic() << TraceContant::CONTENT_SPLITOR;
+      ss << it->getMsgId() << TraceContant::CONTENT_SPLITOR;
+      ss << it->getTags() << TraceContant::CONTENT_SPLITOR;
+      ss << it->getKeys() << TraceContant::CONTENT_SPLITOR;
+      ss << it->getStoreHost() << TraceContant::CONTENT_SPLITOR;
+      ss << it->getBodyLength() << TraceContant::CONTENT_SPLITOR;
       ss << ctx->getCostTime() << TraceContant::CONTENT_SPLITOR;
-      ss << ben->getMsgType() << TraceContant::CONTENT_SPLITOR;
-      ss << ben->getOffsetMsgId() << TraceContant::CONTENT_SPLITOR;
+      ss << it->getMsgType() << TraceContant::CONTENT_SPLITOR;
+      ss << it->getOffsetMsgId() << TraceContant::CONTENT_SPLITOR;
       ss << (ctx->getStatus() ? "true" : "false") << TraceContant::FIELD_SPLITOR;
     } break;
 
     case SubBefore: {
-      std::vector<TraceBean>::iterator it = bens.begin();
-      for (; it != bens.end(); ++it) {
+      std::vector<TraceBean>::iterator it = beans.begin();
+      for (; it != beans.end(); ++it) {
         ss << TraceUtil::CovertTraceTypeToString(ctx->getTraceType()) << TraceContant::CONTENT_SPLITOR;
         ss << ctx->getTimeStamp() << TraceContant::CONTENT_SPLITOR;
         ss << ctx->getRegionId() << TraceContant::CONTENT_SPLITOR;
@@ -71,14 +71,13 @@ TraceTransferBean TraceUtil::CovertTraceContextToTransferBean(TraceContext* ctx)
     } break;
 
     case SubAfter: {
-      // TraceBean* bean = &bens[ctx->getTraceBeanIndex()];
-      TraceBean* bean = &bens[0];
+      std::vector<TraceBean>::iterator it = beans.begin();
       ss << TraceUtil::CovertTraceTypeToString(ctx->getTraceType()) << TraceContant::CONTENT_SPLITOR;
       ss << ctx->getRequestId() << TraceContant::CONTENT_SPLITOR;
-      ss << bean->getMsgId() << TraceContant::CONTENT_SPLITOR;
+      ss << it->getMsgId() << TraceContant::CONTENT_SPLITOR;
       ss << ctx->getCostTime() << TraceContant::CONTENT_SPLITOR;
       ss << (ctx->getStatus() ? "true" : "false") << TraceContant::CONTENT_SPLITOR;
-      ss << bean->getKeys() << TraceContant::FIELD_SPLITOR;
+      ss << it->getKeys() << TraceContant::FIELD_SPLITOR;
     } break;
 
     default:
@@ -89,24 +88,22 @@ TraceTransferBean TraceUtil::CovertTraceContextToTransferBean(TraceContext* ctx)
   transferBean.setTransData(ss.str());
 
   switch (ctx->getTraceType()) {
-    case Pub: {
-      transferBean.setTransKey(bens[0].getMsgId());
-      if (bens[0].getKeys() != "")
-        transferBean.setTransKey(bens[0].getKeys());
+    case Pub:
+    case SubAfter: {
+      std::vector<TraceBean>::iterator it = beans.begin();
+      transferBean.setTransKey(it->getMsgId());
+      if (it->getKeys() != "") {
+        transferBean.setTransKey(it->getKeys());
+      }
     } break;
     case SubBefore: {
-      std::vector<TraceBean>::iterator it = bens.begin();
-      for (; it != bens.end(); ++it) {
+      std::vector<TraceBean>::iterator it = beans.begin();
+      for (; it != beans.end(); ++it) {
         transferBean.setTransKey((*it).getMsgId());
-        if ((*it).getKeys() != "")
+        if ((*it).getKeys() != "") {
           transferBean.setTransKey((*it).getKeys());
+        }
       }
-
-    } break;
-    case SubAfter: {
-      transferBean.setTransKey(bens[0].getMsgId());
-      if (bens[0].getKeys() != "")
-        transferBean.setTransKey(bens[0].getKeys());
     } break;
     default:
       break;
