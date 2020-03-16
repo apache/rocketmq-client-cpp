@@ -191,7 +191,6 @@ class AsyncPullCallback : public PullCallback {
   bool m_bShutdown;
 };
 
-//<!***************************************************************************
 static boost::mutex m_asyncCallbackLock;
 
 DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl() {}
@@ -1152,7 +1151,8 @@ void DefaultMQPushConsumerImpl::executeConsumeMessageHookAfter(ConsumeMessageCon
 void DefaultMQPushConsumerImpl::submitSendTraceRequest(MQMessage& msg, SendCallback* pSendCallback) {
   if (getMessageTrace()) {
     try {
-      LOG_DEBUG("=====Send Trace Messages,Topic[%s],Body[%s]", msg.getTopic().c_str(), msg.getBody().c_str());
+      LOG_DEBUG("=====Send Trace Messages,Topic[%s],Key[%s],Body[%s]", msg.getTopic().c_str(), msg.getKeys().c_str(),
+                msg.getBody().c_str());
       // m_DefaultMQProducerImpl->submitSendTraceRequest(msg, pSendCallback);
       m_DefaultMQProducerImpl->send(msg, pSendCallback, false);
     } catch (exception e) {

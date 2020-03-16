@@ -64,9 +64,14 @@ TraceTransferBean TraceUtil::CovertTraceContextToTransferBean(TraceContext* ctx)
         ss << ctx->getRegionId() << TraceContant::CONTENT_SPLITOR;
         ss << ctx->getGroupName() << TraceContant::CONTENT_SPLITOR;
         ss << ctx->getRequestId() << TraceContant::CONTENT_SPLITOR;
-        ss << (*it).getMsgId() << TraceContant::CONTENT_SPLITOR;
-        ss << (*it).getRetryTimes() << TraceContant::CONTENT_SPLITOR;
-        ss << (*it).getKeys() << TraceContant::FIELD_SPLITOR;
+        ss << it->getMsgId() << TraceContant::CONTENT_SPLITOR;
+        ss << it->getRetryTimes() << TraceContant::CONTENT_SPLITOR;
+        // this is a bug caused by broker.
+        std::string defaultKey = "dKey";
+        if (!it->getKeys().empty()) {
+          defaultKey = it->getKeys();
+        }
+        ss << defaultKey << TraceContant::FIELD_SPLITOR;
       }
     } break;
 
@@ -77,7 +82,12 @@ TraceTransferBean TraceUtil::CovertTraceContextToTransferBean(TraceContext* ctx)
       ss << it->getMsgId() << TraceContant::CONTENT_SPLITOR;
       ss << ctx->getCostTime() << TraceContant::CONTENT_SPLITOR;
       ss << (ctx->getStatus() ? "true" : "false") << TraceContant::CONTENT_SPLITOR;
-      ss << it->getKeys() << TraceContant::FIELD_SPLITOR;
+      // this is a bug caused by broker.
+      std::string defaultKey = "dKey";
+      if (!it->getKeys().empty()) {
+        defaultKey = it->getKeys();
+      }
+      ss << defaultKey << TraceContant::FIELD_SPLITOR;
     } break;
 
     default:

@@ -37,7 +37,6 @@
 
 namespace rocketmq {
 
-//<!************************************************************************
 DefaultMQProducerImpl::DefaultMQProducerImpl(const string& groupname)
     : m_sendMsgTimeout(3000),
       m_compressMsgBodyOverHowmuch(4 * 1024),
@@ -463,7 +462,7 @@ SendResult DefaultMQProducerImpl::sendKernelImpl(MQMessage& msg,
       if (!isMessageTraceTopic(msg.getTopic()) && getMessageTrace() && hasSendMessageHook()) {
         pSendMesgContext.reset(new SendMessageContext);
         pSendMesgContext->setDefaultMqProducer(this);
-        pSendMesgContext->setProducerGroup(getGroupName());
+        pSendMesgContext->setProducerGroup(NameSpaceUtil::withoutNameSpace(getGroupName(), getNameSpace()));
         pSendMesgContext->setCommunicationMode(static_cast<CommunicationMode>(communicationMode));
         pSendMesgContext->setBornHost(UtilAll::getLocalAddress());
         pSendMesgContext->setBrokerAddr(brokerAddr);
@@ -749,12 +748,12 @@ void DefaultMQProducerImpl::submitSendTraceRequest(const MQMessage& msg, SendCal
 
 void DefaultMQProducerImpl::sendTraceMessage(MQMessage& msg, SendCallback* pSendCallback) {
   try {
-    LOG_DEBUG("=====Send Trace Messages,Topic[%s],Body[%s]", msg.getTopic().c_str(), msg.getBody().c_str());
+    LOG_DEBUG("=====Send Trace Messages,Topic[%s],Key[%s],Body[%s]", msg.getTopic().c_str(), msg.getKeys().c_str(),
+              msg.getBody().c_str());
     send(msg, pSendCallback, true);
   } catch (MQException e) {
     LOG_ERROR(e.what());
     // throw e;
   }
 }
-//<!***************************************************************************
 }  // namespace rocketmq

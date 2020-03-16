@@ -76,6 +76,15 @@ bool NameSpaceUtil::checkNameSpaceExistInNameServer(string nameServerAddr) {
   return false;
 }
 
+string NameSpaceUtil::withoutNameSpace(string source, string nameSpace) {
+  if (!nameSpace.empty()) {
+    auto index = source.find(nameSpace);
+    if (index != string::npos) {
+      return source.substr(index + nameSpace.length() + NAMESPACE_SPLIT_FLAG.length(), source.length());
+    }
+  }
+  return source;
+}
 string NameSpaceUtil::withNameSpace(string source, string ns) {
   if (!ns.empty()) {
     return ns + NAMESPACE_SPLIT_FLAG + source;

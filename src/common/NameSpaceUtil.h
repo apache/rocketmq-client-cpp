@@ -43,6 +43,8 @@ class NameSpaceUtil {
 
   static string withNameSpace(string source, string ns);
 
+  static string withoutNameSpace(string source, string ns);
+
   static bool hasNameSpace(string source, string ns);
 };
 

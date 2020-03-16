@@ -22,6 +22,7 @@
 #include "DefaultMQPushConsumerImpl.h"
 #include "Logging.h"
 #include "MQClientException.h"
+#include "NameSpaceUtil.h"
 #include "TraceContant.h"
 #include "TraceContext.h"
 #include "TraceTransferBean.h"
@@ -48,7 +49,7 @@ void ConsumeMessageHookImpl::executeHookBefore(ConsumeMessageContext* context) {
   TraceContext* traceContext = new TraceContext();
   context->setTraceContext(traceContext);
   traceContext->setTraceType(SubBefore);
-  traceContext->setGroupName(context->getConsumerGroup());
+  traceContext->setGroupName(NameSpaceUtil::withoutNameSpace(context->getConsumerGroup(), context->getNameSpace()));
   std::vector<TraceBean> beans;
 
   std::vector<MQMessageExt> msgs = context->getMsgList();

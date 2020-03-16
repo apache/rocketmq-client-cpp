@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include "DefaultMQProducerImpl.h"
+#include "Logging.h"
 #include "MQClientException.h"
 #include "SendMessageContext.h"
 #include "TraceContant.h"
@@ -30,7 +31,10 @@ using namespace std;
 namespace rocketmq {
 
 class TraceMessageSendCallback : public SendCallback {
-  virtual void onSuccess(SendResult& sendResult) {}
+  virtual void onSuccess(SendResult& sendResult) {
+    LOG_DEBUG("TraceMessageSendCallback, MsgId:[%s],OffsetMsgId[%s]", sendResult.getMsgId().c_str(),
+              sendResult.getOffsetMsgId().c_str());
+  }
   virtual void onException(MQException& e) {}
 };
 static TraceMessageSendCallback* callback = new TraceMessageSendCallback();
