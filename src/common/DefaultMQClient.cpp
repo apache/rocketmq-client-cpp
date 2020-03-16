@@ -46,6 +46,7 @@ DefaultMQClient::DefaultMQClient() {
   m_tcpConnectTimeout = 3000;        // 3s
   m_tcpTransportTryLockTimeout = 3;  // 3s
   m_unitName = "";
+  m_messageTrace = false;
 }
 
 DefaultMQClient::~DefaultMQClient() {}
@@ -216,6 +217,14 @@ const string& DefaultMQClient::getUnitName() const {
   return m_unitName;
 }
 
+bool DefaultMQClient::getMessageTrace() const {
+  return m_messageTrace;
+}
+
+void DefaultMQClient::setMessageTrace(bool mMessageTrace) {
+  m_messageTrace = mMessageTrace;
+}
+
 void DefaultMQClient::setSessionCredentials(const string& input_accessKey,
                                             const string& input_secretKey,
                                             const string& input_onsChannel) {
@@ -239,6 +248,7 @@ void DefaultMQClient::showClientConfigs() {
   LOG_WARN("PullThreadNum:%d", m_pullThreadNum);
   LOG_WARN("TcpConnectTimeout:%lld ms", m_tcpConnectTimeout);
   LOG_WARN("TcpTransportTryLockTimeout:%lld s", m_tcpTransportTryLockTimeout);
+  LOG_WARN("OpenMessageTrace:%s", m_messageTrace ? "true" : "false");
   // LOG_WARN("*****************************************************************************");
 }
 //<!************************************************************************

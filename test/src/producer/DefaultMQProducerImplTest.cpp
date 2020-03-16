@@ -103,9 +103,8 @@ TEST(DefaultMQProducerImplTest, init) {
   EXPECT_EQ(impl->getNamesrvAddr(), "rocketmq.nameserver.com");
   impl->setNameSpace("MQ_INST_NAMESPACE_TEST");
   EXPECT_EQ(impl->getNameSpace(), "MQ_INST_NAMESPACE_TEST");
-  // impl->start();
-  // EXPECT_EQ(impl->getGroupName(), "MQ_INST_NAMESPACE_TEST%testMQProducerGroup");
-  // impl->shutdown();
+  impl->setMessageTrace(true);
+  EXPECT_TRUE(impl->getMessageTrace());
 }
 TEST(DefaultMQProducerImplTest, Sends) {
   DefaultMQProducerImpl* impl = new DefaultMQProducerImpl("testMockSendMQProducerGroup");
@@ -182,6 +181,46 @@ TEST(DefaultMQProducerImplTest, Sends) {
   SendResult s5 = impl->send(msgs, mqA);
   EXPECT_EQ(s5.getSendStatus(), SEND_OK);
   EXPECT_EQ(s5.getQueueOffset(), 1024);
+
+  impl->shutdown();
+  delete mockFactory;
+  delete apiImpl;
+}
+TEST(DefaultMQProducerImplTest, Trace) {
+  DefaultMQProducerImpl* impl = new DefaultMQProducerImpl("testMockProducerTraceGroup");
+  MockMQClientFactory* mockFactory = new MockMQClientFactory("testTraceClientId");
+  MockMQClientAPIImpl* apiImpl = new MockMQClientAPIImpl();
+
+  impl->setFactory(mockFactory);
+  impl->setNamesrvAddr("http://rocketmq.nameserver.com");
+  impl->setMessageTrace(true);
+
+  // prepare send
+  boost::shared_ptr<TopicPublishInfo> topicPublishInfo = boost::make_shared<TopicPublishInfo>();
+  MQMessageQueue mqA("TestTraceTopic", "BrokerA", 0);
+  MQMessageQueue mqB("TestTraceTopic", "BrokerB", 0);
+  topicPublishInfo->updateMessageQueueList(mqA);
+  topicPublishInfo->updateMessageQueueList(mqB);
+
+  SendResult okMQAResult(SEND_OK, "MSSAGEID", "OFFSETID", mqA, 1024, "DEFAULT_REGION");
+
+  EXPECT_CALL(*mockFactory, start()).Times(1).WillOnce(Return());
+  EXPECT_CALL(*mockFactory, shutdown()).Times(1).WillOnce(Return());
+  EXPECT_CALL(*mockFactory, registerProducer(_)).Times(1).WillOnce(Return(true));
+  EXPECT_CALL(*mockFactory, unregisterProducer(_)).Times(1).WillOnce(Return());
+  EXPECT_CALL(*mockFactory, sendHeartbeatToAllBroker()).Times(1).WillOnce(Return());
+  EXPECT_CALL(*mockFactory, tryToFindTopicPublishInfo(_, _)).WillRepeatedly(Return(topicPublishInfo));
+  EXPECT_CALL(*mockFactory, findBrokerAddressInPublish(_)).WillRepeatedly(Return("BrokerA"));
+  EXPECT_CALL(*mockFactory, getMQClientAPIImpl()).WillRepeatedly(Return(apiImpl));
+
+  EXPECT_CALL(*apiImpl, sendMessage(_, _, _, _, _, _, _, _, _)).WillRepeatedly(Return(okMQAResult));
+
+  // Start Producer.
+  impl->start();
+
+  MQMessage msg("TestTraceTopic", "testTag", "testKey", "testBodysA");
+  SendResult s1 = impl->send(msg);
+  EXPECT_EQ(s1.getSendStatus(), SEND_OK);
 
   impl->shutdown();
   delete mockFactory;

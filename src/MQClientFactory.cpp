@@ -77,6 +77,8 @@ void MQClientFactory::start() {
       m_serviceState = RUNNING;
       break;
     case RUNNING:
+      LOG_INFO("The Factory object:%s start before with now state:%d", m_clientId.c_str(), m_serviceState);
+      break;
     case SHUTDOWN_ALREADY:
     case START_FAILED:
       LOG_INFO("The Factory object:%s start failed with fault state:%d", m_clientId.c_str(), m_serviceState);

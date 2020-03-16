@@ -132,6 +132,8 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer {
   const std::string& getUnitName() const;
 
   void setAsyncPull(bool asyncFlag);
+  void setMessageTrace(bool messageTrace);
+  bool getMessageTrace() const;
 
  private:
   DefaultMQPushConsumerImpl* impl;

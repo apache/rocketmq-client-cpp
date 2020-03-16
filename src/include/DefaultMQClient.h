@@ -170,6 +170,10 @@ class DefaultMQClient {
 
   virtual void setFactory(MQClientFactory*);
 
+  bool getMessageTrace() const;
+
+  void setMessageTrace(bool mMessageTrace);
+
  protected:
   virtual void start();
   virtual void shutdown();
@@ -191,6 +195,7 @@ class DefaultMQClient {
 
   std::string m_unitName;
   SessionCredentials m_SessionCredentials;
+  bool m_messageTrace;
 };
 //<!***************************************************************************
 }  // namespace rocketmq

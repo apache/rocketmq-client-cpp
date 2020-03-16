@@ -185,8 +185,27 @@ void ConsumeMessageOrderlyService::ConsumeRequest(boost::weak_ptr<PullRequest> p
           if (m_pConsumer->isUseNameSpaceMode()) {
             MessageAccessor::withoutNameSpace(msgs, m_pConsumer->getNameSpace());
           }
+          ConsumeMessageContext consumeMessageContext;
+          DefaultMQPushConsumerImpl* pConsumer = dynamic_cast<DefaultMQPushConsumerImpl*>(m_pConsumer);
+          if (pConsumer) {
+            if (pConsumer->getMessageTrace() && pConsumer->hasConsumeMessageHook()) {
+              consumeMessageContext.setDefaultMQPushConsumer(pConsumer);
+              consumeMessageContext.setConsumerGroup(pConsumer->getGroupName());
+              consumeMessageContext.setMessageQueue(request->m_messageQueue);
+              consumeMessageContext.setMsgList(msgs);
+              consumeMessageContext.setSuccess(false);
+              consumeMessageContext.setNameSpace(pConsumer->getNameSpace());
+              pConsumer->executeConsumeMessageHookBefore(&consumeMessageContext);
+            }
+          }
           ConsumeStatus consumeStatus = m_pMessageListener->consumeMessage(msgs);
           if (consumeStatus == RECONSUME_LATER) {
+            if (pConsumer) {
+              consumeMessageContext.setMsgIndex(0);
+              consumeMessageContext.setStatus("RECONSUME_LATER");
+              consumeMessageContext.setSuccess(false);
+              pConsumer->executeConsumeMessageHookAfter(&consumeMessageContext);
+            }
             if (msgs[0].getReconsumeTimes() <= 15) {
               msgs[0].setReconsumeTimes(msgs[0].getReconsumeTimes() + 1);
               request->makeMessageToCosumeAgain(msgs);
@@ -202,6 +221,12 @@ void ConsumeMessageOrderlyService::ConsumeRequest(boost::weak_ptr<PullRequest> p
               tryLockLaterAndReconsumeDelay(request, false, 5000);
             }
           } else {
+            if (pConsumer) {
+              consumeMessageContext.setMsgIndex(0);
+              consumeMessageContext.setStatus("CONSUME_SUCCESS");
+              consumeMessageContext.setSuccess(true);
+              pConsumer->executeConsumeMessageHookAfter(&consumeMessageContext);
+            }
             m_pConsumer->updateConsumeOffset(request->m_messageQueue, request->commit());
           }
         } else {

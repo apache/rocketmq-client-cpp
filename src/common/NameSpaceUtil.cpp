@@ -17,6 +17,7 @@
 
 #include "NameSpaceUtil.h"
 #include "Logging.h"
+#include "TraceContant.h"
 
 namespace rocketmq {
 
@@ -75,6 +76,15 @@ bool NameSpaceUtil::checkNameSpaceExistInNameServer(string nameServerAddr) {
   return false;
 }
 
+string NameSpaceUtil::withoutNameSpace(string source, string nameSpace) {
+  if (!nameSpace.empty()) {
+    auto index = source.find(nameSpace);
+    if (index != string::npos) {
+      return source.substr(index + nameSpace.length() + NAMESPACE_SPLIT_FLAG.length(), source.length());
+    }
+  }
+  return source;
+}
 string NameSpaceUtil::withNameSpace(string source, string ns) {
   if (!ns.empty()) {
     return ns + NAMESPACE_SPLIT_FLAG + source;
@@ -83,6 +93,10 @@ string NameSpaceUtil::withNameSpace(string source, string ns) {
 }
 
 bool NameSpaceUtil::hasNameSpace(string source, string ns) {
+  if (source.find(TraceContant::TRACE_TOPIC) != string::npos) {
+    LOG_DEBUG("Find Trace Topic [%s]", source.c_str());
+    return true;
+  }
   if (!ns.empty() && source.length() >= ns.length() && source.find(ns) != string::npos) {
     return true;
   }
