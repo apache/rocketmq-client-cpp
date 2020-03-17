@@ -226,16 +226,16 @@ BuildOpenSSL() {
   fi
   echo "build openssl static #####################"
   if [ $verbose -eq 0 ]; then
-    ./config shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir} &> opensslconfig.txt
+    ./config no-shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir} &> opensslconfig.txt
   else
-    ./config shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir}
+    ./config no-shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir}
   fi
   if [ $? -ne 0 ]; then
     exit 1
   fi
   if [ $verbose -eq 0 ]; then
     echo "build openssl without detail log."
-    make depend
+    make depend &> opensslbuild.txt
     make -j $cpu_num &> opensslbuild.txt
   else
     make depend
@@ -276,9 +276,9 @@ BuildLibevent() {
   fi
   echo "build libevent static #####################"
   if [ $verbose -eq 0 ]; then
-    ./configure --enable-static=yes --enable-shared=no CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} &> libeventconfig.txt
+    ./configure --enable-static=yes --enable-shared=no CFLAGS="-fPIC -I${install_lib_dir}/include" CPPFLAGS="-fPIC -I${install_lib_dir}/include" LDFLAGS="-L${install_lib_dir}/lib" --prefix=${install_lib_dir} &> libeventconfig.txt
   else
-    ./configure --enable-static=yes --enable-shared=no CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir}
+    ./configure --enable-static=yes --enable-shared=no CFLAGS="-fPIC -I${install_lib_dir}/include" CPPFLAGS="-fPIC -I${install_lib_dir}/include" LDFLAGS="-L${install_lib_dir}/lib" --prefix=${install_lib_dir}
   fi
   if [ $? -ne 0 ]; then
     exit 1
