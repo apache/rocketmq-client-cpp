@@ -366,21 +366,21 @@ std::map<std::string, std::string> UtilAll::ReadProperties(const std::string& pa
       std::size_t pos{0};
       pos = line_buffer.find('#');
       if (pos != string::npos) {
-        line_buffer = std::move(line_buffer.substr(0, pos));
+        line_buffer = line_buffer.substr(0, pos);
       }
       if (line_buffer.empty()) {
         continue;
       }
       pos = line_buffer.find('=');
       if (pos != string::npos) {
-        std::string key = std::move(boost::trim_copy(line_buffer.substr(0, pos)));
-        std::string value = std::move(boost::trim_copy(line_buffer.substr(pos + 1)));
+        std::string key = boost::trim_copy(line_buffer.substr(0, pos));
+        std::string value = boost::trim_copy(line_buffer.substr(pos + 1));
         property_map[key] = value;
       }
     }
   }
 
-  return std::move(property_map);
+  return property_map;
 }
 
 }  // namespace rocketmq

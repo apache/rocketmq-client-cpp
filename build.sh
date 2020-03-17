@@ -226,9 +226,9 @@ BuildOpenSSL() {
   fi
   echo "build openssl static #####################"
   if [ $verbose -eq 0 ]; then
-    ./config no-shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir} &> opensslconfig.txt
+    ./config shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir} &> opensslconfig.txt
   else
-    ./config no-shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir}
+    ./config shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir}
   fi
   if [ $? -ne 0 ]; then
     exit 1
