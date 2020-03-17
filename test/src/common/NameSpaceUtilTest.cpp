@@ -80,9 +80,11 @@ TEST(NameSpaceUtil, hasNameSpace) {
   string source = "testTopic";
   string ns = "MQ_INST_UNITTEST";
   string nsSource = "MQ_INST_UNITTEST%testTopic";
+  string nsTraceSource = "rmq_sys_TRACE_DATA_Region";
   EXPECT_TRUE(NameSpaceUtil::hasNameSpace(nsSource, ns));
   EXPECT_FALSE(NameSpaceUtil::hasNameSpace(source, ns));
   EXPECT_FALSE(NameSpaceUtil::hasNameSpace(source, ""));
+  EXPECT_TRUE(NameSpaceUtil::hasNameSpace(nsTraceSource, ns));
 }
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);

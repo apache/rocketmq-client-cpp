@@ -176,6 +176,8 @@ class DefaultMQClient {
 
   void setSslPropertyFile(const std::string& sslPropertyFile);
   const std::string& getSslPropertyFile() const;
+  bool getMessageTrace() const;
+  void setMessageTrace(bool mMessageTrace);
 
  protected:
   virtual void start();
@@ -200,6 +202,7 @@ class DefaultMQClient {
 
   std::string m_unitName;
   SessionCredentials m_SessionCredentials;
+  bool m_messageTrace;
 };
 //<!***************************************************************************
 }  // namespace rocketmq

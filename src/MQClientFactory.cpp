@@ -63,8 +63,6 @@ MQClientFactory::~MQClientFactory() {
   m_topicRouteTable.clear();
   m_brokerAddrTable.clear();
   m_topicPublishInfoTable.clear();
-
-  m_pClientAPIImpl = NULL;
 }
 
 void MQClientFactory::start() {
@@ -78,6 +76,8 @@ void MQClientFactory::start() {
       m_serviceState = RUNNING;
       break;
     case RUNNING:
+      LOG_INFO("The Factory object:%s start before with now state:%d", m_clientId.c_str(), m_serviceState);
+      break;
     case SHUTDOWN_ALREADY:
     case START_FAILED:
       LOG_INFO("The Factory object:%s start failed with fault state:%d", m_clientId.c_str(), m_serviceState);
@@ -286,26 +286,36 @@ void MQClientFactory::shutdown() {
     return;
 
   switch (m_serviceState) {
+    case CREATE_JUST:
     case RUNNING: {
       if (m_consumer_async_service_thread) {
         m_consumer_async_ioService.stop();
         m_consumer_async_service_thread->interrupt();
         m_consumer_async_service_thread->join();
+        m_consumer_async_service_thread.reset();
       }
-      m_async_ioService.stop();
-      m_async_service_thread->interrupt();
-      m_async_service_thread->join();
-      m_pClientAPIImpl->stopAllTcpTransportThread();  // Note: stop all
-                                                      // TcpTransport Threads
-                                                      // and release all
-                                                      // responseFuture
-                                                      // conditions
+
+      if (m_async_service_thread) {
+        m_async_ioService.stop();
+        m_async_service_thread->interrupt();
+        m_async_service_thread->join();
+        m_async_service_thread.reset();
+      }
+
+      if (m_pClientAPIImpl) {
+        m_pClientAPIImpl->stopAllTcpTransportThread();  // Note: stop all
+                                                        // TcpTransport Threads
+                                                        // and release all
+                                                        // responseFuture
+                                                        // conditions
+        m_pClientAPIImpl.reset();
+      }
+
       m_serviceState = SHUTDOWN_ALREADY;
       LOG_INFO("MQClientFactory:%s shutdown", m_clientId.c_str());
       break;
     }
     case SHUTDOWN_ALREADY:
-    case CREATE_JUST:
       break;
     default:
       break;

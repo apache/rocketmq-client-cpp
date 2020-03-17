@@ -22,6 +22,8 @@
 #include "MQMessageQueue.h"
 #include "MQProducer.h"
 #include "RocketMQClient.h"
+#include "SendMessageContext.h"
+#include "SendMessageHook.h"
 #include "SendResult.h"
 
 namespace rocketmq {
@@ -34,6 +36,8 @@ class DefaultMQProducerImpl : public MQProducer {
   //<!begin mqadmin;
   virtual void start();
   virtual void shutdown();
+  virtual void start(bool factoryStart);
+  virtual void shutdown(bool factoryStart);
   //<!end mqadmin;
 
   //<! begin MQProducer;
@@ -78,6 +82,7 @@ class DefaultMQProducerImpl : public MQProducer {
 
   int getRetryTimes4Async() const;
   void setRetryTimes4Async(int times);
+  void submitSendTraceRequest(const MQMessage& msg, SendCallback* pSendCallback);
 
  protected:
   SendResult sendAutoRetrySelectImpl(MQMessage& msg,
@@ -104,6 +109,14 @@ class DefaultMQProducerImpl : public MQProducer {
   BatchMessage buildBatchMessage(std::vector<MQMessage>& msgs);
   bool dealWithNameSpace();
   void logConfigs();
+  bool dealWithMessageTrace();
+  bool isMessageTraceTopic(std::string topic);
+  bool hasSendMessageHook();
+  void registerSendMessageHook(std::shared_ptr<SendMessageHook>& hook);
+  void executeSendMessageHookBefore(SendMessageContext* context);
+  void executeSendMessageHookAfter(SendMessageContext* context);
+
+  void sendTraceMessage(MQMessage& msg, SendCallback* pSendCallback);
 
  private:
   int m_sendMsgTimeout;
@@ -113,6 +126,12 @@ class DefaultMQProducerImpl : public MQProducer {
   int m_compressLevel;
   int m_retryTimes;
   int m_retryTimes4Async;
+
+  // used for trace
+  std::vector<std::shared_ptr<SendMessageHook> > m_sendMessageHookList;
+  boost::asio::io_service m_trace_ioService;
+  boost::thread_group m_trace_threadpool;
+  boost::asio::io_service::work m_trace_ioService_work;
 };
 //<!***************************************************************************
 }  // namespace rocketmq

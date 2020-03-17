@@ -17,11 +17,13 @@
 #if !defined(WIN32) && !defined(__APPLE__)
 #include <sys/prctl.h>
 #endif
+
 #include "ConsumeMsgService.h"
 #include "DefaultMQPushConsumer.h"
 #include "Logging.h"
 #include "MessageAccessor.h"
 #include "UtilAll.h"
+
 namespace rocketmq {
 
 //<!************************************************************************
@@ -80,6 +82,7 @@ void ConsumeMessageConcurrentlyService::submitConsumeRequest(boost::weak_ptr<Pul
              request->m_messageQueue.toString().c_str());
   }
 }
+
 void ConsumeMessageConcurrentlyService::submitConsumeRequestLater(boost::weak_ptr<PullRequest> pullRequest,
                                                                   vector<MQMessageExt>& msgs,
                                                                   int millis) {
@@ -146,14 +149,26 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
   if (request->isDropped()) {
     LOG_WARN("the pull request for %s Had been dropped before", request->m_messageQueue.toString().c_str());
     request->clearAllMsgs();  // add clear operation to avoid bad state when
-                              // dropped pullRequest returns normal
+    // dropped pullRequest returns normal
     return;
   }
   if (msgs.empty()) {
     LOG_WARN("the msg of pull result is NULL,its mq:%s", (request->m_messageQueue).toString().c_str());
     return;
   }
-
+  ConsumeMessageContext consumeMessageContext;
+  DefaultMQPushConsumerImpl* pConsumer = dynamic_cast<DefaultMQPushConsumerImpl*>(m_pConsumer);
+  if (pConsumer) {
+    if (pConsumer->getMessageTrace() && pConsumer->hasConsumeMessageHook()) {
+      consumeMessageContext.setDefaultMQPushConsumer(pConsumer);
+      consumeMessageContext.setConsumerGroup(pConsumer->getGroupName());
+      consumeMessageContext.setMessageQueue(request->m_messageQueue);
+      consumeMessageContext.setMsgList(msgs);
+      consumeMessageContext.setSuccess(false);
+      consumeMessageContext.setNameSpace(pConsumer->getNameSpace());
+      pConsumer->executeConsumeMessageHookBefore(&consumeMessageContext);
+    }
+  }
   ConsumeStatus status = CONSUME_SUCCESS;
   if (m_pMessageListener != NULL) {
     resetRetryTopic(msgs);
@@ -163,11 +178,48 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
     if (m_pConsumer->isUseNameSpaceMode()) {
       MessageAccessor::withoutNameSpace(msgs, m_pConsumer->getNameSpace());
     }
-    try {
-      status = m_pMessageListener->consumeMessage(msgs);
-    } catch (...) {
-      status = RECONSUME_LATER;
-      LOG_ERROR("Consumer's code is buggy. Un-caught exception raised");
+
+    if (pConsumer->getMessageTrace() && pConsumer->hasConsumeMessageHook()) {
+      // For open trace message, consume message one by one.
+      for (size_t i = 0; i < msgs.size(); ++i) {
+        LOG_DEBUG("=====Trace Receive Messages,Topic[%s], MsgId[%s],Body[%s],RetryTimes[%d]",
+                  msgs[i].getTopic().c_str(), msgs[i].getMsgId().c_str(), msgs[i].getBody().c_str(),
+                  msgs[i].getReconsumeTimes());
+        std::vector<MQMessageExt> msgInner;
+        msgInner.push_back(msgs[i]);
+        if (status != CONSUME_SUCCESS) {
+          // all the Messages behind should be set to failed.
+          status = RECONSUME_LATER;
+          consumeMessageContext.setMsgIndex(i);
+          consumeMessageContext.setStatus("RECONSUME_LATER");
+          consumeMessageContext.setSuccess(false);
+          pConsumer->executeConsumeMessageHookAfter(&consumeMessageContext);
+          continue;
+        }
+        try {
+          status = m_pMessageListener->consumeMessage(msgInner);
+        } catch (...) {
+          status = RECONSUME_LATER;
+          LOG_ERROR("Consumer's code is buggy. Un-caught exception raised");
+        }
+        consumeMessageContext.setMsgIndex(i);  // indicate message position,not support batch consumer
+        if (status == CONSUME_SUCCESS) {
+          consumeMessageContext.setStatus("CONSUME_SUCCESS");
+          consumeMessageContext.setSuccess(true);
+        } else {
+          status = RECONSUME_LATER;
+          consumeMessageContext.setStatus("RECONSUME_LATER");
+          consumeMessageContext.setSuccess(false);
+        }
+        pConsumer->executeConsumeMessageHookAfter(&consumeMessageContext);
+      }
+    } else {
+      try {
+        status = m_pMessageListener->consumeMessage(msgs);
+      } catch (...) {
+        status = RECONSUME_LATER;
+        LOG_ERROR("Consumer's code is buggy. Un-caught exception raised");
+      }
     }
   }
 

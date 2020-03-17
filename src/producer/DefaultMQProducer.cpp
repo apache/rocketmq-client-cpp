@@ -180,7 +180,12 @@ void DefaultMQProducer::setUnitName(std::string unitName) {
 const std::string& DefaultMQProducer::getUnitName() const {
   return impl->getUnitName();
 }
-
+void DefaultMQProducer::setMessageTrace(bool messageTrace) {
+  impl->setMessageTrace(messageTrace);
+}
+bool DefaultMQProducer::getMessageTrace() const {
+  return impl->getMessageTrace();
+}
 SendResult DefaultMQProducer::send(MQMessage& msg, bool bSelectActiveBroker) {
   return impl->send(msg, bSelectActiveBroker);
 }

@@ -136,6 +136,8 @@ class ROCKETMQCLIENT_API DefaultMQProducer {
 
   void setUnitName(std::string unitName);
   const std::string& getUnitName() const;
+  void setMessageTrace(bool messageTrace);
+  bool getMessageTrace() const;
 
   void setEnableSsl(bool enableSsl);
   bool getEnableSsl() const;
