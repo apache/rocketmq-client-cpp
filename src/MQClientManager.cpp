@@ -41,9 +41,8 @@ MQClientFactory* MQClientManager::getMQClientFactory(const string& clientId,
   if (it != m_factoryTable.end()) {
     return it->second;
   } else {
-    MQClientFactory* factory =
-        new MQClientFactory(clientId, pullThreadNum, tcpConnectTimeout,
-                            tcpTransportTryLockTimeout, unitName, enableSsl, sslPropertyFile);
+    MQClientFactory* factory = new MQClientFactory(clientId, pullThreadNum, tcpConnectTimeout,
+                                                   tcpTransportTryLockTimeout, unitName, enableSsl, sslPropertyFile);
     m_factoryTable[clientId] = factory;
     return factory;
   }

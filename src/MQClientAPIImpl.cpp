@@ -27,7 +27,8 @@
 
 namespace rocketmq {
 //<!************************************************************************
-MQClientAPIImpl::MQClientAPIImpl(const string& mqClientId, bool enableSsl, const std::string& sslPropertyFile) : m_firstFetchNameSrv(true), m_mqClientId(mqClientId) {}
+MQClientAPIImpl::MQClientAPIImpl(const string& mqClientId, bool enableSsl, const std::string& sslPropertyFile)
+    : m_firstFetchNameSrv(true), m_mqClientId(mqClientId) {}
 MQClientAPIImpl::MQClientAPIImpl(const string& mqClientId,
                                  ClientRemotingProcessor* clientRemotingProcessor,
                                  int pullThreadNum,
@@ -37,7 +38,8 @@ MQClientAPIImpl::MQClientAPIImpl(const string& mqClientId,
                                  bool enableSsl,
                                  const std::string& sslPropertyFile)
     : m_firstFetchNameSrv(true), m_mqClientId(mqClientId) {
-  m_pRemotingClient.reset(new TcpRemotingClient(pullThreadNum, tcpConnectTimeout, tcpTransportTryLockTimeout, enableSsl, sslPropertyFile));
+  m_pRemotingClient.reset(
+      new TcpRemotingClient(pullThreadNum, tcpConnectTimeout, tcpTransportTryLockTimeout, enableSsl, sslPropertyFile));
   m_pRemotingClient->registerProcessor(CHECK_TRANSACTION_STATE, clientRemotingProcessor);
   m_pRemotingClient->registerProcessor(RESET_CONSUMER_CLIENT_OFFSET, clientRemotingProcessor);
   m_pRemotingClient->registerProcessor(GET_CONSUMER_STATUS_FROM_CLIENT, clientRemotingProcessor);

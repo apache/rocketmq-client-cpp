@@ -23,13 +23,13 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
-#include "UtilAll.h"
 #include "MQClient.h"
 #include "MQMessageExt.h"
 #include "MQMessageQueue.h"
 #include "QueryResult.h"
 #include "RocketMQClient.h"
 #include "SessionCredentials.h"
+#include "UtilAll.h"
 
 namespace rocketmq {
 class MQClientFactory;
@@ -192,8 +192,8 @@ class DefaultMQClient {
   std::string m_instanceName;
   std::string m_nameSpace;
   std::string m_GroupName;
-  std::string m_sslPropertyFile { DEFAULT_SSL_PROPERTY_FILE };
-  bool m_enableSsl { true };
+  std::string m_sslPropertyFile{DEFAULT_SSL_PROPERTY_FILE};
+  bool m_enableSsl{false};
   MQClientFactory* m_clientFactory;
   int m_serviceState;
   int m_pullThreadNum;

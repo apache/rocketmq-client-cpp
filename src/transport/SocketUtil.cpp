@@ -86,4 +86,4 @@ uint64 h2nll(uint64 v) {
 uint64 n2hll(uint64 v) {
   return swapll(v);
 }
-}  //<!end namespace;
+}  // namespace rocketmq

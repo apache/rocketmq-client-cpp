@@ -31,7 +31,10 @@
 namespace rocketmq {
 
 //<!************************************************************************
-TcpTransport::TcpTransport(TcpRemotingClient* pTcpRemointClient, bool enableSsl, const std::string& sslPropertyFile, TcpTransportReadCallback handle)
+TcpTransport::TcpTransport(TcpRemotingClient* pTcpRemointClient,
+                           bool enableSsl,
+                           const std::string& sslPropertyFile,
+                           TcpTransportReadCallback handle)
     : m_event(nullptr),
       m_tcpConnectStatus(TCP_CONNECT_STATUS_INIT),
       m_connectEventLock(),
@@ -157,7 +160,8 @@ TcpConnectStatus TcpTransport::connect(const string& strServerURL, int timeoutMi
     sin.sin_addr.s_addr = getInetAddr(hostname);
     sin.sin_port = htons(port);
 
-    m_event.reset(EventLoop::GetDefaultEventLoop()->createBufferEvent(-1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE, m_enableSsl, m_sslPropertyFile));
+    m_event.reset(EventLoop::GetDefaultEventLoop()->createBufferEvent(-1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE,
+                                                                      m_enableSsl, m_sslPropertyFile));
     m_event->setCallback(readNextMessageIntCallback, nullptr, eventCallback, shared_from_this());
     m_event->setWatermark(EV_READ, 4, 0);
     m_event->enable(EV_READ | EV_WRITE);

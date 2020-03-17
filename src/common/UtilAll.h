@@ -28,19 +28,19 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #endif
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/asio.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
-#include <boost/algorithm/string/trim.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/locale/conversion.hpp>
 #include <boost/locale/encoding.hpp>
-#include <sstream>
 #include <fstream>
 #include <map>
+#include <sstream>
 #include "RocketMQClient.h"
 
 using namespace std;
@@ -72,8 +72,8 @@ const string WS_ADDR =
 const int POLL_NAMESERVER_INTEVAL = 1000 * 30;
 const int HEARTBEAT_BROKER_INTERVAL = 1000 * 30;
 const int PERSIST_CONSUMER_OFFSET_INTERVAL = 1000 * 5;
-const int LINE_SEPARATOR = 1;  // rocketmq::UtilAll::charToString((char) 1);
-const int WORD_SEPARATOR = 2;  // rocketmq::UtilAll::charToString((char) 2);
+const int LINE_SEPARATOR = 1;   // rocketmq::UtilAll::charToString((char) 1);
+const int WORD_SEPARATOR = 2;   // rocketmq::UtilAll::charToString((char) 2);
 const int HTTP_TIMEOUT = 3000;  // 3S
 const int HTTP_CONFLICT = 409;
 const int HTTP_OK = 200;

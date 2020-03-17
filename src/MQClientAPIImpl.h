@@ -49,7 +49,8 @@ class MQClientAPIImpl {
                   uint64_t tcpConnectTimeout,
                   uint64_t tcpTransportTryLockTimeout,
                   string unitName,
-                  bool enableSsl, const std::string& sslPropertyFile);
+                  bool enableSsl,
+                  const std::string& sslPropertyFile);
   virtual ~MQClientAPIImpl();
   virtual void stopAllTcpTransportThread();
   virtual bool writeDataToFile(string filename, string data, bool isSync);

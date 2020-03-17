@@ -29,9 +29,15 @@ namespace rocketmq {
 
 //<!************************************************************************
 TcpRemotingClient::TcpRemotingClient(bool enableSsl, const std::string& sslPropertyFile)
-    : m_enableSsl(enableSsl), m_sslPropertyFile(sslPropertyFile)
-    , m_dispatchServiceWork(m_dispatchService), m_handleServiceWork(m_handleService) {}
-TcpRemotingClient::TcpRemotingClient(int pullThreadNum, uint64_t tcpConnectTimeout, uint64_t tcpTransportTryLockTimeout, bool enableSsl, const std::string& sslPropertyFile)
+    : m_enableSsl(enableSsl),
+      m_sslPropertyFile(sslPropertyFile),
+      m_dispatchServiceWork(m_dispatchService),
+      m_handleServiceWork(m_handleService) {}
+TcpRemotingClient::TcpRemotingClient(int pullThreadNum,
+                                     uint64_t tcpConnectTimeout,
+                                     uint64_t tcpTransportTryLockTimeout,
+                                     bool enableSsl,
+                                     const std::string& sslPropertyFile)
     : m_dispatchThreadNum(1),
       m_pullThreadNum(pullThreadNum),
       m_tcpConnectTimeout(tcpConnectTimeout),

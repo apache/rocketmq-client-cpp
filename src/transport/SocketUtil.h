@@ -19,8 +19,8 @@
 
 #ifdef WIN32
 #include <WS2tcpip.h>
-#include <Winsock2.h>
 #include <Windows.h>
+#include <Winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
 #else
 #include <arpa/inet.h>
@@ -34,7 +34,6 @@
 #include <sys/ioctl.h>
 #include <sys/select.h>
 #include <sys/socket.h>
-#include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -45,8 +44,8 @@
 namespace rocketmq {
 //<!************************************************************************
 /**
-* IP:PORT
-*/
+ * IP:PORT
+ */
 sockaddr IPPort2socketAddress(int host, int port);
 string socketAddress2IPPort(sockaddr addr);
 void socketAddress2IPPort(sockaddr addr, int& host, int& port);
@@ -58,6 +57,6 @@ uint64 h2nll(uint64 v);
 uint64 n2hll(uint64 v);
 
 //<!************************************************************************
-}  //<!end namespace;
+}  // namespace rocketmq
 
 #endif

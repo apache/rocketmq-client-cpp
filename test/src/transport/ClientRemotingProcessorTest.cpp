@@ -80,7 +80,13 @@ class MockMQClientFactory : public MQClientFactory {
                       uint64_t tcpConnectTimeout,
                       uint64_t tcpTransportTryLockTimeout,
                       string unitName)
-      : MQClientFactory(clientID, pullThreadNum, tcpConnectTimeout, tcpTransportTryLockTimeout, unitName, true, rocketmq::DEFAULT_SSL_PROPERTY_FILE) {}
+      : MQClientFactory(clientID,
+                        pullThreadNum,
+                        tcpConnectTimeout,
+                        tcpTransportTryLockTimeout,
+                        unitName,
+                        true,
+                        rocketmq::DEFAULT_SSL_PROPERTY_FILE) {}
 
   MOCK_METHOD3(resetOffset,
                void(const string& group, const string& topic, const map<MQMessageQueue, int64>& offsetTable));

@@ -363,7 +363,7 @@ std::map<std::string, std::string> UtilAll::ReadProperties(const std::string& pa
   if (property_file.is_open()) {
     while (!property_file.eof()) {
       std::getline(property_file, line_buffer);
-      std::size_t pos { 0 };
+      std::size_t pos{0};
       pos = line_buffer.find('#');
       if (pos != string::npos) {
         line_buffer = std::move(line_buffer.substr(0, pos));

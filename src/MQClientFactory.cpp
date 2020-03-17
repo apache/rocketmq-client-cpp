@@ -30,7 +30,8 @@
 
 namespace rocketmq {
 //<!***************************************************************************
-MQClientFactory::MQClientFactory(const string& clientID, bool enableSsl, const std::string& sslPropertyFile) : m_bFetchNSService(true) {
+MQClientFactory::MQClientFactory(const string& clientID, bool enableSsl, const std::string& sslPropertyFile)
+    : m_bFetchNSService(true) {
   m_clientId = clientID;
 }
 MQClientFactory::MQClientFactory(const string& clientID,
@@ -38,7 +39,8 @@ MQClientFactory::MQClientFactory(const string& clientID,
                                  uint64_t tcpConnectTimeout,
                                  uint64_t tcpTransportTryLockTimeout,
                                  string unitName,
-                                 bool enableSsl, const std::string& sslPropertyFile)
+                                 bool enableSsl,
+                                 const std::string& sslPropertyFile)
     : m_bFetchNSService(true) {
   m_clientId = clientID;
   // default Topic register;
@@ -46,7 +48,8 @@ MQClientFactory::MQClientFactory(const string& clientID,
   m_topicPublishInfoTable[DEFAULT_TOPIC] = pDefaultTopicInfo;
   m_pClientRemotingProcessor.reset(new ClientRemotingProcessor(this));
   m_pClientAPIImpl.reset(new MQClientAPIImpl(m_clientId, m_pClientRemotingProcessor.get(), pullThreadNum,
-                                             tcpConnectTimeout, tcpTransportTryLockTimeout, unitName, enableSsl, sslPropertyFile));
+                                             tcpConnectTimeout, tcpTransportTryLockTimeout, unitName, enableSsl,
+                                             sslPropertyFile));
   m_serviceState = CREATE_JUST;
   LOG_DEBUG("MQClientFactory construct");
 }

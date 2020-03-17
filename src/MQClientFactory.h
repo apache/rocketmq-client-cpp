@@ -48,9 +48,7 @@ class MQClientFactory {
                   string unitName,
                   bool enableSsl,
                   const std::string& sslPropertyFile);
-  MQClientFactory(const string& clientID,
-                  bool enableSsl,
-                  const std::string& sslPropertyFile);
+  MQClientFactory(const string& clientID, bool enableSsl, const std::string& sslPropertyFile);
   virtual ~MQClientFactory();
 
   virtual void start();

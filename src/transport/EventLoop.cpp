@@ -140,25 +140,29 @@ bool EventLoop::CreateSslContext(const std::string& ssl_property_file) {
       ca_cert_file = properties["tls.client.trustCertPath"];
     }
   } else {
-    LOG_WARN("The tls properties file is not specified or empty. "
-             "Set it by modifying the api of setTlsPropertyFile and fill the configuration content.");
+    LOG_WARN(
+        "The tls properties file is not specified or empty. "
+        "Set it by modifying the api of setTlsPropertyFile and fill the configuration content.");
   }
 
-  SSL_CTX_set_verify(m_sslCtx.get(), SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);  
+  SSL_CTX_set_verify(m_sslCtx.get(), SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
   SSL_CTX_set_mode(m_sslCtx.get(), SSL_MODE_AUTO_RETRY);
 
   if (client_key_passwd.empty()) {
-    LOG_WARN("The pass phrase is not specified. "
-             "Set it by adding the 'tls.client.keyPassword' property in configuration file.");
+    LOG_WARN(
+        "The pass phrase is not specified. "
+        "Set it by adding the 'tls.client.keyPassword' property in configuration file.");
   } else {
     SSL_CTX_set_default_passwd_cb_userdata(m_sslCtx.get(), (void*)client_key_passwd.c_str());
   }
 
-  bool check_flag { true };
+  bool check_flag{true};
   if (!boost::filesystem::exists(ca_cert_file.c_str())) {
     check_flag = false;
-    LOG_WARN("'%s' does not exist. Please make sure the 'tls.client.trustCertPath' property "
-             "in the configuration file is configured correctly.", ca_cert_file.c_str());
+    LOG_WARN(
+        "'%s' does not exist. Please make sure the 'tls.client.trustCertPath' property "
+        "in the configuration file is configured correctly.",
+        ca_cert_file.c_str());
   } else if (SSL_CTX_load_verify_locations(m_sslCtx.get(), ca_cert_file.c_str(), NULL) <= 0) {
     LOG_ERROR("SSL_CTX_load_verify_locations error!");
     ERR_print_errors_fp(stderr);
@@ -167,8 +171,10 @@ bool EventLoop::CreateSslContext(const std::string& ssl_property_file) {
 
   if (!boost::filesystem::exists(client_cert_file.c_str())) {
     check_flag = false;
-    LOG_WARN("'%s' does not exist. Please make sure the 'tls.client.certPath' property "
-             "in the configuration file is configured correctly.", client_cert_file.c_str());
+    LOG_WARN(
+        "'%s' does not exist. Please make sure the 'tls.client.certPath' property "
+        "in the configuration file is configured correctly.",
+        client_cert_file.c_str());
   } else if (SSL_CTX_use_certificate_file(m_sslCtx.get(), client_cert_file.c_str(), SSL_FILETYPE_PEM) <= 0) {
     LOG_ERROR("SSL_CTX_use_certificate_file error!");
     ERR_print_errors_fp(stderr);
@@ -177,16 +183,17 @@ bool EventLoop::CreateSslContext(const std::string& ssl_property_file) {
 
   if (!boost::filesystem::exists(client_key_file.c_str())) {
     check_flag = false;
-    LOG_WARN("'%s' does not exist. Please make sure the 'tls.client.keyPath' property "
-             "in the configuration file is configured correctly.", client_key_file.c_str());
+    LOG_WARN(
+        "'%s' does not exist. Please make sure the 'tls.client.keyPath' property "
+        "in the configuration file is configured correctly.",
+        client_key_file.c_str());
   } else if (SSL_CTX_use_PrivateKey_file(m_sslCtx.get(), client_key_file.c_str(), SSL_FILETYPE_PEM) <= 0) {
     LOG_ERROR("SSL_CTX_use_PrivateKey_file error!");
     ERR_print_errors_fp(stderr);
     return false;
   }
 
-  if(check_flag && SSL_CTX_check_private_key(m_sslCtx.get()) <= 0)
-  {
+  if (check_flag && SSL_CTX_check_private_key(m_sslCtx.get()) <= 0) {
     LOG_ERROR("SSL_CTX_check_private_key error!");
     ERR_print_errors_fp(stderr);
     return false;
@@ -197,8 +204,11 @@ bool EventLoop::CreateSslContext(const std::string& ssl_property_file) {
 
 #define OPT_UNLOCK_CALLBACKS (BEV_OPT_DEFER_CALLBACKS | BEV_OPT_UNLOCK_CALLBACKS)
 
-BufferEvent* EventLoop::createBufferEvent(socket_t fd, int options, bool enable_ssl, const std::string& ssl_property_file) {
-  struct bufferevent* event { nullptr };
+BufferEvent* EventLoop::createBufferEvent(socket_t fd,
+                                          int options,
+                                          bool enable_ssl,
+                                          const std::string& ssl_property_file) {
+  struct bufferevent* event{nullptr};
 
   if (enable_ssl) {
     if (!m_sslCtx && !CreateSslContext(ssl_property_file)) {
@@ -213,10 +223,9 @@ BufferEvent* EventLoop::createBufferEvent(socket_t fd, int options, bool enable_
     }
 
     // create ssl bufferevent
-    event = bufferevent_openssl_socket_new(m_eventBase, fd, ssl,
-                                           BUFFEREVENT_SSL_CONNECTING, options);
-  
-    /* create filter ssl bufferevent 
+    event = bufferevent_openssl_socket_new(m_eventBase, fd, ssl, BUFFEREVENT_SSL_CONNECTING, options);
+
+    /* create filter ssl bufferevent
     struct bufferevent *bev = bufferevent_socket_new(m_eventBase, fd, options);
     event = bufferevent_openssl_filter_new(m_eventBase, bev, ssl,
                                            BUFFEREVENT_SSL_CONNECTING, options);

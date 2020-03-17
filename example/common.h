@@ -17,9 +17,9 @@
 #ifndef ROCKETMQ_CLIENT4CPP_EXAMPLE_COMMON_H_
 #define ROCKETMQ_CLIENT4CPP_EXAMPLE_COMMON_H_
 
-#include <functional>
 #include <atomic>
 #include <chrono>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <string>

@@ -147,7 +147,8 @@ vector<MQMessageQueue> DefaultMQClient::getTopicMessageQueueInfo(const string& t
 void DefaultMQClient::start() {
   if (getFactory() == NULL) {
     m_clientFactory = MQClientManager::getInstance()->getMQClientFactory(
-        getMQClientId(), m_pullThreadNum, m_tcpConnectTimeout, m_tcpTransportTryLockTimeout, m_unitName, m_enableSsl, m_sslPropertyFile);
+        getMQClientId(), m_pullThreadNum, m_tcpConnectTimeout, m_tcpTransportTryLockTimeout, m_unitName, m_enableSsl,
+        m_sslPropertyFile);
   }
   LOG_INFO(
       "MQClient "
