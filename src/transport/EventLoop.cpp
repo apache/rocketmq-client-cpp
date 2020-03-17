@@ -157,7 +157,7 @@ bool EventLoop::CreateSslContext(const std::string& ssl_property_file) {
   bool check_flag { true };
   if (!boost::filesystem::exists(ca_cert_file.c_str())) {
     check_flag = false;
-    LOG_WARN("'%s' does not exist. Please make sure the 'ls.client.trustCertPath' property "
+    LOG_WARN("'%s' does not exist. Please make sure the 'tls.client.trustCertPath' property "
              "in the configuration file is configured correctly.", ca_cert_file.c_str());
   } else if (SSL_CTX_load_verify_locations(m_sslCtx.get(), ca_cert_file.c_str(), NULL) <= 0) {
     LOG_ERROR("SSL_CTX_load_verify_locations error!");
