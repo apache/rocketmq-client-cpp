@@ -797,6 +797,24 @@ int SetProducerMaxMessageSize(CProducer* producer, int size) {
   }
   return OK;
 }
+int SetProducerMessageTrace(CProducer* producer, CTraceModel openTrace) {
+  if (producer == NULL) {
+    return NULL_POINTER;
+  }
+  DefaultProducer* defaultMQProducer = (DefaultProducer*)producer;
+  bool messageTrace = openTrace == OPEN ? true : false;
+  try {
+    if (CAPI_C_PRODUCER_TYPE_TRANSACTION == defaultMQProducer->producerType) {
+      defaultMQProducer->innerTransactionProducer->setMessageTrace(messageTrace);
+    } else {
+      defaultMQProducer->innerProducer->setMessageTrace(messageTrace);
+    }
+  } catch (exception& e) {
+    MQClientErrorContainer::setErr(string(e.what()));
+    return PRODUCER_START_FAILED;
+  }
+  return OK;
+}
 #ifdef __cplusplus
 };
 #endif

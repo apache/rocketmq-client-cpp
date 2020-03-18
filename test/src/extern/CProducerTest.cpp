@@ -228,6 +228,10 @@ TEST(cProducer, info) {
   EXPECT_EQ(SetProducerSessionCredentials(cProducer, "accessKey", "secretKey", "channel"), OK);
   SessionCredentials sessionCredentials = defaultMQProducer->getSessionCredentials();
   EXPECT_EQ(sessionCredentials.getAccessKey(), "accessKey");
+
+  EXPECT_EQ(SetProducerMessageTrace(cProducer, OPEN), OK);
+  EXPECT_EQ(defaultMQProducer->getMessageTrace(), true);
+
   Mock::AllowLeak(defaultMQProducer);
 }
 

@@ -160,7 +160,12 @@ void TransactionMQProducer::setUnitName(std::string unitName) {
 const std::string& TransactionMQProducer::getUnitName() const {
   return impl->getUnitName();
 }
-
+void TransactionMQProducer::setMessageTrace(bool messageTrace) {
+  impl->setMessageTrace(messageTrace);
+}
+bool TransactionMQProducer::getMessageTrace() const {
+  return impl->getMessageTrace();
+}
 std::shared_ptr<TransactionListener> TransactionMQProducer::getTransactionListener() {
   return impl->getTransactionListener();
 }

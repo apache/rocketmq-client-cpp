@@ -83,6 +83,7 @@ typedef enum _CLogLevel_ {
 #endif
 
 typedef enum _CMessageModel_ { BROADCASTING, CLUSTERING } CMessageModel;
+typedef enum _CTraceModel_ { OPEN, CLOSE } CTraceModel;
 
 #ifdef __cplusplus
 }

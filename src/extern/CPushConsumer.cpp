@@ -296,7 +296,14 @@ int SetPushConsumerLogLevel(CPushConsumer* consumer, CLogLevel level) {
   ((DefaultMQPushConsumer*)consumer)->setLogLevel((elogLevel)level);
   return OK;
 }
-
+int SetPushConsumerMessageTrace(CPushConsumer* consumer, CTraceModel openTrace) {
+  if (consumer == NULL) {
+    return NULL_POINTER;
+  }
+  bool messageTrace = openTrace == OPEN ? true : false;
+  ((DefaultMQPushConsumer*)consumer)->setMessageTrace(messageTrace);
+  return OK;
+}
 #ifdef __cplusplus
 };
 #endif
