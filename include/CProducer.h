@@ -63,6 +63,7 @@ ROCKETMQCLIENT_API int SetProducerLogLevel(CProducer* producer, CLogLevel level)
 ROCKETMQCLIENT_API int SetProducerSendMsgTimeout(CProducer* producer, int timeout);
 ROCKETMQCLIENT_API int SetProducerCompressLevel(CProducer* producer, int level);
 ROCKETMQCLIENT_API int SetProducerMaxMessageSize(CProducer* producer, int size);
+ROCKETMQCLIENT_API int SetProducerMessageTrace(CProducer* consumer, CTraceModel openTrace);
 
 ROCKETMQCLIENT_API int SendMessageSync(CProducer* producer, CMessage* msg, CSendResult* result);
 ROCKETMQCLIENT_API int SendBatchMessage(CProducer* producer, CBatchMessage* msg, CSendResult* result);

@@ -118,6 +118,8 @@ TEST(cPushComsumer, info) {
   EXPECT_EQ(SetPushConsumerMessageModel(cpushConsumer, BROADCASTING), OK);
   EXPECT_EQ(mqPushConsumer->getMessageModel(), MessageModel::BROADCASTING);
 
+  EXPECT_EQ(SetPushConsumerMessageTrace(cpushConsumer, CLOSE), OK);
+  EXPECT_EQ(mqPushConsumer->getMessageTrace(), false);
   Mock::AllowLeak(mqPushConsumer);
 }
 
