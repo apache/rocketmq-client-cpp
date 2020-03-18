@@ -25,8 +25,8 @@
 
 namespace rocketmq {
 // hard code first.
-#define ROCKETMQCPP_VERSION "2.0.1"
-#define BUILD_DATE "21:34:58 02-28-2020"
+#define ROCKETMQCPP_VERSION "2.1.0"
+#define BUILD_DATE "14:25:18 03-18-2020"
 // display version: strings bin/librocketmq.so |grep VERSION
 const char* rocketmq_build_time = "CPP CORE VERSION: " ROCKETMQCPP_VERSION ", BUILD TIME: " BUILD_DATE;
 

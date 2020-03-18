@@ -16,7 +16,7 @@
 Summary: A C++ Client of Apache RocketMQ
 
 Name: rocketmq-client-cpp
-Version: 2.0.1
+Version: 2.1.0
 Release: centos
 Group: Apache
 License: APLv2
