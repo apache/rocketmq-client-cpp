@@ -259,8 +259,8 @@ bool DefaultMQPushConsumerImpl::sendMessageBack(MQMessageExt& msg, int delayLeve
   else
     brokerAddr = socketAddress2IPPort(msg.getStoreHost());
   try {
-    getFactory()->getMQClientAPIImpl()->consumerSendMessageBack(brokerAddr, msg, getGroupName(), delayLevel,
-                                                                getMaxReconsumeTimes(), 3000, getSessionCredentials());
+    getFactory()->getMQClientAPIImpl()->consumerSendMessageBack(brokerAddr, msg, getGroupName(), delayLevel, 3000,
+                                                                getMaxReconsumeTimes(), getSessionCredentials());
   } catch (MQException& e) {
     LOG_ERROR(e.what());
     return false;
