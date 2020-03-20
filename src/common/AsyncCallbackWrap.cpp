@@ -180,7 +180,7 @@ void PullCallbackWrap::operationComplete(ResponseFuture* pResponseFuture, bool b
         LOG_ERROR("pPullWrapper had been destroyed with consumer");
       }
     } catch (MQException& e) {
-      LOG_ERROR(e.what());
+      LOG_ERROR("%s", e.what());
       MQException exception("pullResult error", -1, __FILE__, __LINE__);
       if (pCallback && bProducePullRequest)
         pCallback->onException(exception);

@@ -134,7 +134,7 @@ SendResult DefaultMQProducerImpl::send(MQMessage& msg, bool bSelectActiveBroker)
   try {
     return sendDefaultImpl(msg, ComMode_SYNC, NULL, bSelectActiveBroker);
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
     throw e;
   }
   return SendResult();
@@ -148,7 +148,7 @@ void DefaultMQProducerImpl::send(MQMessage& msg, SendCallback* pSendCallback, bo
   try {
     sendDefaultImpl(msg, ComMode_ASYNC, pSendCallback, bSelectActiveBroker);
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
     throw e;
   }
 }
@@ -159,7 +159,7 @@ SendResult DefaultMQProducerImpl::send(std::vector<MQMessage>& msgs) {
     BatchMessage batchMessage = buildBatchMessage(msgs);
     result = sendDefaultImpl(batchMessage, ComMode_SYNC, NULL);
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
     throw e;
   }
   return result;
@@ -171,7 +171,7 @@ SendResult DefaultMQProducerImpl::send(std::vector<MQMessage>& msgs, const MQMes
     BatchMessage batchMessage = buildBatchMessage(msgs);
     result = sendKernelImpl(batchMessage, mq, ComMode_SYNC, NULL);
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
     throw e;
   }
   return result;
@@ -227,7 +227,7 @@ SendResult DefaultMQProducerImpl::send(MQMessage& msg, const MQMessageQueue& mq)
   try {
     return sendKernelImpl(msg, mq, ComMode_SYNC, NULL);
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
     throw e;
   }
   return SendResult();
@@ -244,7 +244,7 @@ void DefaultMQProducerImpl::send(MQMessage& msg, const MQMessageQueue& mq, SendC
   try {
     sendKernelImpl(msg, mq, ComMode_ASYNC, pSendCallback);
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
     throw e;
   }
 }
@@ -257,7 +257,7 @@ void DefaultMQProducerImpl::sendOneway(MQMessage& msg, bool bSelectActiveBroker)
   try {
     sendDefaultImpl(msg, ComMode_ONEWAY, NULL, bSelectActiveBroker);
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
     throw e;
   }
 }
@@ -273,7 +273,7 @@ void DefaultMQProducerImpl::sendOneway(MQMessage& msg, const MQMessageQueue& mq)
   try {
     sendKernelImpl(msg, mq, ComMode_ONEWAY, NULL);
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
     throw e;
   }
 }
@@ -285,7 +285,7 @@ SendResult DefaultMQProducerImpl::send(MQMessage& msg, MessageQueueSelector* pSe
     }
     return sendSelectImpl(msg, pSelector, arg, ComMode_SYNC, NULL);
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
     throw e;
   }
   return SendResult();
@@ -302,7 +302,7 @@ SendResult DefaultMQProducerImpl::send(MQMessage& msg,
     }
     return sendAutoRetrySelectImpl(msg, pSelector, arg, ComMode_SYNC, NULL, autoRetryTimes, bActiveBroker);
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
     throw e;
   }
   return SendResult();

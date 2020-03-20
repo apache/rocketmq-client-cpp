@@ -113,7 +113,7 @@ void Rebalance::doRebalance() {
             errMsg.append("],Topic[");
             errMsg.append(topic);
             errMsg.append("] failed. ");
-            LOG_ERROR(errMsg.c_str());
+            LOG_ERROR("%s", errMsg.c_str());
             THROW_MQEXCEPTION(MQClientException, errMsg, -1);
           }
 
@@ -127,15 +127,16 @@ void Rebalance::doRebalance() {
           if (changed) {
             std::stringstream ss;
             ss << "Allocation result for [Consumer Group: " << m_pConsumer->getGroupName() << ", Topic: " << topic
-               << ", Current Consumer ID: " << m_pConsumer->getMQClientId() << "] is changed.\n "
+               << ", Current Consumer ID: " << m_pConsumer->getMQClientId() << "] is changed.\n"
                << "Total Queue :#" << mqAll.size() << ", Total Consumer :#" << cidAll.size()
-               << " Allocated Queues are: \n";
+               << ", Allocated Queues are: \n";
 
             for (vector<MQMessageQueue>::size_type i = 0; i < allocateResult.size(); ++i) {
               ss << allocateResult[i].toString() << "\n";
             }
             // Log allocation result.
-            LOG_INFO(ss.str().c_str());
+            LOG_INFO("%s", ss.str().c_str());
+
             messageQueueChanged(topic, mqAll, allocateResult);
             break;
           }
@@ -145,7 +146,7 @@ void Rebalance::doRebalance() {
       }
     }
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
   }
 }
 

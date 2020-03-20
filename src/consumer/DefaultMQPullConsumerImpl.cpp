@@ -154,7 +154,7 @@ void DefaultMQPullConsumerImpl::fetchSubscribeMessageQueues(const string& topic,
     const string localTopic = NameSpaceUtil::withNameSpace(topic, getNameSpace());
     getFactory()->fetchSubscribeMessageQueues(localTopic, mqs, getSessionCredentials());
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
   }
 }
 
@@ -237,7 +237,7 @@ PullResult DefaultMQPullConsumerImpl::pullSyncImpl(const MQMessageQueue& mq,
     }
     return pr;
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
   }
   return PullResult(BROKER_TIMEOUT);
 }
@@ -287,7 +287,7 @@ void DefaultMQPullConsumerImpl::pullAsyncImpl(const MQMessageQueue& mq,
                                                                         ComMode_ASYNC,           // 10
                                                                         pPullCallback, getSessionCredentials(), &arg));
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
   }
 }
 

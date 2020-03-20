@@ -791,7 +791,7 @@ void MQClientFactory::sendHeartbeatToAllBroker() {
       try {
         m_pClientAPIImpl->sendHeartbeat(addr, heartbeatData.get(), session_credentials);
       } catch (MQException& e) {
-        LOG_ERROR(e.what());
+        LOG_ERROR("%s", e.what());
       }
     }
   }
@@ -1016,7 +1016,7 @@ int64 MQClientFactory::minOffset(const MQMessageQueue& mq, const SessionCredenti
     try {
       return m_pClientAPIImpl->getMinOffset(brokerAddr, mq.getTopic(), mq.getQueueId(), 1000 * 3, sessionCredentials);
     } catch (MQException& e) {
-      LOG_ERROR(e.what());
+      LOG_ERROR("%s", e.what());
     }
   }
   THROW_MQEXCEPTION(MQClientException, "The broker is not exist", -1);
@@ -1113,7 +1113,7 @@ void MQClientFactory::findConsumerIds(const string& topic,
       LOG_INFO("getConsumerIdList from broker:%s", brokerAddr.c_str());
       return m_pClientAPIImpl->getConsumerIdListByGroup(brokerAddr, group, cids, 5000, sessionCredentials);
     } catch (MQException& e) {
-      LOG_ERROR(e.what());
+      LOG_ERROR("%s", e.what());
     }
   }
 }
