@@ -262,7 +262,7 @@ bool DefaultMQPushConsumerImpl::sendMessageBack(MQMessageExt& msg, int delayLeve
     getFactory()->getMQClientAPIImpl()->consumerSendMessageBack(brokerAddr, msg, getGroupName(), delayLevel, 3000,
                                                                 getMaxReconsumeTimes(), getSessionCredentials());
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
     return false;
   }
   return true;
@@ -273,7 +273,7 @@ void DefaultMQPushConsumerImpl::fetchSubscribeMessageQueues(const string& topic,
   try {
     getFactory()->fetchSubscribeMessageQueues(topic, mqs, getSessionCredentials());
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
   }
 }
 
@@ -282,7 +282,7 @@ void DefaultMQPushConsumerImpl::doRebalance() {
     try {
       m_pRebalance->doRebalance();
     } catch (MQException& e) {
-      LOG_ERROR(e.what());
+      LOG_ERROR("%s", e.what());
     }
   }
 }
@@ -770,7 +770,7 @@ void DefaultMQPushConsumerImpl::pullMessage(boost::weak_ptr<PullRequest> pullReq
       }
     }
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
     LOG_WARN("Pull %s occur exception, restart 1s  later.", messageQueue.toString().c_str());
     producePullMsgTaskLater(request, 1000);
   }
@@ -899,7 +899,7 @@ void DefaultMQPushConsumerImpl::pullMessageAsync(boost::weak_ptr<PullRequest> pu
                                       getSessionCredentials(),   // 12
                                       &arg);                     // 13
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR("%s", e.what());
     if (request->isDropped()) {
       LOG_WARN("Pull request is set as dropped with mq:%s, return", (request->m_messageQueue).toString().c_str());
       return;

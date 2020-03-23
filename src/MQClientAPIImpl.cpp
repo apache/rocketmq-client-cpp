@@ -503,7 +503,7 @@ PullResult* MQClientAPIImpl::pullMessageSync(const string& addr, RemotingCommand
                                                                         // processPullResponse
         return pullResult;
       } catch (MQException& e) {
-        LOG_ERROR(e.what());
+        LOG_ERROR("%s", e.what());
         return NULL;
       }
     }

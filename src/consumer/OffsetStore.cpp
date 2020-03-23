@@ -251,10 +251,10 @@ int64 RemoteBrokerOffsetStore::readOffset(const MQMessageQueue& mq,
         updateOffset(mq, brokerOffset);
         return brokerOffset;
       } catch (MQBrokerException& e) {
-        LOG_ERROR(e.what());
+        LOG_ERROR("%s", e.what());
         return -1;
       } catch (MQException& e) {
-        LOG_ERROR(e.what());
+        LOG_ERROR("%s", e.what());
         return -2;
       }
     }
@@ -311,7 +311,7 @@ void RemoteBrokerOffsetStore::updateConsumeOffsetToBroker(const MQMessageQueue& 
       return m_pClientFactory->getMQClientAPIImpl()->updateConsumerOffsetOneway(
           pFindBrokerResult->brokerAddr, pRequestHeader, 1000 * 5, session_credentials);
     } catch (MQException& e) {
-      LOG_ERROR(e.what());
+      LOG_ERROR("%s", e.what());
     }
   }
   LOG_WARN("The broker not exist");
