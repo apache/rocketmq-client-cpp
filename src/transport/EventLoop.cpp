@@ -34,7 +34,7 @@ EventLoop* EventLoop::GetDefaultEventLoop() {
 }
 
 EventLoop::EventLoop(const struct event_config* config, bool run_immediately) {
-  // tell libevent support multi-threads
+
 #ifdef WIN32
   evthread_use_windows_threads();
 #else
