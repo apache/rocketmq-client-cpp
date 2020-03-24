@@ -34,7 +34,6 @@ EventLoop* EventLoop::GetDefaultEventLoop() {
 }
 
 EventLoop::EventLoop(const struct event_config* config, bool run_immediately) {
-
 #ifdef WIN32
   evthread_use_windows_threads();
 #else
