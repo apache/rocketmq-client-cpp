@@ -1115,7 +1115,7 @@ void DefaultMQPushConsumerImpl::shutdownMessageTraceInnerProducer() {
   if (!getMessageTrace()) {
     return;
   }
-  if (!m_DefaultMQProducerImpl) {
+  if (m_DefaultMQProducerImpl) {
     LOG_INFO("Shutdown Message Trace Inner Producer In Consumer.");
     m_DefaultMQProducerImpl->shutdown(false);
   }
