@@ -35,7 +35,7 @@ using testing::Return;
 
 class MockTcpRemotingClient : public TcpRemotingClient {
  public:
-  MockTcpRemotingClient() : TcpRemotingClient() {}
+  MockTcpRemotingClient() : TcpRemotingClient(true, DEFAULT_SSL_PROPERTY_FILE) {}
 
   MOCK_METHOD3(invokeSync, RemotingCommand*(const string&, RemotingCommand&, int));
   MOCK_METHOD6(invokeAsync, bool(const string&, RemotingCommand&, std::shared_ptr<AsyncCallbackWrap>, int64, int, int));
@@ -48,7 +48,7 @@ class MockMQClientAPIImpl : public MQClientAPIImpl {
                       uint64_t tcpConnectTimeout,
                       uint64_t tcpTransportTryLockTimeout,
                       string unitName)
-      : MQClientAPIImpl(mqClientId) {}
+      : MQClientAPIImpl(mqClientId, true, DEFAULT_SSL_PROPERTY_FILE) {}
   void reInitRemoteClient(TcpRemotingClient* client) { m_pRemotingClient.reset(client); }
 };
 

@@ -45,8 +45,10 @@ class MQClientFactory {
                   int pullThreadNum,
                   uint64_t tcpConnectTimeout,
                   uint64_t tcpTransportTryLockTimeout,
-                  string unitName);
-  MQClientFactory(const string& clientID);
+                  string unitName,
+                  bool enableSsl,
+                  const std::string& sslPropertyFile);
+  MQClientFactory(const string& clientID, bool enableSsl, const std::string& sslPropertyFile);
   virtual ~MQClientFactory();
 
   virtual void start();

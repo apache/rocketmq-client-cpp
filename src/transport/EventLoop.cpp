@@ -22,8 +22,9 @@
 
 #include <event2/thread.h>
 
+#include <boost/filesystem.hpp>
+
 #include "Logging.h"
-#include "UtilAll.h"
 
 namespace rocketmq {
 
@@ -32,9 +33,7 @@ EventLoop* EventLoop::GetDefaultEventLoop() {
   return &defaultEventLoop;
 }
 
-EventLoop::EventLoop(const struct event_config* config, bool run_immediately)
-    : m_eventBase(nullptr), m_loopThread(nullptr), _is_running(false) {
-  // tell libevent support multi-threads
+EventLoop::EventLoop(const struct event_config* config, bool run_immediately) {
 #ifdef WIN32
   evthread_use_windows_threads();
 #else
@@ -85,7 +84,7 @@ void EventLoop::start() {
 
 void EventLoop::stop() {
   if (m_loopThread != nullptr /*&& m_loopThread.joinable()*/) {
-    _is_running = false;
+    m_isRuning = false;
     m_loopThread->join();
 
     delete m_loopThread;
@@ -94,9 +93,9 @@ void EventLoop::stop() {
 }
 
 void EventLoop::runLoop() {
-  _is_running = true;
+  m_isRuning = true;
 
-  while (_is_running) {
+  while (m_isRuning) {
     int ret;
 
     ret = event_base_dispatch(m_eventBase);
@@ -109,11 +108,133 @@ void EventLoop::runLoop() {
   }
 }
 
+bool EventLoop::CreateSslContext(const std::string& ssl_property_file) {
+  ERR_load_crypto_strings();
+  SSL_load_error_strings();
+  SSL_library_init();
+  OpenSSL_add_all_algorithms();
+
+  m_sslCtx.reset(SSL_CTX_new(SSLv23_client_method()));
+  if (!m_sslCtx) {
+    LOG_ERROR("Failed to create ssl context!");
+    return false;
+  }
+
+  std::string client_key_file = DEFAULT_CLIENT_KEY_FILE;
+  std::string client_key_passwd = DEFAULT_CLIENT_KEY_PASSWD;
+  std::string client_cert_file = DEFAULT_CLIENT_CERT_FILE;
+  std::string ca_cert_file = DEFAULT_CA_CERT_FILE;
+  auto properties = UtilAll::ReadProperties(ssl_property_file);
+  if (!properties.empty()) {
+    if (properties.find("tls.client.keyPath") != properties.end()) {
+      client_key_file = properties["tls.client.keyPath"];
+    }
+    if (properties.find("tls.client.keyPassword") != properties.end()) {
+      client_key_passwd = properties["tls.client.keyPassword"];
+    }
+    if (properties.find("tls.client.certPath") != properties.end()) {
+      client_cert_file = properties["tls.client.certPath"];
+    }
+    if (properties.find("tls.client.trustCertPath") != properties.end()) {
+      ca_cert_file = properties["tls.client.trustCertPath"];
+    }
+  } else {
+    LOG_WARN(
+        "The tls properties file is not specified or empty. "
+        "Set it by modifying the api of setTlsPropertyFile and fill the configuration content.");
+  }
+
+  SSL_CTX_set_verify(m_sslCtx.get(), SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+  SSL_CTX_set_mode(m_sslCtx.get(), SSL_MODE_AUTO_RETRY);
+
+  if (client_key_passwd.empty()) {
+    LOG_WARN(
+        "The pass phrase is not specified. "
+        "Set it by adding the 'tls.client.keyPassword' property in configuration file.");
+  } else {
+    SSL_CTX_set_default_passwd_cb_userdata(m_sslCtx.get(), (void*)client_key_passwd.c_str());
+  }
+
+  bool check_flag{true};
+  if (!boost::filesystem::exists(ca_cert_file.c_str())) {
+    check_flag = false;
+    LOG_WARN(
+        "'%s' does not exist. Please make sure the 'tls.client.trustCertPath' property "
+        "in the configuration file is configured correctly.",
+        ca_cert_file.c_str());
+  } else if (SSL_CTX_load_verify_locations(m_sslCtx.get(), ca_cert_file.c_str(), NULL) <= 0) {
+    LOG_ERROR("SSL_CTX_load_verify_locations error!");
+    ERR_print_errors_fp(stderr);
+    return false;
+  }
+
+  if (!boost::filesystem::exists(client_cert_file.c_str())) {
+    check_flag = false;
+    LOG_WARN(
+        "'%s' does not exist. Please make sure the 'tls.client.certPath' property "
+        "in the configuration file is configured correctly.",
+        client_cert_file.c_str());
+  } else if (SSL_CTX_use_certificate_file(m_sslCtx.get(), client_cert_file.c_str(), SSL_FILETYPE_PEM) <= 0) {
+    LOG_ERROR("SSL_CTX_use_certificate_file error!");
+    ERR_print_errors_fp(stderr);
+    return false;
+  }
+
+  if (!boost::filesystem::exists(client_key_file.c_str())) {
+    check_flag = false;
+    LOG_WARN(
+        "'%s' does not exist. Please make sure the 'tls.client.keyPath' property "
+        "in the configuration file is configured correctly.",
+        client_key_file.c_str());
+  } else if (SSL_CTX_use_PrivateKey_file(m_sslCtx.get(), client_key_file.c_str(), SSL_FILETYPE_PEM) <= 0) {
+    LOG_ERROR("SSL_CTX_use_PrivateKey_file error!");
+    ERR_print_errors_fp(stderr);
+    return false;
+  }
+
+  if (check_flag && SSL_CTX_check_private_key(m_sslCtx.get()) <= 0) {
+    LOG_ERROR("SSL_CTX_check_private_key error!");
+    ERR_print_errors_fp(stderr);
+    return false;
+  }
+
+  return true;
+}
+
 #define OPT_UNLOCK_CALLBACKS (BEV_OPT_DEFER_CALLBACKS | BEV_OPT_UNLOCK_CALLBACKS)
 
-BufferEvent* EventLoop::createBufferEvent(socket_t fd, int options) {
-  struct bufferevent* event = bufferevent_socket_new(m_eventBase, fd, options);
+BufferEvent* EventLoop::createBufferEvent(socket_t fd,
+                                          int options,
+                                          bool enable_ssl,
+                                          const std::string& ssl_property_file) {
+  struct bufferevent* event{nullptr};
+
+  if (enable_ssl) {
+    if (!m_sslCtx && !CreateSslContext(ssl_property_file)) {
+      LOG_ERROR("Failed to create ssl context!");
+      return nullptr;
+    }
+
+    SSL* ssl = SSL_new(m_sslCtx.get());
+    if (ssl == nullptr) {
+      LOG_ERROR("Failed to create ssl handle!");
+      return nullptr;
+    }
+
+    // create ssl bufferevent
+    event = bufferevent_openssl_socket_new(m_eventBase, fd, ssl, BUFFEREVENT_SSL_CONNECTING, options);
+
+    /* create filter ssl bufferevent
+    struct bufferevent *bev = bufferevent_socket_new(m_eventBase, fd, options);
+    event = bufferevent_openssl_filter_new(m_eventBase, bev, ssl,
+                                           BUFFEREVENT_SSL_CONNECTING, options);
+    */
+  } else {
+    event = bufferevent_socket_new(m_eventBase, fd, options);
+  }
+
   if (event == nullptr) {
+    LOG_ERROR("Failed to create bufferevent!");
     return nullptr;
   }
 

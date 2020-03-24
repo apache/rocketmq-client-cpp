@@ -50,7 +50,7 @@ class MockMQClientAPIImpl : public MQClientAPIImpl {
                       uint64_t tcpConnectTimeout,
                       uint64_t tcpTransportTryLockTimeout,
                       string unitName)
-      : MQClientAPIImpl(mqClientId) {}
+      : MQClientAPIImpl(mqClientId, true, DEFAULT_SSL_PROPERTY_FILE) {}
 
   MOCK_METHOD5(getMinOffset, int64(const string&, const string&, int, int, const SessionCredentials&));
   MOCK_METHOD3(getTopicRouteInfoFromNameServer, TopicRouteData*(const string&, int, const SessionCredentials&));
@@ -62,7 +62,7 @@ class MockMQClientFactory : public MQClientFactory {
                       uint64_t tcpConnectTimeout,
                       uint64_t tcpTransportTryLockTimeout,
                       string unitName)
-      : MQClientFactory(mqClientId) {}
+      : MQClientFactory(mqClientId, true, DEFAULT_SSL_PROPERTY_FILE) {}
   void reInitClientImpl(MQClientAPIImpl* pImpl) { m_pClientAPIImpl.reset(pImpl); }
   void addTestConsumer(const string& consumerName, MQConsumer* pMQConsumer) {
     addConsumerToTable(consumerName, pMQConsumer);

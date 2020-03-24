@@ -353,4 +353,34 @@ bool UtilAll::ReplaceFile(const std::string& from_path, const std::string& to_pa
   return false;
 #endif
 }
+
+std::map<std::string, std::string> UtilAll::ReadProperties(const std::string& path) {
+  std::map<std::string, std::string> property_map;
+  std::ifstream property_file;
+  property_file.open(path);
+  std::string line_buffer;
+
+  if (property_file.is_open()) {
+    while (!property_file.eof()) {
+      std::getline(property_file, line_buffer);
+      std::size_t pos{0};
+      pos = line_buffer.find('#');
+      if (pos != string::npos) {
+        line_buffer = line_buffer.substr(0, pos);
+      }
+      if (line_buffer.empty()) {
+        continue;
+      }
+      pos = line_buffer.find('=');
+      if (pos != string::npos) {
+        std::string key = boost::trim_copy(line_buffer.substr(0, pos));
+        std::string value = boost::trim_copy(line_buffer.substr(pos + 1));
+        property_map[key] = value;
+      }
+    }
+  }
+
+  return property_map;
+}
+
 }  // namespace rocketmq

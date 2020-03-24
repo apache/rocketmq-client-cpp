@@ -22,8 +22,12 @@
 
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
+#include <event2/bufferevent_ssl.h>
 #include <event2/event.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 
+#include "UtilAll.h"
 #include "noncopyable.h"
 
 using socket_t = evutil_socket_t;
@@ -43,16 +47,18 @@ class EventLoop : public noncopyable {
   void start();
   void stop();
 
-  BufferEvent* createBufferEvent(socket_t fd, int options);
+  BufferEvent* createBufferEvent(socket_t fd, int options, bool enable_ssl, const std::string& ssl_property_file);
 
  private:
   void runLoop();
+  bool CreateSslContext(const std::string& ssl_property_file);
 
  private:
-  struct event_base* m_eventBase;
-  std::thread* m_loopThread;
-
-  bool _is_running;  // aotmic is unnecessary
+  struct event_base* m_eventBase{nullptr};
+  std::thread* m_loopThread{nullptr};
+  using SSL_CTX_ptr = std::unique_ptr<SSL_CTX, decltype(::SSL_CTX_free)&>;
+  SSL_CTX_ptr m_sslCtx{nullptr, ::SSL_CTX_free};
+  bool m_isRuning{false};  // aotmic is unnecessary
 };
 
 class TcpTransport;

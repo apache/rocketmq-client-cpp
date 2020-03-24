@@ -31,7 +31,9 @@ class MQClientManager {
                                               int pullThreadNum,
                                               uint64_t tcpConnectTimeout,
                                               uint64_t tcpTransportTryLockTimeout,
-                                              string unitName);
+                                              string unitName,
+                                              bool enableSsl,
+                                              const std::string& sslPropertyFile);
   void removeClientFactory(const string& clientId);
 
   static MQClientManager* getInstance();

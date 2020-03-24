@@ -42,13 +42,15 @@ namespace rocketmq {
 //<!************************************************************************
 class MQClientAPIImpl {
  public:
-  MQClientAPIImpl(const string& mqClientId);
+  MQClientAPIImpl(const string& mqClientId, bool enableSsl, const std::string& sslPropertyFile);
   MQClientAPIImpl(const string& mqClientId,
                   ClientRemotingProcessor* clientRemotingProcessor,
                   int pullThreadNum,
                   uint64_t tcpConnectTimeout,
                   uint64_t tcpTransportTryLockTimeout,
-                  string unitName);
+                  string unitName,
+                  bool enableSsl,
+                  const std::string& sslPropertyFile);
   virtual ~MQClientAPIImpl();
   virtual void stopAllTcpTransportThread();
   virtual bool writeDataToFile(string filename, string data, bool isSync);

@@ -29,6 +29,7 @@
 #include "QueryResult.h"
 #include "RocketMQClient.h"
 #include "SessionCredentials.h"
+#include "UtilAll.h"
 
 namespace rocketmq {
 class MQClientFactory;
@@ -170,8 +171,12 @@ class DefaultMQClient {
 
   virtual void setFactory(MQClientFactory*);
 
-  bool getMessageTrace() const;
+  void setEnableSsl(bool enableSsl);
+  bool getEnableSsl() const;
 
+  void setSslPropertyFile(const std::string& sslPropertyFile);
+  const std::string& getSslPropertyFile() const;
+  bool getMessageTrace() const;
   void setMessageTrace(bool mMessageTrace);
 
  protected:
@@ -187,6 +192,8 @@ class DefaultMQClient {
   std::string m_instanceName;
   std::string m_nameSpace;
   std::string m_GroupName;
+  std::string m_sslPropertyFile{DEFAULT_SSL_PROPERTY_FILE};
+  bool m_enableSsl{false};
   MQClientFactory* m_clientFactory;
   int m_serviceState;
   int m_pullThreadNum;

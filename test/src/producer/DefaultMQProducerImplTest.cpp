@@ -48,7 +48,7 @@ class MyMessageQueueSelector : public MessageQueueSelector {
 };
 class MockMQClientFactory : public MQClientFactory {
  public:
-  MockMQClientFactory(const string& mqClientId) : MQClientFactory(mqClientId) {}
+  MockMQClientFactory(const string& mqClientId) : MQClientFactory(mqClientId, true, DEFAULT_SSL_PROPERTY_FILE) {}
   MOCK_METHOD0(start, void());
   MOCK_METHOD0(shutdown, void());
   MOCK_METHOD0(sendHeartbeatToAllBroker, void());
@@ -61,7 +61,7 @@ class MockMQClientFactory : public MQClientFactory {
 };
 class MockMQClientAPIImpl : public MQClientAPIImpl {
  public:
-  MockMQClientAPIImpl() : MQClientAPIImpl("testMockMQClientAPIImpl") {}
+  MockMQClientAPIImpl() : MQClientAPIImpl("testMockMQClientAPIImpl", true, DEFAULT_SSL_PROPERTY_FILE) {}
 
   MOCK_METHOD9(sendMessage,
                SendResult(const string&,

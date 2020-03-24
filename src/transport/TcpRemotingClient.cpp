@@ -28,13 +28,22 @@
 namespace rocketmq {
 
 //<!************************************************************************
-TcpRemotingClient::TcpRemotingClient()
-    : m_dispatchServiceWork(m_dispatchService), m_handleServiceWork(m_handleService) {}
-TcpRemotingClient::TcpRemotingClient(int pullThreadNum, uint64_t tcpConnectTimeout, uint64_t tcpTransportTryLockTimeout)
+TcpRemotingClient::TcpRemotingClient(bool enableSsl, const std::string& sslPropertyFile)
+    : m_enableSsl(enableSsl),
+      m_sslPropertyFile(sslPropertyFile),
+      m_dispatchServiceWork(m_dispatchService),
+      m_handleServiceWork(m_handleService) {}
+TcpRemotingClient::TcpRemotingClient(int pullThreadNum,
+                                     uint64_t tcpConnectTimeout,
+                                     uint64_t tcpTransportTryLockTimeout,
+                                     bool enableSsl,
+                                     const std::string& sslPropertyFile)
     : m_dispatchThreadNum(1),
       m_pullThreadNum(pullThreadNum),
       m_tcpConnectTimeout(tcpConnectTimeout),
       m_tcpTransportTryLockTimeout(tcpTransportTryLockTimeout),
+      m_enableSsl(enableSsl),
+      m_sslPropertyFile(sslPropertyFile),
       m_namesrvIndex(0),
       m_dispatchServiceWork(m_dispatchService),
       m_handleServiceWork(m_handleService) {
@@ -326,7 +335,7 @@ std::shared_ptr<TcpTransport> TcpRemotingClient::CreateTransport(const string& a
     //<!callback;
     TcpTransportReadCallback callback = needResponse ? &TcpRemotingClient::static_messageReceived : nullptr;
 
-    tts = TcpTransport::CreateTransport(this, callback);
+    tts = TcpTransport::CreateTransport(this, m_enableSsl, m_sslPropertyFile, callback);
     TcpConnectStatus connectStatus = tts->connect(addr, 0);  // use non-block
     if (connectStatus != TCP_CONNECT_STATUS_WAIT) {
       LOG_WARN("can not connect to:%s", addr.c_str());

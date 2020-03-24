@@ -24,9 +24,12 @@ declare build_dir="${basepath}/tmp_build_dir"
 declare packet_dir="${basepath}/tmp_packet_dir"
 declare install_lib_dir="${basepath}/bin"
 declare static_package_dir="${basepath}/tmp_static_package_dir"
+declare fname_openssl="openssl*.tar.gz"
+
 declare fname_libevent="libevent*.zip"
 declare fname_jsoncpp="jsoncpp*.zip"
 declare fname_boost="boost*.tar.gz"
+declare fname_openssl_down="openssl-1.1.1d.tar.gz"
 declare fname_libevent_down="release-2.1.11-stable.zip"
 declare fname_jsoncpp_down="0.10.7.zip"
 declare fname_boost_down="1.58.0/boost_1_58_0.tar.gz"
@@ -44,23 +47,29 @@ if test "$(uname)" = "Linux"; then
 elif test "$(uname)" = "Darwin" ; then
   declare cpu_num=$(sysctl -n machdep.cpu.thread_count)
 fi
-declare need_build_jsoncpp=1
+
+declare need_build_openssl=1
 declare need_build_libevent=1
+declare need_build_jsoncpp=1
 declare need_build_boost=1
 declare enable_asan=0
 declare enable_lsan=0
 declare verbose=1
 declare codecov=0
+declare debug=0
 declare test=0
 
 pasres_arguments() {
   for var in "$@"; do
     case "$var" in
-    noJson)
-      need_build_jsoncpp=0
+    noOpenSSL)
+      need_build_openssl=0
       ;;
     noEvent)
       need_build_libevent=0
+      ;;
+    noJson)
+      need_build_jsoncpp=0
       ;;
     noBoost)
       need_build_boost=0
@@ -77,6 +86,9 @@ pasres_arguments() {
     codecov)
       codecov=1
       ;;
+    debug)
+      debug=1
+      ;;
     test)
       test=1
       ;;
@@ -88,15 +100,20 @@ pasres_arguments $@
 
 PrintParams() {
   echo "###########################################################################"
-  if [ $need_build_libevent -eq 0 ]; then
-    echo "no need build libevent lib"
+  if [ $need_build_openssl -eq 0 ]; then
+    echo "no need build openssl lib"
   else
-    echo "need build libevent lib"
+    echo "need build openssl lib"
   fi
   if [ $need_build_jsoncpp -eq 0 ]; then
     echo "no need build jsoncpp lib"
   else
     echo "need build jsoncpp lib"
+  fi
+  if [ $need_build_libevent -eq 0 ]; then
+    echo "no need build libevent lib"
+  else
+    echo "need build libevent lib"
   fi
   if [ $need_build_boost -eq 0 ]; then
     echo "no need build boost lib"
@@ -113,18 +130,25 @@ PrintParams() {
   else
     echo "disable lsan reporting"
   fi
-  if [ $test -eq 1 ]; then
-    echo "build unit tests"
-  else
-    echo "without build unit tests"
-  fi
-  if [ $codecov -eq 1 ]; then
-    echo "run unit tests with code coverage"
-  fi
   if [ $verbose -eq 0 ]; then
     echo "no need print detail logs"
   else
     echo "need print detail logs"
+  fi
+  if [ $codecov -eq 1 ]; then
+    echo "run unit tests with code coverage"
+  else
+    echo "run unit tests without code coverage"
+  fi
+  if [ $debug -eq 1 ]; then
+    echo "enable debug"
+  else
+    echo "disable debug"
+  fi
+  if [ $test -eq 1 ]; then
+    echo "build unit tests"
+  else
+    echo "without build unit tests"
   fi
 
   echo "###########################################################################"
@@ -141,6 +165,10 @@ Prepare() {
   fi
 
   cd ${basepath}
+  if [ -e ${fname_openssl} ]; then
+    mv -f ${basepath}/${fname_openssl} ${down_dir}
+  fi
+
   if [ -e ${fname_libevent} ]; then
     mv -f ${basepath}/${fname_libevent} ${down_dir}
   fi
@@ -174,6 +202,52 @@ Prepare() {
   fi
 }
 
+BuildOpenSSL() {
+  if [ $need_build_openssl -eq 0 ]; then
+    echo "no need build openssl lib"
+    return 0
+  fi
+
+  cd ${down_dir}
+  if [ -e ${fname_openssl} ]; then
+    echo "${fname_openssl} is exist"
+  else
+    wget https://www.openssl.org/source/${fname_openssl_down} -O ${fname_openssl_down}
+  fi
+  tar -zxvf ${fname_openssl} &> unzipopenssl.txt
+  if [ $? -ne 0 ]; then
+    exit 1
+  fi
+
+  openssl_dir=$(ls | grep ^openssl | grep .*[^gz]$)
+  cd ${openssl_dir}
+  if [ $? -ne 0 ]; then
+    exit 1
+  fi
+  echo "build openssl static #####################"
+  if [ $verbose -eq 0 ]; then
+    ./config shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir} &> opensslconfig.txt
+  else
+    ./config shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir}
+  fi
+  if [ $? -ne 0 ]; then
+    exit 1
+  fi
+  if [ $verbose -eq 0 ]; then
+    echo "build openssl without detail log."
+    make depend &> opensslbuild.txt
+    make -j $cpu_num &> opensslbuild.txt
+  else
+    make depend
+    make -j $cpu_num
+  fi
+  if [ $? -ne 0 ]; then
+    exit 1
+  fi
+  make install
+  echo "build openssl success."
+}
+
 BuildLibevent() {
   if [ $need_build_libevent -eq 0 ]; then
     echo "no need build libevent lib"
@@ -202,9 +276,9 @@ BuildLibevent() {
   fi
   echo "build libevent static #####################"
   if [ $verbose -eq 0 ]; then
-    ./configure --disable-openssl --enable-static=yes --enable-shared=no CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} &> libeventconfig.txt
+    ./configure --enable-static=yes --enable-shared=no CFLAGS="-fPIC -I${install_lib_dir}/include" CPPFLAGS="-fPIC -I${install_lib_dir}/include" LDFLAGS="-L${install_lib_dir}/lib" --prefix=${install_lib_dir} &> libeventconfig.txt
   else
-    ./configure --disable-openssl --enable-static=yes --enable-shared=no CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir}
+    ./configure --enable-static=yes --enable-shared=no CFLAGS="-fPIC -I${install_lib_dir}/include" CPPFLAGS="-fPIC -I${install_lib_dir}/include" LDFLAGS="-L${install_lib_dir}/lib" --prefix=${install_lib_dir}
   fi
   if [ $? -ne 0 ]; then
     exit 1
@@ -330,6 +404,11 @@ BuildRocketMQClient() {
   else
       ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DENABLE_LSAN=OFF"
   fi
+  if [ $debug -eq 1 ]; then
+      ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DCMAKE_BUILD_TYPE=Debug"
+  else
+      ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DCMAKE_BUILD_TYPE=Release"
+  fi
   cmake .. $ROCKETMQ_CMAKE_FLAG
   if [ $verbose -eq 0 ]; then
     echo "build rocketmq without detail log."
@@ -426,22 +505,16 @@ PackageRocketMQStatic() {
     cp -f ${install_lib_dir}/librocketmq.a .
     echo "Md5 Hash RocketMQ Before:"
     md5sum librocketmq.a
-    local dir=`ls *.a | grep -v  gtest | grep -v gmock `
+    local dir=`ls *.a | grep -E 'gtest|gmock'`
     for i in $dir
     do
-      echo $i
-      ar x $i
+      rm -rf $i
     done
-    echo "At last, ar libboost_filesystem"
-    ar x libboost_filesystem.a
-    ar cru librocketmq.a *.o
-    ranlib librocketmq.a
+    libtool -no_warning_for_no_symbols -static -o librocketmq.a *.a
     echo "Md5 Hash RocketMQ After:"
     md5sum librocketmq.a
     echo "Try to copy $(pwd)/librocketmq.a to ${install_lib_dir}/"
     cp -f librocketmq.a  ${install_lib_dir}/
-    rm -rf *.o
-    rm -rf __.*
     cd ${basepath}
     rm -rf ${static_package_dir}
   fi
@@ -450,6 +523,7 @@ PackageRocketMQStatic() {
 
 PrintParams
 Prepare
+BuildOpenSSL
 BuildLibevent
 BuildJsonCPP
 BuildBoost
