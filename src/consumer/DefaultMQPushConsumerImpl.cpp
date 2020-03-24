@@ -1112,8 +1112,13 @@ void DefaultMQPushConsumerImpl::createMessageTraceInnerProducer() {
   m_DefaultMQProducerImpl->start(false);
 }
 void DefaultMQPushConsumerImpl::shutdownMessageTraceInnerProducer() {
-  LOG_INFO("Shutdown Message Trace Inner Producer In Consumer.");
-  m_DefaultMQProducerImpl->shutdown(false);
+  if (!getMessageTrace()) {
+    return;
+  }
+  if (!m_DefaultMQProducerImpl) {
+    LOG_INFO("Shutdown Message Trace Inner Producer In Consumer.");
+    m_DefaultMQProducerImpl->shutdown(false);
+  }
 }
 bool DefaultMQPushConsumerImpl::hasConsumeMessageHook() {
   return !m_consumeMessageHookList.empty();
