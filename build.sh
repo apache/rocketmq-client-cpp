@@ -505,22 +505,16 @@ PackageRocketMQStatic() {
     cp -f ${install_lib_dir}/librocketmq.a .
     echo "Md5 Hash RocketMQ Before:"
     md5sum librocketmq.a
-    local dir=`ls *.a | grep -v  gtest | grep -v gmock `
+    local dir=`ls *.a | grep -E 'gtest|gmock'`
     for i in $dir
     do
-      echo $i
-      ar x $i
+      rm -rf $i
     done
-    echo "At last, ar libboost_filesystem"
-    ar x libboost_filesystem.a
-    ar cru librocketmq.a *.o
-    ranlib librocketmq.a
+    libtool -no_warning_for_no_symbols -static -o librocketmq.a *.a
     echo "Md5 Hash RocketMQ After:"
     md5sum librocketmq.a
     echo "Try to copy $(pwd)/librocketmq.a to ${install_lib_dir}/"
     cp -f librocketmq.a  ${install_lib_dir}/
-    rm -rf *.o
-    rm -rf __.*
     cd ${basepath}
     rm -rf ${static_package_dir}
   fi
