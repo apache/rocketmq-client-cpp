@@ -1,5 +1,5 @@
 Package: RocketMQ
-Version: 2.1.0
+Version: 2.2.0
 Architecture: amd64
 Essential: no
 Priority: optional
