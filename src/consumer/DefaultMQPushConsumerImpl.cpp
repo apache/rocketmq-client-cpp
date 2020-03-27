@@ -1100,7 +1100,7 @@ bool DefaultMQPushConsumerImpl::dealWithMessageTrace() {
 void DefaultMQPushConsumerImpl::createMessageTraceInnerProducer() {
   m_DefaultMQProducerImpl = std::make_shared<DefaultMQProducerImpl>(getGroupName());
   m_DefaultMQProducerImpl->setMessageTrace(false);
-  m_DefaultMQProducerImpl->setInstanceName(getInstanceName());
+  m_DefaultMQProducerImpl->setInstanceName("MESSAGE_TRACE_" + getInstanceName());
   const SessionCredentials& session = getSessionCredentials();
   m_DefaultMQProducerImpl->setSessionCredentials(session.getAccessKey(), session.getSecretKey(),
                                                  session.getAuthChannel());
@@ -1109,7 +1109,7 @@ void DefaultMQPushConsumerImpl::createMessageTraceInnerProducer() {
   }
   m_DefaultMQProducerImpl->setNameSpace(getNameSpace());
   // m_DefaultMQProducerImpl->setNamesrvDomain(getNamesrvDomain());
-  m_DefaultMQProducerImpl->start(false);
+  m_DefaultMQProducerImpl->start();
 }
 void DefaultMQPushConsumerImpl::shutdownMessageTraceInnerProducer() {
   if (!getMessageTrace()) {
@@ -1117,7 +1117,7 @@ void DefaultMQPushConsumerImpl::shutdownMessageTraceInnerProducer() {
   }
   if (m_DefaultMQProducerImpl) {
     LOG_INFO("Shutdown Message Trace Inner Producer In Consumer.");
-    m_DefaultMQProducerImpl->shutdown(false);
+    m_DefaultMQProducerImpl->shutdown();
   }
 }
 bool DefaultMQPushConsumerImpl::hasConsumeMessageHook() {
