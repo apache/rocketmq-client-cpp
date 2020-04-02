@@ -212,7 +212,7 @@ BuildOpenSSL() {
   if [ -e ${fname_openssl} ]; then
     echo "${fname_openssl} is exist"
   else
-    wget https://www.openssl.org/source/${fname_openssl_down} -O ${fname_openssl_down}
+    wget https://www.openssl.org/source/old/1.1.1/${fname_openssl_down} -O ${fname_openssl_down}
   fi
   tar -zxvf ${fname_openssl} &> unzipopenssl.txt
   if [ $? -ne 0 ]; then
