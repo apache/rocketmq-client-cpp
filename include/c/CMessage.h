@@ -23,7 +23,6 @@
 extern "C" {
 #endif
 
-// typedef struct _CMessage_ CMessage;
 typedef struct CMessage CMessage;
 
 ROCKETMQCLIENT_API CMessage* CreateMessage(const char* topic);
