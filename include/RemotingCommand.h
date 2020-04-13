@@ -22,13 +22,10 @@
 #include <typeindex>
 
 #include "CommandCustomHeader.h"
+#include "DataBlock.h"
 #include "MQClientException.h"
 
 namespace rocketmq {
-
-class MemoryBlock;
-typedef MemoryBlock* MemoryBlockPtr;
-typedef std::shared_ptr<MemoryBlock> MemoryBlockPtr2;
 
 class ROCKETMQCLIENT_API RemotingCommand {
  public:
@@ -71,13 +68,13 @@ class ROCKETMQCLIENT_API RemotingCommand {
 
   CommandCustomHeader* readCustomHeader() const;
 
-  MemoryBlockPtr2 getBody();
+  MemoryBlockPtr2 getBody() const;
   void setBody(MemoryBlock* body);
   void setBody(MemoryBlockPtr2 body);
   void setBody(const std::string& body);
 
  public:
-  MemoryBlockPtr encode();
+  MemoryBlockPtr encode() const;
 
   template <class H>
   H* decodeCommandCustomHeader(bool useCache);
@@ -85,7 +82,7 @@ class ROCKETMQCLIENT_API RemotingCommand {
   template <class H>
   H* decodeCommandCustomHeader();
 
-  static RemotingCommand* Decode(MemoryBlockPtr2& package);
+  static RemotingCommand* Decode(MemoryBlockPtr2 package);
 
   std::string toString() const;
 

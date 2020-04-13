@@ -23,8 +23,6 @@
 #include <string>
 #include <vector>
 
-#include "concurrent/executor.hpp"
-
 #include "MQClientException.h"
 #include "MQProtos.h"
 #include "RPCHook.h"
@@ -33,6 +31,7 @@
 #include "ResponseFuture.h"
 #include "SocketUtil.h"
 #include "TcpTransport.h"
+#include "concurrent/executor.hpp"
 
 namespace rocketmq {
 
@@ -65,10 +64,10 @@ class TcpRemotingClient {
 
  private:
   static bool SendCommand(TcpTransportPtr channel, RemotingCommand& msg);
-  static void MessageReceived(void* context, MemoryBlockPtr3& mem, const std::string& addr);
+  static void MessageReceived(void* context, MemoryBlockPtr mem, const std::string& addr);
 
-  void messageReceived(MemoryBlockPtr3& mem, const std::string& addr);
-  void processMessageReceived(MemoryBlockPtr2& mem, const std::string& addr);
+  void messageReceived(MemoryBlockPtr mem, const std::string& addr);
+  void processMessageReceived(MemoryBlockPtr2 mem, const std::string& addr);
   void processRequestCommand(std::unique_ptr<RemotingCommand> cmd, const std::string& addr);
   void processResponseCommand(std::unique_ptr<RemotingCommand> cmd);
 

@@ -34,7 +34,7 @@ typedef enum TcpConnectStatus {
   TCP_CONNECT_STATUS_CLOSED = 4
 } TcpConnectStatus;
 
-using TcpTransportReadCallback = void (*)(void* context, MemoryBlockPtr3&, const std::string&);
+using TcpTransportReadCallback = void (*)(void* context, MemoryBlockPtr, const std::string&);
 
 class TcpRemotingClient;
 class TcpTransport;
@@ -67,7 +67,7 @@ class TcpTransport : public noncopyable, public std::enable_shared_from_this<Tcp
   static void ReadCallback(BufferEvent* event, TcpTransport* transport);
   static void EventCallback(BufferEvent* event, short what, TcpTransport* transport);
 
-  void messageReceived(MemoryBlockPtr3& mem, const std::string& addr);
+  void messageReceived(MemoryBlockPtr mem, const std::string& addr);
 
   TcpConnectStatus closeBufferEvent();  // not thread-safe
 

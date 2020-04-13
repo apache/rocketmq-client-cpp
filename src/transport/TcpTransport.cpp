@@ -250,19 +250,19 @@ void TcpTransport::ReadCallback(BufferEvent* event, TcpTransport* transport) {
     }
 
     if (msgLen > 0) {
-      MemoryBlockPtr3 msg(new MemoryPool(msgLen, true));
+      MemoryBlockPtr msg(new MemoryPool(msgLen, true));
 
       event->read(&packageLength, 4);  // skip length field
       event->read(msg->getData(), msgLen);
 
-      transport->messageReceived(msg, event->getPeerAddrPort());
+      transport->messageReceived(std::move(msg), event->getPeerAddrPort());
     }
   }
 }
 
-void TcpTransport::messageReceived(MemoryBlockPtr3& mem, const std::string& addr) {
+void TcpTransport::messageReceived(MemoryBlockPtr mem, const std::string& addr) {
   if (m_readCallback != nullptr) {
-    m_readCallback(m_tcpRemotingClient, mem, addr);
+    m_readCallback(m_tcpRemotingClient, std::move(mem), addr);
   }
 }
 

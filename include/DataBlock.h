@@ -24,9 +24,8 @@
 namespace rocketmq {
 
 class MemoryBlock;
-typedef MemoryBlock* MemoryBlockPtr;
+typedef std::unique_ptr<MemoryBlock> MemoryBlockPtr;
 typedef std::shared_ptr<MemoryBlock> MemoryBlockPtr2;
-typedef std::unique_ptr<MemoryBlock> MemoryBlockPtr3;
 
 class ROCKETMQCLIENT_API MemoryBlock {
  public:

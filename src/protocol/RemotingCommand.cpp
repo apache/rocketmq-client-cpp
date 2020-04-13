@@ -73,7 +73,7 @@ RemotingCommand::RemotingCommand(RemotingCommand&& command) {
 
 RemotingCommand::~RemotingCommand() = default;
 
-MemoryBlockPtr RemotingCommand::encode() {
+MemoryBlockPtr RemotingCommand::encode() const {
   Json::Value root;
   root["code"] = m_code;
   root["language"] = m_language;
@@ -111,10 +111,10 @@ MemoryBlockPtr RemotingCommand::encode() {
     package->copyFrom(m_body->getData(), sizeof(messageHeader) + headerLen, m_body->getSize());
   }
 
-  return package;
+  return MemoryBlockPtr(package);
 }
 
-RemotingCommand* RemotingCommand::Decode(MemoryBlockPtr2& package) {
+RemotingCommand* RemotingCommand::Decode(MemoryBlockPtr2 package) {
   // decode package: 4 bytes(headerLength) + header + body
   int packageLength = package->getSize();
 
@@ -231,7 +231,7 @@ CommandCustomHeader* RemotingCommand::readCustomHeader() const {
   return m_customHeader.get();
 }
 
-MemoryBlockPtr2 RemotingCommand::getBody() {
+MemoryBlockPtr2 RemotingCommand::getBody() const {
   return m_body;
 }
 

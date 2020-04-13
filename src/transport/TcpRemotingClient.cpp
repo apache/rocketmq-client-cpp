@@ -503,23 +503,23 @@ bool TcpRemotingClient::CloseNameServerTransport(TcpTransportPtr channel) {
 }
 
 bool TcpRemotingClient::SendCommand(TcpTransportPtr channel, RemotingCommand& msg) {
-  MemoryBlockPtr3 package(msg.encode());
+  MemoryBlockPtr package(msg.encode());
   return channel->sendMessage(package->getData(), package->getSize());
 }
 
-void TcpRemotingClient::MessageReceived(void* context, MemoryBlockPtr3& mem, const std::string& addr) {
+void TcpRemotingClient::MessageReceived(void* context, MemoryBlockPtr mem, const std::string& addr) {
   auto* client = reinterpret_cast<TcpRemotingClient*>(context);
   if (client != nullptr) {
-    client->messageReceived(mem, addr);
+    client->messageReceived(std::move(mem), addr);
   }
 }
 
-void TcpRemotingClient::messageReceived(MemoryBlockPtr3& mem, const std::string& addr) {
+void TcpRemotingClient::messageReceived(MemoryBlockPtr mem, const std::string& addr) {
   m_dispatchExecutor.submit(
       std::bind(&TcpRemotingClient::processMessageReceived, this, MemoryBlockPtr2(std::move(mem)), addr));
 }
 
-void TcpRemotingClient::processMessageReceived(MemoryBlockPtr2& mem, const std::string& addr) {
+void TcpRemotingClient::processMessageReceived(MemoryBlockPtr2 mem, const std::string& addr) {
   std::unique_ptr<RemotingCommand> cmd;
   try {
     cmd.reset(RemotingCommand::Decode(mem));
