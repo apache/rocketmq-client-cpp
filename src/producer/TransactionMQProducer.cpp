@@ -24,7 +24,7 @@ namespace rocketmq {
 TransactionMQProducer::TransactionMQProducer(const std::string& groupname)
     : TransactionMQProducer(groupname, nullptr) {}
 
-TransactionMQProducer::TransactionMQProducer(const std::string& groupname, std::shared_ptr<RPCHook> rpcHook)
+TransactionMQProducer::TransactionMQProducer(const std::string& groupname, RPCHookPtr rpcHook)
     : DefaultMQProducer(groupname, rpcHook, std::make_shared<TransactionMQProducerConfigImpl>()) {}
 
 TransactionMQProducer::~TransactionMQProducer() = default;

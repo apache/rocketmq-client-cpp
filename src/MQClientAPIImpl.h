@@ -47,7 +47,7 @@ class SendCallbackWrap;
 class MQClientAPIImpl {
  public:
   MQClientAPIImpl(ClientRemotingProcessor* clientRemotingProcessor,
-                  std::shared_ptr<RPCHook> rpcHook,
+                  RPCHookPtr rpcHook,
                   ConstMQClientConfigPtr clientConfig);
   virtual ~MQClientAPIImpl();
 

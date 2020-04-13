@@ -32,7 +32,7 @@
 namespace rocketmq {
 
 MQClientAPIImpl::MQClientAPIImpl(ClientRemotingProcessor* clientRemotingProcessor,
-                                 std::shared_ptr<RPCHook> rpcHook,
+                                 RPCHookPtr rpcHook,
                                  ConstMQClientConfigPtr clientConfig)
     : m_remotingClient(new TcpRemotingClient(clientConfig->getTcpTransportWorkerThreadNum(),
                                              clientConfig->getTcpTransportConnectTimeout(),

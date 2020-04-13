@@ -145,8 +145,7 @@ class AsyncPullCallback : public AutoDeletePullCallback {
 DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfigPtr config)
     : DefaultMQPushConsumerImpl(config, nullptr) {}
 
-DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfigPtr config,
-                                                     std::shared_ptr<RPCHook> rpcHook)
+DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfigPtr config, RPCHookPtr rpcHook)
     : MQClientImpl(config, rpcHook),
       m_pushConsumerConfig(config),
       m_startTime(UtilAll::currentTimeMillis()),

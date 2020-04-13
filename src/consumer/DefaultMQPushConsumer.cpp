@@ -25,7 +25,7 @@ namespace rocketmq {
 DefaultMQPushConsumer::DefaultMQPushConsumer(const std::string& groupname)
     : DefaultMQPushConsumer(groupname, nullptr) {}
 
-DefaultMQPushConsumer::DefaultMQPushConsumer(const std::string& groupname, std::shared_ptr<RPCHook> rpcHook)
+DefaultMQPushConsumer::DefaultMQPushConsumer(const std::string& groupname, RPCHookPtr rpcHook)
     : DefaultMQPushConsumerConfigProxy(std::make_shared<DefaultMQPushConsumerConfigImpl>()),
       m_pushConsumerDelegate(nullptr) {
   // set default group name
@@ -84,7 +84,7 @@ void DefaultMQPushConsumer::resume() {
   m_pushConsumerDelegate->resume();
 }
 
-void DefaultMQPushConsumer::setRPCHook(std::shared_ptr<RPCHook> rpcHook) {
+void DefaultMQPushConsumer::setRPCHook(RPCHookPtr rpcHook) {
   std::dynamic_pointer_cast<DefaultMQPushConsumerImpl>(m_pushConsumerDelegate)->setRPCHook(rpcHook);
 }
 

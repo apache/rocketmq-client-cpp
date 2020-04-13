@@ -44,7 +44,7 @@ class TcpRemotingClient {
   void start();
   void shutdown();
 
-  void registerRPCHook(std::shared_ptr<RPCHook> rpcHook);
+  void registerRPCHook(RPCHookPtr rpcHook);
 
   void updateNameServerAddressList(const std::string& addrs);
 
@@ -115,7 +115,7 @@ class TcpRemotingClient {
   std::mutex m_futureTableMutex;
 
   // FIXME: not strict thread-safe in abnormal scence
-  std::vector<std::shared_ptr<RPCHook>> m_rpcHooks;  // for Acl / ONS
+  std::vector<RPCHookPtr> m_rpcHooks;  // for Acl / ONS
 
   uint64_t m_tcpConnectTimeout;           // ms
   uint64_t m_tcpTransportTryLockTimeout;  // s

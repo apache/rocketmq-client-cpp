@@ -78,7 +78,7 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer, public DefaultMQ
   void setSendLatencyFaultEnable(bool sendLatencyFaultEnable) override;
 
  public:
-  void setRPCHook(std::shared_ptr<RPCHook> rpcHook);
+  void setRPCHook(RPCHookPtr rpcHook);
 
  protected:
   std::shared_ptr<MQProducer> m_producerDelegate;

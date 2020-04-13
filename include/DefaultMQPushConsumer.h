@@ -48,7 +48,7 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQPushConsumer, public D
   void resume() override;
 
  public:
-  void setRPCHook(std::shared_ptr<RPCHook> rpcHook);
+  void setRPCHook(RPCHookPtr rpcHook);
 
  protected:
   std::shared_ptr<MQPushConsumer> m_pushConsumerDelegate;

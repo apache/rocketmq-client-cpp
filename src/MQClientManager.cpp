@@ -33,7 +33,7 @@ MQClientInstancePtr MQClientManager::getOrCreateMQClientInstance(ConstMQClientCo
 }
 
 MQClientInstancePtr MQClientManager::getOrCreateMQClientInstance(ConstMQClientConfigPtr clientConfig,
-                                                                 std::shared_ptr<RPCHook> rpcHook) {
+                                                                 RPCHookPtr rpcHook) {
   std::string clientId = clientConfig->buildMQClientId();
   std::lock_guard<std::mutex> lock(m_mutex);
   auto it = m_instanceTable.find(clientId);

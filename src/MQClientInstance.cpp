@@ -45,9 +45,7 @@ static const long LOCK_TIMEOUT_MILLIS = 3000L;
 MQClientInstance::MQClientInstance(ConstMQClientConfigPtr clientConfig, const std::string& clientId)
     : MQClientInstance(clientConfig, clientId, nullptr) {}
 
-MQClientInstance::MQClientInstance(ConstMQClientConfigPtr clientConfig,
-                                   const std::string& clientId,
-                                   std::shared_ptr<RPCHook> rpcHook)
+MQClientInstance::MQClientInstance(ConstMQClientConfigPtr clientConfig, const std::string& clientId, RPCHookPtr rpcHook)
     : m_clientConfig(clientConfig),
       m_clientId(clientId),
       m_rebalanceService(new RebalanceService(this)),

@@ -70,7 +70,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQPullConsumer, public D
   void fetchMessageQueuesInBalance(const std::string& topic, std::vector<MQMessageQueue>& mqs) override;
 
  public:
-  void setRPCHook(std::shared_ptr<RPCHook> rpcHook);
+  void setRPCHook(RPCHookPtr rpcHook);
 
  protected:
   std::shared_ptr<MQPullConsumer> m_pullConsumerDelegate;

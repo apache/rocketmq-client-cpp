@@ -37,6 +37,8 @@
 namespace rocketmq {
 
 class RPCHook;
+typedef std::shared_ptr<RPCHook> RPCHookPtr;
+
 class MQClientAPIImpl;
 class MQAdminImpl;
 class ClientRemotingProcessor;
@@ -49,7 +51,7 @@ typedef std::shared_ptr<MQClientInstance> MQClientInstancePtr;
 class MQClientInstance {
  public:
   MQClientInstance(ConstMQClientConfigPtr clientConfig, const std::string& clientId);
-  MQClientInstance(ConstMQClientConfigPtr clientConfig, const std::string& clientId, std::shared_ptr<RPCHook> rpcHook);
+  MQClientInstance(ConstMQClientConfigPtr clientConfig, const std::string& clientId, RPCHookPtr rpcHook);
   virtual ~MQClientInstance();
 
   static TopicPublishInfoPtr topicRouteData2TopicPublishInfo(const std::string& topic, TopicRouteDataPtr route);

@@ -24,11 +24,11 @@ namespace rocketmq {
 
 DefaultMQProducer::DefaultMQProducer(const std::string& groupname) : DefaultMQProducer(groupname, nullptr) {}
 
-DefaultMQProducer::DefaultMQProducer(const std::string& groupname, std::shared_ptr<RPCHook> rpcHook)
+DefaultMQProducer::DefaultMQProducer(const std::string& groupname, RPCHookPtr rpcHook)
     : DefaultMQProducer(groupname, rpcHook, std::make_shared<DefaultMQProducerConfigImpl>()) {}
 
 DefaultMQProducer::DefaultMQProducer(const std::string& groupname,
-                                     std::shared_ptr<RPCHook> rpcHook,
+                                     RPCHookPtr rpcHook,
                                      DefaultMQProducerConfigPtr producerConfig)
     : DefaultMQProducerConfigProxy(producerConfig), m_producerDelegate(nullptr) {
   // set default group name
@@ -151,7 +151,7 @@ void DefaultMQProducer::setSendLatencyFaultEnable(bool sendLatencyFaultEnable) {
       ->setSendLatencyFaultEnable(sendLatencyFaultEnable);
 }
 
-void DefaultMQProducer::setRPCHook(std::shared_ptr<RPCHook> rpcHook) {
+void DefaultMQProducer::setRPCHook(RPCHookPtr rpcHook) {
   std::dynamic_pointer_cast<DefaultMQProducerImpl>(m_producerDelegate)->setRPCHook(rpcHook);
 }
 

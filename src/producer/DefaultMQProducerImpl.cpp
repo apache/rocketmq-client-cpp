@@ -45,7 +45,7 @@ namespace rocketmq {
 DefaultMQProducerImpl::DefaultMQProducerImpl(DefaultMQProducerConfigPtr config)
     : DefaultMQProducerImpl(config, nullptr) {}
 
-DefaultMQProducerImpl::DefaultMQProducerImpl(DefaultMQProducerConfigPtr config, std::shared_ptr<RPCHook> rpcHook)
+DefaultMQProducerImpl::DefaultMQProducerImpl(DefaultMQProducerConfigPtr config, RPCHookPtr rpcHook)
     : MQClientImpl(config, rpcHook),
       m_producerConfig(config),
       m_mqFaultStrategy(new MQFaultStrategy()),

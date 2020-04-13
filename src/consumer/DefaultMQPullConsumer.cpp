@@ -23,7 +23,7 @@ namespace rocketmq {
 DefaultMQPullConsumer::DefaultMQPullConsumer(const std::string& groupname)
     : DefaultMQPullConsumer(groupname, nullptr) {}
 
-DefaultMQPullConsumer::DefaultMQPullConsumer(const std::string& groupname, std::shared_ptr<RPCHook> rpcHook)
+DefaultMQPullConsumer::DefaultMQPullConsumer(const std::string& groupname, RPCHookPtr rpcHook)
     : DefaultMQPullConsumerConfigProxy(nullptr), m_pullConsumerDelegate(nullptr) {
   // set default group name
   if (groupname.empty()) {
@@ -103,7 +103,7 @@ void DefaultMQPullConsumer::fetchMessageQueuesInBalance(const std::string& topic
   m_pullConsumerDelegate->fetchMessageQueuesInBalance(topic, mqs);
 }
 
-void DefaultMQPullConsumer::setRPCHook(std::shared_ptr<RPCHook> rpcHook) {
+void DefaultMQPullConsumer::setRPCHook(RPCHookPtr rpcHook) {
   // dynamic_cast<DefaultMQPullConsumerImpl*>(m_pullConsumerDelegate.get())->setRPCHook(rpcHook);
 }
 

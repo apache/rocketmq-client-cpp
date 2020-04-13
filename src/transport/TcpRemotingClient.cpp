@@ -80,7 +80,7 @@ void TcpRemotingClient::shutdown() {
   LOG_INFO_NEW("TcpRemotingClient::shutdown End, m_transportTable:{}", m_transportTable.size());
 }
 
-void TcpRemotingClient::registerRPCHook(std::shared_ptr<RPCHook> rpcHook) {
+void TcpRemotingClient::registerRPCHook(RPCHookPtr rpcHook) {
   if (rpcHook != nullptr) {
     for (auto& hook : m_rpcHooks) {
       if (hook == rpcHook) {
