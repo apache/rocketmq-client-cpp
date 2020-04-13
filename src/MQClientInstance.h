@@ -48,8 +48,8 @@ typedef std::shared_ptr<MQClientInstance> MQClientInstancePtr;
 
 class MQClientInstance {
  public:
-  MQClientInstance(MQClientConfig clientConfig, const std::string& clientId);
-  MQClientInstance(MQClientConfig clientConfig, const std::string& clientId, std::shared_ptr<RPCHook> rpcHook);
+  MQClientInstance(ConstMQClientConfigPtr clientConfig, const std::string& clientId);
+  MQClientInstance(ConstMQClientConfigPtr clientConfig, const std::string& clientId, std::shared_ptr<RPCHook> rpcHook);
   virtual ~MQClientInstance();
 
   static TopicPublishInfoPtr topicRouteData2TopicPublishInfo(const std::string& topic, TopicRouteDataPtr route);
@@ -159,7 +159,7 @@ class MQClientInstance {
   bool isTopicInfoValidInTable(const std::string& topic);
 
  private:
-  MQClientConfig m_clientConfig;
+  ConstMQClientConfigPtr m_clientConfig;
   std::string m_clientId;
   ServiceState m_serviceState;
 

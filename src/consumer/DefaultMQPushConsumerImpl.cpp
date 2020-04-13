@@ -20,7 +20,6 @@
 #include <signal.h>
 #endif
 
-#include "AllocateMQAveragely.h"
 #include "CommunicationMode.h"
 #include "ConsumeMsgService.h"
 #include "ConsumerRunningInfo.h"
@@ -143,10 +142,10 @@ class AsyncPullCallback : public AutoDeletePullCallback {
   SubscriptionDataPtr m_subscriptionData;
 };
 
-DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfig* config)
+DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfigPtr config)
     : DefaultMQPushConsumerImpl(config, nullptr) {}
 
-DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfig* config,
+DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfigPtr config,
                                                      std::shared_ptr<RPCHook> rpcHook)
     : MQClientImpl(config, rpcHook),
       m_pushConsumerConfig(config),

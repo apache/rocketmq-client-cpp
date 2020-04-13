@@ -16,27 +16,18 @@
  */
 #include "DefaultMQPushConsumer.h"
 
-#include "AllocateMQAveragely.h"
+#include "DefaultMQPushConsumerConfigImpl.h"
 #include "DefaultMQPushConsumerImpl.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
 
-DefaultMQPushConsumerConfig::DefaultMQPushConsumerConfig()
-    : m_consumeFromWhere(CONSUME_FROM_LAST_OFFSET),
-      m_consumeTimestamp("0"),
-      m_consumeThreadNum(std::min(8, (int)std::thread::hardware_concurrency())),
-      m_consumeMessageBatchMaxSize(1),
-      m_maxMsgCacheSize(1000),
-      m_asyncPullTimeout(30 * 1000),
-      m_maxReconsumeTimes(-1),
-      m_allocateMQStrategy(new AllocateMQAveragely()) {}
-
 DefaultMQPushConsumer::DefaultMQPushConsumer(const std::string& groupname)
     : DefaultMQPushConsumer(groupname, nullptr) {}
 
 DefaultMQPushConsumer::DefaultMQPushConsumer(const std::string& groupname, std::shared_ptr<RPCHook> rpcHook)
-    : m_pushConsumerDelegate(nullptr) {
+    : DefaultMQPushConsumerConfigProxy(std::make_shared<DefaultMQPushConsumerConfigImpl>()),
+      m_pushConsumerDelegate(nullptr) {
   // set default group name
   if (groupname.empty()) {
     setGroupName(DEFAULT_CONSUMER_GROUP);
@@ -44,7 +35,7 @@ DefaultMQPushConsumer::DefaultMQPushConsumer(const std::string& groupname, std::
     setGroupName(groupname);
   }
 
-  m_pushConsumerDelegate = DefaultMQPushConsumerImpl::create(this, rpcHook);
+  m_pushConsumerDelegate = DefaultMQPushConsumerImpl::create(getRealConfig(), rpcHook);
 }
 
 DefaultMQPushConsumer::~DefaultMQPushConsumer() = default;
@@ -94,7 +85,7 @@ void DefaultMQPushConsumer::resume() {
 }
 
 void DefaultMQPushConsumer::setRPCHook(std::shared_ptr<RPCHook> rpcHook) {
-  dynamic_cast<DefaultMQPushConsumerImpl*>(m_pushConsumerDelegate.get())->setRPCHook(rpcHook);
+  std::dynamic_pointer_cast<DefaultMQPushConsumerImpl>(m_pushConsumerDelegate)->setRPCHook(rpcHook);
 }
 
 }  // namespace rocketmq

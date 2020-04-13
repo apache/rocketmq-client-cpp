@@ -33,7 +33,7 @@ namespace rocketmq {
 
 MQClientAPIImpl::MQClientAPIImpl(ClientRemotingProcessor* clientRemotingProcessor,
                                  std::shared_ptr<RPCHook> rpcHook,
-                                 const MQClientConfig* clientConfig)
+                                 ConstMQClientConfigPtr clientConfig)
     : m_remotingClient(new TcpRemotingClient(clientConfig->getTcpTransportWorkerThreadNum(),
                                              clientConfig->getTcpTransportConnectTimeout(),
                                              clientConfig->getTcpTransportTryLockTimeout())) {
@@ -212,9 +212,11 @@ SendResult* MQClientAPIImpl::processSendResponse(const std::string& brokerName,
     const auto& messages = static_cast<const MessageBatch*>(msg)->getMessages();
     uniqMsgId.clear();
     uniqMsgId.reserve(33 * messages.size());
+    bool isFirst = true;
     for (const auto& message : messages) {
-      if (!uniqMsgId.empty()) {
+      if (!isFirst) {
         uniqMsgId.append(",");
+        isFirst = false;
       }
       uniqMsgId.append(MessageClientIDSetter::getUniqID(*message));
     }

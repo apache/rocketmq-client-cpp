@@ -17,79 +17,13 @@
 #ifndef __DEFAULT_MQ_PUSH_CONSUMER_H__
 #define __DEFAULT_MQ_PUSH_CONSUMER_H__
 
-#include "AllocateMQStrategy.h"
-#include "DefaultMQConsumer.h"
+#include "DefaultMQPushConsumerConfigProxy.h"
 #include "MQPushConsumer.h"
 #include "RPCHook.h"
 
 namespace rocketmq {
 
-class ROCKETMQCLIENT_API DefaultMQPushConsumerConfig : public DefaultMQConsumerConfig {
- public:
-  DefaultMQPushConsumerConfig();
-  virtual ~DefaultMQPushConsumerConfig() = default;
-
-  ConsumeFromWhere getConsumeFromWhere() const { return m_consumeFromWhere; }
-  void setConsumeFromWhere(ConsumeFromWhere consumeFromWhere) { m_consumeFromWhere = consumeFromWhere; }
-
-  std::string getConsumeTimestamp() { return m_consumeTimestamp; }
-  void setConsumeTimestamp(std::string consumeTimestamp) { m_consumeTimestamp = consumeTimestamp; }
-
-  /**
-   * consuming thread count, default value is cpu cores
-   */
-  int getConsumeThreadNum() const { return m_consumeThreadNum; }
-  void setConsumeThreadNum(int threadNum) {
-    if (threadNum > 0) {
-      m_consumeThreadNum = threadNum;
-    }
-  }
-
-  /**
-   * the pull number of message size by each pullMsg for orderly consume, default value is 1
-   */
-  int getConsumeMessageBatchMaxSize() const { return m_consumeMessageBatchMaxSize; }
-  void setConsumeMessageBatchMaxSize(int consumeMessageBatchMaxSize) {
-    if (consumeMessageBatchMaxSize >= 1) {
-      m_consumeMessageBatchMaxSize = consumeMessageBatchMaxSize;
-    }
-  }
-
-  /**
-   * max cache msg size per Queue in memory if consumer could not consume msgs immediately,
-   * default maxCacheMsgSize per Queue is 1000, set range is:1~65535
-   */
-  int getMaxCacheMsgSizePerQueue() const { return m_maxMsgCacheSize; }
-  void setMaxCacheMsgSizePerQueue(int maxCacheSize) {
-    if (maxCacheSize > 0 && maxCacheSize < 65535) {
-      m_maxMsgCacheSize = maxCacheSize;
-    }
-  }
-
-  int getAsyncPullTimeout() const { return m_asyncPullTimeout; }
-  void setAsyncPullTimeout(int asyncPullTimeout) { m_asyncPullTimeout = asyncPullTimeout; }
-
-  int getMaxReconsumeTimes() { return m_maxReconsumeTimes; }
-  void setMaxReconsumeTimes(int maxReconsumeTimes) { m_maxReconsumeTimes = maxReconsumeTimes; }
-
-  AllocateMQStrategy* getAllocateMQStrategy() { return m_allocateMQStrategy.get(); }
-  void setAllocateMQStrategy(AllocateMQStrategy* strategy) { m_allocateMQStrategy.reset(strategy); }
-
- protected:
-  ConsumeFromWhere m_consumeFromWhere;
-  std::string m_consumeTimestamp;
-
-  int m_consumeThreadNum;
-  int m_consumeMessageBatchMaxSize;
-  int m_maxMsgCacheSize;
-
-  int m_asyncPullTimeout;  // 30s
-  int m_maxReconsumeTimes;
-
-  std::unique_ptr<AllocateMQStrategy> m_allocateMQStrategy;
-};
-
-class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQPushConsumer, public DefaultMQPushConsumerConfig {
+class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQPushConsumer, public DefaultMQPushConsumerConfigProxy {
  public:
   DefaultMQPushConsumer(const std::string& groupname);
   DefaultMQPushConsumer(const std::string& groupname, RPCHookPtr rpcHook);

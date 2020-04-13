@@ -14,32 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TRANSACTION_MQ_PRODUCER_H__
-#define __TRANSACTION_MQ_PRODUCER_H__
+#ifndef __TRANSACTION_MQ_PRODUCER_CONFIG_H__
+#define __TRANSACTION_MQ_PRODUCER_CONFIG_H__
 
-#include "DefaultMQProducer.h"
-#include "TransactionMQProducerConfig.h"
+#include "DefaultMQProducerConfig.h"
+#include "TransactionListener.h"
 
 namespace rocketmq {
 
-class ROCKETMQCLIENT_API TransactionMQProducer : public DefaultMQProducer, virtual public TransactionMQProducerConfig {
+class TransactionMQProducerConfig;
+typedef std::shared_ptr<TransactionMQProducerConfig> TransactionMQProducerConfigPtr;
+
+class ROCKETMQCLIENT_API TransactionMQProducerConfig : virtual public DefaultMQProducerConfig {
  public:
-  TransactionMQProducer(const std::string& groupname);
-  TransactionMQProducer(const std::string& groupname, RPCHookPtr rpcHook);
-  virtual ~TransactionMQProducer();
+  virtual ~TransactionMQProducerConfig() = default;
 
  public:  // TransactionMQProducerConfig
-  TransactionListener* getTransactionListener() const override;
-  void setTransactionListener(TransactionListener* transactionListener) override;
-
- public:  // MQProducer
-  void start() override;
-  void shutdown() override;
-
-  // Transaction: don't delete msg object, until callback occur.
-  TransactionSendResult sendMessageInTransaction(MQMessagePtr msg, void* arg) override;
+  virtual TransactionListener* getTransactionListener() const = 0;
+  virtual void setTransactionListener(TransactionListener* transactionListener) = 0;
 };
 
 }  // namespace rocketmq
 
-#endif  // __TRANSACTION_MQ_PRODUCER_H__
+#endif  // __TRANSACTION_MQ_PRODUCER_CONFIG_H__

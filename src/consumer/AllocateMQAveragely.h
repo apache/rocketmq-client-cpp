@@ -21,6 +21,7 @@
 
 #include "AllocateMQStrategy.h"
 #include "Logging.h"
+#include "MQClientException.h"
 
 namespace rocketmq {
 

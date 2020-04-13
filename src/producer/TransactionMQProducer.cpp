@@ -17,33 +17,44 @@
 #include "TransactionMQProducer.h"
 
 #include "DefaultMQProducerImpl.h"
+#include "TransactionMQProducerConfigImpl.h"
 
 namespace rocketmq {
-
-TransactionMQProducerConfig::TransactionMQProducerConfig() : m_transactionListener(nullptr) {}
 
 TransactionMQProducer::TransactionMQProducer(const std::string& groupname)
     : TransactionMQProducer(groupname, nullptr) {}
 
 TransactionMQProducer::TransactionMQProducer(const std::string& groupname, std::shared_ptr<RPCHook> rpcHook)
-    : DefaultMQProducer(groupname, rpcHook) {}
+    : DefaultMQProducer(groupname, rpcHook, std::make_shared<TransactionMQProducerConfigImpl>()) {}
 
 TransactionMQProducer::~TransactionMQProducer() = default;
 
+TransactionListener* TransactionMQProducer::getTransactionListener() const {
+  auto transactionProducerConfig = std::dynamic_pointer_cast<TransactionMQProducerConfig>(getRealConfig());
+  if (transactionProducerConfig != nullptr) {
+    return transactionProducerConfig->getTransactionListener();
+  }
+  return nullptr;
+}
+
+void TransactionMQProducer::setTransactionListener(TransactionListener* transactionListener) {
+  auto transactionProducerConfig = std::dynamic_pointer_cast<TransactionMQProducerConfig>(getRealConfig());
+  if (transactionProducerConfig != nullptr) {
+    transactionProducerConfig->setTransactionListener(transactionListener);
+  }
+}
+
 void TransactionMQProducer::start() {
-  dynamic_cast<DefaultMQProducerImpl*>(m_producerDelegate.get())->initTransactionEnv();
+  std::dynamic_pointer_cast<DefaultMQProducerImpl>(m_producerDelegate)->initTransactionEnv();
   DefaultMQProducer::start();
 }
 
 void TransactionMQProducer::shutdown() {
   DefaultMQProducer::shutdown();
-  dynamic_cast<DefaultMQProducerImpl*>(m_producerDelegate.get())->destroyTransactionEnv();
+  std::dynamic_pointer_cast<DefaultMQProducerImpl>(m_producerDelegate)->destroyTransactionEnv();
 }
 
 TransactionSendResult TransactionMQProducer::sendMessageInTransaction(MQMessagePtr msg, void* arg) {
-  if (nullptr == m_transactionListener) {
-    THROW_MQEXCEPTION(MQClientException, "TransactionListener is null", -1);
-  }
   return m_producerDelegate->sendMessageInTransaction(msg, arg);
 }
 

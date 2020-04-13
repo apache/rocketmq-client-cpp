@@ -37,7 +37,7 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
                               public MQClientImpl,
                               public MQProducerInner {
  public:
-  static DefaultMQProducerImplPtr create(DefaultMQProducerConfig* config, RPCHookPtr rpcHook = nullptr) {
+  static DefaultMQProducerImplPtr create(DefaultMQProducerConfigPtr config, RPCHookPtr rpcHook = nullptr) {
     if (nullptr == rpcHook) {
       return DefaultMQProducerImplPtr(new DefaultMQProducerImpl(config));
     } else {
@@ -46,8 +46,8 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
   }
 
  private:
-  DefaultMQProducerImpl(DefaultMQProducerConfig* config);
-  DefaultMQProducerImpl(DefaultMQProducerConfig* config, RPCHookPtr rpcHook);
+  DefaultMQProducerImpl(DefaultMQProducerConfigPtr config);
+  DefaultMQProducerImpl(DefaultMQProducerConfigPtr config, RPCHookPtr rpcHook);
 
  public:
   virtual ~DefaultMQProducerImpl();
@@ -145,7 +145,7 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
   MessageBatch* batch(std::vector<MQMessagePtr>& msgs);
 
  private:
-  DefaultMQProducerConfig* m_producerConfig;
+  DefaultMQProducerConfigPtr m_producerConfig;
   std::unique_ptr<MQFaultStrategy> m_mqFaultStrategy;
   std::unique_ptr<thread_pool_executor> m_checkTransactionExecutor;
 };

@@ -42,10 +42,10 @@
 
 namespace rocketmq {
 
-DefaultMQProducerImpl::DefaultMQProducerImpl(DefaultMQProducerConfig* config)
+DefaultMQProducerImpl::DefaultMQProducerImpl(DefaultMQProducerConfigPtr config)
     : DefaultMQProducerImpl(config, nullptr) {}
 
-DefaultMQProducerImpl::DefaultMQProducerImpl(DefaultMQProducerConfig* config, std::shared_ptr<RPCHook> rpcHook)
+DefaultMQProducerImpl::DefaultMQProducerImpl(DefaultMQProducerConfigPtr config, std::shared_ptr<RPCHook> rpcHook)
     : MQClientImpl(config, rpcHook),
       m_producerConfig(config),
       m_mqFaultStrategy(new MQFaultStrategy()),
@@ -609,9 +609,9 @@ TransactionSendResult* DefaultMQProducerImpl::sendMessageInTransactionImpl(MQMes
 }
 
 TransactionListener* DefaultMQProducerImpl::getCheckListener() {
-  if (std::type_index(typeid(*m_producerConfig)) == std::type_index(typeid(TransactionMQProducer))) {
-    auto* producer = static_cast<TransactionMQProducer*>(m_producerConfig);
-    return producer->getTransactionListener();
+  auto transactionProducerConfig = std::dynamic_pointer_cast<TransactionMQProducerConfig>(m_producerConfig);
+  if (transactionProducerConfig != nullptr) {
+    return transactionProducerConfig->getTransactionListener();
   }
   return nullptr;
 };

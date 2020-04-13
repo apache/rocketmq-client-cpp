@@ -16,17 +16,15 @@
  */
 #include "DefaultMQPullConsumer.h"
 
-#include "AllocateMQAveragely.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
 
-DefaultMQPullConsumerConfig::DefaultMQPullConsumerConfig() : m_allocateMQStrategy(new AllocateMQAveragely()) {}
-
 DefaultMQPullConsumer::DefaultMQPullConsumer(const std::string& groupname)
     : DefaultMQPullConsumer(groupname, nullptr) {}
 
-DefaultMQPullConsumer::DefaultMQPullConsumer(const std::string& groupname, std::shared_ptr<RPCHook> rpcHook) {
+DefaultMQPullConsumer::DefaultMQPullConsumer(const std::string& groupname, std::shared_ptr<RPCHook> rpcHook)
+    : DefaultMQPullConsumerConfigProxy(nullptr), m_pullConsumerDelegate(nullptr) {
   // set default group name
   if (groupname.empty()) {
     setGroupName(DEFAULT_CONSUMER_GROUP);

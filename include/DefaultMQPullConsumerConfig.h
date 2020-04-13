@@ -14,25 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __DEFAULT_MQ_CONSUMER_H__
-#define __DEFAULT_MQ_CONSUMER_H__
+#ifndef __DEFAULT_MQ_PULL_CONSUMER_CONFIG_H__
+#define __DEFAULT_MQ_PULL_CONSUMER_CONFIG_H__
 
+#include "AllocateMQStrategy.h"
 #include "ConsumeType.h"
 #include "MQClientConfig.h"
 
 namespace rocketmq {
 
-class ROCKETMQCLIENT_API DefaultMQConsumerConfig : public MQClientConfig {
+class DefaultMQPullConsumerConfig;
+typedef std::shared_ptr<DefaultMQPullConsumerConfig> DefaultMQPullConsumerConfigPtr;
+
+class ROCKETMQCLIENT_API DefaultMQPullConsumerConfig : virtual public MQClientConfig {
  public:
-  DefaultMQConsumerConfig() : m_messageModel(CLUSTERING) {}
+  virtual ~DefaultMQPullConsumerConfig() = default;
 
-  MessageModel getMessageModel() const { return m_messageModel; }
-  void setMessageModel(MessageModel messageModel) { m_messageModel = messageModel; }
+  virtual MessageModel getMessageModel() const = 0;
+  virtual void setMessageModel(MessageModel messageModel) = 0;
 
- protected:
-  MessageModel m_messageModel;
+  virtual AllocateMQStrategy* getAllocateMQStrategy() const = 0;
+  virtual void setAllocateMQStrategy(AllocateMQStrategy* strategy) = 0;
 };
 
 }  // namespace rocketmq
 
-#endif  // __DEFAULT_MQ_CONSUMER_H__
+#endif  // __DEFAULT_MQ_PULL_CONSUMER_CONFIG_H__

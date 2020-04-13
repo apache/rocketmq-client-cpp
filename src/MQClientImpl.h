@@ -24,9 +24,9 @@
 
 namespace rocketmq {
 
-class MQClientImpl : virtual public MQAdmin {
+class MQClientImpl : public MQAdmin {
  public:
-  MQClientImpl(MQClientConfig* config, std::shared_ptr<RPCHook> rpcHook)
+  MQClientImpl(MQClientConfigPtr config, std::shared_ptr<RPCHook> rpcHook)
       : m_clientConfig(config), m_rpcHook(rpcHook), m_serviceState(CREATE_JUST), m_clientInstance(nullptr) {}
 
  public:  // MQAdmin
@@ -53,7 +53,7 @@ class MQClientImpl : virtual public MQAdmin {
   void setRPCHook(std::shared_ptr<RPCHook> rpcHook) { m_rpcHook = rpcHook; }
 
  protected:
-  MQClientConfig* m_clientConfig;
+  MQClientConfigPtr m_clientConfig;
   std::shared_ptr<RPCHook> m_rpcHook;
   ServiceState m_serviceState;
   MQClientInstancePtr m_clientInstance;

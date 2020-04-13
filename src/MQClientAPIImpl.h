@@ -48,7 +48,7 @@ class MQClientAPIImpl {
  public:
   MQClientAPIImpl(ClientRemotingProcessor* clientRemotingProcessor,
                   std::shared_ptr<RPCHook> rpcHook,
-                  const MQClientConfig* clientConfig);
+                  ConstMQClientConfigPtr clientConfig);
   virtual ~MQClientAPIImpl();
 
   void start();

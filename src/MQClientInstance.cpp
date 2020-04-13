@@ -42,10 +42,10 @@ namespace rocketmq {
 
 static const long LOCK_TIMEOUT_MILLIS = 3000L;
 
-MQClientInstance::MQClientInstance(MQClientConfig clientConfig, const std::string& clientId)
+MQClientInstance::MQClientInstance(ConstMQClientConfigPtr clientConfig, const std::string& clientId)
     : MQClientInstance(clientConfig, clientId, nullptr) {}
 
-MQClientInstance::MQClientInstance(MQClientConfig clientConfig,
+MQClientInstance::MQClientInstance(ConstMQClientConfigPtr clientConfig,
                                    const std::string& clientId,
                                    std::shared_ptr<RPCHook> rpcHook)
     : m_clientConfig(clientConfig),
@@ -58,9 +58,9 @@ MQClientInstance::MQClientInstance(MQClientConfig clientConfig,
   m_topicPublishInfoTable[AUTO_CREATE_TOPIC_KEY_TOPIC] = defaultTopicInfo;
 
   m_clientRemotingProcessor.reset(new ClientRemotingProcessor(this));
-  m_mqClientAPIImpl.reset(new MQClientAPIImpl(m_clientRemotingProcessor.get(), rpcHook, &m_clientConfig));
+  m_mqClientAPIImpl.reset(new MQClientAPIImpl(m_clientRemotingProcessor.get(), rpcHook, m_clientConfig));
 
-  std::string namesrvAddr = m_clientConfig.getNamesrvAddr();
+  std::string namesrvAddr = m_clientConfig->getNamesrvAddr();
   if (!namesrvAddr.empty()) {
     m_mqClientAPIImpl->updateNameServerAddr(namesrvAddr);
     LOG_INFO_NEW("user specified name server address: {}", namesrvAddr);

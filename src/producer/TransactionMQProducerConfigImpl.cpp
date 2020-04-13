@@ -14,36 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_CLIENT_MANAGER_H__
-#define __MQ_CLIENT_MANAGER_H__
-
-#include <map>
-#include <memory>
-#include <string>
-
-#include "MQClientInstance.h"
+#include "TransactionMQProducerConfigImpl.h"
 
 namespace rocketmq {
 
-class MQClientManager {
- public:
-  static MQClientManager* getInstance();
+TransactionMQProducerConfigImpl::TransactionMQProducerConfigImpl() : m_transactionListener(nullptr) {}
 
-  virtual ~MQClientManager();
+TransactionListener* TransactionMQProducerConfigImpl::getTransactionListener() const {
+  return m_transactionListener;
+}
 
-  MQClientInstancePtr getOrCreateMQClientInstance(ConstMQClientConfigPtr clientConfig);
-  MQClientInstancePtr getOrCreateMQClientInstance(ConstMQClientConfigPtr clientConfig, std::shared_ptr<RPCHook> rpcHook);
-
-  void removeMQClientInstance(const std::string& clientId);
-
- private:
-  MQClientManager();
-
- private:
-  std::map<std::string, MQClientInstancePtr> m_instanceTable;
-  std::mutex m_mutex;
-};
+void TransactionMQProducerConfigImpl::setTransactionListener(TransactionListener* transactionListener) {
+  m_transactionListener = transactionListener;
+}
 
 }  // namespace rocketmq
-
-#endif  // __MQ_CLIENT_MANAGER_H__
