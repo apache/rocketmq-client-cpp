@@ -24,103 +24,103 @@ const char* GetMessageTopic(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL;
   }
-  return ((MQMessageExt*)msg)->getTopic().c_str();
+  return reinterpret_cast<MQMessageExt*>(msg)->getTopic().c_str();
 }
 
 const char* GetMessageTags(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL;
   }
-  return ((MQMessageExt*)msg)->getTags().c_str();
+  return reinterpret_cast<MQMessageExt*>(msg)->getTags().c_str();
 }
 
 const char* GetMessageKeys(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL;
   }
-  return ((MQMessageExt*)msg)->getKeys().c_str();
+  return reinterpret_cast<MQMessageExt*>(msg)->getKeys().c_str();
 }
 
 const char* GetMessageBody(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL;
   }
-  return ((MQMessageExt*)msg)->getBody().c_str();
+  return reinterpret_cast<MQMessageExt*>(msg)->getBody().c_str();
 }
 
 const char* GetMessageProperty(CMessageExt* msg, const char* key) {
   if (msg == NULL) {
     return NULL;
   }
-  return ((MQMessageExt*)msg)->getProperty(key).c_str();
+  return reinterpret_cast<MQMessageExt*>(msg)->getProperty(key).c_str();
 }
 
 const char* GetMessageId(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL;
   }
-  return ((MQMessageExt*)msg)->getMsgId().c_str();
+  return reinterpret_cast<MQMessageExt*>(msg)->getMsgId().c_str();
 }
 
 int GetMessageDelayTimeLevel(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  return ((MQMessageExt*)msg)->getDelayTimeLevel();
+  return reinterpret_cast<MQMessageExt*>(msg)->getDelayTimeLevel();
 }
 
 int GetMessageQueueId(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  return ((MQMessageExt*)msg)->getQueueId();
+  return reinterpret_cast<MQMessageExt*>(msg)->getQueueId();
 }
 
 int GetMessageReconsumeTimes(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  return ((MQMessageExt*)msg)->getReconsumeTimes();
+  return reinterpret_cast<MQMessageExt*>(msg)->getReconsumeTimes();
 }
 
 int GetMessageStoreSize(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  return ((MQMessageExt*)msg)->getStoreSize();
+  return reinterpret_cast<MQMessageExt*>(msg)->getStoreSize();
 }
 
 long long GetMessageBornTimestamp(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  return ((MQMessageExt*)msg)->getBornTimestamp();
+  return reinterpret_cast<MQMessageExt*>(msg)->getBornTimestamp();
 }
 
 long long GetMessageStoreTimestamp(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  return ((MQMessageExt*)msg)->getStoreTimestamp();
+  return reinterpret_cast<MQMessageExt*>(msg)->getStoreTimestamp();
 }
 
 long long GetMessageQueueOffset(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  return ((MQMessageExt*)msg)->getQueueOffset();
+  return reinterpret_cast<MQMessageExt*>(msg)->getQueueOffset();
 }
 
 long long GetMessageCommitLogOffset(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  return ((MQMessageExt*)msg)->getCommitLogOffset();
+  return reinterpret_cast<MQMessageExt*>(msg)->getCommitLogOffset();
 }
 
 long long GetMessagePreparedTransactionOffset(CMessageExt* msg) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  return ((MQMessageExt*)msg)->getPreparedTransactionOffset();
+  return reinterpret_cast<MQMessageExt*>(msg)->getPreparedTransactionOffset();
 }

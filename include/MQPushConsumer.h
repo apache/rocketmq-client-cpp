@@ -29,6 +29,8 @@ class ROCKETMQCLIENT_API MQPushConsumer : public MQConsumer {
   virtual void registerMessageListener(MessageListenerConcurrently* messageListener) = 0;
   virtual void registerMessageListener(MessageListenerOrderly* messageListener) = 0;
 
+  virtual MQMessageListener* getMessageListener() const = 0;
+
   virtual void subscribe(const std::string& topic, const std::string& subExpression) = 0;
   // virtual void subscribe(const std::string& topic, MessageSelector* selector) = 0;
 

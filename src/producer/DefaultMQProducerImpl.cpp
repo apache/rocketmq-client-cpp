@@ -328,13 +328,13 @@ MessageBatch* DefaultMQProducerImpl::batch(std::vector<MQMessagePtr>& msgs) {
   }
 
   try {
-    MessageBatch* msgBatch = MessageBatch::generateFromList(msgs);
+    std::unique_ptr<MessageBatch> msgBatch(MessageBatch::generateFromList(msgs));
     for (auto& message : msgBatch->getMessages()) {
       Validators::checkMessage(*message, m_producerConfig->getMaxMessageSize());
       MessageClientIDSetter::setUniqID(*message);
     }
     msgBatch->setBody(msgBatch->encode());
-    return msgBatch;
+    return msgBatch.release();
   } catch (std::exception& e) {
     THROW_MQEXCEPTION(MQClientException, "Failed to initiate the MessageBatch", -1);
   }

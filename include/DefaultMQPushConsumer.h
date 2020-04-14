@@ -42,6 +42,8 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQPushConsumer, public D
   void registerMessageListener(MessageListenerConcurrently* messageListener) override;
   void registerMessageListener(MessageListenerOrderly* messageListener) override;
 
+  MQMessageListener* getMessageListener() const override;
+
   void subscribe(const std::string& topic, const std::string& subExpression) override;
 
   void suspend() override;

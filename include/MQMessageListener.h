@@ -55,6 +55,7 @@ enum MessageListenerType { messageListenerDefaultly = 0, messageListenerOrderly 
 class ROCKETMQCLIENT_API MQMessageListener {
  public:
   virtual ~MQMessageListener() = default;
+
   virtual MessageListenerType getMessageListenerType() { return messageListenerDefaultly; }
 
   virtual ConsumeStatus consumeMessage(const std::vector<MQMessageExtPtr2>& msgs) {

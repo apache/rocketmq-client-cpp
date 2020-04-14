@@ -72,6 +72,10 @@ void DefaultMQPushConsumer::registerMessageListener(MessageListenerOrderly* mess
   m_pushConsumerDelegate->registerMessageListener(messageListener);
 }
 
+MQMessageListener* DefaultMQPushConsumer::getMessageListener() const {
+  return m_pushConsumerDelegate->getMessageListener();
+}
+
 void DefaultMQPushConsumer::subscribe(const std::string& topic, const std::string& subExpression) {
   m_pushConsumerDelegate->subscribe(topic, subExpression);
 }

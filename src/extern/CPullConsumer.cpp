@@ -29,8 +29,8 @@ CPullConsumer* CreatePullConsumer(const char* groupId) {
   if (groupId == NULL) {
     return NULL;
   }
-  DefaultMQPullConsumer* defaultMQPullConsumer = new DefaultMQPullConsumer(groupId);
-  return (CPullConsumer*)defaultMQPullConsumer;
+  auto* defaultMQPullConsumer = new DefaultMQPullConsumer(groupId);
+  return reinterpret_cast<CPullConsumer*>(defaultMQPullConsumer);
 }
 
 int DestroyPullConsumer(CPullConsumer* consumer) {

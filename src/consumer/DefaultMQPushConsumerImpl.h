@@ -73,6 +73,8 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
   void registerMessageListener(MessageListenerConcurrently* messageListener) override;
   void registerMessageListener(MessageListenerOrderly* messageListener) override;
 
+  MQMessageListener* getMessageListener() const override;
+
   void subscribe(const std::string& topic, const std::string& subExpression) override;
 
   void suspend() override;

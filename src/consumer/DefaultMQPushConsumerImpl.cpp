@@ -335,11 +335,15 @@ void DefaultMQPushConsumerImpl::registerMessageListener(MQMessageListener* messa
 }
 
 void DefaultMQPushConsumerImpl::registerMessageListener(MessageListenerConcurrently* messageListener) {
-  registerMessageListener((MQMessageListener*)messageListener);
+  registerMessageListener(static_cast<MQMessageListener*>(messageListener));
 }
 
 void DefaultMQPushConsumerImpl::registerMessageListener(MessageListenerOrderly* messageListener) {
-  registerMessageListener((MQMessageListener*)messageListener);
+  registerMessageListener(static_cast<MQMessageListener*>(messageListener));
+}
+
+MQMessageListener* DefaultMQPushConsumerImpl::getMessageListener() const {
+  return m_messageListener;
 }
 
 void DefaultMQPushConsumerImpl::subscribe(const std::string& topic, const std::string& subExpression) {
