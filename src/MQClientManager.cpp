@@ -36,7 +36,7 @@ MQClientInstancePtr MQClientManager::getOrCreateMQClientInstance(ConstMQClientCo
                                                                  RPCHookPtr rpcHook) {
   std::string clientId = clientConfig->buildMQClientId();
   std::lock_guard<std::mutex> lock(m_mutex);
-  auto it = m_instanceTable.find(clientId);
+  const auto& it = m_instanceTable.find(clientId);
   if (it != m_instanceTable.end()) {
     return it->second;
   } else {
@@ -50,7 +50,7 @@ MQClientInstancePtr MQClientManager::getOrCreateMQClientInstance(ConstMQClientCo
 
 void MQClientManager::removeMQClientInstance(const std::string& clientId) {
   std::lock_guard<std::mutex> lock(m_mutex);
-  auto it = m_instanceTable.find(clientId);
+  const auto& it = m_instanceTable.find(clientId);
   if (it != m_instanceTable.end()) {
     m_instanceTable.erase(it);
   }

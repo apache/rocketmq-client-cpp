@@ -318,7 +318,7 @@ SendMessageResponseHeader* SendMessageResponseHeader::Decode(std::map<std::strin
   header->queueId = std::stoi(extFields.at("queueId"));
   header->queueOffset = std::stoll(extFields.at("queueOffset"));
 
-  auto it = extFields.find("transactionId");
+  const auto& it = extFields.find("transactionId");
   if (it != extFields.end()) {
     header->transactionId = it->second;
   }

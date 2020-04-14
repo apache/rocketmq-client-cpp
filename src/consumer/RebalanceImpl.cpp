@@ -404,9 +404,9 @@ bool RebalanceImpl::updateProcessQueueTableInRebalance(const std::string& topic,
 
 void RebalanceImpl::removeProcessQueue(const MQMessageQueue& mq) {
   std::lock_guard<std::mutex> lock(m_processQueueTableMutex);
-  auto it = m_processQueueTable.find(mq);
+  const auto& it = m_processQueueTable.find(mq);
   if (it != m_processQueueTable.end()) {
-    ProcessQueuePtr prev = it->second;
+    auto prev = it->second;
     m_processQueueTable.erase(it);
 
     bool dropped = prev->isDropped();
@@ -419,33 +419,33 @@ void RebalanceImpl::removeProcessQueue(const MQMessageQueue& mq) {
 
 ProcessQueuePtr RebalanceImpl::removeProcessQueueDirectly(const MQMessageQueue& mq) {
   std::lock_guard<std::mutex> lock(m_processQueueTableMutex);
-  auto it = m_processQueueTable.find(mq);
+  const auto& it = m_processQueueTable.find(mq);
   if (it != m_processQueueTable.end()) {
-    ProcessQueuePtr old = it->second;
+    auto old = it->second;
     m_processQueueTable.erase(it);
     return old;
   }
-  return ProcessQueuePtr();
+  return nullptr;
 }
 
 ProcessQueuePtr RebalanceImpl::putProcessQueueIfAbsent(const MQMessageQueue& mq, ProcessQueuePtr pq) {
   std::lock_guard<std::mutex> lock(m_processQueueTableMutex);
-  auto it = m_processQueueTable.find(mq);
+  const auto& it = m_processQueueTable.find(mq);
   if (it != m_processQueueTable.end()) {
     return it->second;
   } else {
     m_processQueueTable[mq] = pq;
-    return ProcessQueuePtr();
+    return nullptr;
   }
 }
 
 ProcessQueuePtr RebalanceImpl::getProcessQueue(const MQMessageQueue& mq) {
   std::lock_guard<std::mutex> lock(m_processQueueTableMutex);
-  if (m_processQueueTable.find(mq) != m_processQueueTable.end()) {
-    return m_processQueueTable[mq];
+  const auto& it = m_processQueueTable.find(mq);
+  if (it != m_processQueueTable.end()) {
+    return it->second;
   } else {
-    ProcessQueuePtr ptr;
-    return ptr;
+    return nullptr;
   }
 }
 
@@ -477,7 +477,7 @@ TOPIC2SD& RebalanceImpl::getSubscriptionInner() {
 }
 
 SubscriptionDataPtr RebalanceImpl::getSubscriptionData(const std::string& topic) {
-  auto it = m_subscriptionInner.find(topic);
+  const auto& it = m_subscriptionInner.find(topic);
   if (it != m_subscriptionInner.end()) {
     return it->second;
   }
@@ -486,7 +486,7 @@ SubscriptionDataPtr RebalanceImpl::getSubscriptionData(const std::string& topic)
 
 void RebalanceImpl::setSubscriptionData(const std::string& topic, SubscriptionDataPtr subscriptionData) noexcept {
   if (subscriptionData != nullptr) {
-    auto it = m_subscriptionInner.find(topic);
+    const auto& it = m_subscriptionInner.find(topic);
     if (it != m_subscriptionInner.end()) {
       deleteAndZero(it->second);
     }
@@ -496,8 +496,9 @@ void RebalanceImpl::setSubscriptionData(const std::string& topic, SubscriptionDa
 
 bool RebalanceImpl::getTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& mqs) {
   std::lock_guard<std::mutex> lock(m_topicSubscribeInfoTableMutex);
-  if (m_topicSubscribeInfoTable.find(topic) != m_topicSubscribeInfoTable.end()) {
-    mqs = m_topicSubscribeInfoTable[topic];
+  const auto& it = m_topicSubscribeInfoTable.find(topic);
+  if (it != m_topicSubscribeInfoTable.end()) {
+    mqs = it->second;  // mqs will out
     return true;
   }
   return false;
@@ -510,8 +511,6 @@ void RebalanceImpl::setTopicSubscribeInfo(const std::string& topic, std::vector<
 
   {
     std::lock_guard<std::mutex> lock(m_topicSubscribeInfoTableMutex);
-    if (m_topicSubscribeInfoTable.find(topic) != m_topicSubscribeInfoTable.end())
-      m_topicSubscribeInfoTable.erase(topic);
     m_topicSubscribeInfoTable[topic] = mqs;
   }
 

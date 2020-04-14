@@ -505,11 +505,11 @@ bool MQClientInstance::topicRouteDataIsChange(TopicRouteData* olddata, TopicRout
 
 TopicRouteDataPtr MQClientInstance::getTopicRouteData(const std::string& topic) {
   std::lock_guard<std::mutex> lock(m_topicRouteTableMutex);
-  auto iter = m_topicRouteTable.find(topic);
-  if (iter != m_topicRouteTable.end()) {
-    return iter->second;
+  const auto& it = m_topicRouteTable.find(topic);
+  if (it != m_topicRouteTable.end()) {
+    return it->second;
   }
-  return TopicRouteDataPtr();
+  return nullptr;
 }
 
 void MQClientInstance::addTopicRouteData(const std::string& topic, TopicRouteDataPtr topicRouteData) {
@@ -605,10 +605,11 @@ void MQClientInstance::doRebalance() {
 
 void MQClientInstance::doRebalanceByConsumerGroup(const std::string& consumerGroup) {
   std::lock_guard<std::mutex> lock(m_consumerTableMutex);
-  if (m_consumerTable.find(consumerGroup) != m_consumerTable.end()) {
+  const auto& it = m_consumerTable.find(consumerGroup);
+  if (it != m_consumerTable.end()) {
     try {
       LOG_INFO_NEW("Client factory:{} start dorebalance for consumer:{}", m_clientId, consumerGroup);
-      auto* consumer = m_consumerTable[consumerGroup];
+      auto* consumer = it->second;
       consumer->doRebalance();
     } catch (const std::exception& e) {
       LOG_ERROR_NEW("{}", e.what());
@@ -618,24 +619,28 @@ void MQClientInstance::doRebalanceByConsumerGroup(const std::string& consumerGro
 
 MQProducerInner* MQClientInstance::selectProducer(const std::string& producerName) {
   std::lock_guard<std::mutex> lock(m_producerTableMutex);
-  if (m_producerTable.find(producerName) != m_producerTable.end()) {
-    return m_producerTable[producerName];
+  const auto& it = m_producerTable.find(producerName);
+  if (it != m_producerTable.end()) {
+    return it->second;
   }
   return nullptr;
 }
 
 bool MQClientInstance::addProducerToTable(const std::string& producerName, MQProducerInner* producer) {
   std::lock_guard<std::mutex> lock(m_producerTableMutex);
-  if (m_producerTable.find(producerName) != m_producerTable.end())
+  if (m_producerTable.find(producerName) != m_producerTable.end()) {
     return false;
-  m_producerTable[producerName] = producer;
-  return true;
+  } else {
+    m_producerTable[producerName] = producer;
+    return true;
+  }
 }
 
 void MQClientInstance::eraseProducerFromTable(const std::string& producerName) {
   std::lock_guard<std::mutex> lock(m_producerTableMutex);
-  if (m_producerTable.find(producerName) != m_producerTable.end()) {
-    m_producerTable.erase(producerName);
+  const auto& it = m_producerTable.find(producerName);
+  if (it != m_producerTable.end()) {
+    m_producerTable.erase(it);
   }
 }
 
@@ -657,8 +662,9 @@ void MQClientInstance::updateProducerTopicPublishInfo(const std::string& topic, 
 
 MQConsumerInner* MQClientInstance::selectConsumer(const std::string& group) {
   std::lock_guard<std::mutex> lock(m_consumerTableMutex);
-  if (m_consumerTable.find(group) != m_consumerTable.end()) {
-    return m_consumerTable[group];
+  const auto& it = m_consumerTable.find(group);
+  if (it != m_consumerTable.end()) {
+    return it->second;
   }
   return nullptr;
 }
@@ -675,8 +681,9 @@ bool MQClientInstance::addConsumerToTable(const std::string& consumerName, MQCon
 
 void MQClientInstance::eraseConsumerFromTable(const std::string& consumerName) {
   std::lock_guard<std::mutex> lock(m_consumerTableMutex);
-  if (m_consumerTable.find(consumerName) != m_consumerTable.end()) {
-    m_consumerTable.erase(consumerName);  // do not need free consumer, as it was allocated by user
+  const auto& it = m_consumerTable.find(consumerName);
+  if (it != m_consumerTable.end()) {
+    m_consumerTable.erase(it);  // do not need free consumer, as it was allocated by user
   } else {
     LOG_WARN_NEW("could not find consumer:{} from table", consumerName);
   }
@@ -712,24 +719,26 @@ void MQClientInstance::addTopicInfoToTable(const std::string& topic, TopicPublis
 
 void MQClientInstance::eraseTopicInfoFromTable(const std::string& topic) {
   std::lock_guard<std::mutex> lock(m_topicPublishInfoTableMutex);
-  if (m_topicPublishInfoTable.find(topic) != m_topicPublishInfoTable.end()) {
-    m_topicPublishInfoTable.erase(topic);
+  const auto& it = m_topicPublishInfoTable.find(topic);
+  if (it != m_topicPublishInfoTable.end()) {
+    m_topicPublishInfoTable.erase(it);
   }
 }
 
 TopicPublishInfoPtr MQClientInstance::getTopicPublishInfoFromTable(const std::string& topic) {
   std::lock_guard<std::mutex> lock(m_topicPublishInfoTableMutex);
-  if (m_topicPublishInfoTable.find(topic) != m_topicPublishInfoTable.end()) {
-    return m_topicPublishInfoTable[topic];
+  const auto& it = m_topicPublishInfoTable.find(topic);
+  if (it != m_topicPublishInfoTable.end()) {
+    return it->second;
   }
-  return TopicPublishInfoPtr();
+  return nullptr;
 }
 
 bool MQClientInstance::isTopicInfoValidInTable(const std::string& topic) {
   std::lock_guard<std::mutex> lock(m_topicPublishInfoTableMutex);
-  auto iter = m_topicPublishInfoTable.find(topic);
-  if (iter != m_topicPublishInfoTable.end()) {
-    return iter->second->ok();
+  const auto& it = m_topicPublishInfoTable.find(topic);
+  if (it != m_topicPublishInfoTable.end()) {
+    return it->second->ok();
   }
   return false;
 }
@@ -756,9 +765,10 @@ FindBrokerResult* MQClientInstance::findBrokerAddressInAdmin(const std::string& 
   bool slave = false;
   std::string brokerAddr;
 
-  if (brokerTable.find(brokerName) != brokerTable.end()) {
-    std::map<int, std::string> brokerMap(brokerTable[brokerName]);
-    std::map<int, std::string>::iterator it1 = brokerMap.begin();
+  const auto& it = brokerTable.find(brokerName);
+  if (it != brokerTable.end()) {
+    const auto& brokerMap = it->second;
+    const auto& it1 = brokerMap.begin();
     if (it1 != brokerMap.end()) {
       slave = (it1->first != MASTER_ID);
       found = true;
@@ -779,11 +789,12 @@ std::string MQClientInstance::findBrokerAddressInPublish(const std::string& brok
   std::string brokerAddr;
   bool found = false;
 
-  if (brokerTable.find(brokerName) != brokerTable.end()) {
-    const auto& brokerMap = brokerTable[brokerName];
-    auto it = brokerMap.find(MASTER_ID);
-    if (it != brokerMap.end()) {
-      brokerAddr = it->second;
+  const auto& it = brokerTable.find(brokerName);
+  if (it != brokerTable.end()) {
+    const auto& brokerMap = it->second;
+    const auto& it1 = brokerMap.find(MASTER_ID);
+    if (it1 != brokerMap.end()) {
+      brokerAddr = it1->second;
       found = true;
     }
   }
@@ -804,18 +815,19 @@ FindBrokerResult* MQClientInstance::findBrokerAddressInSubscribe(const std::stri
   bool found = false;
   BrokerAddrMAP brokerTable(getBrokerAddrTable());
 
-  if (brokerTable.find(brokerName) != brokerTable.end()) {
-    std::map<int, std::string> brokerMap(brokerTable[brokerName]);
+  const auto& it = brokerTable.find(brokerName);
+  if (it != brokerTable.end()) {
+    const auto& brokerMap = it->second;
     if (!brokerMap.empty()) {
-      auto iter = brokerMap.find(brokerId);
-      if (iter != brokerMap.end()) {
-        brokerAddr = iter->second;
-        slave = (brokerId != MASTER_ID);
+      const auto& it1 = brokerMap.find(brokerId);
+      if (it1 != brokerMap.end()) {
+        brokerAddr = it1->second;
+        slave = it1->first != MASTER_ID;
         found = true;
       } else if (!onlyThisBroker) {  // not only from master
-        iter = brokerMap.begin();
-        brokerAddr = iter->second;
-        slave = iter->first != MASTER_ID;
+        const auto& it2 = brokerMap.begin();
+        brokerAddr = it2->second;
+        slave = it2->first != MASTER_ID;
         found = true;
       }
     }
@@ -885,7 +897,7 @@ void MQClientInstance::resetOffset(const std::string& group,
 
     for (const auto& it : processQueueTable) {
       const auto& mq = it.first;
-      auto it2 = offsetTable.find(mq);
+      const auto& it2 = offsetTable.find(mq);
       if (it2 != offsetTable.end()) {
         auto offset = it2->second;
         consumer->updateConsumeOffset(mq, offset);
@@ -936,10 +948,7 @@ ConsumerRunningInfo* MQClientInstance::consumerRunningInfo(const std::string& co
 void MQClientInstance::addBrokerToAddrTable(const std::string& brokerName,
                                             const std::map<int, std::string>& brokerAddrs) {
   std::lock_guard<std::mutex> lock(m_brokerAddrTableMutex);
-  if (m_brokerAddrTable.find(brokerName) != m_brokerAddrTable.end()) {
-    m_brokerAddrTable.erase(brokerName);
-  }
-  m_brokerAddrTable.emplace(brokerName, brokerAddrs);
+  m_brokerAddrTable[brokerName] = brokerAddrs;
 }
 
 void MQClientInstance::resetBrokerAddrTable(BrokerAddrMAP&& table) {

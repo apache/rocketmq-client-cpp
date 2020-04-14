@@ -97,7 +97,7 @@ class TcpRemotingClient {
   void doAfterRpcHooks(const std::string& addr, RemotingCommand& request, RemotingCommand* response, bool toSent);
 
   // future management
-  void addResponseFuture(int opaque, std::shared_ptr<ResponseFuture> pFuture);
+  void addResponseFuture(int opaque, std::shared_ptr<ResponseFuture> future);
   std::shared_ptr<ResponseFuture> findAndDeleteResponseFuture(int opaque);
 
  private:

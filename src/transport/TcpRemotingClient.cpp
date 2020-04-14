@@ -358,9 +358,9 @@ TcpTransportPtr TcpRemotingClient::CreateTransport(const std::string& addr, bool
     std::lock_guard<std::timed_mutex> lock(m_transportTableMutex, std::adopt_lock);
 
     // check for reuse
-    auto iter = m_transportTable.find(addr);
-    if (iter != m_transportTable.end()) {
-      channel = iter->second;
+    const auto& it = m_transportTable.find(addr);
+    if (it != m_transportTable.end()) {
+      channel = it->second;
       if (channel != nullptr) {
         TcpConnectStatus connectStatus = channel->getTcpConnectStatus();
         switch (connectStatus) {
@@ -460,8 +460,9 @@ bool TcpRemotingClient::CloseTransport(const std::string& addr, TcpTransportPtr 
   LOG_ERROR_NEW("CloseTransport of:{}", addr);
 
   bool removeItemFromTable = true;
-  if (m_transportTable.find(addr) != m_transportTable.end()) {
-    if (m_transportTable[addr]->getStartTime() != channel->getStartTime()) {
+  const auto& it = m_transportTable.find(addr);
+  if (it != m_transportTable.end()) {
+    if (it->second->getStartTime() != channel->getStartTime()) {
       LOG_INFO_NEW("tcpTransport with addr:{} has been closed before, and has been created again, nothing to do", addr);
       removeItemFromTable = false;
     }
@@ -582,10 +583,10 @@ void TcpRemotingClient::processResponseCommand(std::unique_ptr<RemotingCommand> 
 void TcpRemotingClient::processRequestCommand(std::unique_ptr<RemotingCommand> requestCommand,
                                               const std::string& addr) {
   int requestCode = requestCommand->getCode();
-  auto iter = m_processorTable.find(requestCode);
-  if (iter != m_processorTable.end()) {
+  const auto& it = m_processorTable.find(requestCode);
+  if (it != m_processorTable.end()) {
     try {
-      auto& processor = iter->second;
+      auto* processor = it->second;
 
       doBeforeRpcHooks(addr, *requestCommand, false);
       std::unique_ptr<RemotingCommand> response(processor->processRequest(addr, requestCommand.get()));
@@ -625,27 +626,26 @@ void TcpRemotingClient::processRequestCommand(std::unique_ptr<RemotingCommand> r
   }
 }
 
-void TcpRemotingClient::addResponseFuture(int opaque, std::shared_ptr<ResponseFuture> pFuture) {
+void TcpRemotingClient::addResponseFuture(int opaque, std::shared_ptr<ResponseFuture> future) {
   std::lock_guard<std::mutex> lock(m_futureTableMutex);
-  m_futureTable[opaque] = pFuture;
+  m_futureTable[opaque] = future;
 }
 
 // Note: after call this function, shared_ptr of m_futureTable[opaque] will
 // be erased, so caller must ensure the life cycle of returned shared_ptr;
 std::shared_ptr<ResponseFuture> TcpRemotingClient::findAndDeleteResponseFuture(int opaque) {
   std::lock_guard<std::mutex> lock(m_futureTableMutex);
-  std::shared_ptr<ResponseFuture> pResponseFuture;
-  if (m_futureTable.find(opaque) != m_futureTable.end()) {
-    pResponseFuture = m_futureTable[opaque];
-    m_futureTable.erase(opaque);
+  std::shared_ptr<ResponseFuture> responseFuture;
+  const auto& it = m_futureTable.find(opaque);
+  if (it != m_futureTable.end()) {
+    responseFuture = it->second;
+    m_futureTable.erase(it);
   }
-  return pResponseFuture;
+  return responseFuture;
 }
 
 void TcpRemotingClient::registerProcessor(MQRequestCode requestCode, RequestProcessor* requestProcessor) {
-  if (m_processorTable.find(requestCode) != m_processorTable.end()) {
-    m_processorTable.erase(requestCode);
-  }
+  // replace
   m_processorTable[requestCode] = requestProcessor;
 }
 

@@ -34,7 +34,7 @@ void putMessageQueueOffset(MQMessageQueue mq, uint64_t offset) {
 }
 
 uint64_t getMessageQueueOffset(MQMessageQueue mq) {
-  auto it = g_offseTable.find(mq);
+  const auto& it = g_offseTable.find(mq);
   if (it != g_offseTable.end()) {
     return it->second;
   }

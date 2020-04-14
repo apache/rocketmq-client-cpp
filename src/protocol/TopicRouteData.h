@@ -17,11 +17,11 @@
 #ifndef __TOPIC_ROUTE_DATA_H__
 #define __TOPIC_ROUTE_DATA_H__
 
+#include <json/json.h>
+
 #include <algorithm>
 #include <cstdlib>
 #include <memory>
-
-#include <json/json.h>
 
 #include "DataBlock.h"
 #include "Logging.h"
@@ -107,17 +107,17 @@ class TopicRouteData {
     int bdSize = m_brokerDatas.size();
     if (bdSize > 0) {
       int bdIndex = std::rand() % bdSize;
-      auto bd = m_brokerDatas[bdIndex];
-      auto iter = bd.brokerAddrs.find(MASTER_ID);
-      if (iter == bd.brokerAddrs.end()) {
+      const auto& bd = m_brokerDatas[bdIndex];
+      auto it = bd.brokerAddrs.find(MASTER_ID);
+      if (it == bd.brokerAddrs.end()) {
         int baSize = bd.brokerAddrs.size();
         int baIndex = std::rand() % baSize;
-        iter = bd.brokerAddrs.begin();
+        it = bd.brokerAddrs.begin();
         for (; baIndex > 0; baIndex--) {
-          iter++;
+          it++;
         }
       }
-      return iter->second;
+      return it->second;
     }
     return "";
   }

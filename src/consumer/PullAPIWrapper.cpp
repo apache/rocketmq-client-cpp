@@ -42,8 +42,9 @@ void PullAPIWrapper::updatePullFromWhichNode(const MQMessageQueue& mq, int broke
 
 int PullAPIWrapper::recalculatePullFromWhichNode(const MQMessageQueue& mq) {
   std::lock_guard<std::mutex> lock(m_lock);
-  if (m_pullFromWhichNodeTable.find(mq) != m_pullFromWhichNodeTable.end()) {
-    return m_pullFromWhichNodeTable[mq];
+  const auto& it = m_pullFromWhichNodeTable.find(mq);
+  if (it != m_pullFromWhichNodeTable.end()) {
+    return it->second;
   }
   return MASTER_ID;
 }
