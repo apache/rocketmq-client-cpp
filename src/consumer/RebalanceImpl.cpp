@@ -107,8 +107,8 @@ void RebalanceImpl::unlockAll(const bool oneway) {
 }
 
 std::shared_ptr<BROKER2MQS> RebalanceImpl::buildProcessQueueTableByBrokerName() {
-  std::shared_ptr<BROKER2MQS> brokerMqs = std::make_shared<BROKER2MQS>();
-  MQ2PQ processQueueTable = getProcessQueueTable();
+  auto brokerMqs = std::make_shared<BROKER2MQS>();
+  auto processQueueTable = getProcessQueueTable();
   for (const auto& it : processQueueTable) {
     const auto& mq = it.first;
     std::string brokerName = mq.getBrokerName();

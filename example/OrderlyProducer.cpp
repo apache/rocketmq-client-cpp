@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
 
   int threadCount = info.thread_count;
   for (int j = 0; j < threadCount; j++) {
-    std::shared_ptr<std::thread> th = std::make_shared<std::thread>(ProducerWorker, &info, producer);
+    auto th = std::make_shared<std::thread>(ProducerWorker, &info, producer);
     work_pool.push_back(th);
   }
 

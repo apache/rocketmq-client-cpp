@@ -202,7 +202,7 @@ std::unique_ptr<RemotingCommand> TcpRemotingClient::invokeSyncImpl(
   int code = request.getCode();
   int opaque = request.getOpaque();
 
-  std::shared_ptr<ResponseFuture> responseFuture(new ResponseFuture(code, opaque, timeoutMillis));
+  auto responseFuture = std::make_shared<ResponseFuture>(code, opaque, timeoutMillis);
   addResponseFuture(opaque, responseFuture);
 
   if (SendCommand(channel, request)) {
@@ -262,7 +262,7 @@ void TcpRemotingClient::invokeAsyncImpl(TcpTransportPtr channel,
   int opaque = request.getOpaque();
 
   // delete in callback
-  std::shared_ptr<ResponseFuture> responseFuture(new ResponseFuture(code, opaque, timeoutMillis, invokeCallback));
+  auto responseFuture = std::make_shared<ResponseFuture>(code, opaque, timeoutMillis, invokeCallback);
   addResponseFuture(opaque, responseFuture);
 
   try {
@@ -562,7 +562,7 @@ void TcpRemotingClient::processMessageReceived(MemoryBlockPtr2 mem, const std::s
 
 void TcpRemotingClient::processResponseCommand(std::unique_ptr<RemotingCommand> responseCommand) {
   int opaque = responseCommand->getOpaque();
-  std::shared_ptr<ResponseFuture> responseFuture = findAndDeleteResponseFuture(opaque);
+  auto responseFuture = findAndDeleteResponseFuture(opaque);
   if (responseFuture != nullptr) {
     int code = responseFuture->getRequestCode();
     LOG_DEBUG_NEW("processResponseCommand, opaque:{}, code:{}", opaque, code);

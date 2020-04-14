@@ -194,8 +194,8 @@ void BufferEvent::read_callback(struct bufferevent* bev, void* ctx) {
     bufferevent_lock(event->m_bufferEvent);
   }
 
-  BufferEventDataCallback callback = event->m_readCallback;
-  std::shared_ptr<TcpTransport> transport = event->m_callbackTransport.lock();
+  auto callback = event->m_readCallback;
+  auto transport = event->m_callbackTransport.lock();
 
   if (event->m_unlockCallbacks) {
     bufferevent_unlock(event->m_bufferEvent);
@@ -213,8 +213,8 @@ void BufferEvent::write_callback(struct bufferevent* bev, void* ctx) {
     bufferevent_lock(event->m_bufferEvent);
   }
 
-  BufferEventDataCallback callback = event->m_writeCallback;
-  std::shared_ptr<TcpTransport> transport = event->m_callbackTransport.lock();
+  auto callback = event->m_writeCallback;
+  auto transport = event->m_callbackTransport.lock();
 
   if (event->m_unlockCallbacks) {
     bufferevent_unlock(event->m_bufferEvent);
@@ -266,7 +266,7 @@ void BufferEvent::event_callback(struct bufferevent* bev, short what, void* ctx)
   }
 
   BufferEventEventCallback callback = event->m_eventCallback;
-  std::shared_ptr<TcpTransport> transport = event->m_callbackTransport.lock();
+  auto transport = event->m_callbackTransport.lock();
 
   if (event->m_unlockCallbacks) {
     bufferevent_unlock(event->m_bufferEvent);

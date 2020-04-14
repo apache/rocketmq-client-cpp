@@ -358,7 +358,7 @@ SendResult* DefaultMQProducerImpl::sendDefaultImpl(MQMessagePtr msg,
   uint64_t beginTimestampFirst = UtilAll::currentTimeMillis();
   uint64_t beginTimestampPrev = beginTimestampFirst;
   uint64_t endTimestamp = beginTimestampFirst;
-  TopicPublishInfoPtr topicPublishInfo = m_clientInstance->tryToFindTopicPublishInfo(msg->getTopic());
+  auto topicPublishInfo = m_clientInstance->tryToFindTopicPublishInfo(msg->getTopic());
   if (topicPublishInfo != nullptr && topicPublishInfo->ok()) {
     bool callTimeout = false;
     std::unique_ptr<SendResult> sendResult;
