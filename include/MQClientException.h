@@ -29,10 +29,18 @@ namespace rocketmq {
 class ROCKETMQCLIENT_API MQException : public std::exception {
  public:
   MQException(const std::string& msg, int error, const char* file, int line) noexcept
-      : m_error(error), m_line(line), m_msg(msg), m_file(file), m_type("MQException") {}
+      : MQException(msg, error, nullptr, file, line) {}
 
-  MQException(const std::string& msg, int error, const char* file, const char* type, int line) noexcept
-      : m_error(error), m_line(line), m_msg(msg), m_file(file), m_type(type) {}
+  MQException(const std::string& msg, int error, std::exception_ptr cause, const char* file, int line) noexcept
+      : MQException("MQException", msg, error, cause, file, line) {}
+
+  MQException(const std::string& type,
+              const std::string& msg,
+              int error,
+              std::exception_ptr cause,
+              const char* file,
+              int line) noexcept
+      : m_type(type), m_msg(msg), m_error(error), m_cause(cause), m_file(file), m_line(line) {}
 
   virtual ~MQException() noexcept = default;
 
@@ -45,18 +53,27 @@ class ROCKETMQCLIENT_API MQException : public std::exception {
     return m_what_.c_str();
   }
 
-  int GetError() const noexcept { return m_error; }
-  int GetLine() { return m_line; }
-  const char* GetMsg() { return m_msg.c_str(); }
-  const char* GetFile() { return m_file.c_str(); }
   const char* GetType() const noexcept { return m_type.c_str(); }
 
+  const std::string& GetErrorMessage() const noexcept { return m_msg; }
+  const char* GetMsg() const noexcept { return m_msg.c_str(); }
+
+  int GetError() const noexcept { return m_error; }
+
+  std::exception_ptr GetCause() const { return m_cause; }
+
+  const char* GetFile() const noexcept { return m_file.c_str(); }
+  int GetLine() const noexcept { return m_line; }
+
  protected:
-  int m_error;
-  int m_line;
-  std::string m_msg;
-  std::string m_file;
   std::string m_type;
+  std::string m_msg;
+  int m_error;
+
+  std::exception_ptr m_cause;
+
+  std::string m_file;
+  int m_line;
 
   mutable std::string m_what_;
 };
@@ -66,32 +83,43 @@ inline std::ostream& operator<<(std::ostream& os, const MQException& e) {
   return os;
 }
 
-#define DEFINE_MQCLIENTEXCEPTION2(name, super)                                                     \
-  class ROCKETMQCLIENT_API name : public super {                                                   \
-   public:                                                                                         \
-    name(const std::string& msg, int error, const char* file, int line) noexcept                   \
-        : super(msg, error, file, #name, line) {}                                                  \
-                                                                                                   \
-   protected:                                                                                      \
-    name(const std::string& msg, int error, const char* file, const char* type, int line) noexcept \
-        : super(msg, error, file, type, line) {}                                                   \
+#define DEFINE_MQEXCEPTION2(name, super)                                                                   \
+  class ROCKETMQCLIENT_API name : public super {                                                           \
+   public:                                                                                                 \
+    name(const std::string& msg, int error, const char* file, int line) noexcept                           \
+        : name(msg, error, nullptr, file, line) {}                                                         \
+    name(const std::string& msg, int error, std::exception_ptr cause, const char* file, int line) noexcept \
+        : name(#name, msg, error, cause, file, line) {}                                                    \
+                                                                                                           \
+   protected:                                                                                              \
+    name(const std::string& type,                                                                          \
+         const std::string& msg,                                                                           \
+         int error,                                                                                        \
+         std::exception_ptr cause,                                                                         \
+         const char* file,                                                                                 \
+         int line) noexcept                                                                                \
+        : super(type, msg, error, cause, file, line) {}                                                    \
   };
 
-#define DEFINE_MQCLIENTEXCEPTION(name) DEFINE_MQCLIENTEXCEPTION2(name, MQException)
+#define DEFINE_MQEXCEPTION(name) DEFINE_MQEXCEPTION2(name, MQException)
 
-DEFINE_MQCLIENTEXCEPTION(MQClientException)
-DEFINE_MQCLIENTEXCEPTION(MQBrokerException)
-DEFINE_MQCLIENTEXCEPTION(InterruptedException)
-DEFINE_MQCLIENTEXCEPTION(RemotingException)
-DEFINE_MQCLIENTEXCEPTION2(RemotingCommandException, RemotingException)
-DEFINE_MQCLIENTEXCEPTION2(RemotingConnectException, RemotingException)
-DEFINE_MQCLIENTEXCEPTION2(RemotingSendRequestException, RemotingException)
-DEFINE_MQCLIENTEXCEPTION2(RemotingTimeoutException, RemotingException)
-DEFINE_MQCLIENTEXCEPTION2(RemotingTooMuchRequestException, RemotingException)
-DEFINE_MQCLIENTEXCEPTION(UnknownHostException)
+DEFINE_MQEXCEPTION(MQClientException)
+DEFINE_MQEXCEPTION(MQBrokerException)
+DEFINE_MQEXCEPTION(InterruptedException)
+DEFINE_MQEXCEPTION(RemotingException)
+DEFINE_MQEXCEPTION2(RemotingCommandException, RemotingException)
+DEFINE_MQEXCEPTION2(RemotingConnectException, RemotingException)
+DEFINE_MQEXCEPTION2(RemotingSendRequestException, RemotingException)
+DEFINE_MQEXCEPTION2(RemotingTimeoutException, RemotingException)
+DEFINE_MQEXCEPTION2(RemotingTooMuchRequestException, RemotingException)
+DEFINE_MQEXCEPTION(UnknownHostException)
+DEFINE_MQEXCEPTION(RequestTimeoutException)
 
-#define THROW_MQEXCEPTION(e, msg, err) throw e(msg, err, __FILE__, __LINE__)
-#define NEW_MQEXCEPTION(e, msg, err) e(msg, err, __FILE__, __LINE__)
+#define THROW_MQEXCEPTION(e, msg, err) throw e((msg), (err), __FILE__, __LINE__)
+#define THROW_MQEXCEPTION2(e, msg, err, cause) throw e((msg), (err), (cause), __FILE__, __LINE__)
+
+#define NEW_MQEXCEPTION(e, msg, err) e((msg), (err), __FILE__, __LINE__)
+#define NEW_MQEXCEPTION2(e, msg, err, cause) e((msg), (err), (cause), __FILE__, __LINE__)
 
 }  // namespace rocketmq
 
