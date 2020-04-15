@@ -171,7 +171,7 @@ void DefaultMQProducerImpl::send(MQMessagePtr msg, SendCallback* sendCallback, l
   } catch (MQException& e) {
     LOG_ERROR(e.what());
     sendCallback->onException(e);
-    if (sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_ATUO_DELETE) {
+    if (sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
       deleteAndZero(sendCallback);
     }
   } catch (std::exception& e) {
@@ -204,7 +204,7 @@ void DefaultMQProducerImpl::send(MQMessagePtr msg,
   } catch (MQException& e) {
     LOG_ERROR(e.what());
     sendCallback->onException(e);
-    if (sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_ATUO_DELETE) {
+    if (sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
       deleteAndZero(sendCallback);
     }
   } catch (std::exception& e) {
@@ -273,7 +273,7 @@ void DefaultMQProducerImpl::send(MQMessagePtr msg,
   } catch (MQException& e) {
     LOG_ERROR(e.what());
     sendCallback->onException(e);
-    if (sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_ATUO_DELETE) {
+    if (sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
       deleteAndZero(sendCallback);
     }
   } catch (std::exception& e) {

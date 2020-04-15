@@ -60,7 +60,7 @@ void SendCallbackWrap::operationComplete(ResponseFuture* responseFuture) noexcep
     m_sendCallback->onException(exception);
 
     // auto delete callback
-    if (m_sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_ATUO_DELETE) {
+    if (m_sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
       deleteAndZero(m_sendCallback);
     }
     return;
@@ -107,7 +107,7 @@ void SendCallbackWrap::operationComplete(ResponseFuture* responseFuture) noexcep
                                 false);
 
       // auto delete callback
-      if (m_sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_ATUO_DELETE) {
+      if (m_sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
         deleteAndZero(m_sendCallback);
       }
     } catch (MQException& e) {
@@ -140,7 +140,7 @@ void SendCallbackWrap::onExceptionImpl(ResponseFuture* responseFuture,
     m_sendCallback->onException(exception);
 
     // auto delete callback
-    if (m_sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_ATUO_DELETE) {
+    if (m_sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
       deleteAndZero(m_sendCallback);
     }
     return;
@@ -184,7 +184,7 @@ void SendCallbackWrap::onExceptionImpl(ResponseFuture* responseFuture,
     m_sendCallback->onException(e);
 
     // auto delete callback
-    if (m_sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_ATUO_DELETE) {
+    if (m_sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
       deleteAndZero(m_sendCallback);
     }
   }
