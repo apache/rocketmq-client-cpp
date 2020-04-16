@@ -25,26 +25,13 @@
 
 namespace rocketmq {
 
-MQMessageExt::MQMessageExt()
-    : m_storeSize(0),
-      m_bodyCRC(0),
-      m_queueId(0),
-      m_queueOffset(0),
-      m_commitLogOffset(0),
-      m_sysFlag(0),
-      m_bornTimestamp(0),
-      m_storeTimestamp(0),
-      m_reconsumeTimes(3),
-      m_preparedTransactionOffset(0) {
-  memset(&m_bornHost, 0, sizeof(m_bornHost));
-  memset(&m_storeHost, 0, sizeof(m_storeHost));
-}
+MQMessageExt::MQMessageExt() : MQMessageExt(0, 0, nullptr, 0, nullptr, "") {}
 
 MQMessageExt::MQMessageExt(int queueId,
                            int64_t bornTimestamp,
-                           sockaddr bornHost,
+                           const struct sockaddr* bornHost,
                            int64_t storeTimestamp,
-                           sockaddr storeHost,
+                           const struct sockaddr* storeHost,
                            std::string msgId)
     : m_storeSize(0),
       m_bodyCRC(0),
@@ -53,14 +40,20 @@ MQMessageExt::MQMessageExt(int queueId,
       m_commitLogOffset(0),
       m_sysFlag(0),
       m_bornTimestamp(bornTimestamp),
-      m_bornHost(bornHost),
+      m_bornHost(nullptr),
       m_storeTimestamp(storeTimestamp),
-      m_storeHost(storeHost),
+      m_storeHost(nullptr),
       m_reconsumeTimes(3),
       m_preparedTransactionOffset(0),
-      m_msgId(msgId) {}
+      m_msgId(msgId) {
+  m_bornHost = copySocketAddress(m_bornHost, bornHost);
+  m_storeHost = copySocketAddress(m_storeHost, storeHost);
+}
 
-MQMessageExt::~MQMessageExt() = default;
+MQMessageExt::~MQMessageExt() {
+  free(m_bornHost);
+  free(m_storeHost);
+}
 
 TopicFilterType MQMessageExt::parseTopicFilterType(int32_t sysFlag) {
   if ((sysFlag & MessageSysFlag::MultiTagsFlag) == MessageSysFlag::MultiTagsFlag) {
@@ -125,16 +118,16 @@ void MQMessageExt::setBornTimestamp(int64_t bornTimestamp) {
   m_bornTimestamp = bornTimestamp;
 }
 
-const sockaddr& MQMessageExt::getBornHost() const {
+const struct sockaddr* MQMessageExt::getBornHost() const {
   return m_bornHost;
 }
 
 std::string MQMessageExt::getBornHostString() const {
-  return socketAddress2String(&m_bornHost);
+  return socketAddress2String(m_bornHost);
 }
 
-void MQMessageExt::setBornHost(const struct sockaddr& bornHost) {
-  m_bornHost = bornHost;
+void MQMessageExt::setBornHost(const struct sockaddr* bornHost) {
+  m_bornHost = copySocketAddress(m_bornHost, bornHost);
 }
 
 int64_t MQMessageExt::getStoreTimestamp() const {
@@ -145,16 +138,16 @@ void MQMessageExt::setStoreTimestamp(int64_t storeTimestamp) {
   m_storeTimestamp = storeTimestamp;
 }
 
-const sockaddr& MQMessageExt::getStoreHost() const {
+const struct sockaddr* MQMessageExt::getStoreHost() const {
   return m_storeHost;
 }
 
 std::string MQMessageExt::getStoreHostString() const {
-  return socketAddress2String(&m_storeHost);
+  return socketAddress2String(m_storeHost);
 }
 
-void MQMessageExt::setStoreHost(const struct sockaddr& storeHost) {
-  m_storeHost = storeHost;
+void MQMessageExt::setStoreHost(const struct sockaddr* storeHost) {
+  m_storeHost = copySocketAddress(m_storeHost, storeHost);
 }
 
 const std::string& MQMessageExt::getMsgId() const {

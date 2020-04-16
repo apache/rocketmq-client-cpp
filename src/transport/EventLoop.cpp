@@ -237,9 +237,10 @@ static std::string buildPeerAddrPort(socket_t fd) {
   return addrPort;
 }
 
-int BufferEvent::connect(const struct sockaddr* addr, int socklen) {
-  m_peerAddrPort = socketAddress2String(addr);
-  return bufferevent_socket_connect(m_bufferEvent, (struct sockaddr*)addr, socklen);
+int BufferEvent::connect(const std::string& addr) {
+  m_peerAddrPort = addr;
+  const auto* sa = string2SocketAddress(addr);
+  return bufferevent_socket_connect(m_bufferEvent, sa, sa->sa_len);
 }
 
 int BufferEvent::close() {

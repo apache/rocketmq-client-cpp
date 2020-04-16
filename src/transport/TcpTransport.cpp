@@ -99,12 +99,8 @@ void TcpTransport::disconnect(const std::string& addr) {
   LOG_INFO_NEW("disconnect:{} completely", addr);
 }
 
-TcpConnectStatus TcpTransport::connect(const std::string& strServerURL, int timeoutMillis) {
-  std::string hostname;
-  short port;
-
-  LOG_INFO_NEW("connect to [{}].", strServerURL);
-  const auto* sa = string2SocketAddress(strServerURL);
+TcpConnectStatus TcpTransport::connect(const std::string& addr, int timeoutMillis) {
+  LOG_INFO_NEW("connect to {}.", addr);
 
   TcpConnectStatus curStatus = TCP_CONNECT_STATUS_CREATED;
   if (setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_CONNECTING)) {
@@ -121,7 +117,7 @@ TcpConnectStatus TcpTransport::connect(const std::string& strServerURL, int time
     m_event->setWatermark(EV_READ, 4, 0);
     m_event->enable(EV_READ | EV_WRITE);
 
-    if (m_event->connect(sa, sa->sa_len) < 0) {
+    if (m_event->connect(addr) < 0) {
       LOG_WARN_NEW("connect to fd:{} failed", m_event->getfd());
       return closeBufferEvent();
     }
@@ -130,13 +126,13 @@ TcpConnectStatus TcpTransport::connect(const std::string& strServerURL, int time
   }
 
   if (timeoutMillis <= 0) {
-    LOG_INFO_NEW("try to connect to fd:{}, addr:{}", m_event->getfd(), hostname);
+    LOG_INFO_NEW("try to connect to fd:{}, addr:{}", m_event->getfd(), addr);
     return TCP_CONNECT_STATUS_CONNECTING;
   }
 
   TcpConnectStatus connectStatus = waitTcpConnectEvent(timeoutMillis);
   if (connectStatus != TCP_CONNECT_STATUS_CONNECTED) {
-    LOG_WARN_NEW("can not connect to server:{}", strServerURL);
+    LOG_WARN_NEW("can not connect to server:{}", addr);
     return closeBufferEvent();
   }
 

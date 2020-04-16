@@ -100,7 +100,7 @@ class BufferEvent : public noncopyable {
   int enable(short event) { return bufferevent_enable(m_bufferEvent, event); }
   int disable(short event) { return bufferevent_disable(m_bufferEvent, event); }
 
-  int connect(const struct sockaddr* addr, int socklen);
+  int connect(const std::string& addr);
   int close();
 
   int write(const void* data, size_t size) { return bufferevent_write(m_bufferEvent, data, size); }

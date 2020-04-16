@@ -25,13 +25,12 @@
 #include "MQMessageExt.h"
 #include "MQMessageId.h"
 #include "MemoryInputStream.h"
-#include "SocketUtil.h"
 
 namespace rocketmq {
 
 class MQDecoder {
  public:
-  static std::string createMessageId(sockaddr addr, int64_t offset);
+  static std::string createMessageId(const struct sockaddr* sa, int64_t offset);
   static MQMessageId decodeMessageId(const std::string& msgId);
 
   static MQMessageExtPtr2 decode(MemoryBlock& mem);

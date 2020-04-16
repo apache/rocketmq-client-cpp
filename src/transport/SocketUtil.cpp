@@ -34,12 +34,18 @@
 
 namespace rocketmq {
 
-struct sockaddr IPPort2socketAddress(int host, int port) {
+thread_local static union {
   struct sockaddr_in sin;
-  sin.sin_family = AF_INET;
-  sin.sin_port = htons((uint16_t)port);
-  sin.sin_addr.s_addr = htonl(host);
-  return *(struct sockaddr*)&sin;
+  struct sockaddr_in6 sin6;
+} sin_buf;
+
+struct sockaddr* ipPort2SocketAddress(uint32_t host, uint16_t port) {
+  struct sockaddr_in* sin = &sin_buf.sin;
+  sin->sin_len = sizeof(sin);
+  sin->sin_family = AF_INET;
+  sin->sin_port = htons(port);
+  sin->sin_addr.s_addr = htonl(host);
+  return (struct sockaddr*)sin;
 }
 
 const struct sockaddr* string2SocketAddress(const std::string& addr) {
@@ -98,33 +104,6 @@ std::string socketAddress2String(const struct sockaddr* addr) {
   return address;
 }
 
-/**
- * get the hostname of address
- */
-std::string getHostName(const struct sockaddr* addr) {
-  if (NULL == addr) {
-    return std::string();
-  }
-
-  struct hostent* host = NULL;
-  if (addr->sa_family == AF_INET) {
-    struct sockaddr_in* sin = (struct sockaddr_in*)addr;
-    host = ::gethostbyaddr((char*)&sin->sin_addr, sizeof(sin->sin_addr), AF_INET);
-  } else if (addr->sa_family == AF_INET6) {
-    struct sockaddr_in6* sin6 = (struct sockaddr_in6*)addr;
-    host = ::gethostbyaddr((char*)&sin6->sin6_addr, sizeof(sin6->sin6_addr), AF_INET6);
-  }
-
-  if (host != NULL) {
-    char** alias = host->h_aliases;
-    if (*alias != NULL) {
-      return *alias;
-    }
-  }
-
-  return socketAddress2String(addr);
-}
-
 const struct sockaddr* lookupNameServers(const std::string& hostname) {
   if (hostname.empty()) {
     return nullptr;
@@ -147,10 +126,6 @@ const struct sockaddr* lookupNameServers(const std::string& hostname) {
     THROW_MQEXCEPTION(UnknownHostException, info, -1);
   }
 
-  thread_local static union {
-    struct sockaddr_in sin;
-    struct sockaddr_in6 sin6;
-  } sin_buf;
   struct sockaddr* sin = nullptr;
 
   for (struct evutil_addrinfo* ai = answer; ai != NULL; ai = ai->ai_next) {
@@ -166,6 +141,19 @@ const struct sockaddr* lookupNameServers(const std::string& hostname) {
   evutil_freeaddrinfo(answer);
 
   return sin;
+}
+
+struct sockaddr* copySocketAddress(struct sockaddr* dst, const struct sockaddr* src) {
+  if (src != nullptr) {
+    if (dst == nullptr || dst->sa_len < src->sa_len) {
+      dst = (struct sockaddr*)realloc(dst, src->sa_len);
+    }
+    memcpy(dst, src, src->sa_len);
+  } else {
+    free(dst);
+    dst = nullptr;
+  }
+  return dst;
 }
 
 uint64_t h2nll(uint64_t v) {

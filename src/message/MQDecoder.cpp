@@ -41,13 +41,13 @@ int MQDecoder::MessageFlagPostion = 16;
 int MQDecoder::MessagePhysicOffsetPostion = 28;
 int MQDecoder::MessageStoreTimestampPostion = 56;
 
-std::string MQDecoder::createMessageId(sockaddr addr, int64_t offset) {
-  struct sockaddr_in* sa = (struct sockaddr_in*)&addr;
+std::string MQDecoder::createMessageId(const struct sockaddr* sa, int64_t offset) {
+  const struct sockaddr_in* sin = (struct sockaddr_in*)&sa;
 
   MemoryOutputStream outputmen(MSG_ID_LENGTH);
-  outputmen.writeIntBigEndian(sa->sin_addr.s_addr);
+  outputmen.writeIntBigEndian(sin->sin_addr.s_addr);
   outputmen.writeRepeatedByte(0, 2);
-  outputmen.write(&(sa->sin_port), 2);
+  outputmen.write(&(sin->sin_port), 2);
   outputmen.writeInt64BigEndian(offset);
 
   const char* bytes = static_cast<const char*>(outputmen.getData());
@@ -67,12 +67,13 @@ MQMessageId MQDecoder::decodeMessageId(const std::string& msgId) {
 
   uint64_t offset = UtilAll::hexstr2ull(offsetStr.c_str());
 
-  struct sockaddr_in sa;
-  sa.sin_family = AF_INET;
-  sa.sin_port = htons(portInt);
-  sa.sin_addr.s_addr = htonl(ipInt);
+  struct sockaddr_in sin;
+  sin.sin_len = sizeof(sin);
+  sin.sin_family = AF_INET;
+  sin.sin_port = htons(portInt);
+  sin.sin_addr.s_addr = htonl(ipInt);
 
-  return MQMessageId(*((sockaddr*)&sa), offset);
+  return MQMessageId((struct sockaddr*)&sin, offset);
 }
 
 MQMessageExtPtr MQDecoder::clientDecode(MemoryInputStream& byteBuffer, bool readBody) {
@@ -130,7 +131,7 @@ MQMessageExtPtr MQDecoder::decode(MemoryInputStream& byteBuffer, bool readBody, 
   // 10 BORNHOST
   int32_t bornHost = byteBuffer.readIntBigEndian();
   int32_t bornPort = byteBuffer.readIntBigEndian();
-  msgExt->setBornHost(IPPort2socketAddress(bornHost, bornPort));
+  msgExt->setBornHost(ipPort2SocketAddress(bornHost, bornPort));
 
   // 11 STORETIMESTAMP
   int64_t storeTimestamp = byteBuffer.readInt64BigEndian();
@@ -139,7 +140,7 @@ MQMessageExtPtr MQDecoder::decode(MemoryInputStream& byteBuffer, bool readBody, 
   // 12 STOREHOST
   int32_t storeHost = byteBuffer.readIntBigEndian();
   int32_t storePort = byteBuffer.readIntBigEndian();
-  msgExt->setStoreHost(IPPort2socketAddress(storeHost, storePort));
+  msgExt->setStoreHost(ipPort2SocketAddress(storeHost, storePort));
 
   // 13 RECONSUMETIMES
   int32_t reconsumeTimes = byteBuffer.readIntBigEndian();

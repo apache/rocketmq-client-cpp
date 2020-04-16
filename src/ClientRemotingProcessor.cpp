@@ -153,17 +153,11 @@ RemotingCommand* ClientRemotingProcessor::receiveReplyMessage(RemotingCommand* r
     msg->setStoreTimestamp(requestHeader->getStoreTimestamp());
 
     if (!requestHeader->getBornHost().empty()) {
-      auto* sin = string2SocketAddress(requestHeader->getBornHost());
-      if (sin != nullptr) {
-        msg->setBornHost(*sin);
-      }
+      msg->setBornHost(string2SocketAddress(requestHeader->getBornHost()));
     }
 
     if (!requestHeader->getStoreHost().empty()) {
-      auto* sin = string2SocketAddress(requestHeader->getStoreHost());
-      if (sin != nullptr) {
-        msg->setStoreHost(*sin);
-      }
+      msg->setStoreHost(string2SocketAddress(requestHeader->getStoreHost()));
     }
 
     auto body = request->getBody();

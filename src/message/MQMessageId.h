@@ -24,27 +24,29 @@ namespace rocketmq {
 
 class MQMessageId {
  public:
-  MQMessageId() {}
-  MQMessageId(sockaddr address, int64_t offset) : m_address(address), m_offset(offset) {}
+  MQMessageId() : MQMessageId(nullptr, 0) {}
+  MQMessageId(struct sockaddr* address, int64_t offset) : m_address(nullptr), m_offset(offset) { setAddress(address); }
+  ~MQMessageId() { free(m_address); }
+
   MQMessageId& operator=(const MQMessageId& id) {
     if (&id == this) {
       return *this;
     }
-    this->m_address = id.m_address;
+    setAddress(id.m_address);
     this->m_offset = id.m_offset;
     return *this;
   }
 
-  const sockaddr& getAddress() const { return m_address; }
+  const struct sockaddr* getAddress() const { return m_address; }
 
-  void setAddress(sockaddr address) { m_address = address; }
+  void setAddress(struct sockaddr* address) { m_address = copySocketAddress(m_address, address); }
 
   int64_t getOffset() const { return m_offset; }
 
   void setOffset(int64_t offset) { m_offset = offset; }
 
  private:
-  sockaddr m_address;  // FIXME: store a pointer for ipv6
+  struct sockaddr* m_address;
   int64_t m_offset;
 };
 
