@@ -141,12 +141,16 @@ enum MQRequestCode {
 
   VIEW_BROKER_STATS_DATA = 315,
 
-  SEND_BATCH_MESSAGE = 320
+  SEND_BATCH_MESSAGE = 320,
+
+  SEND_REPLY_MESSAGE = 324,
+  SEND_REPLY_MESSAGE_V2 = 325,
+  PUSH_REPLY_MESSAGE_TO_CLIENT = 326
 };
 
 enum MQResponseCode {
   // rcv success response from broker
-  SUCCESS_VALUE = 0,
+  SUCCESS = 0,
   // rcv exception from broker
   SYSTEM_ERROR = 1,
   // rcv symtem busy from broker

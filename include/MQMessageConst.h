@@ -52,6 +52,13 @@ class ROCKETMQCLIENT_API MQMessageConst {
   static const std::string PROPERTY_TRANSACTION_CHECK_TIMES;
   static const std::string PROPERTY_CHECK_IMMUNITY_TIME_IN_SECONDS;
   static const std::string PROPERTY_INSTANCE_ID;
+  static const std::string PROPERTY_CORRELATION_ID;
+  static const std::string PROPERTY_MESSAGE_REPLY_TO_CLIENT;
+  static const std::string PROPERTY_MESSAGE_TTL;
+  static const std::string PROPERTY_REPLY_MESSAGE_ARRIVE_TIME;
+  static const std::string PROPERTY_PUSH_REPLY_TIME;
+  static const std::string PROPERTY_CLUSTER;
+  static const std::string PROPERTY_MESSAGE_TYPE;
 
   // sdk internal use only
   static const std::string PROPERTY_ALREADY_COMPRESSED_FLAG;

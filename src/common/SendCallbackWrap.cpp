@@ -18,7 +18,6 @@
 
 #include <typeindex>
 
-#include "CommandHeader.h"
 #include "DefaultMQProducer.h"
 #include "Logging.h"
 #include "MQClientAPIImpl.h"
@@ -29,6 +28,7 @@
 #include "PullAPIWrapper.h"
 #include "PullResultExt.h"
 #include "TopicPublishInfo.h"
+#include "protocol/header/CommandHeader.h"
 
 namespace rocketmq {
 

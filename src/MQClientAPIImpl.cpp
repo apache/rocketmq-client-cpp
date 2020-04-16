@@ -39,11 +39,12 @@ MQClientAPIImpl::MQClientAPIImpl(ClientRemotingProcessor* clientRemotingProcesso
                                              clientConfig->getTcpTransportTryLockTimeout())) {
   m_remotingClient->registerRPCHook(rpcHook);
   m_remotingClient->registerProcessor(CHECK_TRANSACTION_STATE, clientRemotingProcessor);
+  m_remotingClient->registerProcessor(NOTIFY_CONSUMER_IDS_CHANGED, clientRemotingProcessor);
   m_remotingClient->registerProcessor(RESET_CONSUMER_CLIENT_OFFSET, clientRemotingProcessor);
   m_remotingClient->registerProcessor(GET_CONSUMER_STATUS_FROM_CLIENT, clientRemotingProcessor);
   m_remotingClient->registerProcessor(GET_CONSUMER_RUNNING_INFO, clientRemotingProcessor);
-  m_remotingClient->registerProcessor(NOTIFY_CONSUMER_IDS_CHANGED, clientRemotingProcessor);
   m_remotingClient->registerProcessor(CONSUME_MESSAGE_DIRECTLY, clientRemotingProcessor);
+  m_remotingClient->registerProcessor(PUSH_REPLY_MESSAGE_TO_CLIENT, clientRemotingProcessor);
 }
 
 MQClientAPIImpl::~MQClientAPIImpl() = default;
@@ -76,7 +77,7 @@ void MQClientAPIImpl::createTopic(const std::string& addr, const std::string& de
   std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(addr, request));
   assert(response != nullptr);
   switch (response->getCode()) {
-    case SUCCESS_VALUE: {
+    case SUCCESS: {
       return;
     }
     default:
@@ -111,8 +112,17 @@ SendResult* MQClientAPIImpl::sendMessage(const std::string& addr,
   int code = SEND_MESSAGE;
   std::unique_ptr<CommandCustomHeader> header;
 
-  if (msg->isBatch()) {
+  const auto& msgType = msg->getProperty(MQMessageConst::PROPERTY_MESSAGE_TYPE);
+  bool isReply = msgType == REPLY_MESSAGE_FLAG;
+  if (isReply) {
+    code = SEND_REPLY_MESSAGE_V2;
+  } else if (msg->isBatch()) {
     code = SEND_BATCH_MESSAGE;
+  } else {
+    code = SEND_MESSAGE_V2;
+  }
+
+  if (code != SEND_MESSAGE && code != SEND_REPLY_MESSAGE) {
     header.reset(SendMessageRequestHeaderV2::createSendMessageRequestHeaderV2(requestHeader.get()));
   } else {
     header = std::move(requestHeader);
@@ -192,7 +202,7 @@ SendResult* MQClientAPIImpl::processSendResponse(const std::string& brokerName,
     case SLAVE_NOT_AVAILABLE:
       sendStatus = SEND_SLAVE_NOT_AVAILABLE;
       break;
-    case SUCCESS_VALUE:
+    case SUCCESS:
       sendStatus = SEND_OK;
       break;
     default:
@@ -272,7 +282,7 @@ PullResult* MQClientAPIImpl::pullMessageSync(const std::string& addr, RemotingCo
 PullResult* MQClientAPIImpl::processPullResponse(RemotingCommand* response) {
   PullStatus pullStatus = NO_NEW_MSG;
   switch (response->getCode()) {
-    case SUCCESS_VALUE:
+    case SUCCESS:
       pullStatus = FOUND;
       break;
     case PULL_NOT_FOUND:
@@ -305,7 +315,7 @@ MQMessageExtPtr MQClientAPIImpl::viewMessage(const std::string& addr, int64_t ph
   std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(addr, request, timeoutMillis));
   assert(response != nullptr);
   switch (response->getCode()) {
-    case SUCCESS_VALUE: {
+    case SUCCESS: {
       // TODO: ...
     }
     default:
@@ -330,7 +340,7 @@ int64_t MQClientAPIImpl::searchOffset(const std::string& addr,
   std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(addr, request, timeoutMillis));
   assert(response != nullptr);
   switch (response->getCode()) {
-    case SUCCESS_VALUE: {
+    case SUCCESS: {
       auto* responseHeader = response->decodeCommandCustomHeader<SearchOffsetResponseHeader>();
       assert(responseHeader != nullptr);
       return responseHeader->offset;
@@ -355,7 +365,7 @@ int64_t MQClientAPIImpl::getMaxOffset(const std::string& addr,
   std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(addr, request, timeoutMillis));
   assert(response != nullptr);
   switch (response->getCode()) {
-    case SUCCESS_VALUE: {
+    case SUCCESS: {
       auto* responseHeader = response->decodeCommandCustomHeader<GetMaxOffsetResponseHeader>(GET_MAX_OFFSET);
       return responseHeader->offset;
     }
@@ -379,7 +389,7 @@ int64_t MQClientAPIImpl::getMinOffset(const std::string& addr,
   std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(addr, request, timeoutMillis));
   assert(response != nullptr);
   switch (response->getCode()) {
-    case SUCCESS_VALUE: {
+    case SUCCESS: {
       auto* responseHeader = response->decodeCommandCustomHeader<GetMinOffsetResponseHeader>();
       assert(responseHeader != nullptr);
       return responseHeader->offset;
@@ -404,7 +414,7 @@ int64_t MQClientAPIImpl::getEarliestMsgStoretime(const std::string& addr,
   std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(addr, request, timeoutMillis));
   assert(response != nullptr);
   switch (response->getCode()) {
-    case SUCCESS_VALUE: {
+    case SUCCESS: {
       auto* responseHeader = response->decodeCommandCustomHeader<GetEarliestMsgStoretimeResponseHeader>();
       assert(responseHeader != nullptr);
       return responseHeader->timestamp;
@@ -428,7 +438,7 @@ void MQClientAPIImpl::getConsumerIdListByGroup(const std::string& addr,
   std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(addr, request, timeoutMillis));
   assert(response != nullptr);
   switch (response->getCode()) {
-    case SUCCESS_VALUE: {
+    case SUCCESS: {
       auto responseBody = response->getBody();
       if (responseBody != nullptr && responseBody->getSize() > 0) {
         std::unique_ptr<GetConsumerListByGroupResponseBody> body(
@@ -452,7 +462,7 @@ int64_t MQClientAPIImpl::queryConsumerOffset(const std::string& addr,
   std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(addr, request, timeoutMillis));
   assert(response != nullptr);
   switch (response->getCode()) {
-    case SUCCESS_VALUE: {
+    case SUCCESS: {
       auto* responseHeader = response->decodeCommandCustomHeader<QueryConsumerOffsetResponseHeader>();
       assert(responseHeader != nullptr);
       return responseHeader->offset;
@@ -472,7 +482,7 @@ void MQClientAPIImpl::updateConsumerOffset(const std::string& addr,
   std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(addr, request, timeoutMillis));
   assert(response != nullptr);
   switch (response->getCode()) {
-    case SUCCESS_VALUE: {
+    case SUCCESS: {
       return;
     }
     default:
@@ -497,7 +507,7 @@ void MQClientAPIImpl::sendHearbeat(const std::string& addr, HeartbeatData* heart
   std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(addr, request));
   assert(response != nullptr);
   switch (response->getCode()) {
-    case SUCCESS_VALUE: {
+    case SUCCESS: {
       LOG_INFO("sendheartbeat to broker:%s success", addr.c_str());
       return;
     }
@@ -518,7 +528,7 @@ void MQClientAPIImpl::unregisterClient(const std::string& addr,
   std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(addr, request));
   assert(response != nullptr);
   switch (response->getCode()) {
-    case SUCCESS_VALUE:
+    case SUCCESS:
       LOG_INFO("unregisterClient to:%s success", addr.c_str());
       return;
     default:
@@ -557,7 +567,7 @@ void MQClientAPIImpl::consumerSendMessageBack(const std::string& addr,
   std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(addr, request, timeoutMillis));
   assert(response != nullptr);
   switch (response->getCode()) {
-    case SUCCESS_VALUE: {
+    case SUCCESS: {
       return;
     }
     default:
@@ -577,7 +587,7 @@ void MQClientAPIImpl::lockBatchMQ(const std::string& addr,
   std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(addr, request, timeoutMillis));
   assert(response != nullptr);
   switch (response->getCode()) {
-    case SUCCESS_VALUE: {
+    case SUCCESS: {
       auto requestBody = response->getBody();
       if (requestBody != nullptr && requestBody->getSize() > 0) {
         std::unique_ptr<LockBatchResponseBody> body(LockBatchResponseBody::Decode(*requestBody));
@@ -607,7 +617,7 @@ void MQClientAPIImpl::unlockBatchMQ(const std::string& addr,
     std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(addr, request, timeoutMillis));
     assert(response != nullptr);
     switch (response->getCode()) {
-      case SUCCESS_VALUE: {
+      case SUCCESS: {
         return;
       } break;
       default:
@@ -627,7 +637,7 @@ TopicRouteData* MQClientAPIImpl::getTopicRouteInfoFromNameServer(const std::stri
     case TOPIC_NOT_EXIST: {
       break;
     }
-    case SUCCESS_VALUE: {
+    case SUCCESS: {
       auto responseBody = response->getBody();
       if (responseBody != nullptr && responseBody->getSize() > 0) {
         return TopicRouteData::Decode(*responseBody);
@@ -646,7 +656,7 @@ TopicList* MQClientAPIImpl::getTopicListFromNameServer() {
   std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(null, request));
   assert(response != nullptr);
   switch (response->getCode()) {
-    case SUCCESS_VALUE: {
+    case SUCCESS: {
       auto responseBody = response->getBody();
       if (responseBody != nullptr && responseBody->getSize() > 0) {
         return TopicList::Decode(*responseBody);

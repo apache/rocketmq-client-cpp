@@ -34,6 +34,7 @@ class ROCKETMQCLIENT_API RemotingCommand {
  public:
   RemotingCommand() : m_code(0) {}
   RemotingCommand(int32_t code, CommandCustomHeader* customHeader = nullptr);
+  RemotingCommand(int32_t code, const std::string& remark, CommandCustomHeader* customHeader = nullptr);
   RemotingCommand(int32_t code,
                   const std::string& language,
                   int32_t version,

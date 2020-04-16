@@ -58,7 +58,7 @@ class MQClientInstance {
   static std::vector<MQMessageQueue> topicRouteData2TopicSubscribeInfo(const std::string& topic,
                                                                        TopicRouteDataPtr route);
 
-  std::string getClientId();
+  const std::string& getClientId() const;
 
   void start();
   void shutdown();
@@ -98,6 +98,8 @@ class MQClientInstance {
  public:
   TopicPublishInfoPtr tryToFindTopicPublishInfo(const std::string& topic);
 
+  TopicRouteDataPtr getTopicRouteData(const std::string& topic);
+
  public:
   MQClientAPIImpl* getMQClientAPIImpl() const { return m_mqClientAPIImpl.get(); }
   MQAdminImpl* getMQAdminImpl() const { return m_mqAdminImpl.get(); }
@@ -125,7 +127,6 @@ class MQClientInstance {
 
   // topic route
   bool topicRouteDataIsChange(TopicRouteData* old, TopicRouteData* now);
-  TopicRouteDataPtr getTopicRouteData(const std::string& topic);
   void addTopicRouteData(const std::string& topic, TopicRouteDataPtr topicRouteData);
 
   // heartbeat

@@ -192,11 +192,13 @@ void MQClientInstance::start() {
 }
 
 void MQClientInstance::shutdown() {
-  if (getConsumerTableSize() != 0)
+  if (getConsumerTableSize() != 0) {
     return;
+  }
 
-  if (getProducerTableSize() != 0)
+  if (getProducerTableSize() != 0) {
     return;
+  }
 
   switch (m_serviceState) {
     case CREATE_JUST:
@@ -264,7 +266,7 @@ void MQClientInstance::persistAllConsumerOffsetPeriodically() {
                                       1000 * 5, time_unit::milliseconds);
 }
 
-std::string MQClientInstance::getClientId() {
+const std::string& MQClientInstance::getClientId() const {
   return m_clientId;
 }
 

@@ -18,11 +18,10 @@
 
 #include <string>
 
-#include "CommandHeader.h"
 #include "DataBlock.h"
 #include "Logging.h"
 #include "RemotingCommand.h"
-
+#include "protocol/header/CommandHeader.h"
 #include "spas_client.h"
 
 namespace rocketmq {

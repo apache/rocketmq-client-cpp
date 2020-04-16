@@ -216,7 +216,7 @@ std::unique_ptr<RemotingCommand> TcpRemotingClient::invokeSyncImpl(
     LOG_WARN_NEW("send a request command to channel <{}> failed.", channel->getPeerAddrAndPort());
   }
 
-  std::unique_ptr<RemotingCommand> response(responseFuture->waitResponse());
+  std::unique_ptr<RemotingCommand> response(responseFuture->waitResponse(timeoutMillis));
   if (nullptr == response) {
     if (responseFuture->isSendRequestOK()) {
       THROW_MQEXCEPTION(RemotingTimeoutException,
@@ -582,6 +582,8 @@ void TcpRemotingClient::processResponseCommand(std::unique_ptr<RemotingCommand> 
 
 void TcpRemotingClient::processRequestCommand(std::unique_ptr<RemotingCommand> requestCommand,
                                               const std::string& addr) {
+  std::unique_ptr<RemotingCommand> response;
+
   int requestCode = requestCommand->getCode();
   const auto& it = m_processorTable.find(requestCode);
   if (it != m_processorTable.end()) {
@@ -589,40 +591,35 @@ void TcpRemotingClient::processRequestCommand(std::unique_ptr<RemotingCommand> r
       auto* processor = it->second;
 
       doBeforeRpcHooks(addr, *requestCommand, false);
-      std::unique_ptr<RemotingCommand> response(processor->processRequest(addr, requestCommand.get()));
-      doAfterRpcHooks(addr, *requestCommand, response.get(), true);
-
-      if (!requestCommand->isOnewayRPC()) {
-        if (response != nullptr) {
-          response->setOpaque(requestCommand->getOpaque());
-          response->markResponseType();
-
-          try {
-            TcpTransportPtr channel = GetTransport(addr, true);
-            if (channel != nullptr) {
-              if (!SendCommand(channel, *response)) {
-                LOG_WARN_NEW("send a response command to channel <{}> failed.", channel->getPeerAddrAndPort());
-              }
-            }
-          } catch (std::exception& e) {
-            LOG_ERROR_NEW("process request over, but response failed. {}", e.what());
-          }
-        } else {
-        }
-      }
+      response.reset(processor->processRequest(addr, requestCommand.get()));
+      doAfterRpcHooks(addr, *response, response.get(), true);
     } catch (std::exception& e) {
       LOG_ERROR_NEW("process request exception. {}", e.what());
 
-      if (!requestCommand->isOnewayRPC()) {
-        // TODO: send SYSTEM_ERROR response
-      }
+      // send SYSTEM_ERROR response
+      response.reset(new RemotingCommand(SYSTEM_ERROR, e.what()));
     }
   } else {
+    // send REQUEST_CODE_NOT_SUPPORTED response
     std::string error = "request type " + UtilAll::to_string(requestCommand->getCode()) + " not supported";
+    response.reset(new RemotingCommand(REQUEST_CODE_NOT_SUPPORTED, error));
 
-    // TODO: send REQUEST_CODE_NOT_SUPPORTED response
+    LOG_ERROR_NEW("{}: {}", addr, error);
+  }
 
-    LOG_ERROR_NEW("{} {}", addr, error);
+  if (!requestCommand->isOnewayRPC() && response != nullptr) {
+    response->setOpaque(requestCommand->getOpaque());
+    response->markResponseType();
+    try {
+      TcpTransportPtr channel = GetTransport(addr, true);
+      if (channel != nullptr) {
+        if (!SendCommand(channel, *response)) {
+          LOG_WARN_NEW("send a response command to channel <{}> failed.", channel->getPeerAddrAndPort());
+        }
+      }
+    } catch (const std::exception& e) {
+      LOG_ERROR_NEW("process request over, but response failed. {}", e.what());
+    }
   }
 }
 

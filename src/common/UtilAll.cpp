@@ -114,6 +114,10 @@ std::string UtilAll::getRetryTopic(const std::string& consumerGroup) {
   return RETRY_GROUP_TOPIC_PREFIX + consumerGroup;
 }
 
+std::string UtilAll::getReplyTopic(const std::string& clusterName) {
+  return clusterName + "_" + REPLY_TOPIC_POSTFIX;
+}
+
 void UtilAll::Trim(std::string& str) {
   str.erase(0, str.find_first_not_of(' '));  // prefixing spaces
   str.erase(str.find_last_not_of(' ') + 1);  // surfixing spaces

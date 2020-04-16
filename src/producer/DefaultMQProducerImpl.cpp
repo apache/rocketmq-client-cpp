@@ -23,8 +23,9 @@
 #include <signal.h>
 #endif
 
-#include "CommandHeader.h"
+#include "ClientErrorCode.h"
 #include "CommunicationMode.h"
+#include "CorrelationIdUtil.hpp"
 #include "Logging.h"
 #include "MQClientAPIImpl.h"
 #include "MQClientException.h"
@@ -36,9 +37,11 @@
 #include "MessageBatch.h"
 #include "MessageClientIDSetter.h"
 #include "MessageSysFlag.h"
+#include "RequestFutureTable.h"
 #include "TopicPublishInfo.h"
 #include "TransactionMQProducer.h"
 #include "Validators.h"
+#include "protocol/header/CommandHeader.h"
 
 namespace rocketmq {
 
@@ -69,7 +72,7 @@ void DefaultMQProducerImpl::start() {
 
       m_producerConfig->changeInstanceNameToPID();
 
-      LOG_INFO_NEW("DefaultMQProducerImpl:{} start", m_producerConfig->getGroupName());
+      LOG_INFO_NEW("DefaultMQProducerImpl: {} start", m_producerConfig->getGroupName());
 
       MQClientImpl::start();
 
@@ -337,6 +340,81 @@ MessageBatch* DefaultMQProducerImpl::batch(std::vector<MQMessagePtr>& msgs) {
     return msgBatch.release();
   } catch (std::exception& e) {
     THROW_MQEXCEPTION(MQClientException, "Failed to initiate the MessageBatch", -1);
+  }
+}
+
+class RequestSendCallback : public AutoDeleteSendCallback {
+ public:
+  RequestSendCallback(std::shared_ptr<RequestResponseFuture> requestFuture) : m_requestFuture(requestFuture) {}
+
+  void onSuccess(SendResult& sendResult) override { m_requestFuture->setSendRequestOk(true); }
+
+  void onException(MQException& e) noexcept override {
+    m_requestFuture->setSendRequestOk(false);
+    m_requestFuture->putResponseMessage(nullptr);
+    m_requestFuture->setCause(std::make_exception_ptr(e));
+  }
+
+ private:
+  std::shared_ptr<RequestResponseFuture> m_requestFuture;
+};
+
+MQMessagePtr DefaultMQProducerImpl::request(MQMessagePtr msg, long timeout) {
+  auto beginTimestamp = UtilAll::currentTimeMillis();
+  prepareSendRequest(msg, timeout);
+  const auto& correlationId = msg->getProperty(MQMessageConst::PROPERTY_CORRELATION_ID);
+
+  std::exception_ptr eptr = nullptr;
+  std::unique_ptr<MQMessage> responseMessage;
+  try {
+    auto requestResponseFuture = std::make_shared<RequestResponseFuture>(correlationId, timeout, nullptr);
+    RequestFutureTable::putRequestFuture(correlationId, requestResponseFuture);
+
+    auto cost = UtilAll::currentTimeMillis() - beginTimestamp;
+    sendDefaultImpl(msg, CommunicationMode::ComMode_ASYNC, new RequestSendCallback(requestResponseFuture),
+                    timeout - cost);
+
+    responseMessage.reset(requestResponseFuture->waitResponseMessage(timeout - cost));
+    if (responseMessage == nullptr) {
+      if (requestResponseFuture->isSendRequestOk()) {
+        std::string info = "send request message to <" + msg->getTopic() + "> OK, but wait reply message timeout, " +
+                           UtilAll::to_string(timeout) + " ms.";
+        THROW_MQEXCEPTION(RequestTimeoutException, info, ClientErrorCode::REQUEST_TIMEOUT_EXCEPTION);
+      } else {
+        std::string info = "send request message to <" + msg->getTopic() + "> fail";
+        THROW_MQEXCEPTION2(MQClientException, info, -1, requestResponseFuture->getCause());
+      }
+    }
+  } catch (...) {
+    eptr = std::current_exception();
+  }
+
+  // finally
+  RequestFutureTable::removeRequestFuture(correlationId);
+
+  if (eptr != nullptr) {
+    std::rethrow_exception(eptr);
+  }
+
+  return responseMessage.release();
+}
+
+void DefaultMQProducerImpl::prepareSendRequest(MQMessagePtr msg, long timeout) {
+  const auto correlationId = CorrelationIdUtil::createCorrelationId();
+  const auto& requestClientId = m_clientInstance->getClientId();
+  MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_CORRELATION_ID, correlationId);
+  MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_MESSAGE_REPLY_TO_CLIENT, requestClientId);
+  MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_MESSAGE_TTL, UtilAll::to_string(timeout));
+
+  auto hasRouteData = m_clientInstance->getTopicRouteData(msg->getTopic()) != nullptr;
+  if (!hasRouteData) {
+    auto beginTimestamp = UtilAll::currentTimeMillis();
+    m_clientInstance->tryToFindTopicPublishInfo(msg->getTopic());
+    m_clientInstance->sendHeartbeatToAllBrokerWithLock();
+    auto cost = UtilAll::currentTimeMillis() - beginTimestamp;
+    if (cost > 500) {
+      LOG_WARN_NEW("prepare send request for <{}> cost {} ms", msg->getTopic(), cost);
+    }
   }
 }
 

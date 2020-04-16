@@ -81,6 +81,7 @@ Json::Value RemotingSerializable::fromJson(const char* begin, const char* end) {
   Json::Value root;
   std::string errs;
   std::unique_ptr<Json::CharReader> reader(getPowerReaderBuilder().newCharReader());
+  // TODO: object as key
   if (reader->parse(begin, end, &root, &errs)) {
     return root;
   } else {

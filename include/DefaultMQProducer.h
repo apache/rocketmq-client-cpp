@@ -73,6 +73,9 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer, public DefaultMQ
   SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq) override;
   SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq, long timeout) override;
 
+  // RPC
+  MQMessagePtr request(MQMessagePtr msg, long timeout) override;
+
  public:  // DefaultMQProducerConfig
   bool isSendLatencyFaultEnable() const override;
   void setSendLatencyFaultEnable(bool sendLatencyFaultEnable) override;

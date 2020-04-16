@@ -17,12 +17,10 @@
 #ifndef __MQ_CLIENT_API_IMPL_H__
 #define __MQ_CLIENT_API_IMPL_H__
 
-#include "CommandHeader.h"
 #include "CommunicationMode.h"
 #include "DefaultMQProducerImpl.h"
 #include "HeartbeatData.h"
 #include "KVTable.h"
-#include "LockBatchBody.h"
 #include "MQClientException.h"
 #include "MQClientInstance.h"
 #include "MQMessageExt.h"
@@ -33,6 +31,8 @@
 #include "TopicList.h"
 #include "TopicPublishInfo.h"
 #include "TopicRouteData.h"
+#include "protocol/body/LockBatchBody.h"
+#include "protocol/header/CommandHeader.h"
 
 namespace rocketmq {
 

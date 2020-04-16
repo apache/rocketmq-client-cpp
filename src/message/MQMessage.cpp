@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "MQMessage.h"
+
 #include "MessageSysFlag.h"
 #include "UtilAll.h"
 
@@ -47,6 +48,13 @@ const std::string MQMessageConst::PROPERTY_TRANSACTION_PREPARED_QUEUE_OFFSET = "
 const std::string MQMessageConst::PROPERTY_TRANSACTION_CHECK_TIMES = "TRANSACTION_CHECK_TIMES";
 const std::string MQMessageConst::PROPERTY_CHECK_IMMUNITY_TIME_IN_SECONDS = "CHECK_IMMUNITY_TIME_IN_SECONDS";
 const std::string MQMessageConst::PROPERTY_INSTANCE_ID = "INSTANCE_ID";
+const std::string MQMessageConst::PROPERTY_CORRELATION_ID = "CORRELATION_ID";
+const std::string MQMessageConst::PROPERTY_MESSAGE_REPLY_TO_CLIENT = "REPLY_TO_CLIENT";
+const std::string MQMessageConst::PROPERTY_MESSAGE_TTL = "TTL";
+const std::string MQMessageConst::PROPERTY_REPLY_MESSAGE_ARRIVE_TIME = "ARRIVE_TIME";
+const std::string MQMessageConst::PROPERTY_PUSH_REPLY_TIME = "PUSH_REPLY_TIME";
+const std::string MQMessageConst::PROPERTY_CLUSTER = "CLUSTER";
+const std::string MQMessageConst::PROPERTY_MESSAGE_TYPE = "MSG_TYPE";
 
 const std::string MQMessageConst::PROPERTY_ALREADY_COMPRESSED_FLAG = "__ALREADY_COMPRESSED__";
 
@@ -54,12 +62,12 @@ const std::string MQMessageConst::KEY_SEPARATOR = " ";
 
 static const std::string EMPTY_STRING = "";
 
-MQMessage::MQMessage() : MQMessage(null, "*", null, 0, null, true) {}
+MQMessage::MQMessage() : MQMessage(null, null) {}
 
-MQMessage::MQMessage(const std::string& topic, const std::string& body) : MQMessage(topic, "*", null, 0, body, true) {}
+MQMessage::MQMessage(const std::string& topic, const std::string& body) : MQMessage(topic, "", body) {}
 
 MQMessage::MQMessage(const std::string& topic, const std::string& tags, const std::string& body)
-    : MQMessage(topic, tags, null, 0, body, true) {}
+    : MQMessage(topic, tags, null, body) {}
 
 MQMessage::MQMessage(const std::string& topic,
                      const std::string& tags,
@@ -105,7 +113,7 @@ MQMessage& MQMessage::operator=(const MQMessage& other) {
 MQMessage::~MQMessage() = default;
 
 const std::string& MQMessage::getProperty(const std::string& name) const {
-  const auto it = m_properties.find(name);
+  const auto& it = m_properties.find(name);
   if (it != m_properties.end()) {
     return it->second;
   }

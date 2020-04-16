@@ -36,12 +36,15 @@ int32_t RemotingCommand::createNewRequestId() {
 }
 
 RemotingCommand::RemotingCommand(int32_t code, CommandCustomHeader* customHeader)
+    : RemotingCommand(code, "", customHeader) {}
+
+RemotingCommand::RemotingCommand(int32_t code, const std::string& remark, CommandCustomHeader* customHeader)
     : RemotingCommand(code,
                       MQVersion::s_CurrentLanguage,
                       MQVersion::s_CurrentVersion,
                       createNewRequestId(),
                       0,
-                      "",
+                      remark,
                       customHeader) {}
 
 RemotingCommand::RemotingCommand(int32_t code,

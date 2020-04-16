@@ -92,6 +92,8 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
   SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq) override;
   SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq, long timeout) override;
 
+  MQMessagePtr request(MQMessagePtr msg, long timeout) override;
+
  public:  // MQProducerInner
   TransactionListener* getCheckListener() override;
 
@@ -143,6 +145,8 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
   bool tryToCompressMessage(MQMessage& msg);
 
   MessageBatch* batch(std::vector<MQMessagePtr>& msgs);
+
+  void prepareSendRequest(MQMessagePtr msg, long timeout);
 
  private:
   DefaultMQProducerConfigPtr m_producerConfig;

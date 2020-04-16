@@ -16,9 +16,9 @@
  */
 #include "RebalanceImpl.h"
 
-#include "LockBatchBody.h"
 #include "MQClientAPIImpl.h"
 #include "MQClientInstance.h"
+#include "protocol/body/LockBatchBody.h"
 
 namespace rocketmq {
 

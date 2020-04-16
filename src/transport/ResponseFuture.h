@@ -37,7 +37,7 @@ class ResponseFuture {
   void executeInvokeCallback() noexcept;
 
   // for sync request
-  std::unique_ptr<RemotingCommand> waitResponse(int timeoutMillis = 0);
+  std::unique_ptr<RemotingCommand> waitResponse(int timeoutMillis);
   void putResponse(std::unique_ptr<RemotingCommand> responseCommand);
 
   // for async request

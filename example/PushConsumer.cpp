@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
   consumer->setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
 
   if (info.broadcasting) {
-    consumer->setMessageModel(rocketmq::BROADCASTING);
+    consumer->setMessageModel(BROADCASTING);
   }
 
   consumer->subscribe(info.topic, "*");

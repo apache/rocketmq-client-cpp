@@ -142,6 +142,10 @@ SendResult DefaultMQProducer::send(std::vector<MQMessagePtr>& msgs, const MQMess
   return m_producerDelegate->send(msgs, mq, timeout);
 }
 
+MQMessagePtr DefaultMQProducer::request(MQMessagePtr msg, long timeout) {
+  return m_producerDelegate->request(msg, timeout);
+}
+
 bool DefaultMQProducer::isSendLatencyFaultEnable() const {
   return std::dynamic_pointer_cast<DefaultMQProducerImpl>(m_producerDelegate)->isSendLatencyFaultEnable();
 }

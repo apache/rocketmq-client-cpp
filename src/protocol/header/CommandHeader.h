@@ -408,10 +408,10 @@ class ResetOffsetRequestHeader : public CommandCustomHeader {
 
   static ResetOffsetRequestHeader* Decode(std::map<std::string, std::string>& extFields);
 
-  const std::string getTopic() const;
+  const std::string& getTopic() const;
   void setTopic(const std::string& tmp);
 
-  const std::string getGroup() const;
+  const std::string& getGroup() const;
   void setGroup(const std::string& tmp);
 
   const int64_t getTimeStamp() const;
@@ -435,10 +435,10 @@ class GetConsumerRunningInfoRequestHeader : public CommandCustomHeader {
   void Encode(Json::Value& extFields) override;
   void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) override;
 
-  const std::string getConsumerGroup() const;
+  const std::string& getConsumerGroup() const;
   void setConsumerGroup(const std::string& consumerGroup);
 
-  const std::string getClientId() const;
+  const std::string& getClientId() const;
   void setClientId(const std::string& clientId);
 
   const bool isJstackEnable() const;
@@ -454,7 +454,7 @@ class NotifyConsumerIdsChangedRequestHeader : public CommandCustomHeader {
  public:
   static NotifyConsumerIdsChangedRequestHeader* Decode(std::map<std::string, std::string>& extFields);
 
-  const std::string getConsumerGroup() const;
+  const std::string& getConsumerGroup() const;
   void setConsumerGroup(const std::string& tmp);
 
  private:

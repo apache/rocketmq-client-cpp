@@ -30,6 +30,7 @@ namespace rocketmq {
 class MQMessage;
 typedef MQMessage* MQMessagePtr;
 typedef std::shared_ptr<MQMessage> MQMessagePtr2;
+typedef std::unique_ptr<MQMessage> MQMessagePtr3;
 
 class ROCKETMQCLIENT_API MQMessage {
  public:

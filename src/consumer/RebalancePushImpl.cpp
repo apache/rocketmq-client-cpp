@@ -116,7 +116,7 @@ int64_t RebalancePushImpl::computePullFromWhere(const MQMessageQueue& mq) {
           }
         } else {
           try {
-            // TODO: parseDate by YYYYMMDDHHMMSS
+            // FIXME: parseDate by YYYYMMDDHHMMSS
             auto timestamp =
                 std::stoull(m_defaultMQPushConsumer->getDefaultMQPushConsumerConfig()->getConsumeTimestamp());
             result = m_defaultMQPushConsumer->searchOffset(mq, timestamp);
