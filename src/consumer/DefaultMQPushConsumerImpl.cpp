@@ -790,7 +790,8 @@ AsyncPullCallback* DefaultMQPushConsumerImpl::getAsyncPullCallBack(boost::weak_p
       m_PullCallback[msgQueue] = new AsyncPullCallback(this, request);
     }
     AsyncPullCallback* asyncPullCallback = m_PullCallback[msgQueue];
-    if (asyncPullCallback && asyncPullCallback->getPullRequest().expired()) {
+    if (asyncPullCallback) {
+      // maybe the pull request has dropped before, replace event time.
       asyncPullCallback->setPullRequest(pullRequest);
     }
     return asyncPullCallback;
