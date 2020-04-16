@@ -174,7 +174,7 @@ bool DefaultMQPushConsumerImpl::sendMessageBack(MQMessageExt& msg, int delayLeve
 
 bool DefaultMQPushConsumerImpl::sendMessageBack(MQMessageExt& msg, int delayLevel, const std::string& brokerName) {
   try {
-    std::string brokerAddr = brokerName.empty() ? socketAddress2IPPort(&msg.getStoreHost())
+    std::string brokerAddr = brokerName.empty() ? socketAddress2String(&msg.getStoreHost())
                                                 : m_clientInstance->findBrokerAddressInPublish(brokerName);
 
     m_clientInstance->getMQClientAPIImpl()->consumerSendMessageBack(

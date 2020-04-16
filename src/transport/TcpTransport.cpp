@@ -92,16 +92,6 @@ bool TcpTransport::setTcpConnectEventIf(TcpConnectStatus& expectedStatus, TcpCon
   return isSuccessed;
 }
 
-u_long TcpTransport::resolveInetAddr(std::string& hostname) {
-  // TODO: support ipv6
-  u_long addr = inet_addr(hostname.c_str());
-  if (INADDR_NONE == addr) {
-    auto ip = lookupNameServers(hostname);
-    addr = inet_addr(ip.c_str());
-  }
-  return addr;
-}
-
 void TcpTransport::disconnect(const std::string& addr) {
   // disconnect is idempotent.
   LOG_INFO_NEW("disconnect:{} start. event:{}", addr, (void*)m_event.get());
@@ -114,26 +104,10 @@ TcpConnectStatus TcpTransport::connect(const std::string& strServerURL, int time
   short port;
 
   LOG_INFO_NEW("connect to [{}].", strServerURL);
-  if (!UtilAll::SplitURL(strServerURL, hostname, port)) {
-    LOG_ERROR_NEW("connect to [{}] failed, Invalid url.", strServerURL);
-    return closeBufferEvent();
-  }
+  const auto* sa = string2SocketAddress(strServerURL);
 
   TcpConnectStatus curStatus = TCP_CONNECT_STATUS_CREATED;
   if (setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_CONNECTING)) {
-    // TODO: support ipv6
-    struct sockaddr_in sin;
-    memset(&sin, 0, sizeof(sin));
-    sin.sin_family = AF_INET;
-    try {
-      sin.sin_addr.s_addr = resolveInetAddr(hostname);
-    } catch (UnknownHostException& e) {
-      // throw exception if dns failed.
-      LOG_WARN_NEW("{}", e.what());
-      return closeBufferEvent();
-    }
-    sin.sin_port = htons(port);
-
     // create BufferEvent
     m_event.reset(
         EventLoop::GetDefaultEventLoop()->createBufferEvent(-1, /* BEV_OPT_CLOSE_ON_FREE | */ BEV_OPT_THREADSAFE));
@@ -147,7 +121,7 @@ TcpConnectStatus TcpTransport::connect(const std::string& strServerURL, int time
     m_event->setWatermark(EV_READ, 4, 0);
     m_event->enable(EV_READ | EV_WRITE);
 
-    if (m_event->connect((struct sockaddr*)&sin, sizeof(sin)) < 0) {
+    if (m_event->connect(sa, sa->sa_len) < 0) {
       LOG_WARN_NEW("connect to fd:{} failed", m_event->getfd());
       return closeBufferEvent();
     }

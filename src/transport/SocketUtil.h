@@ -31,14 +31,12 @@ namespace rocketmq {
 
 struct sockaddr IPPort2socketAddress(int host, int port);
 
-std::string socketAddress2IPPort(const struct sockaddr* addr);
-void socketAddress2IPPort(const struct sockaddr*, int& host, int& port);
-
+const struct sockaddr* string2SocketAddress(const std::string& addr);
 std::string socketAddress2String(const struct sockaddr* addr);
 
 std::string getHostName(const struct sockaddr* addr);
 
-std::string lookupNameServers(const std::string& hostname);
+const struct sockaddr* lookupNameServers(const std::string& hostname);
 
 uint64_t h2nll(uint64_t v);
 uint64_t n2hll(uint64_t v);

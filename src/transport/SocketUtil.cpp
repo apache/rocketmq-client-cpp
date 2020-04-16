@@ -16,11 +16,11 @@
  */
 #include "SocketUtil.h"
 
+#include <event2/event.h>
+
 #include <cstring>
 #include <sstream>
 #include <stdexcept>
-
-#include <event2/event.h>
 
 #ifndef WIN32
 #include <arpa/inet.h>
@@ -30,6 +30,7 @@
 
 #include "ByteOrder.h"
 #include "MQClientException.h"
+#include "UtilAll.h"
 
 namespace rocketmq {
 
@@ -41,61 +42,60 @@ struct sockaddr IPPort2socketAddress(int host, int port) {
   return *(struct sockaddr*)&sin;
 }
 
-std::string socketAddress2IPPort(const struct sockaddr* addr) {
-  if (NULL == addr) {
-    return std::string();
+const struct sockaddr* string2SocketAddress(const std::string& addr) {
+  std::string::size_type start_pos = addr[0] == '/' ? 1 : 0;
+  auto colon_pos = addr.find_last_of(":");
+  std::string host = addr.substr(start_pos, colon_pos - start_pos);
+  std::string port = addr.substr(colon_pos + 1, addr.length() - colon_pos);
+  auto* sa = lookupNameServers(host);
+  if (sa != nullptr) {
+    if (sa->sa_family == AF_INET) {
+      auto* sin = (struct sockaddr_in*)sa;
+      sin->sin_port = htons((uint16_t)std::stoi(port));
+    } else {
+      auto* sin6 = (struct sockaddr_in6*)sa;
+      sin6->sin6_port = htons((uint16_t)std::stoi(port));
+    }
   }
-
-  if (addr->sa_family == AF_INET) {
-    struct sockaddr_in* sin = (struct sockaddr_in*)addr;
-    std::ostringstream ipport;
-    ipport << socketAddress2String(addr) << ":" << ntohs(sin->sin_port);
-    return ipport.str();
-  } else if (addr->sa_family == AF_INET6) {
-    // struct sockaddr_in6* sin6 = (struct sockaddr_in6*)addr;
-    throw std::runtime_error("don't support ipv6.");
-  } else {
-    throw std::runtime_error("don't support non-inet Address families.");
-  }
-}
-
-void socketAddress2IPPort(const struct sockaddr* addr, int& host, int& port) {
-  if (addr->sa_family == AF_INET) {
-    struct sockaddr_in* sin = (struct sockaddr_in*)addr;
-    host = ntohl(sin->sin_addr.s_addr);
-    port = ntohs(sin->sin_port);
-  } else if (addr->sa_family == AF_INET6) {
-    // struct sockaddr_in6* sin6 = (struct sockaddr_in6*)addr;
-    throw std::runtime_error("don't support ipv6.");
-  } else {
-    throw std::runtime_error("don't support non-inet Address families.");
-  }
+  return sa;
 }
 
 /**
  * converts an address from network format to presentation format (a.b.c.d)
  */
 std::string socketAddress2String(const struct sockaddr* addr) {
-  if (NULL == addr) {
-    return std::string();
+  if (nullptr == addr) {
+    return "127.0.0.1";
   }
 
   char buf[128];
-  const char* address = NULL;
+  std::string address;
+  uint16_t port = 0;
 
   if (addr->sa_family == AF_INET) {
-    struct sockaddr_in* sin = (struct sockaddr_in*)addr;
-    address = evutil_inet_ntop(AF_INET, &sin->sin_addr, buf, sizeof(buf));
+    auto* sin = (struct sockaddr_in*)addr;
+    if (nullptr != evutil_inet_ntop(AF_INET, &sin->sin_addr, buf, sizeof(buf))) {
+      address = buf;
+    }
+    port = ntohs(sin->sin_port);
   } else if (addr->sa_family == AF_INET6) {
-    struct sockaddr_in6* sin6 = (struct sockaddr_in6*)addr;
-    address = evutil_inet_ntop(AF_INET6, &sin6->sin6_addr, buf, sizeof(buf));
+    auto* sin6 = (struct sockaddr_in6*)addr;
+    if (nullptr != evutil_inet_ntop(AF_INET6, &sin6->sin6_addr, buf, sizeof(buf))) {
+      address = buf;
+    }
+    port = ntohs(sin6->sin6_port);
+  } else {
+    throw std::runtime_error("don't support non-inet Address families.");
   }
 
-  if (address != NULL) {
-    return address;
+  if (!address.empty() && port != 0) {
+    if (addr->sa_family == AF_INET6) {
+      address = "[" + address + "]";
+    }
+    address += ":" + UtilAll::to_string(port);
   }
 
-  return std::string();
+  return address;
 }
 
 /**
@@ -125,20 +125,17 @@ std::string getHostName(const struct sockaddr* addr) {
   return socketAddress2String(addr);
 }
 
-std::string lookupNameServers(const std::string& hostname) {
+const struct sockaddr* lookupNameServers(const std::string& hostname) {
   if (hostname.empty()) {
-    return "127.0.0.1";
+    return nullptr;
   }
-
-  std::string ip;
 
   struct evutil_addrinfo hints;
   struct evutil_addrinfo* answer = NULL;
 
   /* Build the hints to tell getaddrinfo how to act. */
   memset(&hints, 0, sizeof(hints));
-  // hints.ai_family = AF_UNSPEC;           /* v4 or v6 is fine. */
-  hints.ai_family = AF_INET;             /* v4 only. */
+  hints.ai_family = AF_UNSPEC;           /* v4 or v6 is fine. */
   hints.ai_socktype = SOCK_STREAM;       /* We want stream socket*/
   hints.ai_protocol = IPPROTO_TCP;       /* We want a TCP socket */
   hints.ai_flags = EVUTIL_AI_ADDRCONFIG; /* Only return addresses we can use. */
@@ -150,16 +147,25 @@ std::string lookupNameServers(const std::string& hostname) {
     THROW_MQEXCEPTION(UnknownHostException, info, -1);
   }
 
-  for (struct evutil_addrinfo* addressInfo = answer; addressInfo != NULL; addressInfo = addressInfo->ai_next) {
-    ip = socketAddress2String(addressInfo->ai_addr);
-    if (!ip.empty()) {
-      break;
+  thread_local static union {
+    struct sockaddr_in sin;
+    struct sockaddr_in6 sin6;
+  } sin_buf;
+  struct sockaddr* sin = nullptr;
+
+  for (struct evutil_addrinfo* ai = answer; ai != NULL; ai = ai->ai_next) {
+    auto* ai_addr = ai->ai_addr;
+    if (ai_addr->sa_family != AF_INET && ai_addr->sa_family != AF_INET6) {
+      continue;
     }
+    sin = (struct sockaddr*)&sin_buf;
+    memcpy(sin, ai_addr, ai_addr->sa_len);
+    break;
   }
 
   evutil_freeaddrinfo(answer);
 
-  return ip;
+  return sin;
 }
 
 uint64_t h2nll(uint64_t v) {

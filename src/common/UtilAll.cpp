@@ -221,7 +221,7 @@ std::string UtilAll::getLocalAddress() {
     auto hostname = getLocalHostName();
     if (!hostname.empty()) {
       try {
-        s_localIpAddress = lookupNameServers(hostname);
+        s_localIpAddress = socketAddress2String(lookupNameServers(hostname));
       } catch (std::exception& e) {
         LOG_WARN(e.what());
         s_localIpAddress = "127.0.0.1";

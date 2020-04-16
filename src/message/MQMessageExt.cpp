@@ -133,7 +133,7 @@ std::string MQMessageExt::getBornHostString() const {
   return socketAddress2String(&m_bornHost);
 }
 
-void MQMessageExt::setBornHost(const sockaddr& bornHost) {
+void MQMessageExt::setBornHost(const struct sockaddr& bornHost) {
   m_bornHost = bornHost;
 }
 
@@ -153,7 +153,7 @@ std::string MQMessageExt::getStoreHostString() const {
   return socketAddress2String(&m_storeHost);
 }
 
-void MQMessageExt::setStoreHost(const sockaddr& storeHost) {
+void MQMessageExt::setStoreHost(const struct sockaddr& storeHost) {
   m_storeHost = storeHost;
 }
 

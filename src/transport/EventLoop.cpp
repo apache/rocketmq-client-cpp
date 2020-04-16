@@ -231,14 +231,14 @@ static std::string buildPeerAddrPort(socket_t fd) {
 
   getpeername(fd, (struct sockaddr*)&addr, &len);
 
-  std::string addrPort = socketAddress2IPPort((struct sockaddr*)&addr);
+  std::string addrPort = socketAddress2String((struct sockaddr*)&addr);
   LOG_DEBUG("socket: %d, addr: %s", fd, addrPort);
 
   return addrPort;
 }
 
 int BufferEvent::connect(const struct sockaddr* addr, int socklen) {
-  m_peerAddrPort = socketAddress2IPPort(addr);
+  m_peerAddrPort = socketAddress2String(addr);
   return bufferevent_socket_connect(m_bufferEvent, (struct sockaddr*)addr, socklen);
 }
 

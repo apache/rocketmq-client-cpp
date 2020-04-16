@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TCPTRANSPORT_H__
-#define __TCPTRANSPORT_H__
+#ifndef __TCP_TRANSPORT_H__
+#define __TCP_TRANSPORT_H__
 
 #include <atomic>
 #include <condition_variable>
@@ -74,9 +74,6 @@ class TcpTransport : public noncopyable, public std::enable_shared_from_this<Tcp
   TcpConnectStatus setTcpConnectEvent(TcpConnectStatus connectStatus);
   bool setTcpConnectEventIf(TcpConnectStatus& expectStatus, TcpConnectStatus connectStatus);
 
-  // convert host to binary
-  u_long resolveInetAddr(std::string& hostname);
-
  private:
   uint64_t m_startTime;
 
@@ -93,4 +90,4 @@ class TcpTransport : public noncopyable, public std::enable_shared_from_this<Tcp
 
 }  // namespace rocketmq
 
-#endif
+#endif  // __TCP_TRANSPORT__

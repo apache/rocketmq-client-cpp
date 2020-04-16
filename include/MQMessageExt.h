@@ -74,14 +74,14 @@ class ROCKETMQCLIENT_API MQMessageExt : public MQMessage {
 
   const sockaddr& getBornHost() const;
   std::string getBornHostString() const;
-  void setBornHost(const sockaddr& bornHost);
+  void setBornHost(const struct sockaddr& bornHost);
 
   int64_t getStoreTimestamp() const;
   void setStoreTimestamp(int64_t storeTimestamp);
 
   const sockaddr& getStoreHost() const;
   std::string getStoreHostString() const;
-  void setStoreHost(const sockaddr& storeHost);
+  void setStoreHost(const struct sockaddr& storeHost);
 
   int32_t getReconsumeTimes() const;
   void setReconsumeTimes(int32_t reconsumeTimes);
@@ -111,9 +111,9 @@ class ROCKETMQCLIENT_API MQMessageExt : public MQMessage {
   int64_t m_commitLogOffset;
   int32_t m_sysFlag;
   int64_t m_bornTimestamp;
-  sockaddr m_bornHost;
+  struct sockaddr m_bornHost;  // FIXME
   int64_t m_storeTimestamp;
-  sockaddr m_storeHost;
+  struct sockaddr m_storeHost;  // FIXME
   int32_t m_reconsumeTimes;
   int64_t m_preparedTransactionOffset;
   std::string m_msgId;

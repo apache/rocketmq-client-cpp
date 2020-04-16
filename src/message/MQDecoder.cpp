@@ -130,18 +130,16 @@ MQMessageExtPtr MQDecoder::decode(MemoryInputStream& byteBuffer, bool readBody, 
   // 10 BORNHOST
   int32_t bornHost = byteBuffer.readIntBigEndian();
   int32_t bornPort = byteBuffer.readIntBigEndian();
-  sockaddr bornAddr = IPPort2socketAddress(bornHost, bornPort);
-  msgExt->setBornHost(bornAddr);
+  msgExt->setBornHost(IPPort2socketAddress(bornHost, bornPort));
 
   // 11 STORETIMESTAMP
   int64_t storeTimestamp = byteBuffer.readInt64BigEndian();
   msgExt->setStoreTimestamp(storeTimestamp);
 
-  // // 12 STOREHOST
+  // 12 STOREHOST
   int32_t storeHost = byteBuffer.readIntBigEndian();
   int32_t storePort = byteBuffer.readIntBigEndian();
-  sockaddr storeAddr = IPPort2socketAddress(storeHost, storePort);
-  msgExt->setStoreHost(storeAddr);
+  msgExt->setStoreHost(IPPort2socketAddress(storeHost, storePort));
 
   // 13 RECONSUMETIMES
   int32_t reconsumeTimes = byteBuffer.readIntBigEndian();
