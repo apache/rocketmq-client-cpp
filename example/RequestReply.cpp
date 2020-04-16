@@ -17,6 +17,7 @@
 #include <iostream>
 
 #include "../src/common/UtilAll.h"
+#include "../src/log/Logging.h"
 #include "MessageUtil.h"
 #include "common.h"
 
@@ -74,6 +75,9 @@ int main(int argc, char* argv[]) {
   consumer.setConsumeThreadNum(info.thread_count);
   consumer.setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
 
+  // recommend client configs
+  consumer.setPullTimeDelayMillsWhenException(0L);
+
   consumer.subscribe(info.topic, "*");
 
   MyResponseMessageListener msglistener(&producer);
@@ -88,16 +92,19 @@ int main(int argc, char* argv[]) {
 
   // std::this_thread::sleep_for(std::chrono::seconds(10));
 
-  try {
-    MQMessage msg(info.topic, "Hello world");
+  int msg_count = g_msgCount.load();
+  for (int count = 0; count < msg_count; count++) {
+    try {
+      MQMessage msg(info.topic, "Hello world");
 
-    auto begin = UtilAll::currentTimeMillis();
-    std::unique_ptr<MQMessage> retMsg(producer.request(&msg, 10000));
-    auto cost = UtilAll::currentTimeMillis() - begin;
-    std::cout << "request to <" << info.topic << "> cost: " << cost << " replyMessage: " << retMsg->toString()
-              << std::endl;
-  } catch (const std::exception& e) {
-    std::cout << e.what() << std::endl;
+      auto begin = UtilAll::currentTimeMillis();
+      std::unique_ptr<MQMessage> retMsg(producer.request(&msg, 10000));
+      auto cost = UtilAll::currentTimeMillis() - begin;
+      std::cout << count << " >>> request to <" << info.topic << "> cost: " << cost
+                << " replyMessage: " << retMsg->toString() << std::endl;
+    } catch (const std::exception& e) {
+      std::cout << count << " >>> " << e.what() << std::endl;
+    }
   }
 
   consumer.shutdown();

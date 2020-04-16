@@ -52,6 +52,9 @@ class DefaultMQPushConsumerConfigImpl : virtual public DefaultMQPushConsumerConf
   int getMaxReconsumeTimes() const override;
   void setMaxReconsumeTimes(int maxReconsumeTimes) override;
 
+  long getPullTimeDelayMillsWhenException() const override;
+  void setPullTimeDelayMillsWhenException(long pullTimeDelayMillsWhenException) override;
+
   AllocateMQStrategy* getAllocateMQStrategy() const override;
   void setAllocateMQStrategy(AllocateMQStrategy* strategy) override;
 
@@ -67,6 +70,8 @@ class DefaultMQPushConsumerConfigImpl : virtual public DefaultMQPushConsumerConf
 
   int m_asyncPullTimeout;  // 30s
   int m_maxReconsumeTimes;
+
+  long m_pullTimeDelayMillsWhenException;  // 3000
 
   std::unique_ptr<AllocateMQStrategy> m_allocateMQStrategy;
 };

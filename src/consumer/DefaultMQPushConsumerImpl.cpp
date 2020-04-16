@@ -133,7 +133,9 @@ class AsyncPullCallback : public AutoDeletePullCallback {
       LOG_WARN_NEW("execute the pull request exception: {}", e.what());
     }
 
-    defaultMQPushConsumer->executePullRequestLater(m_pullRequest, 3000);
+    // TODO
+    defaultMQPushConsumer->executePullRequestLater(
+        m_pullRequest, defaultMQPushConsumer->getDefaultMQPushConsumerConfig()->getPullTimeDelayMillsWhenException());
   }
 
  private:
@@ -517,7 +519,7 @@ void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pullRequest) {
         pullRequest->setNextOffset(offset);
       }
     } else {
-      executePullRequestLater(pullRequest, 3000);
+      executePullRequestLater(pullRequest, m_pushConsumerConfig->getPullTimeDelayMillsWhenException());
       LOG_INFO_NEW("pull message later because not locked in broker, {}", pullRequest->toString());
       return;
     }
@@ -526,7 +528,7 @@ void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pullRequest) {
   const auto& messageQueue = pullRequest->getMessageQueue();
   SubscriptionDataPtr subscriptionData = m_rebalanceImpl->getSubscriptionData(messageQueue.getTopic());
   if (nullptr == subscriptionData) {
-    executePullRequestLater(pullRequest, 3000);
+    executePullRequestLater(pullRequest, m_pushConsumerConfig->getPullTimeDelayMillsWhenException());
     LOG_WARN_NEW("find the consumer's subscription failed, {}", pullRequest->toString());
     return;
   }
@@ -562,7 +564,7 @@ void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pullRequest) {
                                      callback);                                    // 11
   } catch (MQException& e) {
     LOG_ERROR_NEW("pullKernelImpl exception: {}", e.what());
-    executePullRequestLater(pullRequest, 3000);
+    executePullRequestLater(pullRequest, m_pushConsumerConfig->getPullTimeDelayMillsWhenException());
   }
 }
 

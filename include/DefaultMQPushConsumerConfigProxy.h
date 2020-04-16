@@ -73,6 +73,14 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumerConfigProxy : virtual public Defau
     m_consumerConfig->setMaxReconsumeTimes(maxReconsumeTimes);
   }
 
+  long getPullTimeDelayMillsWhenException() const override {
+    return m_consumerConfig->getPullTimeDelayMillsWhenException();
+  }
+
+  void setPullTimeDelayMillsWhenException(long pullTimeDelayMillsWhenException) override {
+    m_consumerConfig->setPullTimeDelayMillsWhenException(pullTimeDelayMillsWhenException);
+  }
+
   AllocateMQStrategy* getAllocateMQStrategy() const override { return m_consumerConfig->getAllocateMQStrategy(); }
 
   void setAllocateMQStrategy(AllocateMQStrategy* strategy) override {

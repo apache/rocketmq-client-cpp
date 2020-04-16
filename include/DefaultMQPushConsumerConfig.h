@@ -64,6 +64,9 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumerConfig : virtual public MQClientCo
   virtual int getMaxReconsumeTimes() const = 0;
   virtual void setMaxReconsumeTimes(int maxReconsumeTimes) = 0;
 
+  virtual long getPullTimeDelayMillsWhenException() const = 0;
+  virtual void setPullTimeDelayMillsWhenException(long pullTimeDelayMillsWhenException) = 0;
+
   virtual AllocateMQStrategy* getAllocateMQStrategy() const = 0;
   virtual void setAllocateMQStrategy(AllocateMQStrategy* strategy) = 0;
 };

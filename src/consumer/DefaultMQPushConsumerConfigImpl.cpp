@@ -33,6 +33,7 @@ DefaultMQPushConsumerConfigImpl::DefaultMQPushConsumerConfigImpl()
       m_maxMsgCacheSize(1000),
       m_asyncPullTimeout(30 * 1000),
       m_maxReconsumeTimes(-1),
+      m_pullTimeDelayMillsWhenException(3000),
       m_allocateMQStrategy(new AllocateMQAveragely()) {}
 
 MessageModel DefaultMQPushConsumerConfigImpl::getMessageModel() const {
@@ -103,6 +104,14 @@ int DefaultMQPushConsumerConfigImpl::getMaxReconsumeTimes() const {
 
 void DefaultMQPushConsumerConfigImpl::setMaxReconsumeTimes(int maxReconsumeTimes) {
   m_maxReconsumeTimes = maxReconsumeTimes;
+}
+
+long DefaultMQPushConsumerConfigImpl::getPullTimeDelayMillsWhenException() const {
+  return m_pullTimeDelayMillsWhenException;
+}
+
+void DefaultMQPushConsumerConfigImpl::setPullTimeDelayMillsWhenException(long pullTimeDelayMillsWhenException) {
+  m_pullTimeDelayMillsWhenException = pullTimeDelayMillsWhenException;
 }
 
 AllocateMQStrategy* DefaultMQPushConsumerConfigImpl::getAllocateMQStrategy() const {
