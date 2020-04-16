@@ -31,13 +31,12 @@
 
 namespace rocketmq {
 
-TcpTransport::TcpTransport(TcpRemotingClient* client, TcpTransportReadCallback callback)
+TcpTransport::TcpTransport(ReadCallback callback)
     : m_event(nullptr),
       m_tcpConnectStatus(TCP_CONNECT_STATUS_CREATED),
       m_statusMutex(),
       m_statusEvent(),
-      m_readCallback(callback),
-      m_tcpRemotingClient(client) {
+      m_readCallback(callback) {
   m_startTime = UtilAll::currentTimeMillis();
 }
 
@@ -113,7 +112,10 @@ TcpConnectStatus TcpTransport::connect(const std::string& addr, int timeoutMilli
     }
 
     // then, configure BufferEvent
-    m_event->setCallback(ReadCallback, nullptr, EventCallback, shared_from_this());
+    TcpTransportPtr2 weak_this(shared_from_this());
+    m_event->setCallback(
+        std::bind(&TcpTransport::DataArrived, weak_this, std::placeholders::_1), nullptr,
+        std::bind(&TcpTransport::EventOccurred, weak_this, std::placeholders::_1, std::placeholders::_2));
     m_event->setWatermark(EV_READ, 4, 0);
     m_event->enable(EV_READ | EV_WRITE);
 
@@ -139,16 +141,20 @@ TcpConnectStatus TcpTransport::connect(const std::string& addr, int timeoutMilli
   return TCP_CONNECT_STATUS_CONNECTED;
 }
 
-void TcpTransport::EventCallback(BufferEvent* event, short what, TcpTransport* transport) {
-  socket_t fd = event->getfd();
+void TcpTransport::EventOccurred(TcpTransportPtr2 transport, BufferEvent& event, short what) {
+  socket_t fd = event.getfd();
   LOG_INFO("eventcb: received event:%x on fd:%d", what, fd);
+
+  auto channel = transport.lock();
+  if (nullptr == channel) {
+    return;
+  }
+
   if (what & BEV_EVENT_CONNECTED) {
     LOG_INFO("eventcb: connect to fd:%d successfully", fd);
 
-    int val;
-
     // disable Nagle
-    val = 1;
+    int val = 1;
     if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void*)&val, sizeof(val)) < 0) {
       LOG_WARN_NEW("eventcb: disable Nagle failed. fd:{}", fd);
     }
@@ -160,24 +166,24 @@ void TcpTransport::EventCallback(BufferEvent* event, short what, TcpTransport* t
     }
 
     TcpConnectStatus curStatus = TCP_CONNECT_STATUS_CONNECTING;
-    transport->setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_CONNECTED);
+    channel->setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_CONNECTED);
   } else if (what & (BEV_EVENT_ERROR | BEV_EVENT_EOF)) {
-    LOG_INFO("eventcb: received error event cb:%x on fd:%d", what, fd);
+    LOG_INFO("eventcb: received error event:%x on fd:%d", what, fd);
     // if error, stop callback.
-    TcpConnectStatus curStatus = transport->getTcpConnectStatus();
+    TcpConnectStatus curStatus = channel->getTcpConnectStatus();
     while (curStatus != TCP_CONNECT_STATUS_CLOSED && curStatus != TCP_CONNECT_STATUS_FAILED) {
-      if (transport->setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_FAILED)) {
-        event->setCallback(nullptr, nullptr, nullptr, nullptr);
+      if (channel->setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_FAILED)) {
+        event.setCallback(nullptr, nullptr, nullptr);
         break;
       }
-      curStatus = transport->getTcpConnectStatus();
+      curStatus = channel->getTcpConnectStatus();
     }
   } else {
     LOG_ERROR("eventcb: received error event:%d on fd:%d", what, fd);
   }
 }
 
-void TcpTransport::ReadCallback(BufferEvent* event, TcpTransport* transport) {
+void TcpTransport::DataArrived(std::weak_ptr<TcpTransport> transport, BufferEvent& event) {
   /* This callback is invoked when there is data to read on bev. */
 
   // protocol:  <length> <header length> <header data> <body data>
@@ -188,7 +194,12 @@ void TcpTransport::ReadCallback(BufferEvent* event, TcpTransport* transport) {
   //     3, use json to serialization data
   //     4, application could self-defined binary data
 
-  struct evbuffer* input = event->getInput();
+  auto channel = transport.lock();
+  if (nullptr == channel) {
+    return;
+  }
+
+  struct evbuffer* input = event.getInput();
   while (1) {
     // glance at first 4 byte to get package length
     struct evbuffer_iovec v[4];
@@ -213,26 +224,26 @@ void TcpTransport::ReadCallback(BufferEvent* event, TcpTransport* transport) {
     uint32_t msgLen = ByteOrder::swapIfLittleEndian(packageLength);  // same as ntohl()
     size_t recvLen = evbuffer_get_length(input);
     if (recvLen >= msgLen + 4) {
-      LOG_DEBUG_NEW("had received all data. msgLen:{}, from:{}, recvLen:{}", msgLen, event->getfd(), recvLen);
+      LOG_DEBUG_NEW("had received all data. msgLen:{}, from:{}, recvLen:{}", msgLen, event.getfd(), recvLen);
     } else {
-      LOG_DEBUG_NEW("didn't received whole. msgLen:{}, from:{}, recvLen:{}", msgLen, event->getfd(), recvLen);
+      LOG_DEBUG_NEW("didn't received whole. msgLen:{}, from:{}, recvLen:{}", msgLen, event.getfd(), recvLen);
       return;  // consider large data which was not received completely by now
     }
 
     if (msgLen > 0) {
       MemoryBlockPtr msg(new MemoryPool(msgLen, true));
 
-      event->read(&packageLength, 4);  // skip length field
-      event->read(msg->getData(), msgLen);
+      event.read(&packageLength, 4);  // skip length field
+      event.read(msg->getData(), msgLen);
 
-      transport->messageReceived(std::move(msg), event->getPeerAddrPort());
+      channel->messageReceived(std::move(msg));
     }
   }
 }
 
-void TcpTransport::messageReceived(MemoryBlockPtr mem, const std::string& addr) {
+void TcpTransport::messageReceived(MemoryBlockPtr mem) {
   if (m_readCallback != nullptr) {
-    m_readCallback(m_tcpRemotingClient, std::move(mem), addr);
+    m_readCallback(std::move(mem), shared_from_this());
   }
 }
 

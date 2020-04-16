@@ -34,18 +34,18 @@ typedef enum TcpConnectStatus {
   TCP_CONNECT_STATUS_CLOSED = 4
 } TcpConnectStatus;
 
-using TcpTransportReadCallback = void (*)(void* context, MemoryBlockPtr, const std::string&);
-
-class TcpRemotingClient;
 class TcpTransport;
-
 typedef std::shared_ptr<TcpTransport> TcpTransportPtr;
+typedef std::weak_ptr<TcpTransport> TcpTransportPtr2;
 
 class TcpTransport : public noncopyable, public std::enable_shared_from_this<TcpTransport> {
  public:
-  static TcpTransportPtr CreateTransport(TcpRemotingClient* client, TcpTransportReadCallback handle = nullptr) {
+  typedef std::function<void(MemoryBlockPtr, TcpTransportPtr)> ReadCallback;
+
+ public:
+  static TcpTransportPtr CreateTransport(ReadCallback handle = nullptr) {
     // transport must be managed by smart pointer
-    return TcpTransportPtr(new TcpTransport(client, handle));
+    return TcpTransportPtr(new TcpTransport(handle));
   }
 
   virtual ~TcpTransport();
@@ -61,13 +61,13 @@ class TcpTransport : public noncopyable, public std::enable_shared_from_this<Tcp
 
  private:
   // don't instance object directly.
-  TcpTransport(TcpRemotingClient* client, TcpTransportReadCallback callback = nullptr);
+  TcpTransport(ReadCallback callback);
 
   // buffer
-  static void ReadCallback(BufferEvent* event, TcpTransport* transport);
-  static void EventCallback(BufferEvent* event, short what, TcpTransport* transport);
+  static void DataArrived(TcpTransportPtr2 transport, BufferEvent& event);
+  static void EventOccurred(TcpTransportPtr2 transport, BufferEvent& event, short what);
 
-  void messageReceived(MemoryBlockPtr mem, const std::string& addr);
+  void messageReceived(MemoryBlockPtr mem);
 
   TcpConnectStatus closeBufferEvent();  // not thread-safe
 
@@ -84,8 +84,7 @@ class TcpTransport : public noncopyable, public std::enable_shared_from_this<Tcp
   std::condition_variable m_statusEvent;
 
   // read data callback
-  TcpTransportReadCallback m_readCallback;
-  TcpRemotingClient* m_tcpRemotingClient;
+  ReadCallback m_readCallback;
 };
 
 }  // namespace rocketmq

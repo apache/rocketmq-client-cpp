@@ -21,6 +21,7 @@
 #include <event2/bufferevent.h>
 #include <event2/event.h>
 
+#include <functional>
 #include <memory>
 
 #ifndef ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
@@ -77,10 +78,11 @@ class EventLoop : public noncopyable {
 
 class TcpTransport;
 
-using BufferEventDataCallback = void (*)(BufferEvent* event, TcpTransport* transport);
-using BufferEventEventCallback = void (*)(BufferEvent* event, short what, TcpTransport* transport);
-
 class BufferEvent : public noncopyable {
+ public:
+  typedef std::function<void(BufferEvent& event)> DataCallback;
+  typedef std::function<void(BufferEvent& event, short what)> EventCallback;
+
  private:
   BufferEvent(struct bufferevent* event, bool unlockCallbacks, EventLoop* loop);
   friend EventLoop;
@@ -88,10 +90,7 @@ class BufferEvent : public noncopyable {
  public:
   virtual ~BufferEvent();
 
-  void setCallback(BufferEventDataCallback readCallback,
-                   BufferEventDataCallback writeCallback,
-                   BufferEventEventCallback eventCallback,
-                   std::shared_ptr<TcpTransport> transport);
+  void setCallback(DataCallback readCallback, DataCallback writeCallback, EventCallback eventCallback);
 
   void setWatermark(short events, size_t lowmark, size_t highmark) {
     bufferevent_setwatermark(m_bufferEvent, events, lowmark, highmark);
@@ -125,10 +124,9 @@ class BufferEvent : public noncopyable {
   struct bufferevent* m_bufferEvent;
   const bool m_unlockCallbacks;
 
-  BufferEventDataCallback m_readCallback;
-  BufferEventDataCallback m_writeCallback;
-  BufferEventEventCallback m_eventCallback;
-  std::weak_ptr<TcpTransport> m_callbackTransport;  // avoid reference cycle
+  DataCallback m_readCallback;
+  DataCallback m_writeCallback;
+  EventCallback m_eventCallback;
 
   // cached properties
   std::string m_peerAddrPort;

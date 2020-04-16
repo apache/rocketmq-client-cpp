@@ -26,7 +26,6 @@
 
 #include "Logging.h"
 #include "SocketUtil.h"
-#include "UtilAll.h"
 
 namespace rocketmq {
 
@@ -143,8 +142,7 @@ BufferEvent::BufferEvent(struct bufferevent* event, bool unlockCallbacks, EventL
       m_unlockCallbacks(unlockCallbacks),
       m_readCallback(nullptr),
       m_writeCallback(nullptr),
-      m_eventCallback(nullptr),
-      m_callbackTransport() {
+      m_eventCallback(nullptr) {
 #ifdef ROCKETMQ_BUFFEREVENT_PROXY_ALL_CALLBACK
   if (m_bufferEvent != nullptr) {
     bufferevent_setcb(m_bufferEvent, read_callback, write_callback, event_callback, this);
@@ -163,10 +161,7 @@ BufferEvent::~BufferEvent() {
   }
 }
 
-void BufferEvent::setCallback(BufferEventDataCallback readCallback,
-                              BufferEventDataCallback writeCallback,
-                              BufferEventEventCallback eventCallback,
-                              std::shared_ptr<TcpTransport> transport) {
+void BufferEvent::setCallback(DataCallback readCallback, DataCallback writeCallback, EventCallback eventCallback) {
   // use lock in bufferevent
   bufferevent_lock(m_bufferEvent);
 
@@ -174,7 +169,6 @@ void BufferEvent::setCallback(BufferEventDataCallback readCallback,
   m_readCallback = readCallback;
   m_writeCallback = writeCallback;
   m_eventCallback = eventCallback;
-  m_callbackTransport = transport;
 
 #ifndef ROCKETMQ_BUFFEREVENT_PROXY_ALL_CALLBACK
   bufferevent_data_cb readcb = readCallback != nullptr ? read_callback : nullptr;
@@ -195,14 +189,13 @@ void BufferEvent::read_callback(struct bufferevent* bev, void* ctx) {
   }
 
   auto callback = event->m_readCallback;
-  auto transport = event->m_callbackTransport.lock();
 
   if (event->m_unlockCallbacks) {
     bufferevent_unlock(event->m_bufferEvent);
   }
 
   if (callback != nullptr) {
-    callback(event, transport.get());
+    callback(*event);
   }
 }
 
@@ -214,14 +207,13 @@ void BufferEvent::write_callback(struct bufferevent* bev, void* ctx) {
   }
 
   auto callback = event->m_writeCallback;
-  auto transport = event->m_callbackTransport.lock();
 
   if (event->m_unlockCallbacks) {
     bufferevent_unlock(event->m_bufferEvent);
   }
 
   if (callback != nullptr) {
-    callback(event, transport.get());
+    callback(*event);
   }
 }
 
@@ -257,24 +249,18 @@ int BufferEvent::close() {
 void BufferEvent::event_callback(struct bufferevent* bev, short what, void* ctx) {
   auto event = static_cast<BufferEvent*>(ctx);
 
-  // if (what & BEV_EVENT_CONNECTED) {
-  //   socket_t fd = event->getfd();
-  //   event->m_peerAddrPort = buildPeerAddrPort(fd);
-  // }
-
   if (event->m_unlockCallbacks) {
     bufferevent_lock(event->m_bufferEvent);
   }
 
-  BufferEventEventCallback callback = event->m_eventCallback;
-  auto transport = event->m_callbackTransport.lock();
+  auto callback = event->m_eventCallback;
 
   if (event->m_unlockCallbacks) {
     bufferevent_unlock(event->m_bufferEvent);
   }
 
   if (callback != nullptr) {
-    callback(event, what, transport.get());
+    callback(*event, what);
   }
 }
 

@@ -28,7 +28,7 @@ class ClientRemotingProcessor : public RequestProcessor {
   ClientRemotingProcessor(MQClientInstance* mqClientFactory);
   virtual ~ClientRemotingProcessor();
 
-  RemotingCommand* processRequest(const std::string& addr, RemotingCommand* request) override;
+  RemotingCommand* processRequest(TcpTransportPtr channel, RemotingCommand* request) override;
 
   RemotingCommand* checkTransactionState(const std::string& addr, RemotingCommand* request);
   RemotingCommand* notifyConsumerIdsChanged(RemotingCommand* request);

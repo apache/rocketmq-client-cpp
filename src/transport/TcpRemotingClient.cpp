@@ -165,7 +165,7 @@ std::unique_ptr<RemotingCommand> TcpRemotingClient::invokeSync(const std::string
                                                                RemotingCommand& request,
                                                                int timeoutMillis) throw(RemotingException) {
   auto beginStartTime = UtilAll::currentTimeMillis();
-  TcpTransportPtr channel = GetTransport(addr, true);
+  auto channel = GetTransport(addr, true);
   if (channel != nullptr) {
     try {
       doBeforeRpcHooks(addr, request, true);
@@ -235,7 +235,7 @@ void TcpRemotingClient::invokeAsync(const std::string& addr,
                                     InvokeCallback* invokeCallback,
                                     int64_t timeoutMillis) throw(RemotingException) {
   auto beginStartTime = UtilAll::currentTimeMillis();
-  TcpTransportPtr channel = GetTransport(addr, true);
+  auto channel = GetTransport(addr, true);
   if (channel != nullptr) {
     try {
       doBeforeRpcHooks(addr, request, true);
@@ -289,7 +289,7 @@ void TcpRemotingClient::invokeAsyncImpl(TcpTransportPtr channel,
 }
 
 void TcpRemotingClient::invokeOneway(const std::string& addr, RemotingCommand& request) throw(RemotingException) {
-  TcpTransportPtr channel = GetTransport(addr, true);
+  auto channel = GetTransport(addr, true);
   if (channel != nullptr) {
     try {
       doBeforeRpcHooks(addr, request, true);
@@ -349,11 +349,11 @@ TcpTransportPtr TcpRemotingClient::CreateTransport(const std::string& addr, bool
   TcpTransportPtr channel;
 
   {
-    // try get m_tcpLock util m_tcpTransportTryLockTimeout to avoid blocking long time,
+    // try get m_transportTableMutex until m_tcpTransportTryLockTimeout to avoid blocking long time,
     // if could not get m_transportTableMutex, return NULL
     if (!UtilAll::try_lock_for(m_transportTableMutex, 1000 * m_tcpTransportTryLockTimeout)) {
       LOG_ERROR_NEW("GetTransport of:{} get timed_mutex timeout", addr);
-      return TcpTransportPtr();
+      return nullptr;
     }
     std::lock_guard<std::timed_mutex> lock(m_transportTableMutex, std::adopt_lock);
 
@@ -384,10 +384,13 @@ TcpTransportPtr TcpRemotingClient::CreateTransport(const std::string& addr, bool
     }
 
     // choose callback
-    TcpTransportReadCallback callback = needResponse ? &TcpRemotingClient::MessageReceived : nullptr;
+    TcpTransport::ReadCallback callback = nullptr;
+    if (needResponse) {
+      callback = std::bind(&TcpRemotingClient::messageReceived, this, std::placeholders::_1, std::placeholders::_2);
+    }
 
     // create new transport, then connect server
-    channel = TcpTransport::CreateTransport(this, callback);
+    channel = TcpTransport::CreateTransport(callback);
     TcpConnectStatus connectStatus = channel->connect(addr, 0);  // use non-block
     if (connectStatus != TCP_CONNECT_STATUS_CONNECTING) {
       LOG_WARN_NEW("can not connect to:{}", addr);
@@ -404,7 +407,7 @@ TcpTransportPtr TcpRemotingClient::CreateTransport(const std::string& addr, bool
   if (connectStatus != TCP_CONNECT_STATUS_CONNECTED) {
     LOG_WARN_NEW("can not connect to server:{}", addr);
     channel->disconnect(addr);
-    return TcpTransportPtr();
+    return nullptr;
   } else {
     LOG_INFO_NEW("connect server with addr:{} success", addr);
     return channel;
@@ -419,12 +422,12 @@ TcpTransportPtr TcpRemotingClient::CreateNameServerTransport(bool needResponse) 
   LOG_DEBUG_NEW("--CreateNameserverTransport--");
   if (!UtilAll::try_lock_for(m_namesrvLock, 1000 * m_tcpTransportTryLockTimeout)) {
     LOG_ERROR_NEW("CreateNameserverTransport get timed_mutex timeout");
-    return TcpTransportPtr();
+    return nullptr;
   }
   std::lock_guard<std::timed_mutex> lock(m_namesrvLock, std::adopt_lock);
 
   if (!m_namesrvAddrChoosed.empty()) {
-    TcpTransportPtr channel = CreateTransport(m_namesrvAddrChoosed, true);
+    auto channel = CreateTransport(m_namesrvAddrChoosed, true);
     if (channel != nullptr) {
       return channel;
     } else {
@@ -443,7 +446,7 @@ TcpTransportPtr TcpRemotingClient::CreateNameServerTransport(bool needResponse) 
     }
   }
 
-  return TcpTransportPtr();
+  return nullptr;
 }
 
 bool TcpRemotingClient::CloseTransport(const std::string& addr, TcpTransportPtr channel) {
@@ -508,19 +511,12 @@ bool TcpRemotingClient::SendCommand(TcpTransportPtr channel, RemotingCommand& ms
   return channel->sendMessage(package->getData(), package->getSize());
 }
 
-void TcpRemotingClient::MessageReceived(void* context, MemoryBlockPtr mem, const std::string& addr) {
-  auto* client = reinterpret_cast<TcpRemotingClient*>(context);
-  if (client != nullptr) {
-    client->messageReceived(std::move(mem), addr);
-  }
-}
-
-void TcpRemotingClient::messageReceived(MemoryBlockPtr mem, const std::string& addr) {
+void TcpRemotingClient::messageReceived(MemoryBlockPtr mem, TcpTransportPtr channel) {
   m_dispatchExecutor.submit(
-      std::bind(&TcpRemotingClient::processMessageReceived, this, MemoryBlockPtr2(std::move(mem)), addr));
+      std::bind(&TcpRemotingClient::processMessageReceived, this, MemoryBlockPtr2(std::move(mem)), channel));
 }
 
-void TcpRemotingClient::processMessageReceived(MemoryBlockPtr2 mem, const std::string& addr) {
+void TcpRemotingClient::processMessageReceived(MemoryBlockPtr2 mem, TcpTransportPtr channel) {
   std::unique_ptr<RemotingCommand> cmd;
   try {
     cmd.reset(RemotingCommand::Decode(mem));
@@ -534,13 +530,13 @@ void TcpRemotingClient::processMessageReceived(MemoryBlockPtr2 mem, const std::s
   } else {
     class task_adaptor {
      public:
-      task_adaptor(TcpRemotingClient* client, std::unique_ptr<RemotingCommand> cmd, const std::string& addr)
-          : client_(client), cmd_(cmd.release()), addr_(addr) {}
-      task_adaptor(const task_adaptor& other) : client_(other.client_), cmd_(other.cmd_), addr_(other.addr_) {
+      task_adaptor(TcpRemotingClient* client, std::unique_ptr<RemotingCommand> cmd, TcpTransportPtr channel)
+          : client_(client), cmd_(cmd.release()), channel_(channel) {}
+      task_adaptor(const task_adaptor& other) : client_(other.client_), cmd_(other.cmd_), channel_(other.channel_) {
         // force move
         const_cast<task_adaptor*>(&other)->cmd_ = nullptr;
       }
-      task_adaptor(task_adaptor&& other) : client_(other.client_), cmd_(other.cmd_), addr_(other.addr_) {
+      task_adaptor(task_adaptor&& other) : client_(other.client_), cmd_(other.cmd_), channel_(other.channel_) {
         other.cmd_ = nullptr;
       }
       ~task_adaptor() { delete cmd_; }
@@ -548,16 +544,16 @@ void TcpRemotingClient::processMessageReceived(MemoryBlockPtr2 mem, const std::s
       void operator()() {
         std::unique_ptr<RemotingCommand> requestCommand(cmd_);
         cmd_ = nullptr;
-        client_->processRequestCommand(std::move(requestCommand), addr_);
+        client_->processRequestCommand(std::move(requestCommand), channel_);
       }
 
      private:
       TcpRemotingClient* client_;
       RemotingCommand* cmd_;
-      std::string addr_;
+      TcpTransportPtr channel_;
     };
 
-    m_handleExecutor.submit(task_adaptor(this, std::move(cmd), addr));
+    m_handleExecutor.submit(task_adaptor(this, std::move(cmd), channel));
   }
 }
 
@@ -581,7 +577,7 @@ void TcpRemotingClient::processResponseCommand(std::unique_ptr<RemotingCommand> 
 }
 
 void TcpRemotingClient::processRequestCommand(std::unique_ptr<RemotingCommand> requestCommand,
-                                              const std::string& addr) {
+                                              TcpTransportPtr channel) {
   std::unique_ptr<RemotingCommand> response;
 
   int requestCode = requestCommand->getCode();
@@ -590,9 +586,9 @@ void TcpRemotingClient::processRequestCommand(std::unique_ptr<RemotingCommand> r
     try {
       auto* processor = it->second;
 
-      doBeforeRpcHooks(addr, *requestCommand, false);
-      response.reset(processor->processRequest(addr, requestCommand.get()));
-      doAfterRpcHooks(addr, *response, response.get(), true);
+      doBeforeRpcHooks(channel->getPeerAddrAndPort(), *requestCommand, false);
+      response.reset(processor->processRequest(channel, requestCommand.get()));
+      doAfterRpcHooks(channel->getPeerAddrAndPort(), *response, response.get(), true);
     } catch (std::exception& e) {
       LOG_ERROR_NEW("process request exception. {}", e.what());
 
@@ -604,18 +600,15 @@ void TcpRemotingClient::processRequestCommand(std::unique_ptr<RemotingCommand> r
     std::string error = "request type " + UtilAll::to_string(requestCommand->getCode()) + " not supported";
     response.reset(new RemotingCommand(REQUEST_CODE_NOT_SUPPORTED, error));
 
-    LOG_ERROR_NEW("{}: {}", addr, error);
+    LOG_ERROR_NEW("{}: {}", channel->getPeerAddrAndPort(), error);
   }
 
   if (!requestCommand->isOnewayRPC() && response != nullptr) {
     response->setOpaque(requestCommand->getOpaque());
     response->markResponseType();
     try {
-      TcpTransportPtr channel = GetTransport(addr, true);
-      if (channel != nullptr) {
-        if (!SendCommand(channel, *response)) {
-          LOG_WARN_NEW("send a response command to channel <{}> failed.", channel->getPeerAddrAndPort());
-        }
+      if (!SendCommand(channel, *response)) {
+        LOG_WARN_NEW("send a response command to channel <{}> failed.", channel->getPeerAddrAndPort());
       }
     } catch (const std::exception& e) {
       LOG_ERROR_NEW("process request over, but response failed. {}", e.what());

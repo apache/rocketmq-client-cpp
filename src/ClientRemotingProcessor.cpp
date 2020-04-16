@@ -34,7 +34,8 @@ ClientRemotingProcessor::ClientRemotingProcessor(MQClientInstance* mqClientFacto
 
 ClientRemotingProcessor::~ClientRemotingProcessor() = default;
 
-RemotingCommand* ClientRemotingProcessor::processRequest(const std::string& addr, RemotingCommand* request) {
+RemotingCommand* ClientRemotingProcessor::processRequest(TcpTransportPtr channel, RemotingCommand* request) {
+  const auto& addr = channel->getPeerAddrAndPort();
   LOG_DEBUG("request Command received:processRequest, addr:%s, code:%d", addr.data(), request->getCode());
   switch (request->getCode()) {
     case CHECK_TRANSACTION_STATE:
