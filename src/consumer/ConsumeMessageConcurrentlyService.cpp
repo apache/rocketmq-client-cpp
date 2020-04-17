@@ -35,9 +35,11 @@ ConsumeMessageConcurrentlyService::~ConsumeMessageConcurrentlyService() = defaul
 void ConsumeMessageConcurrentlyService::start() {
   // start callback threadpool
   m_consumeExecutor.startup();
+  m_scheduledExecutorService.startup();
 }
 
 void ConsumeMessageConcurrentlyService::shutdown() {
+  m_scheduledExecutorService.shutdown();
   m_consumeExecutor.shutdown();
 }
 
