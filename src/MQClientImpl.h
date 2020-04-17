@@ -55,7 +55,7 @@ class MQClientImpl : public MQAdmin {
  protected:
   MQClientConfigPtr m_clientConfig;
   RPCHookPtr m_rpcHook;
-  ServiceState m_serviceState;
+  volatile ServiceState m_serviceState;
   MQClientInstancePtr m_clientInstance;
 };
 

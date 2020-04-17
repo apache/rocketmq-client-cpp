@@ -164,7 +164,7 @@ class MQClientInstance {
  private:
   ConstMQClientConfigPtr m_clientConfig;
   std::string m_clientId;
-  ServiceState m_serviceState;
+  volatile ServiceState m_serviceState;
 
   // group -> MQProducer
   typedef std::map<std::string, MQProducerInner*> MQPMAP;
