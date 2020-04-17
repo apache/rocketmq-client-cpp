@@ -79,7 +79,7 @@ class MQClientAPIImpl {
   SendResult* processSendResponse(const std::string& brokerName, const MQMessagePtr msg, RemotingCommand* pResponse);
 
   PullResult* pullMessage(const std::string& addr,
-                          PullMessageRequestHeader* pRequestHeader,
+                          PullMessageRequestHeader* requestHeader,
                           int timeoutMillis,
                           CommunicationMode communicationMode,
                           PullCallback* pullCallback);
@@ -104,17 +104,17 @@ class MQClientAPIImpl {
                                 int timeoutMillis);
 
   int64_t queryConsumerOffset(const std::string& addr,
-                              QueryConsumerOffsetRequestHeader* pRequestHeader,
+                              QueryConsumerOffsetRequestHeader* requestHeader,
                               int timeoutMillis);
 
   void updateConsumerOffset(const std::string& addr,
-                            UpdateConsumerOffsetRequestHeader* pRequestHeader,
+                            UpdateConsumerOffsetRequestHeader* requestHeader,
                             int timeoutMillis);
   void updateConsumerOffsetOneway(const std::string& addr,
-                                  UpdateConsumerOffsetRequestHeader* pRequestHeader,
+                                  UpdateConsumerOffsetRequestHeader* requestHeader,
                                   int timeoutMillis);
 
-  void sendHearbeat(const std::string& addr, HeartbeatData* pHeartbeatData);
+  void sendHearbeat(const std::string& addr, HeartbeatData* heartbeatData, long timeoutMillis);
   void unregisterClient(const std::string& addr,
                         const std::string& clientID,
                         const std::string& producerGroup,

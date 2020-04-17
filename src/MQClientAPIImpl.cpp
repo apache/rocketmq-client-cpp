@@ -64,7 +64,7 @@ void MQClientAPIImpl::updateNameServerAddr(const std::string& addrs) {
 }
 
 void MQClientAPIImpl::createTopic(const std::string& addr, const std::string& defaultTopic, TopicConfig topicConfig) {
-  CreateTopicRequestHeader* requestHeader = new CreateTopicRequestHeader();
+  auto* requestHeader = new CreateTopicRequestHeader();
   requestHeader->topic = topicConfig.getTopicName();
   requestHeader->defaultTopic = defaultTopic;
   requestHeader->readQueueNums = topicConfig.getReadQueueNums();
@@ -160,8 +160,8 @@ void MQClientAPIImpl::sendMessageAsync(const std::string& addr,
                                        int retryTimesWhenSendFailed,
                                        DefaultMQProducerImplPtr producer) throw(RemotingException) {
   // delete in future
-  auto cbw = new SendCallbackWrap(addr, brokerName, msg, std::forward<RemotingCommand>(request), sendCallback,
-                                  topicPublishInfo, instance, retryTimesWhenSendFailed, 0, producer);
+  auto* cbw = new SendCallbackWrap(addr, brokerName, msg, std::forward<RemotingCommand>(request), sendCallback,
+                                   topicPublishInfo, instance, retryTimesWhenSendFailed, 0, producer);
 
   try {
     sendMessageAsyncImpl(cbw, timeoutMillis);
@@ -307,7 +307,7 @@ PullResult* MQClientAPIImpl::processPullResponse(RemotingCommand* response) {
 }
 
 MQMessageExtPtr MQClientAPIImpl::viewMessage(const std::string& addr, int64_t phyoffset, int timeoutMillis) {
-  ViewMessageRequestHeader* requestHeader = new ViewMessageRequestHeader();
+  auto* requestHeader = new ViewMessageRequestHeader();
   requestHeader->offset = phyoffset;
 
   RemotingCommand request(VIEW_MESSAGE_BY_ID, requestHeader);
@@ -330,7 +330,7 @@ int64_t MQClientAPIImpl::searchOffset(const std::string& addr,
                                       int queueId,
                                       uint64_t timestamp,
                                       int timeoutMillis) {
-  SearchOffsetRequestHeader* requestHeader = new SearchOffsetRequestHeader();
+  auto* requestHeader = new SearchOffsetRequestHeader();
   requestHeader->topic = topic;
   requestHeader->queueId = queueId;
   requestHeader->timestamp = timestamp;
@@ -356,7 +356,7 @@ int64_t MQClientAPIImpl::getMaxOffset(const std::string& addr,
                                       const std::string& topic,
                                       int queueId,
                                       int timeoutMillis) {
-  GetMaxOffsetRequestHeader* requestHeader = new GetMaxOffsetRequestHeader();
+  auto* requestHeader = new GetMaxOffsetRequestHeader();
   requestHeader->topic = topic;
   requestHeader->queueId = queueId;
 
@@ -380,7 +380,7 @@ int64_t MQClientAPIImpl::getMinOffset(const std::string& addr,
                                       const std::string& topic,
                                       int queueId,
                                       int timeoutMillis) {
-  GetMinOffsetRequestHeader* requestHeader = new GetMinOffsetRequestHeader();
+  auto* requestHeader = new GetMinOffsetRequestHeader();
   requestHeader->topic = topic;
   requestHeader->queueId = queueId;
 
@@ -405,7 +405,7 @@ int64_t MQClientAPIImpl::getEarliestMsgStoretime(const std::string& addr,
                                                  const std::string& topic,
                                                  int queueId,
                                                  int timeoutMillis) {
-  GetEarliestMsgStoretimeRequestHeader* requestHeader = new GetEarliestMsgStoretimeRequestHeader();
+  auto* requestHeader = new GetEarliestMsgStoretimeRequestHeader();
   requestHeader->topic = topic;
   requestHeader->queueId = queueId;
 
@@ -430,7 +430,7 @@ void MQClientAPIImpl::getConsumerIdListByGroup(const std::string& addr,
                                                const std::string& consumerGroup,
                                                std::vector<std::string>& cids,
                                                int timeoutMillis) {
-  GetConsumerListByGroupRequestHeader* requestHeader = new GetConsumerListByGroupRequestHeader();
+  auto* requestHeader = new GetConsumerListByGroupRequestHeader();
   requestHeader->consumerGroup = consumerGroup;
 
   RemotingCommand request(GET_CONSUMER_LIST_BY_GROUP, requestHeader);
@@ -443,10 +443,12 @@ void MQClientAPIImpl::getConsumerIdListByGroup(const std::string& addr,
       if (responseBody != nullptr && responseBody->getSize() > 0) {
         std::unique_ptr<GetConsumerListByGroupResponseBody> body(
             GetConsumerListByGroupResponseBody::Decode(*responseBody));
-        cids = body->consumerIdList;
+        cids = std::move(body->consumerIdList);
         return;
       }
     }
+    case SYSTEM_ERROR:
+      // no consumer for this group
     default:
       break;
   }
@@ -500,15 +502,15 @@ void MQClientAPIImpl::updateConsumerOffsetOneway(const std::string& addr,
   m_remotingClient->invokeOneway(addr, request);
 }
 
-void MQClientAPIImpl::sendHearbeat(const std::string& addr, HeartbeatData* heartbeatData) {
+void MQClientAPIImpl::sendHearbeat(const std::string& addr, HeartbeatData* heartbeatData, long timeoutMillis) {
   RemotingCommand request(HEART_BEAT, nullptr);
   request.setBody(heartbeatData->encode());
 
-  std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(addr, request));
+  std::unique_ptr<RemotingCommand> response(m_remotingClient->invokeSync(addr, request, timeoutMillis));
   assert(response != nullptr);
   switch (response->getCode()) {
     case SUCCESS: {
-      LOG_INFO("sendheartbeat to broker:%s success", addr.c_str());
+      LOG_DEBUG_NEW("sendHeartbeat to broker:{} success", addr);
       return;
     }
     default:
@@ -554,7 +556,7 @@ void MQClientAPIImpl::consumerSendMessageBack(const std::string& addr,
                                               int delayLevel,
                                               int timeoutMillis,
                                               int maxConsumeRetryTimes) {
-  ConsumerSendMsgBackRequestHeader* requestHeader = new ConsumerSendMsgBackRequestHeader();
+  auto* requestHeader = new ConsumerSendMsgBackRequestHeader();
   requestHeader->group = consumerGroup;
   requestHeader->originTopic = msg.getTopic();
   requestHeader->offset = msg.getCommitLogOffset();
