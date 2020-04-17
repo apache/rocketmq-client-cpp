@@ -522,6 +522,7 @@ bool RebalancePush::updateRequestTableInRebalance(const string& topic, vector<MQ
     int64 nextOffset = computePullFromWhere(*itAdd);
     if (nextOffset >= 0) {
       pullRequest->setNextOffset(nextOffset);
+      pullRequest->setDropped(false);
       changed = true;
       addPullRequest(*itAdd, pullRequest);
       pullRequestsToAdd.push_back(pullRequest);

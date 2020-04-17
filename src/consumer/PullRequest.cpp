@@ -208,7 +208,8 @@ bool PullRequest::isPullRequestExpired() const {
   uint64 interval = m_lastPullTimestamp + MAX_PULL_IDLE_TIME;
   if (interval <= UtilAll::currentTimeMillis()) {
     LOG_WARN("PullRequest for [%s] has been expired %lld ms,m_lastPullTimestamp = %lld ms",
-             m_messageQueue.toString().c_str(), UtilAll::currentTimeMillis() - interval, m_lastPullTimestamp);
+             m_messageQueue.toString().c_str(), UtilAll::currentTimeMillis() - m_lastPullTimestamp,
+             m_lastPullTimestamp);
     return true;
   }
   return false;
