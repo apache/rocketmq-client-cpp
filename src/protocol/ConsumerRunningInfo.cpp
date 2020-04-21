@@ -16,6 +16,7 @@
  */
 #include "ConsumerRunningInfo.h"
 #include "UtilAll.h"
+#include "iostream"
 
 namespace rocketmq {
 const string ConsumerRunningInfo::PROP_NAMESERVER_ADDR = "PROP_NAMESERVER_ADDR";
@@ -46,17 +47,13 @@ void ConsumerRunningInfo::setMqTable(MessageQueue queue, ProcessQueueInfo queueI
   mqTable[queue] = queueInfo;
 }
 
-/*const map<string, ConsumeStatus> ConsumerRunningInfo::getStatusTable() const
-{
-return statusTable;
+const map<string, ConsumeStats> ConsumerRunningInfo::getStatusTable() const {
+  return statusTable;
 }
 
-
-void ConsumerRunningInfo::setStatusTable(const map<string, ConsumeStatus>&
-input_statusTable)
-{
-statusTable = input_statusTable;
-}    */
+void ConsumerRunningInfo::setStatusTable(string topic, ConsumeStats consumeStats) {
+  statusTable[topic] = consumeStats;
+}
 
 const vector<SubscriptionData> ConsumerRunningInfo::getSubscriptionSet() const {
   return subscriptionSet;
@@ -95,11 +92,18 @@ string ConsumerRunningInfo::encode() {
       root["subscriptionSet"].append(it->toJson());
     }
   }
+  {
+    Json::Value stats;
+    for (map<string, ConsumeStats>::iterator it = statusTable.begin(); it != statusTable.end(); ++it) {
+      stats[it->first] = it->second.toJson();
+    }
+    if (!stats.isNull()) {
+      root["statusTable"] = stats;
+    }
+  }
 
   Json::FastWriter fastwrite;
   string finals = fastwrite.write(root);
-
-  Json::Value mq;
   string key = "\"mqTable\":";
   key.append("{");
   for (map<MessageQueue, ProcessQueueInfo>::iterator it = mqTable.begin(); it != mqTable.end(); ++it) {
