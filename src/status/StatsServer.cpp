@@ -78,7 +78,7 @@ ConsumeStats StatsServer::getConsumeStats(std::string topic, std::string groupNa
 }
 void StatsServer::incPullRT(std::string topic, std::string groupName, uint64 rt) {}
 void StatsServer::incPullTPS(std::string topic, std::string groupName, uint64 msgCount) {}
-void StatsServer::incConsumeRT(std::string topic, std::string groupName, uint64 rt) {}
+void StatsServer::incConsumeRT(std::string topic, std::string groupName, uint64 rt, uint64 msgCount) {}
 void StatsServer::incConsumeOKTPS(std::string topic, std::string groupName, uint64 msgCount) {}
 void StatsServer::incConsumeFailedTPS(std::string topic, std::string groupName, uint64 msgCount) {}
 

@@ -21,8 +21,10 @@
 #include "ConsumeStats.h"
 #include "RocketMQClient.h"
 #include "ServiceState.h"
-#include "map"
-#include "string"
+#include <map>
+#include <string>
+#include <memory>
+#include <mutex>
 
 namespace rocketmq {
 class StatsServer {
@@ -40,7 +42,7 @@ class StatsServer {
   ConsumeStats getConsumeStats(std::string topic, std::string groupName);
   void incPullRT(std::string topic, std::string groupName, uint64 rt);
   void incPullTPS(std::string topic, std::string groupName, uint64 msgCount);
-  void incConsumeRT(std::string topic, std::string groupName, uint64 rt);
+  void incConsumeRT(std::string topic, std::string groupName, uint64 rt,uint64 msgCount = 1);
   void incConsumeOKTPS(std::string topic, std::string groupName, uint64 msgCount);
   void incConsumeFailedTPS(std::string topic, std::string groupName, uint64 msgCount);
 

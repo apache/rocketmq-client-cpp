@@ -22,8 +22,9 @@
 #include "RocketMQClient.h"
 #include "ServiceState.h"
 #include "StatsServer.h"
-#include "map"
-#include "string"
+#include <map>
+#include <string>
+#include <memory>
 
 namespace rocketmq {
 class StatsServerManager {

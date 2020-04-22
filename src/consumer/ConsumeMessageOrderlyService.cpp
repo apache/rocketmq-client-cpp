@@ -23,6 +23,7 @@
 #include "DefaultMQPushConsumer.h"
 #include "Logging.h"
 #include "Rebalance.h"
+#include "StatsServerManager.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
@@ -187,6 +188,7 @@ void ConsumeMessageOrderlyService::ConsumeRequest(boost::weak_ptr<PullRequest> p
           }
           ConsumeMessageContext consumeMessageContext;
           DefaultMQPushConsumerImpl* pConsumer = dynamic_cast<DefaultMQPushConsumerImpl*>(m_pConsumer);
+          std::string groupName = pConsumer->getGroupName();
           if (pConsumer) {
             if (pConsumer->getMessageTrace() && pConsumer->hasConsumeMessageHook()) {
               consumeMessageContext.setDefaultMQPushConsumer(pConsumer);
@@ -198,8 +200,16 @@ void ConsumeMessageOrderlyService::ConsumeRequest(boost::weak_ptr<PullRequest> p
               pConsumer->executeConsumeMessageHookBefore(&consumeMessageContext);
             }
           }
+          uint64 startTimeStamp = UtilAll::currentTimeMillis();
           ConsumeStatus consumeStatus = m_pMessageListener->consumeMessage(msgs);
+
+          uint64 consumerRT = UtilAll::currentTimeMillis() - startTimeStamp;
+          StatsServerManager::getInstance()->getConsumeStatServer()->incConsumeRT(request->m_messageQueue.getTopic(),
+                                                                                  groupName, consumerRT);
           if (consumeStatus == RECONSUME_LATER) {
+            StatsServerManager::getInstance()->getConsumeStatServer()->incConsumeFailedTPS(
+                request->m_messageQueue.getTopic(), groupName, 1);
+
             if (pConsumer) {
               consumeMessageContext.setMsgIndex(0);
               consumeMessageContext.setStatus("RECONSUME_LATER");
@@ -221,6 +231,8 @@ void ConsumeMessageOrderlyService::ConsumeRequest(boost::weak_ptr<PullRequest> p
               tryLockLaterAndReconsumeDelay(request, false, 5000);
             }
           } else {
+            StatsServerManager::getInstance()->getConsumeStatServer()->incConsumeOKTPS(
+                request->m_messageQueue.getTopic(), groupName, 1);
             if (pConsumer) {
               consumeMessageContext.setMsgIndex(0);
               consumeMessageContext.setStatus("CONSUME_SUCCESS");
