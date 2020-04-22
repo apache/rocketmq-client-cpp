@@ -16,7 +16,6 @@
  */
 #include "ConsumerRunningInfo.h"
 #include "UtilAll.h"
-#include "iostream"
 
 namespace rocketmq {
 const string ConsumerRunningInfo::PROP_NAMESERVER_ADDR = "PROP_NAMESERVER_ADDR";

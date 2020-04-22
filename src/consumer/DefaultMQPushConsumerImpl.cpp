@@ -29,6 +29,7 @@
 #include "PullAPIWrapper.h"
 #include "PullSysFlag.h"
 #include "Rebalance.h"
+#include "StatsServerManager.h"
 #include "UtilAll.h"
 #include "Validators.h"
 #include "task_queue.h"
@@ -315,6 +316,8 @@ void DefaultMQPushConsumerImpl::start() {
   switch (m_serviceState) {
     case CREATE_JUST: {
       m_serviceState = START_FAILED;
+      // Start status server
+      StatsServerManager::getInstance()->getConsumeStatServer()->start();
       DefaultMQClient::start();
       dealWithMessageTrace();
       LOG_INFO("DefaultMQPushConsumerImpl:%s start", m_GroupName.c_str());
@@ -401,6 +404,9 @@ void DefaultMQPushConsumerImpl::shutdown() {
   switch (m_serviceState) {
     case RUNNING: {
       LOG_INFO("DefaultMQPushConsumerImpl shutdown");
+
+      // Shutdown status server
+      StatsServerManager::getInstance()->getConsumeStatServer()->shutdown();
       shutdownMessageTraceInnerProducer();
       m_async_ioService.stop();
       m_async_service_thread->interrupt();
@@ -987,6 +993,14 @@ ConsumerRunningInfo* DefaultMQPushConsumerImpl::getConsumerRunningInfo() {
   std::vector<SubscriptionData> result;
   getSubscriptions(result);
   info->setSubscriptionSet(result);
+
+  for (const auto& it : result) {
+    ConsumeStats consumeStat;
+    // we should get it from status service.
+    consumeStat =
+        StatsServerManager::getInstance()->getConsumeStatServer()->getConsumeStats(it.getTopic(), this->getGroupName());
+    info->setStatusTable(it.getTopic(), consumeStat);
+  }
 
   std::map<MQMessageQueue, boost::shared_ptr<PullRequest>> requestTable = m_pRebalance->getPullRequestTable();
 
