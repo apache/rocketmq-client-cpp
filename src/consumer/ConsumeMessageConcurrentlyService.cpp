@@ -88,8 +88,8 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(std::vector<MQMessageExtP
       }
     }
     status = m_messageListener->consumeMessage(msgs);
-  } catch (std::exception& e) {
-    // ...
+  } catch (const std::exception& e) {
+    LOG_WARN_NEW("encounter unexpected exception when consume messages.\n{}", e.what());
   }
 
   // processConsumeResult

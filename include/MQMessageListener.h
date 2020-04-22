@@ -68,7 +68,7 @@ class ROCKETMQCLIENT_API MQMessageListener {
   }
 
   // SDK will be responsible for the lifecycle of messages.
-  virtual ConsumeStatus consumeMessage(const std::vector<MQMessageExtPtr>& msgs) = 0;
+  virtual ConsumeStatus consumeMessage(const std::vector<MQMessageExtPtr>& msgs) { return RECONSUME_LATER; };
 };
 
 class ROCKETMQCLIENT_API MessageListenerConcurrently : virtual public MQMessageListener {

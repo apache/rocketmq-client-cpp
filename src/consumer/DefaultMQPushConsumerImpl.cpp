@@ -243,7 +243,7 @@ void DefaultMQPushConsumerImpl::start() {
         m_pushConsumerConfig->changeInstanceNameToPID();
       }
 
-      // ensure m_clientFactory
+      // ensure m_clientInstance
       MQClientImpl::start();
 
       // reset rebalance
