@@ -29,11 +29,11 @@ class ConsumeStats {
   Json::Value toJson() const;
 
  public:
-  uint64 pullRT;
-  uint64 pullTPS;
-  uint64 consumeRT;
-  uint64 consumeOKTPS;
-  uint64 consumeFailedTPS;
+  double pullRT;
+  double pullTPS;
+  double consumeRT;
+  double consumeOKTPS;
+  double consumeFailedTPS;
   uint64 consumeFailedMsgs;
 };
 

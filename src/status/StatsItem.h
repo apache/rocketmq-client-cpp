@@ -23,15 +23,26 @@
 namespace rocketmq {
 class StatsItem {
  public:
-  StatsItem();
+  StatsItem() {
+    pullRT = 0;
+    pullRTCount = 0;
+    pullCount = 0;
+    consumeRT = 0;
+    consumeRTCount = 0;
+    consumeOKCount = 0;
+    consumeFailedCount = 0;
+    consumeFailedMsgs = 0;
+  };
   virtual ~StatsItem() {}
 
  public:
   uint64 pullRT;
-  uint64 pullTPS;
+  uint64 pullRTCount;
+  uint64 pullCount;
   uint64 consumeRT;
-  uint64 consumeOKTPS;
-  uint64 consumeFailedTPS;
+  uint64 consumeRTCount;
+  uint64 consumeOKCount;
+  uint64 consumeFailedCount;
   uint64 consumeFailedMsgs;
 };
 

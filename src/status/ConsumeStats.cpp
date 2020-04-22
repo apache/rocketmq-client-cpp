@@ -19,11 +19,11 @@
 
 namespace rocketmq {
 ConsumeStats::ConsumeStats() {
-  pullRT = 0;
-  pullTPS = 0;
-  consumeRT = 0;
-  consumeOKTPS = 0;
-  consumeFailedTPS = 0;
+  pullRT = 0.0;
+  pullTPS = 0.0;
+  consumeRT = 0.0;
+  consumeOKTPS = 0.0;
+  consumeFailedTPS = 0.0;
   consumeFailedMsgs = 0;
 }
 Json::Value ConsumeStats::toJson() const {

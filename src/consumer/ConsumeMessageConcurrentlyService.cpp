@@ -258,11 +258,10 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
       // status consumer tps
       int okCount = 0;
       int failedCount = 0;
-      if (ackIndex >= msgs.size() - 1) {
-        okCount = msgs.size() - 1;
+      if (ackIndex == -1) {
+        failedCount = msgs.size();
       } else {
-        okCount = ackIndex + 1;
-        failedCount = msgs.size() - okCount;
+        okCount = msgs.size();
       }
       StatsServerManager::getInstance()->getConsumeStatServer()->incConsumeOKTPS(request->m_messageQueue.getTopic(),
                                                                                  groupName, okCount);

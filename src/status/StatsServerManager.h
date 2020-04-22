@@ -18,13 +18,13 @@
 #ifndef __CONSUMER_STATUS_SERVICE_MANAGER_H__
 #define __CONSUMER_STATUS_SERVICE_MANAGER_H__
 
+#include <map>
+#include <memory>
+#include <string>
 #include "ConsumeStats.h"
 #include "RocketMQClient.h"
 #include "ServiceState.h"
 #include "StatsServer.h"
-#include <map>
-#include <string>
-#include <memory>
 
 namespace rocketmq {
 class StatsServerManager {

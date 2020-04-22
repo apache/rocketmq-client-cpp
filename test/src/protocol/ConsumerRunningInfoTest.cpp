@@ -97,15 +97,15 @@ TEST(ConsumerRunningInfo, init) {
   EXPECT_TRUE(info.getStatusTable().empty());
 
   ConsumeStats consumeStats;
-  consumeStats.pullTPS = 1024;
+  consumeStats.pullTPS = 22.5;
   ConsumeStats consumeStats2;
-  consumeStats2.consumeOKTPS = 2048;
+  consumeStats2.consumeOKTPS = 3.168;
   info.setStatusTable("TopicA", consumeStats);
   info.setStatusTable("TopicB", consumeStats2);
   map<string, ConsumeStats> statsTable = info.getStatusTable();
   EXPECT_EQ(statsTable.size(), 2);
-  EXPECT_EQ(statsTable["TopicA"].pullTPS, 1024);
-  EXPECT_EQ(statsTable["TopicB"].consumeOKTPS, 2048);
+  EXPECT_EQ(statsTable["TopicA"].pullTPS, 22.5);
+  EXPECT_EQ(statsTable["TopicB"].consumeOKTPS, 3.168);
 
   // encode start
   info.setProperty(ConsumerRunningInfo::PROP_NAMESERVER_ADDR, "127.0.0.1:9876");
