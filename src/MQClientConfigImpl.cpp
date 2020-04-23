@@ -41,7 +41,7 @@ std::string MQClientConfigImpl::buildMQClientId() const {
   std::string clientId;
   clientId.append(UtilAll::getLocalAddress());  // clientIP
   clientId.append("@");
-  clientId.append(m_instanceName);  // processId
+  clientId.append(m_instanceName);  // instanceName
   if (!m_unitName.empty()) {
     clientId.append("@");
     clientId.append(m_unitName);  // unitName

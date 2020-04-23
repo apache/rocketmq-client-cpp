@@ -46,8 +46,10 @@ class MQClientImpl : public MQAdmin {
   virtual void start();
   virtual void shutdown();
 
-  MQClientInstancePtr getFactory() const;
   virtual bool isServiceStateOk();
+
+  MQClientInstancePtr getClientInstance() const;
+  void setClientInstance(MQClientInstancePtr clientInstance);
 
   RPCHookPtr getRPCHook() { return m_rpcHook; }
   void setRPCHook(RPCHookPtr rpcHook) { m_rpcHook = rpcHook; }

@@ -29,8 +29,7 @@
 
 namespace rocketmq {
 
-ClientRemotingProcessor::ClientRemotingProcessor(MQClientInstance* mqClientFactory)
-    : m_mqClientFactory(mqClientFactory) {}
+ClientRemotingProcessor::ClientRemotingProcessor(MQClientInstance* clientInstance) : m_clientInstance(clientInstance) {}
 
 ClientRemotingProcessor::~ClientRemotingProcessor() = default;
 
@@ -74,7 +73,7 @@ RemotingCommand* ClientRemotingProcessor::checkTransactionState(const std::strin
       }
       const auto& group = messageExt->getProperty(MQMessageConst::PROPERTY_PRODUCER_GROUP);
       if (!group.empty()) {
-        auto* producer = m_mqClientFactory->selectProducer(group);
+        auto* producer = m_clientInstance->selectProducer(group);
         if (producer != nullptr) {
           producer->checkTransactionState(addr, messageExt, requestHeader);
         } else {
@@ -96,7 +95,7 @@ RemotingCommand* ClientRemotingProcessor::checkTransactionState(const std::strin
 RemotingCommand* ClientRemotingProcessor::notifyConsumerIdsChanged(RemotingCommand* request) {
   auto* requestHeader = request->decodeCommandCustomHeader<NotifyConsumerIdsChangedRequestHeader>();
   LOG_INFO("notifyConsumerIdsChanged:%s", requestHeader->getConsumerGroup().c_str());
-  m_mqClientFactory->rebalanceImmediately();
+  m_clientInstance->rebalanceImmediately();
   return nullptr;
 }
 
@@ -106,7 +105,7 @@ RemotingCommand* ClientRemotingProcessor::resetOffset(RemotingCommand* request) 
   if (requestBody != nullptr && requestBody->getSize() > 0) {
     std::unique_ptr<ResetOffsetBody> body(ResetOffsetBody::Decode(*requestBody));
     if (body != nullptr) {
-      m_mqClientFactory->resetOffset(responseHeader->getGroup(), responseHeader->getTopic(), body->getOffsetTable());
+      m_clientInstance->resetOffset(responseHeader->getGroup(), responseHeader->getTopic(), body->getOffsetTable());
     } else {
       LOG_ERROR("resetOffset failed as received data could not be unserialized");
     }
@@ -122,7 +121,7 @@ RemotingCommand* ClientRemotingProcessor::getConsumerRunningInfo(const std::stri
       new RemotingCommand(MQResponseCode::SYSTEM_ERROR, "not set any response code"));
 
   std::unique_ptr<ConsumerRunningInfo> runningInfo(
-      m_mqClientFactory->consumerRunningInfo(requestHeader->getConsumerGroup()));
+      m_clientInstance->consumerRunningInfo(requestHeader->getConsumerGroup()));
   if (runningInfo != nullptr) {
     if (requestHeader->isJstackEnable()) {
       /*string jstack = UtilAll::jstack();

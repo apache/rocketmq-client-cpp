@@ -33,10 +33,10 @@ namespace rocketmq {
 
 MQClientAPIImpl::MQClientAPIImpl(ClientRemotingProcessor* clientRemotingProcessor,
                                  RPCHookPtr rpcHook,
-                                 ConstMQClientConfigPtr clientConfig)
-    : m_remotingClient(new TcpRemotingClient(clientConfig->getTcpTransportWorkerThreadNum(),
-                                             clientConfig->getTcpTransportConnectTimeout(),
-                                             clientConfig->getTcpTransportTryLockTimeout())) {
+                                 const MQClientConfig& clientConfig)
+    : m_remotingClient(new TcpRemotingClient(clientConfig.getTcpTransportWorkerThreadNum(),
+                                             clientConfig.getTcpTransportConnectTimeout(),
+                                             clientConfig.getTcpTransportTryLockTimeout())) {
   m_remotingClient->registerRPCHook(rpcHook);
   m_remotingClient->registerProcessor(CHECK_TRANSACTION_STATE, clientRemotingProcessor);
   m_remotingClient->registerProcessor(NOTIFY_CONSUMER_IDS_CHANGED, clientRemotingProcessor);
@@ -58,9 +58,7 @@ void MQClientAPIImpl::shutdown() {
 }
 
 void MQClientAPIImpl::updateNameServerAddr(const std::string& addrs) {
-  if (m_remotingClient != nullptr) {
-    m_remotingClient->updateNameServerAddressList(addrs);
-  }
+  m_remotingClient->updateNameServerAddressList(addrs);
 }
 
 void MQClientAPIImpl::createTopic(const std::string& addr, const std::string& defaultTopic, TopicConfig topicConfig) {

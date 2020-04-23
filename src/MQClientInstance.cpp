@@ -42,12 +42,11 @@ namespace rocketmq {
 
 static const long LOCK_TIMEOUT_MILLIS = 3000L;
 
-MQClientInstance::MQClientInstance(ConstMQClientConfigPtr clientConfig, const std::string& clientId)
+MQClientInstance::MQClientInstance(const MQClientConfig& clientConfig, const std::string& clientId)
     : MQClientInstance(clientConfig, clientId, nullptr) {}
 
-MQClientInstance::MQClientInstance(ConstMQClientConfigPtr clientConfig, const std::string& clientId, RPCHookPtr rpcHook)
-    : m_clientConfig(clientConfig),
-      m_clientId(clientId),
+MQClientInstance::MQClientInstance(const MQClientConfig& clientConfig, const std::string& clientId, RPCHookPtr rpcHook)
+    : m_clientId(clientId),
       m_rebalanceService(new RebalanceService(this)),
       m_pullMessageService(new PullMessageService(this)),
       m_scheduledExecutorService("MQClient", false) {
@@ -56,9 +55,9 @@ MQClientInstance::MQClientInstance(ConstMQClientConfigPtr clientConfig, const st
   m_topicPublishInfoTable[AUTO_CREATE_TOPIC_KEY_TOPIC] = defaultTopicInfo;
 
   m_clientRemotingProcessor.reset(new ClientRemotingProcessor(this));
-  m_mqClientAPIImpl.reset(new MQClientAPIImpl(m_clientRemotingProcessor.get(), rpcHook, m_clientConfig));
+  m_mqClientAPIImpl.reset(new MQClientAPIImpl(m_clientRemotingProcessor.get(), rpcHook, clientConfig));
 
-  std::string namesrvAddr = m_clientConfig->getNamesrvAddr();
+  std::string namesrvAddr = clientConfig.getNamesrvAddr();
   if (!namesrvAddr.empty()) {
     m_mqClientAPIImpl->updateNameServerAddr(namesrvAddr);
     LOG_INFO_NEW("user specified name server address: {}", namesrvAddr);
@@ -81,6 +80,15 @@ MQClientInstance::~MQClientInstance() {
   m_brokerAddrTable.clear();
 
   m_mqClientAPIImpl = nullptr;
+}
+
+std::string MQClientInstance::getNamesrvAddr() const {
+  auto namesrvAddrs = m_mqClientAPIImpl->getRemotingClient()->getNameServerAddressList();
+  std::ostringstream oss;
+  for (const auto& addr : namesrvAddrs) {
+    oss << addr << ";";
+  }
+  return oss.str();
 }
 
 TopicPublishInfoPtr MQClientInstance::topicRouteData2TopicPublishInfo(const std::string& topic,
@@ -164,7 +172,7 @@ std::vector<MQMessageQueue> MQClientInstance::topicRouteData2TopicSubscribeInfo(
 void MQClientInstance::start() {
   switch (m_serviceState) {
     case CREATE_JUST:
-      LOG_INFO_NEW("MQClientInstance:{} start", m_clientId);
+      LOG_INFO_NEW("the client instance [{}] is starting", m_clientId);
       m_serviceState = START_FAILED;
 
       m_mqClientAPIImpl->start();
@@ -178,13 +186,15 @@ void MQClientInstance::start() {
       // start rebalance service
       m_rebalanceService->start();
 
-      LOG_INFO_NEW("the client factory [{}] start OK", m_clientId);
+      LOG_INFO_NEW("the client instance [{}] start OK", m_clientId);
       m_serviceState = RUNNING;
       break;
     case RUNNING:
+      LOG_INFO_NEW("the client instance [{}] already running.", m_clientId, m_serviceState);
+      break;
     case SHUTDOWN_ALREADY:
     case START_FAILED:
-      LOG_INFO_NEW("The Factory object:{} start failed with fault state:{}", m_clientId, m_serviceState);
+      LOG_INFO_NEW("the client instance [{}] start failed with fault state:{}", m_clientId, m_serviceState);
       break;
     default:
       break;
@@ -211,7 +221,7 @@ void MQClientInstance::shutdown() {
       m_rebalanceService->shutdown();
 
       MQClientManager::getInstance()->removeMQClientInstance(m_clientId);
-      LOG_INFO_NEW("the client factory [{}] shutdown OK", m_clientId);
+      LOG_INFO_NEW("the client instance [{}] shutdown OK", m_clientId);
     } break;
     case SHUTDOWN_ALREADY:
       break;
@@ -348,7 +358,7 @@ void MQClientInstance::sendHeartbeatToAllBrokerWithLock() {
 void MQClientInstance::persistAllConsumerOffset() {
   std::lock_guard<std::mutex> lock(m_consumerTableMutex);
   for (const auto& it : m_consumerTable) {
-    LOG_DEBUG_NEW("Client factory start persistAllConsumerOffset");
+    LOG_DEBUG_NEW("the client instance [{}] start persistAllConsumerOffset", m_clientId);
     it.second->persistConsumerOffset();
   }
 }
@@ -362,7 +372,7 @@ void MQClientInstance::sendHeartbeatToAllBroker() {
     return;
   }
 
-  BrokerAddrMAP brokerAddrTable(getBrokerAddrTable());
+  auto brokerAddrTable = getBrokerAddrTable();
   if (!brokerAddrTable.empty()) {
     for (const auto& it : brokerAddrTable) {
       // const auto& brokerName = it.first;
@@ -375,8 +385,8 @@ void MQClientInstance::sendHeartbeatToAllBroker() {
         }
 
         try {
-          m_mqClientAPIImpl->sendHearbeat(addr, heartbeatData.get());
-        } catch (MQException& e) {
+          m_mqClientAPIImpl->sendHearbeat(addr, heartbeatData.get(), 3000);
+        } catch (const MQException& e) {
           LOG_ERROR_NEW("{}", e.what());
         }
       }
@@ -595,14 +605,14 @@ void MQClientInstance::rebalanceImmediately() {
 }
 
 void MQClientInstance::doRebalance() {
-  LOG_INFO_NEW("Client factory:{} start dorebalance", m_clientId);
+  LOG_INFO_NEW("the client instance:{} start doRebalance", m_clientId);
   if (getConsumerTableSize() > 0) {
     std::lock_guard<std::mutex> lock(m_consumerTableMutex);
     for (auto& it : m_consumerTable) {
       it.second->doRebalance();
     }
   }
-  LOG_INFO_NEW("Client factory:{} finish dorebalance", m_clientId);
+  LOG_INFO_NEW("the client instance [{}] finish doRebalance", m_clientId);
 }
 
 void MQClientInstance::doRebalanceByConsumerGroup(const std::string& consumerGroup) {
@@ -610,7 +620,7 @@ void MQClientInstance::doRebalanceByConsumerGroup(const std::string& consumerGro
   const auto& it = m_consumerTable.find(consumerGroup);
   if (it != m_consumerTable.end()) {
     try {
-      LOG_INFO_NEW("Client factory:{} start dorebalance for consumer:{}", m_clientId, consumerGroup);
+      LOG_INFO_NEW("the client instance [{}] start doRebalance for consumer [{}]", m_clientId, consumerGroup);
       auto* consumer = it->second;
       consumer->doRebalance();
     } catch (const std::exception& e) {
@@ -923,19 +933,15 @@ ConsumerRunningInfo* MQClientInstance::consumerRunningInfo(const std::string& co
   if (consumer != nullptr) {
     std::unique_ptr<ConsumerRunningInfo> runningInfo(consumer->consumerRunningInfo());
     if (runningInfo != nullptr) {
-      auto nsList = m_mqClientAPIImpl->getRemotingClient()->getNameServerAddressList();
-
-      std::string nsAddr;
-      for (const auto& addr : nsList) {
-        nsAddr.append(addr);
-      }
-
+      std::string nsAddr = getNamesrvAddr();
       runningInfo->setProperty(ConsumerRunningInfo::PROP_NAMESERVER_ADDR, nsAddr);
+
       if (consumer->consumeType() == CONSUME_PASSIVELY) {
         runningInfo->setProperty(ConsumerRunningInfo::PROP_CONSUME_TYPE, "CONSUME_PASSIVELY");
       } else {
         runningInfo->setProperty(ConsumerRunningInfo::PROP_CONSUME_TYPE, "CONSUME_ACTIVELY");
       }
+
       runningInfo->setProperty(ConsumerRunningInfo::PROP_CLIENT_VERSION,
                                MQVersion::GetVersionDesc(MQVersion::s_CurrentVersion));
 

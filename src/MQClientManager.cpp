@@ -28,19 +28,19 @@ MQClientManager* MQClientManager::getInstance() {
 MQClientManager::MQClientManager() = default;
 MQClientManager::~MQClientManager() = default;
 
-MQClientInstancePtr MQClientManager::getOrCreateMQClientInstance(ConstMQClientConfigPtr clientConfig) {
+MQClientInstancePtr MQClientManager::getOrCreateMQClientInstance(const MQClientConfig& clientConfig) {
   return getOrCreateMQClientInstance(clientConfig, nullptr);
 }
 
-MQClientInstancePtr MQClientManager::getOrCreateMQClientInstance(ConstMQClientConfigPtr clientConfig,
+MQClientInstancePtr MQClientManager::getOrCreateMQClientInstance(const MQClientConfig& clientConfig,
                                                                  RPCHookPtr rpcHook) {
-  std::string clientId = clientConfig->buildMQClientId();
+  std::string clientId = clientConfig.buildMQClientId();
   std::lock_guard<std::mutex> lock(m_mutex);
   const auto& it = m_instanceTable.find(clientId);
   if (it != m_instanceTable.end()) {
     return it->second;
   } else {
-    // clone clientConfig
+    // Clone clientConfig in Java, but we don't now.
     auto instance = std::make_shared<MQClientInstance>(clientConfig, clientId, rpcHook);
     m_instanceTable[clientId] = instance;
     LOG_INFO_NEW("Created new MQClientInstance for clientId:[{}]", clientId);

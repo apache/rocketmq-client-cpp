@@ -182,7 +182,7 @@ bool DefaultMQPushConsumerImpl::sendMessageBack(MQMessageExt& msg, int delayLeve
     m_clientInstance->getMQClientAPIImpl()->consumerSendMessageBack(
         brokerAddr, msg, m_pushConsumerConfig->getGroupName(), delayLevel, 5000, getMaxReconsumeTimes());
     return true;
-  } catch (std::exception& e) {
+  } catch (const std::exception& e) {
     LOG_ERROR_NEW("sendMessageBack exception, group: {}, msg: {}. {}", m_pushConsumerConfig->getGroupName(),
                   msg.toString(), e.what());
   }
@@ -250,7 +250,7 @@ void DefaultMQPushConsumerImpl::start() {
       m_rebalanceImpl->setConsumerGroup(m_pushConsumerConfig->getGroupName());
       m_rebalanceImpl->setMessageModel(m_pushConsumerConfig->getMessageModel());
       m_rebalanceImpl->setAllocateMQStrategy(m_pushConsumerConfig->getAllocateMQStrategy());
-      m_rebalanceImpl->setMQClientFactory(m_clientInstance.get());
+      m_rebalanceImpl->setClientInstance(m_clientInstance.get());
 
       m_pullAPIWrapper.reset(new PullAPIWrapper(m_clientInstance.get(), m_pushConsumerConfig->getGroupName()));
 

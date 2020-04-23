@@ -48,7 +48,7 @@ class MQClientAPIImpl {
  public:
   MQClientAPIImpl(ClientRemotingProcessor* clientRemotingProcessor,
                   RPCHookPtr rpcHook,
-                  ConstMQClientConfigPtr clientConfig);
+                  const MQClientConfig& clientConfig);
   virtual ~MQClientAPIImpl();
 
   void start();
@@ -192,7 +192,6 @@ class MQClientAPIImpl {
 
  private:
   std::unique_ptr<TcpRemotingClient> m_remotingClient;
-  std::string m_nameSrvAddr;
 };
 
 }  // namespace rocketmq

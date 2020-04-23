@@ -24,19 +24,23 @@
 
 namespace rocketmq {
 
-#define ROCKETMQCPP_VERSION "1.0.1"
-#define BUILD_DATE "03-14-2018"
+#define ROCKETMQCPP_VERSION "3.0.0"
+#define BUILD_DATE __DATE__ " " __TIME__
 
 // display version: strings bin/librocketmq.so |grep VERSION
 const char* rocketmq_build_time = "VERSION: " ROCKETMQCPP_VERSION ", BUILD DATE: " BUILD_DATE;
 
 void MQClientImpl::start() {
-  if (m_clientInstance == nullptr) {
-    m_clientInstance = MQClientManager::getInstance()->getOrCreateMQClientInstance(m_clientConfig, m_rpcHook);
+  if (nullptr == m_clientInstance) {
+    if (nullptr == m_clientConfig) {
+      THROW_MQEXCEPTION(MQClientException, "have not clientConfig for create clientInstance.", -1);
+    }
+
+    m_clientInstance = MQClientManager::getInstance()->getOrCreateMQClientInstance(*m_clientConfig, m_rpcHook);
   }
-  LOG_INFO_NEW("MQClientImpl start, nameserveraddr:{}, instanceName:{}, groupName:{}, clientId:{}",
-               m_clientConfig->getNamesrvAddr(), m_clientConfig->getInstanceName(), m_clientConfig->getGroupName(),
-               m_clientInstance->getClientId());
+
+  LOG_INFO_NEW("MQClientImpl start, clientId:{}, real nameservAddr:{}", m_clientInstance->getClientId(),
+               m_clientInstance->getNamesrvAddr());
 }
 
 void MQClientImpl::shutdown() {
@@ -79,12 +83,20 @@ QueryResult MQClientImpl::queryMessage(const std::string& topic,
   return m_clientInstance->getMQAdminImpl()->queryMessage(topic, key, maxNum, begin, end);
 }
 
-MQClientInstancePtr MQClientImpl::getFactory() const {
+bool MQClientImpl::isServiceStateOk() {
+  return m_serviceState == RUNNING;
+}
+
+MQClientInstancePtr MQClientImpl::getClientInstance() const {
   return m_clientInstance;
 }
 
-bool MQClientImpl::isServiceStateOk() {
-  return m_serviceState == RUNNING;
+void MQClientImpl::setClientInstance(MQClientInstancePtr clientInstance) {
+  if (m_serviceState == CREATE_JUST) {
+    m_clientInstance = clientInstance;
+  } else {
+    THROW_MQEXCEPTION(MQClientException, "Client already start, can not reset clientInstance!", -1);
+  }
 }
 
 }  // namespace rocketmq

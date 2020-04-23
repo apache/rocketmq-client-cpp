@@ -25,7 +25,7 @@ namespace rocketmq {
 
 class ClientRemotingProcessor : public RequestProcessor {
  public:
-  ClientRemotingProcessor(MQClientInstance* mqClientFactory);
+  ClientRemotingProcessor(MQClientInstance* clientInstance);
   virtual ~ClientRemotingProcessor();
 
   RemotingCommand* processRequest(TcpTransportPtr channel, RemotingCommand* request) override;
@@ -40,7 +40,7 @@ class ClientRemotingProcessor : public RequestProcessor {
   void processReplyMessage(std::unique_ptr<MQMessageExt> replyMsg);
 
  private:
-  MQClientInstance* m_mqClientFactory;
+  MQClientInstance* m_clientInstance;
 };
 
 }  // namespace rocketmq

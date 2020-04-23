@@ -59,7 +59,7 @@ class TcpRemotingClient {
 
   void registerProcessor(MQRequestCode requestCode, RequestProcessor* requestProcessor);
 
-  std::vector<std::string> getNameServerAddressList() { return m_namesrvAddrList; }
+  std::vector<std::string> getNameServerAddressList() const { return m_namesrvAddrList; }
 
  private:
   static bool SendCommand(TcpTransportPtr channel, RemotingCommand& msg);

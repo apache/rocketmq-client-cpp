@@ -448,7 +448,7 @@ SendResult* DefaultMQProducerImpl::sendDefaultImpl(MQMessagePtr msg,
       lastBrokerName = mq.getBrokerName();
 
       try {
-        LOG_DEBUG("send to mq:%s", mq.toString().data());
+        LOG_DEBUG_NEW("send to mq: {}", mq.toString());
 
         beginTimestampPrev = UtilAll::currentTimeMillis();
         if (times > 0) {

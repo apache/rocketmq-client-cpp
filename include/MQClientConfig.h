@@ -26,7 +26,6 @@ namespace rocketmq {
 
 class MQClientConfig;
 typedef std::shared_ptr<MQClientConfig> MQClientConfigPtr;
-typedef std::shared_ptr<const MQClientConfig> ConstMQClientConfigPtr;
 
 /**
  * MQ Client Config
@@ -53,32 +52,19 @@ class ROCKETMQCLIENT_API MQClientConfig {
   virtual void setUnitName(std::string unitName) = 0;
 
   /**
-   * set TcpTransport pull thread num, which dermine the num of threads to distribute network data,
-   *
-   *  1. its default value is CPU num, it must be setted before producer/consumer start, minimum value is CPU num;
-   *  2. this pullThread num must be tested on your environment to find the best value for RT of sendMsg or delay time
-   *     of consume msg before you change it;
-   *  3. producer and consumer need different pullThread num, if set this num, producer and consumer must set different
-   *     instanceName.
-   *  4. configuration suggestion:
-   *      1>. minimum RT of sendMsg:
-   *              pullThreadNum = brokerNum*2
+   * the num of threads to distribute network data
    **/
   virtual int getTcpTransportWorkerThreadNum() const = 0;
   virtual void setTcpTransportWorkerThreadNum(int num) = 0;
 
   /**
-   * timeout of tcp connect, it is same meaning for both producer and consumer;
-   *  1. default value is 3000ms
-   *  2. input parameter could only be milliSecond, suggestion value is 1000-3000ms;
+   * timeout of tcp connect
    **/
   virtual uint64_t getTcpTransportConnectTimeout() const = 0;
   virtual void setTcpTransportConnectTimeout(uint64_t timeout) = 0;  // ms
 
   /**
-   * timeout of tryLock tcpTransport before sendMsg/pullMsg, if timeout, returns NULL
-   *  1. paremeter unit is ms, default value is 3000ms, the minimun value is 1000ms, suggestion value is 3000ms;
-   *  2. if configured with value smaller than 1000ms, the tryLockTimeout value will be setted to 1000ms
+   * timeout of tryLock tcpTransport, the minimun value is 1000ms
    **/
   virtual uint64_t getTcpTransportTryLockTimeout() const = 0;
   virtual void setTcpTransportTryLockTimeout(uint64_t timeout) = 0;  // ms
