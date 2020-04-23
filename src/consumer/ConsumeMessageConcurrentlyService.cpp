@@ -22,6 +22,7 @@
 #include "DefaultMQPushConsumer.h"
 #include "Logging.h"
 #include "MessageAccessor.h"
+#include "StatsServerManager.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
@@ -158,10 +159,11 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
   }
   ConsumeMessageContext consumeMessageContext;
   DefaultMQPushConsumerImpl* pConsumer = dynamic_cast<DefaultMQPushConsumerImpl*>(m_pConsumer);
+  std::string groupName = pConsumer->getGroupName();
   if (pConsumer) {
     if (pConsumer->getMessageTrace() && pConsumer->hasConsumeMessageHook()) {
       consumeMessageContext.setDefaultMQPushConsumer(pConsumer);
-      consumeMessageContext.setConsumerGroup(pConsumer->getGroupName());
+      consumeMessageContext.setConsumerGroup(groupName);
       consumeMessageContext.setMessageQueue(request->m_messageQueue);
       consumeMessageContext.setMsgList(msgs);
       consumeMessageContext.setSuccess(false);
@@ -196,12 +198,16 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
           pConsumer->executeConsumeMessageHookAfter(&consumeMessageContext);
           continue;
         }
+        uint64 startTimeStamp = UtilAll::currentTimeMillis();
         try {
           status = m_pMessageListener->consumeMessage(msgInner);
         } catch (...) {
           status = RECONSUME_LATER;
           LOG_ERROR("Consumer's code is buggy. Un-caught exception raised");
         }
+        uint64 consumerRT = UtilAll::currentTimeMillis() - startTimeStamp;
+        StatsServerManager::getInstance()->getConsumeStatServer()->incConsumeRT(request->m_messageQueue.getTopic(),
+                                                                                groupName, consumerRT);
         consumeMessageContext.setMsgIndex(i);  // indicate message position,not support batch consumer
         if (status == CONSUME_SUCCESS) {
           consumeMessageContext.setStatus("CONSUME_SUCCESS");
@@ -214,12 +220,16 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
         pConsumer->executeConsumeMessageHookAfter(&consumeMessageContext);
       }
     } else {
+      uint64 startTimeStamp = UtilAll::currentTimeMillis();
       try {
         status = m_pMessageListener->consumeMessage(msgs);
       } catch (...) {
         status = RECONSUME_LATER;
         LOG_ERROR("Consumer's code is buggy. Un-caught exception raised");
       }
+      uint64 consumerRT = UtilAll::currentTimeMillis() - startTimeStamp;
+      StatsServerManager::getInstance()->getConsumeStatServer()->incConsumeRT(request->m_messageQueue.getTopic(),
+                                                                              groupName, consumerRT, msgs.size());
     }
   }
 
@@ -245,6 +255,19 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
       break;
     }
     case CLUSTERING: {
+      // status consumer tps
+      int okCount = 0;
+      int failedCount = 0;
+      if (ackIndex == -1) {
+        failedCount = msgs.size();
+      } else {
+        okCount = msgs.size();
+      }
+      StatsServerManager::getInstance()->getConsumeStatServer()->incConsumeOKTPS(request->m_messageQueue.getTopic(),
+                                                                                 groupName, okCount);
+      StatsServerManager::getInstance()->getConsumeStatServer()->incConsumeFailedTPS(request->m_messageQueue.getTopic(),
+                                                                                     groupName, failedCount);
+
       // send back msg to broker;
       for (size_t i = ackIndex + 1; i < msgs.size(); i++) {
         LOG_DEBUG("consume fail, MQ is:%s, its msgId is:%s, index is:" SIZET_FMT ", reconsume times is:%d",

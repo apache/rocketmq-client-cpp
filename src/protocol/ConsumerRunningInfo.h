@@ -17,6 +17,7 @@
 #ifndef __CONSUMERRUNNINGINFO_H__
 #define __CONSUMERRUNNINGINFO_H__
 
+#include "ConsumeStats.h"
 #include "MessageQueue.h"
 #include "ProcessQueueInfo.h"
 #include "SubscriptionData.h"
@@ -47,8 +48,8 @@ class ConsumerRunningInfo {
   void setProperty(const string& key, const string& value);
   const map<MessageQueue, ProcessQueueInfo> getMqTable() const;
   void setMqTable(MessageQueue queue, ProcessQueueInfo queueInfo);
-  // const map<string, ConsumeStatus> getStatusTable() const;
-  // void setStatusTable(const map<string, ConsumeStatus>& input_statusTable) ;
+  const map<string, ConsumeStats> getStatusTable() const;
+  void setStatusTable(string topic, ConsumeStats consumeStats);
   const vector<SubscriptionData> getSubscriptionSet() const;
   void setSubscriptionSet(const vector<SubscriptionData>& input_subscriptionSet);
   const string getJstack() const;
@@ -59,7 +60,7 @@ class ConsumerRunningInfo {
   map<string, string> properties;
   vector<SubscriptionData> subscriptionSet;
   map<MessageQueue, ProcessQueueInfo> mqTable;
-  // map<string, ConsumeStatus> statusTable;
+  map<string, ConsumeStats> statusTable;
   string jstack;
 };
 }  // namespace rocketmq

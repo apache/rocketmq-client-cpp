@@ -24,6 +24,7 @@
 #include "json/reader.h"
 #include "json/value.h"
 
+#include "ConsumeStats.h"
 #include "ConsumerRunningInfo.h"
 #include "MessageQueue.h"
 #include "ProcessQueueInfo.h"
@@ -40,6 +41,7 @@ using Json::Reader;
 using Json::Value;
 
 using rocketmq::ConsumerRunningInfo;
+using rocketmq::ConsumeStats;
 using rocketmq::MessageQueue;
 using rocketmq::ProcessQueueInfo;
 using rocketmq::SubscriptionData;
@@ -91,6 +93,19 @@ TEST(ConsumerRunningInfo, init) {
   EXPECT_EQ(mqTable.size(), 2);
   EXPECT_EQ(mqTable[messageQueue1].commitOffset, 1024);
   EXPECT_EQ(mqTable[messageQueue2].cachedMsgCount, 1023);
+  // consumeStats
+  EXPECT_TRUE(info.getStatusTable().empty());
+
+  ConsumeStats consumeStats;
+  consumeStats.pullTPS = 22.5;
+  ConsumeStats consumeStats2;
+  consumeStats2.consumeOKTPS = 3.168;
+  info.setStatusTable("TopicA", consumeStats);
+  info.setStatusTable("TopicB", consumeStats2);
+  map<string, ConsumeStats> statsTable = info.getStatusTable();
+  EXPECT_EQ(statsTable.size(), 2);
+  EXPECT_EQ(statsTable["TopicA"].pullTPS, 22.5);
+  EXPECT_EQ(statsTable["TopicB"].consumeOKTPS, 3.168);
 
   // encode start
   info.setProperty(ConsumerRunningInfo::PROP_NAMESERVER_ADDR, "127.0.0.1:9876");
