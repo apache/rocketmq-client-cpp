@@ -16,6 +16,8 @@
  */
 #include "ReplyMessageRequestHeader.h"
 
+#include <memory>
+
 #include "UtilAll.h"
 
 namespace rocketmq {
