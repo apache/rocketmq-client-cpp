@@ -23,14 +23,14 @@ file(GLOB_RECURSE SRC_FILES ${PROJECT_SOURCE_DIR}/../src/*.c*)
 list(REMOVE_ITEM SRC_FILES ${PROJECT_SOURCE_DIR}/../src/dllmain.cpp)
 
 # subdirs
-SET(SUB_DIRS)
+set(SUB_DIRS)
 file(GLOB children ${PROJECT_SOURCE_DIR}/../src/*)
-FOREACH (child ${children})
-    IF (IS_DIRECTORY ${child})
-        LIST(APPEND SUB_DIRS ${child})
-    ENDIF ()
-ENDFOREACH ()
-LIST(APPEND SUB_DIRS ${PROJECT_SOURCE_DIR}/../src)
+foreach (child ${children})
+    if (IS_DIRECTORY ${child})
+        list(APPEND SUB_DIRS ${child})
+    endif ()
+endforeach ()
+list(APPEND SUB_DIRS ${PROJECT_SOURCE_DIR}/../src)
 
 # libs_directories
 file(GLOB LIB_DIRS ${PROJECT_SOURCE_DIR}/../libs/*)

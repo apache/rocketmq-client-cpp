@@ -53,6 +53,9 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
 # Find dependency
 #find_package(spdlog REQUIRED)
+if (NOT spdlog_FOUND)
+    include_directories(${CMAKE_SOURCE_DIR}/bin/include)
+endif ()
 
 option(Libevent_USE_STATIC_LIBS "only find libevent static libs" OFF) # only find static libs
 find_package(Libevent 2.0.21 REQUIRED)
@@ -94,7 +97,7 @@ else ()
     message(FATAL_ERROR "The compiler has no C99 or C++11 support.")
 endif ()
 
-IF (WIN32)
+if (WIN32)
     add_definitions(-DWIN32 -DROCKETMQCLIENT_EXPORTS)
     add_compile_options(/EHsc)
     if (CMAKE_BUILD_TYPE EQUAL "Release")
@@ -102,7 +105,7 @@ IF (WIN32)
     else ()
         add_compile_options(/MTd)
     endif ()
-ELSE ()
+else ()
     add_compile_options(-Wall
         -Wno-deprecated
         -fPIC
@@ -133,7 +136,7 @@ ELSE ()
 
     # add include dir for bsd (posix uses /usr/include/)
     set(CMAKE_INCLUDE_PATH "${CMAKE_INCLUDE_PATH}:/usr/local/include")
-ENDIF ()
+endif ()
 
 add_subdirectory(libs)
 add_subdirectory(project)

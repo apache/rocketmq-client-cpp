@@ -29,7 +29,7 @@
 # Note that 'libevent' contains both core and extra. You must specify one of
 # them for the other components.
 #
-# This module will define the following variables::
+# This module will define the following variables:
 #
 #  LIBEVENT_FOUND        - True if headers and requested libraries were found
 #  LIBEVENT_INCLUDE_DIRS - Libevent include directories
@@ -59,18 +59,16 @@ else ()
     endif ()
 endif ()
 
-set(LIBEVENT_INCLUDE_SEARCH_PATH ${CMAKE_SOURCE_DIR}/bin/include /usr/local/include C:/libevent/include
-        ${CMAKE_SOURCE_DIR}/win32-deps/include)
-set(LIBEVENT_LIBRARIE_SEARCH_PATH ${CMAKE_SOURCE_DIR}/bin/lib /usr/local/lib C:/libevent-2.0.22-stable
-        C:/libevent-2.0.22-stable/lib C:/libevent/lib ${CMAKE_SOURCE_DIR}/win32-deps/lib)
+set(LIBEVENT_INCLUDE_SEARCH_PATH ${CMAKE_SOURCE_DIR}/bin/include /usr/local/include /usr/include)
+set(LIBEVENT_LIBRARIES_SEARCH_PATH ${CMAKE_SOURCE_DIR}/bin/lib /usr/local/lib /usr/lib)
 if (LIBEVENT_ROOT)
-    list(INSERT LIBEVENT_INCLUDE_SEARCH_PATH 0 ${JSONCPP_ROOT}/include)
-    list(INSERT LIBEVENT_LIBRARIE_SEARCH_PATH 0 ${JSONCPP_ROOT}/lib)
+    list(INSERT LIBEVENT_INCLUDE_SEARCH_PATH 0 ${LIBEVENT_ROOT}/include)
+    list(INSERT LIBEVENT_LIBRARIES_SEARCH_PATH 0 ${LIBEVENT_ROOT}/lib)
 endif ()
 
 # Look for the Libevent 2.0 or 1.4 headers
 find_path(LIBEVENT_INCLUDE_DIR
-        NAMES WIN32-Code/event2/event-config.h event2/event-config.h event-config.h
+        NAMES event2/event-config.h event-config.h
         PATHS ${LIBEVENT_INCLUDE_SEARCH_PATH}
         HINTS ${PC_LIBEVENT_INCLUDE_DIRS})
 
@@ -81,7 +79,6 @@ set(Libevent_LIB_PREFIX "")
 set(LIBEVENT_EVENT_CONFIG_DIR ${LIBEVENT_INCLUDE_DIR})
 if (WIN32)
     set(Libevent_LIB_PREFIX "lib")
-    set(LIBEVENT_EVENT_CONFIG_DIR "${LIBEVENT_INCLUDE_DIR}/../WIN32-Code/")
 endif ()
 
 if (LIBEVENT_INCLUDE_DIR)
@@ -110,7 +107,7 @@ endif ()
 
 set(_LIBEVENT_REQUIRED_VARS)
 if (WIN32)
-    set(Libevent_FIND_COMPONENTS ${Libevent_LIB_PREFIX}event core extras)
+    set(Libevent_FIND_COMPONENTS ${Libevent_LIB_PREFIX}event core extra)
 else ()
     set(Libevent_FIND_COMPONENTS ${Libevent_LIB_PREFIX}event core extra pthreads)
 endif ()
@@ -124,10 +121,10 @@ foreach (COMPONENT ${Libevent_FIND_COMPONENTS})
         set(_LIBEVENT_LIBNAME "${Libevent_LIB_PREFIX}event_${COMPONENT}")
     endif ()
     string(TOUPPER "${COMPONENT}" COMPONENT_UPPER)
-    message(STATUS "** ${_LIBEVENT_LIBNAME}")
+    message(STATUS "** fine ${_LIBEVENT_LIBNAME} in ${LIBEVENT_LIBRARIES_SEARCH_PATH}")
     find_library(LIBEVENT_${COMPONENT_UPPER}_LIBRARY
             NAMES ${_LIBEVENT_LIBNAME}
-            PATHS ${LIBEVENT_LIBRARIE_SEARCH_PATH}
+            PATHS ${LIBEVENT_LIBRARIES_SEARCH_PATH}
             HINTS ${PC_LIBEVENT_LIBRARY_DIRS}
             )
     if (LIBEVENT_${COMPONENT_UPPER}_LIBRARY)
@@ -140,9 +137,8 @@ unset(_LIBEVENT_LIBNAME)
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set LIBEVENT_FOUND to TRUE
 # if all listed variables are TRUE and the requested version matches.
-find_package_handle_standard_args(Libevent REQUIRED_VARS
-        ${_LIBEVENT_REQUIRED_VARS}
-        LIBEVENT_INCLUDE_DIR
+find_package_handle_standard_args(Libevent
+        REQUIRED_VARS ${_LIBEVENT_REQUIRED_VARS} LIBEVENT_INCLUDE_DIR
         VERSION_VAR LIBEVENT_VERSION
         HANDLE_COMPONENTS)
 
