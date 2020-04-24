@@ -13,9 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# source files
 project(rocketmq-client)
 
+option(BUILD_ROCKETMQ_STATIC "build rocketmq-client static library" OFF)
+option(BUILD_ROCKETMQ_SHARED "build rocketmq-client shared library" ON)
+
+# source files
 file(GLOB_RECURSE SRC_FILES ${PROJECT_SOURCE_DIR}/../src/*.c*)
 list(REMOVE_ITEM SRC_FILES ${PROJECT_SOURCE_DIR}/../src/dllmain.cpp)
 
@@ -28,8 +31,6 @@ FOREACH (child ${children})
     ENDIF ()
 ENDFOREACH ()
 LIST(APPEND SUB_DIRS ${PROJECT_SOURCE_DIR}/../src)
-
-include_directories(${SUB_DIRS})
 
 # libs_directories
 file(GLOB LIB_DIRS ${PROJECT_SOURCE_DIR}/../libs/*)
@@ -45,7 +46,7 @@ if (BUILD_ROCKETMQ_STATIC)
     add_library(rocketmq_static STATIC
             ${SRC_FILES})
     target_include_directories(rocketmq_static
-            PUBLIC ${PROJECT_SOURCE_DIR}/../include)
+            PUBLIC ${PROJECT_SOURCE_DIR}/../include ${SUB_DIRS})
     if (spdlog_FOUND)
         target_link_libraries(rocketmq_static
                 PUBLIC ${deplibs} Signature ${JSONCPP_LIBRARIES} ${LIBEVENT_LIBRARIES} spdlog::spdlog)
@@ -65,7 +66,7 @@ if (BUILD_ROCKETMQ_SHARED)
     add_library(rocketmq_shared SHARED
             ${SRC_FILES})
     target_include_directories(rocketmq_shared
-            PUBLIC ${PROJECT_SOURCE_DIR}/../include)
+            PUBLIC ${PROJECT_SOURCE_DIR}/../include ${SUB_DIRS})
     if (spdlog_FOUND)
         target_link_libraries(rocketmq_shared
                 PUBLIC ${deplibs} Signature ${JSONCPP_LIBRARIES} ${LIBEVENT_LIBRARIES} spdlog::spdlog)
