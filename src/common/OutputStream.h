@@ -18,6 +18,7 @@
 #define OUTPUTSTREAM_H_INCLUDED
 
 #include "InputStream.h"
+
 namespace rocketmq {
 //==============================================================================
 /**
@@ -128,7 +129,7 @@ class ROCKETMQCLIENT_API OutputStream {
   /** Writes a byte to the output stream a given number of times.
       @returns false if the write operation fails for some reason
   */
-  virtual bool writeRepeatedByte(uint8 byte, size_t numTimesToRepeat);
+  virtual bool writeRepeatedByte(uint8_t byte, size_t numTimesToRepeat);
 
   /** Reads data from an input stream and writes it to this stream.
 

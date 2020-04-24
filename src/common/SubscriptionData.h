@@ -51,7 +51,7 @@ class ROCKETMQCLIENT_API SubscriptionData {
   bool containTag(const std::string& tag);
   std::vector<std::string>& getTagsSet();
 
-  void putCodeSet(const int32 code);
+  void putCodeSet(int32_t code);
 
   bool operator==(const SubscriptionData& other) const;
   bool operator<(const SubscriptionData& other) const;

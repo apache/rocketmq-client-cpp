@@ -70,7 +70,7 @@ std::vector<std::string>& SubscriptionData::getTagsSet() {
   return m_tagSet;
 }
 
-void SubscriptionData::putCodeSet(const int32 code) {
+void SubscriptionData::putCodeSet(int32_t code) {
   m_codeSet.push_back(code);
 }
 

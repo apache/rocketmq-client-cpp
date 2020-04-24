@@ -36,7 +36,7 @@ bool OutputStream::writeByte(char byte) {
   return write(&byte, 1);
 }
 
-bool OutputStream::writeRepeatedByte(uint8 byte, size_t numTimesToRepeat) {
+bool OutputStream::writeRepeatedByte(uint8_t byte, size_t numTimesToRepeat) {
   for (size_t i = 0; i < numTimesToRepeat; ++i)
     if (!writeByte((char)byte))
       return false;

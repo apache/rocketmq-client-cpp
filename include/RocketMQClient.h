@@ -37,30 +37,6 @@
 #define ROCKETMQCLIENT_API
 #endif  // WIN32
 
-/** A platform-independent 8-bit signed integer type. */
-typedef int8_t int8;
-
-/** A platform-independent 8-bit unsigned integer type. */
-typedef uint8_t uint8;
-
-/** A platform-independent 16-bit signed integer type. */
-typedef int16_t int16;
-
-/** A platform-independent 16-bit unsigned integer type. */
-typedef uint16_t uint16;
-
-/** A platform-independent 32-bit signed integer type. */
-typedef int32_t int32;
-
-/** A platform-independent 32-bit unsigned integer type. */
-typedef uint32_t uint32;
-
-/** A platform-independent 64-bit integer type. */
-typedef int64_t int64;
-
-/** A platform-independent 64-bit unsigned integer type. */
-typedef uint64_t uint64;
-
 #ifdef WIN32
 #define SIZET_FMT "%lu"
 #else

@@ -97,13 +97,13 @@ MemoryBlockPtr RemotingCommand::encode() const {
 
   std::string header = RemotingSerializable::toJson(root);
 
-  uint32 headerLen = header.size();
-  uint32 packageLen = 4 + headerLen;
+  uint32_t headerLen = header.size();
+  uint32_t packageLen = 4 + headerLen;
   if (m_body != nullptr) {
     packageLen += m_body->getSize();
   }
 
-  uint32 messageHeader[2];
+  uint32_t messageHeader[2];
   messageHeader[0] = ByteOrder::swapIfLittleEndian(packageLen);
   messageHeader[1] = ByteOrder::swapIfLittleEndian(headerLen);
 
@@ -121,7 +121,7 @@ RemotingCommand* RemotingCommand::Decode(MemoryBlockPtr2 package) {
   // decode package: 4 bytes(headerLength) + header + body
   int packageLength = package->getSize();
 
-  uint32 netHeaderLen;
+  uint32_t netHeaderLen;
   package->copyTo(&netHeaderLen, 0, sizeof(netHeaderLen));
   int oriHeaderLen = ByteOrder::swapIfLittleEndian(netHeaderLen);
   int headerLength = oriHeaderLen & 0xFFFFFF;

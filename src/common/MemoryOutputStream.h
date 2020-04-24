@@ -109,7 +109,7 @@ class ROCKETMQCLIENT_API MemoryOutputStream : public OutputStream {
   int64_t getPosition() { return (int64_t)position; }
   bool setPosition(int64_t);
   int64_t writeFromInputStream(InputStream&, int64_t maxNumBytesToWrite);
-  bool writeRepeatedByte(uint8 byte, size_t numTimesToRepeat);
+  bool writeRepeatedByte(uint8_t byte, size_t numTimesToRepeat);
 
  private:
   //==============================================================================

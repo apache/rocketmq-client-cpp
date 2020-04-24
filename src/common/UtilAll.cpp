@@ -59,7 +59,7 @@ bool UtilAll::try_lock_for(std::timed_mutex& mutex, long timeout) {
 
 int32_t UtilAll::HashCode(const std::string& str) {
   // FIXME: don't equal to String#hashCode in Java
-  int32 h = 0;
+  int32_t h = 0;
   if (!str.empty()) {
     for (const auto& c : str) {
       h = 31 * h + c;

@@ -99,7 +99,7 @@ bool MemoryOutputStream::write(const void* const buffer, size_t howMany) {
   return false;
 }
 
-bool MemoryOutputStream::writeRepeatedByte(uint8 byte, size_t howMany) {
+bool MemoryOutputStream::writeRepeatedByte(uint8_t byte, size_t howMany) {
   if (howMany == 0) {
     return true;
   }
