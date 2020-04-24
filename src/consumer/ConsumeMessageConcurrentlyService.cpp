@@ -256,17 +256,13 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
     }
     case CLUSTERING: {
       // status consumer tps
-      int okCount = 0;
-      int failedCount = 0;
       if (ackIndex == -1) {
-        failedCount = msgs.size();
+        StatsServerManager::getInstance()->getConsumeStatServer()->incConsumeFailedTPS(
+            request->m_messageQueue.getTopic(), groupName, msgs.size());
       } else {
-        okCount = msgs.size();
+        StatsServerManager::getInstance()->getConsumeStatServer()->incConsumeOKTPS(request->m_messageQueue.getTopic(),
+                                                                                   groupName, msgs.size());
       }
-      StatsServerManager::getInstance()->getConsumeStatServer()->incConsumeOKTPS(request->m_messageQueue.getTopic(),
-                                                                                 groupName, okCount);
-      StatsServerManager::getInstance()->getConsumeStatServer()->incConsumeFailedTPS(request->m_messageQueue.getTopic(),
-                                                                                     groupName, failedCount);
 
       // send back msg to broker;
       for (size_t i = ackIndex + 1; i < msgs.size(); i++) {

@@ -132,6 +132,17 @@ void StatsServer::incConsumeFailedTPS(std::string topic, std::string groupName, 
     m_consumeStatsItems[key] = item;
   }
   m_consumeStatsItems[key].consumeFailedCount += msgCount;
+  m_consumeStatsItems[key].consumeFailedMsgs += msgCount;
+}
+void StatsServer::incConsumeFailedMsgs(std::string topic, std::string groupName, uint64 msgCount) {
+  std::string key = topic + "@" + groupName;
+  LOG_DEBUG("incConsumeFailedTPS Key:%s, Count: %lld", key.c_str(), msgCount);
+  std::lock_guard<std::mutex> lock(m_consumeStatsItemMutex);
+  if (m_consumeStatsItems.find(key) == m_consumeStatsItems.end()) {
+    StatsItem item;
+    m_consumeStatsItems[key] = item;
+  }
+  m_consumeStatsItems[key].consumeFailedMsgs += msgCount;
 }
 void StatsServer::startScheduledTask() {
   m_consumer_status_service_thread.reset(new boost::thread(boost::bind(&StatsServer::doStartScheduledTask, this)));
@@ -193,7 +204,7 @@ void StatsServer::samplingInSeconds() {
     LOG_DEBUG("samplingInSeconds Key[%s], consumeFailedTPS:%.2f, Count: %lld", it->first.c_str(),
               consumeStats.consumeFailedTPS, it->second.consumeFailedCount);
     consumeStats.consumeFailedMsgs = it->second.consumeFailedMsgs;
-    it->second.consumeFailedMsgs = 0;
+    // it->second.consumeFailedMsgs = 0;
     updateConsumeStats(it->first, consumeStats);
   }
 }

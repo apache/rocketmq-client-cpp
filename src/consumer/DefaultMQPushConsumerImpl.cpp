@@ -65,9 +65,16 @@ class AsyncPullCallback : public PullCallback {
           LOG_INFO("[Dropped]Remove pullmsg event of mq:%s", (pullRequest->m_messageQueue).toString().c_str());
           break;
         }
+
+        uint64 pullRT = UtilAll::currentTimeMillis() - pullRequest->getLastPullTimestamp();
+        StatsServerManager::getInstance()->getConsumeStatServer()->incConsumeRT(
+            pullRequest->m_messageQueue.getTopic(), m_callbackOwner->getGroupName(), pullRT);
         pullRequest->setNextOffset(result.nextBeginOffset);
         pullRequest->putMessage(result.msgFoundList);
-
+        if (!result.msgFoundList.empty()) {
+          StatsServerManager::getInstance()->getConsumeStatServer()->incPullTPS(
+              pullRequest->m_messageQueue.getTopic(), m_callbackOwner->getGroupName(), result.msgFoundList.size());
+        }
         m_callbackOwner->getConsumerMsgService()->submitConsumeRequest(pullRequest, result.msgFoundList);
 
         if (bProducePullRequest) {
@@ -686,7 +693,8 @@ void DefaultMQPushConsumerImpl::pullMessage(boost::weak_ptr<PullRequest> pullReq
     return;
   }
   try {
-    request->setLastPullTimestamp(UtilAll::currentTimeMillis());
+    uint64 startTimeStamp = UtilAll::currentTimeMillis();
+    request->setLastPullTimestamp(startTimeStamp);
     unique_ptr<PullResult> result(m_pPullAPIWrapper->pullKernelImpl(messageQueue,              // 1
                                                                     subExpression,             // 2
                                                                     pSdata->getSubVersion(),   // 3
@@ -702,6 +710,9 @@ void DefaultMQPushConsumerImpl::pullMessage(boost::weak_ptr<PullRequest> pullReq
     PullResult pullResult = m_pPullAPIWrapper->processPullResult(messageQueue, result.get(), pSdata);
     switch (pullResult.pullStatus) {
       case FOUND: {
+        uint64 pullRT = UtilAll::currentTimeMillis() - startTimeStamp;
+        StatsServerManager::getInstance()->getConsumeStatServer()->incConsumeRT(messageQueue.getTopic(), getGroupName(),
+                                                                                pullRT);
         if (request->isDropped()) {
           LOG_INFO("Get pull result but the queue has been marked as dropped. Queue: %s",
                    messageQueue.toString().c_str());
@@ -710,7 +721,10 @@ void DefaultMQPushConsumerImpl::pullMessage(boost::weak_ptr<PullRequest> pullReq
         // and this request is dropped, and then received pulled msgs.
         request->setNextOffset(pullResult.nextBeginOffset);
         request->putMessage(pullResult.msgFoundList);
-
+        if (!pullResult.msgFoundList.empty()) {
+          StatsServerManager::getInstance()->getConsumeStatServer()->incPullTPS(messageQueue.getTopic(), getGroupName(),
+                                                                                pullResult.msgFoundList.size());
+        }
         m_consumerService->submitConsumeRequest(request, pullResult.msgFoundList);
         producePullMsgTask(request);
 

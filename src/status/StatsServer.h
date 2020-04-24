@@ -54,6 +54,7 @@ class StatsServer {
   void incConsumeRT(std::string topic, std::string groupName, uint64 rt, uint64 msgCount = 1);
   void incConsumeOKTPS(std::string topic, std::string groupName, uint64 msgCount);
   void incConsumeFailedTPS(std::string topic, std::string groupName, uint64 msgCount);
+  void incConsumeFailedMsgs(std::string topic, std::string groupName, uint64 msgCount);
 
  private:
   void startScheduledTask();
