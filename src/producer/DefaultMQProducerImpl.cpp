@@ -723,7 +723,7 @@ void DefaultMQProducerImpl::checkTransactionStateImpl(const std::string& addr,
   }
 
   LocalTransactionState localTransactionState = UNKNOWN;
-  std::exception_ptr exception;
+  std::exception_ptr exception = nullptr;
   try {
     localTransactionState = transactionCheckListener->checkLocalTransaction(*message);
   } catch (MQException& e) {
@@ -761,7 +761,7 @@ void DefaultMQProducerImpl::checkTransactionStateImpl(const std::string& addr,
   }
 
   std::string remark;
-  if (exception) {
+  if (exception != nullptr) {
     remark = "checkLocalTransactionState Exception: " + UtilAll::to_string(exception);
   }
 

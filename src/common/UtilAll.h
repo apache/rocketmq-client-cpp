@@ -17,6 +17,7 @@
 #ifndef __UTIL_ALL_H__
 #define __UTIL_ALL_H__
 
+#include <exception>
 #include <mutex>
 #include <string>
 #include <vector>
