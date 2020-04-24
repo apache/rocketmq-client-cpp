@@ -18,12 +18,6 @@
 
 #include <event2/thread.h>
 
-#ifndef WIN32
-#include <arpa/inet.h>
-#else
-#include <Winsock2.h>
-#endif
-
 #include "Logging.h"
 #include "SocketUtil.h"
 
@@ -231,8 +225,8 @@ static std::string buildPeerAddrPort(socket_t fd) {
 
 int BufferEvent::connect(const std::string& addr) {
   m_peerAddrPort = addr;
-  const auto* sa = string2SocketAddress(addr);
-  return bufferevent_socket_connect(m_bufferEvent, sa, sa->sa_len);
+  auto* sa = string2SocketAddress(addr);
+  return bufferevent_socket_connect(m_bufferEvent, sa, sockaddr_size(sa));
 }
 
 int BufferEvent::close() {

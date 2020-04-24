@@ -68,7 +68,6 @@ MQMessageId MQDecoder::decodeMessageId(const std::string& msgId) {
   uint64_t offset = UtilAll::hexstr2ull(offsetStr.c_str());
 
   struct sockaddr_in sin;
-  sin.sin_len = sizeof(sin);
   sin.sin_family = AF_INET;
   sin.sin_port = htons(portInt);
   sin.sin_addr.s_addr = htonl(ipInt);

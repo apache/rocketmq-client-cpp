@@ -23,7 +23,6 @@
 #include <stdexcept>
 
 #ifndef WIN32
-#include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
 #endif
@@ -34,21 +33,22 @@
 
 namespace rocketmq {
 
-thread_local static union {
+union sockaddr_union {
   struct sockaddr_in sin;
   struct sockaddr_in6 sin6;
-} sin_buf;
+};
+
+thread_local static sockaddr_union sin_buf;
 
 struct sockaddr* ipPort2SocketAddress(uint32_t host, uint16_t port) {
   struct sockaddr_in* sin = &sin_buf.sin;
-  sin->sin_len = sizeof(sin);
   sin->sin_family = AF_INET;
   sin->sin_port = htons(port);
   sin->sin_addr.s_addr = htonl(host);
   return (struct sockaddr*)sin;
 }
 
-const struct sockaddr* string2SocketAddress(const std::string& addr) {
+struct sockaddr* string2SocketAddress(const std::string& addr) {
   std::string::size_type start_pos = addr[0] == '/' ? 1 : 0;
   auto colon_pos = addr.find_last_of(":");
   std::string host = addr.substr(start_pos, colon_pos - start_pos);
@@ -104,7 +104,7 @@ std::string socketAddress2String(const struct sockaddr* addr) {
   return address;
 }
 
-const struct sockaddr* lookupNameServers(const std::string& hostname) {
+struct sockaddr* lookupNameServers(const std::string& hostname) {
   if (hostname.empty()) {
     return nullptr;
   }
@@ -134,7 +134,7 @@ const struct sockaddr* lookupNameServers(const std::string& hostname) {
       continue;
     }
     sin = (struct sockaddr*)&sin_buf;
-    memcpy(sin, ai_addr, ai_addr->sa_len);
+    memcpy(sin, ai_addr, sockaddr_size(ai_addr));
     break;
   }
 
@@ -145,10 +145,10 @@ const struct sockaddr* lookupNameServers(const std::string& hostname) {
 
 struct sockaddr* copySocketAddress(struct sockaddr* dst, const struct sockaddr* src) {
   if (src != nullptr) {
-    if (dst == nullptr || dst->sa_len < src->sa_len) {
-      dst = (struct sockaddr*)realloc(dst, src->sa_len);
+    if (dst == nullptr || dst->sa_family != src->sa_family) {
+      dst = (struct sockaddr*)realloc(dst, sizeof(union sockaddr_union));
     }
-    memcpy(dst, src, src->sa_len);
+    memcpy(dst, src, sockaddr_size(src));
   } else {
     free(dst);
     dst = nullptr;

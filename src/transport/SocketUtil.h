@@ -21,6 +21,7 @@
 #include <string>
 
 #ifndef WIN32
+#include <arpa/inet.h>
 #include <sys/socket.h>
 #else
 #include <Winsock2.h>
@@ -29,12 +30,16 @@
 
 namespace rocketmq {
 
+static inline size_t sockaddr_size(const struct sockaddr* sa) {
+  return sa->sa_family == AF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
+}
+
 struct sockaddr* ipPort2SocketAddress(uint32_t host, uint16_t port);
 
-const struct sockaddr* string2SocketAddress(const std::string& addr);
+struct sockaddr* string2SocketAddress(const std::string& addr);
 std::string socketAddress2String(const struct sockaddr* addr);
 
-const struct sockaddr* lookupNameServers(const std::string& hostname);
+struct sockaddr* lookupNameServers(const std::string& hostname);
 
 struct sockaddr* copySocketAddress(struct sockaddr* dst, const struct sockaddr* src);
 
