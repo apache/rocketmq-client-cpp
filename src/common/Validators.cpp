@@ -16,8 +16,7 @@
  */
 #include "Validators.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <regex>
 
 #include "MQProtos.h"
 #include "UtilAll.h"
@@ -36,19 +35,24 @@ bool Validators::regularExpressionMatcher(const std::string& origin, const std::
     return true;
   }
 
-  // Pattern pattern = Pattern.compile(patternStr);
-  // Matcher matcher = pattern.matcher(origin);
-
-  // return matcher.matches();
-  return true;
+  const std::regex regex(patternStr);
+  return std::regex_match(origin, regex);
 }
 
 std::string Validators::getGroupWithRegularExpression(const std::string& origin, const std::string& patternStr) {
-  /*Pattern pattern = Pattern.compile(patternStr);
-  Matcher matcher = pattern.matcher(origin);
-  while (matcher.find()) {
-  return matcher.group(0);
-  }*/
+  if (!UtilAll::isBlank(patternStr)) {
+    const std::regex regex(patternStr);
+    std::smatch match;
+
+    if (std::regex_match(origin, match, regex)) {
+      // The first sub_match is the whole string; the next
+      // sub_match is the first parenthesized expression.
+      if (match.size() == 2) {
+        std::ssub_match base_sub_match = match[1];
+        return base_sub_match.str();
+      }
+    }
+  }
   return "";
 }
 
