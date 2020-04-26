@@ -57,22 +57,24 @@ class TopicPublishInfo {
 
   void setHaveTopicRouterInfo(bool haveTopicRouterInfo) { m_haveTopicRouterInfo = haveTopicRouterInfo; }
 
-  MQMessageQueue& selectOneMessageQueue(const std::string& lastBrokerName) {
+  const MQMessageQueue& selectOneMessageQueue(const std::string& lastBrokerName) {
     if (!lastBrokerName.empty()) {
       auto index = m_sendWhichQueue.fetch_add(1);
+      // NOTE: If it possible, mq in same broker is nonadjacent.
       std::lock_guard<std::mutex> lock(m_queuelock);
-      for (size_t i = 0; i < m_messageQueueList.size(); i++) {
+      for (size_t i = 0; i < 2; i++) {
         auto pos = index++ % m_messageQueueList.size();
         auto& mq = m_messageQueueList[pos];
         if (mq.getBrokerName() != lastBrokerName) {
           return mq;
         }
       }
+      return m_messageQueueList[(index - 2) % m_messageQueueList.size()];
     }
     return selectOneMessageQueue();
   }
 
-  MQMessageQueue& selectOneMessageQueue() {
+  const MQMessageQueue& selectOneMessageQueue() {
     auto index = m_sendWhichQueue.fetch_add(1);
     std::lock_guard<std::mutex> lock(m_queuelock);
     auto pos = index % m_messageQueueList.size();
