@@ -70,7 +70,6 @@ class ProcessQueueInfo {
     outJson["droped"] = droped;
     outJson["lastPullTimestamp"] = UtilAll::to_string(lastPullTimestamp);
     outJson["lastConsumeTimestamp"] = UtilAll::to_string(lastConsumeTimestamp);
-
     return outJson;
   }
 

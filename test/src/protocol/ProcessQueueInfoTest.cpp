@@ -14,20 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "MQMessageExt.h"
 #include "ProcessQueueInfo.h"
 
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::MQMessageExt;
 using rocketmq::ProcessQueueInfo;
 
-TEST(processQueueInfo, init) {
+TEST(ProcessQueueInfoTest, Init) {
   ProcessQueueInfo processQueueInfo;
   EXPECT_EQ(processQueueInfo.commitOffset, 0);
   EXPECT_EQ(processQueueInfo.cachedMsgMinOffset, 0);
@@ -38,7 +38,7 @@ TEST(processQueueInfo, init) {
   EXPECT_EQ(processQueueInfo.transactionMsgCount, 0);
   EXPECT_EQ(processQueueInfo.locked, false);
   EXPECT_EQ(processQueueInfo.tryUnlockTimes, 0);
-  EXPECT_EQ(processQueueInfo.lastLockTimestamp, 123);
+  EXPECT_EQ(processQueueInfo.lastLockTimestamp, 0);
   EXPECT_EQ(processQueueInfo.droped, false);
   EXPECT_EQ(processQueueInfo.lastPullTimestamp, 0);
   EXPECT_EQ(processQueueInfo.lastConsumeTimestamp, 0);
@@ -63,7 +63,7 @@ TEST(processQueueInfo, init) {
   EXPECT_EQ(outJson["transactionMsgCount"].asInt(), 0);
   EXPECT_EQ(outJson["locked"].asBool(), true);
   EXPECT_EQ(outJson["tryUnlockTimes"].asInt(), 0);
-  EXPECT_EQ(outJson["lastLockTimestamp"], "123");
+  EXPECT_EQ(outJson["lastLockTimestamp"], "0");
   EXPECT_EQ(outJson["droped"].asBool(), true);
   EXPECT_EQ(outJson["lastPullTimestamp"], "0");
   EXPECT_EQ(outJson["lastConsumeTimestamp"], "0");
@@ -72,7 +72,6 @@ TEST(processQueueInfo, init) {
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "processQueueInfo.init";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "ProcessQueueInfoTest.*";
+  return RUN_ALL_TESTS();
 }

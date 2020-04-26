@@ -14,27 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
 #include <iostream>
-#include <map>
 
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include "MessageClientIDSetter.h"
 
-#include "StringIdMaker.h"
-
-using namespace std;
-using namespace rocketmq;
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
-TEST(StringIdMakerTest, get_unique_id) {
-  string unique_id = StringIdMaker::getInstance().createUniqID();
-  cout << "unique_id: " << unique_id << endl;
-  EXPECT_EQ(unique_id.size(), 32);
+using rocketmq::MessageClientIDSetter;
+
+TEST(MessageClientIDSetterTest, CreateUniqID) {
+  auto uniqueId = MessageClientIDSetter::createUniqID();
+  std::cout << "uniqueId: " << uniqueId << std::endl;
+  EXPECT_EQ(uniqueId.size(), 32);
+  EXPECT_EQ(uniqueId.substr(28), "0000");  // seq
 }
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
+  testing::GTEST_FLAG(throw_on_failure) = true;
+  testing::GTEST_FLAG(filter) = "MessageClientIDSetterTest.*";
   return RUN_ALL_TESTS();
 }

@@ -665,8 +665,8 @@ ResetOffsetRequestHeader* ResetOffsetRequestHeader::Decode(std::map<std::string,
   header->group = extFields.at("group");
   header->timestamp = std::stoll(extFields.at("timestamp"));
   header->isForce = UtilAll::stob(extFields.at("isForce"));
-  LOG_INFO("topic:%s, group:%s, timestamp:%lld, isForce:%d", header->topic.c_str(), header->group.c_str(),
-           header->timestamp, header->isForce);
+  LOG_INFO_NEW("topic:{}, group:{}, timestamp:{}, isForce:{}", header->topic, header->group, header->timestamp,
+               header->isForce);
   return header.release();
 }
 

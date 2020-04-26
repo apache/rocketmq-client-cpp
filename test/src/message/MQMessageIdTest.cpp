@@ -14,43 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <stdio.h>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "MQMessageId.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
 
 using namespace std;
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::MQMessageId;
 
-TEST(messageId, id) {
-  int host;
-  int port;
-  sockaddr addr = rocketmq::IPPort2socketAddress(inet_addr("127.0.0.1"), 10091);
-  MQMessageId id(addr, 1024);
+TEST(MessageIdTest, MessageId) {
+  MQMessageId msgId(rocketmq::string2SocketAddress("127.0.0.1:10091"), 1024);
+  EXPECT_EQ(rocketmq::socketAddress2String(msgId.getAddress()), "127.0.0.1:10091");
+  EXPECT_EQ(msgId.getOffset(), 1024);
 
-  rocketmq::socketAddress2IPPort(id.getAddress(), host, port);
-  EXPECT_EQ(host, inet_addr("127.0.0.1"));
-  EXPECT_EQ(port, 10091);
-  EXPECT_EQ(id.getOffset(), 1024);
+  msgId.setAddress(rocketmq::string2SocketAddress("127.0.0.2:10092"));
+  EXPECT_EQ(rocketmq::socketAddress2String(msgId.getAddress()), "127.0.0.2:10092");
 
-  id.setAddress(rocketmq::IPPort2socketAddress(inet_addr("127.0.0.2"), 10092));
-  id.setOffset(2048);
-
-  rocketmq::socketAddress2IPPort(id.getAddress(), host, port);
-  EXPECT_EQ(host, inet_addr("127.0.0.2"));
-  EXPECT_EQ(port, 10092);
-  EXPECT_EQ(id.getOffset(), 2048);
+  msgId.setOffset(2048);
+  EXPECT_EQ(msgId.getOffset(), 2048);
 }
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
-
-  testing::GTEST_FLAG(filter) = "messageId.id";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(throw_on_failure) = true;
+  testing::GTEST_FLAG(filter) = "MessageIdTest.*";
+  return RUN_ALL_TESTS();
 }

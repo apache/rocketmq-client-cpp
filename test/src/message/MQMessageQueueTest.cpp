@@ -14,18 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "MQMessageQueue.h"
 
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::MQMessageQueue;
 
-TEST(messageQueue, init) {
+TEST(MessageQueueTest, Init) {
   MQMessageQueue messageQueue;
   EXPECT_EQ(messageQueue.getBrokerName(), "");
   EXPECT_EQ(messageQueue.getTopic(), "");
@@ -37,25 +37,25 @@ TEST(messageQueue, init) {
   EXPECT_EQ(twoMessageQueue.getQueueId(), 1);
 
   MQMessageQueue threeMessageQueue("threeTestTopic", "threeTestBroker", 2);
-  MQMessageQueue frouMessageQueue(threeMessageQueue);
-  EXPECT_EQ(frouMessageQueue.getBrokerName(), "threeTestBroker");
-  EXPECT_EQ(frouMessageQueue.getTopic(), "threeTestTopic");
-  EXPECT_EQ(frouMessageQueue.getQueueId(), 2);
+  MQMessageQueue fourMessageQueue(threeMessageQueue);
+  EXPECT_EQ(fourMessageQueue.getBrokerName(), "threeTestBroker");
+  EXPECT_EQ(fourMessageQueue.getTopic(), "threeTestTopic");
+  EXPECT_EQ(fourMessageQueue.getQueueId(), 2);
 
-  frouMessageQueue = twoMessageQueue;
-  EXPECT_EQ(frouMessageQueue.getBrokerName(), "testBroker");
-  EXPECT_EQ(frouMessageQueue.getTopic(), "testTopic");
-  EXPECT_EQ(frouMessageQueue.getQueueId(), 1);
+  fourMessageQueue = twoMessageQueue;
+  EXPECT_EQ(fourMessageQueue.getBrokerName(), "testBroker");
+  EXPECT_EQ(fourMessageQueue.getTopic(), "testTopic");
+  EXPECT_EQ(fourMessageQueue.getQueueId(), 1);
 
-  frouMessageQueue.setBrokerName("frouTestBroker");
-  frouMessageQueue.setTopic("frouTestTopic");
-  frouMessageQueue.setQueueId(4);
-  EXPECT_EQ(frouMessageQueue.getBrokerName(), "frouTestBroker");
-  EXPECT_EQ(frouMessageQueue.getTopic(), "frouTestTopic");
-  EXPECT_EQ(frouMessageQueue.getQueueId(), 4);
+  fourMessageQueue.setBrokerName("fourTestBroker");
+  fourMessageQueue.setTopic("fourTestTopic");
+  fourMessageQueue.setQueueId(4);
+  EXPECT_EQ(fourMessageQueue.getBrokerName(), "fourTestBroker");
+  EXPECT_EQ(fourMessageQueue.getTopic(), "fourTestTopic");
+  EXPECT_EQ(fourMessageQueue.getQueueId(), 4);
 }
 
-TEST(messageQueue, operators) {
+TEST(MessageQueueTest, Operators) {
   MQMessageQueue messageQueue;
   EXPECT_EQ(messageQueue, messageQueue);
   EXPECT_EQ(messageQueue.compareTo(messageQueue), 0);
@@ -66,11 +66,17 @@ TEST(messageQueue, operators) {
 
   twoMessageQueue.setTopic("testTopic");
   EXPECT_FALSE(messageQueue == twoMessageQueue);
-  EXPECT_FALSE(messageQueue.compareTo(twoMessageQueue) == 0);
+  EXPECT_NE(messageQueue.compareTo(twoMessageQueue), 0);
+
+  twoMessageQueue = messageQueue;
+  EXPECT_TRUE(messageQueue == twoMessageQueue);
 
   twoMessageQueue.setQueueId(1);
   EXPECT_FALSE(messageQueue == twoMessageQueue);
-  EXPECT_FALSE(messageQueue.compareTo(twoMessageQueue) == 0);
+  EXPECT_NE(messageQueue.compareTo(twoMessageQueue), 0);
+
+  twoMessageQueue = messageQueue;
+  EXPECT_TRUE(messageQueue == twoMessageQueue);
 
   twoMessageQueue.setBrokerName("testBroker");
   EXPECT_FALSE(messageQueue == twoMessageQueue);
@@ -79,8 +85,8 @@ TEST(messageQueue, operators) {
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
-
-  testing::GTEST_FLAG(filter) = "messageQueue.*";
+  testing::GTEST_FLAG(throw_on_failure) = true;
+  testing::GTEST_FLAG(filter) = "MessageQueueTest.*";
   int itestts = RUN_ALL_TESTS();
   return itestts;
 }

@@ -14,161 +14,137 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
 #include <string>
 
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include "DataBlock.h"
 
-#include "dataBlock.h"
-
-using std::string;
-
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::MemoryBlock;
+using rocketmq::MemoryPool;
 
-TEST(memoryBlock, init) {
+TEST(MemoryBlockTest, Init) {
   MemoryBlock memoryBlock;
   EXPECT_EQ(memoryBlock.getSize(), 0);
   EXPECT_TRUE(memoryBlock.getData() == nullptr);
 
-  MemoryBlock twoMemoryBlock(-1, true);
+  MemoryPool twoMemoryBlock(0, true);
   EXPECT_EQ(twoMemoryBlock.getSize(), 0);
   EXPECT_TRUE(twoMemoryBlock.getData() == nullptr);
 
-  MemoryBlock threeMemoryBlock(10, true);
+  MemoryPool threeMemoryBlock(10, true);
   EXPECT_EQ(threeMemoryBlock.getSize(), 10);
   EXPECT_TRUE(threeMemoryBlock.getData() != nullptr);
 
-  MemoryBlock frouMemoryBlock(12, false);
+  MemoryPool frouMemoryBlock(12, false);
   EXPECT_EQ(frouMemoryBlock.getSize(), 12);
   EXPECT_TRUE(frouMemoryBlock.getData() != nullptr);
 
-  char* buf = (char*)malloc(sizeof(char) * 9);
-  strcpy(buf, "RocketMQ");
-  MemoryBlock fiveMemoryBlock(buf, -1);
-  EXPECT_EQ(fiveMemoryBlock.getSize(), -1);
+  char buf[] = "RocketMQ";
+  MemoryPool fiveMemoryBlock(buf, 0);
+  EXPECT_EQ(fiveMemoryBlock.getSize(), 0);
   EXPECT_TRUE(fiveMemoryBlock.getData() == nullptr);
 
-  char* bufNull = NULL;
-  MemoryBlock sixMemoryBlock(bufNull, 16);
+  MemoryPool sixMemoryBlock(nullptr, 16);
   EXPECT_EQ(sixMemoryBlock.getSize(), 16);
   EXPECT_TRUE(sixMemoryBlock.getData() != nullptr);
 
-  MemoryBlock sevenMemoryBlock(buf, 20);
-  EXPECT_EQ(sevenMemoryBlock.getSize(), 20);
-  sevenMemoryBlock.getData();
-  EXPECT_EQ(string(sevenMemoryBlock.getData()), string(buf));
+  MemoryPool sevenMemoryBlock(buf, sizeof(buf) - 1);
+  EXPECT_EQ(sevenMemoryBlock.getSize(), sizeof(buf) - 1);
+  EXPECT_EQ((std::string)sevenMemoryBlock, buf);
 
-  MemoryBlock nineMemoryBlock(sevenMemoryBlock);
+  MemoryPool nineMemoryBlock(sevenMemoryBlock);
   EXPECT_EQ(nineMemoryBlock.getSize(), sevenMemoryBlock.getSize());
-  EXPECT_EQ(string(nineMemoryBlock.getData()), string(sevenMemoryBlock.getData()));
+  EXPECT_EQ(nineMemoryBlock, sevenMemoryBlock);
 
-  MemoryBlock eightMemoryBlock(fiveMemoryBlock);
+  MemoryPool eightMemoryBlock(fiveMemoryBlock);
   EXPECT_EQ(eightMemoryBlock.getSize(), fiveMemoryBlock.getSize());
   EXPECT_TRUE(eightMemoryBlock.getData() == nullptr);
-
-  free(buf);
 }
 
-TEST(memoryBlock, operators) {
-  MemoryBlock memoryBlock(12, false);
+TEST(MemoryBlockTest, Operators) {
+  MemoryPool memoryBlock(8, false);
 
-  MemoryBlock operaterMemoryBlock = memoryBlock;
-
+  MemoryPool operaterMemoryBlock = memoryBlock;
   EXPECT_TRUE(operaterMemoryBlock == memoryBlock);
 
-  char* buf = (char*)malloc(sizeof(char) * 16);
-  memset(buf, 0, 16);
-  strcpy(buf, "RocketMQ");
-  MemoryBlock twoMemoryBlock(buf, 12);
+  char buf[] = "RocketMQ";
+  MemoryPool twoMemoryBlock(buf, sizeof(buf) - 1);
   EXPECT_FALSE(memoryBlock == twoMemoryBlock);
 
-  MemoryBlock threeMemoryBlock(buf, 16);
+  MemoryPool threeMemoryBlock(buf, 7);
   EXPECT_FALSE(memoryBlock == threeMemoryBlock);
   EXPECT_TRUE(twoMemoryBlock != threeMemoryBlock);
 
   threeMemoryBlock.fillWith(49);
-  EXPECT_EQ(string(threeMemoryBlock.getData(), 16), "1111111111111111");
+  EXPECT_EQ((std::string)threeMemoryBlock, "1111111");
 
   threeMemoryBlock.reset();
   EXPECT_EQ(threeMemoryBlock.getSize(), 0);
   EXPECT_TRUE(threeMemoryBlock.getData() == nullptr);
 
-  threeMemoryBlock.setSize(16, 0);
+  threeMemoryBlock.setSize(16, false);
   EXPECT_EQ(threeMemoryBlock.getSize(), 16);
-  // EXPECT_EQ(threeMemoryBlock.getData() , buf);
 
-  threeMemoryBlock.setSize(0, 0);
+  threeMemoryBlock.setSize(0, false);
   EXPECT_EQ(threeMemoryBlock.getSize(), 0);
   EXPECT_TRUE(threeMemoryBlock.getData() == nullptr);
 
-  MemoryBlock appendMemoryBlock;
+  MemoryPool appendMemoryBlock;
   EXPECT_EQ(appendMemoryBlock.getSize(), 0);
   EXPECT_TRUE(appendMemoryBlock.getData() == nullptr);
 
-  appendMemoryBlock.append(buf, -1);
+  appendMemoryBlock.append(buf, 0);
   EXPECT_EQ(appendMemoryBlock.getSize(), 0);
   EXPECT_TRUE(appendMemoryBlock.getData() == nullptr);
 
-  appendMemoryBlock.append(buf, 8);
+  appendMemoryBlock.append(buf, sizeof(buf) - 1);
   EXPECT_EQ(appendMemoryBlock.getSize(), 8);
 
-  MemoryBlock replaceWithMemoryBlock;
-  replaceWithMemoryBlock.append(buf, 8);
+  MemoryPool replaceWithMemoryBlock;
+  replaceWithMemoryBlock.append(buf, sizeof(buf) - 1);
 
-  char* aliyunBuf = (char*)malloc(sizeof(char) * 8);
-  memset(aliyunBuf, 0, 8);
-  strcpy(aliyunBuf, "aliyun");
+  char aliyunBuf[] = "aliyun";
   replaceWithMemoryBlock.replaceWith(aliyunBuf, 0);
   EXPECT_EQ(replaceWithMemoryBlock.getSize(), 8);
-  EXPECT_EQ(string(replaceWithMemoryBlock.getData(), 8), "RocketMQ");
+  EXPECT_EQ((std::string)replaceWithMemoryBlock, "RocketMQ");
 
-  replaceWithMemoryBlock.replaceWith(aliyunBuf, 6);
+  replaceWithMemoryBlock.replaceWith(aliyunBuf, sizeof(aliyunBuf) - 1);
   EXPECT_EQ(replaceWithMemoryBlock.getSize(), 6);
-  EXPECT_EQ(string(replaceWithMemoryBlock.getData(), strlen(aliyunBuf)), "aliyun");
+  EXPECT_EQ((std::string)replaceWithMemoryBlock, "aliyun");
 
-  MemoryBlock insertMemoryBlock;
-  insertMemoryBlock.append(buf, 8);
-  insertMemoryBlock.insert(aliyunBuf, -1, -1);
-  EXPECT_EQ(string(insertMemoryBlock.getData(), 8), "RocketMQ");
+  MemoryPool insertMemoryBlock;
+  insertMemoryBlock.append(buf, sizeof(buf) - 1);
+  insertMemoryBlock.insert(aliyunBuf, 0, 0);
+  EXPECT_EQ((std::string)insertMemoryBlock, "RocketMQ");
 
-  /*    MemoryBlock fourInsertMemoryBlock;
-   fourInsertMemoryBlock.append(buf , 8);
-   // 6+ (-1)
-   fourInsertMemoryBlock.insert(aliyunBuf , 8 , -1);
-   string fourStr( fourInsertMemoryBlock.getData());
-   EXPECT_TRUE( fourStr == "liyun");*/
+  MemoryPool twoInsertMemoryBlock;
+  twoInsertMemoryBlock.append(buf, sizeof(buf) - 1);
+  twoInsertMemoryBlock.insert(aliyunBuf, sizeof(aliyunBuf) - 1, 0);
+  EXPECT_EQ((std::string)twoInsertMemoryBlock, "aliyunRocketMQ");
 
-  MemoryBlock twoInsertMemoryBlock;
-  twoInsertMemoryBlock.append(buf, 8);
-  twoInsertMemoryBlock.insert(aliyunBuf, strlen(aliyunBuf), 0);
-  EXPECT_EQ(string(twoInsertMemoryBlock.getData(), 8 + strlen(aliyunBuf)), "aliyunRocketMQ");
+  MemoryPool threeInsertMemoryBlock;
+  threeInsertMemoryBlock.append(buf, sizeof(buf) - 1);
+  threeInsertMemoryBlock.insert(aliyunBuf, sizeof(aliyunBuf) - 1, 100);
+  EXPECT_EQ((std::string)threeInsertMemoryBlock, "RocketMQaliyun");
 
-  MemoryBlock threeInsertMemoryBlock;
-  threeInsertMemoryBlock.append(buf, 8);
-  threeInsertMemoryBlock.insert(aliyunBuf, 6, 100);
-  EXPECT_EQ(string(threeInsertMemoryBlock.getData(), 8 + strlen(aliyunBuf)), "RocketMQaliyun");
+  MemoryPool removeSectionMemoryBlock(buf, sizeof(buf) - 1);
+  removeSectionMemoryBlock.removeSection(8, 0);
+  EXPECT_EQ((std::string)removeSectionMemoryBlock, "RocketMQ");
 
-  MemoryBlock removeSectionMemoryBlock(buf, 8);
-  removeSectionMemoryBlock.removeSection(8, -1);
-  EXPECT_EQ(string(removeSectionMemoryBlock.getData(), 8), "RocketMQ");
-
-  MemoryBlock twoRemoveSectionMemoryBlock(buf, 8);
+  MemoryPool twoRemoveSectionMemoryBlock(buf, sizeof(buf) - 1);
   twoRemoveSectionMemoryBlock.removeSection(1, 4);
-  string str(twoRemoveSectionMemoryBlock.getData(), 4);
-  EXPECT_TRUE(str == "RtMQ");
-
-  free(buf);
-  free(aliyunBuf);
+  EXPECT_EQ((std::string)twoRemoveSectionMemoryBlock, "RtMQ");
 }
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "memoryBlock.*";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "MemoryBlockTest.*";
+  return RUN_ALL_TESTS();
 }

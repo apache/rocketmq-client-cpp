@@ -285,9 +285,9 @@ BuildRocketMQClient() {
     cmake -DLibevent_USE_STATIC_LIBS=ON -DJSONCPP_USE_STATIC_LIBS=ON -DBUILD_ROCKETMQ_STATIC=ON -DBUILD_ROCKETMQ_SHARED=OFF ..
   else
     if [ $codecov -eq 1 ]; then
-      cmake -DLibevent_USE_STATIC_LIBS=ON -DJSONCPP_USE_STATIC_LIBS=ON -DBUILD_ROCKETMQ_STATIC=ON -DBUILD_ROCKETMQ_SHARED=OFF -DRUN_UNIT_TEST=ON -DCODE_COVERAGE=ON ..
+      cmake .. -DLibevent_USE_STATIC_LIBS=ON -DJSONCPP_USE_STATIC_LIBS=ON -DBUILD_ROCKETMQ_STATIC=ON -DBUILD_ROCKETMQ_SHARED=OFF -DRUN_UNIT_TEST=ON -DCODE_COVERAGE=ON
     else
-      cmake -DLibevent_USE_STATIC_LIBS=ON -DJSONCPP_USE_STATIC_LIBS=ON -DBUILD_ROCKETMQ_STATIC=ON -DBUILD_ROCKETMQ_SHARED=OFF -DRUN_UNIT_TEST=ON ..
+      cmake .. -DLibevent_USE_STATIC_LIBS=ON -DJSONCPP_USE_STATIC_LIBS=ON -DBUILD_ROCKETMQ_STATIC=ON -DBUILD_ROCKETMQ_SHARED=OFF -DRUN_UNIT_TEST=ON
     fi
   fi
   if [ $verbose -eq 0 ]; then
@@ -310,20 +310,20 @@ BuildGoogleTest() {
   fi
 
   if [ -f ./bin/lib/libgtest.a ]; then
-    echo "libgteest already exist no need build test"
+    echo "libgtest already exist no need build test"
     return 0
   fi
 
   cd ${down_dir}
-  if [ -e release-1.8.1.tar.gz ]; then
+  if [ -e release-1.10.0.tar.gz ]; then
     echo "${fname_boost} is exist"
   else
-    wget https://github.com/abseil/googletest/archive/release-1.8.1.tar.gz
+    wget https://github.com/abseil/googletest/archive/release-1.10.0.tar.gz
   fi
-  if [ ! -d "googletest-release-1.8.1" ]; then
-    tar -zxvf release-1.8.1.tar.gz >googletest.txt 2>&1
+  if [ ! -d "googletest-release-1.10.0" ]; then
+    tar -zxvf release-1.10.0.tar.gz >googletest.txt 2>&1
   fi
-  cd googletest-release-1.8.1
+  cd googletest-release-1.10.0
   mkdir build
   cd build
   echo "build googletest static #####################"

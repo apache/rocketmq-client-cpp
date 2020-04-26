@@ -94,7 +94,7 @@ RemotingCommand* ClientRemotingProcessor::checkTransactionState(const std::strin
 
 RemotingCommand* ClientRemotingProcessor::notifyConsumerIdsChanged(RemotingCommand* request) {
   auto* requestHeader = request->decodeCommandCustomHeader<NotifyConsumerIdsChangedRequestHeader>();
-  LOG_INFO("notifyConsumerIdsChanged:%s", requestHeader->getConsumerGroup().c_str());
+  LOG_INFO_NEW("notifyConsumerIdsChanged, group:{}", requestHeader->getConsumerGroup());
   m_clientInstance->rebalanceImmediately();
   return nullptr;
 }
@@ -115,7 +115,7 @@ RemotingCommand* ClientRemotingProcessor::resetOffset(RemotingCommand* request) 
 
 RemotingCommand* ClientRemotingProcessor::getConsumerRunningInfo(const std::string& addr, RemotingCommand* request) {
   auto* requestHeader = request->decodeCommandCustomHeader<GetConsumerRunningInfoRequestHeader>();
-  LOG_INFO("getConsumerRunningInfo:%s", requestHeader->getConsumerGroup().c_str());
+  LOG_INFO("getConsumerRunningInfo, group:{}", requestHeader->getConsumerGroup());
 
   std::unique_ptr<RemotingCommand> response(
       new RemotingCommand(MQResponseCode::SYSTEM_ERROR, "not set any response code"));
@@ -178,7 +178,7 @@ RemotingCommand* ClientRemotingProcessor::receiveReplyMessage(RemotingCommand* r
                                  UtilAll::to_string(receiveTime));
     msg->setBornTimestamp(requestHeader->getBornTimestamp());
     msg->setReconsumeTimes(requestHeader->getReconsumeTimes());
-    LOG_DEBUG_NEW("receive reply message :{}", msg->toString());
+    LOG_DEBUG_NEW("receive reply message:{}", msg->toString());
 
     processReplyMessage(std::move(msg));
 

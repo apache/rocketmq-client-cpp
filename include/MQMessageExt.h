@@ -120,6 +120,7 @@ class ROCKETMQCLIENT_API MQMessageExt : public MQMessage {
 };
 
 class ROCKETMQCLIENT_API MQMessageClientExt : public MQMessageExt {
+ public:
   const std::string& getOffsetMsgId() const;
   void setOffsetMsgId(const std::string& offsetMsgId);
 

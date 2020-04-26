@@ -15,45 +15,37 @@
  * limitations under the License.
  */
 
-#include "string.h"
-
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
-
-#include "CPushConsumer.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "ConsumeType.h"
 #include "DefaultMQPushConsumer.h"
 #include "MQMessageListener.h"
 #include "SessionCredentials.h"
+#include "c/CPushConsumer.h"
 
-using std::string;
-
-using ::testing::_;
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::_;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Mock;
 using testing::Return;
 
 using rocketmq::DefaultMQPushConsumer;
-using rocketmq::elogLevel;
 using rocketmq::MessageListenerType;
 using rocketmq::MessageModel;
 using rocketmq::SessionCredentials;
 
 class MockDefaultMQPushConsumer : public DefaultMQPushConsumer {
  public:
-  MockDefaultMQPushConsumer(const string& groupname) : DefaultMQPushConsumer(groupname) {}
+  MockDefaultMQPushConsumer(const std::string& groupname) : DefaultMQPushConsumer(groupname) {}
 
-  MOCK_METHOD0(start, void());
-  MOCK_METHOD0(shutdown, void());
-  MOCK_METHOD2(setLogFileSizeAndNum, void(int, long));
-  MOCK_METHOD1(setLogLevel, void(elogLevel));
+  MOCK_METHOD(void, start, (), (override));
+  MOCK_METHOD(void, shutdown, (), (override));
 };
 
-TEST(cPushComsumer, infomock) {
+TEST(CPushComsumerTest, InfoMock) {
   MockDefaultMQPushConsumer* pushComsumer = new MockDefaultMQPushConsumer("testGroup");
-  CPushConsumer* consumer = (CPushConsumer*)pushComsumer;
+  CPushConsumer* consumer = reinterpret_cast<CPushConsumer*>(static_cast<DefaultMQPushConsumer*>(pushComsumer));
 
   EXPECT_CALL(*pushComsumer, start()).Times(1);
   EXPECT_EQ(StartPushConsumer(consumer), OK);
@@ -61,65 +53,59 @@ TEST(cPushComsumer, infomock) {
   EXPECT_CALL(*pushComsumer, shutdown()).Times(1);
   EXPECT_EQ(ShutdownPushConsumer(consumer), OK);
 
-  EXPECT_CALL(*pushComsumer, setLogFileSizeAndNum(1, 1)).Times(1);
-  pushComsumer->setLogFileSizeAndNum(1, 1);
-  EXPECT_EQ(SetPushConsumerLogFileNumAndSize(consumer, 1, 1), OK);
-
-  // EXPECT_CALL(*pushComsumer,setLogLevel(_)).Times(1);
-  EXPECT_EQ(SetPushConsumerLogLevel(consumer, E_LOG_LEVEL_FATAL), OK);
-
-  Mock::AllowLeak(pushComsumer);
+  delete pushComsumer;
 }
 
 int MessageCallBackFunc(CPushConsumer* consumer, CMessageExt* msg) {
   return 0;
 }
 
-TEST(cPushComsumer, info) {
-  CPushConsumer* cpushConsumer = CreatePushConsumer("testGroup");
-  DefaultMQPushConsumer* mqPushConsumer = (DefaultMQPushConsumer*)cpushConsumer;
+TEST(CPushComsumerTest, Info) {
+  CPushConsumer* cPushConsumer = CreatePushConsumer("testGroup");
+  DefaultMQPushConsumer* mqPushConsumer = reinterpret_cast<DefaultMQPushConsumer*>(cPushConsumer);
 
-  EXPECT_TRUE(cpushConsumer != NULL);
-  EXPECT_EQ(string(GetPushConsumerGroupID(cpushConsumer)), "testGroup");
+  EXPECT_TRUE(cPushConsumer != NULL);
+  EXPECT_STREQ(GetPushConsumerGroupID(cPushConsumer), "testGroup");
 
-  EXPECT_EQ(SetPushConsumerGroupID(cpushConsumer, "testGroupTwo"), OK);
-  EXPECT_EQ(string(GetPushConsumerGroupID(cpushConsumer)), "testGroupTwo");
+  EXPECT_EQ(SetPushConsumerGroupID(cPushConsumer, "testGroupTwo"), OK);
+  EXPECT_STREQ(GetPushConsumerGroupID(cPushConsumer), "testGroupTwo");
 
-  EXPECT_EQ(SetPushConsumerNameServerAddress(cpushConsumer, "127.0.0.1:9876"), OK);
+  EXPECT_EQ(SetPushConsumerNameServerAddress(cPushConsumer, "127.0.0.1:9876"), OK);
   EXPECT_EQ(mqPushConsumer->getNamesrvAddr(), "127.0.0.1:9876");
 
-  EXPECT_EQ(Subscribe(cpushConsumer, "testTopic", "testSub"), OK);
+  EXPECT_EQ(Subscribe(cPushConsumer, "testTopic", "testSub"), OK);
 
-  EXPECT_EQ(RegisterMessageCallbackOrderly(cpushConsumer, MessageCallBackFunc), OK);
-  EXPECT_EQ(mqPushConsumer->getMessageListenerType(), MessageListenerType::messageListenerOrderly);
+  EXPECT_EQ(RegisterMessageCallbackOrderly(cPushConsumer, MessageCallBackFunc), OK);
+  EXPECT_EQ(mqPushConsumer->getMessageListener()->getMessageListenerType(),
+            MessageListenerType::messageListenerOrderly);
+  EXPECT_EQ(UnregisterMessageCallbackOrderly(cPushConsumer), OK);
 
-  EXPECT_EQ(RegisterMessageCallback(cpushConsumer, MessageCallBackFunc), OK);
-  EXPECT_EQ(mqPushConsumer->getMessageListenerType(), MessageListenerType::messageListenerConcurrently);
+  EXPECT_EQ(RegisterMessageCallback(cPushConsumer, MessageCallBackFunc), OK);
+  EXPECT_EQ(mqPushConsumer->getMessageListener()->getMessageListenerType(),
+            MessageListenerType::messageListenerConcurrently);
+  EXPECT_EQ(UnregisterMessageCallback(cPushConsumer), OK);
 
-  EXPECT_EQ(UnregisterMessageCallbackOrderly(cpushConsumer), OK);
-  EXPECT_EQ(UnregisterMessageCallback(cpushConsumer), OK);
+  EXPECT_EQ(SetPushConsumerThreadCount(cPushConsumer, 10), OK);
+  EXPECT_EQ(mqPushConsumer->getConsumeThreadNum(), 10);
 
-  EXPECT_EQ(SetPushConsumerThreadCount(cpushConsumer, 10), OK);
-  EXPECT_EQ(mqPushConsumer->getConsumeThreadCount(), 10);
-
-  EXPECT_EQ(SetPushConsumerMessageBatchMaxSize(cpushConsumer, 1024), OK);
+  EXPECT_EQ(SetPushConsumerMessageBatchMaxSize(cPushConsumer, 1024), OK);
   EXPECT_EQ(mqPushConsumer->getConsumeMessageBatchMaxSize(), 1024);
 
-  EXPECT_EQ(SetPushConsumerInstanceName(cpushConsumer, "instance"), OK);
+  EXPECT_EQ(SetPushConsumerInstanceName(cPushConsumer, "instance"), OK);
   EXPECT_EQ(mqPushConsumer->getInstanceName(), "instance");
 
-  EXPECT_EQ(SetPushConsumerSessionCredentials(cpushConsumer, "accessKey", "secretKey", "channel"), OK);
-  SessionCredentials sessionCredentials = mqPushConsumer->getSessionCredentials();
-  EXPECT_EQ(sessionCredentials.getAccessKey(), "accessKey");
+  EXPECT_EQ(SetPushConsumerSessionCredentials(cPushConsumer, "accessKey", "secretKey", "channel"), OK);
+  // SessionCredentials sessionCredentials = mqPushConsumer->getSessionCredentials();
+  // EXPECT_EQ(sessionCredentials.getAccessKey(), "accessKey");
 
-  EXPECT_EQ(SetPushConsumerMessageModel(cpushConsumer, BROADCASTING), OK);
+  EXPECT_EQ(SetPushConsumerMessageModel(cPushConsumer, BROADCASTING), OK);
   EXPECT_EQ(mqPushConsumer->getMessageModel(), MessageModel::BROADCASTING);
 
-  Mock::AllowLeak(mqPushConsumer);
+  DestroyPushConsumer(cPushConsumer);
 }
 
-TEST(cPushComsumer, null) {
-  CPushConsumer* cpushConsumer = CreatePushConsumer("testGroup");
+TEST(CPushComsumerTest, CheckNull) {
+  CPushConsumer* cPushConsumer = CreatePushConsumer("testGroup");
 
   EXPECT_TRUE(CreatePushConsumer(NULL) == NULL);
   EXPECT_EQ(DestroyPushConsumer(NULL), NULL_POINTER);
@@ -130,7 +116,7 @@ TEST(cPushComsumer, null) {
   EXPECT_EQ(SetPushConsumerNameServerAddress(NULL, NULL), NULL_POINTER);
   EXPECT_EQ(Subscribe(NULL, NULL, NULL), NULL_POINTER);
   EXPECT_EQ(RegisterMessageCallbackOrderly(NULL, NULL), NULL_POINTER);
-  EXPECT_EQ(RegisterMessageCallbackOrderly(cpushConsumer, NULL), NULL_POINTER);
+  EXPECT_EQ(RegisterMessageCallbackOrderly(cPushConsumer, NULL), NULL_POINTER);
   EXPECT_EQ(RegisterMessageCallback(NULL, NULL), NULL_POINTER);
   EXPECT_EQ(UnregisterMessageCallbackOrderly(NULL), NULL_POINTER);
   EXPECT_EQ(UnregisterMessageCallback(NULL), NULL_POINTER);
@@ -142,11 +128,13 @@ TEST(cPushComsumer, null) {
   EXPECT_EQ(SetPushConsumerLogFileNumAndSize(NULL, 1, 1), NULL_POINTER);
   EXPECT_EQ(SetPushConsumerLogLevel(NULL, E_LOG_LEVEL_LEVEL_NUM), NULL_POINTER);
   EXPECT_EQ(SetPushConsumerMessageModel(NULL, BROADCASTING), NULL_POINTER);
+
+  DestroyPushConsumer(cPushConsumer);
 }
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
-  testing::GTEST_FLAG(filter) = "cPushComsumer.*";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(throw_on_failure) = true;
+  testing::GTEST_FLAG(filter) = "CPushComsumerTest.*";
+  return RUN_ALL_TESTS();
 }

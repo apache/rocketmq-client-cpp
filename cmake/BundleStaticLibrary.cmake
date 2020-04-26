@@ -16,7 +16,7 @@
 # ref: https://cristianadam.eu/20190501/bundling-together-static-libraries-with-cmake/
 
 set(STATIC_LIBRARY_REGEX "${CMAKE_STATIC_LIBRARY_SUFFIX}")
-string(REPLACE ".", "\\.", STATIC_LIBRARY_REGEX ${STATIC_LIBRARY_REGEX})
+string(REPLACE "." "\\." STATIC_LIBRARY_REGEX "${STATIC_LIBRARY_REGEX}")
 set(STATIC_LIBRARY_REGEX "^.+${STATIC_LIBRARY_REGEX}$")
 
 function(bundle_static_library tgt_name bundled_tgt_name)

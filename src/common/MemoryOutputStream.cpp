@@ -121,8 +121,8 @@ const void* MemoryOutputStream::getData() const {
     return externalData;
   }
 
-  if ((unsigned int)poolToUse->getSize() > size) {
-    static_cast<char*>(poolToUse->getData())[size] = 0;
+  if (poolToUse->getSize() > size) {
+    poolToUse->getData()[size] = 0;
   }
 
   return poolToUse->getData();

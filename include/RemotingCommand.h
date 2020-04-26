@@ -83,7 +83,7 @@ class ROCKETMQCLIENT_API RemotingCommand {
   template <class H>
   H* decodeCommandCustomHeader();
 
-  static RemotingCommand* Decode(MemoryBlockPtr2 package);
+  static RemotingCommand* Decode(MemoryBlockPtr2 package, bool havePackageLen = false);
 
   std::string toString() const;
 

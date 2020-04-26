@@ -44,6 +44,8 @@ class ROCKETMQCLIENT_API MQMessageQueue {
   void setQueueId(int queueId);
 
   bool operator==(const MQMessageQueue& mq) const;
+  bool operator!=(const MQMessageQueue& mq) const { return !operator==(mq); }
+
   bool operator<(const MQMessageQueue& mq) const;
   int compareTo(const MQMessageQueue& mq) const;
 

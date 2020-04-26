@@ -127,7 +127,7 @@ void MemoryPool::reset() {
 
 void MemoryPool::reset(char* data, size_t size) {
   if (size != 0) {
-    throw std::runtime_error("MemoryBlock can't set external pointer as data.");
+    throw std::runtime_error("MemoryPool can't set external pointer as data.");
   }
 
   std::free(data_);

@@ -107,27 +107,33 @@ MemoryBlockPtr RemotingCommand::encode() const {
   messageHeader[0] = ByteOrder::swapIfLittleEndian(packageLen);
   messageHeader[1] = ByteOrder::swapIfLittleEndian(headerLen);
 
-  auto* package = new MemoryPool(4 + packageLen);
+  std::unique_ptr<MemoryPool> package(new MemoryPool(4 + packageLen));
   package->copyFrom(messageHeader, 0, sizeof(messageHeader));
   package->copyFrom(header.data(), sizeof(messageHeader), headerLen);
   if (m_body != nullptr && m_body->getSize() > 0) {
     package->copyFrom(m_body->getData(), sizeof(messageHeader) + headerLen, m_body->getSize());
   }
 
-  return MemoryBlockPtr(package);
+  return std::move(package);
 }
 
-RemotingCommand* RemotingCommand::Decode(MemoryBlockPtr2 package) {
-  // decode package: 4 bytes(headerLength) + header + body
+RemotingCommand* RemotingCommand::Decode(MemoryBlockPtr2 package, bool havePackageLen) {
+  // decode package: [4 bytes(packageLength) +] 4 bytes(headerLength) + header + body
   int packageLength = package->getSize();
-
   uint32_t netHeaderLen;
-  package->copyTo(&netHeaderLen, 0, sizeof(netHeaderLen));
+  const char* data = package->getData();
+
+  if (havePackageLen) {
+    data += 4;
+    packageLength -= 4;
+    package->copyTo(&netHeaderLen, 4, sizeof(netHeaderLen));
+  } else {
+    package->copyTo(&netHeaderLen, 0, sizeof(netHeaderLen));
+  }
   int oriHeaderLen = ByteOrder::swapIfLittleEndian(netHeaderLen);
   int headerLength = oriHeaderLen & 0xFFFFFF;
 
   // decode header
-  const char* data = package->getData();
   const char* begin = data + 4;
   const char* end = data + 4 + headerLength;
 
@@ -164,7 +170,7 @@ RemotingCommand* RemotingCommand::Decode(MemoryBlockPtr2 package) {
   // decode body
   int bodyLength = packageLength - 4 - headerLength;
   if (bodyLength > 0) {
-    auto* body = new MemoryView(package, 4 + headerLength);
+    auto* body = new MemoryView(package, (havePackageLen ? 8 : 4) + headerLength);
     cmd->setBody(body);
   }
 

@@ -14,10 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INPUTSTREAM_H_INCLUDED
-#define INPUTSTREAM_H_INCLUDED
+#ifndef __INPUT_STREAM_H__
+#define __INPUT_STREAM_H__
 
 #include "DataBlock.h"
+
 //==============================================================================
 /** The base class for streams that read data.
 
@@ -28,6 +29,7 @@
     @see OutputStream, MemoryInputStream, BufferedInputStream, FileInputStream
 */
 namespace rocketmq {
+
 class ROCKETMQCLIENT_API InputStream {
  public:
   /** Destructor. */
@@ -189,5 +191,7 @@ class ROCKETMQCLIENT_API InputStream {
   //==============================================================================
   InputStream() {}
 };
+
 }  // namespace rocketmq
-#endif  // INPUTSTREAM_H_INCLUDED
+
+#endif  // __INPUT_STREAM_H__

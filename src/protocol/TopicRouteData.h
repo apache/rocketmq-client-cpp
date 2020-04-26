@@ -42,6 +42,7 @@ struct QueueData {
     return brokerName == other.brokerName && readQueueNums == other.readQueueNums &&
            writeQueueNums == other.writeQueueNums && perm == other.perm;
   }
+  bool operator!=(const QueueData& other) const { return !operator==(other); }
 };
 
 struct BrokerData {
@@ -53,6 +54,7 @@ struct BrokerData {
   bool operator==(const BrokerData& other) const {
     return brokerName == other.brokerName && brokerAddrs == other.brokerAddrs;
   }
+  bool operator!=(const BrokerData& other) const { return !operator==(other); }
 };
 
 class TopicRouteData;
@@ -134,6 +136,7 @@ class TopicRouteData {
     return m_brokerDatas == other.m_brokerDatas && m_orderTopicConf == other.m_orderTopicConf &&
            m_queueDatas == other.m_queueDatas;
   }
+  bool operator!=(const TopicRouteData& other) const { return !operator==(other); }
 
  private:
   std::string m_orderTopicConf;

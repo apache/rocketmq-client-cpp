@@ -58,14 +58,18 @@ if (NOT spdlog_FOUND)
 endif ()
 
 option(Libevent_USE_STATIC_LIBS "only find libevent static libs" OFF) # only find static libs
+if (NOT LIBEVENT_ROOT)
+    set(LIBEVENT_ROOT ${CMAKE_SOURCE_DIR}/bin)
+endif ()
 find_package(Libevent 2.0.21 REQUIRED)
-include_directories(${LIBEVENT_INCLUDE_DIRS})
 message(STATUS "** LIBEVENT_INCLUDE_DIR: ${LIBEVENT_INCLUDE_DIR}")
 message(STATUS "** LIBEVENT_LIBRARIES: ${LIBEVENT_LIBRARIES}")
 
 option(JSONCPP_USE_STATIC_LIBS "only find jsoncpp static libs" OFF) # only find static libs
+if (NOT JSONCPP_ROOT)
+    set(JSONCPP_ROOT ${CMAKE_SOURCE_DIR}/bin)
+endif ()
 find_package(Jsoncpp 0.10.6 REQUIRED)
-include_directories(${JSONCPP_INCLUDE_DIRS})
 message(STATUS "** JSONCPP_INCLUDE_DIRS: ${JSONCPP_INCLUDE_DIRS}")
 message(STATUS "** JSONCPP_LIBRARIES: ${JSONCPP_LIBRARIES}")
 
@@ -144,7 +148,7 @@ else ()
                 -g         # generate debug info
                 --coverage # sets all required flags
                 )
-        if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
+        if (NOT (CMAKE_VERSION VERSION_LESS "3.13"))
             target_link_options(coverage_config INTERFACE --coverage)
         else ()
             target_link_libraries(coverage_config INTERFACE --coverage)
@@ -163,5 +167,6 @@ add_subdirectory(example)
 option(RUN_UNIT_TEST "RUN_UNIT_TEST" OFF)
 if (RUN_UNIT_TEST)
     message(STATUS "** RUN_UNIT_TEST: Do execution testing")
+    enable_testing()
     add_subdirectory(test)
 endif ()

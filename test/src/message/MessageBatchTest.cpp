@@ -17,26 +17,46 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <string>
+#include <memory>
 
-#include "VirtualEnvUtil.h"
+#include "MQDecoder.h"
+#include "MQMessage.h"
+#include "MessageBatch.h"
 
 using testing::InitGoogleMock;
 using testing::InitGoogleTest;
 using testing::Return;
 
-using rocketmq::VirtualEnvUtil;
+using rocketmq::MessageBatch;
+using rocketmq::MQDecoder;
+using rocketmq::MQMessage;
 
-TEST(VirtualEnvUtilTest, BuildWithProjectGroup) {
-  EXPECT_EQ(VirtualEnvUtil::buildWithProjectGroup("origin", ""), "origin");
-  EXPECT_EQ(VirtualEnvUtil::buildWithProjectGroup("origin", "123"), "origin%PROJECT_123%");
+TEST(MessageBatchTest, Encode) {
+  std::vector<MQMessage*> msgs;
+  msgs.push_back(new MQMessage("topic", "*", "test1"));
+  std::unique_ptr<MessageBatch> msgBatch(MessageBatch::generateFromList(msgs));
+  auto encodeMessage = msgBatch->encode();
+  auto encodeMessage2 = MQDecoder::encodeMessages(msgs);
+  EXPECT_EQ(encodeMessage, encodeMessage2);
+  // 20 + bodyLen(test1) + 2 + propertiesLength(TAGS:*;WAIT:true;);
+  EXPECT_EQ(encodeMessage.size(), 44);
+
+  msgs.push_back(new MQMessage("topic", "*", "test2"));
+  msgs.push_back(new MQMessage("topic", "*", "test3"));
+  msgBatch.reset(MessageBatch::generateFromList(msgs));
+  encodeMessage = msgBatch->encode();
+  encodeMessage2 = MQDecoder::encodeMessages(msgs);
+  EXPECT_EQ(encodeMessage, encodeMessage2);
+  EXPECT_EQ(encodeMessage.size(), 132);  // 44 * 3
+
+  for (auto* msg : msgs) {
+    delete msg;
+  }
 }
-
-TEST(VirtualEnvUtilTest, ClearProjectGroup) {}
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "VirtualEnvUtilTest.*";
+  testing::GTEST_FLAG(filter) = "MessageBatchTest.*";
   return RUN_ALL_TESTS();
 }

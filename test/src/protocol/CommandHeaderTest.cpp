@@ -14,33 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include <json/json.h>
+#include <json/value.h>
+#include <json/writer.h>
 
+#include <map>
 #include <memory>
 #include <string>
 
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
-
-#include "json/value.h"
-#include "json/writer.h"
-
-#include "CommandHeader.h"
+#include "DataBlock.h"
 #include "MQClientException.h"
 #include "MessageSysFlag.h"
 #include "UtilAll.h"
-#include "dataBlock.h"
-#include "json/json.h"
+#include "protocol/header/CommandHeader.h"
 
-using std::shared_ptr;
-
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
 using Json::FastWriter;
 using Json::Value;
 
-using rocketmq::CommandHeader;
+using rocketmq::CommandCustomHeader;
 using rocketmq::ConsumerSendMsgBackRequestHeader;
 using rocketmq::CreateTopicRequestHeader;
 using rocketmq::GetConsumerListByGroupRequestHeader;
@@ -55,6 +52,7 @@ using rocketmq::GetMinOffsetRequestHeader;
 using rocketmq::GetMinOffsetResponseHeader;
 using rocketmq::GetRouteInfoRequestHeader;
 using rocketmq::MemoryBlock;
+using rocketmq::MemoryView;
 using rocketmq::NotifyConsumerIdsChangedRequestHeader;
 using rocketmq::PullMessageRequestHeader;
 using rocketmq::PullMessageResponseHeader;
@@ -69,29 +67,25 @@ using rocketmq::UnregisterClientRequestHeader;
 using rocketmq::UpdateConsumerOffsetRequestHeader;
 using rocketmq::ViewMessageRequestHeader;
 
-TEST(commandHeader, ConsumerSendMsgBackRequestHeader) {}
+TEST(CommandHeaderTest, ConsumerSendMsgBackRequestHeader) {}
 
-TEST(commandHeader, GetConsumerListByGroupResponseBody) {
+TEST(CommandHeaderTest, GetConsumerListByGroupResponseBody) {
   Value value;
-  value[0] = "body";
-  value[1] = 1;
+  value[0] = "consumer1";
+  value[1] = "consumer2";
 
   Value root;
   root["consumerIdList"] = value;
 
   FastWriter writer;
-  string data = writer.write(root);
+  std::string data = writer.write(root);
 
-  MemoryBlock* mem = new MemoryBlock(data.c_str(), data.size());
-  vector<string> cids;
-  GetConsumerListByGroupResponseBody::Decode(mem, cids);
-
-  EXPECT_EQ(cids.size(), 1);
-
-  delete mem;
+  std::unique_ptr<MemoryBlock> mem(new MemoryBlock(const_cast<char*>(data.data()), data.size()));
+  std::unique_ptr<GetConsumerListByGroupResponseBody> body(GetConsumerListByGroupResponseBody::Decode(*mem));
+  EXPECT_EQ(body->consumerIdList.size(), 2);
 }
 
-TEST(commandHeader, ResetOffsetRequestHeader) {
+TEST(CommandHeaderTest, ResetOffsetRequestHeader) {
   ResetOffsetRequestHeader header;
 
   header.setTopic("testTopic");
@@ -106,89 +100,54 @@ TEST(commandHeader, ResetOffsetRequestHeader) {
   header.setForceFlag(true);
   EXPECT_TRUE(header.getForceFlag());
 
-  Value value;
-  value["isForce"] = "false";
-  shared_ptr<ResetOffsetRequestHeader> headersh(
-      static_cast<ResetOffsetRequestHeader*>(ResetOffsetRequestHeader::Decode(value)));
-  EXPECT_EQ(headersh->getTopic(), "");
-  EXPECT_EQ(headersh->getGroup(), "");
-  // EXPECT_EQ(headersh->getTimeStamp(), 0);
-  EXPECT_FALSE(headersh->getForceFlag());
-  value["topic"] = "testTopic";
-  headersh.reset(static_cast<ResetOffsetRequestHeader*>(ResetOffsetRequestHeader::Decode(value)));
-  EXPECT_EQ(headersh->getTopic(), "testTopic");
-  EXPECT_EQ(headersh->getGroup(), "");
-  // EXPECT_EQ(headersh->getTimeStamp(), 0);
-  EXPECT_FALSE(headersh->getForceFlag());
-
-  value["topic"] = "testTopic";
-  value["group"] = "testGroup";
-  headersh.reset(static_cast<ResetOffsetRequestHeader*>(ResetOffsetRequestHeader::Decode(value)));
-  EXPECT_EQ(headersh->getTopic(), "testTopic");
-  EXPECT_EQ(headersh->getGroup(), "testGroup");
-  // EXPECT_EQ(headersh->getTimeStamp(), 0);
-  EXPECT_FALSE(headersh->getForceFlag());
-
-  value["topic"] = "testTopic";
-  value["group"] = "testGroup";
-  value["timestamp"] = "123";
-  headersh.reset(static_cast<ResetOffsetRequestHeader*>(ResetOffsetRequestHeader::Decode(value)));
-  EXPECT_EQ(headersh->getTopic(), "testTopic");
-  EXPECT_EQ(headersh->getGroup(), "testGroup");
-  EXPECT_EQ(headersh->getTimeStamp(), 123);
-  EXPECT_FALSE(headersh->getForceFlag());
-
-  value["topic"] = "testTopic";
-  value["group"] = "testGroup";
-  value["timestamp"] = "123";
-  value["isForce"] = "1";
-  headersh.reset(static_cast<ResetOffsetRequestHeader*>(ResetOffsetRequestHeader::Decode(value)));
-  EXPECT_EQ(headersh->getTopic(), "testTopic");
-  EXPECT_EQ(headersh->getGroup(), "testGroup");
-  EXPECT_EQ(headersh->getTimeStamp(), 123);
-  EXPECT_TRUE(headersh->getForceFlag());
+  std::map<std::string, std::string> resetOffsetFields;
+  resetOffsetFields["topic"] = "testTopic";
+  resetOffsetFields["group"] = "testGroup";
+  resetOffsetFields["timestamp"] = "123";
+  resetOffsetFields["isForce"] = "true";
+  std::unique_ptr<ResetOffsetRequestHeader> resetOffsetHeader(ResetOffsetRequestHeader::Decode(resetOffsetFields));
+  EXPECT_EQ(resetOffsetHeader->getTopic(), "testTopic");
+  EXPECT_EQ(resetOffsetHeader->getGroup(), "testGroup");
+  EXPECT_EQ(resetOffsetHeader->getTimeStamp(), 123);
+  EXPECT_TRUE(resetOffsetHeader->getForceFlag());
 }
 
-TEST(commandHeader, GetConsumerRunningInfoRequestHeader) {
+TEST(CommandHeaderTest, GetConsumerRunningInfoRequestHeader) {
   GetConsumerRunningInfoRequestHeader header;
   header.setClientId("testClientId");
   header.setConsumerGroup("testConsumer");
   header.setJstackEnable(true);
 
-  map<string, string> requestMap;
+  std::map<std::string, std::string> requestMap;
   header.SetDeclaredFieldOfCommandHeader(requestMap);
   EXPECT_EQ(requestMap["clientId"], "testClientId");
   EXPECT_EQ(requestMap["consumerGroup"], "testConsumer");
-  EXPECT_EQ(requestMap["jstackEnable"], "1");
+  EXPECT_EQ(requestMap["jstackEnable"], "true");
 
   Value outData;
   header.Encode(outData);
   EXPECT_EQ(outData["clientId"], "testClientId");
   EXPECT_EQ(outData["consumerGroup"], "testConsumer");
-  EXPECT_TRUE(outData["jstackEnable"].asBool());
+  EXPECT_EQ(outData["jstackEnable"], "true");
 
-  shared_ptr<GetConsumerRunningInfoRequestHeader> decodeHeader(
-      static_cast<GetConsumerRunningInfoRequestHeader*>(GetConsumerRunningInfoRequestHeader::Decode(outData)));
+  std::unique_ptr<GetConsumerRunningInfoRequestHeader> decodeHeader(
+      GetConsumerRunningInfoRequestHeader::Decode(requestMap));
   EXPECT_EQ(decodeHeader->getClientId(), "testClientId");
   EXPECT_EQ(decodeHeader->getConsumerGroup(), "testConsumer");
   EXPECT_TRUE(decodeHeader->isJstackEnable());
 }
 
-TEST(commandHeader, NotifyConsumerIdsChangedRequestHeader) {
-  Json::Value ext;
-  shared_ptr<NotifyConsumerIdsChangedRequestHeader> header(
-      static_cast<NotifyConsumerIdsChangedRequestHeader*>(NotifyConsumerIdsChangedRequestHeader::Decode(ext)));
-  EXPECT_EQ(header->getGroup(), "");
-
-  ext["consumerGroup"] = "testGroup";
-  header.reset(static_cast<NotifyConsumerIdsChangedRequestHeader*>(NotifyConsumerIdsChangedRequestHeader::Decode(ext)));
-  EXPECT_EQ(header->getGroup(), "testGroup");
+TEST(CommandHeaderTest, NotifyConsumerIdsChangedRequestHeader) {
+  std::map<std::string, std::string> extFields;
+  extFields["consumerGroup"] = "testGroup";
+  std::unique_ptr<NotifyConsumerIdsChangedRequestHeader> header(
+      NotifyConsumerIdsChangedRequestHeader::Decode(extFields));
+  EXPECT_EQ(header->getConsumerGroup(), "testGroup");
 }
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "commandHeader.*";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "CommandHeaderTest.*";
+  return RUN_ALL_TESTS();
 }

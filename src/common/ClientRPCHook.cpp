@@ -54,12 +54,12 @@ void ClientRPCHook::signCommand(RemotingCommand& command) {
   headerMap.insert(std::make_pair(SessionCredentials::AccessKey, sessionCredentials_.getAccessKey()));
   headerMap.insert(std::make_pair(SessionCredentials::ONSChannelKey, sessionCredentials_.getAuthChannel()));
 
-  LOG_DEBUG("before insert declared filed, MAP SIZE is:" SIZET_FMT "", headerMap.size());
+  LOG_DEBUG_NEW("before insert declared filed, MAP SIZE is:{}", headerMap.size());
   auto* header = command.readCustomHeader();
   if (header != nullptr) {
     header->SetDeclaredFieldOfCommandHeader(headerMap);
   }
-  LOG_DEBUG("after insert declared filed, MAP SIZE is:" SIZET_FMT "", headerMap.size());
+  LOG_DEBUG_NEW("after insert declared filed, MAP SIZE is:{}", headerMap.size());
 
   std::string totalMsg;
   for (const auto& it : headerMap) {
@@ -70,18 +70,18 @@ void ClientRPCHook::signCommand(RemotingCommand& command) {
     LOG_DEBUG_NEW("request have msgBody, length is:{}", body->getSize());
     totalMsg.append(body->getData(), body->getSize());
   }
-  LOG_DEBUG("total msg info are:%s, size is:" SIZET_FMT "", totalMsg.c_str(), totalMsg.size());
+  LOG_DEBUG_NEW("total msg info are:{}, size is:{}", totalMsg, totalMsg.size());
 
-  char* pSignature =
+  char* sign =
       rocketmqSignature::spas_sign(totalMsg.c_str(), totalMsg.size(), sessionCredentials_.getSecretKey().c_str());
-  if (pSignature != nullptr) {
-    std::string signature(static_cast<const char*>(pSignature));
+  if (sign != nullptr) {
+    std::string signature(static_cast<const char*>(sign));
     command.addExtField(SessionCredentials::Signature, signature);
     command.addExtField(SessionCredentials::AccessKey, sessionCredentials_.getAccessKey());
     command.addExtField(SessionCredentials::ONSChannelKey, sessionCredentials_.getAuthChannel());
-    rocketmqSignature::spas_mem_free(pSignature);
+    rocketmqSignature::spas_mem_free(sign);
   } else {
-    LOG_ERROR("signature for request failed");
+    LOG_ERROR_NEW("signature for request failed");
   }
 }
 

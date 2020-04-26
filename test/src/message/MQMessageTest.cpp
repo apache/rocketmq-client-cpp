@@ -14,24 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <stdio.h>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <map>
 #include <string>
 
 #include "MQMessage.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
 
-using namespace std;
-
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::MQMessage;
+using rocketmq::MQMessageConst;
 
-TEST(message, Init) {
+TEST(MessageTest, Init) {
   MQMessage messageOne;
   EXPECT_EQ(messageOne.getTopic(), "");
   EXPECT_EQ(messageOne.getBody(), "");
@@ -72,81 +70,68 @@ TEST(message, Init) {
   EXPECT_EQ(messageSix.getFlag(), 1);
 }
 
-TEST(message, info) {
+TEST(MessageTest, GetterAndSetter) {
   MQMessage message;
 
-  EXPECT_EQ(message.getTopic(), "");
+  EXPECT_EQ(message.getTopic(), "");  // default
   message.setTopic("testTopic");
   EXPECT_EQ(message.getTopic(), "testTopic");
-  char* topic = "testTopic";
+
+  const char* topic = "testTopic";
   message.setTopic(topic, 5);
   EXPECT_EQ(message.getTopic(), "testT");
 
-  EXPECT_EQ(message.getBody(), "");
+  EXPECT_EQ(message.getBody(), "");  // default
   message.setBody("testBody");
   EXPECT_EQ(message.getBody(), "testBody");
 
-  char* body = "testBody";
+  const char* body = "testBody";
   message.setBody(body, 5);
   EXPECT_EQ(message.getBody(), "testB");
 
-  string tags(message.getTags());
-  EXPECT_EQ(tags, "");
-  EXPECT_EQ(message.getFlag(), 0);
+  EXPECT_EQ(message.getTags(), "");  // default
+  message.setTags("testTags");
+  EXPECT_EQ(message.getTags(), "testTags");
+
+  EXPECT_EQ(message.getKeys(), "");  // default
+  message.setKeys("testKeys");
+  EXPECT_EQ(message.getKeys(), "testKeys");
+
+  EXPECT_EQ(message.getFlag(), 0);  // default
   message.setFlag(2);
   EXPECT_EQ(message.getFlag(), 2);
 
-  EXPECT_EQ(message.isWaitStoreMsgOK(), true);
+  EXPECT_EQ(message.isWaitStoreMsgOK(), true);  // default
   message.setWaitStoreMsgOK(false);
   EXPECT_EQ(message.isWaitStoreMsgOK(), false);
   message.setWaitStoreMsgOK(true);
   EXPECT_EQ(message.isWaitStoreMsgOK(), true);
 
-  string keys(message.getTags());
-  EXPECT_EQ(keys, "");
-  message.setKeys("testKeys");
-  EXPECT_EQ(message.getKeys(), "testKeys");
-
-  EXPECT_EQ(message.getDelayTimeLevel(), 0);
+  EXPECT_EQ(message.getDelayTimeLevel(), 0);  // default
   message.setDelayTimeLevel(1);
   EXPECT_EQ(message.getDelayTimeLevel(), 1);
-
-  message.setSysFlag(1);
-  EXPECT_EQ(message.getSysFlag(), 1);
 }
 
-TEST(message, properties) {
+TEST(MessageTest, Properties) {
   MQMessage message;
+
   EXPECT_EQ(message.getProperties().size(), 1);
-  EXPECT_STREQ(message.getProperty(MQMessage::PROPERTY_TRANSACTION_PREPARED).c_str(), "");
+  EXPECT_EQ(message.getProperty(MQMessageConst::PROPERTY_TRANSACTION_PREPARED), "");
 
-  message.setProperty(MQMessage::PROPERTY_TRANSACTION_PREPARED, "true");
+  message.putProperty(MQMessageConst::PROPERTY_TRANSACTION_PREPARED, "true");
   EXPECT_EQ(message.getProperties().size(), 2);
-  EXPECT_EQ(message.getSysFlag(), 4);
-  EXPECT_EQ(message.getProperty(MQMessage::PROPERTY_TRANSACTION_PREPARED), "true");
+  EXPECT_EQ(message.getProperty(MQMessageConst::PROPERTY_TRANSACTION_PREPARED), "true");
 
-  message.setProperty(MQMessage::PROPERTY_TRANSACTION_PREPARED, "false");
-  EXPECT_EQ(message.getProperties().size(), 2);
-  EXPECT_EQ(message.getSysFlag(), 0);
-  EXPECT_EQ(message.getProperty(MQMessage::PROPERTY_TRANSACTION_PREPARED), "false");
-
-  map<string, string> newProperties;
-
-  newProperties[MQMessage::PROPERTY_TRANSACTION_PREPARED] = "true";
+  std::map<std::string, std::string> newProperties;
+  newProperties[MQMessageConst::PROPERTY_TRANSACTION_PREPARED] = "false";
   message.setProperties(newProperties);
-  EXPECT_EQ(message.getSysFlag(), 4);
-  EXPECT_EQ(message.getProperty(MQMessage::PROPERTY_TRANSACTION_PREPARED), "true");
-
-  newProperties[MQMessage::PROPERTY_TRANSACTION_PREPARED] = "false";
-  message.setProperties(newProperties);
-  EXPECT_EQ(message.getSysFlag(), 0);
-  EXPECT_EQ(message.getProperty(MQMessage::PROPERTY_TRANSACTION_PREPARED), "false");
+  EXPECT_EQ(message.getProperties().size(), 1);
+  EXPECT_EQ(message.getProperty(MQMessageConst::PROPERTY_TRANSACTION_PREPARED), "false");
 }
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
-
-  testing::GTEST_FLAG(filter) = "message.info";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(throw_on_failure) = true;
+  testing::GTEST_FLAG(filter) = "MessageTest.*";
+  return RUN_ALL_TESTS();
 }

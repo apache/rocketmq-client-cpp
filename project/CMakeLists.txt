@@ -46,7 +46,7 @@ if (BUILD_ROCKETMQ_STATIC)
     add_library(rocketmq_static STATIC
             ${SRC_FILES})
     target_include_directories(rocketmq_static
-            PUBLIC ${PROJECT_SOURCE_DIR}/../include ${SUB_DIRS})
+            PUBLIC ${CMAKE_SOURCE_DIR}/include ${SUB_DIRS} ${JSONCPP_INCLUDE_DIRS} ${LIBEVENT_INCLUDE_DIRS})
     if (spdlog_FOUND)
         target_link_libraries(rocketmq_static
                 PUBLIC ${deplibs} Signature ${JSONCPP_LIBRARIES} ${LIBEVENT_LIBRARIES} spdlog::spdlog)
@@ -66,7 +66,7 @@ if (BUILD_ROCKETMQ_SHARED)
     add_library(rocketmq_shared SHARED
             ${SRC_FILES})
     target_include_directories(rocketmq_shared
-            PUBLIC ${PROJECT_SOURCE_DIR}/../include ${SUB_DIRS})
+            PUBLIC ${CMAKE_SOURCE_DIR}/include ${SUB_DIRS} ${JSONCPP_INCLUDE_DIRS} ${LIBEVENT_INCLUDE_DIRS})
     if (spdlog_FOUND)
         target_link_libraries(rocketmq_shared
                 PUBLIC ${deplibs} Signature ${JSONCPP_LIBRARIES} ${LIBEVENT_LIBRARIES} spdlog::spdlog)

@@ -77,8 +77,8 @@ PullResult PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
     }
 
     for (auto& msg : msgListFilterAgain) {
-      const auto& traFlag = msg->getProperty(MQMessageConst::PROPERTY_TRANSACTION_PREPARED);
-      if (UtilAll::stob(traFlag)) {
+      const auto& tranMsg = msg->getProperty(MQMessageConst::PROPERTY_TRANSACTION_PREPARED);
+      if (UtilAll::stob(tranMsg)) {
         msg->setTransactionId(msg->getProperty(MQMessageConst::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX));
       }
       MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_MIN_OFFSET, UtilAll::to_string(pullResult.minOffset));
