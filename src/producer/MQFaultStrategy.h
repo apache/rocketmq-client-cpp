@@ -46,7 +46,7 @@ class MQFaultStrategy {
     m_sendLatencyFaultEnable = sendLatencyFaultEnable;
   }
 
-  const MQMessageQueue& selectOneMessageQueue(TopicPublishInfo* tpInfo, const std::string& lastBrokerName);
+  const MQMessageQueue& selectOneMessageQueue(const TopicPublishInfo* tpInfo, const std::string& lastBrokerName);
 
   void updateFaultItem(const std::string& brokerName, const long currentLatency, bool isolation);
 

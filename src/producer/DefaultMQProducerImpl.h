@@ -105,7 +105,7 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
   void initTransactionEnv();
   void destroyTransactionEnv();
 
-  const MQMessageQueue& selectOneMessageQueue(TopicPublishInfo* tpInfo, const std::string& lastBrokerName);
+  const MQMessageQueue& selectOneMessageQueue(const TopicPublishInfo* tpInfo, const std::string& lastBrokerName);
   void updateFaultItem(const std::string& brokerName, const long currentLatency, bool isolation);
 
   void endTransaction(SendResult& sendResult,
@@ -124,7 +124,7 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
                              const MQMessageQueue& mq,
                              CommunicationMode communicationMode,
                              SendCallback* sendCallback,
-                             std::shared_ptr<TopicPublishInfo> topicPublishInfo,
+                             std::shared_ptr<const TopicPublishInfo> topicPublishInfo,
                              long timeout);
   SendResult* sendSelectImpl(MQMessagePtr msg,
                              MessageQueueSelector* selector,

@@ -104,14 +104,14 @@ class TopicRouteData {
    * @return Broker address.
    */
   std::string selectBrokerAddr() {
-    int bdSize = m_brokerDatas.size();
+    auto bdSize = m_brokerDatas.size();
     if (bdSize > 0) {
-      int bdIndex = std::rand() % bdSize;
+      auto bdIndex = std::rand() % bdSize;
       const auto& bd = m_brokerDatas[bdIndex];
       auto it = bd.brokerAddrs.find(MASTER_ID);
       if (it == bd.brokerAddrs.end()) {
-        int baSize = bd.brokerAddrs.size();
-        int baIndex = std::rand() % baSize;
+        auto baSize = bd.brokerAddrs.size();
+        auto baIndex = std::rand() % baSize;
         it = bd.brokerAddrs.begin();
         for (; baIndex > 0; baIndex--) {
           it++;

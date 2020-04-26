@@ -418,7 +418,7 @@ void DefaultMQProducerImpl::prepareSendRequest(MQMessagePtr msg, long timeout) {
   }
 }
 
-const MQMessageQueue& DefaultMQProducerImpl::selectOneMessageQueue(TopicPublishInfo* tpInfo,
+const MQMessageQueue& DefaultMQProducerImpl::selectOneMessageQueue(const TopicPublishInfo* tpInfo,
                                                                    const std::string& lastBrokerName) {
   return m_mqFaultStrategy->selectOneMessageQueue(tpInfo, lastBrokerName);
 }
@@ -480,7 +480,7 @@ SendResult* DefaultMQProducerImpl::sendDefaultImpl(MQMessagePtr msg,
           default:
             break;
         }
-      } catch (std::exception& e) {
+      } catch (const std::exception& e) {
         // TODO: 区分异常类型
         endTimestamp = UtilAll::currentTimeMillis();
         updateFaultItem(mq.getBrokerName(), endTimestamp - beginTimestampPrev, true);

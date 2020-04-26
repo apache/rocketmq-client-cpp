@@ -93,8 +93,10 @@ std::string MQClientInstance::getNamesrvAddr() const {
 
 TopicPublishInfoPtr MQClientInstance::topicRouteData2TopicPublishInfo(const std::string& topic,
                                                                       TopicRouteDataPtr route) {
-  TopicPublishInfoPtr info(new TopicPublishInfo());
+  auto info = std::make_shared<TopicPublishInfo>();
   info->setTopicRouteData(route);
+
+  auto& mqList = const_cast<TopicPublishInfo::QueuesVec&>(info->getMessageQueueList());
 
   std::string orderTopicConf = route->getOrderTopicConf();
   if (!orderTopicConf.empty()) {  // order msg
@@ -106,7 +108,7 @@ TopicPublishInfoPtr MQClientInstance::topicRouteData2TopicPublishInfo(const std:
       UtilAll::Split(item, broker, ':');
       int nums = atoi(item[1].c_str());
       for (int i = 0; i < nums; i++) {
-        info->getMessageQueueList().emplace_back(topic, item[0], i);
+        mqList.emplace_back(topic, item[0], i);
       }
     }
     info->setOrderTopic(true);
@@ -133,20 +135,19 @@ TopicPublishInfoPtr MQClientInstance::topicRouteData2TopicPublishInfo(const std:
         }
 
         for (int i = 0; i < qd.writeQueueNums; i++) {
-          info->getMessageQueueList().emplace_back(topic, qd.brokerName, i);
+          mqList.emplace_back(topic, qd.brokerName, i);
         }
       }
     }
 
     // sort, make brokerName is staggered.
-    std::sort(info->getMessageQueueList().begin(), info->getMessageQueueList().end(),
-              [](const MQMessageQueue& a, const MQMessageQueue& b) {
-                auto result = a.getQueueId() - b.getQueueId();
-                if (result == 0) {
-                  result = a.getBrokerName().compare(b.getBrokerName());
-                }
-                return result < 0;
-              });
+    std::sort(mqList.begin(), mqList.end(), [](const MQMessageQueue& a, const MQMessageQueue& b) {
+      auto result = a.getQueueId() - b.getQueueId();
+      if (result == 0) {
+        result = a.getBrokerName().compare(b.getBrokerName());
+      }
+      return result < 0;
+    });
 
     info->setOrderTopic(false);
   }
@@ -436,7 +437,6 @@ bool MQClientInstance::updateTopicRouteInfoFromNameServer(const std::string& top
           // update publish info
           {
             TopicPublishInfoPtr publishInfo(topicRouteData2TopicPublishInfo(topic, topicRouteData));
-            publishInfo->setHaveTopicRouterInfo(true);
             updateProducerTopicPublishInfo(topic, publishInfo);
           }
 
@@ -748,21 +748,17 @@ TopicPublishInfoPtr MQClientInstance::getTopicPublishInfoFromTable(const std::st
 
 bool MQClientInstance::isTopicInfoValidInTable(const std::string& topic) {
   std::lock_guard<std::mutex> lock(m_topicPublishInfoTableMutex);
-  const auto& it = m_topicPublishInfoTable.find(topic);
-  if (it != m_topicPublishInfoTable.end()) {
-    return it->second->ok();
-  }
-  return false;
+  return m_topicPublishInfoTable.find(topic) != m_topicPublishInfoTable.end();
 }
 
 TopicPublishInfoPtr MQClientInstance::tryToFindTopicPublishInfo(const std::string& topic) {
   auto topicPublishInfo = getTopicPublishInfoFromTable(topic);
-  if (nullptr == topicPublishInfo || !topicPublishInfo->ok()) {
+  if (nullptr == topicPublishInfo) {
     updateTopicRouteInfoFromNameServer(topic);
     topicPublishInfo = getTopicPublishInfoFromTable(topic);
   }
 
-  if (nullptr != topicPublishInfo && (topicPublishInfo->isHaveTopicRouterInfo() || topicPublishInfo->ok())) {
+  if (nullptr != topicPublishInfo && topicPublishInfo->ok()) {
     return topicPublishInfo;
   } else {
     LOG_INFO_NEW("updateTopicRouteInfoFromNameServer with default");
