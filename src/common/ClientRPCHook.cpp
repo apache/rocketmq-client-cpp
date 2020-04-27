@@ -50,10 +50,14 @@ void ClientRPCHook::doBeforeRequest(const string& remoteAddr, RemotingCommand& r
   for (; it != requestMap.end(); ++it) {
     totalMsg.append(it->second);
   }
-  if (request.getMsgBody().length() > 0) {
+  const MemoryBlock* pBody = request.GetBody();
+  if (pBody && pBody->getSize() > 0) {
+    const char* msg_body = const_cast<const char*>(static_cast<char*>(pBody->getData()));
+    LOG_DEBUG("msgBody is:%s, msgBody length is:%d", msg_body, pBody->getSize());
+    totalMsg.append(msg_body, pBody->getSize());
+  } else if (request.getMsgBody().length() > 0) {
     LOG_DEBUG("msgBody is:%s, msgBody length is:" SIZET_FMT "", request.getMsgBody().c_str(),
               request.getMsgBody().length());
-
     totalMsg.append(request.getMsgBody());
   }
   LOG_DEBUG("total msg info are:%s, size is:" SIZET_FMT "", totalMsg.c_str(), totalMsg.size());
