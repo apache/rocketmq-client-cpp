@@ -20,6 +20,11 @@
 
 namespace rocketmq {
 
+static const char* EnumStrings[] = {"FOUND", "NO_NEW_MSG", "NO_MATCHED_MSG",
+                                    "NO_LATEST_MSG"
+                                    "OFFSET_ILLEGAL",
+                                    "BROKER_TIMEOUT"};
+
 PullResult::PullResult() : pullStatus(NO_MATCHED_MSG), nextBeginOffset(0), minOffset(0), maxOffset(0) {}
 
 PullResult::PullResult(PullStatus status) : pullStatus(status), nextBeginOffset(0), minOffset(0), maxOffset(0) {}
@@ -50,5 +55,12 @@ PullResult::PullResult(PullStatus pullStatus,
       msgFoundList(std::forward<std::vector<MQMessageExtPtr2>>(src)) {}
 
 PullResult::~PullResult() = default;
+
+std::string PullResult::toString() const {
+  std::stringstream ss;
+  ss << "PullResult [ pullStatus=" << EnumStrings[pullStatus] << ", nextBeginOffset=" << nextBeginOffset
+     << ", minOffset=" << minOffset << ", maxOffset=" << maxOffset << ", msgFoundList=" << msgFoundList.size() << " ]";
+  return ss.str();
+}
 
 }  // namespace rocketmq

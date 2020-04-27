@@ -32,7 +32,7 @@
 #include "MQProtos.h"
 #include "OffsetStore.h"
 #include "PullAPIWrapper.h"
-#include "PullMessageService.h"
+#include "PullMessageService.hpp"
 #include "PullSysFlag.h"
 #include "RebalancePushImpl.h"
 #include "SocketUtil.h"
@@ -93,6 +93,13 @@ class AsyncPullCallback : public AutoDeletePullCallback {
         m_pullRequest->setNextOffset(result.nextBeginOffset);
         defaultMQPushConsumer->correctTagsOffset(m_pullRequest);
         defaultMQPushConsumer->executePullRequestImmediately(m_pullRequest);
+        break;
+      case NO_LATEST_MSG:
+        m_pullRequest->setNextOffset(result.nextBeginOffset);
+        defaultMQPushConsumer->correctTagsOffset(m_pullRequest);
+        defaultMQPushConsumer->executePullRequestLater(
+            m_pullRequest,
+            defaultMQPushConsumer->getDefaultMQPushConsumerConfig()->getPullTimeDelayMillsWhenException());
         break;
       case OFFSET_ILLEGAL: {
         LOG_WARN_NEW("the pull request offset illegal, {} {}", m_pullRequest->toString(), result.toString());

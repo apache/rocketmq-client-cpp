@@ -26,7 +26,7 @@
 #include "MQClientManager.h"
 #include "MQVersion.h"
 #include "PermName.h"
-#include "PullMessageService.h"
+#include "PullMessageService.hpp"
 #include "PullRequest.h"
 #include "RebalanceImpl.h"
 #include "RebalanceService.h"

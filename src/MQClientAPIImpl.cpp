@@ -287,7 +287,11 @@ PullResult* MQClientAPIImpl::processPullResponse(RemotingCommand* response) {
       pullStatus = NO_NEW_MSG;
       break;
     case PULL_RETRY_IMMEDIATELY:
-      pullStatus = NO_MATCHED_MSG;
+      if ("OFFSET_OVERFLOW_BADLY" == response->getRemark()) {
+        pullStatus = NO_LATEST_MSG;
+      } else {
+        pullStatus = NO_MATCHED_MSG;
+      }
       break;
     case PULL_OFFSET_MOVED:
       pullStatus = OFFSET_ILLEGAL;

@@ -58,7 +58,7 @@ class TopicPublishInfo {
       auto mqSize = m_messageQueueList.size();
       if (mqSize <= 1) {
         if (mqSize == 0) {
-          LOG_ERROR_NEW("FIXME: messageQueueList is empty");
+          LOG_ERROR_NEW("[BUG] messageQueueList is empty");
           THROW_MQEXCEPTION(MQClientException, "messageQueueList is empty", -1);
         }
         return m_messageQueueList[0];
