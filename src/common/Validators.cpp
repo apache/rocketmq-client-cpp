@@ -35,13 +35,18 @@ bool Validators::regularExpressionMatcher(const std::string& origin, const std::
     return true;
   }
 
-  const std::regex regex(patternStr);
+#if defined(__GNUC__) && ((__GNUC__ < 4) || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8))
+  return true;
+#else
+  const std::regex regex(patternStr, std::regex::extended);
   return std::regex_match(origin, regex);
+#endif
 }
 
 std::string Validators::getGroupWithRegularExpression(const std::string& origin, const std::string& patternStr) {
   if (!UtilAll::isBlank(patternStr)) {
-    const std::regex regex(patternStr);
+#if !defined(__GNUC__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 8)
+    const std::regex regex(patternStr, std::regex::extended);
     std::smatch match;
 
     if (std::regex_match(origin, match, regex)) {
@@ -52,6 +57,7 @@ std::string Validators::getGroupWithRegularExpression(const std::string& origin,
         return base_sub_match.str();
       }
     }
+#endif
   }
   return "";
 }
