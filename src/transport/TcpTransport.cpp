@@ -31,18 +31,21 @@
 
 namespace rocketmq {
 
-TcpTransport::TcpTransport(ReadCallback callback)
+TcpTransport::TcpTransport(ReadCallback readCallback,
+                           CloseCallback closeCallback,
+                           std::unique_ptr<TcpTransportInfo> info)
     : m_event(nullptr),
       m_tcpConnectStatus(TCP_CONNECT_STATUS_CREATED),
       m_statusMutex(),
       m_statusEvent(),
-      m_readCallback(callback) {
+      m_readCallback(readCallback),
+      m_closeCallback(closeCallback),
+      m_info(std::move(info)) {
   m_startTime = UtilAll::currentTimeMillis();
 }
 
 TcpTransport::~TcpTransport() {
   closeBufferEvent();
-  m_readCallback = nullptr;
 }
 
 TcpConnectStatus TcpTransport::closeBufferEvent() {
@@ -52,6 +55,9 @@ TcpConnectStatus TcpTransport::closeBufferEvent() {
       m_event->disable(EV_READ | EV_WRITE);  // this is need for avoid block on event_base_dispatch.
       // close the socket!!!
       m_event->close();
+    }
+    if (m_closeCallback != nullptr) {
+      m_closeCallback(shared_from_this());
     }
   }
   return TCP_CONNECT_STATUS_CLOSED;
@@ -104,18 +110,15 @@ TcpConnectStatus TcpTransport::connect(const std::string& addr, int timeoutMilli
   TcpConnectStatus curStatus = TCP_CONNECT_STATUS_CREATED;
   if (setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_CONNECTING)) {
     // create BufferEvent
-    m_event.reset(
-        EventLoop::GetDefaultEventLoop()->createBufferEvent(-1, /* BEV_OPT_CLOSE_ON_FREE | */ BEV_OPT_THREADSAFE));
+    m_event.reset(EventLoop::GetDefaultEventLoop()->createBufferEvent(-1, BEV_OPT_THREADSAFE));
     if (nullptr == m_event) {
       LOG_ERROR_NEW("create BufferEvent failed");
       return closeBufferEvent();
     }
 
     // then, configure BufferEvent
-    TcpTransportPtr2 weak_this(shared_from_this());
-    m_event->setCallback(
-        std::bind(&TcpTransport::DataArrived, weak_this, std::placeholders::_1), nullptr,
-        std::bind(&TcpTransport::EventOccurred, weak_this, std::placeholders::_1, std::placeholders::_2));
+    m_event->setCallback(std::bind(&TcpTransport::dataArrived, this, std::placeholders::_1), nullptr,
+                         std::bind(&TcpTransport::eventOccurred, this, std::placeholders::_1, std::placeholders::_2));
     m_event->setWatermark(EV_READ, 4, 0);
     m_event->enable(EV_READ | EV_WRITE);
 
@@ -141,17 +144,12 @@ TcpConnectStatus TcpTransport::connect(const std::string& addr, int timeoutMilli
   return TCP_CONNECT_STATUS_CONNECTED;
 }
 
-void TcpTransport::EventOccurred(TcpTransportPtr2 transport, BufferEvent& event, short what) {
+void TcpTransport::eventOccurred(BufferEvent& event, short what) {
   socket_t fd = event.getfd();
-  LOG_INFO("eventcb: received event:%x on fd:%d", what, fd);
-
-  auto channel = transport.lock();
-  if (nullptr == channel) {
-    return;
-  }
+  LOG_INFO_NEW("eventcb: received event:0x{:X} on fd:{}", what, fd);
 
   if (what & BEV_EVENT_CONNECTED) {
-    LOG_INFO("eventcb: connect to fd:%d successfully", fd);
+    LOG_INFO_NEW("eventcb: connect to fd:{} successfully", fd);
 
     // disable Nagle
     int val = 1;
@@ -166,24 +164,25 @@ void TcpTransport::EventOccurred(TcpTransportPtr2 transport, BufferEvent& event,
     }
 
     TcpConnectStatus curStatus = TCP_CONNECT_STATUS_CONNECTING;
-    channel->setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_CONNECTED);
+    setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_CONNECTED);
   } else if (what & (BEV_EVENT_ERROR | BEV_EVENT_EOF)) {
-    LOG_INFO("eventcb: received error event:%x on fd:%d", what, fd);
+    LOG_INFO_NEW("eventcb: received error event:0x{:X} on fd:{}", what, fd);
     // if error, stop callback.
-    TcpConnectStatus curStatus = channel->getTcpConnectStatus();
-    while (curStatus != TCP_CONNECT_STATUS_CLOSED && curStatus != TCP_CONNECT_STATUS_FAILED) {
-      if (channel->setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_FAILED)) {
-        event.setCallback(nullptr, nullptr, nullptr);
-        break;
-      }
-      curStatus = channel->getTcpConnectStatus();
-    }
+    closeBufferEvent();
+    // TcpConnectStatus curStatus = getTcpConnectStatus();
+    // while (curStatus != TCP_CONNECT_STATUS_CLOSED && curStatus != TCP_CONNECT_STATUS_FAILED) {
+    //   if (setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_FAILED)) {
+    //     event.setCallback(nullptr, nullptr, nullptr);
+    //     break;
+    //   }
+    //   curStatus = getTcpConnectStatus();
+    // }
   } else {
-    LOG_ERROR("eventcb: received error event:%d on fd:%d", what, fd);
+    LOG_ERROR_NEW("eventcb: received error event:0x{:X} on fd:{}", what, fd);
   }
 }
 
-void TcpTransport::DataArrived(std::weak_ptr<TcpTransport> transport, BufferEvent& event) {
+void TcpTransport::dataArrived(BufferEvent& event) {
   /* This callback is invoked when there is data to read on bev. */
 
   // protocol:  <length> <header length> <header data> <body data>
@@ -193,11 +192,6 @@ void TcpTransport::DataArrived(std::weak_ptr<TcpTransport> transport, BufferEven
   //     2, big endian 4 bytes int, its length is 3
   //     3, use json to serialization data
   //     4, application could self-defined binary data
-
-  auto channel = transport.lock();
-  if (nullptr == channel) {
-    return;
-  }
 
   struct evbuffer* input = event.getInput();
   while (1) {
@@ -236,7 +230,7 @@ void TcpTransport::DataArrived(std::weak_ptr<TcpTransport> transport, BufferEven
       event.read(&packageLength, 4);  // skip length field
       event.read(msg->getData(), msgLen);
 
-      channel->messageReceived(std::move(msg));
+      messageReceived(std::move(msg));
     }
   }
 }

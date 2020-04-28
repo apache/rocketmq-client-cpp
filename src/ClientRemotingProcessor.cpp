@@ -35,7 +35,7 @@ ClientRemotingProcessor::~ClientRemotingProcessor() = default;
 
 RemotingCommand* ClientRemotingProcessor::processRequest(TcpTransportPtr channel, RemotingCommand* request) {
   const auto& addr = channel->getPeerAddrAndPort();
-  LOG_DEBUG("request Command received:processRequest, addr:%s, code:%d", addr.data(), request->getCode());
+  LOG_DEBUG_NEW("processRequest, code:{}, addr:{}", request->getCode(), addr);
   switch (request->getCode()) {
     case CHECK_TRANSACTION_STATE:
       return checkTransactionState(addr, request);

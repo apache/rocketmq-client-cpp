@@ -17,12 +17,14 @@
 #ifndef __RESPONSE_FUTURE_H__
 #define __RESPONSE_FUTURE_H__
 
-#include "concurrent/latch.hpp"
-
 #include "InvokeCallback.h"
 #include "RemotingCommand.h"
+#include "concurrent/latch.hpp"
 
 namespace rocketmq {
+
+class ResponseFuture;
+typedef std::shared_ptr<ResponseFuture> ResponseFuturePtr;
 
 class ResponseFuture {
  public:

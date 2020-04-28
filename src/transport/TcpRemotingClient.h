@@ -64,18 +64,20 @@ class TcpRemotingClient {
  private:
   static bool SendCommand(TcpTransportPtr channel, RemotingCommand& msg);
 
+  void channelClosed(TcpTransportPtr channel);
+
   void messageReceived(MemoryBlockPtr mem, TcpTransportPtr channel);
   void processMessageReceived(MemoryBlockPtr2 mem, TcpTransportPtr channel);
   void processRequestCommand(std::unique_ptr<RemotingCommand> cmd, TcpTransportPtr channel);
-  void processResponseCommand(std::unique_ptr<RemotingCommand> cmd);
+  void processResponseCommand(std::unique_ptr<RemotingCommand> cmd, TcpTransportPtr channel);
 
   // timeout daemon
   void scanResponseTablePeriodically();
   void scanResponseTable();
 
-  TcpTransportPtr GetTransport(const std::string& addr, bool needResponse);
-  TcpTransportPtr CreateTransport(const std::string& addr, bool needResponse);
-  TcpTransportPtr CreateNameServerTransport(bool needResponse);
+  TcpTransportPtr GetTransport(const std::string& addr);
+  TcpTransportPtr CreateTransport(const std::string& addr);
+  TcpTransportPtr CreateNameServerTransport();
 
   bool CloseTransport(const std::string& addr, TcpTransportPtr channel);
   bool CloseNameServerTransport(TcpTransportPtr channel);
@@ -95,21 +97,17 @@ class TcpRemotingClient {
   void doAfterRpcHooks(const std::string& addr, RemotingCommand& request, RemotingCommand* response, bool toSent);
 
   // future management
-  void addResponseFuture(int opaque, std::shared_ptr<ResponseFuture> future);
-  std::shared_ptr<ResponseFuture> findAndDeleteResponseFuture(int opaque);
+  void putResponseFuture(TcpTransportPtr channel, int opaque, ResponseFuturePtr future);
+  ResponseFuturePtr popResponseFuture(TcpTransportPtr channel, int opaque);
 
  private:
   using ProcessorMap = std::map<int, RequestProcessor*>;
   using TransportMap = std::map<std::string, std::shared_ptr<TcpTransport>>;
-  using FutureMap = std::map<int, std::shared_ptr<ResponseFuture>>;
 
   ProcessorMap m_processorTable;  // code -> processor
 
   TransportMap m_transportTable;  // addr -> transport
   std::timed_mutex m_transportTableMutex;
-
-  FutureMap m_futureTable;  // opaque -> future
-  std::mutex m_futureTableMutex;
 
   // FIXME: not strict thread-safe in abnormal scence
   std::vector<RPCHookPtr> m_rpcHooks;  // for Acl / ONS
@@ -121,7 +119,7 @@ class TcpRemotingClient {
   std::timed_mutex m_namesrvLock;
   std::vector<std::string> m_namesrvAddrList;
   std::string m_namesrvAddrChoosed;
-  unsigned int m_namesrvIndex;
+  size_t m_namesrvIndex;
 
   thread_pool_executor m_dispatchExecutor;
   thread_pool_executor m_handleExecutor;

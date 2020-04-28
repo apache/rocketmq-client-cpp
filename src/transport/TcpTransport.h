@@ -36,16 +36,23 @@ typedef enum TcpConnectStatus {
 
 class TcpTransport;
 typedef std::shared_ptr<TcpTransport> TcpTransportPtr;
-typedef std::weak_ptr<TcpTransport> TcpTransportPtr2;
+
+class TcpTransportInfo {
+ public:
+  virtual ~TcpTransportInfo() = default;
+};
 
 class TcpTransport : public noncopyable, public std::enable_shared_from_this<TcpTransport> {
  public:
-  typedef std::function<void(MemoryBlockPtr, TcpTransportPtr)> ReadCallback;
+  typedef std::function<void(MemoryBlockPtr, TcpTransportPtr) noexcept> ReadCallback;
+  typedef std::function<void(TcpTransportPtr) noexcept> CloseCallback;
 
  public:
-  static TcpTransportPtr CreateTransport(ReadCallback handle = nullptr) {
+  static TcpTransportPtr CreateTransport(ReadCallback readCallback,
+                                         CloseCallback closeCallback,
+                                         std::unique_ptr<TcpTransportInfo> info) {
     // transport must be managed by smart pointer
-    return TcpTransportPtr(new TcpTransport(handle));
+    return TcpTransportPtr(new TcpTransport(readCallback, closeCallback, std::move(info)));
   }
 
   virtual ~TcpTransport();
@@ -59,13 +66,15 @@ class TcpTransport : public noncopyable, public std::enable_shared_from_this<Tcp
   const std::string& getPeerAddrAndPort();
   const uint64_t getStartTime() const;
 
+  TcpTransportInfo* getInfo() { return m_info.get(); }
+
  private:
   // don't instance object directly.
-  TcpTransport(ReadCallback callback);
+  TcpTransport(ReadCallback readCallback, CloseCallback closeCallback, std::unique_ptr<TcpTransportInfo> info);
 
-  // buffer
-  static void DataArrived(TcpTransportPtr2 transport, BufferEvent& event);
-  static void EventOccurred(TcpTransportPtr2 transport, BufferEvent& event, short what);
+  // BufferEvent callback
+  void dataArrived(BufferEvent& event);
+  void eventOccurred(BufferEvent& event, short what);
 
   void messageReceived(MemoryBlockPtr mem);
 
@@ -77,14 +86,18 @@ class TcpTransport : public noncopyable, public std::enable_shared_from_this<Tcp
  private:
   uint64_t m_startTime;
 
-  std::shared_ptr<BufferEvent> m_event;  // NOTE: use m_event in callback is unsafe.
+  std::unique_ptr<BufferEvent> m_event;  // NOTE: use m_event in callback is unsafe.
 
   std::atomic<TcpConnectStatus> m_tcpConnectStatus;
   std::mutex m_statusMutex;
   std::condition_variable m_statusEvent;
 
-  // read data callback
+  // callback
   ReadCallback m_readCallback;
+  CloseCallback m_closeCallback;
+
+  // info
+  std::unique_ptr<TcpTransportInfo> m_info;
 };
 
 }  // namespace rocketmq

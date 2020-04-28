@@ -211,30 +211,21 @@ void BufferEvent::write_callback(struct bufferevent* bev, void* ctx) {
   }
 }
 
-static std::string buildPeerAddrPort(socket_t fd) {
-  sockaddr_in addr;
-  socklen_t len = sizeof(addr);
-
-  getpeername(fd, (struct sockaddr*)&addr, &len);
-
-  std::string addrPort = socketAddress2String((struct sockaddr*)&addr);
-  LOG_DEBUG("socket: %d, addr: %s", fd, addrPort);
-
-  return addrPort;
-}
-
 int BufferEvent::connect(const std::string& addr) {
-  m_peerAddrPort = addr;
   auto* sa = string2SocketAddress(addr);
+  m_peerAddrPort = socketAddress2String(sa);  // resolve domain
   return bufferevent_socket_connect(m_bufferEvent, sa, sockaddr_size(sa));
 }
 
 int BufferEvent::close() {
+  int ret = -1;
   bufferevent_lock(m_bufferEvent);
   auto fd = bufferevent_getfd(m_bufferEvent);
-  int ret = -1;
-  if (fd >= 0) {
+  if (fd >= 0 && bufferevent_setfd(m_bufferEvent, -1) != -1) {
     ret = evutil_closesocket(fd);
+    if (ret != 0) {
+      LOG_ERROR_NEW("[CRITICAL] close socket faild, fd:{}", fd);
+    }
   }
   bufferevent_unlock(m_bufferEvent);
   return ret;
