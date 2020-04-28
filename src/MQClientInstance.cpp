@@ -302,6 +302,7 @@ void MQClientInstance::cleanOfflineBroker() {
   if (UtilAll::try_lock_for(m_lockNamesrv, LOCK_TIMEOUT_MILLIS)) {
     std::lock_guard<std::timed_mutex> lock(m_lockNamesrv, std::adopt_lock);
 
+    std::set<std::string> offlineBrokers;
     BrokerAddrMAP updatedTable(getBrokerAddrTable());
     for (auto itBrokerTable = updatedTable.begin(); itBrokerTable != updatedTable.end();) {
       const auto& brokerName = itBrokerTable->first;
@@ -310,6 +311,7 @@ void MQClientInstance::cleanOfflineBroker() {
       for (auto it = cloneAddrTable.begin(); it != cloneAddrTable.end();) {
         const auto& addr = it->second;
         if (!isBrokerAddrExistInTopicRouteTable(addr)) {
+          offlineBrokers.insert(addr);
           it = cloneAddrTable.erase(it);
           LOG_INFO_NEW("the broker addr[{} {}] is offline, remove it", brokerName, addr);
         } else {
@@ -325,7 +327,18 @@ void MQClientInstance::cleanOfflineBroker() {
       }
     }
 
-    resetBrokerAddrTable(std::move(updatedTable));
+    if (offlineBrokers.size() > 0) {
+      resetBrokerAddrTable(std::move(updatedTable));
+
+      std::lock_guard<std::mutex> lock(m_topicBrokerAddrTableMutex);
+      for (auto it = m_topicBrokerAddrTable.begin(); it != m_topicBrokerAddrTable.end();) {
+        if (offlineBrokers.find(it->second.first) != offlineBrokers.end()) {
+          it = m_topicBrokerAddrTable.erase(it);
+        } else {
+          it++;
+        }
+      }
+    }
   } else {
     LOG_WARN_NEW("lock namesrv, but failed.");
   }
@@ -853,18 +866,42 @@ FindBrokerResult* MQClientInstance::findBrokerAddressInSubscribe(const std::stri
 void MQClientInstance::findConsumerIds(const std::string& topic,
                                        const std::string& group,
                                        std::vector<std::string>& cids) {
-  std::string brokerAddr = findBrokerAddrByTopic(topic);
+  std::string brokerAddr;
+
+  // find consumerIds from same broker every 40s
+  {
+    std::lock_guard<std::mutex> lock(m_topicBrokerAddrTableMutex);
+    const auto& it = m_topicBrokerAddrTable.find(topic);
+    if (it != m_topicBrokerAddrTable.end()) {
+      if (UtilAll::currentTimeMillis() < it->second.second + 40000) {
+        brokerAddr = it->second.first;
+      }
+    }
+  }
+
   if (brokerAddr.empty()) {
-    updateTopicRouteInfoFromNameServer(topic);
+    // select new one
     brokerAddr = findBrokerAddrByTopic(topic);
+    if (brokerAddr.empty()) {
+      updateTopicRouteInfoFromNameServer(topic);
+      brokerAddr = findBrokerAddrByTopic(topic);
+    }
+
+    if (!brokerAddr.empty()) {
+      std::lock_guard<std::mutex> lock(m_topicBrokerAddrTableMutex);
+      m_topicBrokerAddrTable[topic] = std::make_pair(brokerAddr, UtilAll::currentTimeMillis());
+    }
   }
 
   if (!brokerAddr.empty()) {
     try {
       LOG_INFO_NEW("getConsumerIdList from broker:{}", brokerAddr);
       return m_mqClientAPIImpl->getConsumerIdListByGroup(brokerAddr, group, cids, 5000);
-    } catch (MQException& e) {
-      LOG_ERROR_NEW("{}", e.what());
+    } catch (const MQException& e) {
+      LOG_ERROR_NEW("encounter exception when getConsumerIdList: {}", e.what());
+
+      std::lock_guard<std::mutex> lock(m_topicBrokerAddrTableMutex);
+      m_topicBrokerAddrTable.erase(topic);
     }
   }
 }

@@ -20,6 +20,7 @@
 #include <memory>
 #include <mutex>
 #include <set>
+#include <utility>
 
 #include "ConsumerRunningInfo.h"
 #include "FindBrokerResult.h"
@@ -189,6 +190,11 @@ class MQClientInstance {
   typedef std::map<std::string, TopicPublishInfoPtr> TPMAP;
   TPMAP m_topicPublishInfoTable;
   std::mutex m_topicPublishInfoTableMutex;
+
+  // topic -> <broker, time>
+  typedef std::map<std::string, std::pair<std::string, uint64_t>> TBAMAP;
+  TBAMAP m_topicBrokerAddrTable;
+  std::mutex m_topicBrokerAddrTableMutex;
 
   std::timed_mutex m_lockNamesrv;
   std::timed_mutex m_lockHeartbeat;
