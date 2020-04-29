@@ -61,11 +61,12 @@ class thread_pool_executor : public abstract_executor_service {
     }
   }
 
-  void shutdown() override {
+  void shutdown(bool immediately = true) override {
     if (state_ == RUNNING) {
-      state_ = STOP;
+      state_ = immediately ? STOP : SHUTDOWN;
       wakeup_event_.notify_all();
       thread_group_.join();
+      state_ = STOP;
     }
   }
 
@@ -206,7 +207,7 @@ class scheduled_thread_pool_executor : public thread_pool_executor, virtual publ
     }
   }
 
-  void shutdown() override {
+  void shutdown(bool immediately = true) override {
     if (!stopped_) {
       stopped_ = true;
 
@@ -214,7 +215,7 @@ class scheduled_thread_pool_executor : public thread_pool_executor, virtual publ
       timer_thread_.join();
 
       if (!single_thread_) {
-        thread_pool_executor::shutdown();
+        thread_pool_executor::shutdown(immediately);
       }
     }
   }

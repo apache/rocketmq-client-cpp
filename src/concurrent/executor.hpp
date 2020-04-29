@@ -69,7 +69,7 @@ class executor {
 
 class executor_service : virtual public executor {
  public:
-  virtual void shutdown() = 0;
+  virtual void shutdown(bool immediately) = 0;
   virtual bool is_shutdown() = 0;
   virtual std::future<void> submit(const handler_type& task) = 0;
 };
