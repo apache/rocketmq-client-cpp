@@ -52,8 +52,6 @@ TcpConnectStatus TcpTransport::closeBufferEvent() {
   // closeBufferEvent is idempotent.
   if (setTcpConnectEvent(TCP_CONNECT_STATUS_CLOSED) != TCP_CONNECT_STATUS_CLOSED) {
     if (m_event != nullptr) {
-      m_event->disable(EV_READ | EV_WRITE);  // this is need for avoid block on event_base_dispatch.
-      // close the socket!!!
       m_event->close();
     }
     if (m_closeCallback != nullptr) {
@@ -110,7 +108,7 @@ TcpConnectStatus TcpTransport::connect(const std::string& addr, int timeoutMilli
   TcpConnectStatus curStatus = TCP_CONNECT_STATUS_CREATED;
   if (setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_CONNECTING)) {
     // create BufferEvent
-    m_event.reset(EventLoop::GetDefaultEventLoop()->createBufferEvent(-1, BEV_OPT_THREADSAFE));
+    m_event.reset(EventLoop::GetDefaultEventLoop()->createBufferEvent(-1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE));
     if (nullptr == m_event) {
       LOG_ERROR_NEW("create BufferEvent failed");
       return closeBufferEvent();

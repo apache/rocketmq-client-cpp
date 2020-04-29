@@ -45,7 +45,7 @@ EventLoop::EventLoop(const struct event_config* config, bool run_immediately)
 
   if (m_eventBase == nullptr) {
     // FIXME: failure...
-    LOG_ERROR("Failed to create event base!");
+    LOG_ERROR_NEW("[CRITICAL] Failed to create event base!");
     exit(-1);
   }
 
@@ -60,8 +60,6 @@ EventLoop::EventLoop(const struct event_config* config, bool run_immediately)
 
 EventLoop::~EventLoop() {
   stop();
-
-  freeBufferEvent();
 
   if (m_eventBase != nullptr) {
     event_base_free(m_eventBase);
@@ -85,35 +83,13 @@ void EventLoop::stop() {
 
 void EventLoop::runLoop() {
   while (_is_running) {
-    freeBufferEvent();
-
     int ret = event_base_dispatch(m_eventBase);
     if (ret == 1) {
       // no event
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
   }
-
-  freeBufferEvent();
 }
-
-#if ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
-void EventLoop::freeBufferEvent() {
-  while (true) {
-    auto event = _free_queue.pop_front();
-    if (event == nullptr) {
-      break;
-    }
-    bufferevent_free(*event);
-  }
-}
-
-void EventLoop::freeBufferEvent(struct bufferevent* event) {
-  _free_queue.push_back(event);
-}
-#else
-void EventLoop::freeBufferEvent() {}
-#endif  // ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
 
 #define OPT_UNLOCK_CALLBACKS (BEV_OPT_DEFER_CALLBACKS | BEV_OPT_UNLOCK_CALLBACKS)
 
@@ -137,25 +113,22 @@ BufferEvent::BufferEvent(struct bufferevent* event, bool unlockCallbacks, EventL
       m_readCallback(nullptr),
       m_writeCallback(nullptr),
       m_eventCallback(nullptr) {
-#ifdef ROCKETMQ_BUFFEREVENT_PROXY_ALL_CALLBACK
   if (m_bufferEvent != nullptr) {
-    bufferevent_setcb(m_bufferEvent, read_callback, write_callback, event_callback, this);
+    bufferevent_incref(m_bufferEvent);
   }
-#endif  // ROCKETMQ_BUFFEREVENT_PROXY_ALL_CALLBACK
 }
 
 BufferEvent::~BufferEvent() {
   if (m_bufferEvent != nullptr) {
-#if ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
-    m_eventLoop->freeBufferEvent(m_bufferEvent);
-#else
-    bufferevent_free(m_bufferEvent);
-#endif  // ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
-    m_bufferEvent = nullptr;
+    bufferevent_decref(m_bufferEvent);
   }
 }
 
 void BufferEvent::setCallback(DataCallback readCallback, DataCallback writeCallback, EventCallback eventCallback) {
+  if (m_bufferEvent == nullptr) {
+    return;
+  }
+
   // use lock in bufferevent
   bufferevent_lock(m_bufferEvent);
 
@@ -164,13 +137,11 @@ void BufferEvent::setCallback(DataCallback readCallback, DataCallback writeCallb
   m_writeCallback = writeCallback;
   m_eventCallback = eventCallback;
 
-#ifndef ROCKETMQ_BUFFEREVENT_PROXY_ALL_CALLBACK
   bufferevent_data_cb readcb = readCallback != nullptr ? read_callback : nullptr;
   bufferevent_data_cb writecb = writeCallback != nullptr ? write_callback : nullptr;
   bufferevent_event_cb eventcb = eventCallback != nullptr ? event_callback : nullptr;
 
   bufferevent_setcb(m_bufferEvent, readcb, writecb, eventcb, this);
-#endif  // ROCKETMQ_BUFFEREVENT_PROXY_ALL_CALLBACK
 
   bufferevent_unlock(m_bufferEvent);
 }
@@ -211,26 +182,6 @@ void BufferEvent::write_callback(struct bufferevent* bev, void* ctx) {
   }
 }
 
-int BufferEvent::connect(const std::string& addr) {
-  auto* sa = string2SocketAddress(addr);
-  m_peerAddrPort = socketAddress2String(sa);  // resolve domain
-  return bufferevent_socket_connect(m_bufferEvent, sa, sockaddr_size(sa));
-}
-
-int BufferEvent::close() {
-  int ret = -1;
-  bufferevent_lock(m_bufferEvent);
-  auto fd = bufferevent_getfd(m_bufferEvent);
-  if (fd >= 0 && bufferevent_setfd(m_bufferEvent, -1) != -1) {
-    ret = evutil_closesocket(fd);
-    if (ret != 0) {
-      LOG_ERROR_NEW("[CRITICAL] close socket faild, fd:{}", fd);
-    }
-  }
-  bufferevent_unlock(m_bufferEvent);
-  return ret;
-}
-
 void BufferEvent::event_callback(struct bufferevent* bev, short what, void* ctx) {
   auto event = static_cast<BufferEvent*>(ctx);
 
@@ -246,6 +197,23 @@ void BufferEvent::event_callback(struct bufferevent* bev, short what, void* ctx)
 
   if (callback != nullptr) {
     callback(*event, what);
+  }
+}
+
+int BufferEvent::connect(const std::string& addr) {
+  if (m_bufferEvent == nullptr) {
+    LOG_WARN_NEW("have not bufferevent object to connect {}", addr);
+    return -1;
+  }
+
+  auto* sa = string2SocketAddress(addr);
+  m_peerAddrPort = socketAddress2String(sa);  // resolve domain
+  return bufferevent_socket_connect(m_bufferEvent, sa, sockaddr_size(sa));
+}
+
+void BufferEvent::close() {
+  if (m_bufferEvent != nullptr) {
+    bufferevent_free(m_bufferEvent);
   }
 }
 

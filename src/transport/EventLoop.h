@@ -24,14 +24,6 @@
 #include <functional>
 #include <memory>
 
-#ifndef ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
-#define ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP 1
-#endif  // ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
-
-#if ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
-#include "concurrent/concurrent_queue.hpp"
-#endif  // ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOPƒ
-
 #include "concurrent/thread.hpp"
 #include "noncopyable.h"
 
@@ -58,22 +50,12 @@ class EventLoop : public noncopyable {
 
  private:
   void runLoop();
-  void freeBufferEvent();
-
-#if ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
-  void freeBufferEvent(struct bufferevent* event);
-  friend BufferEvent;
-#endif  // ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
 
  private:
   struct event_base* m_eventBase;
   thread m_loopThread;
 
   bool _is_running;  // aotmic is unnecessary
-
-#if ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
-  concurrent_queue<struct bufferevent*> _free_queue;
-#endif  // ROCKETMQ_BUFFEREVENT_FREE_IN_EVENTLOOP
 };
 
 class TcpTransport;
@@ -100,7 +82,7 @@ class BufferEvent : public noncopyable {
   int disable(short event) { return bufferevent_disable(m_bufferEvent, event); }
 
   int connect(const std::string& addr);
-  int close();
+  void close();
 
   int write(const void* data, size_t size) { return bufferevent_write(m_bufferEvent, data, size); }
 

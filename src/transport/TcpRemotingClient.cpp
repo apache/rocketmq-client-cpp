@@ -96,7 +96,9 @@ TcpRemotingClient::TcpRemotingClient(int workerThreadNum,
       m_handleExecutor("MessageHandleExecutor", workerThreadNum, false),
       m_timeoutExecutor("TimeoutScanExecutor", false) {}
 
-TcpRemotingClient::~TcpRemotingClient() = default;
+TcpRemotingClient::~TcpRemotingClient() {
+  LOG_DEBUG_NEW("TcpRemotingClient is destructed.");
+}
 
 void TcpRemotingClient::start() {
   m_dispatchExecutor.startup();
