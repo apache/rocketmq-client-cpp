@@ -42,7 +42,7 @@ int MQDecoder::MessagePhysicOffsetPostion = 28;
 int MQDecoder::MessageStoreTimestampPostion = 56;
 
 std::string MQDecoder::createMessageId(const struct sockaddr* sa, int64_t offset) {
-  const struct sockaddr_in* sin = (struct sockaddr_in*)&sa;
+  const struct sockaddr_in* sin = (struct sockaddr_in*)sa;
 
   MemoryOutputStream outputmen(MSG_ID_LENGTH);
   outputmen.writeIntBigEndian(sin->sin_addr.s_addr);
