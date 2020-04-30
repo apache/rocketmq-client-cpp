@@ -139,7 +139,7 @@ SendResult DefaultMQProducerImpl::send(MQMessagePtr msg, long timeout) {
     std::unique_ptr<SendResult> sendResult(sendDefaultImpl(msg, ComMode_SYNC, nullptr, timeout));
     return *sendResult;
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR_NEW("send failed, exception:{}", e.what());
     throw e;
   }
 }
@@ -159,7 +159,7 @@ SendResult DefaultMQProducerImpl::send(MQMessagePtr msg, const MQMessageQueue& m
     std::unique_ptr<SendResult> sendResult(sendKernelImpl(msg, mq, ComMode_SYNC, nullptr, nullptr, timeout));
     return *sendResult;
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR_NEW("send failed, exception:{}", e.what());
     throw e;
   }
 }
@@ -172,7 +172,7 @@ void DefaultMQProducerImpl::send(MQMessagePtr msg, SendCallback* sendCallback, l
   try {
     (void)sendDefaultImpl(msg, ComMode_ASYNC, sendCallback, timeout);
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR_NEW("send failed, exception:{}", e.what());
     sendCallback->onException(e);
     if (sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
       deleteAndZero(sendCallback);
@@ -205,7 +205,7 @@ void DefaultMQProducerImpl::send(MQMessagePtr msg,
       THROW_MQEXCEPTION(MQClientException, info, e.GetError());
     }
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR_NEW("send failed, exception:{}", e.what());
     sendCallback->onException(e);
     if (sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
       deleteAndZero(sendCallback);
@@ -249,7 +249,7 @@ SendResult DefaultMQProducerImpl::send(MQMessagePtr msg, MessageQueueSelector* s
     std::unique_ptr<SendResult> result(sendSelectImpl(msg, selector, arg, ComMode_SYNC, nullptr, timeout));
     return *result.get();
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR_NEW("send failed, exception:{}", e.what());
     throw e;
   }
 }
@@ -274,7 +274,7 @@ void DefaultMQProducerImpl::send(MQMessagePtr msg,
       THROW_MQEXCEPTION(MQClientException, info, e.GetError());
     }
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR_NEW("send failed, exception:{}", e.what());
     sendCallback->onException(e);
     if (sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
       deleteAndZero(sendCallback);
@@ -300,7 +300,7 @@ TransactionSendResult DefaultMQProducerImpl::sendMessageInTransaction(MQMessageP
         sendMessageInTransactionImpl(msg, arg, m_producerConfig->getSendMsgTimeout()));
     return *sendResult;
   } catch (MQException& e) {
-    LOG_ERROR(e.what());
+    LOG_ERROR_NEW("sendMessageInTransaction failed, exception:{}", e.what());
     throw e;
   }
 }
@@ -484,7 +484,7 @@ SendResult* DefaultMQProducerImpl::sendDefaultImpl(MQMessagePtr msg,
         // TODO: 区分异常类型
         endTimestamp = UtilAll::currentTimeMillis();
         updateFaultItem(mq.getBrokerName(), endTimestamp - beginTimestampPrev, true);
-        LOG_ERROR_NEW("send failed of times:{}, brokerName:{}. exception:{}", times, mq.getBrokerName(), e.what());
+        LOG_WARN_NEW("send failed of times:{}, brokerName:{}. exception:{}", times, mq.getBrokerName(), e.what());
         continue;
       }
 

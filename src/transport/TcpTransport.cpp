@@ -164,7 +164,7 @@ void TcpTransport::eventOccurred(BufferEvent& event, short what) {
     TcpConnectStatus curStatus = TCP_CONNECT_STATUS_CONNECTING;
     setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_CONNECTED);
   } else if (what & (BEV_EVENT_ERROR | BEV_EVENT_EOF)) {
-    LOG_INFO_NEW("eventcb: received error event:0x{:X} on fd:{}", what, fd);
+    LOG_ERROR_NEW("eventcb: received error event:0x{:X} on fd:{}", what, fd);
     // if error, stop callback.
     closeBufferEvent();
     // TcpConnectStatus curStatus = getTcpConnectStatus();

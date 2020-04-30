@@ -507,7 +507,7 @@ bool TcpRemotingClient::CloseTransport(const std::string& addr, TcpTransportPtr 
   }
   std::lock_guard<std::timed_mutex> lock(m_transportTableMutex, std::adopt_lock);
 
-  LOG_ERROR_NEW("CloseTransport of:{}", addr);
+  LOG_INFO_NEW("CloseTransport of:{}", addr);
 
   bool removeItemFromTable = true;
   const auto& it = m_transportTable.find(addr);
