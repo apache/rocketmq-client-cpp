@@ -407,45 +407,46 @@ TcpTransportPtr TcpRemotingClient::CreateTransport(const std::string& addr) {
     const auto& it = m_transportTable.find(addr);
     if (it != m_transportTable.end()) {
       channel = it->second;
-      if (channel != nullptr) {
-        TcpConnectStatus connectStatus = channel->getTcpConnectStatus();
-        switch (connectStatus) {
-          // case TCP_CONNECT_STATUS_CREATED:
-          case TCP_CONNECT_STATUS_CONNECTED:
-            return channel;
-          case TCP_CONNECT_STATUS_CONNECTING:
-            // wait server answer, return null
-            return nullptr;
-          case TCP_CONNECT_STATUS_FAILED:
-            LOG_ERROR_NEW("tcpTransport with server disconnected, erase server:{}", addr);
-            channel->disconnect(addr);  // avoid coredump when connection with broker was broken
-            m_transportTable.erase(it);
-            break;
-          default:  // TCP_CONNECT_STATUS_CLOSED
-            LOG_ERROR_NEW("go to CLOSED state, erase:{} from transportTable, and reconnect it", addr);
-            m_transportTable.erase(it);
-            break;
-        }
-      }
     }
 
-    // callback
-    TcpTransport::ReadCallback readCallback =
-        std::bind(&TcpRemotingClient::messageReceived, this, std::placeholders::_1, std::placeholders::_2);
-    TcpTransport::CloseCallback closeCallback =
-        std::bind(&TcpRemotingClient::channelClosed, this, std::placeholders::_1);
-
-    // create new transport, then connect server
-    std::unique_ptr<ResponseFutureInfo> responseFutureInfo(new ResponseFutureInfo());
-    channel = TcpTransport::CreateTransport(readCallback, closeCallback, std::move(responseFutureInfo));
-    TcpConnectStatus connectStatus = channel->connect(addr, 0);  // use non-block
-    if (connectStatus != TCP_CONNECT_STATUS_CONNECTING) {
-      LOG_WARN_NEW("can not connect to:{}", addr);
-      channel->disconnect(addr);
-      return nullptr;
+    if (channel != nullptr) {
+      TcpConnectStatus connectStatus = channel->getTcpConnectStatus();
+      switch (connectStatus) {
+        // case TCP_CONNECT_STATUS_CREATED:
+        case TCP_CONNECT_STATUS_CONNECTED:
+          return channel;
+        case TCP_CONNECT_STATUS_CONNECTING:
+          // wait server answer
+          break;
+        case TCP_CONNECT_STATUS_FAILED:
+          LOG_ERROR_NEW("tcpTransport with server disconnected, erase server:{}", addr);
+          channel->disconnect(addr);
+          m_transportTable.erase(it);
+          break;
+        default:  // TCP_CONNECT_STATUS_CLOSED
+          LOG_ERROR_NEW("go to CLOSED state, erase:{} from transportTable, and reconnect it", addr);
+          m_transportTable.erase(it);
+          break;
+      }
     } else {
-      // even if connecting failed finally, this server transport will be erased by next CreateTransport
-      m_transportTable[addr] = channel;
+      // callback
+      TcpTransport::ReadCallback readCallback =
+          std::bind(&TcpRemotingClient::messageReceived, this, std::placeholders::_1, std::placeholders::_2);
+      TcpTransport::CloseCallback closeCallback =
+          std::bind(&TcpRemotingClient::channelClosed, this, std::placeholders::_1);
+
+      // create new transport, then connect server
+      std::unique_ptr<ResponseFutureInfo> responseFutureInfo(new ResponseFutureInfo());
+      channel = TcpTransport::CreateTransport(readCallback, closeCallback, std::move(responseFutureInfo));
+      TcpConnectStatus connectStatus = channel->connect(addr, 0);  // use non-block
+      if (connectStatus != TCP_CONNECT_STATUS_CONNECTING) {
+        LOG_WARN_NEW("can not connect to:{}", addr);
+        channel->disconnect(addr);
+        return nullptr;
+      } else {
+        // even if connecting failed finally, this server transport will be erased by next CreateTransport
+        m_transportTable[addr] = channel;
+      }
     }
   }
 
@@ -453,7 +454,7 @@ TcpTransportPtr TcpRemotingClient::CreateTransport(const std::string& addr) {
   TcpConnectStatus connectStatus = channel->waitTcpConnectEvent(static_cast<int>(m_tcpConnectTimeout));
   if (connectStatus != TCP_CONNECT_STATUS_CONNECTED) {
     LOG_WARN_NEW("can not connect to server:{}", addr);
-    channel->disconnect(addr);
+    // channel->disconnect(addr);
     return nullptr;
   } else {
     LOG_INFO_NEW("connect server with addr:{} success", addr);
