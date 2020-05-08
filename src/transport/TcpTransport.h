@@ -78,7 +78,7 @@ class TcpTransport : public noncopyable, public std::enable_shared_from_this<Tcp
 
   void messageReceived(MemoryBlockPtr mem);
 
-  TcpConnectStatus closeBufferEvent();  // not thread-safe
+  TcpConnectStatus closeBufferEvent(bool isDeleted = false);
 
   TcpConnectStatus setTcpConnectEvent(TcpConnectStatus connectStatus);
   bool setTcpConnectEventIf(TcpConnectStatus& expectStatus, TcpConnectStatus connectStatus);

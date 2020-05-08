@@ -45,16 +45,16 @@ TcpTransport::TcpTransport(ReadCallback readCallback,
 }
 
 TcpTransport::~TcpTransport() {
-  closeBufferEvent();
+  closeBufferEvent(true);
 }
 
-TcpConnectStatus TcpTransport::closeBufferEvent() {
+TcpConnectStatus TcpTransport::closeBufferEvent(bool isDeleted) {
   // closeBufferEvent is idempotent.
   if (setTcpConnectEvent(TCP_CONNECT_STATUS_CLOSED) != TCP_CONNECT_STATUS_CLOSED) {
     if (m_event != nullptr) {
       m_event->close();
     }
-    if (m_closeCallback != nullptr) {
+    if (!isDeleted && m_closeCallback != nullptr) {
       m_closeCallback(shared_from_this());
     }
   }
@@ -115,8 +115,24 @@ TcpConnectStatus TcpTransport::connect(const std::string& addr, int timeoutMilli
     }
 
     // then, configure BufferEvent
-    m_event->setCallback(std::bind(&TcpTransport::dataArrived, this, std::placeholders::_1), nullptr,
-                         std::bind(&TcpTransport::eventOccurred, this, std::placeholders::_1, std::placeholders::_2));
+    auto weak_this = std::weak_ptr<TcpTransport>(shared_from_this());
+    auto readCallback = [=](BufferEvent& event) {
+      auto channel = weak_this.lock();
+      if (channel != nullptr) {
+        channel->dataArrived(event);
+      } else {
+        LOG_WARN_NEW("[BUG] TcpTransport object is released.");
+      }
+    };
+    auto eventCallback = [=](BufferEvent& event, short what) {
+      auto channel = weak_this.lock();
+      if (channel != nullptr) {
+        channel->eventOccurred(event, what);
+      } else {
+        LOG_WARN_NEW("[BUG] TcpTransport object is released.");
+      }
+    };
+    m_event->setCallback(readCallback, nullptr, eventCallback);
     m_event->setWatermark(EV_READ, 4, 0);
     m_event->enable(EV_READ | EV_WRITE);
 
@@ -165,8 +181,8 @@ void TcpTransport::eventOccurred(BufferEvent& event, short what) {
     setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_CONNECTED);
   } else if (what & (BEV_EVENT_ERROR | BEV_EVENT_EOF)) {
     LOG_ERROR_NEW("eventcb: received error event:0x{:X} on fd:{}", what, fd);
-    // if error, stop callback.
     closeBufferEvent();
+    // if error, stop callback.
     // TcpConnectStatus curStatus = getTcpConnectStatus();
     // while (curStatus != TCP_CONNECT_STATUS_CLOSED && curStatus != TCP_CONNECT_STATUS_FAILED) {
     //   if (setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_FAILED)) {
