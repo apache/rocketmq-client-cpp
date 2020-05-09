@@ -873,7 +873,7 @@ void MQClientInstance::findConsumerIds(const std::string& topic,
     std::lock_guard<std::mutex> lock(m_topicBrokerAddrTableMutex);
     const auto& it = m_topicBrokerAddrTable.find(topic);
     if (it != m_topicBrokerAddrTable.end()) {
-      if (UtilAll::currentTimeMillis() < it->second.second + 40000) {
+      if (UtilAll::currentTimeMillis() < it->second.second + 120000) {
         brokerAddr = it->second.first;
       }
     }
