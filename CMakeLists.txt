@@ -51,7 +51,7 @@ endif (APPLE)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
-# Find dependency
+# Find dependencies
 #find_package(spdlog REQUIRED)
 if (NOT spdlog_FOUND)
     include_directories(${CMAKE_SOURCE_DIR}/bin/include)
