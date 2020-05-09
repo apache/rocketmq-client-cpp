@@ -39,8 +39,12 @@ class ROCKETMQCLIENT_API MQException : public std::exception {
               int error,
               std::exception_ptr cause,
               const char* file,
-              int line) noexcept
-      : m_type(type), m_msg(msg), m_error(error), m_cause(cause), m_file(file), m_line(line) {}
+              int line) noexcept : m_type(type),
+                                   m_msg(msg),
+                                   m_error(error),
+                                   m_cause(cause),
+                                   m_file(file),
+                                   m_line(line) {}
 
   virtual ~MQException() noexcept = default;
 
@@ -97,8 +101,7 @@ inline std::ostream& operator<<(std::ostream& os, const MQException& e) {
          int error,                                                                                        \
          std::exception_ptr cause,                                                                         \
          const char* file,                                                                                 \
-         int line) noexcept                                                                                \
-        : super(type, msg, error, cause, file, line) {}                                                    \
+         int line) noexcept : super(type, msg, error, cause, file, line) {}                                \
   };
 
 #define DEFINE_MQEXCEPTION(name) DEFINE_MQEXCEPTION2(name, MQException)

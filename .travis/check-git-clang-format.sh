@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+
+# Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
 # The ASF licenses this file to You under the Apache License, Version 2.0
@@ -12,17 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/bin/bash
-
- if [ "$TRAVIS_PULL_REQUEST" = "true" ]; then
+if [ "$TRAVIS_PULL_REQUEST" = "true" ]; then
     base_commit="$TRAVIS_BRANCH"
 else
     base_commit="HEAD^"
 fi
 
- output="$(sudo python .travis/git-clang-format --binary clang-format-3.8 --commit $base_commit --diff)"
+output="$(python .travis/git-clang-format --binary clang-format-3.8 --commit $base_commit --diff --style file)"
 
- if [ "$output" = "no modified files to format" ] || [ "$output" = "clang-format did not modify any files" ]; then
+if [ "$output" = "no modified files to format" ] || [ "$output" = "clang-format did not modify any files" ]; then
     echo "clang-format passed."
     exit 0
 else

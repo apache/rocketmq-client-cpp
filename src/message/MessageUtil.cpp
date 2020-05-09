@@ -44,9 +44,8 @@ MQMessagePtr MessageUtil::createReplyMessage(const MQMessagePtr requestMessage,
 
       return replyMessage.release();
     } else {
-      THROW_MQEXCEPTION(MQClientException,
-                        "create reply message fail, requestMessage error, property[" +
-                            MQMessageConst::PROPERTY_CLUSTER + "] is null.",
+      THROW_MQEXCEPTION(MQClientException, "create reply message fail, requestMessage error, property[" +
+                                               MQMessageConst::PROPERTY_CLUSTER + "] is null.",
                         ClientErrorCode::CREATE_REPLY_MESSAGE_EXCEPTION);
     }
   }

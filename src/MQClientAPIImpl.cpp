@@ -450,7 +450,7 @@ void MQClientAPIImpl::getConsumerIdListByGroup(const std::string& addr,
       }
     }
     case SYSTEM_ERROR:
-      // no consumer for this group
+    // no consumer for this group
     default:
       break;
   }
