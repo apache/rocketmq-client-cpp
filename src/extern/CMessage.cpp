@@ -21,18 +21,18 @@
 using namespace rocketmq;
 
 CMessage* CreateMessage(const char* topic) {
-  MQMessage* mqMessage = new MQMessage();
+  auto* msg = new MQMessage();
   if (topic != NULL) {
-    mqMessage->setTopic(topic);
+    msg->setTopic(topic);
   }
-  return (CMessage*)mqMessage;
+  return reinterpret_cast<CMessage*>(msg);
 }
 
 int DestroyMessage(CMessage* msg) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  delete (MQMessage*)msg;
+  delete reinterpret_cast<MQMessage*>(msg);
   return OK;
 }
 
@@ -40,7 +40,7 @@ int SetMessageTopic(CMessage* msg, const char* topic) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  ((MQMessage*)msg)->setTopic(topic);
+  reinterpret_cast<MQMessage*>(msg)->setTopic(topic);
   return OK;
 }
 
@@ -48,7 +48,7 @@ int SetMessageTags(CMessage* msg, const char* tags) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  ((MQMessage*)msg)->setTags(tags);
+  reinterpret_cast<MQMessage*>(msg)->setTags(tags);
   return OK;
 }
 
@@ -56,7 +56,7 @@ int SetMessageKeys(CMessage* msg, const char* keys) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  ((MQMessage*)msg)->setKeys(keys);
+  reinterpret_cast<MQMessage*>(msg)->setKeys(keys);
   return OK;
 }
 
@@ -64,7 +64,7 @@ int SetMessageBody(CMessage* msg, const char* body) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  ((MQMessage*)msg)->setBody(body);
+  reinterpret_cast<MQMessage*>(msg)->setBody(body);
   return OK;
 }
 
@@ -72,7 +72,7 @@ int SetByteMessageBody(CMessage* msg, const char* body, int len) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  ((MQMessage*)msg)->setBody(body, len);
+  reinterpret_cast<MQMessage*>(msg)->setBody(body, len);
   return OK;
 }
 
@@ -80,7 +80,7 @@ int SetMessageProperty(CMessage* msg, const char* key, const char* value) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  ((MQMessage*)msg)->putProperty(key, value);
+  reinterpret_cast<MQMessage*>(msg)->putProperty(key, value);
   return OK;
 }
 
@@ -88,6 +88,48 @@ int SetDelayTimeLevel(CMessage* msg, int level) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  ((MQMessage*)msg)->setDelayTimeLevel(level);
+  reinterpret_cast<MQMessage*>(msg)->setDelayTimeLevel(level);
   return OK;
+}
+
+const char* GetOriginMessageTopic(CMessage* msg) {
+  if (msg == NULL) {
+    return NULL;
+  }
+  return reinterpret_cast<MQMessage*>(msg)->getTopic().c_str();
+}
+
+const char* GetOriginMessageTags(CMessage* msg) {
+  if (msg == NULL) {
+    return NULL;
+  }
+  return reinterpret_cast<MQMessage*>(msg)->getTags().c_str();
+}
+
+const char* GetOriginMessageKeys(CMessage* msg) {
+  if (msg == NULL) {
+    return NULL;
+  }
+  return reinterpret_cast<MQMessage*>(msg)->getKeys().c_str();
+}
+
+const char* GetOriginMessageBody(CMessage* msg) {
+  if (msg == NULL) {
+    return NULL;
+  }
+  return reinterpret_cast<MQMessage*>(msg)->getBody().c_str();
+}
+
+const char* GetOriginMessageProperty(CMessage* msg, const char* key) {
+  if (msg == NULL) {
+    return NULL;
+  }
+  return reinterpret_cast<MQMessage*>(msg)->getProperty(key).c_str();
+}
+
+int GetOriginDelayTimeLevel(CMessage* msg) {
+  if (msg == NULL) {
+    return -1;
+  }
+  return reinterpret_cast<MQMessage*>(msg)->getDelayTimeLevel();
 }

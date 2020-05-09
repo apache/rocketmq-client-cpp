@@ -74,6 +74,9 @@ class ROCKETMQCLIENT_API MQProducer {
   virtual SendResult send(std::vector<MQMessagePtr>& msgs, long timeout) = 0;
   virtual SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq) = 0;
   virtual SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq, long timeout) = 0;
+
+  // RPC
+  virtual MQMessagePtr request(MQMessagePtr msg, long timeout) = 0;
 };
 
 }  // namespace rocketmq

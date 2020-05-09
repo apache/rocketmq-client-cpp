@@ -14,110 +14,71 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-#include "AsyncCallback.h"
-#include "AsyncCallbackWrap.h"
-#include "MQClientAPIImpl.h"
-#include "MQMessage.h"
+#include "InvokeCallback.h"
 #include "RemotingCommand.h"
 #include "ResponseFuture.h"
-#include "TcpRemotingClient.h"
 #include "UtilAll.h"
+#include "protocol/RequestCode.h"
 
 using ::testing::_;
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
-using rocketmq::AsyncCallback;
-using rocketmq::AsyncCallbackStatus;
-using rocketmq::asyncCallBackType;
-using rocketmq::AsyncCallbackWrap;
-using rocketmq::MQClientAPIImpl;
-using rocketmq::MQMessage;
+using rocketmq::InvokeCallback;
+using rocketmq::MQRequestCode;
 using rocketmq::RemotingCommand;
 using rocketmq::ResponseFuture;
-using rocketmq::SendCallbackWrap;
-using rocketmq::TcpRemotingClient;
 using rocketmq::UtilAll;
 
-class MockAsyncCallbackWrap : public SendCallbackWrap {
+class MockInvokeCallback : public InvokeCallback {
  public:
-  MockAsyncCallbackWrap(AsyncCallback* pAsyncCallback, MQClientAPIImpl* pclientAPI)
-      : SendCallbackWrap("", MQMessage(), pAsyncCallback, pclientAPI) {}
-
-  MOCK_METHOD2(operationComplete, void(ResponseFuture*, bool));
-  MOCK_METHOD0(onException, void());
-  asyncCallBackType getCallbackType() { return asyncCallBackType::sendCallbackWrap; }
+  void operationComplete(ResponseFuture* responseFuture) noexcept {}
 };
 
-TEST(responseFuture, init) {
-  ResponseFuture responseFuture(13, 4, NULL, 1000);
-  EXPECT_EQ(responseFuture.getRequestCode(), 13);
+TEST(ResponseFutureTest, Init) {
+  ResponseFuture responseFuture(MQRequestCode::QUERY_BROKER_OFFSET, 4, 1000);
+  EXPECT_EQ(responseFuture.getRequestCode(), MQRequestCode::QUERY_BROKER_OFFSET);
   EXPECT_EQ(responseFuture.getOpaque(), 4);
-
-  EXPECT_EQ(responseFuture.getRequestCommand().getCode(), 0);
+  EXPECT_EQ(responseFuture.getTimeoutMillis(), 1000);
   EXPECT_FALSE(responseFuture.isSendRequestOK());
-  EXPECT_EQ(responseFuture.getMaxRetrySendTimes(), 1);
-  EXPECT_EQ(responseFuture.getRetrySendTimes(), 1);
-  EXPECT_EQ(responseFuture.getBrokerAddr(), "");
+  EXPECT_FALSE(responseFuture.hasInvokeCallback());
 
-  EXPECT_FALSE(responseFuture.getAsyncFlag());
-  EXPECT_TRUE(responseFuture.getAsyncCallbackWrap() == nullptr);
-
-  // ~ResponseFuture  delete pcall
-  SendCallbackWrap* pcall = new SendCallbackWrap("", MQMessage(), nullptr, nullptr);
-  ResponseFuture twoResponseFuture(13, 4, nullptr, 1000, true, pcall);
-  EXPECT_TRUE(twoResponseFuture.getAsyncFlag());
-  EXPECT_FALSE(twoResponseFuture.getAsyncCallbackWrap() == nullptr);
+  // ~ResponseFuture delete callback
+  auto* callback = new MockInvokeCallback();
+  ResponseFuture twoResponseFuture(MQRequestCode::QUERY_BROKER_OFFSET, 4, 1000, callback);
+  EXPECT_TRUE(twoResponseFuture.hasInvokeCallback());
 }
 
-TEST(responseFuture, info) {
-  ResponseFuture responseFuture(13, 4, NULL, 1000);
-
-  responseFuture.setBrokerAddr("127.0.0.1:9876");
-  EXPECT_EQ(responseFuture.getBrokerAddr(), "127.0.0.1:9876");
-
-  responseFuture.setMaxRetrySendTimes(3000);
-  EXPECT_EQ(responseFuture.getMaxRetrySendTimes(), 3000);
-
-  responseFuture.setRetrySendTimes(3000);
-  EXPECT_EQ(responseFuture.getRetrySendTimes(), 3000);
+TEST(ResponseFutureTest, Info) {
+  ResponseFuture responseFuture(MQRequestCode::QUERY_BROKER_OFFSET, 4, 1000);
 
   responseFuture.setSendRequestOK(true);
   EXPECT_TRUE(responseFuture.isSendRequestOK());
 }
 
-TEST(responseFuture, response) {
-  // m_bAsync = false  m_syncResponse
-  ResponseFuture responseFuture(13, 4, NULL, 1000);
+TEST(ResponseFutureTest, Response) {
+  ResponseFuture responseFuture(MQRequestCode::QUERY_BROKER_OFFSET, 4, 1000);
+  EXPECT_FALSE(responseFuture.hasInvokeCallback());
 
-  EXPECT_FALSE(responseFuture.getAsyncFlag());
+  std::unique_ptr<RemotingCommand> responseCommand(new RemotingCommand());
+  responseFuture.setResponseCommand(std::move(responseCommand));
+  EXPECT_EQ(responseFuture.getResponseCommand()->getCode(), 0);
 
-  RemotingCommand* pResponseCommand = NULL;
-  responseFuture.setResponse(pResponseCommand);
-  EXPECT_EQ(responseFuture.getRequestCommand().getCode(), 0);
-
-  // m_bAsync = true  m_syncResponse
-  ResponseFuture twoResponseFuture(13, 4, NULL, 1000, true);
-  EXPECT_TRUE(twoResponseFuture.getAsyncFlag());
-
-  ResponseFuture threeSesponseFuture(13, 4, NULL, 1000);
-
+  ResponseFuture responseFuture2(MQRequestCode::QUERY_BROKER_OFFSET, 4, 1000);
   uint64_t millis = UtilAll::currentTimeMillis();
-  RemotingCommand* remotingCommand = threeSesponseFuture.waitResponse(10);
+  auto remotingCommand = responseFuture2.waitResponse(1000);
   uint64_t useTime = UtilAll::currentTimeMillis() - millis;
-  EXPECT_LT(useTime, 30);
-
-  EXPECT_EQ(NULL, remotingCommand);
+  EXPECT_LT(useTime, 3000);
+  EXPECT_EQ(remotingCommand, nullptr);
 }
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "responseFuture.*";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "ResponseFutureTest.*";
+  return RUN_ALL_TESTS();
 }

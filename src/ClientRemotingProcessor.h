@@ -25,29 +25,22 @@ namespace rocketmq {
 
 class ClientRemotingProcessor : public RequestProcessor {
  public:
-  ClientRemotingProcessor(MQClientInstance* mqClientFactory);
+  ClientRemotingProcessor(MQClientInstance* clientInstance);
   virtual ~ClientRemotingProcessor();
 
-  RemotingCommand* processRequest(const std::string& addr, RemotingCommand* request) override;
+  RemotingCommand* processRequest(TcpTransportPtr channel, RemotingCommand* request) override;
 
+  RemotingCommand* checkTransactionState(const std::string& addr, RemotingCommand* request);
+  RemotingCommand* notifyConsumerIdsChanged(RemotingCommand* request);
   RemotingCommand* resetOffset(RemotingCommand* request);
   RemotingCommand* getConsumerRunningInfo(const std::string& addr, RemotingCommand* request);
-  RemotingCommand* notifyConsumerIdsChanged(RemotingCommand* request);
-  RemotingCommand* checkTransactionState(const std::string& addr, RemotingCommand* request);
+  RemotingCommand* receiveReplyMessage(RemotingCommand* request);
 
  private:
-  MQClientInstance* m_mqClientFactory;
-};
-
-class ResetOffsetBody {
- public:
-  static ResetOffsetBody* Decode(MemoryBlock& mem);
-
-  std::map<MQMessageQueue, int64_t> getOffsetTable();
-  void setOffsetTable(const MQMessageQueue& mq, int64_t offset);
+  void processReplyMessage(std::unique_ptr<MQMessageExt> replyMsg);
 
  private:
-  std::map<MQMessageQueue, int64_t> m_offsetTable;
+  MQClientInstance* m_clientInstance;
 };
 
 }  // namespace rocketmq

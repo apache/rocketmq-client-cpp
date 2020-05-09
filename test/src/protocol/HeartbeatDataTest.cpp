@@ -14,11 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-#include "vector"
-
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <vector>
 
 #include "ConsumeType.h"
 #include "HeartbeatData.h"
@@ -26,8 +25,8 @@
 
 using std::vector;
 
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::ConsumeFromWhere;
@@ -38,7 +37,7 @@ using rocketmq::MessageModel;
 using rocketmq::ProducerData;
 using rocketmq::SubscriptionData;
 
-TEST(heartbeatData, ProducerData) {
+TEST(HeartbeatDataTest, ProducerData) {
   ProducerData producerData;
   producerData.groupName = "testGroup";
 
@@ -46,7 +45,7 @@ TEST(heartbeatData, ProducerData) {
   EXPECT_EQ(outJson["groupName"], "testGroup");
 }
 
-TEST(heartbeatData, ConsumerData) {
+TEST(HeartbeatDataTest, ConsumerData) {
   ConsumerData consumerData;
   consumerData.groupName = "testGroup";
   consumerData.consumeType = ConsumeType::CONSUME_ACTIVELY;
@@ -71,7 +70,7 @@ TEST(heartbeatData, ConsumerData) {
   EXPECT_EQ(subsValue[0]["subString"], "sub");
 }
 
-TEST(heartbeatData, HeartbeatData) {
+TEST(HeartbeatDataTest, HeartbeatData) {
   HeartbeatData heartbeatData;
   heartbeatData.setClientID("testClientId");
 
@@ -96,8 +95,7 @@ TEST(heartbeatData, HeartbeatData) {
   heartbeatData.insertDataToConsumerDataSet(consumerData);
   EXPECT_FALSE(heartbeatData.isConsumerDataSetEmpty());
 
-  string outData;
-  heartbeatData.Encode(outData);
+  std::string outData = heartbeatData.encode();
 
   Json::Value root;
   Json::Reader reader;
@@ -109,7 +107,6 @@ TEST(heartbeatData, HeartbeatData) {
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "heartbeatData.*";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "HeartbeatDataTest.*";
+  return RUN_ALL_TESTS();
 }

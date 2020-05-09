@@ -16,7 +16,6 @@
  */
 #include "TopicConfig.h"
 
-#include <stdlib.h>
 #include <sstream>
 
 #include "PermName.h"
@@ -52,6 +51,7 @@ TopicConfig::~TopicConfig() {}
 
 std::string TopicConfig::encode() {
   std::stringstream ss;
+
   ss << m_topicName << SEPARATOR << m_readQueueNums << SEPARATOR << m_writeQueueNums << SEPARATOR << m_perm << SEPARATOR
      << m_topicFilterType;
 

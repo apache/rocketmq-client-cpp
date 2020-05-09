@@ -17,17 +17,17 @@
 #
 # Find the jsoncpp includes and library
 #
-# if you nee to add a custom library search path, do it via via CMAKE_PREFIX_PATH
+# if you nee to add a custom library search path, do it via CMAKE_PREFIX_PATH
 #
 # -*- cmake -*-
 # - Find JSONCpp
 # Find the JSONCpp includes and library
-# This module defines
+#
+# This module define the following variables:
+#
+#  JSONCPP_FOUND, If false, do not try to use jsoncpp.
 #  JSONCPP_INCLUDE_DIRS, where to find json.h, etc.
 #  JSONCPP_LIBRARIES, the libraries needed to use jsoncpp.
-#  JSONCPP_FOUND, If false, do not try to use jsoncpp.
-#  also defined, but not for general use are
-#  JSONCPP_LIBRARIES, where to find the jsoncpp library.
 
 # Support preference of static libs by adjusting CMAKE_FIND_LIBRARY_SUFFIXES
 if (JSONCPP_USE_STATIC_LIBS)
@@ -48,13 +48,11 @@ else ()
     endif ()
 endif ()
 
-set(JSONCPP_INCLUDE_SEARCH_PATH ${CMAKE_SOURCE_DIR}/bin/include /usr/local/include C:/jsoncpp/include
-        ${CMAKE_SOURCE_DIR}/win32-deps/include C:/jsoncpp-0.10.6/include)
-set(JSONCPP_LIBRARIE_SEARCH_PATH ${CMAKE_SOURCE_DIR}/bin/lib /usr/local/lib C:/jsoncpp/lib
-        ${CMAKE_SOURCE_DIR}/win32-deps/lib C:/jsoncpp-0.10.6/)
+set(JSONCPP_INCLUDE_SEARCH_PATH /usr/local/include /usr/include)
+set(JSONCPP_LIBRARIES_SEARCH_PATH /usr/local/lib /usr/lib)
 if (JSONCPP_ROOT)
     list(INSERT JSONCPP_INCLUDE_SEARCH_PATH 0 ${JSONCPP_ROOT}/include)
-    list(INSERT JSONCPP_LIBRARIE_SEARCH_PATH 0 ${JSONCPP_ROOT}/lib)
+    list(INSERT JSONCPP_LIBRARIES_SEARCH_PATH 0 ${JSONCPP_ROOT}/lib)
 endif ()
 
 find_path(JSONCPP_INCLUDE_DIRS
@@ -64,34 +62,25 @@ find_path(JSONCPP_INCLUDE_DIRS
 
 find_library(JSONCPP_LIBRARIES
         NAMES jsoncpp
-        PATHS ${JSONCPP_LIBRARIE_SEARCH_PATH})
+        PATHS ${JSONCPP_LIBRARIES_SEARCH_PATH})
 
-IF (JSONCPP_LIBRARIES AND JSONCPP_INCLUDE_DIRS)
-    SET(JSONCPP_LIBRARIES ${JSONCPP_LIBRARIES})
-    SET(JSONCPP_FOUND "YES")
-ELSE (JSONCPP_LIBRARIES AND JSONCPP_INCLUDE_DIRS)
-    SET(JSONCPP_FOUND "NO")
-ENDIF (JSONCPP_LIBRARIES AND JSONCPP_INCLUDE_DIRS)
+if (JSONCPP_LIBRARIES AND JSONCPP_INCLUDE_DIRS)
+    set(JSONCPP_FOUND "YES")
+else (JSONCPP_LIBRARIES AND JSONCPP_INCLUDE_DIRS)
+    set(JSONCPP_FOUND "NO")
+endif (JSONCPP_LIBRARIES AND JSONCPP_INCLUDE_DIRS)
 
+if (JSONCPP_FOUND)
+    if (NOT JSONCPP_FIND_QUIETLY)
+        message(STATUS "Found JSONCpp: ${JSONCPP_LIBRARIES}")
+    endif (NOT JSONCPP_FIND_QUIETLY)
+else (JSONCPP_FOUND)
+    if (JSONCPP_FIND_REQUIRED)
+        message(FATAL_ERROR "Could not find JSONCPP library, include: ${JSONCPP_INCLUDE_DIRS}, lib: ${JSONCPP_LIBRARIES}")
+    endif (JSONCPP_FIND_REQUIRED)
+endif (JSONCPP_FOUND)
 
-IF (JSONCPP_FOUND)
-    IF (NOT JSONCPP_FIND_QUIETLY)
-        MESSAGE(STATUS "Found JSONCpp: ${JSONCPP_LIBRARIES}")
-    ENDIF (NOT JSONCPP_FIND_QUIETLY)
-ELSE (JSONCPP_FOUND)
-    IF (JSONCPP_FIND_REQUIRED)
-        MESSAGE(FATAL_ERROR "Could not find JSONCPP library include: ${JSONCPP_INCLUDE_DIRS}, lib: ${JSONCPP_LIBRARIES}")
-    ENDIF (JSONCPP_FIND_REQUIRED)
-ENDIF (JSONCPP_FOUND)
-
-# Deprecated declarations.
-SET(NATIVE_JSONCPP_INCLUDE_PATH ${JSONCPP_INCLUDE_DIRS})
-GET_FILENAME_COMPONENT(NATIVE_JSONCPP_LIB_PATH ${JSONCPP_LIBRARIES} PATH)
-
-MARK_AS_ADVANCED(
-        JSONCPP_LIBRARIES
-        JSONCPP_INCLUDE_DIRS
-)
+mark_as_advanced(JSONCPP_LIBRARIES JSONCPP_INCLUDE_DIRS)
 
 # Restore the original find library ordering
 if (JSONCPP_USE_STATIC_LIBS)

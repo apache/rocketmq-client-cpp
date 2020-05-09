@@ -24,47 +24,104 @@
 #include "DefaultMQProducer.h"
 #include "Logging.h"
 #include "MQClientErrorContainer.h"
+#include "TransactionMQProducer.h"
 #include "UtilAll.h"
 
 using namespace rocketmq;
 
+class LocalTransactionExecutorInner {
+ public:
+  LocalTransactionExecutorInner(CLocalTransactionExecutorCallback callback, CMessage* message, void* userData)
+      : m_excutorCallback(callback), m_message(message), m_userData(userData) {}
+
+  ~LocalTransactionExecutorInner() = default;
+
+ public:
+  CLocalTransactionExecutorCallback m_excutorCallback;
+  CMessage* m_message;
+  void* m_userData;
+};
+
+class LocalTransactionListenerInner : public TransactionListener {
+ public:
+  LocalTransactionListenerInner(CProducer* producer, CLocalTransactionCheckerCallback callback, void* userData)
+      : m_producer(producer), m_checkerCallback(callback), m_userData(userData) {}
+
+  ~LocalTransactionListenerInner() = default;
+
+  LocalTransactionState executeLocalTransaction(const MQMessage& message, void* arg) override {
+    if (m_checkerCallback == nullptr) {
+      return LocalTransactionState::UNKNOWN;
+    }
+    auto* msg = reinterpret_cast<CMessage*>(const_cast<MQMessage*>(&message));
+    auto* executorInner = reinterpret_cast<LocalTransactionExecutorInner*>(arg);
+    auto status = executorInner->m_excutorCallback(m_producer, msg, executorInner->m_userData);
+    switch (status) {
+      case E_COMMIT_TRANSACTION:
+        return LocalTransactionState::COMMIT_MESSAGE;
+      case E_ROLLBACK_TRANSACTION:
+        return LocalTransactionState::ROLLBACK_MESSAGE;
+      default:
+        return LocalTransactionState::UNKNOWN;
+    }
+  }
+
+  LocalTransactionState checkLocalTransaction(const MQMessageExt& message) override {
+    if (m_checkerCallback == NULL) {
+      return LocalTransactionState::UNKNOWN;
+    }
+    auto* msgExt = reinterpret_cast<CMessageExt*>(const_cast<MQMessageExt*>(&message));
+    auto status = m_checkerCallback(m_producer, msgExt, m_userData);
+    switch (status) {
+      case E_COMMIT_TRANSACTION:
+        return LocalTransactionState::COMMIT_MESSAGE;
+      case E_ROLLBACK_TRANSACTION:
+        return LocalTransactionState::ROLLBACK_MESSAGE;
+      default:
+        return LocalTransactionState::UNKNOWN;
+    }
+  }
+
+ private:
+  CProducer* m_producer;
+  CLocalTransactionCheckerCallback m_checkerCallback;
+  void* m_userData;
+};
+
 class SelectMessageQueueInner : public MessageQueueSelector {
  public:
-  MQMessageQueue select(const std::vector<MQMessageQueue>& mqs, const MQMessage& msg, void* arg) {
-    int index = 0;
+  MQMessageQueue select(const std::vector<MQMessageQueue>& mqs, const MQMessage& msg, void* arg) override {
     std::string shardingKey = UtilAll::to_string((char*)arg);
-
-    index = std::hash<std::string>{}(shardingKey) % mqs.size();
+    auto index = std::hash<std::string>{}(shardingKey) % mqs.size();
     return mqs[index % mqs.size()];
   }
 };
 
 class SelectMessageQueue : public MessageQueueSelector {
  public:
-  SelectMessageQueue(QueueSelectorCallback callback) { m_pCallback = callback; }
+  SelectMessageQueue(QueueSelectorCallback callback) { m_callback = callback; }
 
-  MQMessageQueue select(const std::vector<MQMessageQueue>& mqs, const MQMessage& msg, void* arg) {
-    CMessage* message = (CMessage*)&msg;
+  MQMessageQueue select(const std::vector<MQMessageQueue>& mqs, const MQMessage& msg, void* arg) override {
+    auto* message = reinterpret_cast<CMessage*>(const_cast<MQMessage*>(&msg));
     // Get the index of sending MQMessageQueue through callback function.
-    int index = m_pCallback(mqs.size(), message, arg);
+    auto index = m_callback(mqs.size(), message, arg);
     return mqs[index];
   }
 
  private:
-  QueueSelectorCallback m_pCallback;
+  QueueSelectorCallback m_callback;
 };
 
 class COnSendCallback : public AutoDeleteSendCallback {
  public:
-  COnSendCallback(COnSendSuccessCallback cSendSuccessCallback,
-                  COnSendExceptionCallback cSendExceptionCallback,
-                  void* message,
-                  void* userData) {
-    m_cSendSuccessCallback = cSendSuccessCallback;
-    m_cSendExceptionCallback = cSendExceptionCallback;
-    m_message = message;
-    m_userData = userData;
-  }
+  COnSendCallback(COnSendSuccessCallback sendSuccessCallback,
+                  COnSendExceptionCallback sendExceptionCallback,
+                  CMessage* message,
+                  void* userData)
+      : m_sendSuccessCallback(sendSuccessCallback),
+        m_sendExceptionCallback(sendExceptionCallback),
+        m_message(message),
+        m_userData(userData) {}
 
   virtual ~COnSendCallback() = default;
 
@@ -74,7 +131,7 @@ class COnSendCallback : public AutoDeleteSendCallback {
     result.offset = sendResult.getQueueOffset();
     strncpy(result.msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result.msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
-    m_cSendSuccessCallback(result, (CMessage*)m_message, m_userData);
+    m_sendSuccessCallback(result, m_message, m_userData);
   }
 
   void onException(MQException& e) noexcept override {
@@ -83,22 +140,20 @@ class COnSendCallback : public AutoDeleteSendCallback {
     exception.line = e.GetLine();
     strncpy(exception.msg, e.what(), MAX_EXEPTION_MSG_LENGTH - 1);
     strncpy(exception.file, e.GetFile(), MAX_EXEPTION_FILE_LENGTH - 1);
-    m_cSendExceptionCallback(exception, (CMessage*)m_message, m_userData);
+    m_sendExceptionCallback(exception, m_message, m_userData);
   }
 
  private:
-  COnSendSuccessCallback m_cSendSuccessCallback;
-  COnSendExceptionCallback m_cSendExceptionCallback;
-  void* m_message;
+  COnSendSuccessCallback m_sendSuccessCallback;
+  COnSendExceptionCallback m_sendExceptionCallback;
+  CMessage* m_message;
   void* m_userData;
 };
 
 class CSendCallback : public AutoDeleteSendCallback {
  public:
-  CSendCallback(CSendSuccessCallback cSendSuccessCallback, CSendExceptionCallback cSendExceptionCallback) {
-    m_cSendSuccessCallback = cSendSuccessCallback;
-    m_cSendExceptionCallback = cSendExceptionCallback;
-  }
+  CSendCallback(CSendSuccessCallback sendSuccessCallback, CSendExceptionCallback sendExceptionCallback)
+      : m_sendSuccessCallback(sendSuccessCallback), m_sendExceptionCallback(sendExceptionCallback) {}
 
   virtual ~CSendCallback() = default;
 
@@ -108,7 +163,7 @@ class CSendCallback : public AutoDeleteSendCallback {
     result.offset = sendResult.getQueueOffset();
     strncpy(result.msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result.msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
-    m_cSendSuccessCallback(result);
+    m_sendSuccessCallback(result);
   }
 
   void onException(MQException& e) noexcept override {
@@ -117,12 +172,12 @@ class CSendCallback : public AutoDeleteSendCallback {
     exception.line = e.GetLine();
     strncpy(exception.msg, e.what(), MAX_EXEPTION_MSG_LENGTH - 1);
     strncpy(exception.file, e.GetFile(), MAX_EXEPTION_FILE_LENGTH - 1);
-    m_cSendExceptionCallback(exception);
+    m_sendExceptionCallback(exception);
   }
 
  private:
-  CSendSuccessCallback m_cSendSuccessCallback;
-  CSendExceptionCallback m_cSendExceptionCallback;
+  CSendSuccessCallback m_sendSuccessCallback;
+  CSendExceptionCallback m_sendExceptionCallback;
 };
 
 CProducer* CreateProducer(const char* groupId) {
@@ -130,11 +185,22 @@ CProducer* CreateProducer(const char* groupId) {
     return NULL;
   }
   auto* defaultMQProducer = new DefaultMQProducer(groupId);
-  return (CProducer*)defaultMQProducer;
+  return reinterpret_cast<CProducer*>(defaultMQProducer);
 }
 
 CProducer* CreateOrderlyProducer(const char* groupId) {
   return CreateProducer(groupId);
+}
+
+CProducer* CreateTransactionProducer(const char* groupId, CLocalTransactionCheckerCallback callback, void* userData) {
+  if (groupId == NULL) {
+    return NULL;
+  }
+  auto* transactionMQProducer = new TransactionMQProducer(groupId);
+  auto* producer = reinterpret_cast<CProducer*>(static_cast<DefaultMQProducer*>(transactionMQProducer));
+  auto* transcationListener = new LocalTransactionListenerInner(producer, callback, userData);
+  transactionMQProducer->setTransactionListener(transcationListener);
+  return producer;
 }
 
 int DestroyProducer(CProducer* producer) {
@@ -184,14 +250,13 @@ int SetProducerNameServerDomain(CProducer* producer, const char* domain) {
 }
 
 int SendMessageSync(CProducer* producer, CMessage* msg, CSendResult* result) {
-  // CSendResult sendResult;
   if (producer == NULL || msg == NULL || result == NULL) {
     return NULL_POINTER;
   }
   try {
-    DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
-    MQMessage* message = (MQMessage*)msg;
-    SendResult sendResult = defaultMQProducer->send(message);
+    auto* defaultMQProducer = reinterpret_cast<DefaultMQProducer*>(producer);
+    auto* message = reinterpret_cast<MQMessage*>(msg);
+    auto sendResult = defaultMQProducer->send(message);
     switch (sendResult.getSendStatus()) {
       case SEND_OK:
         result->sendStatus = E_SEND_OK;
@@ -220,14 +285,13 @@ int SendMessageSync(CProducer* producer, CMessage* msg, CSendResult* result) {
 }
 
 int SendBatchMessage(CProducer* producer, CBatchMessage* batcMsg, CSendResult* result) {
-  // CSendResult sendResult;
   if (producer == NULL || batcMsg == NULL || result == NULL) {
     return NULL_POINTER;
   }
   try {
-    DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
-    std::vector<MQMessage*>* message = (std::vector<MQMessage*>*)batcMsg;
-    SendResult sendResult = defaultMQProducer->send(*message);
+    auto* defaultMQProducer = reinterpret_cast<DefaultMQProducer*>(producer);
+    auto* message = reinterpret_cast<std::vector<MQMessage*>*>(batcMsg);
+    auto sendResult = defaultMQProducer->send(*message);
     switch (sendResult.getSendStatus()) {
       case SEND_OK:
         result->sendStatus = E_SEND_OK;
@@ -256,30 +320,30 @@ int SendBatchMessage(CProducer* producer, CBatchMessage* batcMsg, CSendResult* r
 
 int SendMessageAsync(CProducer* producer,
                      CMessage* msg,
-                     CSendSuccessCallback cSendSuccessCallback,
-                     CSendExceptionCallback cSendExceptionCallback) {
-  if (producer == NULL || msg == NULL || cSendSuccessCallback == NULL || cSendExceptionCallback == NULL) {
+                     CSendSuccessCallback sendSuccessCallback,
+                     CSendExceptionCallback sendExceptionCallback) {
+  if (producer == NULL || msg == NULL || sendSuccessCallback == NULL || sendExceptionCallback == NULL) {
     return NULL_POINTER;
   }
-  DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
-  MQMessage* message = (MQMessage*)msg;
-  CSendCallback* cSendCallback = new CSendCallback(cSendSuccessCallback, cSendExceptionCallback);
-  defaultMQProducer->send(message, cSendCallback);
+  auto* defaultMQProducer = reinterpret_cast<DefaultMQProducer*>(producer);
+  auto* message = reinterpret_cast<MQMessage*>(msg);
+  auto* sendCallback = new CSendCallback(sendSuccessCallback, sendExceptionCallback);
+  defaultMQProducer->send(message, sendCallback);
   return OK;
 }
 
 int SendAsync(CProducer* producer,
               CMessage* msg,
-              COnSendSuccessCallback onSuccess,
-              COnSendExceptionCallback onException,
-              void* usrData) {
-  if (producer == NULL || msg == NULL || onSuccess == NULL || onException == NULL) {
+              COnSendSuccessCallback sendSuccessCallback,
+              COnSendExceptionCallback sendExceptionCallback,
+              void* userData) {
+  if (producer == NULL || msg == NULL || sendSuccessCallback == NULL || sendExceptionCallback == NULL) {
     return NULL_POINTER;
   }
-  DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
-  MQMessage* message = (MQMessage*)msg;
-  COnSendCallback* cSendCallback = new COnSendCallback(onSuccess, onException, (void*)msg, usrData);
-  defaultMQProducer->send(message, cSendCallback);
+  auto* defaultMQProducer = reinterpret_cast<DefaultMQProducer*>(producer);
+  auto* message = reinterpret_cast<MQMessage*>(msg);
+  auto* sendCallback = new COnSendCallback(sendSuccessCallback, sendExceptionCallback, msg, userData);
+  defaultMQProducer->send(message, sendCallback);
   return OK;
 }
 
@@ -287,8 +351,8 @@ int SendMessageOneway(CProducer* producer, CMessage* msg) {
   if (producer == NULL || msg == NULL) {
     return NULL_POINTER;
   }
-  DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
-  MQMessage* message = (MQMessage*)msg;
+  auto* defaultMQProducer = reinterpret_cast<DefaultMQProducer*>(producer);
+  auto* message = reinterpret_cast<MQMessage*>(msg);
   try {
     defaultMQProducer->sendOneway(message);
   } catch (std::exception& e) {
@@ -301,8 +365,8 @@ int SendMessageOnewayOrderly(CProducer* producer, CMessage* msg, QueueSelectorCa
   if (producer == NULL || msg == NULL) {
     return NULL_POINTER;
   }
-  DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
-  MQMessage* message = (MQMessage*)msg;
+  auto* defaultMQProducer = reinterpret_cast<DefaultMQProducer*>(producer);
+  auto* message = reinterpret_cast<MQMessage*>(msg);
   try {
     SelectMessageQueue selectMessageQueue(selector);
     defaultMQProducer->sendOneway(message, &selectMessageQueue, arg);
@@ -315,37 +379,37 @@ int SendMessageOnewayOrderly(CProducer* producer, CMessage* msg, QueueSelectorCa
 
 int SendMessageOrderlyAsync(CProducer* producer,
                             CMessage* msg,
-                            QueueSelectorCallback callback,
+                            QueueSelectorCallback selectorCallback,
                             void* arg,
-                            CSendSuccessCallback cSendSuccessCallback,
-                            CSendExceptionCallback cSendExceptionCallback) {
-  if (producer == NULL || msg == NULL || callback == NULL || cSendSuccessCallback == NULL ||
-      cSendExceptionCallback == NULL) {
+                            CSendSuccessCallback sendSuccessCallback,
+                            CSendExceptionCallback sendExceptionCallback) {
+  if (producer == NULL || msg == NULL || selectorCallback == NULL || sendSuccessCallback == NULL ||
+      sendExceptionCallback == NULL) {
     return NULL_POINTER;
   }
-  DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
-  MQMessage* message = (MQMessage*)msg;
-  CSendCallback* cSendCallback = new CSendCallback(cSendSuccessCallback, cSendExceptionCallback);
+  auto* defaultMQProducer = reinterpret_cast<DefaultMQProducer*>(producer);
+  auto* message = reinterpret_cast<MQMessage*>(msg);
+  auto* cSendCallback = new CSendCallback(sendSuccessCallback, sendExceptionCallback);
   // Constructing SelectMessageQueue objects through function pointer callback
-  SelectMessageQueue selectMessageQueue(callback);
+  SelectMessageQueue selectMessageQueue(selectorCallback);
   defaultMQProducer->send(message, &selectMessageQueue, arg, cSendCallback);
   return OK;
 }
 
 int SendMessageOrderly(CProducer* producer,
                        CMessage* msg,
-                       QueueSelectorCallback callback,
+                       QueueSelectorCallback selectorCallback,
                        void* arg,
                        int autoRetryTimes,
                        CSendResult* result) {
-  if (producer == NULL || msg == NULL || callback == NULL || arg == NULL || result == NULL) {
+  if (producer == NULL || msg == NULL || selectorCallback == NULL || arg == NULL || result == NULL) {
     return NULL_POINTER;
   }
-  DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
-  MQMessage* message = (MQMessage*)msg;
+  auto* defaultMQProducer = reinterpret_cast<DefaultMQProducer*>(producer);
+  auto* message = reinterpret_cast<MQMessage*>(msg);
   try {
     // Constructing SelectMessageQueue objects through function pointer callback
-    SelectMessageQueue selectMessageQueue(callback);
+    SelectMessageQueue selectMessageQueue(selectorCallback);
     SendResult sendResult = defaultMQProducer->send(message, &selectMessageQueue, arg);
     // Convert SendStatus to CSendStatus
     result->sendStatus = CSendStatus((int)sendResult.getSendStatus());
@@ -363,8 +427,8 @@ int SendMessageOrderlyByShardingKey(CProducer* producer, CMessage* msg, const ch
   if (producer == NULL || msg == NULL || shardingKey == NULL || result == NULL) {
     return NULL_POINTER;
   }
-  DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)producer;
-  MQMessage* message = (MQMessage*)msg;
+  auto* defaultMQProducer = reinterpret_cast<DefaultMQProducer*>(producer);
+  auto* message = reinterpret_cast<MQMessage*>(msg);
   try {
     // Constructing SelectMessageQueue objects through function pointer callback
     int retryTimes = 3;
@@ -378,6 +442,30 @@ int SendMessageOrderlyByShardingKey(CProducer* producer, CMessage* msg, const ch
   } catch (std::exception& e) {
     MQClientErrorContainer::setErr(std::string(e.what()));
     return PRODUCER_SEND_ORDERLY_FAILED;
+  }
+  return OK;
+}
+
+int SendMessageTransaction(CProducer* producer,
+                           CMessage* msg,
+                           CLocalTransactionExecutorCallback callback,
+                           void* userData,
+                           CSendResult* result) {
+  if (producer == NULL || msg == NULL || callback == NULL || result == NULL) {
+    return NULL_POINTER;
+  }
+  try {
+    auto* transactionMQProducer = reinterpret_cast<DefaultMQProducer*>(producer);
+    auto* message = reinterpret_cast<MQMessage*>(msg);
+    LocalTransactionExecutorInner executorInner(callback, msg, userData);
+    auto sendResult = transactionMQProducer->sendMessageInTransaction(message, &executorInner);
+    result->sendStatus = CSendStatus((int)sendResult.getSendStatus());
+    result->offset = sendResult.getQueueOffset();
+    strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+    result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
+  } catch (std::exception& e) {
+    MQClientErrorContainer::setErr(std::string(e.what()));
+    return PRODUCER_SEND_TRANSACTION_FAILED;
   }
   return OK;
 }
@@ -414,7 +502,7 @@ int SetProducerLogPath(CProducer* producer, const char* logPath) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  // Todo, This api should be implemented by core api.
+  // TODO: This api should be implemented by core api.
   // reinterpret_cast<DefaultMQProducer*>(producer)->setLogFileSizeAndNum(3, 102400000);
   return OK;
 }

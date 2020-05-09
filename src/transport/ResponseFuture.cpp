@@ -59,8 +59,8 @@ void ResponseFuture::executeInvokeCallback() noexcept {
 
 std::unique_ptr<RemotingCommand> ResponseFuture::waitResponse(int timeoutMillis) {
   if (m_countDownLatch != nullptr) {
-    if (timeoutMillis <= 0) {
-      timeoutMillis = m_timeoutMillis;
+    if (timeoutMillis < 0) {
+      timeoutMillis = 0;
     }
     m_countDownLatch->wait(timeoutMillis, time_unit::milliseconds);
   }

@@ -21,18 +21,19 @@
 
 #include "AllocateMQStrategy.h"
 #include "Logging.h"
+#include "MQClientException.h"
 
 namespace rocketmq {
 
 class AllocateMQAveragely : public AllocateMQStrategy {
  public:
-  void allocate(const std::string& currentCID,
+  void allocate(const std::string& currentCid,
                 std::vector<MQMessageQueue>& mqAll,
                 std::vector<std::string>& cidAll,
                 std::vector<MQMessageQueue>& outReuslt) override {
     outReuslt.clear();
 
-    if (currentCID.empty()) {
+    if (currentCid.empty()) {
       THROW_MQEXCEPTION(MQClientException, "currentCID is empty", -1);
     }
 
@@ -47,7 +48,7 @@ class AllocateMQAveragely : public AllocateMQStrategy {
     int index = -1;
     int cidAllSize = cidAll.size();
     for (int i = 0; i < cidAllSize; i++) {
-      if (cidAll[i] == currentCID) {
+      if (cidAll[i] == currentCid) {
         index = i;
         break;
       }

@@ -14,38 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
 #include <map>
 #include <string>
 
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
-
 #include "KVTable.h"
 
-using std::map;
-using std::string;
-
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::KVTable;
 
-TEST(KVTable, init) {
+TEST(KVTableTest, Init) {
   KVTable table;
 
   EXPECT_EQ(table.getTable().size(), 0);
 
-  map<string, string> maps;
-  maps["string"] = "string";
-  table.setTable(maps);
+  std::map<std::string, std::string> kvs;
+  kvs["string"] = "string";
+  table.setTable(kvs);
   EXPECT_EQ(table.getTable().size(), 1);
 }
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "KVTable.*";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "KVTableTest.*";
+  return RUN_ALL_TESTS();
 }

@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PULL_MESSAGE_SERVICE_H__
-#define __PULL_MESSAGE_SERVICE_H__
+#ifndef __PULL_MESSAGE_SERVICE_HPP__
+#define __PULL_MESSAGE_SERVICE_HPP__
 
 #include "DefaultMQPushConsumerImpl.h"
 #include "Logging.h"
@@ -57,7 +57,8 @@ class PullMessageService {
  private:
   void pullMessage(PullRequestPtr pullRequest) {
     MQConsumerInner* consumer = m_clientInstance->selectConsumer(pullRequest->getConsumerGroup());
-    if (consumer != nullptr && std::type_index(typeid(*consumer)) == std::type_index(typeid(DefaultMQPushConsumerImpl))) {
+    if (consumer != nullptr &&
+        std::type_index(typeid(*consumer)) == std::type_index(typeid(DefaultMQPushConsumerImpl))) {
       auto* impl = static_cast<DefaultMQPushConsumerImpl*>(consumer);
       impl->pullMessage(pullRequest);
     } else {
@@ -72,4 +73,4 @@ class PullMessageService {
 
 }  // namespace rocketmq
 
-#endif  // __PULL_MESSAGE_SERVICE_H__
+#endif  // __PULL_MESSAGE_SERVICE_HPP__

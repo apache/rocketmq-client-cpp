@@ -16,8 +16,7 @@
  */
 #include "Validators.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <regex>
 
 #include "MQProtos.h"
 #include "UtilAll.h"
@@ -36,19 +35,30 @@ bool Validators::regularExpressionMatcher(const std::string& origin, const std::
     return true;
   }
 
-  // Pattern pattern = Pattern.compile(patternStr);
-  // Matcher matcher = pattern.matcher(origin);
-
-  // return matcher.matches();
+#if defined(__GNUC__) && ((__GNUC__ < 4) || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8))
   return true;
+#else
+  const std::regex regex(patternStr, std::regex::extended);
+  return std::regex_match(origin, regex);
+#endif
 }
 
 std::string Validators::getGroupWithRegularExpression(const std::string& origin, const std::string& patternStr) {
-  /*Pattern pattern = Pattern.compile(patternStr);
-  Matcher matcher = pattern.matcher(origin);
-  while (matcher.find()) {
-  return matcher.group(0);
-  }*/
+  if (!UtilAll::isBlank(patternStr)) {
+#if !defined(__GNUC__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 8)
+    const std::regex regex(patternStr, std::regex::extended);
+    std::smatch match;
+
+    if (std::regex_match(origin, match, regex)) {
+      // The first sub_match is the whole string; the next
+      // sub_match is the first parenthesized expression.
+      if (match.size() == 2) {
+        std::ssub_match base_sub_match = match[1];
+        return base_sub_match.str();
+      }
+    }
+#endif
+  }
   return "";
 }
 

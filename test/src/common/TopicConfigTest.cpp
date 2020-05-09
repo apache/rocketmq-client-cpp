@@ -14,35 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "string.h"
-
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "PermName.h"
 #include "TopicConfig.h"
 #include "TopicFilterType.h"
 
-using std::string;
-
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::PermName;
 using rocketmq::TopicConfig;
 using rocketmq::TopicFilterType;
 
-TEST(topicConfig, encodeAndDecode) {
+TEST(TopicConfigTest, EncodeAndDecode) {
   TopicConfig topicConfig("testTopic", 4, 4, PermName::PERM_READ);
-  string str = topicConfig.encode();
+  std::string str = topicConfig.encode();
+  EXPECT_EQ(str, "testTopic 4 4 4 0");
 
   TopicConfig topicDecodeConfig;
   topicDecodeConfig.decode(str);
   EXPECT_EQ(str, topicDecodeConfig.encode());
 }
 
-TEST(topicConfig, info) {
+TEST(TopicConfigTest, GetterAndSetter) {
   TopicConfig topicConfig;
 
   topicConfig.setTopicName("testTopic");
@@ -61,7 +58,7 @@ TEST(topicConfig, info) {
   EXPECT_EQ(topicConfig.getTopicFilterType(), TopicFilterType::MULTI_TAG);
 }
 
-TEST(topicConfig, init) {
+TEST(TopicConfigTest, Init) {
   TopicConfig topicConfig;
   EXPECT_TRUE(topicConfig.getTopicName() == "");
   EXPECT_EQ(topicConfig.getReadQueueNums(), TopicConfig::DefaultReadQueueNums);
@@ -87,7 +84,6 @@ TEST(topicConfig, init) {
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "topicConfig.*";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "TopicConfigTest.*";
+  return RUN_ALL_TESTS();
 }

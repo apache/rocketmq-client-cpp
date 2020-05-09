@@ -58,7 +58,7 @@ void ProcessQueue::putMessage(std::vector<MQMessageExtPtr2>& msgs) {
     }
   }
 
-  LOG_DEBUG("ProcessQueue: putMessage m_queueOffsetMax:%lld ", m_queueOffsetMax);
+  LOG_DEBUG_NEW("ProcessQueue: putMessage m_queueOffsetMax:{}", m_queueOffsetMax);
 }
 
 int64_t ProcessQueue::removeMessage(std::vector<MQMessageExtPtr2>& msgs) {
@@ -70,11 +70,10 @@ int64_t ProcessQueue::removeMessage(std::vector<MQMessageExtPtr2>& msgs) {
 
   if (!m_msgTreeMap.empty()) {
     result = m_queueOffsetMax + 1;
-    LOG_DEBUG("offset result is:%lld, m_queueOffsetMax is:%lld, msgs size:" SIZET_FMT "", result, m_queueOffsetMax,
-              msgs.size());
+    LOG_DEBUG_NEW("offset result is:{}, m_queueOffsetMax is:{}, msgs size:{}", result, m_queueOffsetMax, msgs.size());
 
     for (auto& msg : msgs) {
-      LOG_DEBUG("remove these msg from m_msgTreeMap, its offset:%lld", msg->getQueueOffset());
+      LOG_DEBUG_NEW("remove these msg from m_msgTreeMap, its offset:{}", msg->getQueueOffset());
       m_msgTreeMap.erase(msg->getQueueOffset());
     }
 
@@ -156,7 +155,7 @@ void ProcessQueue::clearAllMsgs() {
   std::lock_guard<std::mutex> lock(m_lockTreeMap);
 
   if (isDropped()) {
-    LOG_DEBUG("clear m_msgTreeMap as PullRequest had been dropped.");
+    LOG_DEBUG_NEW("clear m_msgTreeMap as PullRequest had been dropped.");
     m_msgTreeMap.clear();
     m_consumingMsgOrderlyTreeMap.clear();
     m_queueOffsetMax = 0;

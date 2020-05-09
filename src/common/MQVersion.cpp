@@ -18,8 +18,8 @@
 
 namespace rocketmq {
 
-int MQVersion::s_CurrentVersion = MQVersion::V4_6_0;
-std::string MQVersion::s_CurrentLanguage = "CPP";
+const int MQVersion::s_CurrentVersion = MQVersion::V4_6_0;
+const std::string MQVersion::s_CurrentLanguage = "CPP";
 
 const char* MQVersion::GetVersionDesc(int value) {
   int currentVersion = value;

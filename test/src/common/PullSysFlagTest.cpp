@@ -14,18 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "PullSysFlag.h"
 
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::PullSysFlag;
 
-TEST(pullSysFlag, flag) {
+TEST(PullSysFlagTest, Flag) {
   EXPECT_EQ(PullSysFlag::buildSysFlag(false, false, false, false), 0);
 
   EXPECT_EQ(PullSysFlag::buildSysFlag(true, false, false, false), 1);
@@ -89,7 +89,6 @@ TEST(pullSysFlag, flag) {
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "pullSysFlag.flag";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "PullSysFlagTest.*";
+  return RUN_ALL_TESTS();
 }

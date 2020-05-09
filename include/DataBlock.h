@@ -18,20 +18,20 @@
 #define __DATA_BLOCK_H__
 
 #include <memory>
+#include <string>
 
 #include "RocketMQClient.h"
 
 namespace rocketmq {
 
 class MemoryBlock;
-typedef MemoryBlock* MemoryBlockPtr;
+typedef std::unique_ptr<MemoryBlock> MemoryBlockPtr;
 typedef std::shared_ptr<MemoryBlock> MemoryBlockPtr2;
-typedef std::unique_ptr<MemoryBlock> MemoryBlockPtr3;
 
 class ROCKETMQCLIENT_API MemoryBlock {
  public:
   MemoryBlock() : MemoryBlock(nullptr, 0) {}
-  MemoryBlock(char* data, size_t size) : data_(data), size_(size) {}
+  explicit MemoryBlock(char* data, size_t size) : data_(data), size_(size) {}
   virtual ~MemoryBlock() = default;
 
   /** Returns a void pointer to the data.
@@ -56,6 +56,14 @@ class ROCKETMQCLIENT_API MemoryBlock {
   template <typename Type>
   const char& operator[](const Type offset) const {
     return data_[offset];
+  }
+
+  operator std::string() {
+    if (size_ > 0) {
+      return std::string(data_, size_);
+    } else {
+      return "";
+    }
   }
 
   /** Frees all the blocks data, setting its size to 0. */
@@ -90,14 +98,14 @@ class ROCKETMQCLIENT_API MemoryPool : public MemoryBlock {
    *  @param initialSize          the size of block to create
    *  @param initialiseToZero     whether to clear the memory or just leave it uninitialised
    */
-  MemoryPool(size_t initialSize, bool initialiseToZero = false);
+  explicit MemoryPool(size_t initialSize, bool initialiseToZero = false);
 
   /** Creates a memory block using a copy of a block of data.
    *
    *  @param dataToInitialiseFrom     some data to copy into this block
    *  @param sizeInBytes              how much space to use
    */
-  MemoryPool(const void* dataToInitialiseFrom, size_t sizeInBytes);
+  explicit MemoryPool(const void* dataToInitialiseFrom, size_t sizeInBytes);
 
   /** Creates a copy of another memory block. */
   MemoryPool(const MemoryPool&);

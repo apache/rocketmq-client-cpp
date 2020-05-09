@@ -14,38 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "string.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <string>
 
 #include "VirtualEnvUtil.h"
 
-using std::string;
-
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::VirtualEnvUtil;
 
-VirtualEnvUtil virtualEnvUtil;
-
-TEST(virtualEnvUtil, buildWithProjectGroup) {
-  string origin = "origin";
-  string projectGroup;
-  EXPECT_EQ(virtualEnvUtil.buildWithProjectGroup(origin, string()), origin);
-
-  EXPECT_EQ(virtualEnvUtil.buildWithProjectGroup(origin, string("123")), origin);
+TEST(VirtualEnvUtilTest, BuildWithProjectGroup) {
+  EXPECT_EQ(VirtualEnvUtil::buildWithProjectGroup("origin", ""), "origin");
+  EXPECT_EQ(VirtualEnvUtil::buildWithProjectGroup("origin", "123"), "origin%PROJECT_123%");
 }
 
-TEST(virtualEnvUtil, clearProjectGroup) {}
+TEST(VirtualEnvUtilTest, ClearProjectGroup) {}
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
-
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "messageExt.init";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "VirtualEnvUtilTest.*";
+  return RUN_ALL_TESTS();
 }

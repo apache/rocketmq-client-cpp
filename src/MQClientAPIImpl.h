@@ -17,12 +17,10 @@
 #ifndef __MQ_CLIENT_API_IMPL_H__
 #define __MQ_CLIENT_API_IMPL_H__
 
-#include "CommandHeader.h"
 #include "CommunicationMode.h"
 #include "DefaultMQProducerImpl.h"
 #include "HeartbeatData.h"
 #include "KVTable.h"
-#include "LockBatchBody.h"
 #include "MQClientException.h"
 #include "MQClientInstance.h"
 #include "MQMessageExt.h"
@@ -33,6 +31,8 @@
 #include "TopicList.h"
 #include "TopicPublishInfo.h"
 #include "TopicRouteData.h"
+#include "protocol/body/LockBatchBody.h"
+#include "protocol/header/CommandHeader.h"
 
 namespace rocketmq {
 
@@ -47,8 +47,8 @@ class SendCallbackWrap;
 class MQClientAPIImpl {
  public:
   MQClientAPIImpl(ClientRemotingProcessor* clientRemotingProcessor,
-                  std::shared_ptr<RPCHook> rpcHook,
-                  const MQClientConfig* clientConfig);
+                  RPCHookPtr rpcHook,
+                  const MQClientConfig& clientConfig);
   virtual ~MQClientAPIImpl();
 
   void start();
@@ -79,7 +79,7 @@ class MQClientAPIImpl {
   SendResult* processSendResponse(const std::string& brokerName, const MQMessagePtr msg, RemotingCommand* pResponse);
 
   PullResult* pullMessage(const std::string& addr,
-                          PullMessageRequestHeader* pRequestHeader,
+                          PullMessageRequestHeader* requestHeader,
                           int timeoutMillis,
                           CommunicationMode communicationMode,
                           PullCallback* pullCallback);
@@ -104,17 +104,17 @@ class MQClientAPIImpl {
                                 int timeoutMillis);
 
   int64_t queryConsumerOffset(const std::string& addr,
-                              QueryConsumerOffsetRequestHeader* pRequestHeader,
+                              QueryConsumerOffsetRequestHeader* requestHeader,
                               int timeoutMillis);
 
   void updateConsumerOffset(const std::string& addr,
-                            UpdateConsumerOffsetRequestHeader* pRequestHeader,
+                            UpdateConsumerOffsetRequestHeader* requestHeader,
                             int timeoutMillis);
   void updateConsumerOffsetOneway(const std::string& addr,
-                                  UpdateConsumerOffsetRequestHeader* pRequestHeader,
+                                  UpdateConsumerOffsetRequestHeader* requestHeader,
                                   int timeoutMillis);
 
-  void sendHearbeat(const std::string& addr, HeartbeatData* pHeartbeatData);
+  void sendHearbeat(const std::string& addr, HeartbeatData* heartbeatData, long timeoutMillis);
   void unregisterClient(const std::string& addr,
                         const std::string& clientID,
                         const std::string& producerGroup,
@@ -192,7 +192,6 @@ class MQClientAPIImpl {
 
  private:
   std::unique_ptr<TcpRemotingClient> m_remotingClient;
-  std::string m_nameSrvAddr;
 };
 
 }  // namespace rocketmq

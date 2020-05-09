@@ -17,11 +17,11 @@
 #ifndef __TOPIC_ROUTE_DATA_H__
 #define __TOPIC_ROUTE_DATA_H__
 
+#include <json/json.h>
+
 #include <algorithm>
 #include <cstdlib>
 #include <memory>
-
-#include <json/json.h>
 
 #include "DataBlock.h"
 #include "Logging.h"
@@ -42,6 +42,7 @@ struct QueueData {
     return brokerName == other.brokerName && readQueueNums == other.readQueueNums &&
            writeQueueNums == other.writeQueueNums && perm == other.perm;
   }
+  bool operator!=(const QueueData& other) const { return !operator==(other); }
 };
 
 struct BrokerData {
@@ -53,6 +54,7 @@ struct BrokerData {
   bool operator==(const BrokerData& other) const {
     return brokerName == other.brokerName && brokerAddrs == other.brokerAddrs;
   }
+  bool operator!=(const BrokerData& other) const { return !operator==(other); }
 };
 
 class TopicRouteData;
@@ -104,20 +106,20 @@ class TopicRouteData {
    * @return Broker address.
    */
   std::string selectBrokerAddr() {
-    int bdSize = m_brokerDatas.size();
+    auto bdSize = m_brokerDatas.size();
     if (bdSize > 0) {
-      int bdIndex = std::rand() % bdSize;
-      auto bd = m_brokerDatas[bdIndex];
-      auto iter = bd.brokerAddrs.find(MASTER_ID);
-      if (iter == bd.brokerAddrs.end()) {
-        int baSize = bd.brokerAddrs.size();
-        int baIndex = std::rand() % baSize;
-        iter = bd.brokerAddrs.begin();
+      auto bdIndex = std::rand() % bdSize;
+      const auto& bd = m_brokerDatas[bdIndex];
+      auto it = bd.brokerAddrs.find(MASTER_ID);
+      if (it == bd.brokerAddrs.end()) {
+        auto baSize = bd.brokerAddrs.size();
+        auto baIndex = std::rand() % baSize;
+        it = bd.brokerAddrs.begin();
         for (; baIndex > 0; baIndex--) {
-          iter++;
+          it++;
         }
       }
-      return iter->second;
+      return it->second;
     }
     return "";
   }
@@ -134,6 +136,7 @@ class TopicRouteData {
     return m_brokerDatas == other.m_brokerDatas && m_orderTopicConf == other.m_orderTopicConf &&
            m_queueDatas == other.m_queueDatas;
   }
+  bool operator!=(const TopicRouteData& other) const { return !operator==(other); }
 
  private:
   std::string m_orderTopicConf;

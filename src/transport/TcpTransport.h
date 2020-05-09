@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TCPTRANSPORT_H__
-#define __TCPTRANSPORT_H__
+#ifndef __TCP_TRANSPORT_H__
+#define __TCP_TRANSPORT_H__
 
 #include <atomic>
 #include <condition_variable>
@@ -34,18 +34,25 @@ typedef enum TcpConnectStatus {
   TCP_CONNECT_STATUS_CLOSED = 4
 } TcpConnectStatus;
 
-using TcpTransportReadCallback = void (*)(void* context, MemoryBlockPtr3&, const std::string&);
-
-class TcpRemotingClient;
 class TcpTransport;
-
 typedef std::shared_ptr<TcpTransport> TcpTransportPtr;
+
+class TcpTransportInfo {
+ public:
+  virtual ~TcpTransportInfo() = default;
+};
 
 class TcpTransport : public noncopyable, public std::enable_shared_from_this<TcpTransport> {
  public:
-  static TcpTransportPtr CreateTransport(TcpRemotingClient* client, TcpTransportReadCallback handle = nullptr) {
+  typedef std::function<void(MemoryBlockPtr, TcpTransportPtr) noexcept> ReadCallback;
+  typedef std::function<void(TcpTransportPtr) noexcept> CloseCallback;
+
+ public:
+  static TcpTransportPtr CreateTransport(ReadCallback readCallback,
+                                         CloseCallback closeCallback,
+                                         std::unique_ptr<TcpTransportInfo> info) {
     // transport must be managed by smart pointer
-    return TcpTransportPtr(new TcpTransport(client, handle));
+    return TcpTransportPtr(new TcpTransport(readCallback, closeCallback, std::move(info)));
   }
 
   virtual ~TcpTransport();
@@ -59,38 +66,40 @@ class TcpTransport : public noncopyable, public std::enable_shared_from_this<Tcp
   const std::string& getPeerAddrAndPort();
   const uint64_t getStartTime() const;
 
+  TcpTransportInfo* getInfo() { return m_info.get(); }
+
  private:
   // don't instance object directly.
-  TcpTransport(TcpRemotingClient* client, TcpTransportReadCallback callback = nullptr);
+  TcpTransport(ReadCallback readCallback, CloseCallback closeCallback, std::unique_ptr<TcpTransportInfo> info);
 
-  // buffer
-  static void ReadCallback(BufferEvent* event, TcpTransport* transport);
-  static void EventCallback(BufferEvent* event, short what, TcpTransport* transport);
+  // BufferEvent callback
+  void dataArrived(BufferEvent& event);
+  void eventOccurred(BufferEvent& event, short what);
 
-  void messageReceived(MemoryBlockPtr3& mem, const std::string& addr);
+  void messageReceived(MemoryBlockPtr mem);
 
-  TcpConnectStatus closeBufferEvent();  // not thread-safe
+  TcpConnectStatus closeBufferEvent(bool isDeleted = false);
 
   TcpConnectStatus setTcpConnectEvent(TcpConnectStatus connectStatus);
   bool setTcpConnectEventIf(TcpConnectStatus& expectStatus, TcpConnectStatus connectStatus);
 
-  // convert host to binary
-  u_long resolveInetAddr(std::string& hostname);
-
  private:
   uint64_t m_startTime;
 
-  std::shared_ptr<BufferEvent> m_event;  // NOTE: use m_event in callback is unsafe.
+  std::unique_ptr<BufferEvent> m_event;  // NOTE: use m_event in callback is unsafe.
 
   std::atomic<TcpConnectStatus> m_tcpConnectStatus;
   std::mutex m_statusMutex;
   std::condition_variable m_statusEvent;
 
-  // read data callback
-  TcpTransportReadCallback m_readCallback;
-  TcpRemotingClient* m_tcpRemotingClient;
+  // callback
+  ReadCallback m_readCallback;
+  CloseCallback m_closeCallback;
+
+  // info
+  std::unique_ptr<TcpTransportInfo> m_info;
 };
 
 }  // namespace rocketmq
 
-#endif
+#endif  // __TCP_TRANSPORT__

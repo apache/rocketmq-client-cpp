@@ -18,34 +18,25 @@
 #define __TRANSACTION_MQ_PRODUCER_H__
 
 #include "DefaultMQProducer.h"
-#include "TransactionListener.h"
+#include "TransactionMQProducerConfig.h"
 
 namespace rocketmq {
 
-class ROCKETMQCLIENT_API TransactionMQProducerConfig {
- public:
-  TransactionMQProducerConfig();
-  virtual ~TransactionMQProducerConfig() = default;
-
- public:  // TransactionMQProducerConfig
-  TransactionListener* getTransactionListener() const { return m_transactionListener; }
-  void setTransactionListener(TransactionListener* transactionListener) { m_transactionListener = transactionListener; }
-
- protected:
-  TransactionListener* m_transactionListener;
-};
-
-class ROCKETMQCLIENT_API TransactionMQProducer : public DefaultMQProducer, public TransactionMQProducerConfig {
+class ROCKETMQCLIENT_API TransactionMQProducer : public DefaultMQProducer, virtual public TransactionMQProducerConfig {
  public:
   TransactionMQProducer(const std::string& groupname);
   TransactionMQProducer(const std::string& groupname, RPCHookPtr rpcHook);
   virtual ~TransactionMQProducer();
 
+ public:  // TransactionMQProducerConfig
+  TransactionListener* getTransactionListener() const override;
+  void setTransactionListener(TransactionListener* transactionListener) override;
+
  public:  // MQProducer
   void start() override;
   void shutdown() override;
 
-  // Transaction
+  // Transaction: don't delete msg object, until callback occur.
   TransactionSendResult sendMessageInTransaction(MQMessagePtr msg, void* arg) override;
 };
 

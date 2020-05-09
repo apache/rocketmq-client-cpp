@@ -15,79 +15,78 @@
 
 project(test)
 
-SET(SUB_DIRS)
-file(GLOB children ${CMAKE_SOURCE_DIR}/src/*)
-FOREACH(child ${children})
-    IF(IS_DIRECTORY ${child})
-        LIST(APPEND SUB_DIRS ${child})
-    ENDIF()
-ENDFOREACH()
-LIST(APPEND SUB_DIRS ${CMAKE_SOURCE_DIR}/src)
-include_directories(${CMAKE_SOURCE_DIR}/include)
-include_directories(${SUB_DIRS})
-
-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/test/bin)
-
-include_directories(${CMAKE_SOURCE_DIR}/include)
-include_directories(${Boost_INCLUDE_DIRS})
-
-set(Gtest_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/bin/include/gtest)
-set(Gmock_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/bin/include/gmock)
-
-include_directories(${Gtest_INCLUDE_DIR})
-include_directories(${Gtest_INCLUDE_DIR}/internal)
-include_directories(${Gmock_INCLUDE_DIR})
-include_directories(${Gmock_INCLUDE_DIR}/internal)
-
-set(Gtest_LIBRARY_DIRS ${CMAKE_SOURCE_DIR}/bin/lib)
-set(Gtest_LIBRARIES ${Gtest_LIBRARY_DIRS}/libgtest_main.a;${Gtest_LIBRARY_DIRS}/libgtest.a)
-set(Gmock_LIBRARIES ${Gtest_LIBRARY_DIRS}/libgmock_main.a;${Gtest_LIBRARY_DIRS}/libgmock.a)
-message(status "** Gmock_LIBRARIES: ${Gmock_LIBRARIES}")
-
-link_directories(${Boost_LIBRARY_DIRS})
-link_directories(${LIBEVENT_LIBRARY})
-link_directories(${JSONCPP_LIBRARY})
-
-set(ROCKETMQ_LIBRARIES ${CMAKE_SOURCE_DIR}/bin/librocketmq.a)
-message(status "ROCKETMQ_LIBRARIES ${ROCKETMQ_LIBRARIES}")
-
 set(CMAKE_BUILD_TYPE "Debug")
 
-function(compile files)
-    foreach(file ${files})
-        get_filename_component(basename ${file} NAME_WE)
-        add_executable(${basename} ${file})
-        if(MSVC)
-            if(CMAKE_CONFIGURATION_TYPES STREQUAL "Release")
-                set_target_properties( ${basename} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMT" )
-            else()
-                set_target_properties( ${basename} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMTD" )
-            endif()
-        endif()
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
-        if (MSVC) 
-            if (BUILD_ROCKETMQ_SHARED)
-                target_link_libraries (${basename}  rocketmq_shared ${deplibs}
-                ${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES} ${x`})
-            else()
-                target_link_libraries (${basename}  rocketmq_static ${deplibs}
-                ${Boost_LIBRARIES} ${LIBEVENT_LIBRARIES} ${JSONCPP_LIBRARIES} ${Gtest_LIBRARIES})
-            endif()
+set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${CMAKE_SOURCE_DIR}/bin/lib64/cmake;${CMAKE_SOURCE_DIR}/bin/lib/cmake")
+
+# Find dependencies
+if (CMAKE_VERSION VERSION_LESS "3.0")
+    find_package(GTest 1.10.0 REQUIRED CONFIG)
+else ()
+    include_directories("${CMAKE_SOURCE_DIR}/bin/include")
+
+    if (EXISTS "${CMAKE_SOURCE_DIR}/bin/lib64/libgtest.a")
+        set(Gtest_LIBRARY_DIR "${CMAKE_SOURCE_DIR}/bin/lib64")
+    else ()
+        set(Gtest_LIBRARY_DIR "${CMAKE_SOURCE_DIR}/bin/lib")
+    endif ()
+    link_libraries("${Gtest_LIBRARY_DIR}/libgtest.a" "${Gtest_LIBRARY_DIR}/libgtest_main.a"
+        "${Gtest_LIBRARY_DIR}/libgmock.a" "${Gtest_LIBRARY_DIR}/libgmock_main.a")
+endif ()
+
+if (NOT (CMAKE_VERSION VERSION_LESS "3.9"))
+    cmake_policy(SET CMP0054 NEW)
+    cmake_policy(SET CMP0057 NEW)
+    include(GoogleTest)
+endif ()
+
+function(config_test file)
+    get_filename_component(basename ${file} NAME_WE)
+
+    add_executable(${basename} ${file})
+
+    if(MSVC)
+        if(CMAKE_CONFIGURATION_TYPES STREQUAL "Release")
+            set_target_properties(${basename} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMT")
         else()
-            target_link_libraries (${basename}  rocketmq_shared ${deplibs})
-            target_link_libraries (${basename}  rocketmq_shared ${Gtest_LIBRARIES})
-            target_link_libraries (${basename}  rocketmq_shared ${Gmock_LIBRARIES})
-        endif()  
-    endforeach()
+            set_target_properties(${basename} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMTD")
+        endif()
+    endif()
+
+    if (CMAKE_VERSION VERSION_LESS "3.0")
+        if (BUILD_ROCKETMQ_SHARED)
+            target_link_libraries(${basename} rocketmq_shared
+                GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
+        else (BUILD_ROCKETMQ_SHARED)
+            target_link_libraries(${basename} rocketmq_static
+                GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
+        endif (BUILD_ROCKETMQ_SHARED)
+    else ()
+        if (BUILD_ROCKETMQ_SHARED)
+            target_link_libraries(${basename} rocketmq_shared)
+        else (BUILD_ROCKETMQ_SHARED)
+            target_link_libraries(${basename} rocketmq_static)
+        endif (BUILD_ROCKETMQ_SHARED)
+    endif ()
+
+    if (NOT (CMAKE_VERSION VERSION_LESS "3.10"))
+        gtest_discover_tests(${basename})
+    elseif (NOT (CMAKE_VERSION VERSION_LESS "3.9"))
+        gtest_add_tests(TARGET ${basename})
+    endif ()
 endfunction()
 
-file(GLOB files "src/*.c*")
-compile("${files}")
+function(config_all_test dir)
+    file(GLOB files "${dir}/*")
+    foreach (file ${files})
+        if (IS_DIRECTORY ${file})
+            config_all_test(${file})
+        elseif (${file} MATCHES "^.+\\.(c|cpp)$")
+            config_test(${file})
+        endif ()
+    endforeach ()
+endfunction()
 
-file(GLOB files "src/*")
-foreach(file ${files})
-    if(IS_DIRECTORY ${file})
-        file(GLOB filess "${file}/*.c*")
-        compile("${filess}")
-    endif()
-endforeach()
+config_all_test(${PROJECT_SOURCE_DIR}/src)

@@ -17,6 +17,7 @@
 #ifndef __UTIL_ALL_H__
 #define __UTIL_ALL_H__
 
+#include <exception>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -39,6 +40,8 @@ const std::string CLIENT_INNER_PRODUCER_GROUP = "CLIENT_INNER_PRODUCER";
 const std::string SELF_TEST_TOPIC = "SELF_TEST_TOPIC";
 const std::string RETRY_GROUP_TOPIC_PREFIX = "%RETRY%";
 const std::string DLQ_GROUP_TOPIC_PREFIX = "%DLQ%";
+const std::string REPLY_TOPIC_POSTFIX = "REPLY_TOPIC";
+const std::string REPLY_MESSAGE_FLAG = "reply";
 
 const std::string ROCKETMQ_HOME_PROPERTY = "rocketmq.home.dir";
 const std::string MESSAGE_COMPRESS_LEVEL = "rocketmq.message.compressLevel";
@@ -96,6 +99,7 @@ class UtilAll {
 
   static bool isRetryTopic(const std::string& topic);
   static std::string getRetryTopic(const std::string& consumerGroup);
+  static std::string getReplyTopic(const std::string& clusterName);
 
   static void Trim(std::string& str);
   static bool isBlank(const std::string& str);

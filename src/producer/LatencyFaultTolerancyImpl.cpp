@@ -38,7 +38,7 @@ void LatencyFaultTolerancyImpl::updateFaultItem(const std::string& name,
 
 bool LatencyFaultTolerancyImpl::isAvailable(const std::string& name) {
   std::lock_guard<std::mutex> lock(m_faultItemTableMutex);
-  auto it = m_faultItemTable.find(name);
+  const auto& it = m_faultItemTable.find(name);
   if (it != m_faultItemTable.end()) {
     return it->second.isAvailable();
   }

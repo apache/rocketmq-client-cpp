@@ -83,7 +83,7 @@ int64_t LocalFileOffsetStore::readOffset(const MQMessageQueue& mq, ReadOffsetTyp
     case MEMORY_FIRST_THEN_STORE:
     case READ_FROM_MEMORY: {
       std::lock_guard<std::mutex> lock(m_lock);
-      auto it = m_offsetTable.find(mq);
+      const auto& it = m_offsetTable.find(mq);
       if (it != m_offsetTable.end()) {
         return it->second;
       } else if (READ_FROM_MEMORY == type) {
@@ -93,7 +93,7 @@ int64_t LocalFileOffsetStore::readOffset(const MQMessageQueue& mq, ReadOffsetTyp
     case READ_FROM_STORE: {
       auto offsetTable = readLocalOffset();
       if (!offsetTable.empty()) {
-        auto it = offsetTable.find(mq);
+        const auto& it = offsetTable.find(mq);
         if (it != offsetTable.end()) {
           auto offset = it->second;
           updateOffset(mq, offset, false);
@@ -124,7 +124,7 @@ void LocalFileOffsetStore::persistAll(const std::vector<MQMessageQueue>& mqs) {
   Json::Value root(Json::objectValue);
   Json::Value jOffsetTable(Json::objectValue);
   for (const auto& mq : mqs) {
-    auto it = offsetTable.find(mq);
+    const auto& it = offsetTable.find(mq);
     if (it != offsetTable.end()) {
       std::string strMQ = RemotingSerializable::toJson(toJson(mq));
       jOffsetTable[strMQ] = Json::Value((Json::Int64)it->second);
@@ -184,7 +184,7 @@ std::map<MQMessageQueue, int64_t> LocalFileOffsetStore::readLocalOffsetBak() {
           auto& offset = jOffsetTable[strMQ];
           Json::Value jMQ = RemotingSerializable::fromJson(strMQ);
           MQMessageQueue mq(jMQ["topic"].asString(), jMQ["brokerName"].asString(), jMQ["queueId"].asInt());
-          offsetTable.emplace(mq, offset.asInt64());
+          offsetTable.emplace(std::move(mq), offset.asInt64());
         }
       } catch (const std::exception& e) {
         LOG_WARN_NEW("readLocalOffset Exception {}", e.what());
@@ -211,12 +211,8 @@ void RemoteBrokerOffsetStore::load() {}
 
 void RemoteBrokerOffsetStore::updateOffset(const MQMessageQueue& mq, int64_t offset, bool increaseOnly) {
   std::lock_guard<std::mutex> lock(m_lock);
-  auto it = m_offsetTable.find(mq);
-  if (it != m_offsetTable.end()) {
-    if (!increaseOnly || offset > it->second) {
-      it->second = offset;
-    }
-  } else {
+  const auto& it = m_offsetTable.find(mq);
+  if (it == m_offsetTable.end() || !increaseOnly || offset > it->second) {
     m_offsetTable[mq] = offset;
   }
 }
@@ -227,7 +223,7 @@ int64_t RemoteBrokerOffsetStore::readOffset(const MQMessageQueue& mq, ReadOffset
     case READ_FROM_MEMORY: {
       std::lock_guard<std::mutex> lock(m_lock);
 
-      auto it = m_offsetTable.find(mq);
+      const auto& it = m_offsetTable.find(mq);
       if (it != m_offsetTable.end()) {
         return it->second;
       } else if (READ_FROM_MEMORY == type) {
@@ -261,7 +257,7 @@ void RemoteBrokerOffsetStore::persist(const MQMessageQueue& mq) {
     offsetTable = m_offsetTable;
   }
 
-  auto it = offsetTable.find(mq);
+  const auto& it = offsetTable.find(mq);
   if (it != offsetTable.end()) {
     try {
       updateConsumeOffsetToBroker(mq, it->second);
@@ -275,8 +271,9 @@ void RemoteBrokerOffsetStore::persistAll(const std::vector<MQMessageQueue>& mq) 
 
 void RemoteBrokerOffsetStore::removeOffset(const MQMessageQueue& mq) {
   std::lock_guard<std::mutex> lock(m_lock);
-  if (m_offsetTable.find(mq) != m_offsetTable.end()) {
-    m_offsetTable.erase(mq);
+  const auto& it = m_offsetTable.find(mq);
+  if (it != m_offsetTable.end()) {
+    m_offsetTable.erase(it);
   }
 }
 

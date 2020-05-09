@@ -27,23 +27,19 @@ using namespace rocketmq;
 
 class MessageListenerInner : public MessageListenerConcurrently {
  public:
-  MessageListenerInner() {}
+  MessageListenerInner(CPushConsumer* consumer, MessageCallBack callback)
+      : m_consumer(consumer), m_msgReceivedCallback(callback) {}
 
-  MessageListenerInner(CPushConsumer* consumer, MessageCallBack pCallback) {
-    m_pconsumer = consumer;
-    m_pMsgReceiveCallback = pCallback;
-  }
+  ~MessageListenerInner() = default;
 
-  ~MessageListenerInner() {}
-
-  ConsumeStatus consumeMessage(const std::vector<MQMessageExt*>& msgs) {
+  ConsumeStatus consumeMessage(const std::vector<MQMessageExt*>& msgs) override {
     // to do user call back
-    if (m_pMsgReceiveCallback == nullptr) {
+    if (m_msgReceivedCallback == nullptr) {
       return RECONSUME_LATER;
     }
-    for (size_t i = 0; i < msgs.size(); ++i) {
-      CMessageExt* message = (CMessageExt*)msgs[i];
-      if (m_pMsgReceiveCallback(m_pconsumer, message) != E_CONSUME_SUCCESS) {
+    for (auto msg : msgs) {
+      auto* message = reinterpret_cast<CMessageExt*>(msg);
+      if (m_msgReceivedCallback(m_consumer, message) != E_CONSUME_SUCCESS) {
         return RECONSUME_LATER;
       }
     }
@@ -51,24 +47,22 @@ class MessageListenerInner : public MessageListenerConcurrently {
   }
 
  private:
-  MessageCallBack m_pMsgReceiveCallback;
-  CPushConsumer* m_pconsumer;
+  CPushConsumer* m_consumer;
+  MessageCallBack m_msgReceivedCallback;
 };
 
 class MessageListenerOrderlyInner : public MessageListenerOrderly {
  public:
-  MessageListenerOrderlyInner(CPushConsumer* consumer, MessageCallBack pCallback) {
-    m_pconsumer = consumer;
-    m_pMsgReceiveCallback = pCallback;
-  }
+  MessageListenerOrderlyInner(CPushConsumer* consumer, MessageCallBack callback)
+      : m_consumer(consumer), m_msgReceivedCallback(callback) {}
 
   ConsumeStatus consumeMessage(const std::vector<MQMessageExt*>& msgs) {
-    if (m_pMsgReceiveCallback == nullptr) {
+    if (m_msgReceivedCallback == nullptr) {
       return RECONSUME_LATER;
     }
-    for (size_t i = 0; i < msgs.size(); ++i) {
-      CMessageExt* message = (CMessageExt*)msgs[i];
-      if (m_pMsgReceiveCallback(m_pconsumer, message) != E_CONSUME_SUCCESS) {
+    for (auto msg : msgs) {
+      auto* message = reinterpret_cast<CMessageExt*>(msg);
+      if (m_msgReceivedCallback(m_consumer, message) != E_CONSUME_SUCCESS) {
         return RECONSUME_LATER;
       }
     }
@@ -76,12 +70,9 @@ class MessageListenerOrderlyInner : public MessageListenerOrderly {
   }
 
  private:
-  MessageCallBack m_pMsgReceiveCallback;
-  CPushConsumer* m_pconsumer;
+  CPushConsumer* m_consumer;
+  MessageCallBack m_msgReceivedCallback;
 };
-
-std::map<CPushConsumer*, MessageListenerInner*> g_ListenerMap;
-std::map<CPushConsumer*, MessageListenerOrderlyInner*> g_OrderListenerMap;
 
 CPushConsumer* CreatePushConsumer(const char* groupId) {
   if (groupId == NULL) {
@@ -160,23 +151,21 @@ int Subscribe(CPushConsumer* consumer, const char* topic, const char* expression
   return OK;
 }
 
-int RegisterMessageCallback(CPushConsumer* consumer, MessageCallBack pCallback) {
-  if (consumer == NULL || pCallback == NULL) {
+int RegisterMessageCallback(CPushConsumer* consumer, MessageCallBack callback) {
+  if (consumer == NULL || callback == NULL) {
     return NULL_POINTER;
   }
-  MessageListenerInner* listenerInner = new MessageListenerInner(consumer, pCallback);
+  auto* listenerInner = new MessageListenerInner(consumer, callback);
   reinterpret_cast<DefaultMQPushConsumer*>(consumer)->registerMessageListener(listenerInner);
-  g_ListenerMap[consumer] = listenerInner;
   return OK;
 }
 
-int RegisterMessageCallbackOrderly(CPushConsumer* consumer, MessageCallBack pCallback) {
-  if (consumer == NULL || pCallback == NULL) {
+int RegisterMessageCallbackOrderly(CPushConsumer* consumer, MessageCallBack callback) {
+  if (consumer == NULL || callback == NULL) {
     return NULL_POINTER;
   }
-  MessageListenerOrderlyInner* messageListenerOrderlyInner = new MessageListenerOrderlyInner(consumer, pCallback);
+  auto* messageListenerOrderlyInner = new MessageListenerOrderlyInner(consumer, callback);
   reinterpret_cast<DefaultMQPushConsumer*>(consumer)->registerMessageListener(messageListenerOrderlyInner);
-  g_OrderListenerMap[consumer] = messageListenerOrderlyInner;
   return OK;
 }
 
@@ -184,15 +173,8 @@ int UnregisterMessageCallbackOrderly(CPushConsumer* consumer) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  std::map<CPushConsumer*, MessageListenerOrderlyInner*>::iterator iter;
-  iter = g_OrderListenerMap.find(consumer);
-  if (iter != g_OrderListenerMap.end()) {
-    MessageListenerOrderlyInner* listenerInner = iter->second;
-    if (listenerInner != NULL) {
-      delete listenerInner;
-    }
-    g_OrderListenerMap.erase(iter);
-  }
+  auto* listenerInner = reinterpret_cast<DefaultMQPushConsumer*>(consumer)->getMessageListener();
+  delete listenerInner;
   return OK;
 }
 
@@ -200,16 +182,8 @@ int UnregisterMessageCallback(CPushConsumer* consumer) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  std::map<CPushConsumer*, MessageListenerInner*>::iterator iter;
-  iter = g_ListenerMap.find(consumer);
-
-  if (iter != g_ListenerMap.end()) {
-    MessageListenerInner* listenerInner = iter->second;
-    if (listenerInner != NULL) {
-      delete listenerInner;
-    }
-    g_ListenerMap.erase(iter);
-  }
+  auto* listenerInner = reinterpret_cast<DefaultMQPushConsumer*>(consumer)->getMessageListener();
+  delete listenerInner;
   return OK;
 }
 
@@ -275,7 +249,7 @@ int SetPushConsumerLogPath(CPushConsumer* consumer, const char* logPath) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  // Todo, This api should be implemented by core api.
+  // TODO: This api should be implemented by core api.
   // reinterpret_cast<DefaultMQPushConsumer*>(consumer)->setInstanceName(instanceName);
   return OK;
 }

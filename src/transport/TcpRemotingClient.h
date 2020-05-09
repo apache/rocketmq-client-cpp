@@ -23,16 +23,14 @@
 #include <string>
 #include <vector>
 
-#include "concurrent/executor.hpp"
-
 #include "MQClientException.h"
 #include "MQProtos.h"
 #include "RPCHook.h"
 #include "RemotingCommand.h"
 #include "RequestProcessor.h"
 #include "ResponseFuture.h"
-#include "SocketUtil.h"
 #include "TcpTransport.h"
+#include "concurrent/executor.hpp"
 
 namespace rocketmq {
 
@@ -44,7 +42,7 @@ class TcpRemotingClient {
   void start();
   void shutdown();
 
-  void registerRPCHook(std::shared_ptr<RPCHook> rpcHook);
+  void registerRPCHook(RPCHookPtr rpcHook);
 
   void updateNameServerAddressList(const std::string& addrs);
 
@@ -61,24 +59,25 @@ class TcpRemotingClient {
 
   void registerProcessor(MQRequestCode requestCode, RequestProcessor* requestProcessor);
 
-  std::vector<std::string> getNameServerAddressList() { return m_namesrvAddrList; }
+  std::vector<std::string> getNameServerAddressList() const { return m_namesrvAddrList; }
 
  private:
   static bool SendCommand(TcpTransportPtr channel, RemotingCommand& msg);
-  static void MessageReceived(void* context, MemoryBlockPtr3& mem, const std::string& addr);
 
-  void messageReceived(MemoryBlockPtr3& mem, const std::string& addr);
-  void processMessageReceived(MemoryBlockPtr2& mem, const std::string& addr);
-  void processRequestCommand(std::unique_ptr<RemotingCommand> cmd, const std::string& addr);
-  void processResponseCommand(std::unique_ptr<RemotingCommand> cmd);
+  void channelClosed(TcpTransportPtr channel);
+
+  void messageReceived(MemoryBlockPtr mem, TcpTransportPtr channel);
+  void processMessageReceived(MemoryBlockPtr2 mem, TcpTransportPtr channel);
+  void processRequestCommand(std::unique_ptr<RemotingCommand> cmd, TcpTransportPtr channel);
+  void processResponseCommand(std::unique_ptr<RemotingCommand> cmd, TcpTransportPtr channel);
 
   // timeout daemon
   void scanResponseTablePeriodically();
   void scanResponseTable();
 
-  TcpTransportPtr GetTransport(const std::string& addr, bool needResponse);
-  TcpTransportPtr CreateTransport(const std::string& addr, bool needResponse);
-  TcpTransportPtr CreateNameServerTransport(bool needResponse);
+  TcpTransportPtr GetTransport(const std::string& addr);
+  TcpTransportPtr CreateTransport(const std::string& addr);
+  TcpTransportPtr CreateNameServerTransport();
 
   bool CloseTransport(const std::string& addr, TcpTransportPtr channel);
   bool CloseNameServerTransport(TcpTransportPtr channel);
@@ -98,24 +97,20 @@ class TcpRemotingClient {
   void doAfterRpcHooks(const std::string& addr, RemotingCommand& request, RemotingCommand* response, bool toSent);
 
   // future management
-  void addResponseFuture(int opaque, std::shared_ptr<ResponseFuture> pFuture);
-  std::shared_ptr<ResponseFuture> findAndDeleteResponseFuture(int opaque);
+  void putResponseFuture(TcpTransportPtr channel, int opaque, ResponseFuturePtr future);
+  ResponseFuturePtr popResponseFuture(TcpTransportPtr channel, int opaque);
 
  private:
   using ProcessorMap = std::map<int, RequestProcessor*>;
   using TransportMap = std::map<std::string, std::shared_ptr<TcpTransport>>;
-  using FutureMap = std::map<int, std::shared_ptr<ResponseFuture>>;
 
   ProcessorMap m_processorTable;  // code -> processor
 
   TransportMap m_transportTable;  // addr -> transport
   std::timed_mutex m_transportTableMutex;
 
-  FutureMap m_futureTable;  // opaque -> future
-  std::mutex m_futureTableMutex;
-
   // FIXME: not strict thread-safe in abnormal scence
-  std::vector<std::shared_ptr<RPCHook>> m_rpcHooks;  // for Acl / ONS
+  std::vector<RPCHookPtr> m_rpcHooks;  // for Acl / ONS
 
   uint64_t m_tcpConnectTimeout;           // ms
   uint64_t m_tcpTransportTryLockTimeout;  // s
@@ -124,7 +119,7 @@ class TcpRemotingClient {
   std::timed_mutex m_namesrvLock;
   std::vector<std::string> m_namesrvAddrList;
   std::string m_namesrvAddrChoosed;
-  unsigned int m_namesrvIndex;
+  size_t m_namesrvIndex;
 
   thread_pool_executor m_dispatchExecutor;
   thread_pool_executor m_handleExecutor;

@@ -39,7 +39,7 @@
 
 // DefaultMQPullConsumer::DefaultMQPullConsumer(const string& groupname) : DefaultMQPullConsumer(groupname, nullptr) {}
 
-// DefaultMQPullConsumer::DefaultMQPullConsumer(const string& groupname, std::shared_ptr<RPCHook> rpcHook)
+// DefaultMQPullConsumer::DefaultMQPullConsumer(const string& groupname, RPCHookPtr rpcHook)
 //     : MQClient(rpcHook),
 //       m_rebalanceImpl(new RebalancePullImpl(this)),
 //       m_pullAPIWrapper(nullptr),
@@ -318,7 +318,8 @@
 //   }
 // }
 
-// void DefaultMQPullConsumer::fetchMessageQueuesInBalance(const std::string& topic, std::vector<MQMessageQueue>& mqs) {}
+// void DefaultMQPullConsumer::fetchMessageQueuesInBalance(const std::string& topic, std::vector<MQMessageQueue>& mqs)
+// {}
 
 // void DefaultMQPullConsumer::checkConfig() {
 //   string groupname = getGroupName();

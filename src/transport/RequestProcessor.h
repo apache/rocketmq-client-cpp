@@ -18,6 +18,7 @@
 #define __REQUEST_PROCESSOR_H__
 
 #include "RemotingCommand.h"
+#include "TcpTransport.h"
 
 namespace rocketmq {
 
@@ -25,7 +26,7 @@ class RequestProcessor {
  public:
   virtual ~RequestProcessor() = default;
 
-  virtual RemotingCommand* processRequest(const std::string& addr, RemotingCommand* request) = 0;
+  virtual RemotingCommand* processRequest(TcpTransportPtr channel, RemotingCommand* request) = 0;
 };
 
 }  // namespace rocketmq

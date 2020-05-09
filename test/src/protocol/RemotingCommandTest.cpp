@@ -14,28 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-#include <stdlib.h>
-#include <iostream>
 #include <memory>
+#include <string>
 
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
-
-#include "CommandHeader.h"
+#include "DataBlock.h"
 #include "MQProtos.h"
 #include "MQVersion.h"
 #include "MemoryOutputStream.h"
 #include "RemotingCommand.h"
-#include "dataBlock.h"
+#include "protocol/header/CommandHeader.h"
 
-using std::shared_ptr;
-
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
-using rocketmq::CommandHeader;
 using rocketmq::GetConsumerRunningInfoRequestHeader;
 using rocketmq::GetEarliestMsgStoretimeResponseHeader;
 using rocketmq::GetMaxOffsetResponseHeader;
@@ -53,7 +48,7 @@ using rocketmq::ResetOffsetRequestHeader;
 using rocketmq::SearchOffsetResponseHeader;
 using rocketmq::SendMessageResponseHeader;
 
-TEST(remotingCommand, init) {
+TEST(RemotingCommandTest, Init) {
   RemotingCommand remotingCommand;
   EXPECT_EQ(remotingCommand.getCode(), 0);
 
@@ -62,12 +57,12 @@ TEST(remotingCommand, init) {
   EXPECT_EQ(twoRemotingCommand.getOpaque(), 0);
   EXPECT_EQ(twoRemotingCommand.getRemark(), "");
   EXPECT_EQ(twoRemotingCommand.getVersion(), MQVersion::s_CurrentVersion);
-  // EXPECT_EQ(twoRemotingCommand.getFlag() , 0);
-  EXPECT_EQ(twoRemotingCommand.getMsgBody(), "");
-  EXPECT_TRUE(twoRemotingCommand.getCommandHeader() == nullptr);
+  EXPECT_EQ(twoRemotingCommand.getFlag(), 0);
+  EXPECT_TRUE(twoRemotingCommand.getBody() == nullptr);
+  EXPECT_TRUE(twoRemotingCommand.readCustomHeader() == nullptr);
 
   RemotingCommand threeRemotingCommand(13, new GetRouteInfoRequestHeader("topic"));
-  EXPECT_FALSE(threeRemotingCommand.getCommandHeader() == nullptr);
+  EXPECT_FALSE(threeRemotingCommand.readCustomHeader() == nullptr);
 
   RemotingCommand frouRemotingCommand(13, "CPP", MQVersion::s_CurrentVersion, 12, 3, "remark",
                                       new GetRouteInfoRequestHeader("topic"));
@@ -76,17 +71,17 @@ TEST(remotingCommand, init) {
   EXPECT_EQ(frouRemotingCommand.getRemark(), "remark");
   EXPECT_EQ(frouRemotingCommand.getVersion(), MQVersion::s_CurrentVersion);
   EXPECT_EQ(frouRemotingCommand.getFlag(), 3);
-  EXPECT_EQ(frouRemotingCommand.getMsgBody(), "");
-  EXPECT_FALSE(frouRemotingCommand.getCommandHeader() == nullptr);
+  EXPECT_TRUE(frouRemotingCommand.getBody() == nullptr);
+  EXPECT_FALSE(frouRemotingCommand.readCustomHeader() == nullptr);
 
-  RemotingCommand sixRemotingCommand(frouRemotingCommand);
+  RemotingCommand sixRemotingCommand(std::move(frouRemotingCommand));
   EXPECT_EQ(sixRemotingCommand.getCode(), 13);
   EXPECT_EQ(sixRemotingCommand.getOpaque(), 12);
   EXPECT_EQ(sixRemotingCommand.getRemark(), "remark");
   EXPECT_EQ(sixRemotingCommand.getVersion(), MQVersion::s_CurrentVersion);
   EXPECT_EQ(sixRemotingCommand.getFlag(), 3);
-  EXPECT_EQ(sixRemotingCommand.getMsgBody(), "");
-  EXPECT_TRUE(sixRemotingCommand.getCommandHeader() == nullptr);
+  EXPECT_TRUE(sixRemotingCommand.getBody() == nullptr);
+  EXPECT_FALSE(sixRemotingCommand.readCustomHeader() == nullptr);
 
   RemotingCommand* sevenRemotingCommand = &sixRemotingCommand;
   EXPECT_EQ(sevenRemotingCommand->getCode(), 13);
@@ -94,11 +89,11 @@ TEST(remotingCommand, init) {
   EXPECT_EQ(sevenRemotingCommand->getRemark(), "remark");
   EXPECT_EQ(sevenRemotingCommand->getVersion(), MQVersion::s_CurrentVersion);
   EXPECT_EQ(sevenRemotingCommand->getFlag(), 3);
-  EXPECT_EQ(sevenRemotingCommand->getMsgBody(), "");
-  EXPECT_TRUE(sevenRemotingCommand->getCommandHeader() == nullptr);
+  EXPECT_TRUE(sevenRemotingCommand->getBody() == nullptr);
+  EXPECT_FALSE(sevenRemotingCommand->readCustomHeader() == nullptr);
 }
 
-TEST(remotingCommand, info) {
+TEST(RemotingCommandTest, Info) {
   RemotingCommand remotingCommand;
 
   remotingCommand.setCode(13);
@@ -110,13 +105,13 @@ TEST(remotingCommand, info) {
   remotingCommand.setRemark("123");
   EXPECT_EQ(remotingCommand.getRemark(), "123");
 
-  remotingCommand.setMsgBody("msgBody");
-  EXPECT_EQ(remotingCommand.getMsgBody(), "msgBody");
+  remotingCommand.setBody("msgBody");
+  EXPECT_EQ((std::string)*remotingCommand.getBody(), "msgBody");
 
   remotingCommand.addExtField("key", "value");
 }
 
-TEST(remotingCommand, flag) {
+TEST(RemotingCommandTest, Flag) {
   RemotingCommand remotingCommand(13, "CPP", MQVersion::s_CurrentVersion, 12, 0, "remark",
                                   new GetRouteInfoRequestHeader("topic"));
   ;
@@ -136,25 +131,22 @@ TEST(remotingCommand, flag) {
   EXPECT_TRUE(remotingCommand.isOnewayRPC());
 }
 
-TEST(remotingCommand, encodeAndDecode) {
-  RemotingCommand remotingCommand(13, "CPP", MQVersion::s_CurrentVersion, 12, 3, "remark", NULL);
-  remotingCommand.SetBody("123123", 6);
-  remotingCommand.Encode();
-  // no delete
-  const MemoryBlock* head = remotingCommand.GetHead();
-  const MemoryBlock* body = remotingCommand.GetBody();
+TEST(RemotingCommandTest, EncodeAndDecode) {
+  RemotingCommand remotingCommand(MQRequestCode::QUERY_BROKER_OFFSET, "CPP", MQVersion::s_CurrentVersion, 12, 3,
+                                  "remark", nullptr);
+  remotingCommand.setBody("123123");
 
-  unique_ptr<MemoryOutputStream> result(new MemoryOutputStream(1024));
-  result->write(head->getData() + 4, head->getSize() - 4);
-  result->write(body->getData(), body->getSize());
+  auto package = remotingCommand.encode();
 
-  shared_ptr<RemotingCommand> decodeRemtingCommand(RemotingCommand::Decode(result->getMemoryBlock()));
+  std::unique_ptr<RemotingCommand> decodeRemtingCommand(
+      RemotingCommand::Decode(std::shared_ptr<MemoryBlock>(std::move(package)), true));
+
   EXPECT_EQ(remotingCommand.getCode(), decodeRemtingCommand->getCode());
   EXPECT_EQ(remotingCommand.getOpaque(), decodeRemtingCommand->getOpaque());
   EXPECT_EQ(remotingCommand.getRemark(), decodeRemtingCommand->getRemark());
   EXPECT_EQ(remotingCommand.getVersion(), decodeRemtingCommand->getVersion());
   EXPECT_EQ(remotingCommand.getFlag(), decodeRemtingCommand->getFlag());
-  EXPECT_TRUE(decodeRemtingCommand->getCommandHeader() == NULL);
+  EXPECT_TRUE(decodeRemtingCommand->readCustomHeader() == nullptr);
 
   // ~RemotingCommand delete
   GetConsumerRunningInfoRequestHeader* requestHeader = new GetConsumerRunningInfoRequestHeader();
@@ -162,97 +154,35 @@ TEST(remotingCommand, encodeAndDecode) {
   requestHeader->setConsumerGroup("consumerGroup");
   requestHeader->setJstackEnable(false);
 
-  RemotingCommand encodeRemotingCommand(307, "CPP", MQVersion::s_CurrentVersion, 12, 3, "remark", requestHeader);
-  encodeRemotingCommand.SetBody("123123", 6);
-  encodeRemotingCommand.Encode();
+  RemotingCommand remotingCommand2(MQRequestCode::GET_CONSUMER_RUNNING_INFO, "CPP", MQVersion::s_CurrentVersion, 12, 3,
+                                   "remark", requestHeader);
+  remotingCommand2.setBody("123123");
+  package = remotingCommand2.encode();
 
-  // no delete
-  const MemoryBlock* phead = encodeRemotingCommand.GetHead();
-  const MemoryBlock* pbody = encodeRemotingCommand.GetBody();
+  decodeRemtingCommand.reset(RemotingCommand::Decode(std::shared_ptr<MemoryBlock>(std::move(package)), true));
 
-  unique_ptr<MemoryOutputStream> results(new MemoryOutputStream(1024));
-  results->write(phead->getData() + 4, phead->getSize() - 4);
-  results->write(pbody->getData(), pbody->getSize());
-
-  shared_ptr<RemotingCommand> decodeRemtingCommandTwo(RemotingCommand::Decode(results->getMemoryBlock()));
-
-  decodeRemtingCommandTwo->SetExtHeader(encodeRemotingCommand.getCode());
-  GetConsumerRunningInfoRequestHeader* header =
-      reinterpret_cast<GetConsumerRunningInfoRequestHeader*>(decodeRemtingCommandTwo->getCommandHeader());
+  auto* header = decodeRemtingCommand->decodeCommandCustomHeader<GetConsumerRunningInfoRequestHeader>();
   EXPECT_EQ(requestHeader->getClientId(), header->getClientId());
   EXPECT_EQ(requestHeader->getConsumerGroup(), header->getConsumerGroup());
 }
 
-TEST(remotingCommand, SetExtHeader) {
-  shared_ptr<RemotingCommand> remotingCommand(new RemotingCommand());
+TEST(RemotingCommandTest, SetExtHeader) {
+  std::unique_ptr<RemotingCommand> remotingCommand(new RemotingCommand());
 
-  remotingCommand->SetExtHeader(-1);
-  EXPECT_TRUE(remotingCommand->getCommandHeader() == NULL);
+  EXPECT_TRUE(remotingCommand->readCustomHeader() == nullptr);
 
-  Json::Value object;
-  Json::Value extFields;
-  extFields["id"] = 1;
-  object["extFields"] = extFields;
-  remotingCommand->setParsedJson(object);
-
-  remotingCommand->SetExtHeader(MQRequestCode::SEND_MESSAGE);
-  SendMessageResponseHeader* sendMessageResponseHeader =
-      reinterpret_cast<SendMessageResponseHeader*>(remotingCommand->getCommandHeader());
-  EXPECT_EQ(sendMessageResponseHeader->msgId, "");
-
-  remotingCommand->SetExtHeader(MQRequestCode::PULL_MESSAGE);
-  PullMessageResponseHeader* pullMessageResponseHeader =
-      reinterpret_cast<PullMessageResponseHeader*>(remotingCommand->getCommandHeader());
-  EXPECT_EQ(pullMessageResponseHeader->suggestWhichBrokerId, 0);
-
-  remotingCommand->SetExtHeader(MQRequestCode::GET_MIN_OFFSET);
-  GetMinOffsetResponseHeader* getMinOffsetResponseHeader =
-      reinterpret_cast<GetMinOffsetResponseHeader*>(remotingCommand->getCommandHeader());
-  EXPECT_EQ(getMinOffsetResponseHeader->offset, 0);
-
-  remotingCommand->SetExtHeader(MQRequestCode::GET_MAX_OFFSET);
-  GetMaxOffsetResponseHeader* getMaxOffsetResponseHeader =
-      reinterpret_cast<GetMaxOffsetResponseHeader*>(remotingCommand->getCommandHeader());
-  EXPECT_EQ(getMaxOffsetResponseHeader->offset, 0);
-
-  remotingCommand->SetExtHeader(MQRequestCode::SEARCH_OFFSET_BY_TIMESTAMP);
-  SearchOffsetResponseHeader* searchOffsetResponseHeader =
-      reinterpret_cast<SearchOffsetResponseHeader*>(remotingCommand->getCommandHeader());
-  EXPECT_EQ(searchOffsetResponseHeader->offset, 0);
-
-  remotingCommand->SetExtHeader(MQRequestCode::GET_EARLIEST_MSG_STORETIME);
-  GetEarliestMsgStoretimeResponseHeader* getEarliestMsgStoretimeResponseHeader =
-      reinterpret_cast<GetEarliestMsgStoretimeResponseHeader*>(remotingCommand->getCommandHeader());
-  EXPECT_EQ(getEarliestMsgStoretimeResponseHeader->timestamp, 0);
-
-  remotingCommand->SetExtHeader(MQRequestCode::QUERY_CONSUMER_OFFSET);
-  QueryConsumerOffsetResponseHeader* queryConsumerOffsetResponseHeader =
-      reinterpret_cast<QueryConsumerOffsetResponseHeader*>(remotingCommand->getCommandHeader());
-  EXPECT_EQ(queryConsumerOffsetResponseHeader->offset, 0);
-
-  extFields["isForce"] = "true";
-  object["extFields"] = extFields;
-  remotingCommand->setParsedJson(object);
-  remotingCommand->SetExtHeader(MQRequestCode::RESET_CONSUMER_CLIENT_OFFSET);
-  ResetOffsetRequestHeader* resetOffsetRequestHeader =
-      reinterpret_cast<ResetOffsetRequestHeader*>(remotingCommand->getCommandHeader());
-  resetOffsetRequestHeader->setGroup("group");
-
-  remotingCommand->SetExtHeader(MQRequestCode::GET_CONSUMER_RUNNING_INFO);
-  GetConsumerRunningInfoRequestHeader* getConsumerRunningInfoRequestHeader =
-      reinterpret_cast<GetConsumerRunningInfoRequestHeader*>(remotingCommand->getCommandHeader());
-  getConsumerRunningInfoRequestHeader->setClientId("id");
-
-  remotingCommand->SetExtHeader(MQRequestCode::NOTIFY_CONSUMER_IDS_CHANGED);
-  NotifyConsumerIdsChangedRequestHeader* notifyConsumerIdsChangedRequestHeader =
-      reinterpret_cast<NotifyConsumerIdsChangedRequestHeader*>(remotingCommand->getCommandHeader());
-  notifyConsumerIdsChangedRequestHeader->setGroup("group");
+  remotingCommand->addExtField("msgId", "ABCD");
+  remotingCommand->addExtField("queueId", "1");
+  remotingCommand->addExtField("queueOffset", "1024");
+  auto* sendMessageResponseHeader = remotingCommand->decodeCommandCustomHeader<SendMessageResponseHeader>();
+  EXPECT_EQ(sendMessageResponseHeader->msgId, "ABCD");
+  EXPECT_EQ(sendMessageResponseHeader->queueId, 1);
+  EXPECT_EQ(sendMessageResponseHeader->queueOffset, 1024);
 }
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "remotingCommand.*";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "RemotingCommandTest.*";
+  return RUN_ALL_TESTS();
 }

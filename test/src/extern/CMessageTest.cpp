@@ -14,20 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-#include "CCommon.h"
-#include "CMessage.h"
 #include "MQMessage.h"
+#include "c/CCommon.h"
+#include "c/CMessage.h"
 
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::MQMessage;
 
-TEST(cmessages, info) {
+TEST(CMessagesTest, CheckProperties) {
   CMessage* message = CreateMessage(NULL);
   MQMessage* mqMessage = (MQMessage*)message;
   EXPECT_EQ(mqMessage->getTopic(), "");
@@ -47,22 +47,22 @@ TEST(cmessages, info) {
   SetByteMessageBody(message, "testBody", 5);
   EXPECT_EQ(mqMessage->getBody(), "testB");
 
-  SetMessageProperty(message, "testKey", "testValue");
-  EXPECT_EQ(mqMessage->getProperty("testKey"), "testValue");
+  SetMessageProperty(message, "testProperty", "testValue");
+  EXPECT_EQ(mqMessage->getProperty("testProperty"), "testValue");
 
   SetDelayTimeLevel(message, 1);
   EXPECT_EQ(mqMessage->getDelayTimeLevel(), 1);
 
   EXPECT_EQ(DestroyMessage(message), OK);
 
-  CMessage* twomessage = CreateMessage("testTwoTopic");
-  MQMessage* twoMqMessage = (MQMessage*)twomessage;
-  EXPECT_EQ(twoMqMessage->getTopic(), "testTwoTopic");
+  message = CreateMessage("testTopic");
+  mqMessage = (MQMessage*)message;
+  EXPECT_EQ(mqMessage->getTopic(), "testTopic");
 
-  EXPECT_EQ(DestroyMessage(twomessage), OK);
+  EXPECT_EQ(DestroyMessage(message), OK);
 }
 
-TEST(cmessages, null) {
+TEST(CMessagesTest, CheckNull) {
   EXPECT_EQ(SetMessageTopic(NULL, NULL), NULL_POINTER);
   EXPECT_EQ(SetMessageTags(NULL, NULL), NULL_POINTER);
   EXPECT_EQ(SetMessageKeys(NULL, NULL), NULL_POINTER);
@@ -74,8 +74,6 @@ TEST(cmessages, null) {
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
-
-  testing::GTEST_FLAG(filter) = "cmessages.null";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "CMessagesTest.*";
+  return RUN_ALL_TESTS();
 }

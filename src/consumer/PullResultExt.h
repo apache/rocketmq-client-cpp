@@ -38,7 +38,7 @@ class PullResultExt : public PullResult {
                 int64_t minOffset,
                 int64_t maxOffset,
                 int suggestWhichBrokerId,
-                const MemoryBlockPtr2& messageBinary)
+                MemoryBlockPtr2 messageBinary)
       : PullResult(pullStatus, nextBeginOffset, minOffset, maxOffset),
         suggestWhichBrokerId(suggestWhichBrokerId),
         msgMemBlock(messageBinary) {}

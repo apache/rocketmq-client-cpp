@@ -37,7 +37,7 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
                               public MQClientImpl,
                               public MQProducerInner {
  public:
-  static DefaultMQProducerImplPtr create(DefaultMQProducerConfig* config, RPCHookPtr rpcHook = nullptr) {
+  static DefaultMQProducerImplPtr create(DefaultMQProducerConfigPtr config, RPCHookPtr rpcHook = nullptr) {
     if (nullptr == rpcHook) {
       return DefaultMQProducerImplPtr(new DefaultMQProducerImpl(config));
     } else {
@@ -46,8 +46,8 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
   }
 
  private:
-  DefaultMQProducerImpl(DefaultMQProducerConfig* config);
-  DefaultMQProducerImpl(DefaultMQProducerConfig* config, RPCHookPtr rpcHook);
+  DefaultMQProducerImpl(DefaultMQProducerConfigPtr config);
+  DefaultMQProducerImpl(DefaultMQProducerConfigPtr config, RPCHookPtr rpcHook);
 
  public:
   virtual ~DefaultMQProducerImpl();
@@ -92,6 +92,8 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
   SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq) override;
   SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq, long timeout) override;
 
+  MQMessagePtr request(MQMessagePtr msg, long timeout) override;
+
  public:  // MQProducerInner
   TransactionListener* getCheckListener() override;
 
@@ -103,7 +105,7 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
   void initTransactionEnv();
   void destroyTransactionEnv();
 
-  const MQMessageQueue& selectOneMessageQueue(TopicPublishInfo* tpInfo, const std::string& lastBrokerName);
+  const MQMessageQueue& selectOneMessageQueue(const TopicPublishInfo* tpInfo, const std::string& lastBrokerName);
   void updateFaultItem(const std::string& brokerName, const long currentLatency, bool isolation);
 
   void endTransaction(SendResult& sendResult,
@@ -122,7 +124,7 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
                              const MQMessageQueue& mq,
                              CommunicationMode communicationMode,
                              SendCallback* sendCallback,
-                             std::shared_ptr<TopicPublishInfo> topicPublishInfo,
+                             std::shared_ptr<const TopicPublishInfo> topicPublishInfo,
                              long timeout);
   SendResult* sendSelectImpl(MQMessagePtr msg,
                              MessageQueueSelector* selector,
@@ -144,8 +146,10 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
 
   MessageBatch* batch(std::vector<MQMessagePtr>& msgs);
 
+  void prepareSendRequest(MQMessagePtr msg, long timeout);
+
  private:
-  DefaultMQProducerConfig* m_producerConfig;
+  DefaultMQProducerConfigPtr m_producerConfig;
   std::unique_ptr<MQFaultStrategy> m_mqFaultStrategy;
   std::unique_ptr<thread_pool_executor> m_checkTransactionExecutor;
 };

@@ -28,7 +28,6 @@
 extern "C" {
 #endif
 
-// typedef struct _CProducer_ _CProducer;
 typedef struct CProducer CProducer;
 typedef int (*QueueSelectorCallback)(int size, CMessage* msg, void* arg);
 typedef void (*CSendSuccessCallback)(CSendResult result);
@@ -67,12 +66,12 @@ ROCKETMQCLIENT_API int SendMessageSync(CProducer* producer, CMessage* msg, CSend
 ROCKETMQCLIENT_API int SendBatchMessage(CProducer* producer, CBatchMessage* msg, CSendResult* result);
 ROCKETMQCLIENT_API int SendMessageAsync(CProducer* producer,
                                         CMessage* msg,
-                                        CSendSuccessCallback cSendSuccessCallback,
-                                        CSendExceptionCallback cSendExceptionCallback);
+                                        CSendSuccessCallback sendSuccessCallback,
+                                        CSendExceptionCallback sendExceptionCallback);
 ROCKETMQCLIENT_API int SendAsync(CProducer* producer,
                                  CMessage* msg,
-                                 COnSendSuccessCallback cSendSuccessCallback,
-                                 COnSendExceptionCallback cSendExceptionCallback,
+                                 COnSendSuccessCallback sendSuccessCallback,
+                                 COnSendExceptionCallback sendExceptionCallback,
                                  void* userData);
 ROCKETMQCLIENT_API int SendMessageOneway(CProducer* producer, CMessage* msg);
 ROCKETMQCLIENT_API int SendMessageOnewayOrderly(CProducer* producer,
@@ -90,8 +89,8 @@ ROCKETMQCLIENT_API int SendMessageOrderlyAsync(CProducer* producer,
                                                CMessage* msg,
                                                QueueSelectorCallback callback,
                                                void* arg,
-                                               CSendSuccessCallback cSendSuccessCallback,
-                                               CSendExceptionCallback cSendExceptionCallback);
+                                               CSendSuccessCallback sendSuccessCallback,
+                                               CSendExceptionCallback sendExceptionCallback);
 ROCKETMQCLIENT_API int SendMessageOrderlyByShardingKey(CProducer* producer,
                                                        CMessage* msg,
                                                        const char* shardingKey,

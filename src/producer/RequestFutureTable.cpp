@@ -14,25 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __DEFAULT_MQ_CONSUMER_H__
-#define __DEFAULT_MQ_CONSUMER_H__
-
-#include "ConsumeType.h"
-#include "MQClientConfig.h"
+#include "RequestFutureTable.h"
 
 namespace rocketmq {
 
-class ROCKETMQCLIENT_API DefaultMQConsumerConfig : public MQClientConfig {
- public:
-  DefaultMQConsumerConfig() : m_messageModel(CLUSTERING) {}
+std::map<std::string, std::shared_ptr<RequestResponseFuture>> RequestFutureTable::s_futureTable;
+std::mutex RequestFutureTable::s_futureTableMutex;
 
-  MessageModel getMessageModel() const { return m_messageModel; }
-  void setMessageModel(MessageModel messageModel) { m_messageModel = messageModel; }
+void RequestFutureTable::putRequestFuture(std::string correlationId, std::shared_ptr<RequestResponseFuture> future) {
+  std::lock_guard<std::mutex> lock(s_futureTableMutex);
+  s_futureTable[correlationId] = future;
+}
 
- protected:
-  MessageModel m_messageModel;
-};
+std::shared_ptr<RequestResponseFuture> RequestFutureTable::removeRequestFuture(std::string correlationId) {
+  std::lock_guard<std::mutex> lock(s_futureTableMutex);
+  const auto& it = s_futureTable.find(correlationId);
+  if (it != s_futureTable.end()) {
+    auto requestFuture = it->second;
+    s_futureTable.erase(it);
+    return requestFuture;
+  }
+  return nullptr;
+}
 
 }  // namespace rocketmq
-
-#endif  // __DEFAULT_MQ_CONSUMER_H__

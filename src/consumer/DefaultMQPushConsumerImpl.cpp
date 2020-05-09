@@ -20,7 +20,6 @@
 #include <signal.h>
 #endif
 
-#include "AllocateMQAveragely.h"
 #include "CommunicationMode.h"
 #include "ConsumeMsgService.h"
 #include "ConsumerRunningInfo.h"
@@ -33,7 +32,7 @@
 #include "MQProtos.h"
 #include "OffsetStore.h"
 #include "PullAPIWrapper.h"
-#include "PullMessageService.h"
+#include "PullMessageService.hpp"
 #include "PullSysFlag.h"
 #include "RebalancePushImpl.h"
 #include "SocketUtil.h"
@@ -95,6 +94,13 @@ class AsyncPullCallback : public AutoDeletePullCallback {
         defaultMQPushConsumer->correctTagsOffset(m_pullRequest);
         defaultMQPushConsumer->executePullRequestImmediately(m_pullRequest);
         break;
+      case NO_LATEST_MSG:
+        m_pullRequest->setNextOffset(result.nextBeginOffset);
+        defaultMQPushConsumer->correctTagsOffset(m_pullRequest);
+        defaultMQPushConsumer->executePullRequestLater(
+            m_pullRequest,
+            defaultMQPushConsumer->getDefaultMQPushConsumerConfig()->getPullTimeDelayMillsWhenException());
+        break;
       case OFFSET_ILLEGAL: {
         LOG_WARN_NEW("the pull request offset illegal, {} {}", m_pullRequest->toString(), result.toString());
 
@@ -134,7 +140,9 @@ class AsyncPullCallback : public AutoDeletePullCallback {
       LOG_WARN_NEW("execute the pull request exception: {}", e.what());
     }
 
-    defaultMQPushConsumer->executePullRequestLater(m_pullRequest, 3000);
+    // TODO
+    defaultMQPushConsumer->executePullRequestLater(
+        m_pullRequest, defaultMQPushConsumer->getDefaultMQPushConsumerConfig()->getPullTimeDelayMillsWhenException());
   }
 
  private:
@@ -143,11 +151,10 @@ class AsyncPullCallback : public AutoDeletePullCallback {
   SubscriptionDataPtr m_subscriptionData;
 };
 
-DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfig* config)
+DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfigPtr config)
     : DefaultMQPushConsumerImpl(config, nullptr) {}
 
-DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfig* config,
-                                                     std::shared_ptr<RPCHook> rpcHook)
+DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfigPtr config, RPCHookPtr rpcHook)
     : MQClientImpl(config, rpcHook),
       m_pushConsumerConfig(config),
       m_startTime(UtilAll::currentTimeMillis()),
@@ -176,13 +183,13 @@ bool DefaultMQPushConsumerImpl::sendMessageBack(MQMessageExt& msg, int delayLeve
 
 bool DefaultMQPushConsumerImpl::sendMessageBack(MQMessageExt& msg, int delayLevel, const std::string& brokerName) {
   try {
-    std::string brokerAddr = brokerName.empty() ? socketAddress2IPPort(&msg.getStoreHost())
+    std::string brokerAddr = brokerName.empty() ? socketAddress2String(msg.getStoreHost())
                                                 : m_clientInstance->findBrokerAddressInPublish(brokerName);
 
     m_clientInstance->getMQClientAPIImpl()->consumerSendMessageBack(
         brokerAddr, msg, m_pushConsumerConfig->getGroupName(), delayLevel, 5000, getMaxReconsumeTimes());
     return true;
-  } catch (std::exception& e) {
+  } catch (const std::exception& e) {
     LOG_ERROR_NEW("sendMessageBack exception, group: {}, msg: {}. {}", m_pushConsumerConfig->getGroupName(),
                   msg.toString(), e.what());
   }
@@ -243,14 +250,14 @@ void DefaultMQPushConsumerImpl::start() {
         m_pushConsumerConfig->changeInstanceNameToPID();
       }
 
-      // ensure m_clientFactory
+      // ensure m_clientInstance
       MQClientImpl::start();
 
       // reset rebalance
       m_rebalanceImpl->setConsumerGroup(m_pushConsumerConfig->getGroupName());
       m_rebalanceImpl->setMessageModel(m_pushConsumerConfig->getMessageModel());
       m_rebalanceImpl->setAllocateMQStrategy(m_pushConsumerConfig->getAllocateMQStrategy());
-      m_rebalanceImpl->setMQClientFactory(m_clientInstance.get());
+      m_rebalanceImpl->setClientInstance(m_clientInstance.get());
 
       m_pullAPIWrapper.reset(new PullAPIWrapper(m_clientInstance.get(), m_pushConsumerConfig->getGroupName()));
 
@@ -337,11 +344,15 @@ void DefaultMQPushConsumerImpl::registerMessageListener(MQMessageListener* messa
 }
 
 void DefaultMQPushConsumerImpl::registerMessageListener(MessageListenerConcurrently* messageListener) {
-  registerMessageListener((MQMessageListener*)messageListener);
+  registerMessageListener(static_cast<MQMessageListener*>(messageListener));
 }
 
 void DefaultMQPushConsumerImpl::registerMessageListener(MessageListenerOrderly* messageListener) {
-  registerMessageListener((MQMessageListener*)messageListener);
+  registerMessageListener(static_cast<MQMessageListener*>(messageListener));
+}
+
+MQMessageListener* DefaultMQPushConsumerImpl::getMessageListener() const {
+  return m_messageListener;
 }
 
 void DefaultMQPushConsumerImpl::subscribe(const std::string& topic, const std::string& subExpression) {
@@ -515,7 +526,7 @@ void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pullRequest) {
         pullRequest->setNextOffset(offset);
       }
     } else {
-      executePullRequestLater(pullRequest, 3000);
+      executePullRequestLater(pullRequest, m_pushConsumerConfig->getPullTimeDelayMillsWhenException());
       LOG_INFO_NEW("pull message later because not locked in broker, {}", pullRequest->toString());
       return;
     }
@@ -524,7 +535,7 @@ void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pullRequest) {
   const auto& messageQueue = pullRequest->getMessageQueue();
   SubscriptionDataPtr subscriptionData = m_rebalanceImpl->getSubscriptionData(messageQueue.getTopic());
   if (nullptr == subscriptionData) {
-    executePullRequestLater(pullRequest, 3000);
+    executePullRequestLater(pullRequest, m_pushConsumerConfig->getPullTimeDelayMillsWhenException());
     LOG_WARN_NEW("find the consumer's subscription failed, {}", pullRequest->toString());
     return;
   }
@@ -560,7 +571,7 @@ void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pullRequest) {
                                      callback);                                    // 11
   } catch (MQException& e) {
     LOG_ERROR_NEW("pullKernelImpl exception: {}", e.what());
-    executePullRequestLater(pullRequest, 3000);
+    executePullRequestLater(pullRequest, m_pushConsumerConfig->getPullTimeDelayMillsWhenException());
   }
 }
 

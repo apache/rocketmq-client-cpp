@@ -14,34 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "SocketUtil.h"
 
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
-TEST(socketUtil, init) {
-  sockaddr addr = rocketmq::IPPort2socketAddress(inet_addr("127.0.0.1"), 10091);
+using namespace rocketmq;
 
-  EXPECT_EQ(rocketmq::socketAddress2IPPort(addr), "1.0.0.127:10091");
+TEST(SocketUtilTest, Convert) {
+  struct sockaddr* sa = ipPort2SocketAddress(0x7F000001, 0x276B);
+  struct sockaddr_in* sin = (struct sockaddr_in*)sa;
+  EXPECT_EQ(sin->sin_addr.s_addr, 0x0100007F);
+  EXPECT_EQ(sin->sin_port, 0x6B27);
 
-  int host;
-  int port;
+  EXPECT_EQ(socketAddress2String(sa), "127.0.0.1:10091");
 
-  rocketmq::socketAddress2IPPort(addr, host, port);
-  EXPECT_EQ(host, inet_addr("127.0.0.1"));
-  EXPECT_EQ(port, 10091);
-
-  EXPECT_EQ(rocketmq::socketAddress2String(addr), "1.0.0.127");
+  sa = string2SocketAddress("127.0.0.1:10091");
+  sin = (struct sockaddr_in*)sa;
+  EXPECT_EQ(sin->sin_addr.s_addr, 0x0100007F);
+  EXPECT_EQ(sin->sin_port, 0x6B27);
 }
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "socketUtil.init";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "SocketUtilTest.*";
+  return RUN_ALL_TESTS();
 }

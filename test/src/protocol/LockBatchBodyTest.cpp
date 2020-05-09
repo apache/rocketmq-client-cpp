@@ -14,20 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-#include "vector"
+#include <vector>
 
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
-
-#include "LockBatchBody.h"
+#include "DataBlock.h"
 #include "MQMessageQueue.h"
-#include "dataBlock.h"
+#include "protocol/body/LockBatchBody.h"
 
-using std::vector;
-
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::LockBatchRequestBody;
@@ -36,7 +33,7 @@ using rocketmq::MemoryBlock;
 using rocketmq::MQMessageQueue;
 using rocketmq::UnlockBatchRequestBody;
 
-TEST(lockBatchBody, LockBatchRequestBody) {
+TEST(LockBatchBodyTest, LockBatchRequestBody) {
   LockBatchRequestBody lockBatchRequestBody;
 
   lockBatchRequestBody.setClientId("testClientId");
@@ -45,31 +42,28 @@ TEST(lockBatchBody, LockBatchRequestBody) {
   lockBatchRequestBody.setConsumerGroup("testGroup");
   EXPECT_EQ(lockBatchRequestBody.getConsumerGroup(), "testGroup");
 
-  vector<MQMessageQueue> vectorMessageQueue;
-  vectorMessageQueue.push_back(MQMessageQueue());
-  vectorMessageQueue.push_back(MQMessageQueue());
+  std::vector<MQMessageQueue> messageQueueList;
+  messageQueueList.push_back(MQMessageQueue("testTopic", "testBroker", 1));
+  messageQueueList.push_back(MQMessageQueue("testTopic", "testBroker", 2));
 
-  lockBatchRequestBody.setMqSet(vectorMessageQueue);
-  EXPECT_EQ(lockBatchRequestBody.getMqSet(), vectorMessageQueue);
+  lockBatchRequestBody.setMqSet(messageQueueList);
+  EXPECT_EQ(lockBatchRequestBody.getMqSet(), messageQueueList);
 
-  Json::Value outJson = lockBatchRequestBody.toJson(MQMessageQueue("topicTest", "testBroker", 10));
-  EXPECT_EQ(outJson["topic"], "topicTest");
-  EXPECT_EQ(outJson["brokerName"], "testBroker");
-  EXPECT_EQ(outJson["queueId"], 10);
-
-  string outData;
-  lockBatchRequestBody.Encode(outData);
+  std::string outData = lockBatchRequestBody.encode();
 
   Json::Value root;
   Json::Reader reader;
   reader.parse(outData, root);
   EXPECT_EQ(root["clientId"], "testClientId");
   EXPECT_EQ(root["consumerGroup"], "testGroup");
+  EXPECT_EQ(root["mqSet"][1]["topic"], "testTopic");
+  EXPECT_EQ(root["mqSet"][1]["brokerName"], "testBroker");
+  EXPECT_EQ(root["mqSet"][1]["queueId"], 2);
 }
 
-TEST(lockBatchBody, UnlockBatchRequestBody) {}
+TEST(LockBatchBodyTest, UnlockBatchRequestBody) {}
 
-TEST(lockBatchBody, LockBatchResponseBody) {
+TEST(LockBatchBodyTest, LockBatchResponseBody) {
   Json::Value root;
   Json::Value mqs;
 
@@ -81,23 +75,18 @@ TEST(lockBatchBody, LockBatchResponseBody) {
   root["lockOKMQSet"] = mqs;
 
   Json::FastWriter fastwrite;
-  string outData = fastwrite.write(root);
+  std::string outData = fastwrite.write(root);
 
-  MemoryBlock* mem = new MemoryBlock(outData.c_str(), outData.size());
-
-  LockBatchResponseBody lockBatchResponseBody;
-
-  vector<MQMessageQueue> messageQueues;
-  LockBatchResponseBody::Decode(mem, messageQueues);
+  std::unique_ptr<MemoryBlock> mem(new MemoryBlock(const_cast<char*>(outData.data()), outData.size()));
+  std::unique_ptr<LockBatchResponseBody> lockBatchResponseBody(LockBatchResponseBody::Decode(*mem));
 
   MQMessageQueue messageQueue("testTopic", "testBroker", 1);
-  EXPECT_EQ(messageQueue, messageQueues[0]);
+  EXPECT_EQ(messageQueue, lockBatchResponseBody->getLockOKMQSet()[0]);
 }
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "lockBatchBody.*";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "LockBatchBodyTest.*";
+  return RUN_ALL_TESTS();
 }

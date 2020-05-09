@@ -15,10 +15,6 @@
 
 cmake_minimum_required(VERSION 2.8)
 
-if (APPLE)
-    set(CMAKE_MACOSX_RPATH 1)
-endif (APPLE)
-
 # CMake complains if we don't have this.
 if (COMMAND cmake_policy)
     cmake_policy(SET CMP0003 NEW)
@@ -34,102 +30,98 @@ endif ()
 
 # First, declare project (important for prerequisite checks).
 project(rocketmq-client-cpp)
+
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif ()
 if (NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_CONFIGURATION_TYPES "Release")
 endif ()
+
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
 set(CMAKE_VERBOSE_MAKEFILE 1)
 
-option(BUILD_ROCKETMQ_STATIC "build rocketmq-client static library" OFF)
-option(BUILD_ROCKETMQ_SHARED "build rocketmq-client shared library" ON)
-
-# Find dependency
-#find_package(spdlog REQUIRED)
-
-option(Libevent_USE_STATIC_LIBS "only find libevent static libs" OFF) # only find static libs
-find_package(Libevent 2.0.21 REQUIRED)
-include_directories(${LIBEVENT_INCLUDE_DIRS})
-message(STATUS "** LIBEVENT_INCLUDE_DIR: ${LIBEVENT_INCLUDE_DIR}")
-message(STATUS "** LIBEVENT_LIBRARIES: ${LIBEVENT_LIBRARIES}")
-
-option(JSONCPP_USE_STATIC_LIBS "only find jsoncpp static libs" OFF) # only find static libs
-find_package(Jsoncpp 0.10.6 REQUIRED)
-include_directories(${JSONCPP_INCLUDE_DIRS})
-message(STATUS "** JSONCPP_INCLUDE_DIRS: ${JSONCPP_INCLUDE_DIRS}")
-message(STATUS "** JSONCPP_LIBRARIES: ${JSONCPP_LIBRARIES}")
+if (APPLE)
+    set(CMAKE_MACOSX_RPATH 1)
+endif (APPLE)
 
 # put binaries in a different dir to make them easier to find.
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
-# for unix, put debug files in a separate bin "debug" dir.
-# release bin files should stay in the root of the bin dir.
-# if (CMAKE_GENERATOR STREQUAL "Unix Makefiles")
-#     if (CMAKE_BUILD_TYPE STREQUAL Debug)
-#         set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin/debug)
-#         set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin/debug)
-#     endif()
-# endif()
+# Find dependencies
+#find_package(spdlog REQUIRED)
+if (NOT spdlog_FOUND)
+    include_directories(${CMAKE_SOURCE_DIR}/bin/include)
+endif ()
 
-IF (WIN32)
+option(Libevent_USE_STATIC_LIBS "only find libevent static libs" OFF) # only find static libs
+if (NOT LIBEVENT_ROOT)
+    set(LIBEVENT_ROOT ${CMAKE_SOURCE_DIR}/bin)
+endif ()
+find_package(Libevent 2.0.21 REQUIRED)
+message(STATUS "** LIBEVENT_INCLUDE_DIR: ${LIBEVENT_INCLUDE_DIR}")
+message(STATUS "** LIBEVENT_LIBRARIES: ${LIBEVENT_LIBRARIES}")
+
+option(JSONCPP_USE_STATIC_LIBS "only find jsoncpp static libs" OFF) # only find static libs
+if (NOT JSONCPP_ROOT)
+    set(JSONCPP_ROOT ${CMAKE_SOURCE_DIR}/bin)
+endif ()
+find_package(Jsoncpp 0.10.6 REQUIRED)
+message(STATUS "** JSONCPP_INCLUDE_DIRS: ${JSONCPP_INCLUDE_DIRS}")
+message(STATUS "** JSONCPP_LIBRARIES: ${JSONCPP_LIBRARIES}")
+
+# Set compile options
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+CHECK_C_COMPILER_FLAG("-std=c99" COMPILER_SUPPORTS_C99)
+CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+if (COMPILER_SUPPORTS_C99 AND COMPILER_SUPPORTS_CXX11)
+    if (NOT (CMAKE_VERSION VERSION_LESS "3.1"))
+        set(CMAKE_C_STANDARD 99)
+        set(CMAKE_CXX_STANDARD 11)
+        message(STATUS "** set CMAKE_C_STANDARD to 99")
+        message(STATUS "** set CMAKE_CXX_STANDARD to 11")
+    else ()
+        if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+            set(C_STANDARD_FLAG "-std=gnu99")
+            set(CXX_STANDARD_FLAG "-std=gnu++11")
+        else ()
+            set(C_STANDARD_FLAG "-std=c99")
+            set(CXX_STANDARD_FLAG "-std=c++11")
+        endif ()
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${C_STANDARD_FLAG}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_STANDARD_FLAG}")
+        message(STATUS "** set CMAKE_C_FLAGS with ${C_STANDARD_FLAG}")
+        message(STATUS "** set CMAKE_CXX_FLAGS with ${CXX_STANDARD_FLAG}")
+    endif ()
+else ()
+    message(FATAL_ERROR "The compiler has no C99 or C++11 support.")
+endif ()
+
+if (WIN32)
     add_definitions(-DWIN32 -DROCKETMQCLIENT_EXPORTS)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
-ELSE ()
-    set(C_FLAGS
-            -Wall
-            -Wno-deprecated
-            -fPIC
-            -fno-strict-aliasing
-            )
-    set(CXX_FLAGS
-            -Wall
-            -Wno-deprecated
-            -fPIC
-            -fno-strict-aliasing
-            -std=c++11
-            -Wno-unused-local-typedef
-            -Wno-expansion-to-defined
-            # -finline-limit=1000
-            # -Wextra
-            # -pedantic
-            # -pedantic-errors
-            # -D_FILE_OFFSET_BITS=64
-            # -DVALGRIND
-            # -DCHECK_PTHREAD_RETURN_VALUE
-            # -Werror
-            # -Wconversion
-            # -Wno-unused-parameter
-            # -Wunused-but-set-variable
-            # -Wold-style-cast
-            # -Woverloaded-virtual
-            # -Wpointer-arith
-            # -Wshadow
-            # -Wwrite-strings
-            # -Wdeprecated-declarations
-            # -march=native
-            # -MMD
-            # -std=c++0x
-            # -rdynamic
-            )
+    add_compile_options(/EHsc)
+    if (CMAKE_BUILD_TYPE EQUAL "Release")
+        add_compile_options(/MT)
+    else ()
+        add_compile_options(/MTd)
+    endif ()
+else ()
+    add_compile_options(-Wall
+        -Wno-deprecated
+        -fPIC
+        -fno-strict-aliasing
+        -Wno-unused-local-typedef
+        -Wno-expansion-to-defined)
 
     if (CMAKE_BUILD_BITS EQUAL 32)
-        list(APPEND CXX_FLAGS "-m32")
+        add_compile_options(-m32)
     else () #not-condition
-        list(APPEND CXX_FLAGS "-m64")
+        add_compile_options(-m64)
     endif ()
-
-    string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
-    string(REPLACE ";" " " CMAKE_C_FLAGS "${C_FLAGS}")
-
-    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -DDEBUG")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
-
 
     # Declare deplibs, so we can use list in linker later. There's probably
     # a more elegant way of doing this; with SCons, when you check for the
@@ -146,40 +138,35 @@ ELSE ()
     endif ()
     list(APPEND deplibs z)
 
+    option(CODE_COVERAGE "Enable coverage reporting" OFF)
+    if (CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        # Add required flags (GCC & LLVM/Clang)
+        # Code Coverage Configuration
+        add_library(coverage_config INTERFACE)
+        target_compile_options(coverage_config INTERFACE
+                -O0        # no optimization
+                -g         # generate debug info
+                --coverage # sets all required flags
+                )
+        if (NOT (CMAKE_VERSION VERSION_LESS "3.13"))
+            target_link_options(coverage_config INTERFACE --coverage)
+        else ()
+            target_link_libraries(coverage_config INTERFACE --coverage)
+        endif ()
+        list(APPEND deplibs coverage_config)
+    endif (CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+
     # add include dir for bsd (posix uses /usr/include/)
     set(CMAKE_INCLUDE_PATH "${CMAKE_INCLUDE_PATH}:/usr/local/include")
-ENDIF ()
-
-# For config.h, set some static values; it may be a good idea to make
-# these values dynamic for non-standard UNIX compilers.
-set(ACCEPT_TYPE_ARG3 socklen_t)
-set(HAVE_CXX_BOOL 1)
-set(HAVE_CXX_CASTS 1)
-set(HAVE_CXX_EXCEPTIONS 1)
-set(HAVE_CXX_MUTABLE 1)
-set(HAVE_CXX_STDLIB 1)
-set(HAVE_PTHREAD_SIGNAL 1)
-set(SELECT_TYPE_ARG1 int)
-set(SELECT_TYPE_ARG234 "(fd_set *)")
-set(SELECT_TYPE_ARG5 "(struct timeval *)")
-set(STDC_HEADERS 1)
-set(TIME_WITH_SYS_TIME 1)
-set(HAVE_SOCKLEN_T 1)
-
-# For config.h, save the results based on a template (config.h.in).
-# configure_file(res/config.h.in ${root_dir}/config.h)
-
-# add_definitions(-DSYSAPI_UNIX=1 -DHAVE_CONFIG_H)
+endif ()
 
 add_subdirectory(libs)
 add_subdirectory(project)
 add_subdirectory(example)
 
-
 option(RUN_UNIT_TEST "RUN_UNIT_TEST" OFF)
-
 if (RUN_UNIT_TEST)
     message(STATUS "** RUN_UNIT_TEST: Do execution testing")
+    enable_testing()
     add_subdirectory(test)
 endif ()
-

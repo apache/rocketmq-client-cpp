@@ -35,9 +35,11 @@ ConsumeMessageConcurrentlyService::~ConsumeMessageConcurrentlyService() = defaul
 void ConsumeMessageConcurrentlyService::start() {
   // start callback threadpool
   m_consumeExecutor.startup();
+  m_scheduledExecutorService.startup();
 }
 
 void ConsumeMessageConcurrentlyService::shutdown() {
+  m_scheduledExecutorService.shutdown();
   m_consumeExecutor.shutdown();
 }
 
@@ -86,64 +88,69 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(std::vector<MQMessageExtP
       }
     }
     status = m_messageListener->consumeMessage(msgs);
-  } catch (std::exception& e) {
-    // ...
+  } catch (const std::exception& e) {
+    LOG_WARN_NEW("encounter unexpected exception when consume messages.\n{}", e.what());
   }
 
+  if (processQueue->isDropped()) {
+    LOG_WARN_NEW("processQueue is dropped without process consume result. messageQueue={}", messageQueue.toString());
+    return;
+  }
+
+  //
   // processConsumeResult
-  if (!processQueue->isDropped()) {
-    int ackIndex = -1;
-    switch (status) {
-      case CONSUME_SUCCESS:
-        ackIndex = msgs.size() - 1;
-        break;
-      case RECONSUME_LATER:
-        ackIndex = -1;
-        break;
-      default:
-        break;
-    }
 
-    switch (m_consumer->messageModel()) {
-      case BROADCASTING:
-        // Note: broadcasting reconsume should do by application, as it has big affect to broker cluster
-        for (size_t i = ackIndex + 1; i < msgs.size(); i++) {
-          const auto& msg = msgs[i];
-          LOG_WARN_NEW("BROADCASTING, the message consume failed, drop it, {}", msg->toString());
-        }
-        break;
-      case CLUSTERING: {
-        // send back msg to broker
-        std::vector<MQMessageExtPtr2> msgBackFailed;
-        int idx = ackIndex + 1;
-        for (auto iter = msgs.begin() + idx; iter != msgs.end(); idx++) {
-          LOG_WARN_NEW("consume fail, MQ is:{}, its msgId is:{}, index is:{}, reconsume times is:{}",
-                       messageQueue.toString(), (*iter)->getMsgId(), idx, (*iter)->getReconsumeTimes());
-          auto& msg = (*iter);
-          bool result = m_consumer->sendMessageBack(*msg, 0, messageQueue.getBrokerName());
-          if (!result) {
-            msg->setReconsumeTimes(msg->getReconsumeTimes() + 1);
-            msgBackFailed.push_back(msg);
-            iter = msgs.erase(iter);
-          } else {
-            iter++;
-          }
-        }
+  int ackIndex = -1;
+  switch (status) {
+    case CONSUME_SUCCESS:
+      ackIndex = msgs.size() - 1;
+      break;
+    case RECONSUME_LATER:
+      ackIndex = -1;
+      break;
+    default:
+      break;
+  }
 
-        if (!msgBackFailed.empty()) {
-          // send back failed, reconsume later
-          submitConsumeRequestLater(msgBackFailed, processQueue, messageQueue);
+  switch (m_consumer->messageModel()) {
+    case BROADCASTING:
+      // Note: broadcasting reconsume should do by application, as it has big affect to broker cluster
+      for (size_t i = ackIndex + 1; i < msgs.size(); i++) {
+        const auto& msg = msgs[i];
+        LOG_WARN_NEW("BROADCASTING, the message consume failed, drop it, {}", msg->toString());
+      }
+      break;
+    case CLUSTERING: {
+      // send back msg to broker
+      std::vector<MQMessageExtPtr2> msgBackFailed;
+      int idx = ackIndex + 1;
+      for (auto iter = msgs.begin() + idx; iter != msgs.end(); idx++) {
+        LOG_WARN_NEW("consume fail, MQ is:{}, its msgId is:{}, index is:{}, reconsume times is:{}",
+                     messageQueue.toString(), (*iter)->getMsgId(), idx, (*iter)->getReconsumeTimes());
+        auto& msg = (*iter);
+        bool result = m_consumer->sendMessageBack(*msg, 0, messageQueue.getBrokerName());
+        if (!result) {
+          msg->setReconsumeTimes(msg->getReconsumeTimes() + 1);
+          msgBackFailed.push_back(msg);
+          iter = msgs.erase(iter);
+        } else {
+          iter++;
         }
-      } break;
-      default:
-        break;
-    }
+      }
 
-    // update offset
-    int64_t offset = processQueue->removeMessage(msgs);
-    if (offset >= 0 && !processQueue->isDropped()) {
-      m_consumer->getOffsetStore()->updateOffset(messageQueue, offset, true);
-    }
+      if (!msgBackFailed.empty()) {
+        // send back failed, reconsume later
+        submitConsumeRequestLater(msgBackFailed, processQueue, messageQueue);
+      }
+    } break;
+    default:
+      break;
+  }
+
+  // update offset
+  int64_t offset = processQueue->removeMessage(msgs);
+  if (offset >= 0 && !processQueue->isDropped()) {
+    m_consumer->getOffsetStore()->updateOffset(messageQueue, offset, true);
   }
 }
 

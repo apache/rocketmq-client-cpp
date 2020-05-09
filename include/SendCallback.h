@@ -22,7 +22,7 @@
 
 namespace rocketmq {
 
-enum SendCallbackType { SEND_CALLBACK_TYPE_SIMPLE = 0, SEND_CALLBACK_TYPE_ATUO_DELETE = 1 };
+enum SendCallbackType { SEND_CALLBACK_TYPE_SIMPLE = 0, SEND_CALLBACK_TYPE_AUTO_DELETE = 1 };
 
 class ROCKETMQCLIENT_API SendCallback {
  public:
@@ -37,7 +37,7 @@ class ROCKETMQCLIENT_API SendCallback {
 // async SendCallback will be deleted automatically by rocketmq cpp after invoke callback interface
 class ROCKETMQCLIENT_API AutoDeleteSendCallback : public SendCallback {
  public:
-  SendCallbackType getSendCallbackType() const override final { return SEND_CALLBACK_TYPE_ATUO_DELETE; }
+  SendCallbackType getSendCallbackType() const override final { return SEND_CALLBACK_TYPE_AUTO_DELETE; }
 };
 
 }  // namespace rocketmq

@@ -17,8 +17,8 @@
 #ifndef __NAMESRV_CONFIG_H__
 #define __NAMESRV_CONFIG_H__
 
-#include <stdlib.h>
 #include <string>
+
 #include "UtilAll.h"
 
 namespace rocketmq {
@@ -32,17 +32,17 @@ class NamesrvConfig {
     }
   }
 
-  const string& getRocketmqHome() const { return m_rocketmqHome; }
+  const std::string& getRocketmqHome() const { return m_rocketmqHome; }
 
-  void setRocketmqHome(const string& rocketmqHome) { m_rocketmqHome = rocketmqHome; }
+  void setRocketmqHome(const std::string& rocketmqHome) { m_rocketmqHome = rocketmqHome; }
 
-  const string& getKvConfigPath() const { return m_kvConfigPath; }
+  const std::string& getKvConfigPath() const { return m_kvConfigPath; }
 
-  void setKvConfigPath(const string& kvConfigPath) { m_kvConfigPath = kvConfigPath; }
+  void setKvConfigPath(const std::string& kvConfigPath) { m_kvConfigPath = kvConfigPath; }
 
  private:
-  string m_rocketmqHome;
-  string m_kvConfigPath;
+  std::string m_rocketmqHome;
+  std::string m_kvConfigPath;
 };
 
 }  // namespace rocketmq

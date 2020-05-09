@@ -30,33 +30,15 @@ enum ConsumeStatus {
   RECONSUME_LATER
 };
 
-/*enum ConsumeOrderlyStatus
-{*/
-/**
- * Success consumption
- */
-// SUCCESS,
-/**
- * Rollback consumption(only for binlog consumption)
- */
-// ROLLBACK,
-/**
- * Commit offset(only for binlog consumption)
- */
-// COMMIT,
-/**
- * Suspend current queue a moment
- */
-// SUSPEND_CURRENT_QUEUE_A_MOMENT
-/*};*/
-
 enum MessageListenerType { messageListenerDefaultly = 0, messageListenerOrderly = 1, messageListenerConcurrently = 2 };
 
 class ROCKETMQCLIENT_API MQMessageListener {
  public:
   virtual ~MQMessageListener() = default;
+
   virtual MessageListenerType getMessageListenerType() { return messageListenerDefaultly; }
 
+  // Recommended
   virtual ConsumeStatus consumeMessage(const std::vector<MQMessageExtPtr2>& msgs) {
     std::vector<MQMessageExtPtr> msgs2;
     msgs2.reserve(msgs.size());
@@ -67,7 +49,7 @@ class ROCKETMQCLIENT_API MQMessageListener {
   }
 
   // SDK will be responsible for the lifecycle of messages.
-  virtual ConsumeStatus consumeMessage(const std::vector<MQMessageExtPtr>& msgs) = 0;
+  virtual ConsumeStatus consumeMessage(const std::vector<MQMessageExtPtr>& msgs) { return RECONSUME_LATER; };
 };
 
 class ROCKETMQCLIENT_API MessageListenerConcurrently : virtual public MQMessageListener {

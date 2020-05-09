@@ -15,25 +15,23 @@
  * limitations under the License.
  */
 
-#include <string>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <string>
 
 #include "NamesrvConfig.h"
 
-using std::string;
-
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::NamesrvConfig;
 
-TEST(namesrvConfig, init) {
+TEST(NamesrvConfigTest, Init) {
   NamesrvConfig namesrvConfig;
 
-  const string home = "/home/rocketmq";
+  const std::string home = "/home/rocketmq";
   namesrvConfig.setRocketmqHome(home);
   EXPECT_EQ(namesrvConfig.getRocketmqHome(), "/home/rocketmq");
 
@@ -44,7 +42,6 @@ TEST(namesrvConfig, init) {
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "namesrvConfig.init";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "NamesrvConfigTest.*";
+  return RUN_ALL_TESTS();
 }

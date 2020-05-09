@@ -318,7 +318,7 @@ SendMessageResponseHeader* SendMessageResponseHeader::Decode(std::map<std::strin
   header->queueId = std::stoi(extFields.at("queueId"));
   header->queueOffset = std::stoll(extFields.at("queueOffset"));
 
-  auto it = extFields.find("transactionId");
+  const auto& it = extFields.find("transactionId");
   if (it != extFields.end()) {
     header->transactionId = it->second;
   }
@@ -598,8 +598,8 @@ void UpdateConsumerOffsetRequestHeader::SetDeclaredFieldOfCommandHeader(
     std::map<std::string, std::string>& requestMap) {
   requestMap.emplace("consumerGroup", consumerGroup);
   requestMap.emplace("topic", topic);
-  requestMap.emplace("queueId", std::to_string(queueId));
-  requestMap.emplace("commitOffset", std::to_string(commitOffset));
+  requestMap.emplace("queueId", UtilAll::to_string(queueId));
+  requestMap.emplace("commitOffset", UtilAll::to_string(commitOffset));
 }
 
 //######################################
@@ -607,34 +607,34 @@ void UpdateConsumerOffsetRequestHeader::SetDeclaredFieldOfCommandHeader(
 //######################################
 
 void ConsumerSendMsgBackRequestHeader::Encode(Json::Value& extFields) {
-  extFields["offset"] = std::to_string(offset);
+  extFields["offset"] = UtilAll::to_string(offset);
   extFields["group"] = group;
-  extFields["delayLevel"] = std::to_string(delayLevel);
+  extFields["delayLevel"] = UtilAll::to_string(delayLevel);
   if (!originMsgId.empty()) {
     extFields["originMsgId"] = originMsgId;
   }
   if (!originTopic.empty()) {
     extFields["originTopic"] = originTopic;
   }
-  extFields["unitMode"] = std::to_string(unitMode);
+  extFields["unitMode"] = UtilAll::to_string(unitMode);
   if (maxReconsumeTimes != -1) {
-    extFields["maxReconsumeTimes"] = std::to_string(maxReconsumeTimes);
+    extFields["maxReconsumeTimes"] = UtilAll::to_string(maxReconsumeTimes);
   }
 }
 
 void ConsumerSendMsgBackRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
-  requestMap.emplace("offset", std::to_string(offset));
+  requestMap.emplace("offset", UtilAll::to_string(offset));
   requestMap.emplace("group", group);
-  requestMap.emplace("delayLevel", std::to_string(delayLevel));
+  requestMap.emplace("delayLevel", UtilAll::to_string(delayLevel));
   if (!originMsgId.empty()) {
     requestMap.emplace("originMsgId", originMsgId);
   }
   if (!originTopic.empty()) {
     requestMap.emplace("originTopic", originTopic);
   }
-  requestMap.emplace("unitMode", std::to_string(unitMode));
+  requestMap.emplace("unitMode", UtilAll::to_string(unitMode));
   if (maxReconsumeTimes != -1) {
-    requestMap.emplace("maxReconsumeTimes", std::to_string(maxReconsumeTimes));
+    requestMap.emplace("maxReconsumeTimes", UtilAll::to_string(maxReconsumeTimes));
   }
 }
 
@@ -665,8 +665,8 @@ ResetOffsetRequestHeader* ResetOffsetRequestHeader::Decode(std::map<std::string,
   header->group = extFields.at("group");
   header->timestamp = std::stoll(extFields.at("timestamp"));
   header->isForce = UtilAll::stob(extFields.at("isForce"));
-  LOG_INFO("topic:%s, group:%s, timestamp:%lld, isForce:%d", header->topic.c_str(), header->group.c_str(),
-           header->timestamp, header->isForce);
+  LOG_INFO_NEW("topic:{}, group:{}, timestamp:{}, isForce:{}", header->topic, header->group, header->timestamp,
+               header->isForce);
   return header.release();
 }
 
@@ -686,11 +686,11 @@ void ResetOffsetRequestHeader::setForceFlag(const bool& tmp) {
   isForce = tmp;
 }
 
-const std::string ResetOffsetRequestHeader::getTopic() const {
+const std::string& ResetOffsetRequestHeader::getTopic() const {
   return topic;
 }
 
-const std::string ResetOffsetRequestHeader::getGroup() const {
+const std::string& ResetOffsetRequestHeader::getGroup() const {
   return group;
 }
 
@@ -727,10 +727,10 @@ void GetConsumerRunningInfoRequestHeader::SetDeclaredFieldOfCommandHeader(
     std::map<std::string, std::string>& requestMap) {
   requestMap.emplace("consumerGroup", consumerGroup);
   requestMap.emplace("clientId", clientId);
-  requestMap.emplace("jstackEnable", std::to_string(jstackEnable));
+  requestMap.emplace("jstackEnable", UtilAll::to_string(jstackEnable));
 }
 
-const std::string GetConsumerRunningInfoRequestHeader::getConsumerGroup() const {
+const std::string& GetConsumerRunningInfoRequestHeader::getConsumerGroup() const {
   return consumerGroup;
 }
 
@@ -738,7 +738,7 @@ void GetConsumerRunningInfoRequestHeader::setConsumerGroup(const std::string& co
   this->consumerGroup = consumerGroup;
 }
 
-const std::string GetConsumerRunningInfoRequestHeader::getClientId() const {
+const std::string& GetConsumerRunningInfoRequestHeader::getClientId() const {
   return clientId;
 }
 
@@ -765,7 +765,7 @@ NotifyConsumerIdsChangedRequestHeader* NotifyConsumerIdsChangedRequestHeader::De
   return header.release();
 }
 
-const std::string NotifyConsumerIdsChangedRequestHeader::getConsumerGroup() const {
+const std::string& NotifyConsumerIdsChangedRequestHeader::getConsumerGroup() const {
   return consumerGroup;
 }
 

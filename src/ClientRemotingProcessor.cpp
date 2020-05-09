@@ -16,27 +16,31 @@
  */
 #include "ClientRemotingProcessor.h"
 
-#include "CommandHeader.h"
 #include "ConsumerRunningInfo.h"
 #include "MQDecoder.h"
 #include "MQProtos.h"
+#include "MessageAccessor.h"
+#include "MessageSysFlag.h"
+#include "RequestFutureTable.h"
+#include "SocketUtil.h"
+#include "protocol/body/ResetOffsetBody.h"
+#include "protocol/header/CommandHeader.h"
+#include "protocol/header/ReplyMessageRequestHeader.h"
 
 namespace rocketmq {
 
-ClientRemotingProcessor::ClientRemotingProcessor(MQClientInstance* mqClientFactory)
-    : m_mqClientFactory(mqClientFactory) {}
+ClientRemotingProcessor::ClientRemotingProcessor(MQClientInstance* clientInstance) : m_clientInstance(clientInstance) {}
 
 ClientRemotingProcessor::~ClientRemotingProcessor() = default;
 
-RemotingCommand* ClientRemotingProcessor::processRequest(const std::string& addr, RemotingCommand* request) {
-  LOG_DEBUG("request Command received:processRequest, addr:%s, code:%d", addr.data(), request->getCode());
+RemotingCommand* ClientRemotingProcessor::processRequest(TcpTransportPtr channel, RemotingCommand* request) {
+  const auto& addr = channel->getPeerAddrAndPort();
+  LOG_DEBUG_NEW("processRequest, code:{}, addr:{}", request->getCode(), addr);
   switch (request->getCode()) {
     case CHECK_TRANSACTION_STATE:
       return checkTransactionState(addr, request);
-      break;
     case NOTIFY_CONSUMER_IDS_CHANGED:
       return notifyConsumerIdsChanged(request);
-      break;
     case RESET_CONSUMER_CLIENT_OFFSET:  // oneWayRPC
       return resetOffset(request);
     case GET_CONSUMER_STATUS_FROM_CLIENT:
@@ -44,81 +48,14 @@ RemotingCommand* ClientRemotingProcessor::processRequest(const std::string& addr
       break;
     case GET_CONSUMER_RUNNING_INFO:
       return getConsumerRunningInfo(addr, request);
-      break;
     case CONSUME_MESSAGE_DIRECTLY:
       // return consumeMessageDirectly( request);
       break;
+    case PUSH_REPLY_MESSAGE_TO_CLIENT:
+      return receiveReplyMessage(request);
     default:
       break;
   }
-  return nullptr;
-}
-
-RemotingCommand* ClientRemotingProcessor::resetOffset(RemotingCommand* request) {
-  auto* responseHeader = request->decodeCommandCustomHeader<ResetOffsetRequestHeader>();
-  auto requestBody = request->getBody();
-  if (requestBody != nullptr && requestBody->getSize() > 0) {
-    std::unique_ptr<ResetOffsetBody> body(ResetOffsetBody::Decode(*requestBody));
-    if (body != nullptr) {
-      m_mqClientFactory->resetOffset(responseHeader->getGroup(), responseHeader->getTopic(), body->getOffsetTable());
-    } else {
-      LOG_ERROR("resetOffset failed as received data could not be unserialized");
-    }
-  }
-  return nullptr;  // as resetOffset is oneWayRPC, do not need return any response
-}
-
-ResetOffsetBody* ResetOffsetBody::Decode(MemoryBlock& mem) {
-  Json::Value root = RemotingSerializable::fromJson(mem);
-  Json::Value qds = root["offsetTable"];
-  std::unique_ptr<ResetOffsetBody> body(new ResetOffsetBody());
-  for (unsigned int i = 0; i < qds.size(); i++) {
-    Json::Value qd = qds[i];
-    MQMessageQueue mq(qd["brokerName"].asString(), qd["topic"].asString(), qd["queueId"].asInt());
-    int64_t offset = qd["offset"].asInt64();
-    body->setOffsetTable(mq, offset);
-  }
-  return body.release();
-}
-
-std::map<MQMessageQueue, int64_t> ResetOffsetBody::getOffsetTable() {
-  return m_offsetTable;
-}
-
-void ResetOffsetBody::setOffsetTable(const MQMessageQueue& mq, int64_t offset) {
-  m_offsetTable[mq] = offset;
-}
-
-RemotingCommand* ClientRemotingProcessor::getConsumerRunningInfo(const std::string& addr, RemotingCommand* request) {
-  auto* requestHeader = request->decodeCommandCustomHeader<GetConsumerRunningInfoRequestHeader>();
-  LOG_INFO("getConsumerRunningInfo:%s", requestHeader->getConsumerGroup().c_str());
-
-  RemotingCommand* response =
-      new RemotingCommand(request->getCode(), "CPP", request->getVersion(), request->getOpaque(), request->getFlag(),
-                          request->getRemark(), nullptr);
-
-  std::unique_ptr<ConsumerRunningInfo> runningInfo(
-      m_mqClientFactory->consumerRunningInfo(requestHeader->getConsumerGroup()));
-  if (runningInfo != nullptr) {
-    if (requestHeader->isJstackEnable()) {
-      /*string jstack = UtilAll::jstack();
-       consumerRunningInfo->setJstack(jstack);*/
-    }
-    response->setCode(SUCCESS_VALUE);
-    std::string body = runningInfo->encode();
-    response->setBody(body);
-  } else {
-    response->setCode(SYSTEM_ERROR);
-    response->setRemark("The Consumer Group not exist in this consumer");
-  }
-
-  return response;
-}
-
-RemotingCommand* ClientRemotingProcessor::notifyConsumerIdsChanged(RemotingCommand* request) {
-  auto* requestHeader = request->decodeCommandCustomHeader<NotifyConsumerIdsChangedRequestHeader>();
-  LOG_INFO("notifyConsumerIdsChanged:%s", requestHeader->getConsumerGroup().c_str());
-  m_mqClientFactory->rebalanceImmediately();
   return nullptr;
 }
 
@@ -136,7 +73,7 @@ RemotingCommand* ClientRemotingProcessor::checkTransactionState(const std::strin
       }
       const auto& group = messageExt->getProperty(MQMessageConst::PROPERTY_PRODUCER_GROUP);
       if (!group.empty()) {
-        auto* producer = m_mqClientFactory->selectProducer(group);
+        auto* producer = m_clientInstance->selectProducer(group);
         if (producer != nullptr) {
           producer->checkTransactionState(addr, messageExt, requestHeader);
         } else {
@@ -153,6 +90,120 @@ RemotingCommand* ClientRemotingProcessor::checkTransactionState(const std::strin
   }
 
   return nullptr;
+}
+
+RemotingCommand* ClientRemotingProcessor::notifyConsumerIdsChanged(RemotingCommand* request) {
+  auto* requestHeader = request->decodeCommandCustomHeader<NotifyConsumerIdsChangedRequestHeader>();
+  LOG_INFO_NEW("notifyConsumerIdsChanged, group:{}", requestHeader->getConsumerGroup());
+  m_clientInstance->rebalanceImmediately();
+  return nullptr;
+}
+
+RemotingCommand* ClientRemotingProcessor::resetOffset(RemotingCommand* request) {
+  auto* responseHeader = request->decodeCommandCustomHeader<ResetOffsetRequestHeader>();
+  auto requestBody = request->getBody();
+  if (requestBody != nullptr && requestBody->getSize() > 0) {
+    std::unique_ptr<ResetOffsetBody> body(ResetOffsetBody::Decode(*requestBody));
+    if (body != nullptr) {
+      m_clientInstance->resetOffset(responseHeader->getGroup(), responseHeader->getTopic(), body->getOffsetTable());
+    } else {
+      LOG_ERROR("resetOffset failed as received data could not be unserialized");
+    }
+  }
+  return nullptr;  // as resetOffset is oneWayRPC, do not need return any response
+}
+
+RemotingCommand* ClientRemotingProcessor::getConsumerRunningInfo(const std::string& addr, RemotingCommand* request) {
+  auto* requestHeader = request->decodeCommandCustomHeader<GetConsumerRunningInfoRequestHeader>();
+  LOG_INFO("getConsumerRunningInfo, group:{}", requestHeader->getConsumerGroup());
+
+  std::unique_ptr<RemotingCommand> response(
+      new RemotingCommand(MQResponseCode::SYSTEM_ERROR, "not set any response code"));
+
+  std::unique_ptr<ConsumerRunningInfo> runningInfo(
+      m_clientInstance->consumerRunningInfo(requestHeader->getConsumerGroup()));
+  if (runningInfo != nullptr) {
+    if (requestHeader->isJstackEnable()) {
+      /*string jstack = UtilAll::jstack();
+       consumerRunningInfo->setJstack(jstack);*/
+    }
+    response->setCode(SUCCESS);
+    auto body = runningInfo->encode();
+    response->setBody(body);
+  } else {
+    response->setCode(SYSTEM_ERROR);
+    response->setRemark("The Consumer Group not exist in this consumer");
+  }
+
+  return response.release();
+}
+
+RemotingCommand* ClientRemotingProcessor::receiveReplyMessage(RemotingCommand* request) {
+  std::unique_ptr<RemotingCommand> response(
+      new RemotingCommand(MQResponseCode::SYSTEM_ERROR, "not set any response code"));
+
+  auto receiveTime = UtilAll::currentTimeMillis();
+  auto* requestHeader = request->decodeCommandCustomHeader<ReplyMessageRequestHeader>();
+
+  try {
+    std::unique_ptr<MQMessageExt> msg(new MQMessageExt);
+
+    msg->setTopic(requestHeader->getTopic());
+    msg->setQueueId(requestHeader->getQueueId());
+    msg->setStoreTimestamp(requestHeader->getStoreTimestamp());
+
+    if (!requestHeader->getBornHost().empty()) {
+      msg->setBornHost(string2SocketAddress(requestHeader->getBornHost()));
+    }
+
+    if (!requestHeader->getStoreHost().empty()) {
+      msg->setStoreHost(string2SocketAddress(requestHeader->getStoreHost()));
+    }
+
+    auto body = request->getBody();
+    if ((requestHeader->getSysFlag() & MessageSysFlag::CompressedFlag) == MessageSysFlag::CompressedFlag) {
+      std::string outbody;
+      if (UtilAll::inflate(body->getData(), body->getSize(), outbody)) {
+        msg->setBody(std::move(outbody));
+      } else {
+        LOG_WARN_NEW("err when uncompress constant");
+      }
+    } else {
+      msg->setBody(body->getData(), body->getSize());
+    }
+
+    msg->setFlag(requestHeader->getFlag());
+    MessageAccessor::setProperties(*msg, MQDecoder::string2messageProperties(requestHeader->getProperties()));
+    MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_REPLY_MESSAGE_ARRIVE_TIME,
+                                 UtilAll::to_string(receiveTime));
+    msg->setBornTimestamp(requestHeader->getBornTimestamp());
+    msg->setReconsumeTimes(requestHeader->getReconsumeTimes());
+    LOG_DEBUG_NEW("receive reply message:{}", msg->toString());
+
+    processReplyMessage(std::move(msg));
+
+    response->setCode(MQResponseCode::SUCCESS);
+    response->setRemark(null);
+  } catch (const std::exception& e) {
+    LOG_WARN_NEW("unknown err when receiveReplyMsg, {}", e.what());
+    response->setCode(MQResponseCode::SYSTEM_ERROR);
+    response->setRemark("process reply message fail");
+  }
+
+  return response.release();
+}
+
+void ClientRemotingProcessor::processReplyMessage(std::unique_ptr<MQMessageExt> replyMsg) {
+  const auto& correlationId = replyMsg->getProperty(MQMessageConst::PROPERTY_CORRELATION_ID);
+  auto requestResponseFuture = RequestFutureTable::removeRequestFuture(correlationId);
+  if (requestResponseFuture != nullptr) {
+    requestResponseFuture->putResponseMessage(std::move(replyMsg));
+    requestResponseFuture->executeRequestCallback();
+  } else {
+    auto bornHost = replyMsg->getBornHostString();
+    LOG_WARN_NEW("receive reply message, but not matched any request, CorrelationId: {} , reply from host: {}",
+                 correlationId, bornHost);
+  }
 }
 
 }  // namespace rocketmq

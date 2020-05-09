@@ -32,10 +32,12 @@ class MessageQueueLock {
  public:
   std::shared_ptr<std::mutex> fetchLockObject(const MQMessageQueue& mq) {
     std::lock_guard<std::mutex> lock(m_mqLockTableMutex);
-    if (m_mqLockTable.find(mq) == m_mqLockTable.end()) {
-      m_mqLockTable.emplace(mq, std::shared_ptr<std::mutex>(new std::mutex()));
+    const auto& it = m_mqLockTable.find(mq);
+    if (it != m_mqLockTable.end()) {
+      return it->second;
+    } else {
+      return m_mqLockTable[mq] = std::make_shared<std::mutex>();
     }
-    return m_mqLockTable[mq];
   }
 
  private:

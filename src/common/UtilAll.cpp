@@ -59,7 +59,7 @@ bool UtilAll::try_lock_for(std::timed_mutex& mutex, long timeout) {
 
 int32_t UtilAll::HashCode(const std::string& str) {
   // FIXME: don't equal to String#hashCode in Java
-  int32 h = 0;
+  int32_t h = 0;
   if (!str.empty()) {
     for (const auto& c : str) {
       h = 31 * h + c;
@@ -112,6 +112,10 @@ bool UtilAll::isRetryTopic(const std::string& topic) {
 
 std::string UtilAll::getRetryTopic(const std::string& consumerGroup) {
   return RETRY_GROUP_TOPIC_PREFIX + consumerGroup;
+}
+
+std::string UtilAll::getReplyTopic(const std::string& clusterName) {
+  return clusterName + "_" + REPLY_TOPIC_POSTFIX;
 }
 
 void UtilAll::Trim(std::string& str) {
@@ -221,7 +225,7 @@ std::string UtilAll::getLocalAddress() {
     auto hostname = getLocalHostName();
     if (!hostname.empty()) {
       try {
-        s_localIpAddress = lookupNameServers(hostname);
+        s_localIpAddress = socketAddress2String(lookupNameServers(hostname));
       } catch (std::exception& e) {
         LOG_WARN(e.what());
         s_localIpAddress = "127.0.0.1";

@@ -23,18 +23,16 @@ MQFaultStrategy::MQFaultStrategy() : m_sendLatencyFaultEnable(false) {
   m_notAvailableDuration = std::vector<long>{0L, 0L, 30000L, 60000L, 120000L, 180000L, 600000L};
 }
 
-const MQMessageQueue& MQFaultStrategy::selectOneMessageQueue(TopicPublishInfo* tpInfo,
+const MQMessageQueue& MQFaultStrategy::selectOneMessageQueue(const TopicPublishInfo* tpInfo,
                                                              const std::string& lastBrokerName) {
   if (m_sendLatencyFaultEnable) {
     {
       auto index = tpInfo->getSendWhichQueue().fetch_add(1);
-      std::lock_guard<std::mutex> lock(tpInfo->getMessageQueueListMutex());
-      auto& messageQueueList = tpInfo->getMessageQueueList();
+      const auto& messageQueueList = tpInfo->getMessageQueueList();
       for (size_t i = 0; i < messageQueueList.size(); i++) {
         auto pos = index++ % messageQueueList.size();
         const auto& mq = messageQueueList[pos];
         if (m_latencyFaultTolerance.isAvailable(mq.getBrokerName())) {
-          // FIXME: why not mq.getBrokerName() != lastBrokerName
           if (lastBrokerName.empty() || mq.getBrokerName() != lastBrokerName) {
             return mq;
           }

@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MEMORYOUTPUTSTREAM_H_INCLUDED
-#define MEMORYOUTPUTSTREAM_H_INCLUDED
+#ifndef __MEMORY_OUTPUT_STREAM_H__
+#define __MEMORY_OUTPUT_STREAM_H__
 
 #include "OutputStream.h"
 
 namespace rocketmq {
+
 //==============================================================================
 /**
     Writes data to an internal memory buffer, which grows as required.
@@ -109,7 +110,7 @@ class ROCKETMQCLIENT_API MemoryOutputStream : public OutputStream {
   int64_t getPosition() { return (int64_t)position; }
   bool setPosition(int64_t);
   int64_t writeFromInputStream(InputStream&, int64_t maxNumBytesToWrite);
-  bool writeRepeatedByte(uint8 byte, size_t numTimesToRepeat);
+  bool writeRepeatedByte(uint8_t byte, size_t numTimesToRepeat);
 
  private:
   //==============================================================================
@@ -125,5 +126,7 @@ class ROCKETMQCLIENT_API MemoryOutputStream : public OutputStream {
 /** Copies all the data that has been written to a MemoryOutputStream into
  * another stream. */
 OutputStream& operator<<(OutputStream& stream, const MemoryOutputStream& streamToRead);
+
 }  // namespace rocketmq
-#endif  // MEMORYOUTPUTSTREAM_H_INCLUDED
+
+#endif  // __MEMORY_OUTPUT_STREAM_H__

@@ -14,11 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef OUTPUTSTREAM_H_INCLUDED
-#define OUTPUTSTREAM_H_INCLUDED
+#ifndef __OUTPUT_STREAM_H__
+#define __OUTPUT_STREAM_H__
 
 #include "InputStream.h"
+
 namespace rocketmq {
+
 //==============================================================================
 /**
     The base class for streams that write data to some kind of destination.
@@ -128,7 +130,7 @@ class ROCKETMQCLIENT_API OutputStream {
   /** Writes a byte to the output stream a given number of times.
       @returns false if the write operation fails for some reason
   */
-  virtual bool writeRepeatedByte(uint8 byte, size_t numTimesToRepeat);
+  virtual bool writeRepeatedByte(uint8_t byte, size_t numTimesToRepeat);
 
   /** Reads data from an input stream and writes it to this stream.
 
@@ -142,6 +144,7 @@ class ROCKETMQCLIENT_API OutputStream {
   */
   virtual int64_t writeFromInputStream(InputStream& source, int64_t maxNumBytesToWrite);
 };
+
 }  // namespace rocketmq
 
-#endif  // OUTPUTSTREAM_H_INCLUDED
+#endif  // __OUTPUT_STREAM_H__

@@ -28,11 +28,10 @@ enum PullStatus {
   FOUND,
   NO_NEW_MSG,
   NO_MATCHED_MSG,
+  NO_LATEST_MSG,
   OFFSET_ILLEGAL,
   BROKER_TIMEOUT  // indicate pull request timeout or received NULL response
 };
-
-static const char* EnumStrings[] = {"FOUND", "NO_NEW_MSG", "NO_MATCHED_MSG", "OFFSET_ILLEGAL", "BROKER_TIMEOUT"};
 
 class ROCKETMQCLIENT_API PullResult {
  public:
@@ -53,13 +52,7 @@ class ROCKETMQCLIENT_API PullResult {
 
   virtual ~PullResult();
 
-  std::string toString() const {
-    std::stringstream ss;
-    ss << "PullResult [ pullStatus=" << EnumStrings[pullStatus] << ", nextBeginOffset=" << nextBeginOffset
-       << ", minOffset=" << minOffset << ", maxOffset=" << maxOffset << ", msgFoundList=" << msgFoundList.size()
-       << " ]";
-    return ss.str();
-  }
+  std::string toString() const;
 
  public:
   PullStatus pullStatus;

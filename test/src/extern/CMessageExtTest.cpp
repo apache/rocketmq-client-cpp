@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-#include "CCommon.h"
-#include "CMessageExt.h"
 #include "MQMessageExt.h"
+#include "c/CCommon.h"
+#include "c/CMessageExt.h"
 
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::MQMessageExt;
 
-TEST(cmessageExt, info) {
+TEST(CMessageExtTest, CheckProperties) {
   MQMessageExt* mqMessageExt = new MQMessageExt();
   CMessageExt* messageExt = (CMessageExt*)mqMessageExt;
 
@@ -44,8 +44,8 @@ TEST(cmessageExt, info) {
   mqMessageExt->setBody("testBody");
   EXPECT_EQ(GetMessageBody(messageExt), mqMessageExt->getBody());
 
-  mqMessageExt->setProperty("testKey", "testValues");
-  EXPECT_EQ(GetMessageProperty(messageExt, "testKey"), mqMessageExt->getProperty("testKey"));
+  mqMessageExt->putProperty("testProperty", "testValue");
+  EXPECT_EQ(GetMessageProperty(messageExt, "testProperty"), mqMessageExt->getProperty("testProperty"));
 
   mqMessageExt->setMsgId("msgId123456");
   EXPECT_EQ(GetMessageId(messageExt), mqMessageExt->getMsgId());
@@ -80,7 +80,7 @@ TEST(cmessageExt, info) {
   delete mqMessageExt;
 }
 
-TEST(cmessageExt, null) {
+TEST(CMessageExtTest, CheckNull) {
   EXPECT_TRUE(GetMessageTopic(NULL) == NULL);
   EXPECT_TRUE(GetMessageTags(NULL) == NULL);
   EXPECT_TRUE(GetMessageKeys(NULL) == NULL);
@@ -100,7 +100,7 @@ TEST(cmessageExt, null) {
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
-  testing::GTEST_FLAG(filter) = "cmessageExt.*";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(throw_on_failure) = true;
+  testing::GTEST_FLAG(filter) = "CMessageExtTest.*";
+  return RUN_ALL_TESTS();
 }

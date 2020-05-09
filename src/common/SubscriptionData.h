@@ -17,10 +17,10 @@
 #ifndef __SUBSCRIPTION_DATA_H__
 #define __SUBSCRIPTION_DATA_H__
 
+#include <json/json.h>
+
 #include <string>
 #include <vector>
-
-#include <json/json.h>
 
 #include "RocketMQClient.h"
 
@@ -51,9 +51,11 @@ class ROCKETMQCLIENT_API SubscriptionData {
   bool containTag(const std::string& tag);
   std::vector<std::string>& getTagsSet();
 
-  void putCodeSet(const int32 code);
+  void putCodeSet(int32_t code);
 
   bool operator==(const SubscriptionData& other) const;
+  bool operator!=(const SubscriptionData& other) const { return !operator==(other); }
+
   bool operator<(const SubscriptionData& other) const;
 
   Json::Value toJson() const;

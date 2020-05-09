@@ -29,7 +29,7 @@ namespace rocketmq {
 
 class MQAdminImpl {
  public:
-  MQAdminImpl(MQClientInstance* mqClientFactory) : m_mqClientFactory(mqClientFactory) {}
+  MQAdminImpl(MQClientInstance* clientInstance) : m_clientInstance(clientInstance) {}
 
   void createTopic(const std::string& key, const std::string& newTopic, int queueNum);
 
@@ -38,13 +38,13 @@ class MQAdminImpl {
   int64_t searchOffset(const MQMessageQueue& mq, int64_t timestamp);
   int64_t maxOffset(const MQMessageQueue& mq);
   int64_t minOffset(const MQMessageQueue& mq);
-  int64_t earliestMsgStoreTime(const MQMessageQueue& mqClientFactory);
+  int64_t earliestMsgStoreTime(const MQMessageQueue& mq);
 
   MQMessageExtPtr viewMessage(const std::string& msgId);
   QueryResult queryMessage(const std::string& topic, const std::string& key, int maxNum, int64_t begin, int64_t end);
 
  private:
-  MQClientInstance* m_mqClientFactory;
+  MQClientInstance* m_clientInstance;
 };
 
 }  // namespace rocketmq

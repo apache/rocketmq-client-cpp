@@ -14,18 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "PermName.h"
 
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::PermName;
 
-TEST(permName, perm2String) {
+TEST(PermNameTest, Perm2String) {
   EXPECT_EQ(PermName::perm2String(0), "---");
   EXPECT_EQ(PermName::perm2String(1), "--X");
   EXPECT_EQ(PermName::perm2String(2), "-W");
@@ -40,7 +40,6 @@ TEST(permName, perm2String) {
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "permName.perm2String";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "PermNameTest.*";
+  return RUN_ALL_TESTS();
 }

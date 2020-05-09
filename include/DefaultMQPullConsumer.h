@@ -21,25 +21,13 @@
 #include <string>
 
 #include "AllocateMQStrategy.h"
-#include "DefaultMQConsumer.h"
+#include "DefaultMQPullConsumerConfigProxy.h"
 #include "MQPullConsumer.h"
 #include "RPCHook.h"
 
 namespace rocketmq {
 
-class ROCKETMQCLIENT_API DefaultMQPullConsumerConfig : public DefaultMQConsumerConfig {
- public:
-  DefaultMQPullConsumerConfig();
-  virtual ~DefaultMQPullConsumerConfig() = default;
-
-  AllocateMQStrategy* getAllocateMQStrategy() { return m_allocateMQStrategy.get(); }
-  void setAllocateMQStrategy(AllocateMQStrategy* strategy) { m_allocateMQStrategy.reset(strategy); }
-
- protected:
-  std::unique_ptr<AllocateMQStrategy> m_allocateMQStrategy;
-};
-
-class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQPullConsumer, public DefaultMQPullConsumerConfig {
+class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQPullConsumer, public DefaultMQPullConsumerConfigProxy {
  public:
   DefaultMQPullConsumer(const std::string& groupname);
   DefaultMQPullConsumer(const std::string& groupname, RPCHookPtr rpcHook);
@@ -82,7 +70,7 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQPullConsumer, public D
   void fetchMessageQueuesInBalance(const std::string& topic, std::vector<MQMessageQueue>& mqs) override;
 
  public:
-  void setRPCHook(std::shared_ptr<RPCHook> rpcHook);
+  void setRPCHook(RPCHookPtr rpcHook);
 
  protected:
   std::shared_ptr<MQPullConsumer> m_pullConsumerDelegate;

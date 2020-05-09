@@ -34,6 +34,12 @@ class ROCKETMQCLIENT_API SessionCredentials {
   SessionCredentials() : authChannel_("ALIYUN") {}
   SessionCredentials(const std::string& accessKey, const std::string& secretKey, const std::string& authChannel)
       : accessKey_(accessKey), secretKey_(secretKey), authChannel_(authChannel) {}
+  SessionCredentials(const SessionCredentials& other)
+      : accessKey_(other.accessKey_),
+        secretKey_(other.secretKey_),
+        signature_(other.signature_),
+        signatureMethod_(other.signatureMethod_),
+        authChannel_(other.authChannel_) {}
 
   ~SessionCredentials() = default;
 

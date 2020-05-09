@@ -78,10 +78,10 @@ int64_t InputStream::readInt64BigEndian() {
 
 float InputStream::readFloatBigEndian() {
   union {
-    int32 asInt;
+    int32_t asInt;
     float asFloat;
   } n;
-  n.asInt = (int32)readIntBigEndian();
+  n.asInt = (int32_t)readIntBigEndian();
   return n.asFloat;
 }
 

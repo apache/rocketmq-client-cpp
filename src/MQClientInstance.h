@@ -20,6 +20,7 @@
 #include <memory>
 #include <mutex>
 #include <set>
+#include <utility>
 
 #include "ConsumerRunningInfo.h"
 #include "FindBrokerResult.h"
@@ -37,6 +38,8 @@
 namespace rocketmq {
 
 class RPCHook;
+typedef std::shared_ptr<RPCHook> RPCHookPtr;
+
 class MQClientAPIImpl;
 class MQAdminImpl;
 class ClientRemotingProcessor;
@@ -48,15 +51,16 @@ typedef std::shared_ptr<MQClientInstance> MQClientInstancePtr;
 
 class MQClientInstance {
  public:
-  MQClientInstance(MQClientConfig clientConfig, const std::string& clientId);
-  MQClientInstance(MQClientConfig clientConfig, const std::string& clientId, std::shared_ptr<RPCHook> rpcHook);
+  MQClientInstance(const MQClientConfig& clientConfig, const std::string& clientId);
+  MQClientInstance(const MQClientConfig& clientConfig, const std::string& clientId, RPCHookPtr rpcHook);
   virtual ~MQClientInstance();
 
   static TopicPublishInfoPtr topicRouteData2TopicPublishInfo(const std::string& topic, TopicRouteDataPtr route);
   static std::vector<MQMessageQueue> topicRouteData2TopicSubscribeInfo(const std::string& topic,
                                                                        TopicRouteDataPtr route);
 
-  std::string getClientId();
+  const std::string& getClientId() const;
+  std::string getNamesrvAddr() const;
 
   void start();
   void shutdown();
@@ -96,6 +100,8 @@ class MQClientInstance {
  public:
   TopicPublishInfoPtr tryToFindTopicPublishInfo(const std::string& topic);
 
+  TopicRouteDataPtr getTopicRouteData(const std::string& topic);
+
  public:
   MQClientAPIImpl* getMQClientAPIImpl() const { return m_mqClientAPIImpl.get(); }
   MQAdminImpl* getMQAdminImpl() const { return m_mqAdminImpl.get(); }
@@ -123,7 +129,6 @@ class MQClientInstance {
 
   // topic route
   bool topicRouteDataIsChange(TopicRouteData* old, TopicRouteData* now);
-  TopicRouteDataPtr getTopicRouteData(const std::string& topic);
   void addTopicRouteData(const std::string& topic, TopicRouteDataPtr topicRouteData);
 
   // heartbeat
@@ -159,9 +164,8 @@ class MQClientInstance {
   bool isTopicInfoValidInTable(const std::string& topic);
 
  private:
-  MQClientConfig m_clientConfig;
   std::string m_clientId;
-  ServiceState m_serviceState;
+  volatile ServiceState m_serviceState;
 
   // group -> MQProducer
   typedef std::map<std::string, MQProducerInner*> MQPMAP;
@@ -186,6 +190,11 @@ class MQClientInstance {
   typedef std::map<std::string, TopicPublishInfoPtr> TPMAP;
   TPMAP m_topicPublishInfoTable;
   std::mutex m_topicPublishInfoTableMutex;
+
+  // topic -> <broker, time>
+  typedef std::map<std::string, std::pair<std::string, uint64_t>> TBAMAP;
+  TBAMAP m_topicBrokerAddrTable;
+  std::mutex m_topicBrokerAddrTableMutex;
 
   std::timed_mutex m_lockNamesrv;
   std::timed_mutex m_lockHeartbeat;

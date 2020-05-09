@@ -44,7 +44,7 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
                                   public MQClientImpl,
                                   public MQConsumerInner {
  public:
-  static DefaultMQPushConsumerImplPtr create(DefaultMQPushConsumerConfig* config, RPCHookPtr rpcHook = nullptr) {
+  static DefaultMQPushConsumerImplPtr create(DefaultMQPushConsumerConfigPtr config, RPCHookPtr rpcHook = nullptr) {
     if (nullptr == rpcHook) {
       return DefaultMQPushConsumerImplPtr(new DefaultMQPushConsumerImpl(config));
     } else {
@@ -53,8 +53,8 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
   }
 
  private:
-  DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfig* config);
-  DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfig* config, RPCHookPtr rpcHook);
+  DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfigPtr config);
+  DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfigPtr config, RPCHookPtr rpcHook);
 
  public:
   virtual ~DefaultMQPushConsumerImpl();
@@ -72,6 +72,8 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
   void registerMessageListener(MQMessageListener* messageListener) override;
   void registerMessageListener(MessageListenerConcurrently* messageListener) override;
   void registerMessageListener(MessageListenerOrderly* messageListener) override;
+
+  MQMessageListener* getMessageListener() const override;
 
   void subscribe(const std::string& topic, const std::string& subExpression) override;
 
@@ -123,7 +125,7 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
     return messageListenerDefaultly;
   }
 
-  DefaultMQPushConsumerConfig* getDefaultMQPushConsumerConfig() { return m_pushConsumerConfig; }
+  DefaultMQPushConsumerConfig* getDefaultMQPushConsumerConfig() { return m_pushConsumerConfig.get(); }
 
  private:
   void checkConfig();
@@ -133,7 +135,7 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
   int getMaxReconsumeTimes();
 
  private:
-  DefaultMQPushConsumerConfig* m_pushConsumerConfig;
+  DefaultMQPushConsumerConfigPtr m_pushConsumerConfig;
 
   uint64_t m_startTime;
 

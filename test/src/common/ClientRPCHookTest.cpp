@@ -14,25 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "ClientRPCHook.h"
-#include "CommandHeader.h"
 #include "RemotingCommand.h"
 #include "SessionCredentials.h"
+#include "protocol/RequestCode.h"
+#include "protocol/header/CommandHeader.h"
 
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
+using rocketmq::ClientRPCHook;
+using rocketmq::MQRequestCode;
 using rocketmq::RemotingCommand;
 using rocketmq::SendMessageRequestHeader;
 using rocketmq::SessionCredentials;
 
-using rocketmq::ClientRPCHook;
-
-TEST(clientRPCHook, doBeforeRequest) {
+TEST(ClientRPCHookTest, BeforeRequest) {
   SessionCredentials sessionCredentials;
   sessionCredentials.setAccessKey("accessKey");
   sessionCredentials.setSecretKey("secretKey");
@@ -40,21 +41,23 @@ TEST(clientRPCHook, doBeforeRequest) {
 
   ClientRPCHook clientRPCHook(sessionCredentials);
 
-  RemotingCommand remotingCommand;
-  clientRPCHook.doBeforeRequest("127.0.0.1:9876", remotingCommand);
+  // TODO:
+
+  RemotingCommand requestCommand;
+  clientRPCHook.doBeforeRequest("127.0.0.1:9876", requestCommand, true);
 
   SendMessageRequestHeader* sendMessageRequestHeader = new SendMessageRequestHeader();
-  RemotingCommand headeRremotingCommand(17, sendMessageRequestHeader);
-  clientRPCHook.doBeforeRequest("127.0.0.1:9876", headeRremotingCommand);
+  RemotingCommand sendRequestCommand(MQRequestCode::UPDATE_AND_CREATE_TOPIC, sendMessageRequestHeader);
+  clientRPCHook.doBeforeRequest("127.0.0.1:9876", sendRequestCommand, true);
 
-  headeRremotingCommand.setMsgBody("1231231");
-  clientRPCHook.doBeforeRequest("127.0.0.1:9876", headeRremotingCommand);
+  sendRequestCommand.setBody("1231231");
+  clientRPCHook.doBeforeRequest("127.0.0.1:9876", sendRequestCommand, true);
 }
 
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "clientRPCHook.doBeforeRequest";
+  testing::GTEST_FLAG(filter) = "ClientRPCHookTest.*";
   int itestts = RUN_ALL_TESTS();
   return itestts;
 }

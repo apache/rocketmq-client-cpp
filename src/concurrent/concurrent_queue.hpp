@@ -56,9 +56,19 @@ class concurrent_queue {
   typedef T value_type;
   typedef concurrent_queue_node<value_type> node_type;
 
-  ~concurrent_queue() { delete[](char*) sentinel; }
+  ~concurrent_queue() {
+    // clear this queue
+    while (_clear_when_destruct) {
+      if (nullptr == pop_front()) {
+        break;
+      }
+    }
 
-  concurrent_queue() : sentinel((node_type*)new char[sizeof(node_type)]) {
+    delete[](char*) sentinel;
+  }
+
+  concurrent_queue(bool clear_when_destruct = true)
+      : sentinel((node_type*)new char[sizeof(node_type)]), _clear_when_destruct(clear_when_destruct) {
     sentinel->next_ = sentinel;
     head_ = tail_ = sentinel;
   }
@@ -136,6 +146,7 @@ class concurrent_queue {
 
   std::atomic<node_type*> head_, tail_;
   node_type* const sentinel;
+  bool _clear_when_destruct;
 };
 
 }  // namespace rocketmq

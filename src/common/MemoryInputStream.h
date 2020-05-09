@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MEMORYINPUTSTREAM_H_INCLUDED
-#define MEMORYINPUTSTREAM_H_INCLUDED
+#ifndef __MEMORY_INTPUT_STREAM_H__
+#define __MEMORY_INTPUT_STREAM_H__
 
 #include "InputStream.h"
 
 namespace rocketmq {
+
 //==============================================================================
 /**
     Allows a block of data to be accessed as a stream.
@@ -91,5 +92,7 @@ class ROCKETMQCLIENT_API MemoryInputStream : public InputStream {
 
   void createInternalCopy();
 };
+
 }  // namespace rocketmq
-#endif
+
+#endif  // __MEMORY_INTPUT_STREAM_H__

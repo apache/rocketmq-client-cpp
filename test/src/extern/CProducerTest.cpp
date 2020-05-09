@@ -14,33 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "string.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
-
-#include "CMessage.h"
-#include "CProducer.h"
-#include "CSendResult.h"
-
-#include "AsyncCallback.h"
 #include "DefaultMQProducer.h"
 #include "MQMessage.h"
 #include "MQMessageQueue.h"
 #include "MQSelector.h"
 #include "SendResult.h"
 #include "SessionCredentials.h"
+#include "c/CMessage.h"
+#include "c/CProducer.h"
+#include "c/CSendResult.h"
 
-using std::string;
-
-using ::testing::_;
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::_;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Mock;
 using testing::Return;
 
 using rocketmq::DefaultMQProducer;
-using rocketmq::elogLevel;
 using rocketmq::MessageQueueSelector;
 using rocketmq::MQMessage;
 using rocketmq::MQMessageQueue;
@@ -51,31 +44,31 @@ using rocketmq::SessionCredentials;
 
 class MockDefaultMQProducer : public DefaultMQProducer {
  public:
-  MockDefaultMQProducer(const string& groupname) : DefaultMQProducer(groupname) {}
-  MOCK_METHOD0(start, void());
-  MOCK_METHOD0(shutdown, void());
-  MOCK_METHOD2(setLogFileSizeAndNum, void(int, long));
-  MOCK_METHOD1(SetProducerLogLevel, void(elogLevel));
-  MOCK_METHOD2(send, SendResult(MQMessage&, bool));
-  MOCK_METHOD3(send, void(MQMessage&, SendCallback*, bool));
-  MOCK_METHOD2(sendOneway, void(MQMessage&, bool));
-  MOCK_METHOD5(send, SendResult(MQMessage&, MessageQueueSelector*, void*, int, bool));
+  MockDefaultMQProducer(const std::string& groupname) : DefaultMQProducer(groupname) {}
+
+  MOCK_METHOD(void, start, (), (override));
+  MOCK_METHOD(void, shutdown, (), (override));
+
+  MOCK_METHOD(SendResult, send, (MQMessage*), (override));
+  MOCK_METHOD(void, send, (MQMessage*, SendCallback*), (noexcept, override));
+  MOCK_METHOD(SendResult, send, (MQMessage*, MessageQueueSelector*, void*, long), (override));
+  MOCK_METHOD(void, sendOneway, (MQMessage*), (override));
 };
 
 void CSendSuccessCallbackFunc(CSendResult result) {}
-void cSendExceptionCallbackFunc(CMQException e) {}
+void CSendExceptionCallbackFunc(CMQException e) {}
 
-TEST(cProducer, SendMessageAsync) {
+TEST(CProducerTest, SendMessageAsync) {
   MockDefaultMQProducer* mockProducer = new MockDefaultMQProducer("testGroup");
   CProducer* cProducer = (CProducer*)mockProducer;
-  CMessage* msg = (CMessage*)new MQMessage();
+  CMessage* msg = CreateMessage("");
 
   EXPECT_EQ(SendMessageAsync(NULL, NULL, NULL, NULL), NULL_POINTER);
   EXPECT_EQ(SendMessageAsync(cProducer, NULL, NULL, NULL), NULL_POINTER);
   EXPECT_EQ(SendMessageAsync(cProducer, msg, CSendSuccessCallbackFunc, NULL), NULL_POINTER);
 
   EXPECT_CALL(*mockProducer, send(_, _)).Times(1);
-  EXPECT_EQ(SendMessageAsync(cProducer, msg, CSendSuccessCallbackFunc, cSendExceptionCallbackFunc), OK);
+  EXPECT_EQ(SendMessageAsync(cProducer, msg, CSendSuccessCallbackFunc, CSendExceptionCallbackFunc), OK);
   Mock::AllowLeak(mockProducer);
   DestroyMessage(msg);
 }
@@ -84,7 +77,7 @@ int QueueSelectorCallbackFunc(int size, CMessage* msg, void* arg) {
   return 0;
 }
 
-TEST(cProducer, sendMessageOrderly) {
+TEST(CProducerTest, SendMessageOrderly) {
   MockDefaultMQProducer* mockProducer = new MockDefaultMQProducer("testGroup");
   CProducer* cProducer = (CProducer*)mockProducer;
   CMessage* msg = (CMessage*)new MQMessage();
@@ -96,7 +89,7 @@ TEST(cProducer, sendMessageOrderly) {
   EXPECT_EQ(SendMessageOrderly(cProducer, msg, QueueSelectorCallbackFunc, NULL, 1, NULL), NULL_POINTER);
   EXPECT_EQ(SendMessageOrderly(cProducer, msg, QueueSelectorCallbackFunc, msg, 1, NULL), NULL_POINTER);
 
-  EXPECT_CALL(*mockProducer, send(_, _, _, _, _))
+  EXPECT_CALL(*mockProducer, send(_, _, _, _))
       .WillOnce(Return(SendResult(SendStatus::SEND_OK, "3", "offset1", messageQueue, 14)));
   // EXPECT_EQ(SendMessageOrderly(cProducer, msg, callback, msg, 1, result), OK);
   Mock::AllowLeak(mockProducer);
@@ -104,7 +97,7 @@ TEST(cProducer, sendMessageOrderly) {
   // free(result);
 }
 
-TEST(cProducer, sendOneway) {
+TEST(CProducerTest, SendOneway) {
   MockDefaultMQProducer* mockProducer = new MockDefaultMQProducer("testGroup");
   CProducer* cProducer = (CProducer*)mockProducer;
   CMessage* msg = (CMessage*)new MQMessage();
@@ -112,13 +105,15 @@ TEST(cProducer, sendOneway) {
   EXPECT_EQ(SendMessageOneway(NULL, NULL), NULL_POINTER);
   EXPECT_EQ(SendMessageOneway(cProducer, NULL), NULL_POINTER);
 
-  EXPECT_CALL(*mockProducer, sendOneway(_, _)).Times(1);
+  EXPECT_CALL(*mockProducer, sendOneway(_)).Times(1);
   EXPECT_EQ(SendMessageOneway(cProducer, msg), OK);
+
   Mock::AllowLeak(mockProducer);
+
   DestroyMessage(msg);
 }
 
-TEST(cProducer, sendMessageSync) {
+TEST(CProducerTest, SendMessageSync) {
   MockDefaultMQProducer* mockProducer = new MockDefaultMQProducer("testGroup");
   CProducer* cProducer = (CProducer*)mockProducer;
 
@@ -133,7 +128,7 @@ TEST(cProducer, sendMessageSync) {
 
   result = (CSendResult*)malloc(sizeof(CSendResult));
 
-  EXPECT_CALL(*mockProducer, send(_, _))
+  EXPECT_CALL(*mockProducer, send(_))
       .Times(5)
       .WillOnce(Return(SendResult(SendStatus::SEND_FLUSH_DISK_TIMEOUT, "1", "offset1", messageQueue, 14)))
       .WillOnce(Return(SendResult(SendStatus::SEND_FLUSH_SLAVE_TIMEOUT, "2", "offset1", messageQueue, 14)))
@@ -155,12 +150,14 @@ TEST(cProducer, sendMessageSync) {
 
   EXPECT_EQ(SendMessageSync(cProducer, msg, result), OK);
   EXPECT_EQ(result->sendStatus, E_SEND_OK);
+
   Mock::AllowLeak(mockProducer);
+
   DestroyMessage(msg);
   free(result);
 }
 
-TEST(cProducer, infoMock) {
+TEST(CProducerTest, InfoMock) {
   MockDefaultMQProducer* mockProducer = new MockDefaultMQProducer("testGroup");
   CProducer* cProducer = (CProducer*)mockProducer;
 
@@ -170,15 +167,10 @@ TEST(cProducer, infoMock) {
   EXPECT_CALL(*mockProducer, shutdown()).Times(1);
   EXPECT_EQ(ShutdownProducer(cProducer), OK);
 
-  EXPECT_CALL(*mockProducer, setLogFileSizeAndNum(_, _)).Times(1);
-  EXPECT_EQ(SetProducerLogFileNumAndSize(cProducer, 1, 1), OK);
-
-  EXPECT_CALL(*mockProducer, SetProducerLogLevel(_)).Times(1);
-  EXPECT_EQ(SetProducerLogLevel(cProducer, E_LOG_LEVEL_FATAL), OK);
   Mock::AllowLeak(mockProducer);
 }
 
-TEST(cProducer, info) {
+TEST(CProducerTest, Info) {
   CProducer* cProducer = CreateProducer("groupTest");
   DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)cProducer;
   EXPECT_TRUE(cProducer != NULL);
@@ -204,12 +196,13 @@ TEST(cProducer, info) {
 
   EXPECT_EQ(SetProducerSessionCredentials(NULL, NULL, NULL, NULL), NULL_POINTER);
   EXPECT_EQ(SetProducerSessionCredentials(cProducer, "accessKey", "secretKey", "channel"), OK);
-  SessionCredentials sessionCredentials = defaultMQProducer->getSessionCredentials();
-  EXPECT_EQ(sessionCredentials.getAccessKey(), "accessKey");
+  // SessionCredentials sessionCredentials = defaultMQProducer->getSessionCredentials();
+  // EXPECT_EQ(sessionCredentials.getAccessKey(), "accessKey");
+
   Mock::AllowLeak(defaultMQProducer);
 }
 
-TEST(cProducer, null) {
+TEST(CProducerTest, CheckNull) {
   EXPECT_TRUE(CreateProducer(NULL) == NULL);
   EXPECT_EQ(StartProducer(NULL), NULL_POINTER);
   EXPECT_EQ(ShutdownProducer(NULL), NULL_POINTER);
@@ -228,7 +221,6 @@ TEST(cProducer, null) {
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "cProducer.*";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "CProducerTest.*";
+  return RUN_ALL_TESTS();
 }

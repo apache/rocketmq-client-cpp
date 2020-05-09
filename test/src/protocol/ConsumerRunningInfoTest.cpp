@@ -14,15 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include <json/reader.h>
+#include <json/value.h>
+
 #include <iostream>
-#include "map"
-#include "string"
-
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
-
-#include "json/reader.h"
-#include "json/value.h"
+#include <map>
+#include <string>
 
 #include "ConsumerRunningInfo.h"
 #include "MessageQueue.h"
@@ -32,19 +31,19 @@
 using std::map;
 using std::string;
 
-using ::testing::InitGoogleMock;
-using ::testing::InitGoogleTest;
+using testing::InitGoogleMock;
+using testing::InitGoogleTest;
 using testing::Return;
 
 using Json::Reader;
 using Json::Value;
 
 using rocketmq::ConsumerRunningInfo;
-using rocketmq::MessageQueue;
+using rocketmq::MQMessageQueue;
 using rocketmq::ProcessQueueInfo;
 using rocketmq::SubscriptionData;
 
-TEST(consumerRunningInfo, init) {
+TEST(ConsumerRunningInfoTest, Init) {
   ConsumerRunningInfo consumerRunningInfo;
   consumerRunningInfo.setJstack("jstack");
   EXPECT_EQ(consumerRunningInfo.getJstack(), "jstack");
@@ -60,7 +59,7 @@ TEST(consumerRunningInfo, init) {
 
   EXPECT_TRUE(consumerRunningInfo.getSubscriptionSet().empty());
 
-  vector<SubscriptionData> subscriptionSet;
+  std::vector<SubscriptionData> subscriptionSet;
   subscriptionSet.push_back(SubscriptionData());
 
   consumerRunningInfo.setSubscriptionSet(subscriptionSet);
@@ -68,11 +67,11 @@ TEST(consumerRunningInfo, init) {
 
   EXPECT_TRUE(consumerRunningInfo.getMqTable().empty());
 
-  MessageQueue messageQueue("testTopic", "testBroker", 3);
+  MQMessageQueue messageQueue("testTopic", "testBroker", 3);
   ProcessQueueInfo processQueueInfo;
   processQueueInfo.commitOffset = 1024;
   consumerRunningInfo.setMqTable(messageQueue, processQueueInfo);
-  map<MessageQueue, ProcessQueueInfo> mqTable = consumerRunningInfo.getMqTable();
+  std::map<MQMessageQueue, ProcessQueueInfo> mqTable = consumerRunningInfo.getMqTable();
   EXPECT_EQ(mqTable[messageQueue].commitOffset, processQueueInfo.commitOffset);
 
   // encode start
@@ -82,6 +81,7 @@ TEST(consumerRunningInfo, init) {
   consumerRunningInfo.setProperty(ConsumerRunningInfo::PROP_CONSUME_TYPE, "consume_type");
   consumerRunningInfo.setProperty(ConsumerRunningInfo::PROP_CLIENT_VERSION, "client_version");
   consumerRunningInfo.setProperty(ConsumerRunningInfo::PROP_CONSUMER_START_TIMESTAMP, "127");
+
   // TODO
   /* string outstr = consumerRunningInfo.encode();
    std::cout<< outstr;
@@ -118,7 +118,6 @@ TEST(consumerRunningInfo, init) {
 int main(int argc, char* argv[]) {
   InitGoogleMock(&argc, argv);
   testing::GTEST_FLAG(throw_on_failure) = true;
-  testing::GTEST_FLAG(filter) = "consumerRunningInfo.*";
-  int itestts = RUN_ALL_TESTS();
-  return itestts;
+  testing::GTEST_FLAG(filter) = "ConsumerRunningInfoTest.*";
+  return RUN_ALL_TESTS();
 }
