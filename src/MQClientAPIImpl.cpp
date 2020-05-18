@@ -219,14 +219,13 @@ SendResult* MQClientAPIImpl::processSendResponse(const std::string& brokerName,
   if (msg->isBatch()) {
     const auto& messages = static_cast<const MessageBatch*>(msg)->getMessages();
     uniqMsgId.clear();
-    uniqMsgId.reserve(33 * messages.size());
-    bool isFirst = true;
+    uniqMsgId.reserve(33 * messages.size() + 1);
     for (const auto& message : messages) {
-      if (!isFirst) {
-        uniqMsgId.append(",");
-        isFirst = false;
-      }
       uniqMsgId.append(MessageClientIDSetter::getUniqID(*message));
+      uniqMsgId.append(",");
+    }
+    if (!uniqMsgId.empty()) {
+      uniqMsgId.resize(uniqMsgId.length() - 1);
     }
   }
 
