@@ -30,7 +30,7 @@ EventLoop* EventLoop::GetDefaultEventLoop() {
 
 EventLoop::EventLoop(const struct event_config* config, bool run_immediately)
     : m_eventBase(nullptr), m_loopThread("EventLoop"), _is_running(false) {
-  // tell libevent support multi-threads
+// tell libevent support multi-threads
 #ifdef WIN32
   evthread_use_windows_threads();
 #else
@@ -206,9 +206,14 @@ int BufferEvent::connect(const std::string& addr) {
     return -1;
   }
 
-  auto* sa = string2SocketAddress(addr);
-  m_peerAddrPort = socketAddress2String(sa);  // resolve domain
-  return bufferevent_socket_connect(m_bufferEvent, sa, sockaddr_size(sa));
+  try {
+    auto* sa = string2SocketAddress(addr);  // resolve domain
+    m_peerAddrPort = socketAddress2String(sa);
+    return bufferevent_socket_connect(m_bufferEvent, sa, sockaddr_size(sa));
+  } catch (const std::exception& e) {
+    LOG_ERROR_NEW("can not connect to {}, {}", addr, e.what());
+    return -1;
+  }
 }
 
 void BufferEvent::close() {
