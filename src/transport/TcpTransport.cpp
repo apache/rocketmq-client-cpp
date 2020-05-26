@@ -157,7 +157,13 @@ TcpConnectStatus TcpTransport::connect(const string& strServerURL, int timeoutMi
     struct sockaddr_in sin;
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = getInetAddr(hostname);
+    try {
+      sin.sin_addr.s_addr = getInetAddr(hostname);
+    } catch (const MQClientException& e) {
+      LOG_INFO("connect to %s failed, %s", strServerURL.c_str(), e.what());
+      setTcpConnectStatus(TCP_CONNECT_STATUS_FAILED);
+      return TCP_CONNECT_STATUS_FAILED;
+    }
     sin.sin_port = htons(port);
 
     m_event.reset(EventLoop::GetDefaultEventLoop()->createBufferEvent(-1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE,
