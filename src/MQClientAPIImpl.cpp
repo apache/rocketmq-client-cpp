@@ -325,7 +325,9 @@ TopicRouteData* MQClientAPIImpl::getTopicRouteInfoFromNameServer(const string& t
           }
         }
         case TOPIC_NOT_EXIST: {
-          LOG_WARN("Get topic[%s] route failed [TOPIC_NOT_EXIST].", topic.c_str());
+          if (DEFAULT_TOPIC.compare(topic) != 0) {
+            LOG_WARN("Get topic[%s] route failed [TOPIC_NOT_EXIST].", topic.c_str());
+          }
           return NULL;
         }
         default:
@@ -335,7 +337,9 @@ TopicRouteData* MQClientAPIImpl::getTopicRouteInfoFromNameServer(const string& t
       return NULL;
     }
   }
-  LOG_WARN("Get topic[%s] route failed [Null Response].", topic.c_str());
+  if (DEFAULT_TOPIC.compare(topic) != 0) {
+    LOG_WARN("Get topic[%s] route failed [Null Response].", topic.c_str());
+  }
   return NULL;
 }
 
