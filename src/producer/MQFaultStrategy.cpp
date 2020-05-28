@@ -33,9 +33,7 @@ const MQMessageQueue& MQFaultStrategy::selectOneMessageQueue(const TopicPublishI
         auto pos = index++ % messageQueueList.size();
         const auto& mq = messageQueueList[pos];
         if (m_latencyFaultTolerance.isAvailable(mq.getBrokerName())) {
-          if (lastBrokerName.empty() || mq.getBrokerName() != lastBrokerName) {
-            return mq;
-          }
+          return mq;
         }
       }
     }
