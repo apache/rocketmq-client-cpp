@@ -57,6 +57,11 @@ cp -f ${RPM_SOURCE_DIR}/rocketmq/bin/librocketmq.so     $RPM_BUILD_ROOT%{_prefix
 cp -f ${RPM_SOURCE_DIR}/rocketmq/bin/librocketmq.a     $RPM_BUILD_ROOT%{_prefix}/lib
 cp -rf ${RPM_SOURCE_DIR}/rocketmq/include/*             $RPM_BUILD_ROOT%{_prefix}/include/rocketmq
 
+%post
+# As '/usr/local/lib' is not included in dynamic libraries on CentOS, it should be made explicit to dlopen() 
+echo "/usr/local/lib" > /etc/ld.so.conf.d/librocketmq.x86_64.conf
+/sbin/ldconfig
+
 # package information
 %files
 # set file attribute here
