@@ -29,7 +29,7 @@ class thread_group {
 
   template <typename Function>
   thread_group(const std::string& name, Function f, std::size_t num_threads) : name_(name), first_(nullptr) {
-    create_thread(f, num_threads);
+    create_threads(f, num_threads);
   }
 
   // Destructor joins any remaining threads in the group.

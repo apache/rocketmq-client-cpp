@@ -38,8 +38,9 @@ class concurrent_queue_node {
  private:
   template <typename E,
             typename std::enable_if<std::is_same<typename std::decay<E>::type, value_type>::value, int>::type = 0>
-  explicit concurrent_queue_node(E v) : value_(new value_type(std::forward<E>(v))) {}
+  explicit concurrent_queue_node(E&& v) : value_(new value_type(std::forward<E>(v))) {}
 
+  // for pointer
   template <class E, typename std::enable_if<std::is_convertible<E, value_type*>::value, int>::type = 0>
   explicit concurrent_queue_node(E v) : value_(v) {}
 
@@ -76,7 +77,7 @@ class concurrent_queue {
   bool empty() { return sentinel == tail_.load(); }
 
   template <class E>
-  void push_back(E v) {
+  void push_back(E&& v) {
     auto* node = new node_type(std::forward<E>(v));
     push_back_impl(node);
   }
@@ -144,7 +145,7 @@ class concurrent_queue {
     }
   }
 
-  std::atomic<node_type*> head_, tail_;
+  std::atomic<node_type *> head_, tail_;
   node_type* const sentinel;
   bool _clear_when_destruct;
 };

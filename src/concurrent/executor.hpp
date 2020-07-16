@@ -28,12 +28,12 @@ namespace rocketmq {
 typedef std::function<void()> handler_type;
 
 struct executor_handler {
-  handler_type handler_;
+  const handler_type handler_;
   std::unique_ptr<std::promise<void>> promise_;
 
   template <typename H,
             typename std::enable_if<std::is_same<typename std::decay<H>::type, handler_type>::value, int>::type = 0>
-  explicit executor_handler(H handler)
+  explicit executor_handler(H&& handler)
       : handler_(std::forward<handler_type>(handler)), promise_(new std::promise<void>) {}
 
   void operator()() noexcept {
@@ -51,9 +51,9 @@ struct executor_handler {
     }
   }
 
-  template <class _Ep>
-  void abort(_Ep&& exception) noexcept {
-    promise_->set_exception(std::make_exception_ptr(std::forward<_Ep>(exception)));
+  template <class E>
+  void abort(E&& exception) noexcept {
+    promise_->set_exception(std::make_exception_ptr(std::forward<E>(exception)));
   }
 
  private:

@@ -31,7 +31,7 @@ namespace rocketmq {
 class abstract_executor_service : virtual public executor_service {
  public:
   std::future<void> submit(const handler_type& task) override {
-    std::unique_ptr<executor_handler> handler(new executor_handler(task));
+    std::unique_ptr<executor_handler> handler(new executor_handler(const_cast<handler_type&>(task)));
     std::future<void> fut = handler->promise_->get_future();
     execute(std::move(handler));
     return fut;
@@ -132,7 +132,7 @@ struct scheduled_executor_handler : public executor_handler {
 
   template <typename H,
             typename std::enable_if<std::is_same<typename std::decay<H>::type, handler_type>::value, int>::type = 0>
-  explicit scheduled_executor_handler(H handler, const std::chrono::steady_clock::time_point& time)
+  explicit scheduled_executor_handler(H&& handler, const std::chrono::steady_clock::time_point& time)
       : executor_handler(std::forward<handler_type>(handler)), wakeup_time_(time) {}
 
   bool operator<(const scheduled_executor_handler& other) const { return (wakeup_time_ > other.wakeup_time_); }
@@ -232,7 +232,8 @@ class scheduled_thread_pool_executor : public thread_pool_executor, virtual publ
 
   std::future<void> schedule(const handler_type& task, long delay, time_unit unit) override {
     auto time_point = until_time_point(delay, unit);
-    std::unique_ptr<scheduled_executor_handler> handler(new scheduled_executor_handler(task, time_point));
+    std::unique_ptr<scheduled_executor_handler> handler(
+        new scheduled_executor_handler(const_cast<handler_type&>(task), time_point));
     std::future<void> fut = handler->promise_->get_future();
 
     {
