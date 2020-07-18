@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __BYTE_ORDER_H__
-#define __BYTE_ORDER_H__
+#ifndef ROCKETMQ_COMMON_BYTEORDER_H_
+#define ROCKETMQ_COMMON_BYTEORDER_H_
 
 #include <RocketMQClient.h>
 
@@ -24,9 +24,10 @@ namespace rocketmq {
 /**
  * Contains static methods for converting the byte order between different endiannesses.
  */
-class ROCKETMQCLIENT_API ByteOrder {
+class ByteOrder {
  public:
   //==============================================================================
+
   /** Swaps the upper and lower bytes of a 16-bit integer. */
   static uint16_t swap(uint16_t value);
 
@@ -37,6 +38,7 @@ class ROCKETMQCLIENT_API ByteOrder {
   static uint64_t swap(uint64_t value);
 
   //==============================================================================
+
   /** Swaps the byte order of a 16-bit int if the CPU is big-endian */
   static uint16_t swapIfBigEndian(uint16_t value);
 
@@ -56,6 +58,7 @@ class ROCKETMQCLIENT_API ByteOrder {
   static uint64_t swapIfLittleEndian(uint64_t value);
 
   //==============================================================================
+
   /** Turns 4 bytes into a little-endian integer. */
   static uint32_t littleEndianInt(const void* bytes);
 
@@ -75,6 +78,7 @@ class ROCKETMQCLIENT_API ByteOrder {
   static uint16_t bigEndianShort(const void* bytes);
 
   //==============================================================================
+
   /** Converts 3 little-endian bytes into a signed 24-bit value (which is
    * sign-extended to 32 bits). */
   static int littleEndian24Bit(const void* bytes);
@@ -90,6 +94,7 @@ class ROCKETMQCLIENT_API ByteOrder {
   static void bigEndian24BitToChars(int value, void* destBytes);
 
   //==============================================================================
+
   /** Returns true if the current CPU is big-endian. */
   static bool isBigEndian();
 };
@@ -109,6 +114,7 @@ inline uint64_t ByteOrder::swap(uint64_t value) {
 }
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__  //__BYTE_ORDER__ is defined by GCC
+
 inline uint16_t ByteOrder::swapIfBigEndian(const uint16_t v) {
   return v;
 }
@@ -160,7 +166,9 @@ inline uint16_t ByteOrder::bigEndianShort(const void* const bytes) {
 inline bool ByteOrder::isBigEndian() {
   return false;
 }
-#else
+
+#else  // __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+
 inline uint16_t ByteOrder::swapIfBigEndian(const uint16_t v) {
   return swap(v);
 }
@@ -212,7 +220,8 @@ inline uint16_t ByteOrder::bigEndianShort(const void* const bytes) {
 inline bool ByteOrder::isBigEndian() {
   return true;
 }
-#endif
+
+#endif  // __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 
 inline int ByteOrder::littleEndian24Bit(const void* const bytes) {
   return (((int)static_cast<const int8_t*>(bytes)[2]) << 16) | (((int)static_cast<const uint8_t*>(bytes)[1]) << 8) |
@@ -238,4 +247,4 @@ inline void ByteOrder::bigEndian24BitToChars(const int value, void* const destBy
 
 }  // namespace rocketmq
 
-#endif  // __BYTE_ORDER_H__
+#endif  // ROCKETMQ_COMMON_BYTEORDER_H_

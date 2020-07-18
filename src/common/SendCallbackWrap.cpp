@@ -22,7 +22,7 @@
 #include "Logging.h"
 #include "MQClientAPIImpl.h"
 #include "MQClientInstance.h"
-#include "MQDecoder.h"
+#include "MessageDecoder.h"
 #include "MQMessageQueue.h"
 #include "MQProtos.h"
 #include "PullAPIWrapper.h"
@@ -34,7 +34,7 @@ namespace rocketmq {
 
 SendCallbackWrap::SendCallbackWrap(const std::string& addr,
                                    const std::string& brokerName,
-                                   const MQMessagePtr msg,
+                                   const MessagePtr msg,
                                    RemotingCommand&& request,
                                    SendCallback* sendCallback,
                                    TopicPublishInfoPtr topicPublishInfo,

@@ -17,7 +17,7 @@
 #ifndef __MQ_MESSAGE_CONST_H__
 #define __MQ_MESSAGE_CONST_H__
 
-#include <string>
+#include <string>  // std::string
 
 #include "RocketMQClient.h"
 

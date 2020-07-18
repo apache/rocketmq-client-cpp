@@ -20,7 +20,7 @@
 #include <exception>
 #include <string>
 
-#include "MQMessage.h"
+#include "Message.h"
 #include "RequestCallback.h"
 #include "concurrent/latch.hpp"
 
@@ -34,8 +34,8 @@ class RequestResponseFuture {
 
   bool isTimeout();
 
-  MQMessagePtr waitResponseMessage(int64_t timeout);
-  void putResponseMessage(MQMessagePtr3 responseMsg);
+  MessagePtr waitResponseMessage(int64_t timeout);
+  void putResponseMessage(MessagePtr responseMsg);
 
   bool isSendRequestOk();
   void setSendRequestOk(bool sendRequestOk);
@@ -47,10 +47,10 @@ class RequestResponseFuture {
   std::string m_correlationId;
   RequestCallback* m_requestCallback;
   uint64_t m_beginTimestamp;
-  MQMessagePtr m_requestMsg;
+  MessagePtr m_requestMsg;
   long m_timeoutMillis;
   std::unique_ptr<latch> m_countDownLatch;  // use for synchronization rpc
-  MQMessagePtr3 m_responseMsg;
+  MessagePtr m_responseMsg;
   bool m_sendRequestOk;
   std::exception_ptr m_cause;
 };

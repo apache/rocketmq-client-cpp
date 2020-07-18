@@ -40,7 +40,7 @@ class MQAdminImpl {
   int64_t minOffset(const MQMessageQueue& mq);
   int64_t earliestMsgStoreTime(const MQMessageQueue& mq);
 
-  MQMessageExtPtr viewMessage(const std::string& msgId);
+  MQMessageExt viewMessage(const std::string& msgId);
   QueryResult queryMessage(const std::string& topic, const std::string& key, int maxNum, int64_t begin, int64_t end);
 
  private:

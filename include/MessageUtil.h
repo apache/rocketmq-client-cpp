@@ -14,10 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MESSAGE_UTIL_H__
-#define __MESSAGE_UTIL_H__
-
-#include <string>
+#ifndef ROCKETMQ_MESSAGEUTIL_H_
+#define ROCKETMQ_MESSAGEUTIL_H_
 
 #include "MQClientException.h"
 #include "MQMessage.h"
@@ -26,12 +24,11 @@ namespace rocketmq {
 
 class ROCKETMQCLIENT_API MessageUtil {
  public:
-  static MQMessagePtr createReplyMessage(const MQMessagePtr requestMessage,
-                                         const std::string& body) throw(MQClientException);
+  static MQMessage createReplyMessage(const Message& requestMessage, const std::string& body) throw(MQClientException);
 
-  static const std::string& getReplyToClient(const MQMessagePtr msg);
+  static const std::string& getReplyToClient(const Message& msg);
 };
 
 }  // namespace rocketmq
 
-#endif  // __MESSAGE_UTIL_H__
+#endif  // ROCKETMQ_MESSAGEUTIL_H_

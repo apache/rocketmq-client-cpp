@@ -77,18 +77,18 @@ int main(int argc, char* argv[]) {
     do {
       try {
         PullResult result = consumer.pull(mq, "*", getMessageQueueOffset(mq), 32);
-        g_msgCount += result.msgFoundList.size();
-        std::cout << result.msgFoundList.size() << std::endl;
+        g_msgCount += result.msg_found_list_.size();
+        std::cout << result.msg_found_list_.size() << std::endl;
         // if pull request timeout or received NULL response, pullStatus will be
         // setted to BROKER_TIMEOUT,
         // And nextBeginOffset/minOffset/MaxOffset will be setted to 0
-        if (result.pullStatus != BROKER_TIMEOUT) {
-          putMessageQueueOffset(mq, result.nextBeginOffset);
+        if (result.pull_status_ != BROKER_TIMEOUT) {
+          putMessageQueueOffset(mq, result.next_begin_offset_);
           PrintPullResult(&result);
         } else {
           std::cout << "broker timeout occur" << std::endl;
         }
-        switch (result.pullStatus) {
+        switch (result.pull_status_) {
           case FOUND:
           case NO_MATCHED_MSG:
           case OFFSET_ILLEGAL:

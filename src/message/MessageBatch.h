@@ -17,28 +17,28 @@
 #ifndef __MESSAGE_BATCH_H__
 #define __MESSAGE_BATCH_H__
 
-#include <memory>
-#include <string>
-
 #include "MQMessage.h"
+#include "MessageImpl.h"
 
 namespace rocketmq {
 
-class MessageBatch : public MQMessage {
+class MessageBatch : public MessageImpl {
  public:
-  static MessageBatch* generateFromList(std::vector<MQMessagePtr>& messages);
+  static std::shared_ptr<MessageBatch> generateFromList(std::vector<MQMessage>& messages);
 
  public:
-  MessageBatch(std::vector<MQMessagePtr>& messages) : m_messages(messages) {}
+  MessageBatch(std::vector<MQMessage>& messages) : MessageImpl(), m_messages(messages) {}
 
+ public:  // Message
+  bool isBatch() const override final { return true; }
+
+ public:
   std::string encode();
 
-  const std::vector<MQMessagePtr>& getMessages() const { return m_messages; }
-
-  bool isBatch() override final { return true; }
+  const std::vector<MQMessage>& getMessages() const { return m_messages; }
 
  protected:
-  std::vector<MQMessagePtr> m_messages;
+  std::vector<MQMessage> m_messages;
 };
 
 }  // namespace rocketmq

@@ -114,9 +114,9 @@ static void PrintResult(rocketmq::SendResult* result) {
 
 void PrintPullResult(rocketmq::PullResult* result) {
   std::cout << result->toString() << std::endl;
-  if (result->pullStatus == rocketmq::FOUND) {
+  if (result->pull_status_ == rocketmq::FOUND) {
     std::cout << result->toString() << std::endl;
-    for (auto& msg : result->msgFoundList) {
+    for (auto& msg : result->msg_found_list_) {
       std::cout << "=======================================================" << std::endl
                 << msg->toString() << std::endl;
     }

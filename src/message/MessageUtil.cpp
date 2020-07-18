@@ -16,45 +16,37 @@
  */
 #include "MessageUtil.h"
 
-#include <memory>
-
 #include "ClientErrorCode.h"
-#include "MQMessageConst.h"
+#include "MessageImpl.h"
 #include "MessageAccessor.h"
+#include "MQMessageConst.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
 
-MQMessagePtr MessageUtil::createReplyMessage(const MQMessagePtr requestMessage,
-                                             const std::string& body) throw(MQClientException) {
-  if (requestMessage != nullptr) {
-    std::unique_ptr<MQMessage> replyMessage(new MQMessage());
-    const auto& cluster = requestMessage->getProperty(MQMessageConst::PROPERTY_CLUSTER);
-    const auto& replyTo = requestMessage->getProperty(MQMessageConst::PROPERTY_MESSAGE_REPLY_TO_CLIENT);
-    const auto& correlationId = requestMessage->getProperty(MQMessageConst::PROPERTY_CORRELATION_ID);
-    const auto& ttl = requestMessage->getProperty(MQMessageConst::PROPERTY_MESSAGE_TTL);
-    replyMessage->setBody(body);
-    if (!cluster.empty()) {
-      auto replyTopic = UtilAll::getReplyTopic(cluster);
-      replyMessage->setTopic(replyTopic);
-      MessageAccessor::putProperty(*replyMessage, MQMessageConst::PROPERTY_MESSAGE_TYPE, REPLY_MESSAGE_FLAG);
-      MessageAccessor::putProperty(*replyMessage, MQMessageConst::PROPERTY_CORRELATION_ID, correlationId);
-      MessageAccessor::putProperty(*replyMessage, MQMessageConst::PROPERTY_MESSAGE_REPLY_TO_CLIENT, replyTo);
-      MessageAccessor::putProperty(*replyMessage, MQMessageConst::PROPERTY_MESSAGE_TTL, ttl);
-
-      return replyMessage.release();
-    } else {
-      THROW_MQEXCEPTION(MQClientException, "create reply message fail, requestMessage error, property[" +
-                                               MQMessageConst::PROPERTY_CLUSTER + "] is null.",
-                        ClientErrorCode::CREATE_REPLY_MESSAGE_EXCEPTION);
-    }
+MQMessage MessageUtil::createReplyMessage(const Message& requestMessage,
+                                          const std::string& body) throw(MQClientException) {
+  const auto& cluster = requestMessage.getProperty(MQMessageConst::PROPERTY_CLUSTER);
+  if (!cluster.empty()) {
+    auto replyMessage = std::make_shared<MessageImpl>(UtilAll::getReplyTopic(cluster), body);
+    // set properties
+    MessageAccessor::putProperty(*replyMessage, MQMessageConst::PROPERTY_MESSAGE_TYPE, REPLY_MESSAGE_FLAG);
+    const auto& correlationId = requestMessage.getProperty(MQMessageConst::PROPERTY_CORRELATION_ID);
+    MessageAccessor::putProperty(*replyMessage, MQMessageConst::PROPERTY_CORRELATION_ID, correlationId);
+    const auto& replyTo = requestMessage.getProperty(MQMessageConst::PROPERTY_MESSAGE_REPLY_TO_CLIENT);
+    MessageAccessor::putProperty(*replyMessage, MQMessageConst::PROPERTY_MESSAGE_REPLY_TO_CLIENT, replyTo);
+    const auto& ttl = requestMessage.getProperty(MQMessageConst::PROPERTY_MESSAGE_TTL);
+    MessageAccessor::putProperty(*replyMessage, MQMessageConst::PROPERTY_MESSAGE_TTL, ttl);
+    return MQMessage(replyMessage);
+  } else {
+    THROW_MQEXCEPTION(MQClientException, "create reply message fail, requestMessage error, property[" +
+                                             MQMessageConst::PROPERTY_CLUSTER + "] is null.",
+                      ClientErrorCode::CREATE_REPLY_MESSAGE_EXCEPTION);
   }
-  THROW_MQEXCEPTION(MQClientException, "create reply message fail, requestMessage cannot be null.",
-                    ClientErrorCode::CREATE_REPLY_MESSAGE_EXCEPTION);
 }
 
-const std::string& MessageUtil::getReplyToClient(const MQMessagePtr msg) {
-  return msg->getProperty(MQMessageConst::PROPERTY_MESSAGE_REPLY_TO_CLIENT);
+const std::string& MessageUtil::getReplyToClient(const Message& msg) {
+  return msg.getProperty(MQMessageConst::PROPERTY_MESSAGE_REPLY_TO_CLIENT);
 }
 
 }  // namespace rocketmq

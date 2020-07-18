@@ -17,31 +17,33 @@
 #ifndef __MESSAGE_ACCESSOR_H__
 #define __MESSAGE_ACCESSOR_H__
 
-#include "MQMessage.h"
+#include <algorithm>
+
+#include "Message.h"
 
 namespace rocketmq {
 
 class MessageAccessor {
  public:
-  static inline void clearProperty(MQMessage& msg, const std::string& name) { msg.clearProperty(name); }
+  static inline void clearProperty(Message& msg, const std::string& name) { msg.clearProperty(name); }
 
-  static inline void setProperties(MQMessage& msg, std::map<std::string, std::string>&& properties) {
-    msg.setProperties(std::forward<std::map<std::string, std::string>>(properties));
+  static inline void setProperties(Message& msg, std::map<std::string, std::string>&& properties) {
+    msg.setProperties(std::move(properties));
   }
 
-  static inline void putProperty(MQMessage& msg, const std::string& name, const std::string& value) {
+  static inline void putProperty(Message& msg, const std::string& name, const std::string& value) {
     msg.putProperty(name, value);
   }
 
-  static inline const std::string& getReconsumeTime(MQMessage& msg) {
+  static inline const std::string& getReconsumeTime(Message& msg) {
     return msg.getProperty(MQMessageConst::PROPERTY_RECONSUME_TIME);
   }
 
-  static inline const std::string& getMaxReconsumeTimes(MQMessage& msg) {
+  static inline const std::string& getMaxReconsumeTimes(Message& msg) {
     return msg.getProperty(MQMessageConst::PROPERTY_MAX_RECONSUME_TIMES);
   }
 
-  static inline void setConsumeStartTimeStamp(MQMessage& msg, const std::string& propertyConsumeStartTimeStamp) {
+  static inline void setConsumeStartTimeStamp(Message& msg, const std::string& propertyConsumeStartTimeStamp) {
     putProperty(msg, MQMessageConst::PROPERTY_CONSUME_START_TIMESTAMP, propertyConsumeStartTimeStamp);
   }
 };

@@ -16,48 +16,47 @@
  */
 #include "MessageBatch.h"
 
-#include <memory>
-
-#include "MQDecoder.h"
+#include "MessageDecoder.h"
 #include "MessageClientIDSetter.h"
 
 namespace rocketmq {
 
-std::string MessageBatch::encode() {
-  return MQDecoder::encodeMessages(m_messages);
-}
-
-MessageBatch* MessageBatch::generateFromList(std::vector<MQMessagePtr>& messages) {
-  bool isFirst = true;
+std::shared_ptr<MessageBatch> MessageBatch::generateFromList(std::vector<MQMessage>& messages) {
+  bool is_first = true;
   std::string topic;
-  bool waitStoreMsgOK = false;
+  bool wait_store_msg_ok = true;
 
+  // check messages
   for (auto& message : messages) {
-    if (message->getDelayTimeLevel() > 0) {
+    if (message.getDelayTimeLevel() > 0) {
       THROW_MQEXCEPTION(MQClientException, "TimeDelayLevel in not supported for batching", -1);
     }
-    if (isFirst) {
-      isFirst = false;
-      topic = message->getTopic();
-      waitStoreMsgOK = message->isWaitStoreMsgOK();
+    if (is_first) {
+      is_first = false;
+      topic = message.getTopic();
+      wait_store_msg_ok = message.isWaitStoreMsgOK();
 
       if (UtilAll::isRetryTopic(topic)) {
         THROW_MQEXCEPTION(MQClientException, "Retry Group is not supported for batching", -1);
       }
     } else {
-      if (message->getTopic() != topic) {
+      if (message.getTopic() != topic) {
         THROW_MQEXCEPTION(MQClientException, "The topic of the messages in one batch should be the same", -1);
       }
-      if (message->isWaitStoreMsgOK() != waitStoreMsgOK) {
+      if (message.isWaitStoreMsgOK() != wait_store_msg_ok) {
         THROW_MQEXCEPTION(MQClientException, "The waitStoreMsgOK of the messages in one batch should the same", -2);
       }
     }
   }
 
-  MessageBatch* batchMessage = new MessageBatch(messages);
+  auto batchMessage = std::make_shared<MessageBatch>(messages);
   batchMessage->setTopic(topic);
-  batchMessage->setWaitStoreMsgOK(waitStoreMsgOK);
+  batchMessage->setWaitStoreMsgOK(wait_store_msg_ok);
   return batchMessage;
+}
+
+std::string MessageBatch::encode() {
+  return MessageDecoder::encodeMessages(m_messages);
 }
 
 }  // namespace rocketmq

@@ -38,43 +38,43 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer, public DefaultMQ
   void shutdown() override;
 
   // Sync: caller will be responsible for the lifecycle of messages.
-  SendResult send(MQMessagePtr msg) override;
-  SendResult send(MQMessagePtr msg, long timeout) override;
-  SendResult send(MQMessagePtr msg, const MQMessageQueue& mq) override;
-  SendResult send(MQMessagePtr msg, const MQMessageQueue& mq, long timeout) override;
+  SendResult send(MQMessage& msg) override;
+  SendResult send(MQMessage& msg, long timeout) override;
+  SendResult send(MQMessage& msg, const MQMessageQueue& mq) override;
+  SendResult send(MQMessage& msg, const MQMessageQueue& mq, long timeout) override;
 
   // Async: don't delete msg object, until callback occur.
-  void send(MQMessagePtr msg, SendCallback* sendCallback) noexcept override;
-  void send(MQMessagePtr msg, SendCallback* sendCallback, long timeout) noexcept override;
-  void send(MQMessagePtr msg, const MQMessageQueue& mq, SendCallback* sendCallback) noexcept override;
-  void send(MQMessagePtr msg, const MQMessageQueue& mq, SendCallback* sendCallback, long timeout) noexcept override;
+  void send(MQMessage& msg, SendCallback* sendCallback) noexcept override;
+  void send(MQMessage& msg, SendCallback* sendCallback, long timeout) noexcept override;
+  void send(MQMessage& msg, const MQMessageQueue& mq, SendCallback* sendCallback) noexcept override;
+  void send(MQMessage& msg, const MQMessageQueue& mq, SendCallback* sendCallback, long timeout) noexcept override;
 
   // Oneyway: same as sync send, but don't care its result.
-  void sendOneway(MQMessagePtr msg) override;
-  void sendOneway(MQMessagePtr msg, const MQMessageQueue& mq) override;
+  void sendOneway(MQMessage& msg) override;
+  void sendOneway(MQMessage& msg, const MQMessageQueue& mq) override;
 
   // Select
-  SendResult send(MQMessagePtr msg, MessageQueueSelector* selector, void* arg) override;
-  SendResult send(MQMessagePtr msg, MessageQueueSelector* selector, void* arg, long timeout) override;
-  void send(MQMessagePtr msg, MessageQueueSelector* selector, void* arg, SendCallback* sendCallback) noexcept override;
-  void send(MQMessagePtr msg,
+  SendResult send(MQMessage& msg, MessageQueueSelector* selector, void* arg) override;
+  SendResult send(MQMessage& msg, MessageQueueSelector* selector, void* arg, long timeout) override;
+  void send(MQMessage& msg, MessageQueueSelector* selector, void* arg, SendCallback* sendCallback) noexcept override;
+  void send(MQMessage& msg,
             MessageQueueSelector* selector,
             void* arg,
             SendCallback* sendCallback,
             long timeout) noexcept override;
-  void sendOneway(MQMessagePtr msg, MessageQueueSelector* selector, void* arg) override;
+  void sendOneway(MQMessage& msg, MessageQueueSelector* selector, void* arg) override;
 
   // Transaction
-  TransactionSendResult sendMessageInTransaction(MQMessagePtr msg, void* arg) override;
+  TransactionSendResult sendMessageInTransaction(MQMessage& msg, void* arg) override;
 
   // Batch: power by sync send, caller will be responsible for the lifecycle of messages.
-  SendResult send(std::vector<MQMessagePtr>& msgs) override;
-  SendResult send(std::vector<MQMessagePtr>& msgs, long timeout) override;
-  SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq) override;
-  SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq, long timeout) override;
+  SendResult send(std::vector<MQMessage>& msgs) override;
+  SendResult send(std::vector<MQMessage>& msgs, long timeout) override;
+  SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq) override;
+  SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, long timeout) override;
 
   // RPC
-  MQMessagePtr request(MQMessagePtr msg, long timeout) override;
+  MQMessage request(MQMessage& msg, long timeout) override;
 
  public:  // DefaultMQProducerConfig
   bool isSendLatencyFaultEnable() const override;

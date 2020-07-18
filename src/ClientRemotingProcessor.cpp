@@ -17,7 +17,7 @@
 #include "ClientRemotingProcessor.h"
 
 #include "ConsumerRunningInfo.h"
-#include "MQDecoder.h"
+#include "MessageDecoder.h"
 #include "MQProtos.h"
 #include "MessageAccessor.h"
 #include "MessageSysFlag.h"
@@ -65,7 +65,7 @@ RemotingCommand* ClientRemotingProcessor::checkTransactionState(const std::strin
 
   auto requestBody = request->getBody();
   if (requestBody != nullptr && requestBody->getSize() > 0) {
-    MQMessageExtPtr2 messageExt = MQDecoder::decode(*requestBody);
+    MessageExtPtr messageExt = MessageDecoder::decode(*requestBody);
     if (messageExt != nullptr) {
       const auto& transactionId = messageExt->getProperty(MQMessageConst::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);
       if (!transactionId.empty()) {
@@ -173,7 +173,7 @@ RemotingCommand* ClientRemotingProcessor::receiveReplyMessage(RemotingCommand* r
     }
 
     msg->setFlag(requestHeader->getFlag());
-    MessageAccessor::setProperties(*msg, MQDecoder::string2messageProperties(requestHeader->getProperties()));
+    MessageAccessor::setProperties(*msg, MessageDecoder::string2messageProperties(requestHeader->getProperties()));
     MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_REPLY_MESSAGE_ARRIVE_TIME,
                                  UtilAll::to_string(receiveTime));
     msg->setBornTimestamp(requestHeader->getBornTimestamp());

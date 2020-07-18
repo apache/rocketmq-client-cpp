@@ -26,6 +26,9 @@ const int MessageSysFlag::TransactionPreparedType = 0x1 << 2;
 const int MessageSysFlag::TransactionCommitType = 0x2 << 2;
 const int MessageSysFlag::TransactionRollbackType = 0x3 << 2;
 
+const int MessageSysFlag::BronhostV6Flag = 0x1 << 4;
+const int MessageSysFlag::StorehostV6Flag = 0x1 << 5;
+
 int MessageSysFlag::getTransactionValue(int flag) {
   return flag & TransactionRollbackType;
 }

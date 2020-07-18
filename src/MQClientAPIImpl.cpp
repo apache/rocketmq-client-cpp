@@ -87,7 +87,7 @@ void MQClientAPIImpl::createTopic(const std::string& addr, const std::string& de
 
 SendResult* MQClientAPIImpl::sendMessage(const std::string& addr,
                                          const std::string& brokerName,
-                                         const MQMessagePtr msg,
+                                         const MessagePtr msg,
                                          std::unique_ptr<SendMessageRequestHeader> requestHeader,
                                          int timeoutMillis,
                                          CommunicationMode communicationMode,
@@ -98,7 +98,7 @@ SendResult* MQClientAPIImpl::sendMessage(const std::string& addr,
 
 SendResult* MQClientAPIImpl::sendMessage(const std::string& addr,
                                          const std::string& brokerName,
-                                         const MQMessagePtr msg,
+                                         const MessagePtr msg,
                                          std::unique_ptr<SendMessageRequestHeader> requestHeader,
                                          int timeoutMillis,
                                          CommunicationMode communicationMode,
@@ -149,7 +149,7 @@ SendResult* MQClientAPIImpl::sendMessage(const std::string& addr,
 
 void MQClientAPIImpl::sendMessageAsync(const std::string& addr,
                                        const std::string& brokerName,
-                                       const MQMessagePtr msg,
+                                       const MessagePtr msg,
                                        RemotingCommand&& request,
                                        SendCallback* sendCallback,
                                        TopicPublishInfoPtr topicPublishInfo,
@@ -177,7 +177,7 @@ void MQClientAPIImpl::sendMessageAsyncImpl(SendCallbackWrap* cbw, int64_t timeou
 
 SendResult* MQClientAPIImpl::sendMessageSync(const std::string& addr,
                                              const std::string& brokerName,
-                                             const MQMessagePtr msg,
+                                             const MessagePtr msg,
                                              RemotingCommand& request,
                                              int timeoutMillis) {
   // block until response
@@ -187,7 +187,7 @@ SendResult* MQClientAPIImpl::sendMessageSync(const std::string& addr,
 }
 
 SendResult* MQClientAPIImpl::processSendResponse(const std::string& brokerName,
-                                                 const MQMessagePtr msg,
+                                                 const MessagePtr msg,
                                                  RemotingCommand* response) {
   SendStatus sendStatus = SEND_OK;
   switch (response->getCode()) {
@@ -217,11 +217,11 @@ SendResult* MQClientAPIImpl::processSendResponse(const std::string& brokerName,
 
   // MessageBatch
   if (msg->isBatch()) {
-    const auto& messages = static_cast<const MessageBatch*>(msg)->getMessages();
+    const auto& messages = std::dynamic_pointer_cast<MessageBatch>(msg)->getMessages();
     uniqMsgId.clear();
     uniqMsgId.reserve(33 * messages.size() + 1);
     for (const auto& message : messages) {
-      uniqMsgId.append(MessageClientIDSetter::getUniqID(*message));
+      uniqMsgId.append(MessageClientIDSetter::getUniqID(message));
       uniqMsgId.append(",");
     }
     if (!uniqMsgId.empty()) {
@@ -307,7 +307,7 @@ PullResult* MQClientAPIImpl::processPullResponse(RemotingCommand* response) {
                            responseHeader->maxOffset, (int)responseHeader->suggestWhichBrokerId, response->getBody());
 }
 
-MQMessageExtPtr MQClientAPIImpl::viewMessage(const std::string& addr, int64_t phyoffset, int timeoutMillis) {
+MQMessageExt MQClientAPIImpl::viewMessage(const std::string& addr, int64_t phyoffset, int timeoutMillis) {
   auto* requestHeader = new ViewMessageRequestHeader();
   requestHeader->offset = phyoffset;
 
@@ -552,17 +552,17 @@ void MQClientAPIImpl::endTransactionOneway(const std::string& addr,
 }
 
 void MQClientAPIImpl::consumerSendMessageBack(const std::string& addr,
-                                              MQMessageExt& msg,
+                                              MessageExtPtr msg,
                                               const std::string& consumerGroup,
                                               int delayLevel,
                                               int timeoutMillis,
                                               int maxConsumeRetryTimes) {
   auto* requestHeader = new ConsumerSendMsgBackRequestHeader();
   requestHeader->group = consumerGroup;
-  requestHeader->originTopic = msg.getTopic();
-  requestHeader->offset = msg.getCommitLogOffset();
+  requestHeader->originTopic = msg->getTopic();
+  requestHeader->offset = msg->getCommitLogOffset();
   requestHeader->delayLevel = delayLevel;
-  requestHeader->originMsgId = msg.getMsgId();
+  requestHeader->originMsgId = msg->getMsgId();
   requestHeader->maxReconsumeTimes = maxConsumeRetryTimes;
 
   RemotingCommand request(CONSUMER_SEND_MSG_BACK, requestHeader);

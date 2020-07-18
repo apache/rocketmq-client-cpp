@@ -95,7 +95,7 @@ void Validators::checkGroup(const std::string& group) {
   }
 }
 
-void Validators::checkMessage(const MQMessage& msg, int maxMessageSize) {
+void Validators::checkMessage(const Message& msg, int maxMessageSize) {
   checkTopic(msg.getTopic());
 
   const auto& body = msg.getBody();

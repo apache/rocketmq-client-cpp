@@ -34,6 +34,9 @@ class MessageSysFlag {
   static const int TransactionPreparedType;
   static const int TransactionCommitType;
   static const int TransactionRollbackType;
+
+  static const int BronhostV6Flag;
+  static const int StorehostV6Flag;
 };
 
 }  // namespace rocketmq

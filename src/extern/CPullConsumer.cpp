@@ -187,27 +187,27 @@ CPullResult Pull(CPullConsumer* consumer,
         reinterpret_cast<DefaultMQPullConsumer*>(consumer)->pull(messageQueue, subExpression, offset, maxNums);
   } catch (std::exception& e) {
     MQClientErrorContainer::setErr(std::string(e.what()));
-    cppPullResult.pullStatus = BROKER_TIMEOUT;
+    cppPullResult.set_pull_status(BROKER_TIMEOUT);
   }
 
-  if (cppPullResult.pullStatus != BROKER_TIMEOUT) {
-    pullResult.maxOffset = cppPullResult.maxOffset;
-    pullResult.minOffset = cppPullResult.minOffset;
-    pullResult.nextBeginOffset = cppPullResult.nextBeginOffset;
+  if (cppPullResult.pull_status() != BROKER_TIMEOUT) {
+    pullResult.maxOffset = cppPullResult.max_offset();
+    pullResult.minOffset = cppPullResult.min_offset();
+    pullResult.nextBeginOffset = cppPullResult.next_begin_offset();
   }
 
-  switch (cppPullResult.pullStatus) {
+  switch (cppPullResult.pull_status()) {
     case FOUND: {
       pullResult.pullStatus = E_FOUND;
-      pullResult.size = cppPullResult.msgFoundList.size();
+      pullResult.size = cppPullResult.msg_found_list().size();
       PullResult* tmpPullResult = new PullResult(cppPullResult);
       pullResult.pData = tmpPullResult;
       // Alloc memory to save the pointer to CPP MQMessageExt, which will be release by the CPP SDK core.
       // Thus, this memory should be released by users using @ReleasePullResult
       pullResult.msgFoundList = (CMessageExt**)malloc(pullResult.size * sizeof(CMessageExt*));
-      for (size_t i = 0; i < cppPullResult.msgFoundList.size(); i++) {
-        MQMessageExt* msg = tmpPullResult->msgFoundList[i].get();
-        pullResult.msgFoundList[i] = (CMessageExt*)(msg);
+      for (size_t i = 0; i < cppPullResult.msg_found_list().size(); i++) {
+        auto msg = tmpPullResult->msg_found_list()[i];
+        pullResult.msgFoundList[i] = reinterpret_cast<CMessageExt*>(&msg);
       }
       break;
     }

@@ -43,13 +43,13 @@ class MessageClientIDSetter {
    */
   static std::string createUniqID() { return getInstance().createUniqueID(); }
 
-  static void setUniqID(MQMessage& msg) {
+  static void setUniqID(Message& msg) {
     if (msg.getProperty(MQMessageConst::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX).empty()) {
       MessageAccessor::putProperty(msg, MQMessageConst::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX, createUniqID());
     }
   }
 
-  static const std::string& getUniqID(const MQMessage& msg) {
+  static const std::string& getUniqID(const Message& msg) {
     return msg.getProperty(MQMessageConst::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);
   }
 

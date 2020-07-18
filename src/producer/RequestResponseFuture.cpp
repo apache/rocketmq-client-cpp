@@ -68,17 +68,17 @@ bool RequestResponseFuture::isTimeout() {
   return diff > m_timeoutMillis;
 }
 
-MQMessagePtr RequestResponseFuture::waitResponseMessage(int64_t timeout) {
+MessagePtr RequestResponseFuture::waitResponseMessage(int64_t timeout) {
   if (m_countDownLatch != nullptr) {
     if (timeout < 0) {
       timeout = 0;
     }
     m_countDownLatch->wait(timeout, time_unit::milliseconds);
   }
-  return m_responseMsg.release();
+  return m_responseMsg;
 }
 
-void RequestResponseFuture::putResponseMessage(MQMessagePtr3 responseMsg) {
+void RequestResponseFuture::putResponseMessage(MessagePtr responseMsg) {
   m_responseMsg = std::move(responseMsg);
   if (m_countDownLatch != nullptr) {
     m_countDownLatch->count_down();

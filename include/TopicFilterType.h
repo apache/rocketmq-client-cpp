@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TOPIC_FILTER_TYPE_H__
-#define __TOPIC_FILTER_TYPE_H__
+#ifndef ROCKETMQ_TOPICFILTERTYPE_H_
+#define ROCKETMQ_TOPICFILTERTYPE_H_
 
 namespace rocketmq {
 
@@ -24,6 +24,7 @@ enum TopicFilterType {
    * each msg could only have one tag
    */
   SINGLE_TAG,
+
   /**
    * not support now
    */
@@ -32,4 +33,4 @@ enum TopicFilterType {
 
 }  // namespace rocketmq
 
-#endif  // __TOPIC_FILTER_TYPE_H__
+#endif  // ROCKETMQ_TOPICFILTERTYPE_H_

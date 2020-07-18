@@ -79,7 +79,7 @@ class ROCKETMQCLIENT_API MQAdmin {
    * @param offsetMsgId message id
    * @return message
    */
-  virtual MQMessageExtPtr viewMessage(const std::string& offsetMsgId) = 0;
+  virtual MQMessageExt viewMessage(const std::string& offsetMsgId) = 0;
 
   /**
    * Query messages

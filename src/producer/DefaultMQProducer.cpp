@@ -51,65 +51,65 @@ void DefaultMQProducer::shutdown() {
   m_producerDelegate->shutdown();
 }
 
-SendResult DefaultMQProducer::send(MQMessagePtr msg) {
+SendResult DefaultMQProducer::send(MQMessage& msg) {
   return m_producerDelegate->send(msg);
 }
 
-SendResult DefaultMQProducer::send(MQMessagePtr msg, long timeout) {
+SendResult DefaultMQProducer::send(MQMessage& msg, long timeout) {
   return m_producerDelegate->send(msg, timeout);
 }
 
-SendResult DefaultMQProducer::send(MQMessagePtr msg, const MQMessageQueue& mq) {
+SendResult DefaultMQProducer::send(MQMessage& msg, const MQMessageQueue& mq) {
   return m_producerDelegate->send(msg, mq);
 }
 
-SendResult DefaultMQProducer::send(MQMessagePtr msg, const MQMessageQueue& mq, long timeout) {
+SendResult DefaultMQProducer::send(MQMessage& msg, const MQMessageQueue& mq, long timeout) {
   return m_producerDelegate->send(msg, mq, timeout);
 }
 
-void DefaultMQProducer::send(MQMessagePtr msg, SendCallback* sendCallback) noexcept {
+void DefaultMQProducer::send(MQMessage& msg, SendCallback* sendCallback) noexcept {
   m_producerDelegate->send(msg, sendCallback, getSendMsgTimeout());
 }
 
-void DefaultMQProducer::send(MQMessagePtr msg, SendCallback* sendCallback, long timeout) noexcept {
+void DefaultMQProducer::send(MQMessage& msg, SendCallback* sendCallback, long timeout) noexcept {
   m_producerDelegate->send(msg, sendCallback, timeout);
 }
 
-void DefaultMQProducer::send(MQMessagePtr msg, const MQMessageQueue& mq, SendCallback* sendCallback) noexcept {
+void DefaultMQProducer::send(MQMessage& msg, const MQMessageQueue& mq, SendCallback* sendCallback) noexcept {
   return m_producerDelegate->send(msg, mq, sendCallback);
 }
 
-void DefaultMQProducer::send(MQMessagePtr msg,
+void DefaultMQProducer::send(MQMessage& msg,
                              const MQMessageQueue& mq,
                              SendCallback* sendCallback,
                              long timeout) noexcept {
   m_producerDelegate->send(msg, mq, sendCallback, timeout);
 }
 
-void DefaultMQProducer::sendOneway(MQMessagePtr msg) {
+void DefaultMQProducer::sendOneway(MQMessage& msg) {
   m_producerDelegate->sendOneway(msg);
 }
 
-void DefaultMQProducer::sendOneway(MQMessagePtr msg, const MQMessageQueue& mq) {
+void DefaultMQProducer::sendOneway(MQMessage& msg, const MQMessageQueue& mq) {
   m_producerDelegate->sendOneway(msg, mq);
 }
 
-SendResult DefaultMQProducer::send(MQMessagePtr msg, MessageQueueSelector* selector, void* arg) {
+SendResult DefaultMQProducer::send(MQMessage& msg, MessageQueueSelector* selector, void* arg) {
   return m_producerDelegate->send(msg, selector, arg);
 }
 
-SendResult DefaultMQProducer::send(MQMessagePtr msg, MessageQueueSelector* selector, void* arg, long timeout) {
+SendResult DefaultMQProducer::send(MQMessage& msg, MessageQueueSelector* selector, void* arg, long timeout) {
   return m_producerDelegate->send(msg, selector, arg, timeout);
 }
 
-void DefaultMQProducer::send(MQMessagePtr msg,
+void DefaultMQProducer::send(MQMessage& msg,
                              MessageQueueSelector* selector,
                              void* arg,
                              SendCallback* sendCallback) noexcept {
   return m_producerDelegate->send(msg, selector, arg, sendCallback);
 }
 
-void DefaultMQProducer::send(MQMessagePtr msg,
+void DefaultMQProducer::send(MQMessage& msg,
                              MessageQueueSelector* selector,
                              void* arg,
                              SendCallback* sendCallback,
@@ -117,32 +117,32 @@ void DefaultMQProducer::send(MQMessagePtr msg,
   m_producerDelegate->send(msg, selector, arg, sendCallback, timeout);
 }
 
-void DefaultMQProducer::sendOneway(MQMessagePtr msg, MessageQueueSelector* selector, void* arg) {
+void DefaultMQProducer::sendOneway(MQMessage& msg, MessageQueueSelector* selector, void* arg) {
   m_producerDelegate->sendOneway(msg, selector, arg);
 }
 
-TransactionSendResult DefaultMQProducer::sendMessageInTransaction(MQMessagePtr msg, void* arg) {
+TransactionSendResult DefaultMQProducer::sendMessageInTransaction(MQMessage& msg, void* arg) {
   THROW_MQEXCEPTION(MQClientException, "sendMessageInTransaction not implement, please use TransactionMQProducer class",
                     -1);
 }
 
-SendResult DefaultMQProducer::send(std::vector<MQMessagePtr>& msgs) {
+SendResult DefaultMQProducer::send(std::vector<MQMessage>& msgs) {
   return m_producerDelegate->send(msgs);
 }
 
-SendResult DefaultMQProducer::send(std::vector<MQMessagePtr>& msgs, long timeout) {
+SendResult DefaultMQProducer::send(std::vector<MQMessage>& msgs, long timeout) {
   return m_producerDelegate->send(msgs, timeout);
 }
 
-SendResult DefaultMQProducer::send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq) {
+SendResult DefaultMQProducer::send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq) {
   return m_producerDelegate->send(msgs, mq);
 }
 
-SendResult DefaultMQProducer::send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq, long timeout) {
+SendResult DefaultMQProducer::send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, long timeout) {
   return m_producerDelegate->send(msgs, mq, timeout);
 }
 
-MQMessagePtr DefaultMQProducer::request(MQMessagePtr msg, long timeout) {
+MQMessage DefaultMQProducer::request(MQMessage& msg, long timeout) {
   return m_producerDelegate->request(msg, timeout);
 }
 

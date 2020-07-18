@@ -28,10 +28,10 @@ class ROCKETMQCLIENT_API RequestCallback {
  public:
   virtual ~RequestCallback() = default;
 
-  virtual void onSuccess(MQMessagePtr3 message) { onSuccess(message.get()); }
+  virtual void onSuccess(MessagePtr message) { onSuccess(MQMessage(message)); }
 
   // SDK will be responsible for the lifecycle of message.
-  virtual void onSuccess(MQMessagePtr message) = 0;
+  virtual void onSuccess(MQMessage message) = 0;
 
   virtual void onException(MQException& e) noexcept = 0;
 

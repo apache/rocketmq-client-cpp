@@ -23,7 +23,7 @@
 using namespace rocketmq;
 
 CBatchMessage* CreateBatchMessage() {
-  auto* msgs = new std::vector<MQMessage*>();
+  auto* msgs = new std::vector<MQMessage>();
   return reinterpret_cast<CBatchMessage*>(msgs);
 }
 
@@ -35,7 +35,7 @@ int AddMessage(CBatchMessage* batchMsg, CMessage* msg) {
     return NULL_POINTER;
   }
   auto* message = reinterpret_cast<MQMessage*>(msg);
-  reinterpret_cast<std::vector<MQMessage*>*>(batchMsg)->push_back(message);
+  reinterpret_cast<std::vector<MQMessage>*>(batchMsg)->push_back(*message);
   return OK;
 }
 
@@ -43,10 +43,7 @@ int DestroyBatchMessage(CBatchMessage* batchMsg) {
   if (batchMsg == NULL) {
     return NULL_POINTER;
   }
-  auto* msgs = reinterpret_cast<std::vector<MQMessage*>*>(batchMsg);
-  for (auto* msg : *msgs) {
-    delete msg;
-  }
+  auto* msgs = reinterpret_cast<std::vector<MQMessage>*>(batchMsg);
   delete msgs;
   return OK;
 }

@@ -33,8 +33,8 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQPushConsumer, public D
   void start() override;
   void shutdown() override;
 
-  bool sendMessageBack(MQMessageExt& msg, int delayLevel) override;
-  bool sendMessageBack(MQMessageExt& msg, int delayLevel, const std::string& brokerName) override;
+  bool sendMessageBack(MessageExtPtr msg, int delayLevel) override;
+  bool sendMessageBack(MessageExtPtr msg, int delayLevel, const std::string& brokerName) override;
   void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) override;
 
  public:  // MQPushConsumer

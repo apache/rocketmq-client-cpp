@@ -63,39 +63,39 @@ class AsyncPullCallback : public AutoDeletePullCallback {
 
     PullResult result = defaultMQPushConsumer->getPullAPIWrapper()->processPullResult(m_pullRequest->getMessageQueue(),
                                                                                       pullResult, m_subscriptionData);
-    switch (result.pullStatus) {
+    switch (result.pull_status()) {
       case FOUND: {
         int64_t prevRequestOffset = m_pullRequest->getNextOffset();
-        m_pullRequest->setNextOffset(result.nextBeginOffset);
+        m_pullRequest->setNextOffset(result.next_begin_offset());
 
         int64_t firstMsgOffset = (std::numeric_limits<int64_t>::max)();
-        if (result.msgFoundList.empty()) {
+        if (result.msg_found_list().empty()) {
           defaultMQPushConsumer->executePullRequestImmediately(m_pullRequest);
         } else {
-          firstMsgOffset = (*result.msgFoundList.begin())->getQueueOffset();
+          firstMsgOffset = result.msg_found_list()[0]->getQueueOffset();
 
-          m_pullRequest->getProcessQueue()->putMessage(result.msgFoundList);
+          m_pullRequest->getProcessQueue()->putMessage(result.msg_found_list());
           defaultMQPushConsumer->getConsumerMsgService()->submitConsumeRequest(
-              result.msgFoundList, m_pullRequest->getProcessQueue(), m_pullRequest->getMessageQueue(), true);
+              result.msg_found_list(), m_pullRequest->getProcessQueue(), m_pullRequest->getMessageQueue(), true);
 
           defaultMQPushConsumer->executePullRequestImmediately(m_pullRequest);
         }
 
-        if (result.nextBeginOffset < prevRequestOffset || firstMsgOffset < prevRequestOffset) {
+        if (result.next_begin_offset() < prevRequestOffset || firstMsgOffset < prevRequestOffset) {
           LOG_WARN_NEW(
               "[BUG] pull message result maybe data wrong, nextBeginOffset:{} firstMsgOffset:{} prevRequestOffset:{}",
-              result.nextBeginOffset, firstMsgOffset, prevRequestOffset);
+              result.next_begin_offset(), firstMsgOffset, prevRequestOffset);
         }
 
       } break;
       case NO_NEW_MSG:
       case NO_MATCHED_MSG:
-        m_pullRequest->setNextOffset(result.nextBeginOffset);
+        m_pullRequest->setNextOffset(result.next_begin_offset());
         defaultMQPushConsumer->correctTagsOffset(m_pullRequest);
         defaultMQPushConsumer->executePullRequestImmediately(m_pullRequest);
         break;
       case NO_LATEST_MSG:
-        m_pullRequest->setNextOffset(result.nextBeginOffset);
+        m_pullRequest->setNextOffset(result.next_begin_offset());
         defaultMQPushConsumer->correctTagsOffset(m_pullRequest);
         defaultMQPushConsumer->executePullRequestLater(
             m_pullRequest,
@@ -104,7 +104,7 @@ class AsyncPullCallback : public AutoDeletePullCallback {
       case OFFSET_ILLEGAL: {
         LOG_WARN_NEW("the pull request offset illegal, {} {}", m_pullRequest->toString(), result.toString());
 
-        m_pullRequest->setNextOffset(result.nextBeginOffset);
+        m_pullRequest->setNextOffset(result.next_begin_offset());
         m_pullRequest->getProcessQueue()->setDropped(true);
 
         // update and persist offset, then removeProcessQueue
@@ -177,13 +177,13 @@ int DefaultMQPushConsumerImpl::getMaxReconsumeTimes() {
   }
 }
 
-bool DefaultMQPushConsumerImpl::sendMessageBack(MQMessageExt& msg, int delayLevel) {
+bool DefaultMQPushConsumerImpl::sendMessageBack(MessageExtPtr msg, int delayLevel) {
   return sendMessageBack(msg, delayLevel, null);
 }
 
-bool DefaultMQPushConsumerImpl::sendMessageBack(MQMessageExt& msg, int delayLevel, const std::string& brokerName) {
+bool DefaultMQPushConsumerImpl::sendMessageBack(MessageExtPtr msg, int delayLevel, const std::string& brokerName) {
   try {
-    std::string brokerAddr = brokerName.empty() ? socketAddress2String(msg.getStoreHost())
+    std::string brokerAddr = brokerName.empty() ? socketAddress2String(msg->getStoreHost())
                                                 : m_clientInstance->findBrokerAddressInPublish(brokerName);
 
     m_clientInstance->getMQClientAPIImpl()->consumerSendMessageBack(
@@ -191,7 +191,7 @@ bool DefaultMQPushConsumerImpl::sendMessageBack(MQMessageExt& msg, int delayLeve
     return true;
   } catch (const std::exception& e) {
     LOG_ERROR_NEW("sendMessageBack exception, group: {}, msg: {}. {}", m_pushConsumerConfig->getGroupName(),
-                  msg.toString(), e.what());
+                  msg->toString(), e.what());
   }
   return false;
 }
@@ -293,9 +293,8 @@ void DefaultMQPushConsumerImpl::start() {
       if (!registerOK) {
         m_serviceState = CREATE_JUST;
         m_consumeService->shutdown();
-        THROW_MQEXCEPTION(MQClientException,
-                          "The cousumer group[" + m_pushConsumerConfig->getGroupName() +
-                              "] has been created before, specify another name please.",
+        THROW_MQEXCEPTION(MQClientException, "The cousumer group[" + m_pushConsumerConfig->getGroupName() +
+                                                 "] has been created before, specify another name please.",
                           -1);
       }
 
@@ -575,7 +574,8 @@ void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pullRequest) {
   }
 }
 
-void DefaultMQPushConsumerImpl::resetRetryTopic(std::vector<MQMessageExtPtr2>& msgs, const std::string& consumerGroup) {
+void DefaultMQPushConsumerImpl::resetRetryTopic(const std::vector<MessageExtPtr>& msgs,
+                                                const std::string& consumerGroup) {
   std::string groupTopic = UtilAll::getRetryTopic(consumerGroup);
   for (auto& msg : msgs) {
     std::string retryTopic = msg->getProperty(MQMessageConst::PROPERTY_RETRY_TOPIC);

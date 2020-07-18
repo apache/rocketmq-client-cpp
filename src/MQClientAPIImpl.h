@@ -60,14 +60,14 @@ class MQClientAPIImpl {
 
   SendResult* sendMessage(const std::string& addr,
                           const std::string& brokerName,
-                          const MQMessagePtr msg,
+                          const MessagePtr msg,
                           std::unique_ptr<SendMessageRequestHeader> requestHeader,
                           int timeoutMillis,
                           CommunicationMode communicationMode,
                           DefaultMQProducerImplPtr producer);
   SendResult* sendMessage(const std::string& addr,
                           const std::string& brokerName,
-                          const MQMessagePtr msg,
+                          const MessagePtr msg,
                           std::unique_ptr<SendMessageRequestHeader> requestHeader,
                           int timeoutMillis,
                           CommunicationMode communicationMode,
@@ -76,7 +76,7 @@ class MQClientAPIImpl {
                           MQClientInstancePtr instance,
                           int retryTimesWhenSendFailed,
                           DefaultMQProducerImplPtr producer);
-  SendResult* processSendResponse(const std::string& brokerName, const MQMessagePtr msg, RemotingCommand* pResponse);
+  SendResult* processSendResponse(const std::string& brokerName, const MessagePtr msg, RemotingCommand* pResponse);
 
   PullResult* pullMessage(const std::string& addr,
                           PullMessageRequestHeader* requestHeader,
@@ -85,7 +85,7 @@ class MQClientAPIImpl {
                           PullCallback* pullCallback);
   PullResult* processPullResponse(RemotingCommand* pResponse);
 
-  MQMessageExtPtr viewMessage(const std::string& addr, int64_t phyoffset, int timeoutMillis);
+  MQMessageExt viewMessage(const std::string& addr, int64_t phyoffset, int timeoutMillis);
 
   int64_t searchOffset(const std::string& addr,
                        const std::string& topic,
@@ -125,7 +125,7 @@ class MQClientAPIImpl {
                             const std::string& remark);
 
   void consumerSendMessageBack(const std::string& addr,
-                               MQMessageExt& msg,
+                               MessageExtPtr msg,
                                const std::string& consumerGroup,
                                int delayLevel,
                                int timeoutMillis,
@@ -166,13 +166,13 @@ class MQClientAPIImpl {
 
   SendResult* sendMessageSync(const std::string& addr,
                               const std::string& brokerName,
-                              const MQMessagePtr msg,
+                              const MessagePtr msg,
                               RemotingCommand& request,
                               int timeoutMillis);
 
   void sendMessageAsync(const std::string& addr,
                         const std::string& brokerName,
-                        const MQMessagePtr msg,
+                        const MessagePtr msg,
                         RemotingCommand&& request,
                         SendCallback* sendCallback,
                         TopicPublishInfoPtr topicPublishInfo,

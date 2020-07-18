@@ -14,10 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __ROCKETMQ_CLIENT_H__
-#define __ROCKETMQ_CLIENT_H__
+#ifndef ROCKETMQ_ROCKETMQCLIENT_H_
+#define ROCKETMQ_ROCKETMQCLIENT_H_
 
+#ifdef __cplusplus
 #include <cstdint>
+#else
+#include <stdint.h>
+#endif
 
 #ifdef WIN32
 #ifdef ROCKETMQCLIENT_EXPORTS
@@ -49,4 +53,4 @@
 #define FILE_SEPARATOR "/"
 #endif
 
-#endif  // __ROCKETMQ_CLIENT_H__
+#endif  // ROCKETMQ_ROCKETMQCLIENT_H_

@@ -31,7 +31,7 @@
 #include "MQClientException.h"
 #include "MQClientInstance.h"
 #include "MQClientManager.h"
-#include "MQDecoder.h"
+#include "MessageDecoder.h"
 #include "MQFaultStrategy.h"
 #include "MQProtos.h"
 #include "MessageBatch.h"
@@ -79,9 +79,8 @@ void DefaultMQProducerImpl::start() {
       bool registerOK = m_clientInstance->registerProducer(m_producerConfig->getGroupName(), this);
       if (!registerOK) {
         m_serviceState = CREATE_JUST;
-        THROW_MQEXCEPTION(MQClientException,
-                          "The producer group[" + m_producerConfig->getGroupName() +
-                              "] has been created before, specify another name please.",
+        THROW_MQEXCEPTION(MQClientException, "The producer group[" + m_producerConfig->getGroupName() +
+                                                 "] has been created before, specify another name please.",
                           -1);
       }
 
@@ -130,13 +129,13 @@ void DefaultMQProducerImpl::destroyTransactionEnv() {
   m_checkTransactionExecutor->shutdown();
 }
 
-SendResult DefaultMQProducerImpl::send(MQMessagePtr msg) {
+SendResult DefaultMQProducerImpl::send(MQMessage& msg) {
   return send(msg, m_producerConfig->getSendMsgTimeout());
 }
 
-SendResult DefaultMQProducerImpl::send(MQMessagePtr msg, long timeout) {
+SendResult DefaultMQProducerImpl::send(MQMessage& msg, long timeout) {
   try {
-    std::unique_ptr<SendResult> sendResult(sendDefaultImpl(msg, ComMode_SYNC, nullptr, timeout));
+    std::unique_ptr<SendResult> sendResult(sendDefaultImpl(msg.getMessageImpl(), ComMode_SYNC, nullptr, timeout));
     return *sendResult;
   } catch (MQException& e) {
     LOG_ERROR_NEW("send failed, exception:{}", e.what());
@@ -144,19 +143,20 @@ SendResult DefaultMQProducerImpl::send(MQMessagePtr msg, long timeout) {
   }
 }
 
-SendResult DefaultMQProducerImpl::send(MQMessagePtr msg, const MQMessageQueue& mq) {
+SendResult DefaultMQProducerImpl::send(MQMessage& msg, const MQMessageQueue& mq) {
   return send(msg, mq, m_producerConfig->getSendMsgTimeout());
 }
 
-SendResult DefaultMQProducerImpl::send(MQMessagePtr msg, const MQMessageQueue& mq, long timeout) {
-  Validators::checkMessage(*msg, m_producerConfig->getMaxMessageSize());
+SendResult DefaultMQProducerImpl::send(MQMessage& msg, const MQMessageQueue& mq, long timeout) {
+  Validators::checkMessage(msg, m_producerConfig->getMaxMessageSize());
 
-  if (msg->getTopic() != mq.getTopic()) {
+  if (msg.getTopic() != mq.getTopic()) {
     THROW_MQEXCEPTION(MQClientException, "message's topic not equal mq's topic", -1);
   }
 
   try {
-    std::unique_ptr<SendResult> sendResult(sendKernelImpl(msg, mq, ComMode_SYNC, nullptr, nullptr, timeout));
+    std::unique_ptr<SendResult> sendResult(
+        sendKernelImpl(msg.getMessageImpl(), mq, ComMode_SYNC, nullptr, nullptr, timeout));
     return *sendResult;
   } catch (MQException& e) {
     LOG_ERROR_NEW("send failed, exception:{}", e.what());
@@ -164,13 +164,13 @@ SendResult DefaultMQProducerImpl::send(MQMessagePtr msg, const MQMessageQueue& m
   }
 }
 
-void DefaultMQProducerImpl::send(MQMessagePtr msg, SendCallback* sendCallback) noexcept {
+void DefaultMQProducerImpl::send(MQMessage& msg, SendCallback* sendCallback) noexcept {
   return send(msg, sendCallback, m_producerConfig->getSendMsgTimeout());
 }
 
-void DefaultMQProducerImpl::send(MQMessagePtr msg, SendCallback* sendCallback, long timeout) noexcept {
+void DefaultMQProducerImpl::send(MQMessage& msg, SendCallback* sendCallback, long timeout) noexcept {
   try {
-    (void)sendDefaultImpl(msg, ComMode_ASYNC, sendCallback, timeout);
+    (void)sendDefaultImpl(msg.getMessageImpl(), ComMode_ASYNC, sendCallback, timeout);
   } catch (MQException& e) {
     LOG_ERROR_NEW("send failed, exception:{}", e.what());
     sendCallback->onException(e);
@@ -183,23 +183,23 @@ void DefaultMQProducerImpl::send(MQMessagePtr msg, SendCallback* sendCallback, l
   }
 }
 
-void DefaultMQProducerImpl::send(MQMessagePtr msg, const MQMessageQueue& mq, SendCallback* sendCallback) noexcept {
+void DefaultMQProducerImpl::send(MQMessage& msg, const MQMessageQueue& mq, SendCallback* sendCallback) noexcept {
   return send(msg, mq, sendCallback, m_producerConfig->getSendMsgTimeout());
 }
 
-void DefaultMQProducerImpl::send(MQMessagePtr msg,
+void DefaultMQProducerImpl::send(MQMessage& msg,
                                  const MQMessageQueue& mq,
                                  SendCallback* sendCallback,
                                  long timeout) noexcept {
   try {
-    Validators::checkMessage(*msg, m_producerConfig->getMaxMessageSize());
+    Validators::checkMessage(msg, m_producerConfig->getMaxMessageSize());
 
-    if (msg->getTopic() != mq.getTopic()) {
+    if (msg.getTopic() != mq.getTopic()) {
       THROW_MQEXCEPTION(MQClientException, "message's topic not equal mq's topic", -1);
     }
 
     try {
-      sendKernelImpl(msg, mq, ComMode_ASYNC, sendCallback, nullptr, timeout);
+      sendKernelImpl(msg.getMessageImpl(), mq, ComMode_ASYNC, sendCallback, nullptr, timeout);
     } catch (MQBrokerException& e) {
       std::string info = std::string("unknown exception, ") + e.what();
       THROW_MQEXCEPTION(MQClientException, info, e.GetError());
@@ -216,37 +216,38 @@ void DefaultMQProducerImpl::send(MQMessagePtr msg,
   }
 }
 
-void DefaultMQProducerImpl::sendOneway(MQMessagePtr msg) {
+void DefaultMQProducerImpl::sendOneway(MQMessage& msg) {
   try {
-    sendDefaultImpl(msg, ComMode_ONEWAY, nullptr, m_producerConfig->getSendMsgTimeout());
+    sendDefaultImpl(msg.getMessageImpl(), ComMode_ONEWAY, nullptr, m_producerConfig->getSendMsgTimeout());
   } catch (MQBrokerException e) {
     std::string info = std::string("unknown exception, ") + e.what();
     THROW_MQEXCEPTION(MQClientException, info, e.GetError());
   }
 }
 
-void DefaultMQProducerImpl::sendOneway(MQMessagePtr msg, const MQMessageQueue& mq) {
-  Validators::checkMessage(*msg, m_producerConfig->getMaxMessageSize());
+void DefaultMQProducerImpl::sendOneway(MQMessage& msg, const MQMessageQueue& mq) {
+  Validators::checkMessage(msg, m_producerConfig->getMaxMessageSize());
 
-  if (msg->getTopic() != mq.getTopic()) {
+  if (msg.getTopic() != mq.getTopic()) {
     THROW_MQEXCEPTION(MQClientException, "message's topic not equal mq's topic", -1);
   }
 
   try {
-    sendKernelImpl(msg, mq, ComMode_ONEWAY, nullptr, nullptr, m_producerConfig->getSendMsgTimeout());
+    sendKernelImpl(msg.getMessageImpl(), mq, ComMode_ONEWAY, nullptr, nullptr, m_producerConfig->getSendMsgTimeout());
   } catch (MQBrokerException e) {
     std::string info = std::string("unknown exception, ") + e.what();
     THROW_MQEXCEPTION(MQClientException, info, e.GetError());
   }
 }
 
-SendResult DefaultMQProducerImpl::send(MQMessagePtr msg, MessageQueueSelector* selector, void* arg) {
+SendResult DefaultMQProducerImpl::send(MQMessage& msg, MessageQueueSelector* selector, void* arg) {
   return send(msg, selector, arg, m_producerConfig->getSendMsgTimeout());
 }
 
-SendResult DefaultMQProducerImpl::send(MQMessagePtr msg, MessageQueueSelector* selector, void* arg, long timeout) {
+SendResult DefaultMQProducerImpl::send(MQMessage& msg, MessageQueueSelector* selector, void* arg, long timeout) {
   try {
-    std::unique_ptr<SendResult> result(sendSelectImpl(msg, selector, arg, ComMode_SYNC, nullptr, timeout));
+    std::unique_ptr<SendResult> result(
+        sendSelectImpl(msg.getMessageImpl(), selector, arg, ComMode_SYNC, nullptr, timeout));
     return *result.get();
   } catch (MQException& e) {
     LOG_ERROR_NEW("send failed, exception:{}", e.what());
@@ -254,21 +255,21 @@ SendResult DefaultMQProducerImpl::send(MQMessagePtr msg, MessageQueueSelector* s
   }
 }
 
-void DefaultMQProducerImpl::send(MQMessagePtr msg,
+void DefaultMQProducerImpl::send(MQMessage& msg,
                                  MessageQueueSelector* selector,
                                  void* arg,
                                  SendCallback* sendCallback) noexcept {
   return send(msg, selector, arg, sendCallback, m_producerConfig->getSendMsgTimeout());
 }
 
-void DefaultMQProducerImpl::send(MQMessagePtr msg,
+void DefaultMQProducerImpl::send(MQMessage& msg,
                                  MessageQueueSelector* selector,
                                  void* arg,
                                  SendCallback* sendCallback,
                                  long timeout) noexcept {
   try {
     try {
-      sendSelectImpl(msg, selector, arg, ComMode_ASYNC, sendCallback, timeout);
+      sendSelectImpl(msg.getMessageImpl(), selector, arg, ComMode_ASYNC, sendCallback, timeout);
     } catch (MQBrokerException& e) {
       std::string info = std::string("unknown exception, ") + e.what();
       THROW_MQEXCEPTION(MQClientException, info, e.GetError());
@@ -285,19 +286,19 @@ void DefaultMQProducerImpl::send(MQMessagePtr msg,
   }
 }
 
-void DefaultMQProducerImpl::sendOneway(MQMessagePtr msg, MessageQueueSelector* selector, void* arg) {
+void DefaultMQProducerImpl::sendOneway(MQMessage& msg, MessageQueueSelector* selector, void* arg) {
   try {
-    sendSelectImpl(msg, selector, arg, ComMode_ONEWAY, nullptr, m_producerConfig->getSendMsgTimeout());
+    sendSelectImpl(msg.getMessageImpl(), selector, arg, ComMode_ONEWAY, nullptr, m_producerConfig->getSendMsgTimeout());
   } catch (MQBrokerException e) {
     std::string info = std::string("unknown exception, ") + e.what();
     THROW_MQEXCEPTION(MQClientException, info, e.GetError());
   }
 }
 
-TransactionSendResult DefaultMQProducerImpl::sendMessageInTransaction(MQMessagePtr msg, void* arg) {
+TransactionSendResult DefaultMQProducerImpl::sendMessageInTransaction(MQMessage& msg, void* arg) {
   try {
     std::unique_ptr<TransactionSendResult> sendResult(
-        sendMessageInTransactionImpl(msg, arg, m_producerConfig->getSendMsgTimeout()));
+        sendMessageInTransactionImpl(msg.getMessageImpl(), arg, m_producerConfig->getSendMsgTimeout()));
     return *sendResult;
   } catch (MQException& e) {
     LOG_ERROR_NEW("sendMessageInTransaction failed, exception:{}", e.what());
@@ -305,39 +306,39 @@ TransactionSendResult DefaultMQProducerImpl::sendMessageInTransaction(MQMessageP
   }
 }
 
-SendResult DefaultMQProducerImpl::send(std::vector<MQMessagePtr>& msgs) {
-  std::unique_ptr<MessageBatch> batchMessage(batch(msgs));
-  return send(batchMessage.get());
+SendResult DefaultMQProducerImpl::send(std::vector<MQMessage>& msgs) {
+  MQMessage batchMessage(batch(msgs));
+  return send(batchMessage);
 }
 
-SendResult DefaultMQProducerImpl::send(std::vector<MQMessagePtr>& msgs, long timeout) {
-  std::unique_ptr<MessageBatch> batchMessage(batch(msgs));
-  return send(batchMessage.get(), timeout);
+SendResult DefaultMQProducerImpl::send(std::vector<MQMessage>& msgs, long timeout) {
+  MQMessage batchMessage(batch(msgs));
+  return send(batchMessage, timeout);
 }
 
-SendResult DefaultMQProducerImpl::send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq) {
-  std::unique_ptr<MessageBatch> batchMessage(batch(msgs));
-  return send(batchMessage.get(), mq);
+SendResult DefaultMQProducerImpl::send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq) {
+  MQMessage batchMessage(batch(msgs));
+  return send(batchMessage, mq);
 }
 
-SendResult DefaultMQProducerImpl::send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq, long timeout) {
-  std::unique_ptr<MessageBatch> batchMessage(batch(msgs));
-  return send(batchMessage.get(), mq, timeout);
+SendResult DefaultMQProducerImpl::send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, long timeout) {
+  MQMessage batchMessage(batch(msgs));
+  return send(batchMessage, mq, timeout);
 }
 
-MessageBatch* DefaultMQProducerImpl::batch(std::vector<MQMessagePtr>& msgs) {
+MessagePtr DefaultMQProducerImpl::batch(std::vector<MQMessage>& msgs) {
   if (msgs.size() < 1) {
     THROW_MQEXCEPTION(MQClientException, "msgs need one message at least", -1);
   }
 
   try {
-    std::unique_ptr<MessageBatch> msgBatch(MessageBatch::generateFromList(msgs));
-    for (auto& message : msgBatch->getMessages()) {
-      Validators::checkMessage(*message, m_producerConfig->getMaxMessageSize());
-      MessageClientIDSetter::setUniqID(*message);
+    auto messageBatch = MessageBatch::generateFromList(msgs);
+    for (auto& message : messageBatch->getMessages()) {
+      Validators::checkMessage(message, m_producerConfig->getMaxMessageSize());
+      MessageClientIDSetter::setUniqID(const_cast<MQMessage&>(message));
     }
-    msgBatch->setBody(msgBatch->encode());
-    return msgBatch.release();
+    messageBatch->setBody(messageBatch->encode());
+    return messageBatch;
   } catch (std::exception& e) {
     THROW_MQEXCEPTION(MQClientException, "Failed to initiate the MessageBatch", -1);
   }
@@ -359,29 +360,29 @@ class RequestSendCallback : public AutoDeleteSendCallback {
   std::shared_ptr<RequestResponseFuture> m_requestFuture;
 };
 
-MQMessagePtr DefaultMQProducerImpl::request(MQMessagePtr msg, long timeout) {
+MQMessage DefaultMQProducerImpl::request(MQMessage& msg, long timeout) {
   auto beginTimestamp = UtilAll::currentTimeMillis();
   prepareSendRequest(msg, timeout);
-  const auto& correlationId = msg->getProperty(MQMessageConst::PROPERTY_CORRELATION_ID);
+  const auto& correlationId = msg.getProperty(MQMessageConst::PROPERTY_CORRELATION_ID);
 
   std::exception_ptr eptr = nullptr;
-  std::unique_ptr<MQMessage> responseMessage;
+  MessagePtr responseMessage;
   try {
     auto requestResponseFuture = std::make_shared<RequestResponseFuture>(correlationId, timeout, nullptr);
     RequestFutureTable::putRequestFuture(correlationId, requestResponseFuture);
 
     auto cost = UtilAll::currentTimeMillis() - beginTimestamp;
-    sendDefaultImpl(msg, CommunicationMode::ComMode_ASYNC, new RequestSendCallback(requestResponseFuture),
-                    timeout - cost);
+    sendDefaultImpl(msg.getMessageImpl(), CommunicationMode::ComMode_ASYNC,
+                    new RequestSendCallback(requestResponseFuture), timeout - cost);
 
-    responseMessage.reset(requestResponseFuture->waitResponseMessage(timeout - cost));
+    responseMessage = requestResponseFuture->waitResponseMessage(timeout - cost);
     if (responseMessage == nullptr) {
       if (requestResponseFuture->isSendRequestOk()) {
-        std::string info = "send request message to <" + msg->getTopic() + "> OK, but wait reply message timeout, " +
+        std::string info = "send request message to <" + msg.getTopic() + "> OK, but wait reply message timeout, " +
                            UtilAll::to_string(timeout) + " ms.";
         THROW_MQEXCEPTION(RequestTimeoutException, info, ClientErrorCode::REQUEST_TIMEOUT_EXCEPTION);
       } else {
-        std::string info = "send request message to <" + msg->getTopic() + "> fail";
+        std::string info = "send request message to <" + msg.getTopic() + "> fail";
         THROW_MQEXCEPTION2(MQClientException, info, -1, requestResponseFuture->getCause());
       }
     }
@@ -396,24 +397,24 @@ MQMessagePtr DefaultMQProducerImpl::request(MQMessagePtr msg, long timeout) {
     std::rethrow_exception(eptr);
   }
 
-  return responseMessage.release();
+  return MQMessage(responseMessage);
 }
 
-void DefaultMQProducerImpl::prepareSendRequest(MQMessagePtr msg, long timeout) {
+void DefaultMQProducerImpl::prepareSendRequest(Message& msg, long timeout) {
   const auto correlationId = CorrelationIdUtil::createCorrelationId();
   const auto& requestClientId = m_clientInstance->getClientId();
-  MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_CORRELATION_ID, correlationId);
-  MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_MESSAGE_REPLY_TO_CLIENT, requestClientId);
-  MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_MESSAGE_TTL, UtilAll::to_string(timeout));
+  MessageAccessor::putProperty(msg, MQMessageConst::PROPERTY_CORRELATION_ID, correlationId);
+  MessageAccessor::putProperty(msg, MQMessageConst::PROPERTY_MESSAGE_REPLY_TO_CLIENT, requestClientId);
+  MessageAccessor::putProperty(msg, MQMessageConst::PROPERTY_MESSAGE_TTL, UtilAll::to_string(timeout));
 
-  auto hasRouteData = m_clientInstance->getTopicRouteData(msg->getTopic()) != nullptr;
+  auto hasRouteData = m_clientInstance->getTopicRouteData(msg.getTopic()) != nullptr;
   if (!hasRouteData) {
     auto beginTimestamp = UtilAll::currentTimeMillis();
-    m_clientInstance->tryToFindTopicPublishInfo(msg->getTopic());
+    m_clientInstance->tryToFindTopicPublishInfo(msg.getTopic());
     m_clientInstance->sendHeartbeatToAllBrokerWithLock();
     auto cost = UtilAll::currentTimeMillis() - beginTimestamp;
     if (cost > 500) {
-      LOG_WARN_NEW("prepare send request for <{}> cost {} ms", msg->getTopic(), cost);
+      LOG_WARN_NEW("prepare send request for <{}> cost {} ms", msg.getTopic(), cost);
     }
   }
 }
@@ -427,7 +428,7 @@ void DefaultMQProducerImpl::updateFaultItem(const std::string& brokerName, const
   m_mqFaultStrategy->updateFaultItem(brokerName, currentLatency, isolation);
 }
 
-SendResult* DefaultMQProducerImpl::sendDefaultImpl(MQMessagePtr msg,
+SendResult* DefaultMQProducerImpl::sendDefaultImpl(MessagePtr msg,
                                                    CommunicationMode communicationMode,
                                                    SendCallback* sendCallback,
                                                    long timeout) {
@@ -495,15 +496,15 @@ SendResult* DefaultMQProducerImpl::sendDefaultImpl(MQMessagePtr msg,
     }
 
     std::string info = "Send [" + UtilAll::to_string(times) + "] times, still failed, cost [" +
-                       UtilAll::to_string(UtilAll::currentTimeMillis() - beginTimestampFirst) +
-                       "]ms, Topic: " + msg->getTopic();
+                       UtilAll::to_string(UtilAll::currentTimeMillis() - beginTimestampFirst) + "]ms, Topic: " +
+                       msg->getTopic();
     THROW_MQEXCEPTION(MQClientException, info, -1);
   }
 
   THROW_MQEXCEPTION(MQClientException, "No route info of this topic: " + msg->getTopic(), -1);
 }
 
-SendResult* DefaultMQProducerImpl::sendKernelImpl(MQMessagePtr msg,
+SendResult* DefaultMQProducerImpl::sendKernelImpl(MessagePtr msg,
                                                   const MQMessageQueue& mq,
                                                   CommunicationMode communicationMode,
                                                   SendCallback* sendCallback,
@@ -547,7 +548,7 @@ SendResult* DefaultMQProducerImpl::sendKernelImpl(MQMessagePtr msg,
       requestHeader->sysFlag = sysFlag;
       requestHeader->bornTimestamp = UtilAll::currentTimeMillis();
       requestHeader->flag = msg->getFlag();
-      requestHeader->properties = MQDecoder::messageProperties2String(msg->getProperties());
+      requestHeader->properties = MessageDecoder::messageProperties2String(msg->getProperties());
       requestHeader->reconsumeTimes = 0;
       requestHeader->unitMode = false;
       requestHeader->batch = msg->isBatch();
@@ -601,7 +602,7 @@ SendResult* DefaultMQProducerImpl::sendKernelImpl(MQMessagePtr msg,
   THROW_MQEXCEPTION(MQClientException, "The broker[" + mq.getBrokerName() + "] not exist", -1);
 }
 
-SendResult* DefaultMQProducerImpl::sendSelectImpl(MQMessagePtr msg,
+SendResult* DefaultMQProducerImpl::sendSelectImpl(MessagePtr msg,
                                                   MessageQueueSelector* selector,
                                                   void* arg,
                                                   CommunicationMode communicationMode,
@@ -612,7 +613,7 @@ SendResult* DefaultMQProducerImpl::sendSelectImpl(MQMessagePtr msg,
 
   TopicPublishInfoPtr topicPublishInfo = m_clientInstance->tryToFindTopicPublishInfo(msg->getTopic());
   if (topicPublishInfo != nullptr && topicPublishInfo->ok()) {
-    MQMessageQueue mq = selector->select(topicPublishInfo->getMessageQueueList(), *msg, arg);
+    MQMessageQueue mq = selector->select(topicPublishInfo->getMessageQueueList(), MQMessage(msg), arg);
 
     auto costTime = UtilAll::currentTimeMillis() - beginStartTime;
     if (timeout < costTime) {
@@ -626,7 +627,7 @@ SendResult* DefaultMQProducerImpl::sendSelectImpl(MQMessagePtr msg,
   THROW_MQEXCEPTION(MQClientException, info, -1);
 }
 
-TransactionSendResult* DefaultMQProducerImpl::sendMessageInTransactionImpl(MQMessagePtr msg, void* arg, long timeout) {
+TransactionSendResult* DefaultMQProducerImpl::sendMessageInTransactionImpl(MessagePtr msg, void* arg, long timeout) {
   auto* transactionListener = getCheckListener();
   if (nullptr == transactionListener) {
     THROW_MQEXCEPTION(MQClientException, "transactionListener is null", -1);
@@ -653,7 +654,7 @@ TransactionSendResult* DefaultMQProducerImpl::sendMessageInTransactionImpl(MQMes
         if (!transactionId.empty()) {
           msg->setTransactionId(transactionId);
         }
-        localTransactionState = transactionListener->executeLocalTransaction(*msg, arg);
+        localTransactionState = transactionListener->executeLocalTransaction(MQMessage(msg), arg);
         if (localTransactionState != LocalTransactionState::COMMIT_MESSAGE) {
           LOG_INFO_NEW("executeLocalTransaction return not COMMIT_MESSAGE, msg:{}", msg->toString());
         }
@@ -695,7 +696,7 @@ TransactionListener* DefaultMQProducerImpl::getCheckListener() {
 };
 
 void DefaultMQProducerImpl::checkTransactionState(const std::string& addr,
-                                                  MQMessageExtPtr2 msg,
+                                                  MessageExtPtr msg,
                                                   CheckTransactionStateRequestHeader* checkRequestHeader) {
   long tranStateTableOffset = checkRequestHeader->tranStateTableOffset;
   long commitLogOffset = checkRequestHeader->commitLogOffset;
@@ -709,7 +710,7 @@ void DefaultMQProducerImpl::checkTransactionState(const std::string& addr,
 }
 
 void DefaultMQProducerImpl::checkTransactionStateImpl(const std::string& addr,
-                                                      MQMessageExtPtr2 message,
+                                                      MessageExtPtr message,
                                                       long tranStateTableOffset,
                                                       long commitLogOffset,
                                                       const std::string& msgId,
@@ -725,7 +726,7 @@ void DefaultMQProducerImpl::checkTransactionStateImpl(const std::string& addr,
   LocalTransactionState localTransactionState = UNKNOWN;
   std::exception_ptr exception = nullptr;
   try {
-    localTransactionState = transactionCheckListener->checkLocalTransaction(*message);
+    localTransactionState = transactionCheckListener->checkLocalTransaction(MQMessageExt(message));
   } catch (MQException& e) {
     LOG_ERROR_NEW("Broker call checkTransactionState, but checkLocalTransactionState exception, {}", e.what());
     exception = std::current_exception();
@@ -775,12 +776,8 @@ void DefaultMQProducerImpl::checkTransactionStateImpl(const std::string& addr,
 void DefaultMQProducerImpl::endTransaction(SendResult& sendResult,
                                            LocalTransactionState localTransactionState,
                                            std::exception_ptr& localException) {
-  MQMessageId id;
-  if (!sendResult.getOffsetMsgId().empty()) {
-    id = MQDecoder::decodeMessageId(sendResult.getOffsetMsgId());
-  } else {
-    id = MQDecoder::decodeMessageId(sendResult.getMsgId());
-  }
+  const auto& msg_id = !sendResult.getOffsetMsgId().empty() ? sendResult.getOffsetMsgId() : sendResult.getMsgId();
+  auto id = MessageDecoder::decodeMessageId(msg_id);
   const auto& transactionId = sendResult.getTransactionId();
   std::string brokerAddr = m_clientInstance->findBrokerAddressInPublish(sendResult.getMessageQueue().getBrokerName());
   EndTransactionRequestHeader* requestHeader = new EndTransactionRequestHeader();
@@ -810,7 +807,7 @@ void DefaultMQProducerImpl::endTransaction(SendResult& sendResult,
   m_clientInstance->getMQClientAPIImpl()->endTransactionOneway(brokerAddr, requestHeader, remark);
 }
 
-bool DefaultMQProducerImpl::tryToCompressMessage(MQMessage& msg) {
+bool DefaultMQProducerImpl::tryToCompressMessage(Message& msg) {
   if (msg.isBatch()) {
     // batch dose not support compressing right now
     return false;

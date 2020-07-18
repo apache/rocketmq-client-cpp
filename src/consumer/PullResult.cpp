@@ -16,50 +16,55 @@
  */
 #include "PullResult.h"
 
+#include <algorithm>  // std::move
+#include <sstream>    // std::stringstream
+
 #include "UtilAll.h"
 
 namespace rocketmq {
 
-static const char* EnumStrings[] = {"FOUND", "NO_NEW_MSG", "NO_MATCHED_MSG",
-                                    "NO_LATEST_MSG"
-                                    "OFFSET_ILLEGAL",
-                                    "BROKER_TIMEOUT"};
+static const char* kPullStatusStrings[] = {"FOUND", "NO_NEW_MSG", "NO_MATCHED_MSG",
+                                           "NO_LATEST_MSG"
+                                           "OFFSET_ILLEGAL",
+                                           "BROKER_TIMEOUT"};
 
-PullResult::PullResult() : pullStatus(NO_MATCHED_MSG), nextBeginOffset(0), minOffset(0), maxOffset(0) {}
+PullResult::PullResult() : pull_status_(NO_MATCHED_MSG), next_begin_offset_(0), min_offset_(0), max_offset_(0) {}
 
-PullResult::PullResult(PullStatus status) : pullStatus(status), nextBeginOffset(0), minOffset(0), maxOffset(0) {}
+PullResult::PullResult(PullStatus status)
+    : pull_status_(status), next_begin_offset_(0), min_offset_(0), max_offset_(0) {}
 
 PullResult::PullResult(PullStatus pullStatus, int64_t nextBeginOffset, int64_t minOffset, int64_t maxOffset)
-    : pullStatus(pullStatus), nextBeginOffset(nextBeginOffset), minOffset(minOffset), maxOffset(maxOffset) {}
+    : pull_status_(pullStatus), next_begin_offset_(nextBeginOffset), min_offset_(minOffset), max_offset_(maxOffset) {}
 
 PullResult::PullResult(PullStatus pullStatus,
                        int64_t nextBeginOffset,
                        int64_t minOffset,
                        int64_t maxOffset,
-                       const std::vector<MQMessageExtPtr2>& src)
-    : pullStatus(pullStatus),
-      nextBeginOffset(nextBeginOffset),
-      minOffset(minOffset),
-      maxOffset(maxOffset),
-      msgFoundList(src) {}
+                       const std::vector<MessageExtPtr>& msgFoundList)
+    : pull_status_(pullStatus),
+      next_begin_offset_(nextBeginOffset),
+      min_offset_(minOffset),
+      max_offset_(maxOffset),
+      msg_found_list_(msgFoundList) {}
 
 PullResult::PullResult(PullStatus pullStatus,
                        int64_t nextBeginOffset,
                        int64_t minOffset,
                        int64_t maxOffset,
-                       std::vector<MQMessageExtPtr2>&& src)
-    : pullStatus(pullStatus),
-      nextBeginOffset(nextBeginOffset),
-      minOffset(minOffset),
-      maxOffset(maxOffset),
-      msgFoundList(std::forward<std::vector<MQMessageExtPtr2>>(src)) {}
+                       std::vector<MessageExtPtr>&& msgFoundList)
+    : pull_status_(pullStatus),
+      next_begin_offset_(nextBeginOffset),
+      min_offset_(minOffset),
+      max_offset_(maxOffset),
+      msg_found_list_(std::move(msgFoundList)) {}
 
 PullResult::~PullResult() = default;
 
 std::string PullResult::toString() const {
   std::stringstream ss;
-  ss << "PullResult [ pullStatus=" << EnumStrings[pullStatus] << ", nextBeginOffset=" << nextBeginOffset
-     << ", minOffset=" << minOffset << ", maxOffset=" << maxOffset << ", msgFoundList=" << msgFoundList.size() << " ]";
+  ss << "PullResult [ pullStatus=" << kPullStatusStrings[pull_status_] << ", nextBeginOffset=" << next_begin_offset_
+     << ", minOffset=" << min_offset_ << ", maxOffset=" << max_offset_ << ", msgFoundList=" << msg_found_list_.size()
+     << " ]";
   return ss.str();
 }
 

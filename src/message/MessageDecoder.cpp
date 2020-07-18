@@ -14,83 +14,96 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "MQDecoder.h"
+#include "MessageDecoder.h"
 
-#include <sstream>
+#include <cstring>  // std::memcpy
+
+#include <algorithm>  // std::move
+#include <sstream>    // std::stringstream
 
 #ifndef WIN32
-#include <netinet/in.h>
+#include <arpa/inet.h>   // htons, htonl
+#include <netinet/in.h>  // struct sockaddr, sockaddr_in, sockaddr_in6
 #endif
 
 #include "ByteOrder.h"
 #include "Logging.h"
 #include "MemoryOutputStream.h"
+#include "MessageExtImpl.h"
 #include "MessageAccessor.h"
 #include "MessageSysFlag.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
 
-const int MQDecoder::MSG_ID_LENGTH = 8 + 8;
+const int MessageDecoder::MSG_ID_LENGTH = 8 + 8;
 
-const char MQDecoder::NAME_VALUE_SEPARATOR = 1;
-const char MQDecoder::PROPERTY_SEPARATOR = 2;
+const char MessageDecoder::NAME_VALUE_SEPARATOR = 1;
+const char MessageDecoder::PROPERTY_SEPARATOR = 2;
 
-int MQDecoder::MessageMagicCodePostion = 4;
-int MQDecoder::MessageFlagPostion = 16;
-int MQDecoder::MessagePhysicOffsetPostion = 28;
-int MQDecoder::MessageStoreTimestampPostion = 56;
+int MessageDecoder::MessageMagicCodePostion = 4;
+int MessageDecoder::MessageFlagPostion = 16;
+int MessageDecoder::MessagePhysicOffsetPostion = 28;
+int MessageDecoder::MessageStoreTimestampPostion = 56;
 
-std::string MQDecoder::createMessageId(const struct sockaddr* sa, int64_t offset) {
-  const struct sockaddr_in* sin = (struct sockaddr_in*)sa;
+std::string MessageDecoder::createMessageId(const struct sockaddr* sa, int64_t offset) {
+  MemoryOutputStream mos(sa->sa_family == AF_INET ? 16 : 28);
+  if (sa->sa_family == AF_INET) {
+    const struct sockaddr_in* sin = (struct sockaddr_in*)sa;
+    mos.write(&sin->sin_addr.s_addr, 4);
+    mos.writeRepeatedByte(0, 2);
+    mos.write(&sin->sin_port, 2);
+    mos.writeInt64BigEndian(offset);
+  } else {
+    const struct sockaddr_in6* sin6 = (struct sockaddr_in6*)sa;
+    mos.write(&sin6->sin6_addr, 16);
+    mos.writeRepeatedByte(0, 2);
+    mos.write(&sin6->sin6_port, 2);
+    mos.writeInt64BigEndian(offset);
+  }
 
-  MemoryOutputStream outputmen(MSG_ID_LENGTH);
-  outputmen.writeIntBigEndian(sin->sin_addr.s_addr);
-  outputmen.writeRepeatedByte(0, 2);
-  outputmen.write(&(sin->sin_port), 2);
-  outputmen.writeInt64BigEndian(offset);
-
-  const char* bytes = static_cast<const char*>(outputmen.getData());
-  int len = outputmen.getDataSize();
+  const char* bytes = static_cast<const char*>(mos.getData());
+  int len = mos.getDataSize();
 
   return UtilAll::bytes2string(bytes, len);
 }
 
-MQMessageId MQDecoder::decodeMessageId(const std::string& msgId) {
-  std::string ipStr = msgId.substr(0, 8);
-  std::string portStr = msgId.substr(8, 8);
-  std::string offsetStr = msgId.substr(16);
+MessageId MessageDecoder::decodeMessageId(const std::string& msgId) {
+  size_t ip_length = msgId.length() == 32 ? 4 * 2 : 16 * 2;
 
-  size_t pos;
-  int ipInt = std::stoul(ipStr, &pos, 16);
-  int portInt = std::stoul(portStr, &pos, 16);
+  std::string ip = msgId.substr(0, ip_length);
+  std::string port = msgId.substr(ip_length, 8);
+  std::string offset = msgId.substr(ip_length + 8);
 
-  uint64_t offset = UtilAll::hexstr2ull(offsetStr.c_str());
+  uint16_t portInt = (uint16_t)std::stoul(port, nullptr, 16);
+  uint64_t offsetInt = std::stoull(offset, nullptr, 16);
 
-  struct sockaddr_in sin;
-  sin.sin_family = AF_INET;
-  sin.sin_port = htons(portInt);
-  sin.sin_addr.s_addr = htonl(ipInt);
-
-  return MQMessageId((struct sockaddr*)&sin, offset);
+  if (ip_length == 32) {
+    int32_t ipInt = std::stoul(ip, nullptr, 16);
+    struct sockaddr_in sin;
+    sin.sin_family = AF_INET;
+    sin.sin_port = htons(portInt);
+    sin.sin_addr.s_addr = htonl(ipInt);
+    return MessageId((struct sockaddr*)&sin, offsetInt);
+  } else {
+    struct sockaddr_in6 sin6;
+    sin6.sin6_family = AF_INET6;
+    sin6.sin6_port = htons(portInt);
+    UtilAll::string2bytes((char*)&sin6.sin6_addr, ip);
+    return MessageId((struct sockaddr*)&sin6, offsetInt);
+  }
 }
 
-MQMessageExtPtr MQDecoder::clientDecode(MemoryInputStream& byteBuffer, bool readBody) {
+MessageExtPtr MessageDecoder::clientDecode(MemoryInputStream& byteBuffer, bool readBody) {
   return decode(byteBuffer, readBody, true, true);
 }
 
-MQMessageExtPtr MQDecoder::decode(MemoryInputStream& byteBuffer, bool readBody) {
+MessageExtPtr MessageDecoder::decode(MemoryInputStream& byteBuffer, bool readBody) {
   return decode(byteBuffer, readBody, true, false);
 }
 
-MQMessageExtPtr MQDecoder::decode(MemoryInputStream& byteBuffer, bool readBody, bool deCompressBody, bool isClient) {
-  MQMessageExtPtr msgExt;
-
-  if (isClient) {
-    msgExt = new MQMessageClientExt();
-  } else {
-    msgExt = new MQMessageExt();
-  }
+MessageExtPtr MessageDecoder::decode(MemoryInputStream& byteBuffer, bool readBody, bool deCompressBody, bool isClient) {
+  auto msgExt = isClient ? std::make_shared<MessageClientExtImpl>() : std::make_shared<MessageExtImpl>();
 
   // 1 TOTALSIZE
   int32_t storeSize = byteBuffer.readIntBigEndian();
@@ -194,7 +207,7 @@ MQMessageExtPtr MQDecoder::decode(MemoryInputStream& byteBuffer, bool readBody, 
 
   // 18 msg ID
   std::string msgId = createMessageId(msgExt->getStoreHost(), (int64_t)msgExt->getCommitLogOffset());
-  msgExt->MQMessageExt::setMsgId(msgId);
+  msgExt->MessageExtImpl::setMsgId(msgId);
 
   if (uncompress_failed) {
     LOG_WARN_NEW("can not uncompress message, id:{}", msgExt->getMsgId());
@@ -203,35 +216,33 @@ MQMessageExtPtr MQDecoder::decode(MemoryInputStream& byteBuffer, bool readBody, 
   return msgExt;
 }
 
-MQMessageExtPtr2 MQDecoder::decode(MemoryBlock& mem) {
+MessageExtPtr MessageDecoder::decode(MemoryBlock& mem) {
   return decode(mem, true);
 }
 
-MQMessageExtPtr2 MQDecoder::decode(MemoryBlock& mem, bool readBody) {
+MessageExtPtr MessageDecoder::decode(MemoryBlock& mem, bool readBody) {
   MemoryInputStream rawInput(mem, true);
-  MQMessageExtPtr2 message(decode(rawInput, readBody));
-  return message;
+  return decode(rawInput, readBody);
 }
 
-std::vector<MQMessageExtPtr2> MQDecoder::decodes(MemoryBlock& mem) {
+std::vector<MessageExtPtr> MessageDecoder::decodes(MemoryBlock& mem) {
   return decodes(mem, true);
 }
 
-std::vector<MQMessageExtPtr2> MQDecoder::decodes(MemoryBlock& mem, bool readBody) {
-  std::vector<MQMessageExtPtr2> msgExts;
+std::vector<MessageExtPtr> MessageDecoder::decodes(MemoryBlock& mem, bool readBody) {
+  std::vector<MessageExtPtr> msgExts;
   MemoryInputStream rawInput(mem, true);
   while (rawInput.getNumBytesRemaining() > 0) {
-    auto* msgExt = clientDecode(rawInput, readBody);
-    if (msgExt != nullptr) {
-      msgExts.emplace_back(msgExt);
-    } else {
+    auto msgExt = clientDecode(rawInput, readBody);
+    if (nullptr == msgExt) {
       break;
     }
+    msgExts.emplace_back(msgExt);
   }
   return msgExts;
 }
 
-std::string MQDecoder::messageProperties2String(const std::map<std::string, std::string>& properties) {
+std::string MessageDecoder::messageProperties2String(const std::map<std::string, std::string>& properties) {
   std::string os;
 
   for (const auto& it : properties) {
@@ -252,7 +263,7 @@ std::string MQDecoder::messageProperties2String(const std::map<std::string, std:
   return os;
 }
 
-std::map<std::string, std::string> MQDecoder::string2messageProperties(const std::string& properties) {
+std::map<std::string, std::string> MessageDecoder::string2messageProperties(const std::string& properties) {
   std::vector<std::string> out;
   UtilAll::Split(out, properties, PROPERTY_SEPARATOR);
 
@@ -268,10 +279,10 @@ std::map<std::string, std::string> MQDecoder::string2messageProperties(const std
   return map;
 }
 
-std::string MQDecoder::encodeMessage(MQMessage& message) {
+std::string MessageDecoder::encodeMessage(Message& message) {
   const std::string& body = message.getBody();
   uint32_t bodyLen = body.length();
-  std::string properties = MQDecoder::messageProperties2String(message.getProperties());
+  std::string properties = MessageDecoder::messageProperties2String(message.getProperties());
   uint16_t propertiesLength = (int16_t)properties.length();
   uint32_t storeSize = 4                        // 1 TOTALSIZE
                        + 4                      // 2 MAGICCODE
@@ -315,10 +326,10 @@ std::string MQDecoder::encodeMessage(MQMessage& message) {
   return encodeMsg;
 }
 
-std::string MQDecoder::encodeMessages(std::vector<MQMessagePtr>& msgs) {
+std::string MessageDecoder::encodeMessages(std::vector<MQMessage>& msgs) {
   std::string encodedBody;
-  for (auto* message : msgs) {
-    encodedBody.append(encodeMessage(*message));
+  for (auto msg : msgs) {
+    encodedBody.append(encodeMessage(msg));
   }
   return encodedBody;
 }

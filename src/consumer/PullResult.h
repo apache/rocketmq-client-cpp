@@ -14,13 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PULL_RESULT_H__
-#define __PULL_RESULT_H__
+#ifndef ROCKETMQ_CONSUMER_PULLRESULT_H_
+#define ROCKETMQ_CONSUMER_PULLRESULT_H_
 
-#include <memory>
-#include <sstream>
-
-#include "MQMessageExt.h"
+#include "MessageExt.h"
 
 namespace rocketmq {
 
@@ -33,7 +30,7 @@ enum PullStatus {
   BROKER_TIMEOUT  // indicate pull request timeout or received NULL response
 };
 
-class ROCKETMQCLIENT_API PullResult {
+class PullResult {
  public:
   PullResult();
   PullResult(PullStatus status);
@@ -43,25 +40,35 @@ class ROCKETMQCLIENT_API PullResult {
              int64_t nextBeginOffset,
              int64_t minOffset,
              int64_t maxOffset,
-             const std::vector<MQMessageExtPtr2>& src);
+             const std::vector<MessageExtPtr>& msgFoundList);
   PullResult(PullStatus pullStatus,
              int64_t nextBeginOffset,
              int64_t minOffset,
              int64_t maxOffset,
-             std::vector<MQMessageExtPtr2>&& src);
+             std::vector<MessageExtPtr>&& msgFoundList);
 
   virtual ~PullResult();
 
   std::string toString() const;
 
- public:
-  PullStatus pullStatus;
-  int64_t nextBeginOffset;
-  int64_t minOffset;
-  int64_t maxOffset;
-  std::vector<MQMessageExtPtr2> msgFoundList;
+  inline PullStatus pull_status() const { return pull_status_; };
+  inline void set_pull_status(PullStatus pull_status) { pull_status_ = pull_status; }
+
+  inline int64_t next_begin_offset() const { return next_begin_offset_; };
+  inline int64_t min_offset() const { return min_offset_; }
+  inline int64_t max_offset() const { return max_offset_; }
+
+  inline std::vector<MessageExtPtr>& msg_found_list() { return msg_found_list_; }
+  inline const std::vector<MessageExtPtr>& msg_found_list() const { return msg_found_list_; }
+
+ private:
+  PullStatus pull_status_;
+  int64_t next_begin_offset_;
+  int64_t min_offset_;
+  int64_t max_offset_;
+  std::vector<MessageExtPtr> msg_found_list_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __PULL_RESULT_H__
+#endif  // ROCKETMQ_CONSUMER_PULLRESULT_H_

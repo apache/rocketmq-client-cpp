@@ -17,17 +17,17 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "MQMessageId.h"
+#include "MessageId.h"
 
 using namespace std;
 using testing::InitGoogleMock;
 using testing::InitGoogleTest;
 using testing::Return;
 
-using rocketmq::MQMessageId;
+using rocketmq::MessageId;
 
 TEST(MessageIdTest, MessageId) {
-  MQMessageId msgId(rocketmq::string2SocketAddress("127.0.0.1:10091"), 1024);
+  MessageId msgId(rocketmq::string2SocketAddress("127.0.0.1:10091"), 1024);
   EXPECT_EQ(rocketmq::socketAddress2String(msgId.getAddress()), "127.0.0.1:10091");
   EXPECT_EQ(msgId.getOffset(), 1024);
 

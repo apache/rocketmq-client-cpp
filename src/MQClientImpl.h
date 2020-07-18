@@ -35,7 +35,7 @@ class MQClientImpl : public MQAdmin {
   int64_t maxOffset(const MQMessageQueue& mq) override;
   int64_t minOffset(const MQMessageQueue& mq) override;
   int64_t earliestMsgStoreTime(const MQMessageQueue& mq) override;
-  MQMessageExtPtr viewMessage(const std::string& offsetMsgId) override;
+  MQMessageExt viewMessage(const std::string& offsetMsgId) override;
   QueryResult queryMessage(const std::string& topic,
                            const std::string& key,
                            int maxNum,

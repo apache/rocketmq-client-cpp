@@ -68,42 +68,52 @@ int32_t UtilAll::HashCode(const std::string& str) {
   return h;
 }
 
-static const int hex2int[256] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
-    -1, -1, -1, -1, -1, -1, -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
-
-uint64_t UtilAll::hexstr2ull(const char* str) {
-  uint64_t num = 0;
-  unsigned char* ch = (unsigned char*)str;
-  while (*ch != '\0') {
-    num = (num << 4) + hex2int[*ch];
-    ch++;
-  }
-  return num;
-}
-
-static const char sHexAlphabet[] = "0123456789ABCDEF";
+static const char kHexAlphabet[] = "0123456789ABCDEF";
 
 std::string UtilAll::bytes2string(const char* bytes, size_t len) {
   if (bytes == nullptr || len <= 0) {
-    return std::string();
+    return null;
   }
 
   std::string buffer;
   buffer.reserve(len * 2 + 1);
   for (std::size_t i = 0; i < len; i++) {
-    unsigned char v = (unsigned char)bytes[i];
-    buffer.append(1, sHexAlphabet[v >> 4]);
-    buffer.append(1, sHexAlphabet[v & 0x0FU]);
+    uint8_t v = (uint8_t)bytes[i];
+    buffer.append(1, kHexAlphabet[v >> 4]);
+    buffer.append(1, kHexAlphabet[v & 0x0FU]);
   }
   return buffer;
+}
+
+// clang-format off
+static const uint8_t kHexIndex[256] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0, 0,
+    0,10,11,12,13,14,15, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0,10,11,12,13,14,15, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+// clang-format on
+
+void UtilAll::string2bytes(char* dest, const std::string& src) {
+  if (dest == nullptr || src.empty()) {
+    return;
+  }
+  for (size_t i = 0; i < src.size() / 2; i++) {
+    size_t pos = i * 2;
+    dest[i] = kHexIndex[(uint8_t)src[pos]] << 4 | kHexIndex[(uint8_t)src[pos + 1]];
+  }
 }
 
 bool UtilAll::isRetryTopic(const std::string& topic) {

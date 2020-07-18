@@ -22,7 +22,7 @@
 #include "DefaultMQProducerImpl.h"
 #include "InvokeCallback.h"
 #include "MQClientInstance.h"
-#include "MQMessage.h"
+#include "Message.h"
 #include "RemotingCommand.h"
 #include "ResponseFuture.h"
 #include "SendCallback.h"
@@ -34,7 +34,7 @@ class SendCallbackWrap : public InvokeCallback {
  public:
   SendCallbackWrap(const std::string& addr,
                    const std::string& brokerName,
-                   const MQMessagePtr msg,
+                   const MessagePtr msg,
                    RemotingCommand&& request,
                    SendCallback* sendCallback,
                    TopicPublishInfoPtr topicPublishInfo,
@@ -47,7 +47,7 @@ class SendCallbackWrap : public InvokeCallback {
   void onExceptionImpl(ResponseFuture* responseFuture, long timeoutMillis, MQException& e, bool needRetry);
 
   const std::string& getAddr() { return m_addr; }
-  const MQMessagePtr getMessage() { return m_msg; }
+  const MessagePtr getMessage() { return m_msg; }
   RemotingCommand& getRemotingCommand() { return m_request; }
 
   void setRetrySendTimes(int retrySendTimes) { m_times = retrySendTimes; }
@@ -57,7 +57,7 @@ class SendCallbackWrap : public InvokeCallback {
  private:
   std::string m_addr;
   std::string m_brokerName;
-  const MQMessagePtr m_msg;
+  const MessagePtr m_msg;
   RemotingCommand m_request;
   SendCallback* m_sendCallback;
   TopicPublishInfoPtr m_topicPublishInfo;

@@ -36,47 +36,43 @@ class ROCKETMQCLIENT_API MQProducer {
   virtual void shutdown() = 0;
 
   // Sync
-  virtual SendResult send(MQMessagePtr msg) = 0;
-  virtual SendResult send(MQMessagePtr msg, long timeout) = 0;
-  virtual SendResult send(MQMessagePtr msg, const MQMessageQueue& mq) = 0;
-  virtual SendResult send(MQMessagePtr msg, const MQMessageQueue& mq, long timeout) = 0;
+  virtual SendResult send(MQMessage& msg) = 0;
+  virtual SendResult send(MQMessage& msg, long timeout) = 0;
+  virtual SendResult send(MQMessage& msg, const MQMessageQueue& mq) = 0;
+  virtual SendResult send(MQMessage& msg, const MQMessageQueue& mq, long timeout) = 0;
 
   // Async
-  // TODO: replace MQMessagePtr by MQMessagePtr2(shared_ptr)
-  virtual void send(MQMessagePtr msg, SendCallback* sendCallback) noexcept = 0;
-  virtual void send(MQMessagePtr msg, SendCallback* sendCallback, long timeout) noexcept = 0;
-  virtual void send(MQMessagePtr msg, const MQMessageQueue& mq, SendCallback* sendCallback) noexcept = 0;
-  virtual void send(MQMessagePtr msg, const MQMessageQueue& mq, SendCallback* sendCallback, long timeout) noexcept = 0;
+  virtual void send(MQMessage& msg, SendCallback* sendCallback) noexcept = 0;
+  virtual void send(MQMessage& msg, SendCallback* sendCallback, long timeout) noexcept = 0;
+  virtual void send(MQMessage& msg, const MQMessageQueue& mq, SendCallback* sendCallback) noexcept = 0;
+  virtual void send(MQMessage& msg, const MQMessageQueue& mq, SendCallback* sendCallback, long timeout) noexcept = 0;
 
   // Oneyway
-  virtual void sendOneway(MQMessagePtr msg) = 0;
-  virtual void sendOneway(MQMessagePtr msg, const MQMessageQueue& mq) = 0;
+  virtual void sendOneway(MQMessage& msg) = 0;
+  virtual void sendOneway(MQMessage& msg, const MQMessageQueue& mq) = 0;
 
   // Select
-  virtual SendResult send(MQMessagePtr msg, MessageQueueSelector* selector, void* arg) = 0;
-  virtual SendResult send(MQMessagePtr msg, MessageQueueSelector* selector, void* arg, long timeout) = 0;
-  virtual void send(MQMessagePtr msg,
-                    MessageQueueSelector* selector,
-                    void* arg,
-                    SendCallback* sendCallback) noexcept = 0;
-  virtual void send(MQMessagePtr msg,
+  virtual SendResult send(MQMessage& msg, MessageQueueSelector* selector, void* arg) = 0;
+  virtual SendResult send(MQMessage& msg, MessageQueueSelector* selector, void* arg, long timeout) = 0;
+  virtual void send(MQMessage& msg, MessageQueueSelector* selector, void* arg, SendCallback* sendCallback) noexcept = 0;
+  virtual void send(MQMessage& msg,
                     MessageQueueSelector* selector,
                     void* arg,
                     SendCallback* sendCallback,
                     long timeout) noexcept = 0;
-  virtual void sendOneway(MQMessagePtr msg, MessageQueueSelector* selector, void* arg) = 0;
+  virtual void sendOneway(MQMessage& msg, MessageQueueSelector* selector, void* arg) = 0;
 
   // Transaction
-  virtual TransactionSendResult sendMessageInTransaction(MQMessagePtr msg, void* arg) = 0;
+  virtual TransactionSendResult sendMessageInTransaction(MQMessage& msg, void* arg) = 0;
 
   // Batch
-  virtual SendResult send(std::vector<MQMessagePtr>& msgs) = 0;
-  virtual SendResult send(std::vector<MQMessagePtr>& msgs, long timeout) = 0;
-  virtual SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq) = 0;
-  virtual SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq, long timeout) = 0;
+  virtual SendResult send(std::vector<MQMessage>& msgs) = 0;
+  virtual SendResult send(std::vector<MQMessage>& msgs, long timeout) = 0;
+  virtual SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq) = 0;
+  virtual SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, long timeout) = 0;
 
   // RPC
-  virtual MQMessagePtr request(MQMessagePtr msg, long timeout) = 0;
+  virtual MQMessage request(MQMessage& msg, long timeout) = 0;
 };
 
 }  // namespace rocketmq

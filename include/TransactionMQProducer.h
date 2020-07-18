@@ -37,7 +37,7 @@ class ROCKETMQCLIENT_API TransactionMQProducer : public DefaultMQProducer, virtu
   void shutdown() override;
 
   // Transaction: don't delete msg object, until callback occur.
-  TransactionSendResult sendMessageInTransaction(MQMessagePtr msg, void* arg) override;
+  TransactionSendResult sendMessageInTransaction(MQMessage& msg, void* arg) override;
 };
 
 }  // namespace rocketmq

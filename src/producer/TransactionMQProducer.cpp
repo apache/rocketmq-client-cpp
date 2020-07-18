@@ -54,7 +54,7 @@ void TransactionMQProducer::shutdown() {
   std::dynamic_pointer_cast<DefaultMQProducerImpl>(m_producerDelegate)->destroyTransactionEnv();
 }
 
-TransactionSendResult TransactionMQProducer::sendMessageInTransaction(MQMessagePtr msg, void* arg) {
+TransactionSendResult TransactionMQProducer::sendMessageInTransaction(MQMessage& msg, void* arg) {
   return m_producerDelegate->sendMessageInTransaction(msg, arg);
 }
 

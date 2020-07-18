@@ -33,7 +33,7 @@ class ConsumeMsgService {
 
   virtual void start() {}
   virtual void shutdown() {}
-  virtual void submitConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
+  virtual void submitConsumeRequest(std::vector<MessageExtPtr>& msgs,
                                     ProcessQueuePtr processQueue,
                                     const MQMessageQueue& messageQueue,
                                     const bool dispathToConsume) = 0;
@@ -47,17 +47,17 @@ class ConsumeMessageConcurrentlyService : public ConsumeMsgService {
   void start() override;
   void shutdown() override;
 
-  void submitConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
+  void submitConsumeRequest(std::vector<MessageExtPtr>& msgs,
                             ProcessQueuePtr processQueue,
                             const MQMessageQueue& messageQueue,
                             const bool dispathToConsume) override;
 
-  void ConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
+  void ConsumeRequest(std::vector<MessageExtPtr>& msgs,
                       ProcessQueuePtr processQueue,
                       const MQMessageQueue& messageQueue);
 
  private:
-  void submitConsumeRequestLater(std::vector<MQMessageExtPtr2>& msgs,
+  void submitConsumeRequestLater(std::vector<MessageExtPtr>& msgs,
                                  ProcessQueuePtr processQueue,
                                  const MQMessageQueue& messageQueue);
 
@@ -78,7 +78,7 @@ class ConsumeMessageOrderlyService : public ConsumeMsgService {
   void shutdown() override;
   void stopThreadPool();
 
-  void submitConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
+  void submitConsumeRequest(std::vector<MessageExtPtr>& msgs,
                             ProcessQueuePtr processQueue,
                             const MQMessageQueue& messageQueue,
                             const bool dispathToConsume) override;

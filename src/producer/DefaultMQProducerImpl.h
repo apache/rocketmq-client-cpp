@@ -57,48 +57,48 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
   void shutdown() override;
 
   // Sync: caller will be responsible for the lifecycle of messages.
-  SendResult send(MQMessagePtr msg) override;
-  SendResult send(MQMessagePtr msg, long timeout) override;
-  SendResult send(MQMessagePtr msg, const MQMessageQueue& mq) override;
-  SendResult send(MQMessagePtr msg, const MQMessageQueue& mq, long timeout) override;
+  SendResult send(MQMessage& msg) override;
+  SendResult send(MQMessage& msg, long timeout) override;
+  SendResult send(MQMessage& msg, const MQMessageQueue& mq) override;
+  SendResult send(MQMessage& msg, const MQMessageQueue& mq, long timeout) override;
 
   // Async: don't delete msg object, until callback occur.
-  void send(MQMessagePtr msg, SendCallback* sendCallback) noexcept override;
-  void send(MQMessagePtr msg, SendCallback* sendCallback, long timeout) noexcept override;
-  void send(MQMessagePtr msg, const MQMessageQueue& mq, SendCallback* sendCallback) noexcept override;
-  void send(MQMessagePtr msg, const MQMessageQueue& mq, SendCallback* sendCallback, long timeout) noexcept override;
+  void send(MQMessage& msg, SendCallback* sendCallback) noexcept override;
+  void send(MQMessage& msg, SendCallback* sendCallback, long timeout) noexcept override;
+  void send(MQMessage& msg, const MQMessageQueue& mq, SendCallback* sendCallback) noexcept override;
+  void send(MQMessage& msg, const MQMessageQueue& mq, SendCallback* sendCallback, long timeout) noexcept override;
 
   // Oneyway: same as sync send, but don't care its result.
-  void sendOneway(MQMessagePtr msg) override;
-  void sendOneway(MQMessagePtr msg, const MQMessageQueue& mq) override;
+  void sendOneway(MQMessage& msg) override;
+  void sendOneway(MQMessage& msg, const MQMessageQueue& mq) override;
 
   // Select
-  SendResult send(MQMessagePtr msg, MessageQueueSelector* selector, void* arg) override;
-  SendResult send(MQMessagePtr msg, MessageQueueSelector* selector, void* arg, long timeout) override;
-  void send(MQMessagePtr msg, MessageQueueSelector* selector, void* arg, SendCallback* sendCallback) noexcept override;
-  void send(MQMessagePtr msg,
+  SendResult send(MQMessage& msg, MessageQueueSelector* selector, void* arg) override;
+  SendResult send(MQMessage& msg, MessageQueueSelector* selector, void* arg, long timeout) override;
+  void send(MQMessage& msg, MessageQueueSelector* selector, void* arg, SendCallback* sendCallback) noexcept override;
+  void send(MQMessage& msg,
             MessageQueueSelector* selector,
             void* arg,
             SendCallback* sendCallback,
             long timeout) noexcept override;
-  void sendOneway(MQMessagePtr msg, MessageQueueSelector* selector, void* arg) override;
+  void sendOneway(MQMessage& msg, MessageQueueSelector* selector, void* arg) override;
 
   // Transaction
-  TransactionSendResult sendMessageInTransaction(MQMessagePtr msg, void* arg) override;
+  TransactionSendResult sendMessageInTransaction(MQMessage& msg, void* arg) override;
 
   // Batch: power by sync send, caller will be responsible for the lifecycle of messages.
-  SendResult send(std::vector<MQMessagePtr>& msgs) override;
-  SendResult send(std::vector<MQMessagePtr>& msgs, long timeout) override;
-  SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq) override;
-  SendResult send(std::vector<MQMessagePtr>& msgs, const MQMessageQueue& mq, long timeout) override;
+  SendResult send(std::vector<MQMessage>& msgs) override;
+  SendResult send(std::vector<MQMessage>& msgs, long timeout) override;
+  SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq) override;
+  SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, long timeout) override;
 
-  MQMessagePtr request(MQMessagePtr msg, long timeout) override;
+  MQMessage request(MQMessage& msg, long timeout) override;
 
  public:  // MQProducerInner
   TransactionListener* getCheckListener() override;
 
   void checkTransactionState(const std::string& addr,
-                             MQMessageExtPtr2 msg,
+                             MessageExtPtr msg,
                              CheckTransactionStateRequestHeader* checkRequestHeader) override;
 
  public:
@@ -116,37 +116,37 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
   void setSendLatencyFaultEnable(bool sendLatencyFaultEnable);
 
  protected:
-  SendResult* sendDefaultImpl(MQMessagePtr msg,
+  SendResult* sendDefaultImpl(MessagePtr msg,
                               CommunicationMode communicationMode,
                               SendCallback* sendCallback,
                               long timeout);
-  SendResult* sendKernelImpl(MQMessagePtr msg,
+  SendResult* sendKernelImpl(MessagePtr msg,
                              const MQMessageQueue& mq,
                              CommunicationMode communicationMode,
                              SendCallback* sendCallback,
                              std::shared_ptr<const TopicPublishInfo> topicPublishInfo,
                              long timeout);
-  SendResult* sendSelectImpl(MQMessagePtr msg,
+  SendResult* sendSelectImpl(MessagePtr msg,
                              MessageQueueSelector* selector,
                              void* arg,
                              CommunicationMode communicationMode,
                              SendCallback* sendCallback,
                              long timeout);
 
-  TransactionSendResult* sendMessageInTransactionImpl(MQMessagePtr msg, void* arg, long timeout);
+  TransactionSendResult* sendMessageInTransactionImpl(MessagePtr msg, void* arg, long timeout);
   void checkTransactionStateImpl(const std::string& addr,
-                                 MQMessageExtPtr2 message,
+                                 MessageExtPtr message,
                                  long tranStateTableOffset,
                                  long commitLogOffset,
                                  const std::string& msgId,
                                  const std::string& transactionId,
                                  const std::string& offsetMsgId);
 
-  bool tryToCompressMessage(MQMessage& msg);
+  bool tryToCompressMessage(Message& msg);
 
-  MessageBatch* batch(std::vector<MQMessagePtr>& msgs);
+  MessagePtr batch(std::vector<MQMessage>& msgs);
 
-  void prepareSendRequest(MQMessagePtr msg, long timeout);
+  void prepareSendRequest(Message& msg, long timeout);
 
  private:
   DefaultMQProducerConfigPtr m_producerConfig;

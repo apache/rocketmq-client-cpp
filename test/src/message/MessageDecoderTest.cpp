@@ -22,11 +22,11 @@
 #include <string>
 #include <vector>
 
-#include "MQDecoder.h"
+#include "MessageDecoder.h"
 #include "MQMessage.h"
 #include "MQMessageConst.h"
 #include "MQMessageExt.h"
-#include "MQMessageId.h"
+#include "MessageId.h"
 #include "MemoryInputStream.h"
 #include "MemoryOutputStream.h"
 #include "MessageSysFlag.h"
@@ -42,21 +42,21 @@ using rocketmq::MemoryBlock;
 using rocketmq::MemoryInputStream;
 using rocketmq::MemoryOutputStream;
 using rocketmq::MessageSysFlag;
-using rocketmq::MQDecoder;
+using rocketmq::MessageDecoder;
 using rocketmq::MQMessage;
 using rocketmq::MQMessageConst;
 using rocketmq::MQMessageExt;
-using rocketmq::MQMessageId;
+using rocketmq::MessageId;
 using rocketmq::RemotingCommand;
 using rocketmq::SendMessageRequestHeader;
 using rocketmq::UtilAll;
 
 // TODO
 TEST(MessageDecoderTest, MessageId) {
-  std::string strMsgId = MQDecoder::createMessageId(rocketmq::string2SocketAddress("127.0.0.1:10091"), 1024LL);
+  std::string strMsgId = MessageDecoder::createMessageId(rocketmq::string2SocketAddress("127.0.0.1:10091"), 1024LL);
   EXPECT_EQ(strMsgId, "0100007F0000276B0000000000000400");
 
-  MQMessageId msgId = MQDecoder::decodeMessageId(strMsgId);
+  MessageId msgId = MessageDecoder::decodeMessageId(strMsgId);
   EXPECT_EQ(msgId.getOffset(), 1024);
 }
 
@@ -136,17 +136,17 @@ TEST(MessageDecoderTest, Decode) {
   // 17 PROPERTIES 111=109+2
   memoryOut->writeShortBigEndian(0);
 
-  msgExt.setMsgId(MQDecoder::createMessageId(msgExt.getStoreHost(), (int64_t)msgExt.getCommitLogOffset()));
+  msgExt.setMsgId(MessageDecoder::createMessageId(msgExt.getStoreHost(), (int64_t)msgExt.getCommitLogOffset()));
 
   auto block = memoryOut->getMemoryBlock();
-  auto msgs = MQDecoder::decodes(*static_cast<MemoryBlock*>(&block));
+  auto msgs = MessageDecoder::decodes(*static_cast<MemoryBlock*>(&block));
   EXPECT_EQ(msgs.size(), 1);
 
   std::cout << msgs[0]->toString() << std::endl;
   std::cout << msgExt.toString() << std::endl;
   EXPECT_EQ(msgs[0]->toString(), msgExt.toString());
 
-  msgs = MQDecoder::decodes(*static_cast<MemoryBlock*>(&block), false);
+  msgs = MessageDecoder::decodes(*static_cast<MemoryBlock*>(&block), false);
   EXPECT_EQ(msgs[0]->getBody().size(), 0);
 
   //===============================================================
@@ -173,7 +173,7 @@ TEST(MessageDecoderTest, Decode) {
   std::map<std::string, std::string> properties;
   properties["RocketMQ"] = "cpp-client";
   properties[MQMessageConst::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX] = "123456";
-  std::string props = MQDecoder::messageProperties2String(properties);
+  std::string props = MessageDecoder::messageProperties2String(properties);
   memoryOut->writeShortBigEndian(props.size());
   memoryOut->write(props.data(), props.size());
   msgExt.setProperties(properties);
@@ -184,17 +184,17 @@ TEST(MessageDecoderTest, Decode) {
   msgExt.setStoreSize(memoryOut->getDataSize());
 
   block = memoryOut->getMemoryBlock();
-  msgs = MQDecoder::decodes(*static_cast<MemoryBlock*>(&block));
+  msgs = MessageDecoder::decodes(*static_cast<MemoryBlock*>(&block));
   EXPECT_EQ(msgs[0]->toString(), msgExt.toString());
 }
 
 TEST(MessageDecoderTest, MessagePropertiesAndToString) {
   std::map<std::string, std::string> properties;
   properties["RocketMQ"] = "cpp-client";
-  std::string props = MQDecoder::messageProperties2String(properties);
+  std::string props = MessageDecoder::messageProperties2String(properties);
   EXPECT_EQ(props, "RocketMQ\001cpp-client\002");
 
-  auto properties2 = MQDecoder::string2messageProperties(props);
+  auto properties2 = MessageDecoder::string2messageProperties(props);
   EXPECT_EQ(properties, properties2);
 }
 

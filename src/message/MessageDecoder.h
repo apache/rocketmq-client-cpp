@@ -14,46 +14,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MESSAGE_DECODER_H__
-#define __MESSAGE_DECODER_H__
-
-#include <map>
-#include <memory>
-#include <string>
+#ifndef ROCKETMQ_MESSAGE_MESSAGEDECODER_H_
+#define ROCKETMQ_MESSAGE_MESSAGEDECODER_H_
 
 #include "MQClientException.h"
 #include "MQMessageExt.h"
-#include "MQMessageId.h"
+#include "MessageId.h"
 #include "MemoryInputStream.h"
 
 namespace rocketmq {
 
-class MQDecoder {
+class MessageDecoder {
  public:
   static std::string createMessageId(const struct sockaddr* sa, int64_t offset);
-  static MQMessageId decodeMessageId(const std::string& msgId);
+  static MessageId decodeMessageId(const std::string& msgId);
 
-  static MQMessageExtPtr2 decode(MemoryBlock& mem);
-  static MQMessageExtPtr2 decode(MemoryBlock& mem, bool readBody);
+  static MessageExtPtr decode(MemoryBlock& mem);
+  static MessageExtPtr decode(MemoryBlock& mem, bool readBody);
 
-  static std::vector<MQMessageExtPtr2> decodes(MemoryBlock& mem);
-  static std::vector<MQMessageExtPtr2> decodes(MemoryBlock& mem, bool readBody);
+  static std::vector<MessageExtPtr> decodes(MemoryBlock& mem);
+  static std::vector<MessageExtPtr> decodes(MemoryBlock& mem, bool readBody);
 
   static std::string messageProperties2String(const std::map<std::string, std::string>& properties);
   static std::map<std::string, std::string> string2messageProperties(const std::string& properties);
 
-  static std::string encodeMessage(MQMessage& message);
-  static std::string encodeMessages(std::vector<MQMessagePtr>& msgs);
+  static std::string encodeMessage(Message& message);
+  static std::string encodeMessages(std::vector<MQMessage>& msgs);
 
  private:
-  static MQMessageExtPtr clientDecode(MemoryInputStream& byteBuffer, bool readBody);
-  static MQMessageExtPtr decode(MemoryInputStream& byteBuffer, bool readBody);
-  static MQMessageExtPtr decode(MemoryInputStream& byteBuffer, bool readBody, bool deCompressBody, bool isClient);
+  static MessageExtPtr clientDecode(MemoryInputStream& byteBuffer, bool readBody);
+
+  static MessageExtPtr decode(MemoryInputStream& byteBuffer, bool readBody);
+  static MessageExtPtr decode(MemoryInputStream& byteBuffer, bool readBody, bool deCompressBody, bool isClient);
 
  public:
   static const char NAME_VALUE_SEPARATOR;
   static const char PROPERTY_SEPARATOR;
   static const int MSG_ID_LENGTH;
+
   static int MessageMagicCodePostion;
   static int MessageFlagPostion;
   static int MessagePhysicOffsetPostion;
@@ -62,4 +60,4 @@ class MQDecoder {
 
 }  // namespace rocketmq
 
-#endif  // __MESSAGE_DECODER_H__
+#endif  // ROCKETMQ_MESSAGE_MESSAGEDECODER_H_

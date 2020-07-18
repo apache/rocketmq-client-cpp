@@ -31,7 +31,7 @@ class MQProducerInner {
   virtual TransactionListener* getCheckListener() = 0;
 
   virtual void checkTransactionState(const std::string& addr,
-                                     MQMessageExtPtr2 msg,
+                                     MessageExtPtr msg,
                                      CheckTransactionStateRequestHeader* checkRequestHeader) = 0;
 
   //  virtual std::vector<std::string> getPublishTopicList() = 0;

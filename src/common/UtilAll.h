@@ -93,9 +93,8 @@ class UtilAll {
 
   static int32_t HashCode(const std::string& str);
 
-  static uint64_t hexstr2ull(const char* str);
-
   static std::string bytes2string(const char* bytes, size_t len);
+  static void string2bytes(char* dest, const std::string& src);
 
   static bool isRetryTopic(const std::string& topic);
   static std::string getRetryTopic(const std::string& consumerGroup);

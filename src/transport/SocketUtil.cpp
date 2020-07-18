@@ -16,11 +16,13 @@
  */
 #include "SocketUtil.h"
 
-#include <event2/event.h>
+#include <cstdlib>  // std::realloc
+#include <cstring>  // std::memset, std::memcpy
 
-#include <cstring>
 #include <sstream>
 #include <stdexcept>
+
+#include <event2/event.h>
 
 #ifndef WIN32
 #include <netdb.h>
@@ -113,7 +115,7 @@ struct sockaddr* lookupNameServers(const std::string& hostname) {
   struct evutil_addrinfo* answer = NULL;
 
   /* Build the hints to tell getaddrinfo how to act. */
-  memset(&hints, 0, sizeof(hints));
+  std::memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_UNSPEC;           /* v4 or v6 is fine. */
   hints.ai_socktype = SOCK_STREAM;       /* We want stream socket*/
   hints.ai_protocol = IPPROTO_TCP;       /* We want a TCP socket */
@@ -134,7 +136,7 @@ struct sockaddr* lookupNameServers(const std::string& hostname) {
       continue;
     }
     sin = (struct sockaddr*)&sin_buf;
-    memcpy(sin, ai_addr, sockaddr_size(ai_addr));
+    std::memcpy(sin, ai_addr, sockaddr_size(ai_addr));
     break;
   }
 
@@ -146,9 +148,9 @@ struct sockaddr* lookupNameServers(const std::string& hostname) {
 struct sockaddr* copySocketAddress(struct sockaddr* dst, const struct sockaddr* src) {
   if (src != nullptr) {
     if (dst == nullptr || dst->sa_family != src->sa_family) {
-      dst = (struct sockaddr*)realloc(dst, sizeof(union sockaddr_union));
+      dst = (struct sockaddr*)std::realloc(dst, sizeof(union sockaddr_union));
     }
-    memcpy(dst, src, sockaddr_size(src));
+    std::memcpy(dst, src, sockaddr_size(src));
   } else {
     free(dst);
     dst = nullptr;

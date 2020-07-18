@@ -71,7 +71,7 @@ int64_t MQClientImpl::earliestMsgStoreTime(const MQMessageQueue& mq) {
   return m_clientInstance->getMQAdminImpl()->earliestMsgStoreTime(mq);
 }
 
-MQMessageExtPtr MQClientImpl::viewMessage(const std::string& msgId) {
+MQMessageExt MQClientImpl::viewMessage(const std::string& msgId) {
   return m_clientInstance->getMQAdminImpl()->viewMessage(msgId);
 }
 

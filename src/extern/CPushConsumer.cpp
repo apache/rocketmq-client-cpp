@@ -16,7 +16,7 @@
  */
 #include "c/CPushConsumer.h"
 
-#include <map>
+#include <map>  // std::map
 
 #include "ClientRPCHook.h"
 #include "DefaultMQPushConsumer.h"
@@ -32,13 +32,13 @@ class MessageListenerInner : public MessageListenerConcurrently {
 
   ~MessageListenerInner() = default;
 
-  ConsumeStatus consumeMessage(const std::vector<MQMessageExt*>& msgs) override {
+  ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) override {
     // to do user call back
     if (m_msgReceivedCallback == nullptr) {
       return RECONSUME_LATER;
     }
     for (auto msg : msgs) {
-      auto* message = reinterpret_cast<CMessageExt*>(msg);
+      auto* message = reinterpret_cast<CMessageExt*>(&msg);
       if (m_msgReceivedCallback(m_consumer, message) != E_CONSUME_SUCCESS) {
         return RECONSUME_LATER;
       }
@@ -56,12 +56,12 @@ class MessageListenerOrderlyInner : public MessageListenerOrderly {
   MessageListenerOrderlyInner(CPushConsumer* consumer, MessageCallBack callback)
       : m_consumer(consumer), m_msgReceivedCallback(callback) {}
 
-  ConsumeStatus consumeMessage(const std::vector<MQMessageExt*>& msgs) {
+  ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) override {
     if (m_msgReceivedCallback == nullptr) {
       return RECONSUME_LATER;
     }
     for (auto msg : msgs) {
-      auto* message = reinterpret_cast<CMessageExt*>(msg);
+      auto* message = reinterpret_cast<CMessageExt*>(&msg);
       if (m_msgReceivedCallback(m_consumer, message) != E_CONSUME_SUCCESS) {
         return RECONSUME_LATER;
       }

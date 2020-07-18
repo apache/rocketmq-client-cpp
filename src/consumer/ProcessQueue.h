@@ -23,7 +23,7 @@
 #include <mutex>
 #include <vector>
 
-#include "MQMessageExt.h"
+#include "MessageExt.h"
 
 namespace rocketmq {
 
@@ -44,8 +44,8 @@ class ROCKETMQCLIENT_API ProcessQueue {
   bool isLockExpired() const;
   bool isPullExpired() const;
 
-  void putMessage(std::vector<MQMessageExtPtr2>& msgs);
-  int64_t removeMessage(std::vector<MQMessageExtPtr2>& msgs);
+  void putMessage(const std::vector<MessageExtPtr>& msgs);
+  int64_t removeMessage(const std::vector<MessageExtPtr>& msgs);
 
   int getCacheMsgCount();
   int64_t getCacheMinOffset();
@@ -58,8 +58,8 @@ class ROCKETMQCLIENT_API ProcessQueue {
   void setLocked(bool locked);
 
   int64_t commit();
-  void makeMessageToCosumeAgain(std::vector<MQMessageExtPtr2>& msgs);
-  void takeMessages(std::vector<MQMessageExtPtr2>& out_msgs, int batchSize);
+  void makeMessageToCosumeAgain(std::vector<MessageExtPtr>& msgs);
+  void takeMessages(std::vector<MessageExtPtr>& out_msgs, int batchSize);
 
   void clearAllMsgs();
 
@@ -84,9 +84,9 @@ class ROCKETMQCLIENT_API ProcessQueue {
 
  private:
   std::mutex m_lockTreeMap;
-  std::map<int64_t, MQMessageExtPtr2> m_msgTreeMap;
+  std::map<int64_t, MessageExtPtr> m_msgTreeMap;
   std::timed_mutex m_lockConsume;
-  std::map<int64_t, MQMessageExtPtr2> m_consumingMsgOrderlyTreeMap;
+  std::map<int64_t, MessageExtPtr> m_consumingMsgOrderlyTreeMap;
   std::atomic<long> m_tryUnlockTimes;
   volatile int64_t m_queueOffsetMax;
   std::atomic<bool> m_dropped;

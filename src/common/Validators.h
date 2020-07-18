@@ -20,7 +20,7 @@
 #include <string>
 
 #include "MQClientException.h"
-#include "MQMessage.h"
+#include "Message.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
@@ -31,7 +31,7 @@ class Validators {
   static std::string getGroupWithRegularExpression(const std::string& origin, const std::string& patternStr);
   static void checkTopic(const std::string& topic);
   static void checkGroup(const std::string& group);
-  static void checkMessage(const MQMessage& msg, int maxMessageSize);
+  static void checkMessage(const Message& msg, int maxMessageSize);
 
  public:
   static const std::string validPatternStr;

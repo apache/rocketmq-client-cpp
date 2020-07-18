@@ -18,7 +18,7 @@
 
 #include "MQClientAPIImpl.h"
 #include "MQClientInstance.h"
-#include "MQDecoder.h"
+#include "MessageDecoder.h"
 #include "MessageAccessor.h"
 #include "PullResultExt.h"
 #include "PullSysFlag.h"
@@ -58,10 +58,10 @@ PullResult PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
   // update node
   updatePullFromWhichNode(mq, pullResultExt.suggestWhichBrokerId);
 
-  std::vector<MQMessageExtPtr2> msgListFilterAgain;
-  if (FOUND == pullResultExt.pullStatus) {
+  std::vector<MessageExtPtr> msgListFilterAgain;
+  if (FOUND == pullResultExt.pull_status()) {
     // decode all msg list
-    auto msgList = MQDecoder::decodes(*pullResultExt.msgMemBlock);
+    auto msgList = MessageDecoder::decodes(*pullResultExt.msgMemBlock);
 
     // filter msg list again
     if (subscriptionData != nullptr && !subscriptionData->getTagsSet().empty()) {
@@ -81,13 +81,15 @@ PullResult PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
       if (UtilAll::stob(tranMsg)) {
         msg->setTransactionId(msg->getProperty(MQMessageConst::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX));
       }
-      MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_MIN_OFFSET, UtilAll::to_string(pullResult.minOffset));
-      MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_MAX_OFFSET, UtilAll::to_string(pullResult.maxOffset));
+      MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_MIN_OFFSET,
+                                   UtilAll::to_string(pullResult.min_offset()));
+      MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_MAX_OFFSET,
+                                   UtilAll::to_string(pullResult.max_offset()));
     }
   }
 
-  return PullResult(pullResultExt.pullStatus, pullResultExt.nextBeginOffset, pullResultExt.minOffset,
-                    pullResultExt.maxOffset, std::move(msgListFilterAgain));
+  return PullResult(pullResultExt.pull_status(), pullResultExt.next_begin_offset(), pullResultExt.min_offset(),
+                    pullResultExt.max_offset(), std::move(msgListFilterAgain));
 }
 
 PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,             // 1

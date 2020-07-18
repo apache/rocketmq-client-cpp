@@ -47,7 +47,7 @@ bool ProcessQueue::isPullExpired() const {
   return (UtilAll::currentTimeMillis() - m_lastPullTimestamp) > PullMaxIdleTime;
 }
 
-void ProcessQueue::putMessage(std::vector<MQMessageExtPtr2>& msgs) {
+void ProcessQueue::putMessage(const std::vector<MessageExtPtr>& msgs) {
   std::lock_guard<std::mutex> lock(m_lockTreeMap);
 
   for (const auto& msg : msgs) {
@@ -61,7 +61,7 @@ void ProcessQueue::putMessage(std::vector<MQMessageExtPtr2>& msgs) {
   LOG_DEBUG_NEW("ProcessQueue: putMessage m_queueOffsetMax:{}", m_queueOffsetMax);
 }
 
-int64_t ProcessQueue::removeMessage(std::vector<MQMessageExtPtr2>& msgs) {
+int64_t ProcessQueue::removeMessage(const std::vector<MessageExtPtr>& msgs) {
   int64_t result = -1;
   const auto now = UtilAll::currentTimeMillis();
 
@@ -131,7 +131,7 @@ int64_t ProcessQueue::commit() {
   }
 }
 
-void ProcessQueue::makeMessageToCosumeAgain(std::vector<MQMessageExtPtr2>& msgs) {
+void ProcessQueue::makeMessageToCosumeAgain(std::vector<MessageExtPtr>& msgs) {
   std::lock_guard<std::mutex> lock(m_lockTreeMap);
   for (const auto& msg : msgs) {
     m_msgTreeMap[msg->getQueueOffset()] = msg;
@@ -139,7 +139,7 @@ void ProcessQueue::makeMessageToCosumeAgain(std::vector<MQMessageExtPtr2>& msgs)
   }
 }
 
-void ProcessQueue::takeMessages(std::vector<MQMessageExtPtr2>& out_msgs, int batchSize) {
+void ProcessQueue::takeMessages(std::vector<MessageExtPtr>& out_msgs, int batchSize) {
   std::lock_guard<std::mutex> lock(m_lockTreeMap);
   for (int i = 0; i != batchSize; i++) {
     const auto& it = m_msgTreeMap.begin();

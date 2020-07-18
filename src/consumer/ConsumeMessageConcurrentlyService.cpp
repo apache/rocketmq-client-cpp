@@ -43,7 +43,7 @@ void ConsumeMessageConcurrentlyService::shutdown() {
   m_consumeExecutor.shutdown();
 }
 
-void ConsumeMessageConcurrentlyService::submitConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
+void ConsumeMessageConcurrentlyService::submitConsumeRequest(std::vector<MessageExtPtr>& msgs,
                                                              ProcessQueuePtr processQueue,
                                                              const MQMessageQueue& messageQueue,
                                                              const bool dispathToConsume) {
@@ -51,7 +51,7 @@ void ConsumeMessageConcurrentlyService::submitConsumeRequest(std::vector<MQMessa
       std::bind(&ConsumeMessageConcurrentlyService::ConsumeRequest, this, msgs, processQueue, messageQueue));
 }
 
-void ConsumeMessageConcurrentlyService::submitConsumeRequestLater(std::vector<MQMessageExtPtr2>& msgs,
+void ConsumeMessageConcurrentlyService::submitConsumeRequestLater(std::vector<MessageExtPtr>& msgs,
                                                                   ProcessQueuePtr processQueue,
                                                                   const MQMessageQueue& messageQueue) {
   m_scheduledExecutorService.schedule(
@@ -59,7 +59,7 @@ void ConsumeMessageConcurrentlyService::submitConsumeRequestLater(std::vector<MQ
       5000L, time_unit::milliseconds);
 }
 
-void ConsumeMessageConcurrentlyService::ConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
+void ConsumeMessageConcurrentlyService::ConsumeRequest(std::vector<MessageExtPtr>& msgs,
                                                        ProcessQueuePtr processQueue,
                                                        const MQMessageQueue& messageQueue) {
   if (processQueue->isDropped()) {
@@ -83,11 +83,16 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(std::vector<MQMessageExtP
     processQueue->setLastConsumeTimestamp(consumeTimestamp);
     if (!msgs.empty()) {
       auto timestamp = UtilAll::to_string(consumeTimestamp);
-      for (auto& msg : msgs) {
+      for (const auto& msg : msgs) {
         MessageAccessor::setConsumeStartTimeStamp(*msg, timestamp);
       }
     }
-    status = m_messageListener->consumeMessage(msgs);
+    std::vector<MQMessageExt> message_list;
+    message_list.reserve(msgs.size());
+    for (const auto& msg : msgs) {
+      message_list.emplace_back(msg);
+    }
+    status = m_messageListener->consumeMessage(message_list);
   } catch (const std::exception& e) {
     LOG_WARN_NEW("encounter unexpected exception when consume messages.\n{}", e.what());
   }
@@ -122,13 +127,13 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(std::vector<MQMessageExtP
       break;
     case CLUSTERING: {
       // send back msg to broker
-      std::vector<MQMessageExtPtr2> msgBackFailed;
+      std::vector<MessageExtPtr> msgBackFailed;
       int idx = ackIndex + 1;
       for (auto iter = msgs.begin() + idx; iter != msgs.end(); idx++) {
         LOG_WARN_NEW("consume fail, MQ is:{}, its msgId is:{}, index is:{}, reconsume times is:{}",
                      messageQueue.toString(), (*iter)->getMsgId(), idx, (*iter)->getReconsumeTimes());
         auto& msg = (*iter);
-        bool result = m_consumer->sendMessageBack(*msg, 0, messageQueue.getBrokerName());
+        bool result = m_consumer->sendMessageBack(msg, 0, messageQueue.getBrokerName());
         if (!result) {
           msg->setReconsumeTimes(msg->getReconsumeTimes() + 1);
           msgBackFailed.push_back(msg);

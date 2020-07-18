@@ -67,7 +67,7 @@ bool ConsumeMessageOrderlyService::lockOneMQ(const MQMessageQueue& mq) {
   return m_consumer->getRebalanceImpl()->lock(mq);
 }
 
-void ConsumeMessageOrderlyService::submitConsumeRequest(std::vector<MQMessageExtPtr2>& msgs,
+void ConsumeMessageOrderlyService::submitConsumeRequest(std::vector<MessageExtPtr>& msgs,
                                                         ProcessQueuePtr processQueue,
                                                         const MQMessageQueue& messageQueue,
                                                         const bool dispathToConsume) {
@@ -87,7 +87,7 @@ void ConsumeMessageOrderlyService::submitConsumeRequestLater(ProcessQueuePtr pro
 
   timeMillis = std::max(10L, std::min(timeMillis, 30000L));
 
-  static std::vector<MQMessageExtPtr2> dummy;
+  static std::vector<MessageExtPtr> dummy;
   m_scheduledExecutorService.schedule(std::bind(&ConsumeMessageOrderlyService::submitConsumeRequest, this,
                                                 std::ref(dummy), processQueue, messageQueue, true),
                                       timeMillis, time_unit::milliseconds);
@@ -145,7 +145,7 @@ void ConsumeMessageOrderlyService::ConsumeRequest(ProcessQueuePtr processQueue, 
 
       const int consumeBatchSize = m_consumer->getDefaultMQPushConsumerConfig()->getConsumeMessageBatchMaxSize();
 
-      std::vector<MQMessageExtPtr2> msgs;
+      std::vector<MessageExtPtr> msgs;
       processQueue->takeMessages(msgs, consumeBatchSize);
       m_consumer->resetRetryTopic(msgs, m_consumer->getDefaultMQPushConsumerConfig()->getGroupName());
       if (!msgs.empty()) {
@@ -157,8 +157,12 @@ void ConsumeMessageOrderlyService::ConsumeRequest(ProcessQueuePtr processQueue, 
                          messageQueue.toString());
             break;
           }
-
-          status = m_messageListener->consumeMessage(msgs);
+          std::vector<MQMessageExt> message_list;
+          message_list.reserve(msgs.size());
+          for (const auto& msg : msgs) {
+            message_list.emplace_back(msg);
+          }
+          status = m_messageListener->consumeMessage(message_list);
         } catch (const std::exception& e) {
           LOG_WARN_NEW("encounter unexpected exception when consume messages.\n{}", e.what());
         }

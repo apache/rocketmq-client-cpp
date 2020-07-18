@@ -64,8 +64,8 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
   void shutdown() override;
 
  public:  // MQConsumer
-  bool sendMessageBack(MQMessageExt& msg, int delayLevel) override;
-  bool sendMessageBack(MQMessageExt& msg, int delayLevel, const std::string& brokerName) override;
+  bool sendMessageBack(MessageExtPtr msg, int delayLevel) override;
+  bool sendMessageBack(MessageExtPtr msg, int delayLevel, const std::string& brokerName) override;
   void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) override;
 
  public:  // MQPushConsumer
@@ -105,7 +105,7 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
 
   void pullMessage(PullRequestPtr pullrequest);
 
-  void resetRetryTopic(std::vector<MQMessageExtPtr2>& msgs, const std::string& consumerGroup);
+  void resetRetryTopic(const std::vector<MessageExtPtr>& msgs, const std::string& consumerGroup);
 
  public:
   bool isConsumeOrderly() { return m_consumeOrderly; }

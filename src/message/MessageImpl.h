@@ -14,59 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef ROCKETMQ_MQMESSAGE_H_
-#define ROCKETMQ_MQMESSAGE_H_
-
-#include <cstddef>  // std::nullptr_t
+#ifndef ROCKETMQ_MESSAGE_MESSAGEIMPL_H_
+#define ROCKETMQ_MESSAGE_MESSAGEIMPL_H_
 
 #include "Message.h"
-#include "MQMessageConst.h"
+#include "noncopyable.h"
 
 namespace rocketmq {
 
 /**
- * MQMessage - Reference of Message
+ * MessageImpl - Default Message implement
  */
-class ROCKETMQCLIENT_API MQMessage : virtual public Message  // interface
+class MessageImpl : public noncopyable,     // base
+                    virtual public Message  // interface
 {
  public:
-  MQMessage();
-  MQMessage(const std::string& topic, const std::string& body);
-  MQMessage(const std::string& topic, const std::string& tags, const std::string& body);
-  MQMessage(const std::string& topic, const std::string& tags, const std::string& keys, const std::string& body);
-  MQMessage(const std::string& topic,
-            const std::string& tags,
-            const std::string& keys,
-            int32_t flag,
-            const std::string& body,
-            bool waitStoreMsgOK);
+  MessageImpl();
+  MessageImpl(const std::string& topic, const std::string& body);
+  MessageImpl(const std::string& topic,
+              const std::string& tags,
+              const std::string& keys,
+              int32_t flag,
+              const std::string& body,
+              bool waitStoreMsgOK);
 
- public:
-  // reference constructor
-  MQMessage(MessagePtr impl) : message_impl_(impl) {}
+  virtual ~MessageImpl();
 
-  // copy constructor
-  MQMessage(const MQMessage& other) : message_impl_(other.message_impl_) {}
-
-  // assign operator
-  MQMessage& operator=(const MQMessage& other) {
-    if (this != &other) {
-      message_impl_ = other.message_impl_;
-    }
-    return *this;
-  }
-
-  bool operator==(std::nullptr_t) noexcept { return nullptr == message_impl_; }
-
-  friend bool operator==(std::nullptr_t, const MQMessage& message) noexcept { return nullptr == message.message_impl_; }
-
-  // convert to boolean
-  operator bool() noexcept { return nullptr != message_impl_; }
-
- public:
-  virtual ~MQMessage();
-
- public:  // Message
   const std::string& getProperty(const std::string& name) const override;
   void putProperty(const std::string& name, const std::string& value) override;
   void clearProperty(const std::string& name) override;
@@ -103,17 +76,16 @@ class ROCKETMQCLIENT_API MQMessage : virtual public Message  // interface
   void setProperties(const std::map<std::string, std::string>& properties) override;
   void setProperties(std::map<std::string, std::string>&& properties) override;
 
-  bool isBatch() const override;
-
   std::string toString() const override;
 
- public:
-  MessagePtr getMessageImpl();
-
  protected:
-  MessagePtr message_impl_;
+  std::string topic_;
+  int32_t flag_;
+  std::map<std::string, std::string> properties_;
+  std::string body_;
+  std::string transaction_id_;
 };
 
 }  // namespace rocketmq
 
-#endif  // ROCKETMQ_MQMESSAGE_H_
+#endif  // ROCKETMQ_MESSAGE_MESSAGEIMPL_H_

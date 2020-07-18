@@ -45,11 +45,11 @@ void DefaultMQPullConsumer::shutdown() {
   m_pullConsumerDelegate->shutdown();
 }
 
-bool DefaultMQPullConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel) {
+bool DefaultMQPullConsumer::sendMessageBack(MessageExtPtr msg, int delayLevel) {
   return m_pullConsumerDelegate->sendMessageBack(msg, delayLevel);
 }
 
-bool DefaultMQPullConsumer::sendMessageBack(MQMessageExt& msg, int delayLevel, const std::string& brokerName) {
+bool DefaultMQPullConsumer::sendMessageBack(MessageExtPtr msg, int delayLevel, const std::string& brokerName) {
   return m_pullConsumerDelegate->sendMessageBack(msg, delayLevel, brokerName);
 }
 

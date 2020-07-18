@@ -115,9 +115,9 @@ int64_t MQAdminImpl::earliestMsgStoreTime(const MQMessageQueue& mq) {
   THROW_MQEXCEPTION(MQClientException, "The broker is not exist", -1);
 }
 
-MQMessageExtPtr MQAdminImpl::viewMessage(const std::string& msgId) {
+MQMessageExt MQAdminImpl::viewMessage(const std::string& msgId) {
   try {
-    return nullptr;
+    return MQMessageExt(nullptr);
   } catch (MQException& e) {
     THROW_MQEXCEPTION(MQClientException, "message id illegal", -1);
   }
