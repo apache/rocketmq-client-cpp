@@ -84,7 +84,7 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer, public DefaultMQ
   void setRPCHook(RPCHookPtr rpcHook);
 
  protected:
-  std::shared_ptr<MQProducer> m_producerDelegate;
+  std::shared_ptr<MQProducer> producer_impl_;
 };
 
 }  // namespace rocketmq

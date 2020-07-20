@@ -39,8 +39,8 @@
 
 namespace rocketmq {
 
-std::string UtilAll::s_localHostName;
-std::string UtilAll::s_localIpAddress;
+std::string UtilAll::sLocalHostName;
+std::string UtilAll::sLocalIpAddress;
 
 bool UtilAll::try_lock_for(std::timed_mutex& mutex, long timeout) {
   auto now = std::chrono::steady_clock::now();
@@ -57,12 +57,12 @@ bool UtilAll::try_lock_for(std::timed_mutex& mutex, long timeout) {
   }
 }
 
-int32_t UtilAll::HashCode(const std::string& str) {
-  // FIXME: don't equal to String#hashCode in Java
+int32_t UtilAll::hash_code(const std::string& str) {
+  // FIXME: don't equal to String#hashCode in Java for non-ascii
   int32_t h = 0;
   if (!str.empty()) {
     for (const auto& c : str) {
-      h = 31 * h + c;
+      h = 31 * h + (uint8_t)c;
     }
   }
   return h;
@@ -220,29 +220,29 @@ int UtilAll::Split(std::vector<std::string>& ret_, const std::string& strIn, con
 }
 
 std::string UtilAll::getLocalHostName() {
-  if (s_localHostName.empty()) {
+  if (sLocalHostName.empty()) {
     char name[1024];
     if (::gethostname(name, sizeof(name)) != 0) {
       return null;
     }
-    s_localHostName.append(name, strlen(name));
+    sLocalHostName.append(name, strlen(name));
   }
-  return s_localHostName;
+  return sLocalHostName;
 }
 
 std::string UtilAll::getLocalAddress() {
-  if (s_localIpAddress.empty()) {
+  if (sLocalIpAddress.empty()) {
     auto hostname = getLocalHostName();
     if (!hostname.empty()) {
       try {
-        s_localIpAddress = socketAddress2String(lookupNameServers(hostname));
+        sLocalIpAddress = socketAddress2String(lookupNameServers(hostname));
       } catch (std::exception& e) {
         LOG_WARN(e.what());
-        s_localIpAddress = "127.0.0.1";
+        sLocalIpAddress = "127.0.0.1";
       }
     }
   }
-  return s_localIpAddress;
+  return sLocalIpAddress;
 }
 
 uint32_t UtilAll::getIP() {
@@ -372,10 +372,10 @@ int64_t UtilAll::currentTimeSeconds() {
 }
 
 bool UtilAll::deflate(const std::string& input, std::string& out, int level) {
-  return deflate(input.data(), input.length(), out, level);
+  return deflate(ByteArray((char*)input.data(), input.size()), out, level);
 }
 
-bool UtilAll::deflate(const char* input, size_t len, std::string& out, int level) {
+bool UtilAll::deflate(const ByteArray& in, std::string& out, int level) {
   int ret;
   unsigned have;
   z_stream strm;
@@ -390,8 +390,8 @@ bool UtilAll::deflate(const char* input, size_t len, std::string& out, int level
     return false;
   }
 
-  strm.avail_in = len;
-  strm.next_in = (z_const Bytef*)input;
+  strm.avail_in = in.size();
+  strm.next_in = (z_const Bytef*)in.array();
 
   /* run deflate() on input until output buffer not full, finish
      compression if all of source has been read in */
@@ -413,10 +413,10 @@ bool UtilAll::deflate(const char* input, size_t len, std::string& out, int level
 }
 
 bool UtilAll::inflate(const std::string& input, std::string& out) {
-  return inflate(input.data(), input.length(), out);
+  return inflate(ByteArray((char*)input.data(), input.size()), out);
 }
 
-bool UtilAll::inflate(const char* input, size_t len, std::string& out) {
+bool UtilAll::inflate(const ByteArray& in, std::string& out) {
   int ret;
   unsigned have;
   z_stream strm;
@@ -433,8 +433,8 @@ bool UtilAll::inflate(const char* input, size_t len, std::string& out) {
     return false;
   }
 
-  strm.avail_in = len;
-  strm.next_in = (z_const Bytef*)input;
+  strm.avail_in = in.size();
+  strm.next_in = (z_const Bytef*)in.array();
 
   /* run inflate() on input until output buffer not full */
   do {

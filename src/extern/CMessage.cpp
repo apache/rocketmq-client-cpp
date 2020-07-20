@@ -64,7 +64,7 @@ int SetMessageBody(CMessage* msg, const char* body) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<MQMessage*>(msg)->setBody(body);
+  reinterpret_cast<MQMessage*>(msg)->setBody(std::string(body));
   return OK;
 }
 
@@ -72,7 +72,8 @@ int SetByteMessageBody(CMessage* msg, const char* body, int len) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<MQMessage*>(msg)->setBody(body, len);
+
+  reinterpret_cast<MQMessage*>(msg)->setBody(std::string(body, len));
   return OK;
 }
 

@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __RPC_HOOK_H__
-#define __RPC_HOOK_H__
+#ifndef ROCKETMQ_RPCHOOK_H_
+#define ROCKETMQ_RPCHOOK_H_
 
-#include <memory>
-#include <string>
+#include <memory>  // std::shared_ptr
+#include <string>  // std::string
 
 #include "RemotingCommand.h"
 
@@ -41,4 +41,4 @@ class ROCKETMQCLIENT_API RPCHook {
 
 }  // namespace rocketmq
 
-#endif  // __RPC_HOOK_H__
+#endif  // ROCKETMQ_RPCHOOK_H_

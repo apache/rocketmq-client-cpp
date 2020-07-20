@@ -17,7 +17,7 @@
 #include <iostream>
 
 #include "../src/common/UtilAll.h"
-#include "../src/log/Logging.h"
+#include "common.h"
 #include "MessageUtil.h"
 #include "common.h"
 
@@ -28,17 +28,17 @@ class MyResponseMessageListener : public MessageListenerConcurrently {
   MyResponseMessageListener(DefaultMQProducer* replyProducer) : m_replyProducer(replyProducer) {}
   virtual ~MyResponseMessageListener() = default;
 
-  ConsumeStatus consumeMessage(const std::vector<MQMessageExt*>& msgs) override {
+  ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) override {
     for (const auto& msg : msgs) {
       try {
-        std::cout << "handle message: " << msg->toString() << std::endl;
+        std::cout << "handle message: " << msg.toString() << std::endl;
         const auto& replyTo = MessageUtil::getReplyToClient(msg);
 
         // create reply message with given util, do not create reply message by yourself
-        std::unique_ptr<MQMessage> replyMessage(MessageUtil::createReplyMessage(msg, "reply message contents."));
+        MQMessage replyMessage = MessageUtil::createReplyMessage(msg, "reply message contents.");
 
         // send reply message with producer
-        SendResult replyResult = m_replyProducer->send(replyMessage.get(), 10000);
+        SendResult replyResult = m_replyProducer->send(replyMessage, 10000);
         std::cout << "reply to " << replyTo << ", " << replyResult.toString() << std::endl;
       } catch (const std::exception& e) {
         std::cout << e.what() << std::endl;
@@ -98,10 +98,10 @@ int main(int argc, char* argv[]) {
       MQMessage msg(info.topic, "Hello world");
 
       auto begin = UtilAll::currentTimeMillis();
-      std::unique_ptr<MQMessage> retMsg(producer.request(&msg, 10000));
+      MQMessage retMsg = producer.request(msg, 10000);
       auto cost = UtilAll::currentTimeMillis() - begin;
       std::cout << count << " >>> request to <" << info.topic << "> cost: " << cost
-                << " replyMessage: " << retMsg->toString() << std::endl;
+                << " replyMessage: " << retMsg.toString() << std::endl;
     } catch (const std::exception& e) {
       std::cout << count << " >>> " << e.what() << std::endl;
     }

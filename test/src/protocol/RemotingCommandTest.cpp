@@ -20,10 +20,9 @@
 #include <memory>
 #include <string>
 
-#include "DataBlock.h"
+#include "ByteArray.h"
 #include "MQProtos.h"
 #include "MQVersion.h"
-#include "MemoryOutputStream.h"
 #include "RemotingCommand.h"
 #include "protocol/header/CommandHeader.h"
 
@@ -31,13 +30,12 @@ using testing::InitGoogleMock;
 using testing::InitGoogleTest;
 using testing::Return;
 
+using rocketmq::ByteArray;
 using rocketmq::GetConsumerRunningInfoRequestHeader;
 using rocketmq::GetEarliestMsgStoretimeResponseHeader;
 using rocketmq::GetMaxOffsetResponseHeader;
 using rocketmq::GetMinOffsetResponseHeader;
 using rocketmq::GetRouteInfoRequestHeader;
-using rocketmq::MemoryBlock;
-using rocketmq::MemoryOutputStream;
 using rocketmq::MQRequestCode;
 using rocketmq::MQVersion;
 using rocketmq::NotifyConsumerIdsChangedRequestHeader;
@@ -50,15 +48,15 @@ using rocketmq::SendMessageResponseHeader;
 
 TEST(RemotingCommandTest, Init) {
   RemotingCommand remotingCommand;
-  EXPECT_EQ(remotingCommand.getCode(), 0);
+  EXPECT_EQ(remotingCommand.code(), 0);
 
   RemotingCommand twoRemotingCommand(13);
-  EXPECT_EQ(twoRemotingCommand.getCode(), 13);
-  EXPECT_EQ(twoRemotingCommand.getOpaque(), 0);
-  EXPECT_EQ(twoRemotingCommand.getRemark(), "");
-  EXPECT_EQ(twoRemotingCommand.getVersion(), MQVersion::s_CurrentVersion);
-  EXPECT_EQ(twoRemotingCommand.getFlag(), 0);
-  EXPECT_TRUE(twoRemotingCommand.getBody() == nullptr);
+  EXPECT_EQ(twoRemotingCommand.code(), 13);
+  EXPECT_EQ(twoRemotingCommand.opaque(), 0);
+  EXPECT_EQ(twoRemotingCommand.remark(), "");
+  EXPECT_EQ(twoRemotingCommand.version(), MQVersion::s_CurrentVersion);
+  EXPECT_EQ(twoRemotingCommand.flag(), 0);
+  EXPECT_TRUE(twoRemotingCommand.body() == nullptr);
   EXPECT_TRUE(twoRemotingCommand.readCustomHeader() == nullptr);
 
   RemotingCommand threeRemotingCommand(13, new GetRouteInfoRequestHeader("topic"));
@@ -66,86 +64,85 @@ TEST(RemotingCommandTest, Init) {
 
   RemotingCommand frouRemotingCommand(13, "CPP", MQVersion::s_CurrentVersion, 12, 3, "remark",
                                       new GetRouteInfoRequestHeader("topic"));
-  EXPECT_EQ(frouRemotingCommand.getCode(), 13);
-  EXPECT_EQ(frouRemotingCommand.getOpaque(), 12);
-  EXPECT_EQ(frouRemotingCommand.getRemark(), "remark");
-  EXPECT_EQ(frouRemotingCommand.getVersion(), MQVersion::s_CurrentVersion);
-  EXPECT_EQ(frouRemotingCommand.getFlag(), 3);
-  EXPECT_TRUE(frouRemotingCommand.getBody() == nullptr);
+  EXPECT_EQ(frouRemotingCommand.code(), 13);
+  EXPECT_EQ(frouRemotingCommand.opaque(), 12);
+  EXPECT_EQ(frouRemotingCommand.remark(), "remark");
+  EXPECT_EQ(frouRemotingCommand.version(), MQVersion::s_CurrentVersion);
+  EXPECT_EQ(frouRemotingCommand.flag(), 3);
+  EXPECT_TRUE(frouRemotingCommand.body() == nullptr);
   EXPECT_FALSE(frouRemotingCommand.readCustomHeader() == nullptr);
 
   RemotingCommand sixRemotingCommand(std::move(frouRemotingCommand));
-  EXPECT_EQ(sixRemotingCommand.getCode(), 13);
-  EXPECT_EQ(sixRemotingCommand.getOpaque(), 12);
-  EXPECT_EQ(sixRemotingCommand.getRemark(), "remark");
-  EXPECT_EQ(sixRemotingCommand.getVersion(), MQVersion::s_CurrentVersion);
-  EXPECT_EQ(sixRemotingCommand.getFlag(), 3);
-  EXPECT_TRUE(sixRemotingCommand.getBody() == nullptr);
+  EXPECT_EQ(sixRemotingCommand.code(), 13);
+  EXPECT_EQ(sixRemotingCommand.opaque(), 12);
+  EXPECT_EQ(sixRemotingCommand.remark(), "remark");
+  EXPECT_EQ(sixRemotingCommand.version(), MQVersion::s_CurrentVersion);
+  EXPECT_EQ(sixRemotingCommand.flag(), 3);
+  EXPECT_TRUE(sixRemotingCommand.body() == nullptr);
   EXPECT_FALSE(sixRemotingCommand.readCustomHeader() == nullptr);
 
   RemotingCommand* sevenRemotingCommand = &sixRemotingCommand;
-  EXPECT_EQ(sevenRemotingCommand->getCode(), 13);
-  EXPECT_EQ(sevenRemotingCommand->getOpaque(), 12);
-  EXPECT_EQ(sevenRemotingCommand->getRemark(), "remark");
-  EXPECT_EQ(sevenRemotingCommand->getVersion(), MQVersion::s_CurrentVersion);
-  EXPECT_EQ(sevenRemotingCommand->getFlag(), 3);
-  EXPECT_TRUE(sevenRemotingCommand->getBody() == nullptr);
+  EXPECT_EQ(sevenRemotingCommand->code(), 13);
+  EXPECT_EQ(sevenRemotingCommand->opaque(), 12);
+  EXPECT_EQ(sevenRemotingCommand->remark(), "remark");
+  EXPECT_EQ(sevenRemotingCommand->version(), MQVersion::s_CurrentVersion);
+  EXPECT_EQ(sevenRemotingCommand->flag(), 3);
+  EXPECT_TRUE(sevenRemotingCommand->body() == nullptr);
   EXPECT_FALSE(sevenRemotingCommand->readCustomHeader() == nullptr);
 }
 
 TEST(RemotingCommandTest, Info) {
   RemotingCommand remotingCommand;
 
-  remotingCommand.setCode(13);
-  EXPECT_EQ(remotingCommand.getCode(), 13);
+  remotingCommand.set_code(13);
+  EXPECT_EQ(remotingCommand.code(), 13);
 
-  remotingCommand.setOpaque(12);
-  EXPECT_EQ(remotingCommand.getOpaque(), 12);
+  remotingCommand.set_opaque(12);
+  EXPECT_EQ(remotingCommand.opaque(), 12);
 
-  remotingCommand.setRemark("123");
-  EXPECT_EQ(remotingCommand.getRemark(), "123");
+  remotingCommand.set_remark("123");
+  EXPECT_EQ(remotingCommand.remark(), "123");
 
-  remotingCommand.setBody("msgBody");
-  EXPECT_EQ((std::string)*remotingCommand.getBody(), "msgBody");
+  remotingCommand.set_body("msgBody");
+  EXPECT_EQ((std::string)remotingCommand.body()->array(), "msgBody");
 
-  remotingCommand.addExtField("key", "value");
+  remotingCommand.set_ext_field("key", "value");
 }
 
 TEST(RemotingCommandTest, Flag) {
   RemotingCommand remotingCommand(13, "CPP", MQVersion::s_CurrentVersion, 12, 0, "remark",
                                   new GetRouteInfoRequestHeader("topic"));
   ;
-  EXPECT_EQ(remotingCommand.getFlag(), 0);
+  EXPECT_EQ(remotingCommand.flag(), 0);
 
   remotingCommand.markResponseType();
   int bits = 1 << 0;
   int flag = 0;
   flag |= bits;
-  EXPECT_EQ(remotingCommand.getFlag(), flag);
+  EXPECT_EQ(remotingCommand.flag(), flag);
   EXPECT_TRUE(remotingCommand.isResponseType());
 
   bits = 1 << 1;
   flag |= bits;
   remotingCommand.markOnewayRPC();
-  EXPECT_EQ(remotingCommand.getFlag(), flag);
+  EXPECT_EQ(remotingCommand.flag(), flag);
   EXPECT_TRUE(remotingCommand.isOnewayRPC());
 }
 
 TEST(RemotingCommandTest, EncodeAndDecode) {
   RemotingCommand remotingCommand(MQRequestCode::QUERY_BROKER_OFFSET, "CPP", MQVersion::s_CurrentVersion, 12, 3,
                                   "remark", nullptr);
-  remotingCommand.setBody("123123");
+  remotingCommand.set_body("123123");
 
   auto package = remotingCommand.encode();
 
-  std::unique_ptr<RemotingCommand> decodeRemtingCommand(
-      RemotingCommand::Decode(std::shared_ptr<MemoryBlock>(std::move(package)), true));
+  std::unique_ptr<RemotingCommand> decodeRemtingCommand(RemotingCommand::Decode(package, true));
 
-  EXPECT_EQ(remotingCommand.getCode(), decodeRemtingCommand->getCode());
-  EXPECT_EQ(remotingCommand.getOpaque(), decodeRemtingCommand->getOpaque());
-  EXPECT_EQ(remotingCommand.getRemark(), decodeRemtingCommand->getRemark());
-  EXPECT_EQ(remotingCommand.getVersion(), decodeRemtingCommand->getVersion());
-  EXPECT_EQ(remotingCommand.getFlag(), decodeRemtingCommand->getFlag());
+  EXPECT_EQ(remotingCommand.code(), decodeRemtingCommand->code());
+  EXPECT_EQ(remotingCommand.opaque(), decodeRemtingCommand->opaque());
+  EXPECT_EQ(remotingCommand.remark(), decodeRemtingCommand->remark());
+  EXPECT_EQ(remotingCommand.version(), decodeRemtingCommand->version());
+  EXPECT_EQ(remotingCommand.flag(), decodeRemtingCommand->flag());
   EXPECT_TRUE(decodeRemtingCommand->readCustomHeader() == nullptr);
 
   // ~RemotingCommand delete
@@ -156,10 +153,10 @@ TEST(RemotingCommandTest, EncodeAndDecode) {
 
   RemotingCommand remotingCommand2(MQRequestCode::GET_CONSUMER_RUNNING_INFO, "CPP", MQVersion::s_CurrentVersion, 12, 3,
                                    "remark", requestHeader);
-  remotingCommand2.setBody("123123");
+  remotingCommand2.set_body("123123");
   package = remotingCommand2.encode();
 
-  decodeRemtingCommand.reset(RemotingCommand::Decode(std::shared_ptr<MemoryBlock>(std::move(package)), true));
+  decodeRemtingCommand.reset(RemotingCommand::Decode(package, true));
 
   auto* header = decodeRemtingCommand->decodeCommandCustomHeader<GetConsumerRunningInfoRequestHeader>();
   EXPECT_EQ(requestHeader->getClientId(), header->getClientId());
@@ -171,9 +168,9 @@ TEST(RemotingCommandTest, SetExtHeader) {
 
   EXPECT_TRUE(remotingCommand->readCustomHeader() == nullptr);
 
-  remotingCommand->addExtField("msgId", "ABCD");
-  remotingCommand->addExtField("queueId", "1");
-  remotingCommand->addExtField("queueOffset", "1024");
+  remotingCommand->set_ext_field("msgId", "ABCD");
+  remotingCommand->set_ext_field("queueId", "1");
+  remotingCommand->set_ext_field("queueOffset", "1024");
   auto* sendMessageResponseHeader = remotingCommand->decodeCommandCustomHeader<SendMessageResponseHeader>();
   EXPECT_EQ(sendMessageResponseHeader->msgId, "ABCD");
   EXPECT_EQ(sendMessageResponseHeader->queueId, 1);

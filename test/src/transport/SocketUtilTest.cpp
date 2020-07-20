@@ -23,10 +23,13 @@ using testing::InitGoogleMock;
 using testing::InitGoogleTest;
 using testing::Return;
 
+using rocketmq::ByteArray;
+
 using namespace rocketmq;
 
 TEST(SocketUtilTest, Convert) {
-  struct sockaddr* sa = ipPort2SocketAddress(0x7F000001, 0x276B);
+  char ip[] = {0x7F, 0x00, 0x00, 0x01};
+  struct sockaddr* sa = ipPort2SocketAddress(ByteArray(ip, sizeof(ip)), 0x276B);
   struct sockaddr_in* sin = (struct sockaddr_in*)sa;
   EXPECT_EQ(sin->sin_addr.s_addr, 0x0100007F);
   EXPECT_EQ(sin->sin_port, 0x6B27);

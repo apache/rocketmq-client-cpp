@@ -30,6 +30,7 @@ using testing::Return;
 using rocketmq::MessageBatch;
 using rocketmq::MessageDecoder;
 using rocketmq::MQMessage;
+using rocketmq::stoba;
 
 TEST(MessageBatchTest, Encode) {
   std::vector<MQMessage> msgs;

@@ -21,22 +21,22 @@ namespace rocketmq {
 
 class MessageSysFlag {
  public:
+  static const int COMPRESSED_FLAG;
+  static const int MULTI_TAGS_FLAG;
+
+  static const int TRANSACTION_NOT_TYPE;
+  static const int TRANSACTION_PREPARED_TYPE;
+  static const int TRANSACTION_COMMIT_TYPE;
+  static const int TRANSACTION_ROLLBACK_TYPE;
+
+  static const int BORNHOST_V6_FLAG;
+  static const int STOREHOST_V6_FLAG;
+
+ public:
   static int getTransactionValue(int flag);
   static int resetTransactionValue(int flag, int type);
 
   static int clearCompressedFlag(int flag);
-
- public:
-  static const int CompressedFlag;
-  static const int MultiTagsFlag;
-
-  static const int TransactionNotType;
-  static const int TransactionPreparedType;
-  static const int TransactionCommitType;
-  static const int TransactionRollbackType;
-
-  static const int BronhostV6Flag;
-  static const int StorehostV6Flag;
 };
 
 }  // namespace rocketmq

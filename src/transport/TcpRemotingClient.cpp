@@ -16,10 +16,11 @@
  */
 #include "TcpRemotingClient.h"
 
-#include <stddef.h>
+#include <cstddef>
+
+#include <algorithm>  // std::move
 
 #include "Logging.h"
-#include "MemoryOutputStream.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
@@ -232,7 +233,7 @@ std::unique_ptr<RemotingCommand> TcpRemotingClient::invokeSync(const std::string
       CloseTransport(addr, channel);
       throw e;
     } catch (const RemotingTimeoutException& e) {
-      int code = request.getCode();
+      int code = request.code();
       if (code != GET_CONSUMER_LIST_BY_GROUP) {
         CloseTransport(addr, channel);
         LOG_WARN_NEW("invokeSync: close socket because of timeout, {}ms, {}", timeoutMillis,
@@ -250,8 +251,8 @@ std::unique_ptr<RemotingCommand> TcpRemotingClient::invokeSyncImpl(
     TcpTransportPtr channel,
     RemotingCommand& request,
     int64_t timeoutMillis) throw(RemotingTimeoutException, RemotingSendRequestException) {
-  int code = request.getCode();
-  int opaque = request.getOpaque();
+  int code = request.code();
+  int opaque = request.opaque();
 
   auto responseFuture = std::make_shared<ResponseFuture>(code, opaque, timeoutMillis);
   putResponseFuture(channel, opaque, responseFuture);
@@ -305,8 +306,8 @@ void TcpRemotingClient::invokeAsyncImpl(TcpTransportPtr channel,
                                         RemotingCommand& request,
                                         int64_t timeoutMillis,
                                         InvokeCallback* invokeCallback) throw(RemotingSendRequestException) {
-  int code = request.getCode();
-  int opaque = request.getOpaque();
+  int code = request.code();
+  int opaque = request.opaque();
 
   // delete in callback
   auto responseFuture = std::make_shared<ResponseFuture>(code, opaque, timeoutMillis, invokeCallback);
@@ -555,8 +556,8 @@ bool TcpRemotingClient::CloseNameServerTransport(TcpTransportPtr channel) {
 }
 
 bool TcpRemotingClient::SendCommand(TcpTransportPtr channel, RemotingCommand& msg) {
-  MemoryBlockPtr package(msg.encode());
-  return channel->sendMessage(package->getData(), package->getSize());
+  auto package = msg.encode();
+  return channel->sendMessage(package->array(), package->size());
 }
 
 void TcpRemotingClient::channelClosed(TcpTransportPtr channel) {
@@ -564,15 +565,14 @@ void TcpRemotingClient::channelClosed(TcpTransportPtr channel) {
   m_handleExecutor.submit([channel] { static_cast<ResponseFutureInfo*>(channel->getInfo())->activeAllResponses(); });
 }
 
-void TcpRemotingClient::messageReceived(MemoryBlockPtr mem, TcpTransportPtr channel) {
-  m_dispatchExecutor.submit(
-      std::bind(&TcpRemotingClient::processMessageReceived, this, MemoryBlockPtr2(std::move(mem)), channel));
+void TcpRemotingClient::messageReceived(ByteArrayRef msg, TcpTransportPtr channel) {
+  m_dispatchExecutor.submit(std::bind(&TcpRemotingClient::processMessageReceived, this, std::move(msg), channel));
 }
 
-void TcpRemotingClient::processMessageReceived(MemoryBlockPtr2 mem, TcpTransportPtr channel) {
+void TcpRemotingClient::processMessageReceived(ByteArrayRef msg, TcpTransportPtr channel) {
   std::unique_ptr<RemotingCommand> cmd;
   try {
-    cmd.reset(RemotingCommand::Decode(mem));
+    cmd.reset(RemotingCommand::Decode(std::move(msg)));
   } catch (...) {
     LOG_ERROR_NEW("processMessageReceived error");
     return;
@@ -612,7 +612,7 @@ void TcpRemotingClient::processMessageReceived(MemoryBlockPtr2 mem, TcpTransport
 
 void TcpRemotingClient::processResponseCommand(std::unique_ptr<RemotingCommand> responseCommand,
                                                TcpTransportPtr channel) {
-  int opaque = responseCommand->getOpaque();
+  int opaque = responseCommand->opaque();
   auto responseFuture = popResponseFuture(channel, opaque);
   if (responseFuture != nullptr) {
     int code = responseFuture->getRequestCode();
@@ -636,7 +636,7 @@ void TcpRemotingClient::processRequestCommand(std::unique_ptr<RemotingCommand> r
                                               TcpTransportPtr channel) {
   std::unique_ptr<RemotingCommand> response;
 
-  int requestCode = requestCommand->getCode();
+  int requestCode = requestCommand->code();
   const auto& it = m_processorTable.find(requestCode);
   if (it != m_processorTable.end()) {
     try {
@@ -653,14 +653,14 @@ void TcpRemotingClient::processRequestCommand(std::unique_ptr<RemotingCommand> r
     }
   } else {
     // send REQUEST_CODE_NOT_SUPPORTED response
-    std::string error = "request type " + UtilAll::to_string(requestCommand->getCode()) + " not supported";
+    std::string error = "request type " + UtilAll::to_string(requestCommand->code()) + " not supported";
     response.reset(new RemotingCommand(REQUEST_CODE_NOT_SUPPORTED, error));
 
     LOG_ERROR_NEW("{}: {}", channel->getPeerAddrAndPort(), error);
   }
 
   if (!requestCommand->isOnewayRPC() && response != nullptr) {
-    response->setOpaque(requestCommand->getOpaque());
+    response->set_opaque(requestCommand->opaque());
     response->markResponseType();
     try {
       if (!SendCommand(channel, *response)) {

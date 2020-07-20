@@ -14,24 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TOPIC_LIST_H__
-#define __TOPIC_LIST_H__
+#ifndef ROCKETMQ_BYTEARRAY_H_
+#define ROCKETMQ_BYTEARRAY_H_
 
-#include <string>  // std::string
-#include <vector>  // std::vector
+#include <memory>  // std::shared_ptr
 
-#include "ByteArray.h"
+#include "Array.h"
 
 namespace rocketmq {
 
-class TopicList {
- public:
-  static TopicList* Decode(const ByteArray& mem) { return new TopicList(); }
+typedef Array<char> ByteArray;
+typedef std::shared_ptr<Array<char>> ByteArrayRef;
 
- private:
-  std::vector<std::string> topic_list_;
-};
+ByteArrayRef slice(ByteArrayRef ba, size_t offset);
+ByteArrayRef slice(ByteArrayRef ba, size_t offset, size_t size);
 
-}  // namespace rocketmq
+ByteArrayRef stoba(const std::string& str);
+ByteArrayRef stoba(std::string&& str);
 
-#endif  // __TOPIC_LIST_H__
+ByteArrayRef catoba(const char* str, size_t len);
+
+std::string batos(ByteArrayRef ba);
+
+}  // namepace rocketmq
+
+#endif  // ROCKETMQ_BYTEARRAY_H_

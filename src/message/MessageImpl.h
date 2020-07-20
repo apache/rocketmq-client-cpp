@@ -65,7 +65,6 @@ class MessageImpl : public noncopyable,     // base
   void setFlag(int32_t flag) override;
 
   const std::string& getBody() const override;
-  void setBody(const char* body, int len) override;
   void setBody(const std::string& body) override;
   void setBody(std::string&& body) override;
 

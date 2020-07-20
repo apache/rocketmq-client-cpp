@@ -14,34 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_MESSAGE_QUEUE_H__
-#define __MQ_MESSAGE_QUEUE_H__
+#ifndef ROCKETMQ_MQMESSAGEQUEUE_H_
+#define ROCKETMQ_MQMESSAGEQUEUE_H_
 
-#include <sstream>
-#include <string>
+#include <string>  // std::string
 
 #include "RocketMQClient.h"
 
 namespace rocketmq {
 
 /**
- * MQ(T,B,ID)
+ * MessageQueue(Topic, BrokerName, QueueId)
  */
 class ROCKETMQCLIENT_API MQMessageQueue {
  public:
   MQMessageQueue();
   MQMessageQueue(const std::string& topic, const std::string& brokerName, int queueId);
+
   MQMessageQueue(const MQMessageQueue& other);
   MQMessageQueue& operator=(const MQMessageQueue& other);
-
-  const std::string& getTopic() const;
-  void setTopic(const std::string& topic);
-
-  const std::string& getBrokerName() const;
-  void setBrokerName(const std::string& brokerName);
-
-  int getQueueId() const;
-  void setQueueId(int queueId);
 
   bool operator==(const MQMessageQueue& mq) const;
   bool operator!=(const MQMessageQueue& mq) const { return !operator==(mq); }
@@ -49,18 +40,24 @@ class ROCKETMQCLIENT_API MQMessageQueue {
   bool operator<(const MQMessageQueue& mq) const;
   int compareTo(const MQMessageQueue& mq) const;
 
-  std::string toString() const {
-    std::stringstream ss;
-    ss << "MessageQueue [topic=" << m_topic << ", brokerName=" << m_brokerName << ", queueId=" << m_queueId << "]";
-    return ss.str();
-  }
+  std::string toString() const;
+
+ public:
+  inline const std::string& getTopic() const { return topic_; };
+  inline void setTopic(const std::string& topic) { topic_ = topic; };
+
+  inline const std::string& getBrokerName() const { return broker_name_; };
+  inline void setBrokerName(const std::string& broker_name) { broker_name_ = broker_name; };
+
+  inline int getQueueId() const { return queue_id_; };
+  inline void setQueueId(int queue_id) { queue_id_ = queue_id; };
 
  private:
-  std::string m_topic;
-  std::string m_brokerName;
-  int m_queueId;
+  std::string topic_;
+  std::string broker_name_;
+  int queue_id_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __MQ_MESSAGE_QUEUE_H__
+#endif  // ROCKETMQ_MQMESSAGEQUEUE_H_

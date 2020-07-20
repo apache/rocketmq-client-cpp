@@ -20,9 +20,9 @@
 
 namespace rocketmq {
 
-ResetOffsetBody* ResetOffsetBody::Decode(MemoryBlock& mem) {
+ResetOffsetBody* ResetOffsetBody::Decode(const ByteArray& bodyData) {
   // FIXME: object as key
-  Json::Value root = RemotingSerializable::fromJson(mem);
+  Json::Value root = RemotingSerializable::fromJson(bodyData);
   Json::Value qds = root["offsetTable"];
   std::unique_ptr<ResetOffsetBody> body(new ResetOffsetBody());
   for (unsigned int i = 0; i < qds.size(); i++) {
@@ -35,11 +35,11 @@ ResetOffsetBody* ResetOffsetBody::Decode(MemoryBlock& mem) {
 }
 
 std::map<MQMessageQueue, int64_t> ResetOffsetBody::getOffsetTable() {
-  return m_offsetTable;
+  return offset_table_;
 }
 
 void ResetOffsetBody::setOffsetTable(const MQMessageQueue& mq, int64_t offset) {
-  m_offsetTable[mq] = offset;
+  offset_table_[mq] = offset;
 }
 
 }  // namespace rocketmq

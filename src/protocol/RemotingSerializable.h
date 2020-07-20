@@ -19,7 +19,7 @@
 
 #include <json/json.h>
 
-#include "DataBlock.h"
+#include "ByteArray.h"
 
 namespace rocketmq {
 
@@ -35,7 +35,7 @@ class RemotingSerializable {
 
   static Json::Value fromJson(std::istream& sin);
   static Json::Value fromJson(const std::string& json);
-  static Json::Value fromJson(const MemoryBlock& data);
+  static Json::Value fromJson(const ByteArray& bytes);
   static Json::Value fromJson(const char* begin, const char* end);
 
  private:

@@ -39,7 +39,7 @@ void ProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* produc
     try {
       auto start = std::chrono::system_clock::now();
       int orderId = 1;
-      SendResult sendResult = producer->send(&msg, &g_mySelector, static_cast<void*>(&orderId), info->retrytimes);
+      SendResult sendResult = producer->send(msg, &g_mySelector, static_cast<void*>(&orderId), info->retrytimes);
       auto end = std::chrono::system_clock::now();
 
       g_tps.Increment();

@@ -18,6 +18,7 @@
 #define __SOCKET_UTIL_H__
 
 #include <cstdint>
+
 #include <string>
 
 #ifndef WIN32
@@ -28,13 +29,15 @@
 #pragma comment(lib, "ws2_32.lib")
 #endif
 
+#include "ByteArray.h"
+
 namespace rocketmq {
 
 static inline size_t sockaddr_size(const struct sockaddr* sa) {
   return sa->sa_family == AF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
 }
 
-struct sockaddr* ipPort2SocketAddress(uint32_t host, uint16_t port);
+struct sockaddr* ipPort2SocketAddress(const ByteArray& ip, uint16_t port);
 
 struct sockaddr* string2SocketAddress(const std::string& addr);
 std::string socketAddress2String(const struct sockaddr* addr);

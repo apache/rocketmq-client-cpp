@@ -17,7 +17,7 @@
 #ifndef ROCKETMQ_MQMESSAGE_H_
 #define ROCKETMQ_MQMESSAGE_H_
 
-#include <cstddef>  // std::nullptr_t
+#include <algorithm>  // std::move
 
 #include "Message.h"
 #include "MQMessageConst.h"
@@ -47,6 +47,7 @@ class ROCKETMQCLIENT_API MQMessage : virtual public Message  // interface
 
   // copy constructor
   MQMessage(const MQMessage& other) : message_impl_(other.message_impl_) {}
+  MQMessage(MQMessage&& other) : message_impl_(std::move(other.message_impl_)) {}
 
   // assign operator
   MQMessage& operator=(const MQMessage& other) {
@@ -56,9 +57,8 @@ class ROCKETMQCLIENT_API MQMessage : virtual public Message  // interface
     return *this;
   }
 
-  bool operator==(std::nullptr_t) noexcept { return nullptr == message_impl_; }
-
-  friend bool operator==(std::nullptr_t, const MQMessage& message) noexcept { return nullptr == message.message_impl_; }
+  bool operator==(std::nullptr_t) const noexcept { return nullptr == message_impl_; }
+  friend bool operator==(std::nullptr_t, const MQMessage& message) noexcept;
 
   // convert to boolean
   operator bool() noexcept { return nullptr != message_impl_; }
@@ -92,7 +92,6 @@ class ROCKETMQCLIENT_API MQMessage : virtual public Message  // interface
   void setFlag(int32_t flag) override;
 
   const std::string& getBody() const override;
-  void setBody(const char* body, int len) override;
   void setBody(const std::string& body) override;
   void setBody(std::string&& body) override;
 

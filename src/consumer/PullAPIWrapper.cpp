@@ -16,6 +16,7 @@
  */
 #include "PullAPIWrapper.h"
 
+#include "ByteBuffer.hpp"
 #include "MQClientAPIImpl.h"
 #include "MQClientInstance.h"
 #include "MessageDecoder.h"
@@ -56,12 +57,13 @@ PullResult PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
   auto& pullResultExt = dynamic_cast<PullResultExt&>(pullResult);
 
   // update node
-  updatePullFromWhichNode(mq, pullResultExt.suggestWhichBrokerId);
+  updatePullFromWhichNode(mq, pullResultExt.suggert_which_boker_id());
 
   std::vector<MessageExtPtr> msgListFilterAgain;
   if (FOUND == pullResultExt.pull_status()) {
     // decode all msg list
-    auto msgList = MessageDecoder::decodes(*pullResultExt.msgMemBlock);
+    std::unique_ptr<ByteBuffer> byteBuffer(ByteBuffer::wrap(pullResultExt.message_binary()));
+    auto msgList = MessageDecoder::decodes(*byteBuffer);
 
     // filter msg list again
     if (subscriptionData != nullptr && !subscriptionData->getTagsSet().empty()) {

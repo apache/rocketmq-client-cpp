@@ -19,7 +19,7 @@
 
 #include <vector>
 
-#include "DataBlock.h"
+#include "ByteArray.h"
 #include "MQMessageQueue.h"
 #include "protocol/body/LockBatchBody.h"
 
@@ -27,9 +27,9 @@ using testing::InitGoogleMock;
 using testing::InitGoogleTest;
 using testing::Return;
 
+using rocketmq::ByteArray;
 using rocketmq::LockBatchRequestBody;
 using rocketmq::LockBatchResponseBody;
-using rocketmq::MemoryBlock;
 using rocketmq::MQMessageQueue;
 using rocketmq::UnlockBatchRequestBody;
 
@@ -75,10 +75,10 @@ TEST(LockBatchBodyTest, LockBatchResponseBody) {
   root["lockOKMQSet"] = mqs;
 
   Json::FastWriter fastwrite;
-  std::string outData = fastwrite.write(root);
+  std::string data = fastwrite.write(root);
 
-  std::unique_ptr<MemoryBlock> mem(new MemoryBlock(const_cast<char*>(outData.data()), outData.size()));
-  std::unique_ptr<LockBatchResponseBody> lockBatchResponseBody(LockBatchResponseBody::Decode(*mem));
+  const ByteArray bodyData((char*)data.data(), data.size());
+  std::unique_ptr<LockBatchResponseBody> lockBatchResponseBody(LockBatchResponseBody::Decode(bodyData));
 
   MQMessageQueue messageQueue("testTopic", "testBroker", 1);
   EXPECT_EQ(messageQueue, lockBatchResponseBody->getLockOKMQSet()[0]);

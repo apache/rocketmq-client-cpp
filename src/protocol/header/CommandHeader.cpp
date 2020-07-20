@@ -642,8 +642,8 @@ void ConsumerSendMsgBackRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<
 // GetConsumerListByGroupResponseBody
 //######################################
 
-GetConsumerListByGroupResponseBody* GetConsumerListByGroupResponseBody::Decode(MemoryBlock& mem) {
-  Json::Value root = RemotingSerializable::fromJson(mem);
+GetConsumerListByGroupResponseBody* GetConsumerListByGroupResponseBody::Decode(const ByteArray& bodyData) {
+  Json::Value root = RemotingSerializable::fromJson(bodyData);
   auto& ids = root["consumerIdList"];
   std::unique_ptr<GetConsumerListByGroupResponseBody> body(new GetConsumerListByGroupResponseBody());
   for (unsigned int i = 0; i < ids.size(); i++) {

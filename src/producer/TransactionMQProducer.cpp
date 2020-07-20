@@ -45,17 +45,17 @@ void TransactionMQProducer::setTransactionListener(TransactionListener* transact
 }
 
 void TransactionMQProducer::start() {
-  std::dynamic_pointer_cast<DefaultMQProducerImpl>(m_producerDelegate)->initTransactionEnv();
+  std::dynamic_pointer_cast<DefaultMQProducerImpl>(producer_impl_)->initTransactionEnv();
   DefaultMQProducer::start();
 }
 
 void TransactionMQProducer::shutdown() {
   DefaultMQProducer::shutdown();
-  std::dynamic_pointer_cast<DefaultMQProducerImpl>(m_producerDelegate)->destroyTransactionEnv();
+  std::dynamic_pointer_cast<DefaultMQProducerImpl>(producer_impl_)->destroyTransactionEnv();
 }
 
 TransactionSendResult TransactionMQProducer::sendMessageInTransaction(MQMessage& msg, void* arg) {
-  return m_producerDelegate->sendMessageInTransaction(msg, arg);
+  return producer_impl_->sendMessageInTransaction(msg, arg);
 }
 
 }  // namespace rocketmq

@@ -71,9 +71,9 @@ Json::Value RemotingSerializable::fromJson(const std::string& json) {
   return fromJson(begin, end);
 }
 
-Json::Value RemotingSerializable::fromJson(const MemoryBlock& data) {
-  const char* begin = data.getData();
-  const char* end = begin + data.getSize();
+Json::Value RemotingSerializable::fromJson(const ByteArray& bytes) {
+  const char* begin = bytes.array();
+  const char* end = begin + bytes.size();
   return fromJson(begin, end);
 }
 

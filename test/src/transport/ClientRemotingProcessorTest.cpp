@@ -22,10 +22,10 @@
 #include <map>
 #include <memory>
 
+#include "ByteArray.h"
 #include "ClientRPCHook.h"
 #include "ClientRemotingProcessor.h"
 #include "ConsumerRunningInfo.h"
-#include "DataBlock.h"
 #include "MQClientConfigImpl.h"
 #include "MQClientInstance.h"
 #include "MQMessageQueue.h"
@@ -47,11 +47,11 @@ using testing::SetArgReferee;
 using Json::FastWriter;
 using Json::Value;
 
+using rocketmq::ByteArray;
 using rocketmq::ClientRemotingProcessor;
 using rocketmq::ClientRPCHook;
 using rocketmq::ConsumerRunningInfo;
 using rocketmq::GetConsumerRunningInfoRequestHeader;
-using rocketmq::MemoryBlock;
 using rocketmq::MQClientConfig;
 using rocketmq::MQClientConfigImpl;
 using rocketmq::MQClientInstance;

@@ -70,7 +70,6 @@ class ROCKETMQCLIENT_API Message {
 
   // body
   virtual const std::string& getBody() const = 0;
-  virtual void setBody(const char* body, int len) = 0;
   virtual void setBody(const std::string& body) = 0;
   virtual void setBody(std::string&& body) = 0;
 

@@ -20,7 +20,6 @@
 #include <set>
 #include <string>
 
-#include "DataBlock.h"
 #include "MQMessageQueue.h"
 #include "RemotingSerializable.h"
 #include "UtilAll.h"
@@ -48,7 +47,7 @@ class LockBatchRequestBody : public RemotingSerializable {
 
 class LockBatchResponseBody {
  public:
-  static LockBatchResponseBody* Decode(MemoryBlock& mem);
+  static LockBatchResponseBody* Decode(const ByteArray& bodyData);
 
   const std::vector<MQMessageQueue>& getLockOKMQSet();
   void setLockOKMQSet(std::vector<MQMessageQueue> lockOKMQSet);

@@ -27,7 +27,7 @@ void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* pr
                   info->body);  // body
     try {
       auto start = std::chrono::system_clock::now();
-      SendResult sendResult = producer->send(&msg);
+      SendResult sendResult = producer->send(msg);
       auto end = std::chrono::system_clock::now();
 
       g_tps.Increment();

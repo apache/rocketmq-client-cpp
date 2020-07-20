@@ -43,7 +43,7 @@ class FilterAPI {
             UtilAll::Trim(tag);
             if (!tag.empty()) {
               subscriptionData->putTagsSet(tag);
-              subscriptionData->putCodeSet(UtilAll::HashCode(tag));
+              subscriptionData->putCodeSet(UtilAll::hash_code(tag));
             }
           }
         }

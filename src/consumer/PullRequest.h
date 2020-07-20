@@ -49,12 +49,7 @@ class ROCKETMQCLIENT_API PullRequest {
   ProcessQueuePtr getProcessQueue();
   void setProcessQueue(ProcessQueuePtr processQueue);
 
-  std::string toString() const {
-    std::stringstream ss;
-    ss << "PullRequest [consumerGroup=" << m_consumerGroup << ", messageQueue=" << m_messageQueue.toString()
-       << ", nextOffset=" << m_nextOffset << "]";
-    return ss.str();
-  }
+  std::string toString() const;
 
  private:
   std::string m_consumerGroup;

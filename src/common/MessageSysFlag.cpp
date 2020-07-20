@@ -18,27 +18,27 @@
 
 namespace rocketmq {
 
-const int MessageSysFlag::CompressedFlag = 0x1 << 0;
-const int MessageSysFlag::MultiTagsFlag = 0x1 << 1;
+const int MessageSysFlag::COMPRESSED_FLAG = 0x1 << 0;
+const int MessageSysFlag::MULTI_TAGS_FLAG = 0x1 << 1;
 
-const int MessageSysFlag::TransactionNotType = 0x0;
-const int MessageSysFlag::TransactionPreparedType = 0x1 << 2;
-const int MessageSysFlag::TransactionCommitType = 0x2 << 2;
-const int MessageSysFlag::TransactionRollbackType = 0x3 << 2;
+const int MessageSysFlag::TRANSACTION_NOT_TYPE = 0x0;
+const int MessageSysFlag::TRANSACTION_PREPARED_TYPE = 0x1 << 2;
+const int MessageSysFlag::TRANSACTION_COMMIT_TYPE = 0x2 << 2;
+const int MessageSysFlag::TRANSACTION_ROLLBACK_TYPE = 0x3 << 2;
 
-const int MessageSysFlag::BronhostV6Flag = 0x1 << 4;
-const int MessageSysFlag::StorehostV6Flag = 0x1 << 5;
+const int MessageSysFlag::BORNHOST_V6_FLAG = 0x1 << 4;
+const int MessageSysFlag::STOREHOST_V6_FLAG = 0x1 << 5;
 
 int MessageSysFlag::getTransactionValue(int flag) {
-  return flag & TransactionRollbackType;
+  return flag & TRANSACTION_ROLLBACK_TYPE;
 }
 
 int MessageSysFlag::resetTransactionValue(int flag, int type) {
-  return (flag & (~TransactionRollbackType)) | type;
+  return (flag & (~TRANSACTION_ROLLBACK_TYPE)) | type;
 }
 
 int MessageSysFlag::clearCompressedFlag(int flag) {
-  return flag & (~CompressedFlag);
+  return flag & (~COMPRESSED_FLAG);
 }
 
 }  // namespace rocketmq

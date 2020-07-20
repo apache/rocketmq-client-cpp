@@ -144,11 +144,6 @@ const std::string& MessageImpl::getBody() const {
   return body_;
 }
 
-void MessageImpl::setBody(const char* body, int len) {
-  body_.clear();
-  body_.append(body, len);
-}
-
 void MessageImpl::setBody(const std::string& body) {
   body_ = body;
 }

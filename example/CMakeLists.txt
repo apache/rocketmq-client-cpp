@@ -17,7 +17,7 @@ project(example)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
 
-file(GLOB files RELATIVE "${PROJECT_SOURCE_DIR}" "*.c*")
+file(GLOB files RELATIVE "${PROJECT_SOURCE_DIR}" "*.c" "*.cpp")
 list(REMOVE_ITEM files "ArgHelper.cpp")
 foreach(file ${files})
     get_filename_component(basename ${file} NAME_WE)

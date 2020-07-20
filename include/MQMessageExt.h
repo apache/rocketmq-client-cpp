@@ -43,6 +43,7 @@ class ROCKETMQCLIENT_API MQMessageExt : public MQMessage,          // base
 
   // copy constructor
   MQMessageExt(const MQMessageExt& other) : MQMessage(other) {}
+  MQMessageExt(MQMessageExt&& other) : MQMessage(std::move(other)) {}
 
   // assign operator
   MQMessageExt& operator=(const MQMessageExt& other) {

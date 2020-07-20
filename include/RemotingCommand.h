@@ -14,15 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __REMOTING_COMMAND_H__
-#define __REMOTING_COMMAND_H__
+#ifndef ROCKETMQ_REMOTINGCOMMAND_H_
+#define ROCKETMQ_REMOTINGCOMMAND_H_
 
-#include <map>
-#include <memory>
-#include <typeindex>
+#include <exception>  // std::exception
+#include <map>        // std::map
+#include <memory>     // std::unique_ptr, std::shared_ptr
+#include <string>     // std::string
+#include <typeindex>  // std::type_index
 
+#include "ByteArray.h"
 #include "CommandCustomHeader.h"
-#include "DataBlock.h"
 #include "MQClientException.h"
 
 namespace rocketmq {
@@ -32,7 +34,7 @@ class ROCKETMQCLIENT_API RemotingCommand {
   static int32_t createNewRequestId();
 
  public:
-  RemotingCommand() : m_code(0) {}
+  RemotingCommand() : code_(0) {}
   RemotingCommand(int32_t code, CommandCustomHeader* customHeader = nullptr);
   RemotingCommand(int32_t code, const std::string& remark, CommandCustomHeader* customHeader = nullptr);
   RemotingCommand(int32_t code,
@@ -42,78 +44,77 @@ class ROCKETMQCLIENT_API RemotingCommand {
                   int32_t flag,
                   const std::string& remark,
                   CommandCustomHeader* customHeader);
+
   RemotingCommand(RemotingCommand&& command);
 
   virtual ~RemotingCommand();
 
-  int32_t getCode() const;
-  void setCode(int32_t code);
-
-  int32_t getVersion() const;
-
-  int32_t getOpaque() const;
-  void setOpaque(int32_t opaque);
-
-  int32_t getFlag() const;
-
-  const std::string& getRemark() const;
-  void setRemark(const std::string& mark);
-
+ public:
   bool isResponseType();
   void markResponseType();
 
   bool isOnewayRPC();
   void markOnewayRPC();
 
-  void addExtField(const std::string& key, const std::string& value);
-
   CommandCustomHeader* readCustomHeader() const;
 
-  MemoryBlockPtr2 getBody() const;
-  void setBody(MemoryBlock* body);
-  void setBody(MemoryBlockPtr2 body);
-  void setBody(const std::string& body);
-
  public:
-  MemoryBlockPtr encode() const;
+  ByteArrayRef encode() const;
 
   template <class H>
-  H* decodeCommandCustomHeader(bool useCache);
+  H* decodeCommandCustomHeader(bool useCache = true);
 
-  template <class H>
-  H* decodeCommandCustomHeader();
-
-  static RemotingCommand* Decode(MemoryBlockPtr2 package, bool havePackageLen = false);
+  static RemotingCommand* Decode(ByteArrayRef array, bool hasPackageLength = false);
 
   std::string toString() const;
 
- private:
-  int32_t m_code;
-  std::string m_language;
-  int32_t m_version;
-  int32_t m_opaque;
-  int32_t m_flag;
-  std::string m_remark;
-  std::map<std::string, std::string> m_extFields;
-  std::unique_ptr<CommandCustomHeader> m_customHeader;  // transient
+ public:
+  inline int32_t code() const { return code_; }
+  inline void set_code(int32_t code) { code_ = code; }
 
-  MemoryBlockPtr2 m_body;  // transient
+  inline int32_t version() const { return version_; }
+
+  inline int32_t opaque() const { return opaque_; }
+  inline void set_opaque(int32_t opaque) { opaque_ = opaque; }
+
+  inline int32_t flag() const { return flag_; }
+
+  inline const std::string& remark() const { return remark_; }
+  inline void set_remark(const std::string& remark) { remark_ = remark; }
+
+  inline void set_ext_field(const std::string& name, const std::string& value) { ext_fields_[name] = value; }
+
+  inline ByteArrayRef body() const { return body_; }
+  inline void set_body(ByteArrayRef body) { body_ = std::move(body); }
+  inline void set_body(const std::string& body) { body_ = stoba(body); }
+  inline void set_body(std::string&& body) { body_ = stoba(std::move(body)); }
+
+ private:
+  int32_t code_;
+  std::string language_;
+  int32_t version_;
+  int32_t opaque_;
+  int32_t flag_;
+  std::string remark_;
+  std::map<std::string, std::string> ext_fields_;
+
+  std::unique_ptr<CommandCustomHeader> custom_header_;  // transient
+
+  ByteArrayRef body_;  // transient
 };
 
 template <class H>
 H* RemotingCommand::decodeCommandCustomHeader(bool useCache) {
-  auto* cache = m_customHeader.get();
-  if (cache != nullptr && useCache && std::type_index(typeid(*cache)) == std::type_index(typeid(H))) {
-    return static_cast<H*>(m_customHeader.get());
+  if (useCache) {
+    auto* cache = custom_header_.get();
+    if (cache != nullptr && std::type_index(typeid(*cache)) == std::type_index(typeid(H))) {
+      return static_cast<H*>(custom_header_.get());
+    }
   }
-  return decodeCommandCustomHeader<H>();
-}
 
-template <class H>
-H* RemotingCommand::decodeCommandCustomHeader() {
   try {
-    H* header = H::Decode(m_extFields);
-    m_customHeader.reset(header);
+    H* header = H::Decode(ext_fields_);
+    custom_header_.reset(header);
     return header;
   } catch (std::exception& e) {
     THROW_MQEXCEPTION(RemotingCommandException, e.what(), -1);
@@ -122,4 +123,4 @@ H* RemotingCommand::decodeCommandCustomHeader() {
 
 }  // namespace rocketmq
 
-#endif  // __REMOTING_COMMAND_H__
+#endif  // ROCKETMQ_REMOTINGCOMMAND_H_

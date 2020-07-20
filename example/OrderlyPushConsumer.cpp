@@ -27,13 +27,12 @@ class MyMsgListener : public MessageListenerOrderly {
   MyMsgListener() {}
   virtual ~MyMsgListener() {}
 
-  virtual ConsumeStatus consumeMessage(const std::vector<MQMessageExt*>& msgs) {
+  virtual ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) override {
     auto old = g_msgCount.fetch_sub(msgs.size());
     if (old > 0) {
       for (size_t i = 0; i < msgs.size(); ++i) {
         g_tps.Increment();
-        // std::cout << msgs[i]->getMsgId() << std::endl;
-        // std::cout << "msg body: " << msgs[i].getBody() << std::endl;
+        std::cout << msgs[i].getMsgId() << ", body: " << msgs[i].getBody() << std::endl;
       }
       if (old <= msgs.size()) {
         g_finished.count_down();

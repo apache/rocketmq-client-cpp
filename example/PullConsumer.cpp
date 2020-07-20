@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "common.h"
+#include "DefaultMQPullConsumer.h"
 
 using namespace rocketmq;
 
@@ -77,18 +78,18 @@ int main(int argc, char* argv[]) {
     do {
       try {
         PullResult result = consumer.pull(mq, "*", getMessageQueueOffset(mq), 32);
-        g_msgCount += result.msg_found_list_.size();
-        std::cout << result.msg_found_list_.size() << std::endl;
+        g_msgCount += result.msg_found_list().size();
+        std::cout << result.msg_found_list().size() << std::endl;
         // if pull request timeout or received NULL response, pullStatus will be
         // setted to BROKER_TIMEOUT,
         // And nextBeginOffset/minOffset/MaxOffset will be setted to 0
-        if (result.pull_status_ != BROKER_TIMEOUT) {
-          putMessageQueueOffset(mq, result.next_begin_offset_);
+        if (result.pull_status() != BROKER_TIMEOUT) {
+          putMessageQueueOffset(mq, result.next_begin_offset());
           PrintPullResult(&result);
         } else {
           std::cout << "broker timeout occur" << std::endl;
         }
-        switch (result.pull_status_) {
+        switch (result.pull_status()) {
           case FOUND:
           case NO_MATCHED_MSG:
           case OFFSET_ILLEGAL:

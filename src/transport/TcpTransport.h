@@ -21,7 +21,7 @@
 #include <condition_variable>
 #include <mutex>
 
-#include "DataBlock.h"
+#include "ByteArray.h"
 #include "EventLoop.h"
 
 namespace rocketmq {
@@ -44,7 +44,7 @@ class TcpTransportInfo {
 
 class TcpTransport : public noncopyable, public std::enable_shared_from_this<TcpTransport> {
  public:
-  typedef std::function<void(MemoryBlockPtr, TcpTransportPtr) noexcept> ReadCallback;
+  typedef std::function<void(ByteArrayRef, TcpTransportPtr) noexcept> ReadCallback;
   typedef std::function<void(TcpTransportPtr) noexcept> CloseCallback;
 
  public:
@@ -76,7 +76,7 @@ class TcpTransport : public noncopyable, public std::enable_shared_from_this<Tcp
   void dataArrived(BufferEvent& event);
   void eventOccurred(BufferEvent& event, short what);
 
-  void messageReceived(MemoryBlockPtr mem);
+  void messageReceived(ByteArrayRef msg);
 
   TcpConnectStatus closeBufferEvent(bool isDeleted = false);
 

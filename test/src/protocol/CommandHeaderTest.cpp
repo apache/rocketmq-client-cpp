@@ -24,7 +24,7 @@
 #include <memory>
 #include <string>
 
-#include "DataBlock.h"
+#include "ByteArray.h"
 #include "MQClientException.h"
 #include "MessageSysFlag.h"
 #include "UtilAll.h"
@@ -37,6 +37,7 @@ using testing::Return;
 using Json::FastWriter;
 using Json::Value;
 
+using rocketmq::ByteArray;
 using rocketmq::CommandCustomHeader;
 using rocketmq::ConsumerSendMsgBackRequestHeader;
 using rocketmq::CreateTopicRequestHeader;
@@ -51,8 +52,6 @@ using rocketmq::GetMaxOffsetResponseHeader;
 using rocketmq::GetMinOffsetRequestHeader;
 using rocketmq::GetMinOffsetResponseHeader;
 using rocketmq::GetRouteInfoRequestHeader;
-using rocketmq::MemoryBlock;
-using rocketmq::MemoryView;
 using rocketmq::NotifyConsumerIdsChangedRequestHeader;
 using rocketmq::PullMessageRequestHeader;
 using rocketmq::PullMessageResponseHeader;
@@ -80,8 +79,8 @@ TEST(CommandHeaderTest, GetConsumerListByGroupResponseBody) {
   FastWriter writer;
   std::string data = writer.write(root);
 
-  std::unique_ptr<MemoryBlock> mem(new MemoryBlock(const_cast<char*>(data.data()), data.size()));
-  std::unique_ptr<GetConsumerListByGroupResponseBody> body(GetConsumerListByGroupResponseBody::Decode(*mem));
+  const ByteArray bodyData((char*)data.data(), data.size());
+  std::unique_ptr<GetConsumerListByGroupResponseBody> body(GetConsumerListByGroupResponseBody::Decode(bodyData));
   EXPECT_EQ(body->consumerIdList.size(), 2);
 }
 

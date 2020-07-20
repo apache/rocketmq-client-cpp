@@ -19,8 +19,8 @@
 
 #include <vector>
 
+#include "ByteArray.h"
 #include "CommandCustomHeader.h"
-#include "DataBlock.h"
 
 namespace rocketmq {
 
@@ -395,7 +395,7 @@ class ConsumerSendMsgBackRequestHeader : public CommandCustomHeader {
 
 class GetConsumerListByGroupResponseBody : public CommandCustomHeader {
  public:
-  static GetConsumerListByGroupResponseBody* Decode(MemoryBlock& mem);
+  static GetConsumerListByGroupResponseBody* Decode(const ByteArray& bodyData);
   void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) override;
 
  public:

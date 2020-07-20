@@ -17,10 +17,10 @@
 #ifndef ROCKETMQ_MESSAGE_MESSAGEDECODER_H_
 #define ROCKETMQ_MESSAGE_MESSAGEDECODER_H_
 
+#include "ByteBuffer.hpp"
 #include "MQClientException.h"
 #include "MQMessageExt.h"
 #include "MessageId.h"
-#include "MemoryInputStream.h"
 
 namespace rocketmq {
 
@@ -29,23 +29,19 @@ class MessageDecoder {
   static std::string createMessageId(const struct sockaddr* sa, int64_t offset);
   static MessageId decodeMessageId(const std::string& msgId);
 
-  static MessageExtPtr decode(MemoryBlock& mem);
-  static MessageExtPtr decode(MemoryBlock& mem, bool readBody);
+  static MessageExtPtr clientDecode(ByteBuffer& byteBuffer, bool readBody);
+  static MessageExtPtr decode(ByteBuffer& byteBuffer);
+  static MessageExtPtr decode(ByteBuffer& byteBuffer, bool readBody);
+  static MessageExtPtr decode(ByteBuffer& byteBuffer, bool readBody, bool deCompressBody, bool isClient);
 
-  static std::vector<MessageExtPtr> decodes(MemoryBlock& mem);
-  static std::vector<MessageExtPtr> decodes(MemoryBlock& mem, bool readBody);
+  static std::vector<MessageExtPtr> decodes(ByteBuffer& byteBuffer);
+  static std::vector<MessageExtPtr> decodes(ByteBuffer& byteBuffer, bool readBody);
 
   static std::string messageProperties2String(const std::map<std::string, std::string>& properties);
   static std::map<std::string, std::string> string2messageProperties(const std::string& properties);
 
   static std::string encodeMessage(Message& message);
   static std::string encodeMessages(std::vector<MQMessage>& msgs);
-
- private:
-  static MessageExtPtr clientDecode(MemoryInputStream& byteBuffer, bool readBody);
-
-  static MessageExtPtr decode(MemoryInputStream& byteBuffer, bool readBody);
-  static MessageExtPtr decode(MemoryInputStream& byteBuffer, bool readBody, bool deCompressBody, bool isClient);
 
  public:
   static const char NAME_VALUE_SEPARATOR;

@@ -33,9 +33,9 @@ namespace rocketmq {
 MessageClientIDSetter::MessageClientIDSetter() {
   std::srand((uint32_t)std::time(NULL));
 
-  uint32_t pid = ByteOrder::swapIfLittleEndian(static_cast<uint32_t>(UtilAll::getProcessId()));
-  uint32_t ip = ByteOrder::swapIfLittleEndian(UtilAll::getIP());
-  uint32_t random_num = ByteOrder::swapIfLittleEndian(static_cast<uint32_t>(std::rand()));
+  uint32_t pid = ByteOrderUtil::NorminalBigEndian(static_cast<uint32_t>(UtilAll::getProcessId()));
+  uint32_t ip = ByteOrderUtil::NorminalBigEndian(UtilAll::getIP());
+  uint32_t random_num = ByteOrderUtil::NorminalBigEndian(static_cast<uint32_t>(std::rand()));
 
   char bin_buf[10];
   std::memcpy(bin_buf + 2, &pid, 4);
@@ -90,8 +90,8 @@ std::string MessageClientIDSetter::createUniqueID() {
     current = UtilAll::currentTimeMillis();
   }
 
-  uint32_t period = ByteOrder::swapIfLittleEndian(static_cast<uint32_t>(current - mStartTime));
-  uint16_t seqid = ByteOrder::swapIfLittleEndian(mCounter++);
+  uint32_t period = ByteOrderUtil::NorminalBigEndian(static_cast<uint32_t>(current - mStartTime));
+  uint16_t seqid = ByteOrderUtil::NorminalBigEndian(mCounter++);
 
   char bin_buf[6];
   std::memcpy(bin_buf, &period, 4);

@@ -19,15 +19,15 @@
 
 #include <memory>
 
-#include "DataBlock.h"
+#include "ByteArray.h"
 #include "TopicRouteData.h"
 
 using testing::InitGoogleMock;
 using testing::InitGoogleTest;
 using testing::Return;
 
+using rocketmq::ByteArray;
 using rocketmq::BrokerData;
-using rocketmq::MemoryBlock;
 using rocketmq::QueueData;
 using rocketmq::TopicRouteData;
 
@@ -59,10 +59,10 @@ TEST(TopicRouteDataTest, TopicRouteData) {
 
   root["brokerDatas"] = brokerDatas;
 
-  std::string out = root.toStyledString();
+  std::string data = root.toStyledString();
 
-  std::unique_ptr<MemoryBlock> block(new MemoryBlock(const_cast<char*>(out.data()), out.size()));
-  std::unique_ptr<TopicRouteData> topicRouteData(TopicRouteData::Decode(*block));
+  const ByteArray bodyData((char*)data.data(), data.size());
+  std::unique_ptr<TopicRouteData> topicRouteData(TopicRouteData::Decode(bodyData));
 
   EXPECT_EQ(root["orderTopicConf"], topicRouteData->getOrderTopicConf());
 

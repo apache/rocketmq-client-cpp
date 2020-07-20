@@ -22,7 +22,7 @@ TpsReportService g_tps;
 
 void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* producer) {
   while (g_msgCount.fetch_sub(1) > 0) {
-    std::vector<MQMessage*> msgs;
+    std::vector<MQMessage> msgs;
     MQMessage msg1(info->topic, "*", info->body);
     msg1.putProperty("property1", "value1");
     MQMessage msg2(info->topic, "*", info->body);
@@ -32,9 +32,9 @@ void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* pr
     msg3.putProperty("property1", "value1");
     msg3.putProperty("property2", "value2");
     msg3.putProperty("property3", "value3");
-    msgs.push_back(&msg1);
-    msgs.push_back(&msg2);
-    msgs.push_back(&msg3);
+    msgs.push_back(std::move(msg1));
+    msgs.push_back(std::move(msg2));
+    msgs.push_back(std::move(msg3));
 
     try {
       auto start = std::chrono::system_clock::now();

@@ -16,6 +16,7 @@
  */
 #include "MessageUtil.h"
 
+#include "ByteArray.h"
 #include "ClientErrorCode.h"
 #include "MessageImpl.h"
 #include "MessageAccessor.h"

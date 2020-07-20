@@ -16,10 +16,14 @@
  */
 #include "RemotingCommand.h"
 
-#include <atomic>
-#include <limits>
+#include <cstring>  // std::memcpy
+
+#include <algorithm>  // std::move
+#include <atomic>     // std::atomic
+#include <limits>     // std::numeric_limits
 
 #include "ByteOrder.h"
+#include "ByteBuffer.hpp"
 #include "Logging.h"
 #include "MQVersion.h"
 #include "RemotingSerializable.h"
@@ -54,92 +58,104 @@ RemotingCommand::RemotingCommand(int32_t code,
                                  int32_t flag,
                                  const std::string& remark,
                                  CommandCustomHeader* customHeader)
-    : m_code(code),
-      m_language(language),
-      m_version(version),
-      m_opaque(opaque),
-      m_flag(flag),
-      m_remark(remark),
-      m_customHeader(customHeader) {}
+    : code_(code),
+      language_(language),
+      version_(version),
+      opaque_(opaque),
+      flag_(flag),
+      remark_(remark),
+      custom_header_(customHeader) {}
 
 RemotingCommand::RemotingCommand(RemotingCommand&& command) {
-  m_code = command.m_code;
-  m_language = std::move(command.m_language);
-  m_version = command.m_version;
-  m_opaque = command.m_opaque;
-  m_flag = command.m_flag;
-  m_remark = std::move(command.m_remark);
-  m_extFields = std::move(command.m_extFields);
-  m_customHeader = std::move(command.m_customHeader);
-  m_body = std::move(command.m_body);
+  code_ = command.code_;
+  language_ = std::move(command.language_);
+  version_ = command.version_;
+  opaque_ = command.opaque_;
+  flag_ = command.flag_;
+  remark_ = std::move(command.remark_);
+  ext_fields_ = std::move(command.ext_fields_);
+  custom_header_ = std::move(command.custom_header_);
+  body_ = std::move(command.body_);
 }
 
 RemotingCommand::~RemotingCommand() = default;
 
-MemoryBlockPtr RemotingCommand::encode() const {
+ByteArrayRef RemotingCommand::encode() const {
   Json::Value root;
-  root["code"] = m_code;
-  root["language"] = m_language;
-  root["version"] = m_version;
-  root["opaque"] = m_opaque;
-  root["flag"] = m_flag;
-  root["remark"] = m_remark;
+  root["code"] = code_;
+  root["language"] = language_;
+  root["version"] = version_;
+  root["opaque"] = opaque_;
+  root["flag"] = flag_;
+  root["remark"] = remark_;
 
-  Json::Value extJson;
-  for (const auto& it : m_extFields) {
-    extJson[it.first] = it.second;
+  Json::Value ext_fields;
+  for (const auto& it : ext_fields_) {
+    ext_fields[it.first] = it.second;
   }
-  if (m_customHeader != nullptr) {
+  if (custom_header_ != nullptr) {
     // write customHeader to extFields
-    m_customHeader->Encode(extJson);
+    custom_header_->Encode(ext_fields);
   }
-  root["extFields"] = extJson;
+  root["extFields"] = ext_fields;
 
+  // serialize header
   std::string header = RemotingSerializable::toJson(root);
 
-  uint32_t headerLen = header.size();
-  uint32_t packageLen = 4 + headerLen;
-  if (m_body != nullptr) {
-    packageLen += m_body->getSize();
+  // 1> header length size
+  uint32_t length = 4;
+  // 2> header data length
+  length += header.size();
+  // 3> body data length
+  if (body_ != nullptr) {
+    length += body_->size();
   }
 
-  uint32_t messageHeader[2];
-  messageHeader[0] = ByteOrder::swapIfLittleEndian(packageLen);
-  messageHeader[1] = ByteOrder::swapIfLittleEndian(headerLen);
+  std::unique_ptr<ByteBuffer> result(ByteBuffer::allocate(4 + length));
 
-  std::unique_ptr<MemoryPool> package(new MemoryPool(4 + packageLen));
-  package->copyFrom(messageHeader, 0, sizeof(messageHeader));
-  package->copyFrom(header.data(), sizeof(messageHeader), headerLen);
-  if (m_body != nullptr && m_body->getSize() > 0) {
-    package->copyFrom(m_body->getData(), sizeof(messageHeader) + headerLen, m_body->getSize());
+  // length
+  result->putInt(length);
+  // header length
+  result->putInt((uint32_t)header.size());
+  // header data
+  result->put(ByteArray((char*)header.data(), header.size()));
+  // body data;
+  if (body_ != nullptr) {
+    result->put(*body_);
   }
 
-  return std::move(package);
+  // result->flip();
+
+  return result->byte_array();
 }
 
-RemotingCommand* RemotingCommand::Decode(MemoryBlockPtr2 package, bool havePackageLen) {
-  // decode package: [4 bytes(packageLength) +] 4 bytes(headerLength) + header + body
-  int packageLength = package->getSize();
-  uint32_t netHeaderLen;
-  const char* data = package->getData();
+static inline int32_t getHeaderLength(int32_t length) {
+  return length & 0x00FFFFFF;
+}
 
-  if (havePackageLen) {
-    data += 4;
-    packageLength -= 4;
-    package->copyTo(&netHeaderLen, 4, sizeof(netHeaderLen));
-  } else {
-    package->copyTo(&netHeaderLen, 0, sizeof(netHeaderLen));
+static RemotingCommand* Decode(ByteBuffer& byteBuffer, bool hasPackageLength) {
+  // decode package: [4 bytes(packageLength) +] 4 bytes(headerLength) + header + body
+
+  int32_t length = byteBuffer.limit();
+  if (hasPackageLength) {
+    // skip package length
+    (void)byteBuffer.getInt();
+    length -= 4;
   }
-  int oriHeaderLen = ByteOrder::swapIfLittleEndian(netHeaderLen);
-  int headerLength = oriHeaderLen & 0xFFFFFF;
 
   // decode header
-  const char* begin = data + 4;
-  const char* end = data + 4 + headerLength;
+
+  int32_t oriHeaderLen = byteBuffer.getInt();
+  int32_t headerLength = getHeaderLength(oriHeaderLen);
+
+  // ByteArray headData(headerLength);
+  // byteBuffer.get(headerData);
+  ByteArray headerData(byteBuffer.array() + byteBuffer.arrayOffset() + byteBuffer.position(), headerLength);
+  byteBuffer.position(byteBuffer.position() + headerLength);
 
   Json::Value object;
   try {
-    object = RemotingSerializable::fromJson(begin, end);
+    object = RemotingSerializable::fromJson(headerData);
   } catch (std::exception& e) {
     LOG_WARN_NEW("parse json failed. {}", e.what());
     THROW_MQEXCEPTION(MQClientException, "conn't parse json", -1);
@@ -162,16 +178,21 @@ RemotingCommand* RemotingCommand::Decode(MemoryBlockPtr2 package, bool havePacka
     for (auto& name : extFields.getMemberNames()) {
       auto& value = extFields[name];
       if (value.isString()) {
-        cmd->m_extFields[name] = value.asString();
+        cmd->set_ext_field(name, value.asString());
       }
     }
   }
 
   // decode body
-  int bodyLength = packageLength - 4 - headerLength;
+
+  int32_t bodyLength = length - 4 - headerLength;
   if (bodyLength > 0) {
-    auto* body = new MemoryView(package, (havePackageLen ? 8 : 4) + headerLength);
-    cmd->setBody(body);
+    // ByteArrayRef bodyData = std::make_shared<ByteArray>(bodyLength);
+    // byteBuffer.get(*bodyData);
+    ByteArrayRef bodyData =
+        slice(byteBuffer.byte_array(), byteBuffer.arrayOffset() + byteBuffer.position(), bodyLength);
+    byteBuffer.position(byteBuffer.position() + bodyLength);
+    cmd->set_body(std::move(bodyData));
   }
 
   LOG_DEBUG_NEW("code:{}, language:{}, version:{}, opaque:{}, flag:{}, remark:{}, headLen:{}, bodyLen:{}", code,
@@ -180,85 +201,38 @@ RemotingCommand* RemotingCommand::Decode(MemoryBlockPtr2 package, bool havePacka
   return cmd.release();
 }
 
-int32_t RemotingCommand::getCode() const {
-  return m_code;
-}
-
-void RemotingCommand::setCode(int32_t code) {
-  m_code = code;
-}
-
-int32_t RemotingCommand::getVersion() const {
-  return m_version;
-}
-
-int32_t RemotingCommand::getOpaque() const {
-  return m_opaque;
-}
-
-void RemotingCommand::setOpaque(int32_t opaque) {
-  m_opaque = opaque;
-}
-
-int32_t RemotingCommand::getFlag() const {
-  return m_flag;
-}
-
-const std::string& RemotingCommand::getRemark() const {
-  return m_remark;
-}
-
-void RemotingCommand::setRemark(const std::string& mark) {
-  m_remark = mark;
+RemotingCommand* RemotingCommand::Decode(ByteArrayRef array, bool hasPackageLength) {
+  std::unique_ptr<ByteBuffer> byteBuffer(ByteBuffer::wrap(std::move(array)));
+  return rocketmq::Decode(*byteBuffer, hasPackageLength);
 }
 
 bool RemotingCommand::isResponseType() {
   int bits = 1 << RPC_TYPE;
-  return (m_flag & bits) == bits;
+  return (flag_ & bits) == bits;
 }
 
 void RemotingCommand::markResponseType() {
   int bits = 1 << RPC_TYPE;
-  m_flag |= bits;
+  flag_ |= bits;
 }
 
 bool RemotingCommand::isOnewayRPC() {
   int bits = 1 << RPC_ONEWAY;
-  return (m_flag & bits) == bits;
+  return (flag_ & bits) == bits;
 }
 
 void RemotingCommand::markOnewayRPC() {
   int bits = 1 << RPC_ONEWAY;
-  m_flag |= bits;
-}
-
-void RemotingCommand::addExtField(const std::string& key, const std::string& value) {
-  m_extFields[key] = value;
+  flag_ |= bits;
 }
 
 CommandCustomHeader* RemotingCommand::readCustomHeader() const {
-  return m_customHeader.get();
-}
-
-MemoryBlockPtr2 RemotingCommand::getBody() const {
-  return m_body;
-}
-
-void RemotingCommand::setBody(MemoryBlock* body) {
-  m_body.reset(body);
-}
-
-void RemotingCommand::setBody(MemoryBlockPtr2 body) {
-  m_body = body;
-}
-
-void RemotingCommand::setBody(const std::string& body) {
-  m_body.reset(new MemoryPool(body.data(), body.size()));
+  return custom_header_.get();
 }
 
 std::string RemotingCommand::toString() const {
   std::stringstream ss;
-  ss << "code:" << m_code << ", opaque:" << m_opaque << ", flag:" << m_flag << ", body.size:" << m_body->getSize();
+  ss << "code:" << code_ << ", opaque:" << opaque_ << ", flag:" << flag_ << ", body.size:" << body_->size();
   return ss.str();
 }
 

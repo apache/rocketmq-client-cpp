@@ -23,7 +23,7 @@
 #include <cstdlib>
 #include <memory>
 
-#include "DataBlock.h"
+#include "ByteArray.h"
 #include "Logging.h"
 #include "RemotingSerializable.h"
 #include "UtilAll.h"
@@ -62,8 +62,8 @@ typedef std::shared_ptr<TopicRouteData> TopicRouteDataPtr;
 
 class TopicRouteData {
  public:
-  static TopicRouteData* Decode(MemoryBlock& mem) {
-    Json::Value root = RemotingSerializable::fromJson(mem);
+  static TopicRouteData* Decode(const ByteArray& bodyData) {
+    Json::Value root = RemotingSerializable::fromJson(bodyData);
 
     std::unique_ptr<TopicRouteData> trd(new TopicRouteData());
     trd->setOrderTopicConf(root["orderTopicConf"].asString());

@@ -167,7 +167,7 @@ void SendCallbackWrap::onExceptionImpl(ResponseFuture* responseFuture,
                  addr, retryBrokerName);
     try {
       // new request
-      m_request.setOpaque(RemotingCommand::createNewRequestId());
+      m_request.set_opaque(RemotingCommand::createNewRequestId());
 
       // resend
       m_addr = std::move(addr);

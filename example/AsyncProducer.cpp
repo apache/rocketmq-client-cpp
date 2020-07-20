@@ -27,8 +27,7 @@ std::atomic<int> g_failed(0);
 
 class MyAutoDeleteSendCallback : public AutoDeleteSendCallback {
  public:
-  MyAutoDeleteSendCallback(MQMessage* msg) : m_msg(msg) {}
-  virtual ~MyAutoDeleteSendCallback() { delete m_msg; }
+  MyAutoDeleteSendCallback(MQMessage msg) : m_msg(std::move(msg)) {}
 
   void onSuccess(SendResult& sendResult) override {
     g_success++;
@@ -43,14 +42,14 @@ class MyAutoDeleteSendCallback : public AutoDeleteSendCallback {
   }
 
  private:
-  MQMessage* m_msg;
+  MQMessage m_msg;
 };
 
 void AsyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* producer) {
   while (g_msgCount.fetch_sub(1) > 0) {
-    auto* msg = new MQMessage(info->topic,  // topic
-                              "*",          // tag
-                              info->body);  // body
+    MQMessage msg(info->topic,  // topic
+                  "*",          // tag
+                  info->body);  // body
 
     SendCallback* callback = new MyAutoDeleteSendCallback(msg);
 

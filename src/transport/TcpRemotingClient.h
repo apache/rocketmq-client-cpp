@@ -66,8 +66,8 @@ class TcpRemotingClient {
 
   void channelClosed(TcpTransportPtr channel);
 
-  void messageReceived(MemoryBlockPtr mem, TcpTransportPtr channel);
-  void processMessageReceived(MemoryBlockPtr2 mem, TcpTransportPtr channel);
+  void messageReceived(ByteArrayRef msg, TcpTransportPtr channel);
+  void processMessageReceived(ByteArrayRef msg, TcpTransportPtr channel);
   void processRequestCommand(std::unique_ptr<RemotingCommand> cmd, TcpTransportPtr channel);
   void processResponseCommand(std::unique_ptr<RemotingCommand> cmd, TcpTransportPtr channel);
 

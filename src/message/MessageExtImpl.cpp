@@ -60,7 +60,7 @@ MessageExtImpl::~MessageExtImpl() {
 }
 
 TopicFilterType MessageExtImpl::parseTopicFilterType(int32_t sysFlag) {
-  if ((sysFlag & MessageSysFlag::MultiTagsFlag) == MessageSysFlag::MultiTagsFlag) {
+  if ((sysFlag & MessageSysFlag::MULTI_TAGS_FLAG) == MessageSysFlag::MULTI_TAGS_FLAG) {
     return MULTI_TAG;
   }
   return SINGLE_TAG;

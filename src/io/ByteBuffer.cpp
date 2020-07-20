@@ -14,24 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TOPIC_LIST_H__
-#define __TOPIC_LIST_H__
+#include "ByteBuffer.hpp"
 
-#include <string>  // std::string
-#include <vector>  // std::vector
+#include <algorithm>  // std::move
 
-#include "ByteArray.h"
+#include "DefaultByteBuffer.hpp"
 
 namespace rocketmq {
 
-class TopicList {
- public:
-  static TopicList* Decode(const ByteArray& mem) { return new TopicList(); }
+ByteBuffer* ByteBuffer::allocate(int32_t capacity) {
+  if (capacity < 0) {
+    throw std::invalid_argument("");
+  }
+  return new DefaultByteBuffer(capacity, capacity);
+}
 
- private:
-  std::vector<std::string> topic_list_;
-};
+ByteBuffer* ByteBuffer::wrap(ByteArrayRef array, int32_t offset, int32_t length) {
+  try {
+    return new DefaultByteBuffer(std::move(array), offset, length);
+  } catch (const std::exception& x) {
+    throw std::runtime_error("IndexOutOfBoundsException");
+  }
+}
 
 }  // namespace rocketmq
-
-#endif  // __TOPIC_LIST_H__

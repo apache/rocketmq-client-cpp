@@ -85,10 +85,6 @@ TEST(MessageTest, GetterAndSetter) {
   message.setBody("testBody");
   EXPECT_EQ(message.getBody(), "testBody");
 
-  const char* body = "testBody";
-  message.setBody(body, 5);
-  EXPECT_EQ(message.getBody(), "testB");
-
   EXPECT_EQ(message.getTags(), "");  // default
   message.setTags("testTags");
   EXPECT_EQ(message.getTags(), "testTags");

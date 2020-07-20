@@ -43,7 +43,7 @@ void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, TransactionMQProducer
     try {
       auto start = std::chrono::system_clock::now();
       intptr_t arg = old - 1;
-      TransactionSendResult sendResult = producer->sendMessageInTransaction(&msg, (void*)arg);
+      TransactionSendResult sendResult = producer->sendMessageInTransaction(msg, (void*)arg);
       auto end = std::chrono::system_clock::now();
 
       g_tps.Increment();

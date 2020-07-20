@@ -53,7 +53,7 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQPushConsumer, public D
   void setRPCHook(RPCHookPtr rpcHook);
 
  protected:
-  std::shared_ptr<MQPushConsumer> m_pushConsumerDelegate;
+  std::shared_ptr<MQPushConsumer> push_consumer_impl_;
 };
 
 }  // namespace rocketmq

@@ -49,10 +49,10 @@ class MockDefaultMQProducer : public DefaultMQProducer {
   MOCK_METHOD(void, start, (), (override));
   MOCK_METHOD(void, shutdown, (), (override));
 
-  MOCK_METHOD(SendResult, send, (MQMessage*), (override));
-  MOCK_METHOD(void, send, (MQMessage*, SendCallback*), (noexcept, override));
-  MOCK_METHOD(SendResult, send, (MQMessage*, MessageQueueSelector*, void*, long), (override));
-  MOCK_METHOD(void, sendOneway, (MQMessage*), (override));
+  MOCK_METHOD(SendResult, send, (MQMessage&), (override));
+  MOCK_METHOD(void, send, (MQMessage&, SendCallback*), (noexcept, override));
+  MOCK_METHOD(SendResult, send, (MQMessage&, MessageQueueSelector*, void*, long), (override));
+  MOCK_METHOD(void, sendOneway, (MQMessage&), (override));
 };
 
 void CSendSuccessCallbackFunc(CSendResult result) {}

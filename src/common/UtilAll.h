@@ -14,15 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UTIL_ALL_H__
-#define __UTIL_ALL_H__
+#ifndef ROCKETMQ_COMMON_UTILALL_H_
+#define ROCKETMQ_COMMON_UTILALL_H_
 
-#include <exception>
-#include <mutex>
-#include <string>
-#include <vector>
+#include <algorithm>  // std::move
+#include <exception>  // std::exception
+#include <mutex>      // std::timed_mutex
+#include <string>     // std::string
+#include <vector>     // std::vector
 
-#include "RocketMQClient.h"
+#include "ByteArray.h"
 
 namespace rocketmq {
 
@@ -91,7 +92,7 @@ class UtilAll {
   template <typename T>
   static std::string to_string(T value);
 
-  static int32_t HashCode(const std::string& str);
+  static int32_t hash_code(const std::string& str);
 
   static std::string bytes2string(const char* bytes, size_t len);
   static void string2bytes(char* dest, const std::string& src);
@@ -122,9 +123,9 @@ class UtilAll {
   static int64_t currentTimeSeconds();
 
   static bool deflate(const std::string& input, std::string& out, int level);
-  static bool deflate(const char* input, size_t len, std::string& out, int level);
+  static bool deflate(const ByteArray& in, std::string& out, int level);
   static bool inflate(const std::string& input, std::string& out);
-  static bool inflate(const char* input, size_t len, std::string& out);
+  static bool inflate(const ByteArray& in, std::string& out);
 
   // Renames file |from_path| to |to_path|. Both paths must be on the same
   // volume, or the function will fail. Destination file will be created
@@ -135,8 +136,8 @@ class UtilAll {
   static bool ReplaceFile(const std::string& from_path, const std::string& to_path);
 
  private:
-  static std::string s_localHostName;
-  static std::string s_localIpAddress;
+  static std::string sLocalHostName;
+  static std::string sLocalIpAddress;
 };
 
 template <typename T>
@@ -155,6 +156,11 @@ inline std::string UtilAll::to_string<char*>(char* value) {
 }
 
 template <>
+inline std::string UtilAll::to_string<ByteArrayRef>(ByteArrayRef value) {
+  return batos(std::move(value));
+}
+
+template <>
 inline std::string UtilAll::to_string<std::exception_ptr>(std::exception_ptr eptr) {
   try {
     if (eptr) {
@@ -168,4 +174,4 @@ inline std::string UtilAll::to_string<std::exception_ptr>(std::exception_ptr ept
 
 }  // namespace rocketmq
 
-#endif  // __UTIL_ALL_H__
+#endif  // ROCKETMQ_COMMON_UTILALL_H_

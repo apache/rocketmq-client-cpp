@@ -42,12 +42,21 @@ union sockaddr_union {
 
 thread_local static sockaddr_union sin_buf;
 
-struct sockaddr* ipPort2SocketAddress(uint32_t host, uint16_t port) {
-  struct sockaddr_in* sin = &sin_buf.sin;
-  sin->sin_family = AF_INET;
-  sin->sin_port = htons(port);
-  sin->sin_addr.s_addr = htonl(host);
-  return (struct sockaddr*)sin;
+struct sockaddr* ipPort2SocketAddress(const ByteArray& ip, uint16_t port) {
+  if (ip.size() == 4) {
+    struct sockaddr_in* sin = &sin_buf.sin;
+    sin->sin_family = AF_INET;
+    sin->sin_port = ByteOrderUtil::NorminalBigEndian<uint16_t>(port);
+    ByteOrderUtil::Read<decltype(sin->sin_addr)>(&sin->sin_addr, ip.array());
+    return (struct sockaddr*)sin;
+  } else if (ip.size() == 16) {
+    struct sockaddr_in6* sin6 = &sin_buf.sin6;
+    sin6->sin6_family = AF_INET6;
+    sin6->sin6_port = ByteOrderUtil::NorminalBigEndian<uint16_t>(port);
+    ByteOrderUtil::Read<decltype(sin6->sin6_addr)>(&sin6->sin6_addr, ip.array());
+    return (struct sockaddr*)sin6;
+  }
+  return nullptr;
 }
 
 struct sockaddr* string2SocketAddress(const std::string& addr) {
@@ -159,11 +168,11 @@ struct sockaddr* copySocketAddress(struct sockaddr* dst, const struct sockaddr* 
 }
 
 uint64_t h2nll(uint64_t v) {
-  return ByteOrder::swapIfLittleEndian(v);
+  return ByteOrderUtil::NorminalBigEndian(v);
 }
 
 uint64_t n2hll(uint64_t v) {
-  return ByteOrder::swapIfLittleEndian(v);
+  return ByteOrderUtil::NorminalBigEndian(v);
 }
 
 }  // namespace rocketmq

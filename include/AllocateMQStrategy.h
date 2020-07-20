@@ -14,16 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __ALLOCATE_MQ_STRATEGY_H__
-#define __ALLOCATE_MQ_STRATEGY_H__
+#ifndef ROCKETMQ_ALLOCATEMQSTRATEGY_H_
+#define ROCKETMQ_ALLOCATEMQSTRATEGY_H_
 
-#include <string>
-#include <vector>
+#include <string>  // std::string
+#include <vector>  // std::vector
 
 #include "MQMessageQueue.h"
 
 namespace rocketmq {
 
+/**
+ * AllocateMQStrategy - Interface of allocate MessageQueue
+ */
 class ROCKETMQCLIENT_API AllocateMQStrategy {
  public:
   virtual ~AllocateMQStrategy() = default;

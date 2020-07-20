@@ -50,7 +50,7 @@ TEST(ClientRPCHookTest, BeforeRequest) {
   RemotingCommand sendRequestCommand(MQRequestCode::UPDATE_AND_CREATE_TOPIC, sendMessageRequestHeader);
   clientRPCHook.doBeforeRequest("127.0.0.1:9876", sendRequestCommand, true);
 
-  sendRequestCommand.setBody("1231231");
+  sendRequestCommand.set_body("1231231");
   clientRPCHook.doBeforeRequest("127.0.0.1:9876", sendRequestCommand, true);
 }
 

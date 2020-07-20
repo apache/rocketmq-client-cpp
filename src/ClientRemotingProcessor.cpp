@@ -35,8 +35,8 @@ ClientRemotingProcessor::~ClientRemotingProcessor() = default;
 
 RemotingCommand* ClientRemotingProcessor::processRequest(TcpTransportPtr channel, RemotingCommand* request) {
   const auto& addr = channel->getPeerAddrAndPort();
-  LOG_DEBUG_NEW("processRequest, code:{}, addr:{}", request->getCode(), addr);
-  switch (request->getCode()) {
+  LOG_DEBUG_NEW("processRequest, code:{}, addr:{}", request->code(), addr);
+  switch (request->code()) {
     case CHECK_TRANSACTION_STATE:
       return checkTransactionState(addr, request);
     case NOTIFY_CONSUMER_IDS_CHANGED:
@@ -63,9 +63,10 @@ RemotingCommand* ClientRemotingProcessor::checkTransactionState(const std::strin
   auto* requestHeader = request->decodeCommandCustomHeader<CheckTransactionStateRequestHeader>();
   assert(requestHeader != nullptr);
 
-  auto requestBody = request->getBody();
-  if (requestBody != nullptr && requestBody->getSize() > 0) {
-    MessageExtPtr messageExt = MessageDecoder::decode(*requestBody);
+  auto requestBody = request->body();
+  if (requestBody != nullptr && requestBody->size() > 0) {
+    std::unique_ptr<ByteBuffer> byteBuffer(ByteBuffer::wrap(requestBody));
+    MessageExtPtr messageExt = MessageDecoder::decode(*byteBuffer);
     if (messageExt != nullptr) {
       const auto& transactionId = messageExt->getProperty(MQMessageConst::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);
       if (!transactionId.empty()) {
@@ -101,8 +102,8 @@ RemotingCommand* ClientRemotingProcessor::notifyConsumerIdsChanged(RemotingComma
 
 RemotingCommand* ClientRemotingProcessor::resetOffset(RemotingCommand* request) {
   auto* responseHeader = request->decodeCommandCustomHeader<ResetOffsetRequestHeader>();
-  auto requestBody = request->getBody();
-  if (requestBody != nullptr && requestBody->getSize() > 0) {
+  auto requestBody = request->body();
+  if (requestBody != nullptr && requestBody->size() > 0) {
     std::unique_ptr<ResetOffsetBody> body(ResetOffsetBody::Decode(*requestBody));
     if (body != nullptr) {
       m_clientInstance->resetOffset(responseHeader->getGroup(), responseHeader->getTopic(), body->getOffsetTable());
@@ -127,12 +128,11 @@ RemotingCommand* ClientRemotingProcessor::getConsumerRunningInfo(const std::stri
       /*string jstack = UtilAll::jstack();
        consumerRunningInfo->setJstack(jstack);*/
     }
-    response->setCode(SUCCESS);
-    auto body = runningInfo->encode();
-    response->setBody(body);
+    response->set_code(SUCCESS);
+    response->set_body(runningInfo->encode());
   } else {
-    response->setCode(SYSTEM_ERROR);
-    response->setRemark("The Consumer Group not exist in this consumer");
+    response->set_code(SYSTEM_ERROR);
+    response->set_remark("The Consumer Group not exist in this consumer");
   }
 
   return response.release();
@@ -160,16 +160,16 @@ RemotingCommand* ClientRemotingProcessor::receiveReplyMessage(RemotingCommand* r
       msg->setStoreHost(string2SocketAddress(requestHeader->getStoreHost()));
     }
 
-    auto body = request->getBody();
-    if ((requestHeader->getSysFlag() & MessageSysFlag::CompressedFlag) == MessageSysFlag::CompressedFlag) {
-      std::string outbody;
-      if (UtilAll::inflate(body->getData(), body->getSize(), outbody)) {
-        msg->setBody(std::move(outbody));
+    auto body = request->body();
+    if ((requestHeader->getSysFlag() & MessageSysFlag::COMPRESSED_FLAG) == MessageSysFlag::COMPRESSED_FLAG) {
+      std::string origin_body;
+      if (UtilAll::inflate(*body, origin_body)) {
+        msg->setBody(std::move(origin_body));
       } else {
         LOG_WARN_NEW("err when uncompress constant");
       }
     } else {
-      msg->setBody(body->getData(), body->getSize());
+      msg->setBody(std::string(body->array(), body->size()));
     }
 
     msg->setFlag(requestHeader->getFlag());
@@ -182,12 +182,12 @@ RemotingCommand* ClientRemotingProcessor::receiveReplyMessage(RemotingCommand* r
 
     processReplyMessage(std::move(msg));
 
-    response->setCode(MQResponseCode::SUCCESS);
-    response->setRemark(null);
+    response->set_code(MQResponseCode::SUCCESS);
+    response->set_remark(null);
   } catch (const std::exception& e) {
     LOG_WARN_NEW("unknown err when receiveReplyMsg, {}", e.what());
-    response->setCode(MQResponseCode::SYSTEM_ERROR);
-    response->setRemark("process reply message fail");
+    response->set_code(MQResponseCode::SYSTEM_ERROR);
+    response->set_remark("process reply message fail");
   }
 
   return response.release();

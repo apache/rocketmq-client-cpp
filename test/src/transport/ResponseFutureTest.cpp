@@ -66,7 +66,7 @@ TEST(ResponseFutureTest, Response) {
 
   std::unique_ptr<RemotingCommand> responseCommand(new RemotingCommand());
   responseFuture.setResponseCommand(std::move(responseCommand));
-  EXPECT_EQ(responseFuture.getResponseCommand()->getCode(), 0);
+  EXPECT_EQ(responseFuture.getResponseCommand()->code(), 0);
 
   ResponseFuture responseFuture2(MQRequestCode::QUERY_BROKER_OFFSET, 4, 1000);
   uint64_t millis = UtilAll::currentTimeMillis();

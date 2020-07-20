@@ -18,6 +18,7 @@
 #include <gtest/gtest.h>
 
 #include "MQMessageExt.h"
+#include "MessageExtImpl.h"
 #include "MessageSysFlag.h"
 #include "SocketUtil.h"
 #include "TopicFilterType.h"
@@ -26,14 +27,15 @@ using testing::InitGoogleMock;
 using testing::InitGoogleTest;
 using testing::Return;
 
+using rocketmq::MessageClientExtImpl;
+using rocketmq::MessageExtImpl;
 using rocketmq::MessageSysFlag;
-using rocketmq::MQMessageClientExt;
 using rocketmq::MQMessageConst;
 using rocketmq::MQMessageExt;
 using rocketmq::TopicFilterType;
 
-TEST(MessageExtTest, MessageClientExt) {
-  MQMessageClientExt messageClientExt;
+TEST(MessageExtTest, MessageClientExtImpl) {
+  MessageClientExtImpl messageClientExt;
   EXPECT_EQ(messageClientExt.getQueueOffset(), 0);
   EXPECT_EQ(messageClientExt.getCommitLogOffset(), 0);
   EXPECT_EQ(messageClientExt.getBornTimestamp(), 0);
@@ -117,8 +119,8 @@ TEST(MessageExtTest, MessageExt) {
 }
 
 TEST(MessageExtTest, ParseTopicFilterType) {
-  EXPECT_EQ(MQMessageExt::parseTopicFilterType(MessageSysFlag::MultiTagsFlag), TopicFilterType::MULTI_TAG);
-  EXPECT_EQ(MQMessageExt::parseTopicFilterType(0), TopicFilterType::SINGLE_TAG);
+  EXPECT_EQ(MessageExtImpl::parseTopicFilterType(MessageSysFlag::MULTI_TAGS_FLAG), TopicFilterType::MULTI_TAG);
+  EXPECT_EQ(MessageExtImpl::parseTopicFilterType(0), TopicFilterType::SINGLE_TAG);
 }
 
 int main(int argc, char* argv[]) {

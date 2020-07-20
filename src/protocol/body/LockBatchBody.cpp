@@ -65,8 +65,8 @@ void LockBatchResponseBody::setLockOKMQSet(std::vector<MQMessageQueue> lockOKMQS
   m_lockOKMQSet.swap(lockOKMQSet);
 }
 
-LockBatchResponseBody* LockBatchResponseBody::Decode(MemoryBlock& mem) {
-  Json::Value root = RemotingSerializable::fromJson(mem);
+LockBatchResponseBody* LockBatchResponseBody::Decode(const ByteArray& bodyData) {
+  Json::Value root = RemotingSerializable::fromJson(bodyData);
   auto& mqs = root["lockOKMQSet"];
   std::unique_ptr<LockBatchResponseBody> body(new LockBatchResponseBody());
   for (const auto& qd : mqs) {

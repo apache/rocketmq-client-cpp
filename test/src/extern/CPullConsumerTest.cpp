@@ -22,7 +22,7 @@
 
 #include "DefaultMQPullConsumer.h"
 #include "MQClientInstance.h"
-#include "MQMessageExt.h"
+#include "MessageExtImpl.h"
 #include "MQMessageQueue.h"
 #include "PullResult.h"
 #include "SessionCredentials.h"
@@ -39,7 +39,8 @@ using testing::SetArgReferee;
 
 using rocketmq::DefaultMQPullConsumer;
 using rocketmq::MessageModel;
-using rocketmq::MQMessageExt;
+using rocketmq::MessageExtPtr;
+using rocketmq::MessageClientExtImpl;
 using rocketmq::MQMessageQueue;
 using rocketmq::PullResult;
 using rocketmq::PullStatus;
@@ -70,9 +71,9 @@ TEST(CPullConsumerTest, Pull) {
   PullResult offsetIllegalPullResult(PullStatus::OFFSET_ILLEGAL, 1, 2, 3);
   PullResult defaultPullResult((PullStatus)-1, 1, 2, 3);
 
-  std::vector<std::shared_ptr<MQMessageExt>> src;
+  std::vector<MessageExtPtr> src;
   for (int i = 0; i < 5; i++) {
-    auto ext = std::make_shared<MQMessageExt>();
+    auto ext = std::make_shared<MessageClientExtImpl>();
     src.push_back(ext);
   }
   PullResult foundPullResult(PullStatus::FOUND, 1, 2, 3, src);

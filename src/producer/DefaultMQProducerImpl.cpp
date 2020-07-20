@@ -528,13 +528,13 @@ SendResult* DefaultMQProducerImpl::sendKernelImpl(MessagePtr msg,
       int sysFlag = 0;
       bool msgBodyCompressed = false;
       if (tryToCompressMessage(*msg)) {
-        sysFlag |= MessageSysFlag::CompressedFlag;
+        sysFlag |= MessageSysFlag::COMPRESSED_FLAG;
         msgBodyCompressed = true;
       }
 
       const auto& tranMsg = msg->getProperty(MQMessageConst::PROPERTY_TRANSACTION_PREPARED);
       if (UtilAll::stob(tranMsg)) {
-        sysFlag |= MessageSysFlag::TransactionPreparedType;
+        sysFlag |= MessageSysFlag::TRANSACTION_PREPARED_TYPE;
       }
 
       // TOOD: send message hook
@@ -747,14 +747,14 @@ void DefaultMQProducerImpl::checkTransactionStateImpl(const std::string& addr,
   endHeader->transactionId = transactionId;
   switch (localTransactionState) {
     case COMMIT_MESSAGE:
-      endHeader->commitOrRollback = MessageSysFlag::TransactionCommitType;
+      endHeader->commitOrRollback = MessageSysFlag::TRANSACTION_COMMIT_TYPE;
       break;
     case ROLLBACK_MESSAGE:
-      endHeader->commitOrRollback = MessageSysFlag::TransactionRollbackType;
+      endHeader->commitOrRollback = MessageSysFlag::TRANSACTION_ROLLBACK_TYPE;
       LOG_WARN_NEW("when broker check, client rollback this transaction, {}", endHeader->toString());
       break;
     case UNKNOWN:
-      endHeader->commitOrRollback = MessageSysFlag::TransactionNotType;
+      endHeader->commitOrRollback = MessageSysFlag::TRANSACTION_NOT_TYPE;
       LOG_WARN_NEW("when broker check, client does not know this transaction state, {}", endHeader->toString());
       break;
     default:
@@ -785,13 +785,13 @@ void DefaultMQProducerImpl::endTransaction(SendResult& sendResult,
   requestHeader->commitLogOffset = id.getOffset();
   switch (localTransactionState) {
     case COMMIT_MESSAGE:
-      requestHeader->commitOrRollback = MessageSysFlag::TransactionCommitType;
+      requestHeader->commitOrRollback = MessageSysFlag::TRANSACTION_COMMIT_TYPE;
       break;
     case ROLLBACK_MESSAGE:
-      requestHeader->commitOrRollback = MessageSysFlag::TransactionRollbackType;
+      requestHeader->commitOrRollback = MessageSysFlag::TRANSACTION_ROLLBACK_TYPE;
       break;
     case UNKNOWN:
-      requestHeader->commitOrRollback = MessageSysFlag::TransactionNotType;
+      requestHeader->commitOrRollback = MessageSysFlag::TRANSACTION_NOT_TYPE;
       break;
     default:
       break;
@@ -819,10 +819,10 @@ bool DefaultMQProducerImpl::tryToCompressMessage(Message& msg) {
   }
 
   const auto& body = msg.getBody();
-  if (body.length() >= m_producerConfig->getCompressMsgBodyOverHowmuch()) {
-    std::string outBody;
-    if (UtilAll::deflate(body, outBody, m_producerConfig->getCompressLevel())) {
-      msg.setBody(std::move(outBody));
+  if (body.size() >= m_producerConfig->getCompressMsgBodyOverHowmuch()) {
+    std::string out_body;
+    if (UtilAll::deflate(body, out_body, m_producerConfig->getCompressLevel())) {
+      msg.setBody(std::move(out_body));
       msg.putProperty(MQMessageConst::PROPERTY_ALREADY_COMPRESSED_FLAG, "true");
       return true;
     }

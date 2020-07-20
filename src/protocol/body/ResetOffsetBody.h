@@ -17,22 +17,22 @@
 #ifndef __RESET_OFFSET_BODY__
 #define __RESET_OFFSET_BODY__
 
-#include <map>
+#include <map>  // std::map
 
-#include "DataBlock.h"
+#include "ByteArray.h"
 #include "MQMessageQueue.h"
 
 namespace rocketmq {
 
 class ResetOffsetBody {
  public:
-  static ResetOffsetBody* Decode(MemoryBlock& mem);
+  static ResetOffsetBody* Decode(const ByteArray& bodyData);
 
   std::map<MQMessageQueue, int64_t> getOffsetTable();
   void setOffsetTable(const MQMessageQueue& mq, int64_t offset);
 
  private:
-  std::map<MQMessageQueue, int64_t> m_offsetTable;
+  std::map<MQMessageQueue, int64_t> offset_table_;
 };
 
 }  // namespace rocketmq

@@ -14,15 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __COMMAND_CUSTOM_HEADER_H__
-#define __COMMAND_CUSTOM_HEADER_H__
+#ifndef ROCKETMQ_COMMANDCUSTOMHEADER_H_
+#define ROCKETMQ_COMMANDCUSTOMHEADER_H_
 
-#include <map>
-#include <string>
+#include <map>     // std::map
+#include <string>  // std::string
 
 #include "RocketMQClient.h"
 
-namespace Json {
+namespace Json {  // jsoncpp
 class Value;
 }
 
@@ -40,4 +40,4 @@ class ROCKETMQCLIENT_API CommandCustomHeader {
 
 }  // namespace rocketmq
 
-#endif  // __COMMAND_CUSTOM_HEADER_H__
+#endif  // ROCKETMQ_COMMANDCUSTOMHEADER_H_

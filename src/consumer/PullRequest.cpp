@@ -16,6 +16,8 @@
  */
 #include "PullRequest.h"
 
+#include <sstream>  // std::stringstream
+
 #include "Logging.h"
 
 namespace rocketmq {
@@ -62,6 +64,13 @@ ProcessQueuePtr PullRequest::getProcessQueue() {
 
 void PullRequest::setProcessQueue(ProcessQueuePtr processQueue) {
   m_processQueue = processQueue;
+}
+
+std::string PullRequest::toString() const {
+  std::stringstream ss;
+  ss << "PullRequest [consumerGroup=" << m_consumerGroup << ", messageQueue=" << m_messageQueue.toString()
+     << ", nextOffset=" << m_nextOffset << "]";
+  return ss.str();
 }
 
 }  // namespace rocketmq

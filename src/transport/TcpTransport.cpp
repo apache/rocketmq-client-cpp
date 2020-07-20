@@ -229,7 +229,7 @@ void TcpTransport::dataArrived(BufferEvent& event) {
       return;
     }
 
-    uint32_t msgLen = ByteOrder::swapIfLittleEndian(packageLength);  // same as ntohl()
+    uint32_t msgLen = ByteOrderUtil::NorminalBigEndian(packageLength);  // same as ntohl()
     size_t recvLen = evbuffer_get_length(input);
     if (recvLen >= msgLen + 4) {
       LOG_DEBUG_NEW("had received all data. msgLen:{}, from:{}, recvLen:{}", msgLen, event.getfd(), recvLen);
@@ -239,19 +239,19 @@ void TcpTransport::dataArrived(BufferEvent& event) {
     }
 
     if (msgLen > 0) {
-      MemoryBlockPtr msg(new MemoryPool(msgLen, true));
+      auto msg = std::make_shared<ByteArray>(msgLen);
 
       event.read(&packageLength, 4);  // skip length field
-      event.read(msg->getData(), msgLen);
+      event.read(msg->array(), msgLen);
 
       messageReceived(std::move(msg));
     }
   }
 }
 
-void TcpTransport::messageReceived(MemoryBlockPtr mem) {
+void TcpTransport::messageReceived(ByteArrayRef msg) {
   if (m_readCallback != nullptr) {
-    m_readCallback(std::move(mem), shared_from_this());
+    m_readCallback(std::move(msg), shared_from_this());
   }
 }
 

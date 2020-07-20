@@ -23,6 +23,10 @@
 
 namespace rocketmq {
 
+bool operator==(std::nullptr_t, const MQMessage& message) noexcept {
+  return nullptr == message.message_impl_;
+}
+
 MQMessage::MQMessage() : MQMessage(null, null) {}
 
 MQMessage::MQMessage(const std::string& topic, const std::string& body) : MQMessage(topic, null, body) {}
@@ -116,10 +120,6 @@ void MQMessage::setFlag(int32_t flag) {
 
 const std::string& MQMessage::getBody() const {
   return message_impl_->getBody();
-}
-
-void MQMessage::setBody(const char* body, int len) {
-  message_impl_->setBody(body, len);
 }
 
 void MQMessage::setBody(const std::string& body) {

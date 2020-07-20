@@ -16,8 +16,7 @@
  */
 #include "PullResult.h"
 
-#include "DataBlock.h"
-#include "UtilAll.h"
+#include "ByteArray.h"
 
 namespace rocketmq {
 
@@ -38,16 +37,20 @@ class PullResultExt : public PullResult {
                 int64_t minOffset,
                 int64_t maxOffset,
                 int suggestWhichBrokerId,
-                MemoryBlockPtr2 messageBinary)
+                ByteArrayRef messageBinary)
       : PullResult(pullStatus, nextBeginOffset, minOffset, maxOffset),
-        suggestWhichBrokerId(suggestWhichBrokerId),
-        msgMemBlock(messageBinary) {}
+        suggert_which_boker_id_(suggestWhichBrokerId),
+        message_binary_(messageBinary) {}
 
   ~PullResultExt() override = default;
 
  public:
-  int suggestWhichBrokerId;
-  MemoryBlockPtr2 msgMemBlock;
+  inline int suggert_which_boker_id() const { return suggert_which_boker_id_; }
+  inline ByteArrayRef message_binary() const { return message_binary_; }
+
+ private:
+  int suggert_which_boker_id_;
+  ByteArrayRef message_binary_;
 };
 
 }  // namespace rocketmq

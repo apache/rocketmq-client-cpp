@@ -103,7 +103,7 @@ void Validators::checkMessage(const Message& msg, int maxMessageSize) {
     THROW_MQEXCEPTION(MQClientException, "the message body is empty", MESSAGE_ILLEGAL);
   }
 
-  if (body.length() > (size_t)maxMessageSize) {
+  if (body.size() > (size_t)maxMessageSize) {
     std::string info = "the message body size over max value, MAX: " + UtilAll::to_string(maxMessageSize);
     THROW_MQEXCEPTION(MQClientException, info, MESSAGE_ILLEGAL);
   }

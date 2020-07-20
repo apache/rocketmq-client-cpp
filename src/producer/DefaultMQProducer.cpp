@@ -30,7 +30,7 @@ DefaultMQProducer::DefaultMQProducer(const std::string& groupname, RPCHookPtr rp
 DefaultMQProducer::DefaultMQProducer(const std::string& groupname,
                                      RPCHookPtr rpcHook,
                                      DefaultMQProducerConfigPtr producerConfig)
-    : DefaultMQProducerConfigProxy(producerConfig), m_producerDelegate(nullptr) {
+    : DefaultMQProducerConfigProxy(producerConfig), producer_impl_(nullptr) {
   // set default group name
   if (groupname.empty()) {
     setGroupName(DEFAULT_PRODUCER_GROUP);
@@ -38,75 +38,75 @@ DefaultMQProducer::DefaultMQProducer(const std::string& groupname,
     setGroupName(groupname);
   }
 
-  m_producerDelegate = DefaultMQProducerImpl::create(getRealConfig(), rpcHook);
+  producer_impl_ = DefaultMQProducerImpl::create(getRealConfig(), rpcHook);
 }
 
 DefaultMQProducer::~DefaultMQProducer() = default;
 
 void DefaultMQProducer::start() {
-  m_producerDelegate->start();
+  producer_impl_->start();
 }
 
 void DefaultMQProducer::shutdown() {
-  m_producerDelegate->shutdown();
+  producer_impl_->shutdown();
 }
 
 SendResult DefaultMQProducer::send(MQMessage& msg) {
-  return m_producerDelegate->send(msg);
+  return producer_impl_->send(msg);
 }
 
 SendResult DefaultMQProducer::send(MQMessage& msg, long timeout) {
-  return m_producerDelegate->send(msg, timeout);
+  return producer_impl_->send(msg, timeout);
 }
 
 SendResult DefaultMQProducer::send(MQMessage& msg, const MQMessageQueue& mq) {
-  return m_producerDelegate->send(msg, mq);
+  return producer_impl_->send(msg, mq);
 }
 
 SendResult DefaultMQProducer::send(MQMessage& msg, const MQMessageQueue& mq, long timeout) {
-  return m_producerDelegate->send(msg, mq, timeout);
+  return producer_impl_->send(msg, mq, timeout);
 }
 
 void DefaultMQProducer::send(MQMessage& msg, SendCallback* sendCallback) noexcept {
-  m_producerDelegate->send(msg, sendCallback, getSendMsgTimeout());
+  producer_impl_->send(msg, sendCallback, getSendMsgTimeout());
 }
 
 void DefaultMQProducer::send(MQMessage& msg, SendCallback* sendCallback, long timeout) noexcept {
-  m_producerDelegate->send(msg, sendCallback, timeout);
+  producer_impl_->send(msg, sendCallback, timeout);
 }
 
 void DefaultMQProducer::send(MQMessage& msg, const MQMessageQueue& mq, SendCallback* sendCallback) noexcept {
-  return m_producerDelegate->send(msg, mq, sendCallback);
+  return producer_impl_->send(msg, mq, sendCallback);
 }
 
 void DefaultMQProducer::send(MQMessage& msg,
                              const MQMessageQueue& mq,
                              SendCallback* sendCallback,
                              long timeout) noexcept {
-  m_producerDelegate->send(msg, mq, sendCallback, timeout);
+  producer_impl_->send(msg, mq, sendCallback, timeout);
 }
 
 void DefaultMQProducer::sendOneway(MQMessage& msg) {
-  m_producerDelegate->sendOneway(msg);
+  producer_impl_->sendOneway(msg);
 }
 
 void DefaultMQProducer::sendOneway(MQMessage& msg, const MQMessageQueue& mq) {
-  m_producerDelegate->sendOneway(msg, mq);
+  producer_impl_->sendOneway(msg, mq);
 }
 
 SendResult DefaultMQProducer::send(MQMessage& msg, MessageQueueSelector* selector, void* arg) {
-  return m_producerDelegate->send(msg, selector, arg);
+  return producer_impl_->send(msg, selector, arg);
 }
 
 SendResult DefaultMQProducer::send(MQMessage& msg, MessageQueueSelector* selector, void* arg, long timeout) {
-  return m_producerDelegate->send(msg, selector, arg, timeout);
+  return producer_impl_->send(msg, selector, arg, timeout);
 }
 
 void DefaultMQProducer::send(MQMessage& msg,
                              MessageQueueSelector* selector,
                              void* arg,
                              SendCallback* sendCallback) noexcept {
-  return m_producerDelegate->send(msg, selector, arg, sendCallback);
+  return producer_impl_->send(msg, selector, arg, sendCallback);
 }
 
 void DefaultMQProducer::send(MQMessage& msg,
@@ -114,11 +114,11 @@ void DefaultMQProducer::send(MQMessage& msg,
                              void* arg,
                              SendCallback* sendCallback,
                              long timeout) noexcept {
-  m_producerDelegate->send(msg, selector, arg, sendCallback, timeout);
+  producer_impl_->send(msg, selector, arg, sendCallback, timeout);
 }
 
 void DefaultMQProducer::sendOneway(MQMessage& msg, MessageQueueSelector* selector, void* arg) {
-  m_producerDelegate->sendOneway(msg, selector, arg);
+  producer_impl_->sendOneway(msg, selector, arg);
 }
 
 TransactionSendResult DefaultMQProducer::sendMessageInTransaction(MQMessage& msg, void* arg) {
@@ -127,36 +127,35 @@ TransactionSendResult DefaultMQProducer::sendMessageInTransaction(MQMessage& msg
 }
 
 SendResult DefaultMQProducer::send(std::vector<MQMessage>& msgs) {
-  return m_producerDelegate->send(msgs);
+  return producer_impl_->send(msgs);
 }
 
 SendResult DefaultMQProducer::send(std::vector<MQMessage>& msgs, long timeout) {
-  return m_producerDelegate->send(msgs, timeout);
+  return producer_impl_->send(msgs, timeout);
 }
 
 SendResult DefaultMQProducer::send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq) {
-  return m_producerDelegate->send(msgs, mq);
+  return producer_impl_->send(msgs, mq);
 }
 
 SendResult DefaultMQProducer::send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, long timeout) {
-  return m_producerDelegate->send(msgs, mq, timeout);
+  return producer_impl_->send(msgs, mq, timeout);
 }
 
 MQMessage DefaultMQProducer::request(MQMessage& msg, long timeout) {
-  return m_producerDelegate->request(msg, timeout);
+  return producer_impl_->request(msg, timeout);
 }
 
 bool DefaultMQProducer::isSendLatencyFaultEnable() const {
-  return std::dynamic_pointer_cast<DefaultMQProducerImpl>(m_producerDelegate)->isSendLatencyFaultEnable();
+  return std::dynamic_pointer_cast<DefaultMQProducerImpl>(producer_impl_)->isSendLatencyFaultEnable();
 }
 
 void DefaultMQProducer::setSendLatencyFaultEnable(bool sendLatencyFaultEnable) {
-  std::dynamic_pointer_cast<DefaultMQProducerImpl>(m_producerDelegate)
-      ->setSendLatencyFaultEnable(sendLatencyFaultEnable);
+  std::dynamic_pointer_cast<DefaultMQProducerImpl>(producer_impl_)->setSendLatencyFaultEnable(sendLatencyFaultEnable);
 }
 
 void DefaultMQProducer::setRPCHook(RPCHookPtr rpcHook) {
-  std::dynamic_pointer_cast<DefaultMQProducerImpl>(m_producerDelegate)->setRPCHook(rpcHook);
+  std::dynamic_pointer_cast<DefaultMQProducerImpl>(producer_impl_)->setRPCHook(rpcHook);
 }
 
 }  // namespace rocketmq
