@@ -19,7 +19,7 @@
 
 #include <string>
 
-#include "MQClientException.h"
+#include "MQException.h"
 #include "MQMessage.h"
 #include "Validators.h"
 
@@ -31,11 +31,13 @@ using rocketmq::MQClientException;
 using rocketmq::MQMessage;
 using rocketmq::Validators;
 
+const std::string VALID_PATTERN_STR = "^[a-zA-Z0-9_-]+$";
+
 TEST(ValidatorsTest, RegularExpressionMatcher) {
   EXPECT_FALSE(Validators::regularExpressionMatcher("", ""));
   EXPECT_TRUE(Validators::regularExpressionMatcher("123456", ""));
-  EXPECT_FALSE(Validators::regularExpressionMatcher("123%456", Validators::validPatternStr));
-  EXPECT_TRUE(Validators::regularExpressionMatcher("123456", Validators::validPatternStr));
+  EXPECT_FALSE(Validators::regularExpressionMatcher("123%456", VALID_PATTERN_STR));
+  EXPECT_TRUE(Validators::regularExpressionMatcher("123456", VALID_PATTERN_STR));
 }
 
 TEST(ValidatorsTest, GetGroupWithRegularExpression) {

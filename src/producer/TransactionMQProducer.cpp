@@ -17,7 +17,7 @@
 #include "TransactionMQProducer.h"
 
 #include "DefaultMQProducerImpl.h"
-#include "TransactionMQProducerConfigImpl.h"
+#include "TransactionMQProducerConfigImpl.hpp"
 
 namespace rocketmq {
 
@@ -29,8 +29,22 @@ TransactionMQProducer::TransactionMQProducer(const std::string& groupname, RPCHo
 
 TransactionMQProducer::~TransactionMQProducer() = default;
 
+void TransactionMQProducer::start() {
+  dynamic_cast<DefaultMQProducerImpl*>(producer_impl_.get())->initTransactionEnv();
+  DefaultMQProducer::start();
+}
+
+void TransactionMQProducer::shutdown() {
+  DefaultMQProducer::shutdown();
+  dynamic_cast<DefaultMQProducerImpl*>(producer_impl_.get())->destroyTransactionEnv();
+}
+
+TransactionSendResult TransactionMQProducer::sendMessageInTransaction(MQMessage& msg, void* arg) {
+  return producer_impl_->sendMessageInTransaction(msg, arg);
+}
+
 TransactionListener* TransactionMQProducer::getTransactionListener() const {
-  auto transactionProducerConfig = std::dynamic_pointer_cast<TransactionMQProducerConfig>(getRealConfig());
+  auto transactionProducerConfig = dynamic_cast<TransactionMQProducerConfig*>(client_config_.get());
   if (transactionProducerConfig != nullptr) {
     return transactionProducerConfig->getTransactionListener();
   }
@@ -38,24 +52,10 @@ TransactionListener* TransactionMQProducer::getTransactionListener() const {
 }
 
 void TransactionMQProducer::setTransactionListener(TransactionListener* transactionListener) {
-  auto transactionProducerConfig = std::dynamic_pointer_cast<TransactionMQProducerConfig>(getRealConfig());
+  auto transactionProducerConfig = dynamic_cast<TransactionMQProducerConfig*>(client_config_.get());
   if (transactionProducerConfig != nullptr) {
     transactionProducerConfig->setTransactionListener(transactionListener);
   }
-}
-
-void TransactionMQProducer::start() {
-  std::dynamic_pointer_cast<DefaultMQProducerImpl>(producer_impl_)->initTransactionEnv();
-  DefaultMQProducer::start();
-}
-
-void TransactionMQProducer::shutdown() {
-  DefaultMQProducer::shutdown();
-  std::dynamic_pointer_cast<DefaultMQProducerImpl>(producer_impl_)->destroyTransactionEnv();
-}
-
-TransactionSendResult TransactionMQProducer::sendMessageInTransaction(MQMessage& msg, void* arg) {
-  return producer_impl_->sendMessageInTransaction(msg, arg);
 }
 
 }  // namespace rocketmq

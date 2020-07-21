@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_CLIENT_INSTANCE_H__
-#define __MQ_CLIENT_INSTANCE_H__
+#ifndef ROCKETMQ_MQCLIENTINSTANCE_H_
+#define ROCKETMQ_MQCLIENTINSTANCE_H_
 
 #include <memory>
 #include <mutex>
@@ -23,16 +23,16 @@
 #include <utility>
 
 #include "ConsumerRunningInfo.h"
-#include "FindBrokerResult.h"
+#include "FindBrokerResult.hpp"
 #include "HeartbeatData.h"
 #include "MQClientConfig.h"
-#include "MQClientException.h"
+#include "MQException.h"
 #include "MQConsumerInner.h"
 #include "MQMessageQueue.h"
 #include "MQProducerInner.h"
 #include "ServiceState.h"
-#include "TopicPublishInfo.h"
-#include "TopicRouteData.h"
+#include "TopicPublishInfo.hpp"
+#include "TopicRouteData.hpp"
 #include "concurrent/executor.hpp"
 
 namespace rocketmq {
@@ -103,9 +103,9 @@ class MQClientInstance {
   TopicRouteDataPtr getTopicRouteData(const std::string& topic);
 
  public:
-  MQClientAPIImpl* getMQClientAPIImpl() const { return m_mqClientAPIImpl.get(); }
-  MQAdminImpl* getMQAdminImpl() const { return m_mqAdminImpl.get(); }
-  PullMessageService* getPullMessageService() const { return m_pullMessageService.get(); }
+  MQClientAPIImpl* getMQClientAPIImpl() const { return mq_client_api_impl_.get(); }
+  MQAdminImpl* getMQAdminImpl() const { return mq_admin_impl_.get(); }
+  PullMessageService* getPullMessageService() const { return pull_message_service_.get(); }
 
  private:
   typedef std::map<std::string, std::map<int, std::string>> BrokerAddrMAP;
@@ -164,50 +164,50 @@ class MQClientInstance {
   bool isTopicInfoValidInTable(const std::string& topic);
 
  private:
-  std::string m_clientId;
-  volatile ServiceState m_serviceState;
+  std::string client_id_;
+  volatile ServiceState service_state_;
 
   // group -> MQProducer
   typedef std::map<std::string, MQProducerInner*> MQPMAP;
-  MQPMAP m_producerTable;
-  std::mutex m_producerTableMutex;
+  MQPMAP producer_table_;
+  std::mutex producer_table_mutex_;
 
   // group -> MQConsumer
   typedef std::map<std::string, MQConsumerInner*> MQCMAP;
-  MQCMAP m_consumerTable;
-  std::mutex m_consumerTableMutex;
+  MQCMAP consumer_table_;
+  std::mutex consumer_table_mutex_;
 
   // Topic -> TopicRouteData
   typedef std::map<std::string, TopicRouteDataPtr> TRDMAP;
-  TRDMAP m_topicRouteTable;
-  std::mutex m_topicRouteTableMutex;
+  TRDMAP topic_route_table_;
+  std::mutex topic_route_table_mutex_;
 
   // brokerName -> [ brokerid : addr ]
-  BrokerAddrMAP m_brokerAddrTable;
-  std::mutex m_brokerAddrTableMutex;
+  BrokerAddrMAP broker_addr_table_;
+  std::mutex broker_addr_table_mutex_;
 
   // topic -> TopicPublishInfo
   typedef std::map<std::string, TopicPublishInfoPtr> TPMAP;
-  TPMAP m_topicPublishInfoTable;
-  std::mutex m_topicPublishInfoTableMutex;
+  TPMAP topic_publish_info_table_;
+  std::mutex topic_publish_info_table_mutex_;
 
   // topic -> <broker, time>
   typedef std::map<std::string, std::pair<std::string, uint64_t>> TBAMAP;
-  TBAMAP m_topicBrokerAddrTable;
-  std::mutex m_topicBrokerAddrTableMutex;
+  TBAMAP topic_broker_addr_table_;
+  std::mutex topic_broker_addr_table_mutex_;
 
-  std::timed_mutex m_lockNamesrv;
-  std::timed_mutex m_lockHeartbeat;
+  std::timed_mutex lock_namesrv_;
+  std::timed_mutex lock_heartbeat_;
 
-  std::unique_ptr<MQClientAPIImpl> m_mqClientAPIImpl;
-  std::unique_ptr<MQAdminImpl> m_mqAdminImpl;
-  std::unique_ptr<ClientRemotingProcessor> m_clientRemotingProcessor;
+  std::unique_ptr<MQClientAPIImpl> mq_client_api_impl_;
+  std::unique_ptr<MQAdminImpl> mq_admin_impl_;
+  std::unique_ptr<ClientRemotingProcessor> client_remoting_processor_;
 
-  std::unique_ptr<RebalanceService> m_rebalanceService;
-  std::unique_ptr<PullMessageService> m_pullMessageService;
-  scheduled_thread_pool_executor m_scheduledExecutorService;
+  std::unique_ptr<RebalanceService> rebalance_service_;
+  std::unique_ptr<PullMessageService> pull_message_service_;
+  scheduled_thread_pool_executor scheduled_executor_service_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __MQ_CLIENT_INSTANCE_H__
+#endif  // ROCKETMQ_MQCLIENTINSTANCE_H_

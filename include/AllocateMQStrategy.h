@@ -25,7 +25,7 @@
 namespace rocketmq {
 
 /**
- * AllocateMQStrategy - Interface of allocate MessageQueue
+ * AllocateMQStrategy - Interface for allocate MessageQueue
  */
 class ROCKETMQCLIENT_API AllocateMQStrategy {
  public:

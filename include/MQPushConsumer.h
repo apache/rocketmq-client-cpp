@@ -14,15 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_PUSH_CONSUMER_H__
-#define __MQ_PUSH_CONSUMER_H__
+#ifndef ROCKETMQ_MQPUSHCONSUMER_H_
+#define ROCKETMQ_MQPUSHCONSUMER_H_
 
 #include "MQConsumer.h"
 #include "MQMessageListener.h"
 
 namespace rocketmq {
 
-class ROCKETMQCLIENT_API MQPushConsumer : public MQConsumer {
+/**
+ * MQPushConsumer - interface for push consumer
+ */
+class ROCKETMQCLIENT_API MQPushConsumer : public MQConsumer  // base interface
+{
  public:  // MQPushConsumer in Java
   // [[deprecated]]
   virtual void registerMessageListener(MQMessageListener* messageListener) = 0;
@@ -40,4 +44,4 @@ class ROCKETMQCLIENT_API MQPushConsumer : public MQConsumer {
 
 }  // namespace rocketmq
 
-#endif  // __MQ_PUSH_CONSUMER_H__
+#endif  // ROCKETMQ_MQPUSHCONSUMER_H_

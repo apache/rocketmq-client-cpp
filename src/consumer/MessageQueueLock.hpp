@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MESSAGE_QUEUE_LOCK__
-#define __MESSAGE_QUEUE_LOCK__
+#ifndef ROCKETMQ_CONSUMER_MESSAGEQUEUELOCK_HPP_
+#define ROCKETMQ_CONSUMER_MESSAGEQUEUELOCK_HPP_
 
 #include <map>
 #include <memory>
@@ -31,20 +31,20 @@ namespace rocketmq {
 class MessageQueueLock {
  public:
   std::shared_ptr<std::mutex> fetchLockObject(const MQMessageQueue& mq) {
-    std::lock_guard<std::mutex> lock(m_mqLockTableMutex);
-    const auto& it = m_mqLockTable.find(mq);
-    if (it != m_mqLockTable.end()) {
+    std::lock_guard<std::mutex> lock(mq_lock_table_mutex_);
+    const auto& it = mq_lock_table_.find(mq);
+    if (it != mq_lock_table_.end()) {
       return it->second;
     } else {
-      return m_mqLockTable[mq] = std::make_shared<std::mutex>();
+      return mq_lock_table_[mq] = std::make_shared<std::mutex>();
     }
   }
 
  private:
-  std::map<MQMessageQueue, std::shared_ptr<std::mutex>> m_mqLockTable;
-  std::mutex m_mqLockTableMutex;
+  std::map<MQMessageQueue, std::shared_ptr<std::mutex>> mq_lock_table_;
+  std::mutex mq_lock_table_mutex_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __MESSAGE_QUEUE_LOCK__
+#endif  // ROCKETMQ_CONSUMER_MESSAGEQUEUELOCK_HPP_

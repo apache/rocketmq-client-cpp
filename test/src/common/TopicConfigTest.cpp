@@ -42,43 +42,43 @@ TEST(TopicConfigTest, EncodeAndDecode) {
 TEST(TopicConfigTest, GetterAndSetter) {
   TopicConfig topicConfig;
 
-  topicConfig.setTopicName("testTopic");
-  EXPECT_EQ(topicConfig.getTopicName(), "testTopic");
+  topicConfig.set_topic_name("testTopic");
+  EXPECT_EQ(topicConfig.topic_name(), "testTopic");
 
-  topicConfig.setReadQueueNums(4);
-  EXPECT_EQ(topicConfig.getReadQueueNums(), 4);
+  topicConfig.set_read_queue_nums(4);
+  EXPECT_EQ(topicConfig.read_queue_nums(), 4);
 
-  topicConfig.setWriteQueueNums(4);
-  EXPECT_EQ(topicConfig.getWriteQueueNums(), 4);
+  topicConfig.set_write_queue_nums(4);
+  EXPECT_EQ(topicConfig.write_queue_nums(), 4);
 
-  topicConfig.setPerm(PermName::PERM_READ);
-  EXPECT_EQ(topicConfig.getPerm(), PermName::PERM_READ);
+  topicConfig.set_perm(PermName::PERM_READ);
+  EXPECT_EQ(topicConfig.perm(), PermName::PERM_READ);
 
-  topicConfig.setTopicFilterType(TopicFilterType::MULTI_TAG);
-  EXPECT_EQ(topicConfig.getTopicFilterType(), TopicFilterType::MULTI_TAG);
+  topicConfig.set_topic_filter_type(TopicFilterType::MULTI_TAG);
+  EXPECT_EQ(topicConfig.topic_filter_type(), TopicFilterType::MULTI_TAG);
 }
 
 TEST(TopicConfigTest, Init) {
   TopicConfig topicConfig;
-  EXPECT_TRUE(topicConfig.getTopicName() == "");
-  EXPECT_EQ(topicConfig.getReadQueueNums(), TopicConfig::DefaultReadQueueNums);
-  EXPECT_EQ(topicConfig.getWriteQueueNums(), TopicConfig::DefaultWriteQueueNums);
-  EXPECT_EQ(topicConfig.getPerm(), PermName::PERM_READ | PermName::PERM_WRITE);
-  EXPECT_EQ(topicConfig.getTopicFilterType(), TopicFilterType::SINGLE_TAG);
+  EXPECT_TRUE(topicConfig.topic_name() == "");
+  EXPECT_EQ(topicConfig.read_queue_nums(), TopicConfig::DEFAULT_READ_QUEUE_NUMS);
+  EXPECT_EQ(topicConfig.write_queue_nums(), TopicConfig::DEFAULT_WRITE_QUEUE_NUMS);
+  EXPECT_EQ(topicConfig.perm(), PermName::PERM_READ | PermName::PERM_WRITE);
+  EXPECT_EQ(topicConfig.topic_filter_type(), TopicFilterType::SINGLE_TAG);
 
   TopicConfig twoTopicConfig("testTopic");
-  EXPECT_EQ(twoTopicConfig.getTopicName(), "testTopic");
-  EXPECT_EQ(twoTopicConfig.getReadQueueNums(), TopicConfig::DefaultReadQueueNums);
-  EXPECT_EQ(twoTopicConfig.getWriteQueueNums(), TopicConfig::DefaultWriteQueueNums);
-  EXPECT_EQ(twoTopicConfig.getPerm(), PermName::PERM_READ | PermName::PERM_WRITE);
-  EXPECT_EQ(twoTopicConfig.getTopicFilterType(), TopicFilterType::SINGLE_TAG);
+  EXPECT_EQ(twoTopicConfig.topic_name(), "testTopic");
+  EXPECT_EQ(twoTopicConfig.read_queue_nums(), TopicConfig::DEFAULT_READ_QUEUE_NUMS);
+  EXPECT_EQ(twoTopicConfig.write_queue_nums(), TopicConfig::DEFAULT_WRITE_QUEUE_NUMS);
+  EXPECT_EQ(twoTopicConfig.perm(), PermName::PERM_READ | PermName::PERM_WRITE);
+  EXPECT_EQ(twoTopicConfig.topic_filter_type(), TopicFilterType::SINGLE_TAG);
 
   TopicConfig threeTopicConfig("testTopic", 4, 4, PermName::PERM_READ);
-  EXPECT_EQ(threeTopicConfig.getTopicName(), "testTopic");
-  EXPECT_EQ(threeTopicConfig.getReadQueueNums(), 4);
-  EXPECT_EQ(threeTopicConfig.getWriteQueueNums(), 4);
-  EXPECT_EQ(threeTopicConfig.getPerm(), PermName::PERM_READ);
-  EXPECT_EQ(threeTopicConfig.getTopicFilterType(), TopicFilterType::SINGLE_TAG);
+  EXPECT_EQ(threeTopicConfig.topic_name(), "testTopic");
+  EXPECT_EQ(threeTopicConfig.read_queue_nums(), 4);
+  EXPECT_EQ(threeTopicConfig.write_queue_nums(), 4);
+  EXPECT_EQ(threeTopicConfig.perm(), PermName::PERM_READ);
+  EXPECT_EQ(threeTopicConfig.topic_filter_type(), TopicFilterType::SINGLE_TAG);
 }
 
 int main(int argc, char* argv[]) {

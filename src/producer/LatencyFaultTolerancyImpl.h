@@ -14,15 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __LATENCY_FAULT_TOLERANCY_IMPL__
-#define __LATENCY_FAULT_TOLERANCY_IMPL__
+#ifndef ROCKETMQ_PRODUCER_LATENCYFAULTTOLERANCYIMPL_H_
+#define ROCKETMQ_PRODUCER_LATENCYFAULTTOLERANCYIMPL_H_
 
-#include <algorithm>
-#include <atomic>
-#include <map>
-#include <mutex>
-#include <sstream>
-#include <string>
+#include <atomic>  // std::atomic
+#include <map>     // std::map
+#include <mutex>   // std::mutex
+#include <string>  // std::string
 
 namespace rocketmq {
 
@@ -43,45 +41,39 @@ class LatencyFaultTolerancyImpl {
 
     bool isAvailable() const;
 
-    std::string toString() const {
-      std::stringstream ss;
-      ss << "FaultItem{"
-         << "name='" << m_name << "'"
-         << ", currentLatency=" << m_currentLatency << ", startTimestamp=" << m_startTimestamp << "}";
-      return ss.str();
-    }
+    std::string toString() const;
 
    public:
-    std::string m_name;
-    volatile long m_currentLatency;
-    volatile int64_t m_startTimestamp;
+    std::string name_;
+    volatile long current_latency_;
+    volatile int64_t start_timestamp_;
   };
 
   class ComparableFaultItem {
    public:
     ComparableFaultItem(const FaultItem& item)
-        : m_name(item.m_name),
-          m_isAvailable(item.isAvailable()),
-          m_currentLatency(item.m_currentLatency),
-          m_startTimestamp(item.m_startTimestamp) {}
+        : name_(item.name_),
+          is_available_(item.isAvailable()),
+          current_latency_(item.current_latency_),
+          start_timestamp_(item.start_timestamp_) {}
 
     bool operator<(const ComparableFaultItem& other) const;
 
    public:
-    std::string m_name;
-    bool m_isAvailable;
-    long m_currentLatency;
-    int64_t m_startTimestamp;
+    std::string name_;
+    bool is_available_;
+    long current_latency_;
+    int64_t start_timestamp_;
   };
 
  private:
   // brokerName -> FaultItem
-  std::map<std::string, FaultItem> m_faultItemTable;
-  std::mutex m_faultItemTableMutex;
+  std::map<std::string, FaultItem> fault_item_table_;
+  std::mutex fault_item_table_mutex_;
 
-  std::atomic<int> m_whichItemWorst;
+  std::atomic<int> which_item_worst_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __LATENCY_FAULT_TOLERANCY_IMPL__
+#endif  // ROCKETMQ_PRODUCER_LATENCYFAULTTOLERANCYIMPL_H_

@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __THREAD_GROUP_HPP__
-#define __THREAD_GROUP_HPP__
+#ifndef ROCKETMQ_CONCURRENT_THREADGROUP_HPP_
+#define ROCKETMQ_CONCURRENT_THREADGROUP_HPP_
 
 #include "thread.hpp"
 
@@ -28,8 +28,8 @@ class thread_group {
   thread_group(const std::string& name) : name_(name), first_(nullptr) {}
 
   template <typename Function>
-  thread_group(const std::string& name, Function f, std::size_t num_threads) : name_(name), first_(nullptr) {
-    create_threads(f, num_threads);
+  thread_group(const std::string& name, Function f, std::size_t thread_nums) : name_(name), first_(nullptr) {
+    create_threads(f, thread_nums);
   }
 
   // Destructor joins any remaining threads in the group.
@@ -43,8 +43,8 @@ class thread_group {
 
   // Create new threads in the group.
   template <typename Function>
-  void create_threads(Function f, std::size_t num_threads) {
-    for (std::size_t i = 0; i < num_threads; ++i) {
+  void create_threads(Function f, std::size_t thread_nums) {
+    for (std::size_t i = 0; i < thread_nums; ++i) {
       create_thread(f);
     }
   }
@@ -90,4 +90,4 @@ class thread_group {
 
 }  // namespace rocketmq
 
-#endif  // __THREAD_GROUP_HPP__
+#endif  // ROCKETMQ_CONCURRENT_THREADGROUP_HPP_

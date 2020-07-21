@@ -17,11 +17,14 @@
 #ifndef ROCKETMQ_MESSAGEUTIL_H_
 #define ROCKETMQ_MESSAGEUTIL_H_
 
-#include "MQClientException.h"
+#include "MQException.h"
 #include "MQMessage.h"
 
 namespace rocketmq {
 
+/**
+ * MessageUtil - util for Request-Reply mode
+ */
 class ROCKETMQCLIENT_API MessageUtil {
  public:
   static MQMessage createReplyMessage(const Message& requestMessage, const std::string& body);

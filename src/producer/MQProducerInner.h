@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_PRODUCER_INNER_H__
-#define __MQ_PRODUCER_INNER_H__
+#ifndef ROCKETMQ_PRODUCER_MQPRODUCERINNER_H_
+#define ROCKETMQ_PRODUCER_MQPRODUCERINNER_H_
 
 #include "TransactionListener.h"
 
@@ -40,4 +40,4 @@ class MQProducerInner {
 
 }  // namespace rocketmq
 
-#endif  // __MQ_PRODUCER_INNER_H__
+#endif  // ROCKETMQ_PRODUCER_MQPRODUCERINNER_H_

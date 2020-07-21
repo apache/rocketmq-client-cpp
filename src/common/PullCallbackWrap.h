@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PULL_CALLBACK_WRAP_H__
-#define __PULL_CALLBACK_WRAP_H__
+#ifndef ROCKET_COMMON_PULLCALLBACKWRAP_H_
+#define ROCKET_COMMON_PULLCALLBACKWRAP_H_
 
 #include "InvokeCallback.h"
 #include "MQClientAPIImpl.h"
@@ -31,10 +31,10 @@ class PullCallbackWrap : public InvokeCallback {
   void operationComplete(ResponseFuture* responseFuture) noexcept override;
 
  private:
-  PullCallback* m_pullCallback;
-  MQClientAPIImpl* m_pClientAPI;
+  PullCallback* pull_callback_;
+  MQClientAPIImpl* client_api_impl_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __PULL_CALLBACK_WRAP_H__
+#endif  // ROCKET_COMMON_PULLCALLBACKWRAP_H_

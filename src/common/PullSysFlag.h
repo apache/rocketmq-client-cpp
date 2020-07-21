@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PULL_SYS_FLAG_H__
-#define __PULL_SYS_FLAG_H__
+#ifndef ROCKETMQ_COMMON_PULLSYSFLAG_H_
+#define ROCKETMQ_COMMON_PULLSYSFLAG_H_
 
 namespace rocketmq {
 
@@ -28,14 +28,8 @@ class PullSysFlag {
   static bool hasSuspendFlag(int sysFlag);
   static bool hasSubscriptionFlag(int sysFlag);
   static bool hasClassFilterFlag(int sysFlag);
-
- private:
-  static int FLAG_COMMIT_OFFSET;
-  static int FLAG_SUSPEND;
-  static int FLAG_SUBSCRIPTION;
-  static int FLAG_CLASS_FILTER;
 };
 
 }  // namespace rocketmq
 
-#endif  // __PULL_SYS_FLAG_H__
+#endif  // ROCKETMQ_COMMON_PULLSYSFLAG_H_

@@ -20,40 +20,41 @@
 
 #include "PermName.h"
 
+static const std::string SEPARATOR = " ";
+
 namespace rocketmq {
 
-int TopicConfig::DefaultReadQueueNums = 16;
-int TopicConfig::DefaultWriteQueueNums = 16;
-std::string TopicConfig::SEPARATOR = " ";
+const int TopicConfig::DEFAULT_READ_QUEUE_NUMS = 16;
+const int TopicConfig::DEFAULT_WRITE_QUEUE_NUMS = 16;
 
 TopicConfig::TopicConfig()
-    : m_topicName(""),
-      m_readQueueNums(DefaultReadQueueNums),
-      m_writeQueueNums(DefaultWriteQueueNums),
-      m_perm(PermName::PERM_READ | PermName::PERM_WRITE),
-      m_topicFilterType(SINGLE_TAG) {}
+    : topic_name_(null),
+      read_queue_nums_(DEFAULT_READ_QUEUE_NUMS),
+      write_queue_nums_(DEFAULT_WRITE_QUEUE_NUMS),
+      perm_(PermName::PERM_READ | PermName::PERM_WRITE),
+      topic_filter_type_(SINGLE_TAG) {}
 
 TopicConfig::TopicConfig(const std::string& topicName)
-    : m_topicName(topicName),
-      m_readQueueNums(DefaultReadQueueNums),
-      m_writeQueueNums(DefaultWriteQueueNums),
-      m_perm(PermName::PERM_READ | PermName::PERM_WRITE),
-      m_topicFilterType(SINGLE_TAG) {}
+    : topic_name_(topicName),
+      read_queue_nums_(DEFAULT_READ_QUEUE_NUMS),
+      write_queue_nums_(DEFAULT_WRITE_QUEUE_NUMS),
+      perm_(PermName::PERM_READ | PermName::PERM_WRITE),
+      topic_filter_type_(SINGLE_TAG) {}
 
 TopicConfig::TopicConfig(const std::string& topicName, int readQueueNums, int writeQueueNums, int perm)
-    : m_topicName(topicName),
-      m_readQueueNums(readQueueNums),
-      m_writeQueueNums(writeQueueNums),
-      m_perm(perm),
-      m_topicFilterType(SINGLE_TAG) {}
+    : topic_name_(topicName),
+      read_queue_nums_(readQueueNums),
+      write_queue_nums_(writeQueueNums),
+      perm_(perm),
+      topic_filter_type_(SINGLE_TAG) {}
 
 TopicConfig::~TopicConfig() {}
 
-std::string TopicConfig::encode() {
+std::string TopicConfig::encode() const {
   std::stringstream ss;
 
-  ss << m_topicName << SEPARATOR << m_readQueueNums << SEPARATOR << m_writeQueueNums << SEPARATOR << m_perm << SEPARATOR
-     << m_topicFilterType;
+  ss << topic_name_ << SEPARATOR << read_queue_nums_ << SEPARATOR << write_queue_nums_ << SEPARATOR << perm_
+     << SEPARATOR << topic_filter_type_;
 
   return ss.str();
 }
@@ -61,56 +62,16 @@ std::string TopicConfig::encode() {
 bool TopicConfig::decode(const std::string& in) {
   std::stringstream ss(in);
 
-  ss >> m_topicName;
-  ss >> m_readQueueNums;
-  ss >> m_writeQueueNums;
-  ss >> m_perm;
+  ss >> topic_name_;
+  ss >> read_queue_nums_;
+  ss >> write_queue_nums_;
+  ss >> perm_;
 
   int type;
   ss >> type;
-  m_topicFilterType = (TopicFilterType)type;
+  topic_filter_type_ = (TopicFilterType)type;
 
   return true;
-}
-
-const std::string& TopicConfig::getTopicName() {
-  return m_topicName;
-}
-
-void TopicConfig::setTopicName(const std::string& topicName) {
-  m_topicName = topicName;
-}
-
-int TopicConfig::getReadQueueNums() {
-  return m_readQueueNums;
-}
-
-void TopicConfig::setReadQueueNums(int readQueueNums) {
-  m_readQueueNums = readQueueNums;
-}
-
-int TopicConfig::getWriteQueueNums() {
-  return m_writeQueueNums;
-}
-
-void TopicConfig::setWriteQueueNums(int writeQueueNums) {
-  m_writeQueueNums = writeQueueNums;
-}
-
-int TopicConfig::getPerm() {
-  return m_perm;
-}
-
-void TopicConfig::setPerm(int perm) {
-  m_perm = perm;
-}
-
-TopicFilterType TopicConfig::getTopicFilterType() {
-  return m_topicFilterType;
-}
-
-void TopicConfig::setTopicFilterType(TopicFilterType topicFilterType) {
-  m_topicFilterType = topicFilterType;
 }
 
 }  // namespace rocketmq

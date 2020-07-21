@@ -14,22 +14,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_CLIENT_ERROR_CONTAINER_H__
-#define __MQ_CLIENT_ERROR_CONTAINER_H__
+#ifndef ROCKETMQ_OFFSETSTORE_H_
+#define ROCKETMQ_OFFSETSTORE_H_
 
-#include <string>
+#include <vector>  // std::vector
+
+#include "MQMessageQueue.h"
 
 namespace rocketmq {
 
-class MQClientErrorContainer {
- public:
-  static void setErr(const std::string& str);
-  static const std::string& getErr();
+enum ReadOffsetType {
+  // read offset from memory
+  READ_FROM_MEMORY,
+  // read offset from remoting
+  READ_FROM_STORE,
+  // read offset from memory firstly, then from remoting
+  MEMORY_FIRST_THEN_STORE,
+};
 
- private:
-  static thread_local std::string t_err;
+class ROCKETMQCLIENT_API OffsetStore {
+ public:
+  virtual ~OffsetStore() = default;
+
+  virtual void load() = 0;
+  virtual void updateOffset(const MQMessageQueue& mq, int64_t offset, bool increaseOnly) = 0;
+  virtual int64_t readOffset(const MQMessageQueue& mq, ReadOffsetType type) = 0;
+  virtual void persist(const MQMessageQueue& mq) = 0;
+  virtual void persistAll(const std::vector<MQMessageQueue>& mq) = 0;
+  virtual void removeOffset(const MQMessageQueue& mq) = 0;
 };
 
 }  // namespace rocketmq
 
-#endif  // __MQ_CLIENT_ERROR_CONTAINER_H__
+#endif  // ROCKETMQ_CONSUMER_OFFSETSTORE_H_

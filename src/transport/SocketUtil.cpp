@@ -30,7 +30,7 @@
 #endif
 
 #include "ByteOrder.h"
-#include "MQClientException.h"
+#include "MQException.h"
 #include "UtilAll.h"
 
 namespace rocketmq {

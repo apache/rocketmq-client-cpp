@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __C_PRODUCER_H__
-#define __C_PRODUCER_H__
+#ifndef ROCKETMQ_C_CPRODUCER_H_
+#define ROCKETMQ_C_CPRODUCER_H_
 
 #include "CBatchMessage.h"
 #include "CMQException.h"
@@ -28,7 +28,8 @@
 extern "C" {
 #endif
 
-typedef struct CProducer CProducer;
+typedef struct CProducer CProducer;  // alias for DefaultMQProducer
+
 typedef int (*QueueSelectorCallback)(int size, CMessage* msg, void* arg);
 typedef void (*CSendSuccessCallback)(CSendResult result);
 typedef void (*CSendExceptionCallback)(CMQException e);
@@ -105,4 +106,4 @@ ROCKETMQCLIENT_API int SendMessageTransaction(CProducer* producer,
 }
 #endif
 
-#endif  // __C_PRODUCER_H__
+#endif  // ROCKETMQ_C_CPRODUCER_H_

@@ -14,30 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __REQUEST_CALLBACK_H__
-#define __REQUEST_CALLBACK_H__
+#ifndef ROCKETMQ_REQUESTCALLBACK_H_
+#define ROCKETMQ_REQUESTCALLBACK_H_
 
-#include "MQClientException.h"
+#include "MQException.h"
 #include "MQMessage.h"
 
 namespace rocketmq {
 
 enum RequestCallbackType { REQUEST_CALLBACK_TYPE_SIMPLE = 0, REQUEST_CALLBACK_TYPE_AUTO_DELETE = 1 };
 
+/**
+ * RequestCallback - callback interface for async request
+ */
 class ROCKETMQCLIENT_API RequestCallback {
  public:
   virtual ~RequestCallback() = default;
 
-  virtual void onSuccess(MessagePtr message) { onSuccess(MQMessage(message)); }
-
-  // SDK will be responsible for the lifecycle of message.
   virtual void onSuccess(MQMessage message) = 0;
-
   virtual void onException(MQException& e) noexcept = 0;
 
   virtual RequestCallbackType getRequestCallbackType() const { return REQUEST_CALLBACK_TYPE_SIMPLE; }
 };
 
+/**
+ * AutoDeleteRequestCallback - callback interface for async request
+ *
+ * the object of AutoDeleteRequestCallback will be deleted automatically by SDK after invoke callback interface
+ */
 class ROCKETMQCLIENT_API AutoDeleteRequestCallback : public RequestCallback {
  public:
   RequestCallbackType getRequestCallbackType() const override final { return REQUEST_CALLBACK_TYPE_AUTO_DELETE; }
@@ -45,4 +49,4 @@ class ROCKETMQCLIENT_API AutoDeleteRequestCallback : public RequestCallback {
 
 }  // namespace rocketmq
 
-#endif  // __REQUEST_CALLBACK_H__
+#endif  // ROCKETMQ_REQUESTCALLBACK_H_

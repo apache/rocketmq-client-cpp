@@ -26,7 +26,7 @@
 #include "ClientRPCHook.h"
 #include "ClientRemotingProcessor.h"
 #include "ConsumerRunningInfo.h"
-#include "MQClientConfigImpl.h"
+#include "MQClientConfigImpl.hpp"
 #include "MQClientInstance.h"
 #include "MQMessageQueue.h"
 #include "MQProtos.h"

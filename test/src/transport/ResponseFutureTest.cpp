@@ -41,10 +41,10 @@ class MockInvokeCallback : public InvokeCallback {
 
 TEST(ResponseFutureTest, Init) {
   ResponseFuture responseFuture(MQRequestCode::QUERY_BROKER_OFFSET, 4, 1000);
-  EXPECT_EQ(responseFuture.getRequestCode(), MQRequestCode::QUERY_BROKER_OFFSET);
-  EXPECT_EQ(responseFuture.getOpaque(), 4);
-  EXPECT_EQ(responseFuture.getTimeoutMillis(), 1000);
-  EXPECT_FALSE(responseFuture.isSendRequestOK());
+  EXPECT_EQ(responseFuture.request_code(), MQRequestCode::QUERY_BROKER_OFFSET);
+  EXPECT_EQ(responseFuture.opaque(), 4);
+  EXPECT_EQ(responseFuture.timeout_millis(), 1000);
+  EXPECT_FALSE(responseFuture.send_request_ok());
   EXPECT_FALSE(responseFuture.hasInvokeCallback());
 
   // ~ResponseFuture delete callback
@@ -56,8 +56,8 @@ TEST(ResponseFutureTest, Init) {
 TEST(ResponseFutureTest, Info) {
   ResponseFuture responseFuture(MQRequestCode::QUERY_BROKER_OFFSET, 4, 1000);
 
-  responseFuture.setSendRequestOK(true);
-  EXPECT_TRUE(responseFuture.isSendRequestOK());
+  responseFuture.set_send_request_ok(true);
+  EXPECT_TRUE(responseFuture.send_request_ok());
 }
 
 TEST(ResponseFutureTest, Response) {

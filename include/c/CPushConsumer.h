@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __C_PUSH_CONSUMER_H__
-#define __C_PUSH_CONSUMER_H__
+#ifndef ROCKETMQ_C_CPUSHCONSUMER_H_
+#define ROCKETMQ_C_CPUSHCONSUMER_H_
 
 #include "CCommon.h"
 #include "CMessageExt.h"
@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-typedef struct CPushConsumer CPushConsumer;
+typedef struct CPushConsumer CPushConsumer;  // alias for DefaultMQPushConssumer
 
 typedef enum E_CConsumeStatus { E_CONSUME_SUCCESS = 0, E_RECONSUME_LATER = 1 } CConsumeStatus;
 
@@ -61,4 +61,4 @@ ROCKETMQCLIENT_API int SetPushConsumerMaxCacheMessageSizeInMb(CPushConsumer* con
 }
 #endif
 
-#endif  // __C_PUSH_CONSUMER_H__
+#endif  // ROCKETMQ_C_CPUSHCONSUMER_H_

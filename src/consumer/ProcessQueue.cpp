@@ -20,65 +20,66 @@
 #include "ProcessQueueInfo.h"
 #include "UtilAll.h"
 
+static const uint64_t PULL_MAX_IDLE_TIME = 120000;  // ms
+
 namespace rocketmq {
 
-const uint64_t ProcessQueue::RebalanceLockMaxLiveTime = 30000;
-const uint64_t ProcessQueue::RebalanceLockInterval = 20000;
-const uint64_t ProcessQueue::PullMaxIdleTime = 120000;
+const uint64_t ProcessQueue::REBALANCE_LOCK_MAX_LIVE_TIME = 30000;
+const uint64_t ProcessQueue::REBALANCE_LOCK_INTERVAL = 20000;
 
 ProcessQueue::ProcessQueue()
-    : m_queueOffsetMax(0),
-      m_dropped(false),
-      m_lastPullTimestamp(UtilAll::currentTimeMillis()),
-      m_lastConsumeTimestamp(UtilAll::currentTimeMillis()),
-      m_locked(false),
-      m_lastLockTimestamp(UtilAll::currentTimeMillis()) {}
+    : queue_offset_max_(0),
+      dropped_(false),
+      last_pull_timestamp_(UtilAll::currentTimeMillis()),
+      last_consume_timestamp_(UtilAll::currentTimeMillis()),
+      locked_(false),
+      last_lock_timestamp_(UtilAll::currentTimeMillis()) {}
 
 ProcessQueue::~ProcessQueue() {
-  m_msgTreeMap.clear();
-  m_consumingMsgOrderlyTreeMap.clear();
+  msg_tree_map_.clear();
+  consuming_msg_orderly_tree_map_.clear();
 }
 
 bool ProcessQueue::isLockExpired() const {
-  return (UtilAll::currentTimeMillis() - m_lastLockTimestamp) > RebalanceLockMaxLiveTime;
+  return (UtilAll::currentTimeMillis() - last_lock_timestamp_) > REBALANCE_LOCK_MAX_LIVE_TIME;
 }
 
 bool ProcessQueue::isPullExpired() const {
-  return (UtilAll::currentTimeMillis() - m_lastPullTimestamp) > PullMaxIdleTime;
+  return (UtilAll::currentTimeMillis() - last_pull_timestamp_) > PULL_MAX_IDLE_TIME;
 }
 
 void ProcessQueue::putMessage(const std::vector<MessageExtPtr>& msgs) {
-  std::lock_guard<std::mutex> lock(m_lockTreeMap);
+  std::lock_guard<std::mutex> lock(lock_tree_map_);
 
   for (const auto& msg : msgs) {
     int64_t offset = msg->getQueueOffset();
-    m_msgTreeMap[offset] = msg;
-    if (offset > m_queueOffsetMax) {
-      m_queueOffsetMax = offset;
+    msg_tree_map_[offset] = msg;
+    if (offset > queue_offset_max_) {
+      queue_offset_max_ = offset;
     }
   }
 
-  LOG_DEBUG_NEW("ProcessQueue: putMessage m_queueOffsetMax:{}", m_queueOffsetMax);
+  LOG_DEBUG_NEW("ProcessQueue: putMessage queue_offset_max:{}", queue_offset_max_);
 }
 
 int64_t ProcessQueue::removeMessage(const std::vector<MessageExtPtr>& msgs) {
   int64_t result = -1;
   const auto now = UtilAll::currentTimeMillis();
 
-  std::lock_guard<std::mutex> lock(m_lockTreeMap);
-  m_lastConsumeTimestamp = now;
+  std::lock_guard<std::mutex> lock(lock_tree_map_);
+  last_consume_timestamp_ = now;
 
-  if (!m_msgTreeMap.empty()) {
-    result = m_queueOffsetMax + 1;
-    LOG_DEBUG_NEW("offset result is:{}, m_queueOffsetMax is:{}, msgs size:{}", result, m_queueOffsetMax, msgs.size());
+  if (!msg_tree_map_.empty()) {
+    result = queue_offset_max_ + 1;
+    LOG_DEBUG_NEW("offset result is:{}, queue_offset_max is:{}, msgs size:{}", result, queue_offset_max_, msgs.size());
 
     for (auto& msg : msgs) {
-      LOG_DEBUG_NEW("remove these msg from m_msgTreeMap, its offset:{}", msg->getQueueOffset());
-      m_msgTreeMap.erase(msg->getQueueOffset());
+      LOG_DEBUG_NEW("remove these msg from msg_tree_map, its offset:{}", msg->getQueueOffset());
+      msg_tree_map_.erase(msg->getQueueOffset());
     }
 
-    if (!m_msgTreeMap.empty()) {
-      auto it = m_msgTreeMap.begin();
+    if (!msg_tree_map_.empty()) {
+      auto it = msg_tree_map_.begin();
       result = it->first;
     }
   }
@@ -87,44 +88,30 @@ int64_t ProcessQueue::removeMessage(const std::vector<MessageExtPtr>& msgs) {
 }
 
 int ProcessQueue::getCacheMsgCount() {
-  std::lock_guard<std::mutex> lock(m_lockTreeMap);
-  return static_cast<int>(m_msgTreeMap.size());
+  std::lock_guard<std::mutex> lock(lock_tree_map_);
+  return static_cast<int>(msg_tree_map_.size() + consuming_msg_orderly_tree_map_.size());
 }
 
 int64_t ProcessQueue::getCacheMinOffset() {
-  std::lock_guard<std::mutex> lock(m_lockTreeMap);
-  if (m_msgTreeMap.empty()) {
+  std::lock_guard<std::mutex> lock(lock_tree_map_);
+  if (msg_tree_map_.empty() && consuming_msg_orderly_tree_map_.empty()) {
     return 0;
+  } else if (!consuming_msg_orderly_tree_map_.empty()) {
+    return consuming_msg_orderly_tree_map_.begin()->first;
   } else {
-    return m_msgTreeMap.begin()->first;
+    return msg_tree_map_.begin()->first;
   }
 }
 
 int64_t ProcessQueue::getCacheMaxOffset() {
-  return m_queueOffsetMax;
-}
-
-bool ProcessQueue::isDropped() const {
-  return m_dropped.load();
-}
-
-void ProcessQueue::setDropped(bool dropped) {
-  m_dropped.store(dropped);
-}
-
-bool ProcessQueue::isLocked() const {
-  return m_locked.load();
-}
-
-void ProcessQueue::setLocked(bool locked) {
-  m_locked.store(locked);
+  return queue_offset_max_;
 }
 
 int64_t ProcessQueue::commit() {
-  std::lock_guard<std::mutex> lock(m_lockTreeMap);
-  if (!m_consumingMsgOrderlyTreeMap.empty()) {
-    int64_t offset = (--m_consumingMsgOrderlyTreeMap.end())->first;
-    m_consumingMsgOrderlyTreeMap.clear();
+  std::lock_guard<std::mutex> lock(lock_tree_map_);
+  if (!consuming_msg_orderly_tree_map_.empty()) {
+    int64_t offset = (--consuming_msg_orderly_tree_map_.end())->first;
+    consuming_msg_orderly_tree_map_.clear();
     return offset + 1;
   } else {
     return -1;
@@ -132,94 +119,55 @@ int64_t ProcessQueue::commit() {
 }
 
 void ProcessQueue::makeMessageToCosumeAgain(std::vector<MessageExtPtr>& msgs) {
-  std::lock_guard<std::mutex> lock(m_lockTreeMap);
+  std::lock_guard<std::mutex> lock(lock_tree_map_);
   for (const auto& msg : msgs) {
-    m_msgTreeMap[msg->getQueueOffset()] = msg;
-    m_consumingMsgOrderlyTreeMap.erase(msg->getQueueOffset());
+    msg_tree_map_[msg->getQueueOffset()] = msg;
+    consuming_msg_orderly_tree_map_.erase(msg->getQueueOffset());
   }
 }
 
 void ProcessQueue::takeMessages(std::vector<MessageExtPtr>& out_msgs, int batchSize) {
-  std::lock_guard<std::mutex> lock(m_lockTreeMap);
-  for (int i = 0; i != batchSize; i++) {
-    const auto& it = m_msgTreeMap.begin();
-    if (it != m_msgTreeMap.end()) {
-      out_msgs.push_back(it->second);
-      m_consumingMsgOrderlyTreeMap[it->first] = it->second;
-      m_msgTreeMap.erase(it);
-    }
+  std::lock_guard<std::mutex> lock(lock_tree_map_);
+  for (auto it = msg_tree_map_.begin(); it != msg_tree_map_.end() && batchSize--;) {
+    out_msgs.push_back(it->second);
+    consuming_msg_orderly_tree_map_[it->first] = it->second;
+    it = msg_tree_map_.erase(it);
   }
 }
 
 void ProcessQueue::clearAllMsgs() {
-  std::lock_guard<std::mutex> lock(m_lockTreeMap);
+  std::lock_guard<std::mutex> lock(lock_tree_map_);
 
-  if (isDropped()) {
-    LOG_DEBUG_NEW("clear m_msgTreeMap as PullRequest had been dropped.");
-    m_msgTreeMap.clear();
-    m_consumingMsgOrderlyTreeMap.clear();
-    m_queueOffsetMax = 0;
+  if (dropped()) {
+    LOG_DEBUG_NEW("clear msg_tree_map as PullRequest had been dropped.");
+    msg_tree_map_.clear();
+    consuming_msg_orderly_tree_map_.clear();
+    queue_offset_max_ = 0;
   }
-}
-
-uint64_t ProcessQueue::getLastLockTimestamp() const {
-  return m_lastLockTimestamp;
-}
-
-void ProcessQueue::setLastLockTimestamp(int64_t lastLockTimestamp) {
-  m_lastLockTimestamp = lastLockTimestamp;
-}
-
-std::timed_mutex& ProcessQueue::getLockConsume() {
-  return m_lockConsume;
-}
-
-uint64_t ProcessQueue::getLastPullTimestamp() const {
-  return m_lastPullTimestamp;
-}
-
-void ProcessQueue::setLastPullTimestamp(uint64_t lastPullTimestamp) {
-  m_lastPullTimestamp = lastPullTimestamp;
-}
-
-long ProcessQueue::getTryUnlockTimes() {
-  return m_tryUnlockTimes.load();
-}
-
-void ProcessQueue::incTryUnlockTimes() {
-  m_tryUnlockTimes.fetch_add(1);
-}
-
-uint64_t ProcessQueue::getLastConsumeTimestamp() {
-  return m_lastConsumeTimestamp;
-}
-
-void ProcessQueue::setLastConsumeTimestamp(uint64_t lastConsumeTimestamp) {
-  m_lastConsumeTimestamp = lastConsumeTimestamp;
 }
 
 void ProcessQueue::fillProcessQueueInfo(ProcessQueueInfo& info) {
-  std::lock_guard<std::mutex> lock(m_lockTreeMap);
+  std::lock_guard<std::mutex> lock(lock_tree_map_);
 
-  if (!m_msgTreeMap.empty()) {
-    info.cachedMsgMinOffset = m_msgTreeMap.begin()->first;
-    info.cachedMsgMaxOffset = m_queueOffsetMax;
-    info.cachedMsgCount = m_msgTreeMap.size();
+  if (!msg_tree_map_.empty()) {
+    info.cachedMsgMinOffset = msg_tree_map_.begin()->first;
+    info.cachedMsgMaxOffset = queue_offset_max_;
+    info.cachedMsgCount = msg_tree_map_.size();
   }
 
-  if (!m_consumingMsgOrderlyTreeMap.empty()) {
-    info.transactionMsgMinOffset = m_consumingMsgOrderlyTreeMap.begin()->first;
-    info.transactionMsgMaxOffset = (--m_consumingMsgOrderlyTreeMap.end())->first;
-    info.transactionMsgCount = m_consumingMsgOrderlyTreeMap.size();
+  if (!consuming_msg_orderly_tree_map_.empty()) {
+    info.transactionMsgMinOffset = consuming_msg_orderly_tree_map_.begin()->first;
+    info.transactionMsgMaxOffset = (--consuming_msg_orderly_tree_map_.end())->first;
+    info.transactionMsgCount = consuming_msg_orderly_tree_map_.size();
   }
 
-  info.setLocked(m_locked);
-  info.tryUnlockTimes = m_tryUnlockTimes.load();
-  info.lastLockTimestamp = m_lastLockTimestamp;
+  info.setLocked(locked_);
+  info.tryUnlockTimes = try_unlock_times_.load();
+  info.lastLockTimestamp = last_lock_timestamp_;
 
-  info.setDroped(m_dropped);
-  info.lastPullTimestamp = m_lastPullTimestamp;
-  info.lastConsumeTimestamp = m_lastConsumeTimestamp;
+  info.setDroped(dropped_);
+  info.lastPullTimestamp = last_pull_timestamp_;
+  info.lastConsumeTimestamp = last_consume_timestamp_;
 }
 
 }  // namespace rocketmq

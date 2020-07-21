@@ -23,18 +23,19 @@
 #include "CommunicationMode.h"
 #include "ConsumeMsgService.h"
 #include "ConsumerRunningInfo.h"
-#include "FilterAPI.h"
+#include "FilterAPI.hpp"
 #include "Logging.h"
 #include "MQAdminImpl.h"
 #include "MQClientAPIImpl.h"
 #include "MQClientInstance.h"
 #include "MQClientManager.h"
 #include "MQProtos.h"
-#include "OffsetStore.h"
+#include "LocalFileOffsetStore.h"
 #include "PullAPIWrapper.h"
 #include "PullMessageService.hpp"
 #include "PullSysFlag.h"
 #include "RebalancePushImpl.h"
+#include "RemoteBrokerOffsetStore.h"
 #include "SocketUtil.h"
 #include "UtilAll.h"
 #include "Validators.h"
@@ -45,40 +46,36 @@ class AsyncPullCallback : public AutoDeletePullCallback {
  public:
   AsyncPullCallback(DefaultMQPushConsumerImplPtr pushConsumer,
                     PullRequestPtr request,
-                    SubscriptionDataPtr subscriptionData)
-      : m_defaultMQPushConsumer(pushConsumer), m_pullRequest(request), m_subscriptionData(subscriptionData) {}
+                    SubscriptionData* subscriptionData)
+      : default_mq_push_consumer_(pushConsumer), pull_request_(request), subscription_data_(subscriptionData) {}
 
-  ~AsyncPullCallback() override {
-    m_defaultMQPushConsumer.reset();
-    m_pullRequest.reset();
-    m_subscriptionData = nullptr;
-  }
+  ~AsyncPullCallback() = default;
 
   void onSuccess(PullResult& pullResult) override {
-    auto defaultMQPushConsumer = m_defaultMQPushConsumer.lock();
+    auto defaultMQPushConsumer = default_mq_push_consumer_.lock();
     if (nullptr == defaultMQPushConsumer) {
       LOG_WARN_NEW("AsyncPullCallback::onSuccess: DefaultMQPushConsumerImpl is released.");
       return;
     }
 
-    PullResult result = defaultMQPushConsumer->getPullAPIWrapper()->processPullResult(m_pullRequest->getMessageQueue(),
-                                                                                      pullResult, m_subscriptionData);
+    PullResult result = defaultMQPushConsumer->getPullAPIWrapper()->processPullResult(pull_request_->message_queue(),
+                                                                                      pullResult, subscription_data_);
     switch (result.pull_status()) {
       case FOUND: {
-        int64_t prevRequestOffset = m_pullRequest->getNextOffset();
-        m_pullRequest->setNextOffset(result.next_begin_offset());
+        int64_t prevRequestOffset = pull_request_->next_offset();
+        pull_request_->set_next_offset(result.next_begin_offset());
 
         int64_t firstMsgOffset = (std::numeric_limits<int64_t>::max)();
         if (result.msg_found_list().empty()) {
-          defaultMQPushConsumer->executePullRequestImmediately(m_pullRequest);
+          defaultMQPushConsumer->executePullRequestImmediately(pull_request_);
         } else {
           firstMsgOffset = result.msg_found_list()[0]->getQueueOffset();
 
-          m_pullRequest->getProcessQueue()->putMessage(result.msg_found_list());
+          pull_request_->process_queue()->putMessage(result.msg_found_list());
           defaultMQPushConsumer->getConsumerMsgService()->submitConsumeRequest(
-              result.msg_found_list(), m_pullRequest->getProcessQueue(), m_pullRequest->getMessageQueue(), true);
+              result.msg_found_list(), pull_request_->process_queue(), pull_request_->message_queue(), true);
 
-          defaultMQPushConsumer->executePullRequestImmediately(m_pullRequest);
+          defaultMQPushConsumer->executePullRequestImmediately(pull_request_);
         }
 
         if (result.next_begin_offset() < prevRequestOffset || firstMsgOffset < prevRequestOffset) {
@@ -90,32 +87,32 @@ class AsyncPullCallback : public AutoDeletePullCallback {
       } break;
       case NO_NEW_MSG:
       case NO_MATCHED_MSG:
-        m_pullRequest->setNextOffset(result.next_begin_offset());
-        defaultMQPushConsumer->correctTagsOffset(m_pullRequest);
-        defaultMQPushConsumer->executePullRequestImmediately(m_pullRequest);
+        pull_request_->set_next_offset(result.next_begin_offset());
+        defaultMQPushConsumer->correctTagsOffset(pull_request_);
+        defaultMQPushConsumer->executePullRequestImmediately(pull_request_);
         break;
       case NO_LATEST_MSG:
-        m_pullRequest->setNextOffset(result.next_begin_offset());
-        defaultMQPushConsumer->correctTagsOffset(m_pullRequest);
+        pull_request_->set_next_offset(result.next_begin_offset());
+        defaultMQPushConsumer->correctTagsOffset(pull_request_);
         defaultMQPushConsumer->executePullRequestLater(
-            m_pullRequest,
+            pull_request_,
             defaultMQPushConsumer->getDefaultMQPushConsumerConfig()->getPullTimeDelayMillsWhenException());
         break;
       case OFFSET_ILLEGAL: {
-        LOG_WARN_NEW("the pull request offset illegal, {} {}", m_pullRequest->toString(), result.toString());
+        LOG_WARN_NEW("the pull request offset illegal, {} {}", pull_request_->toString(), result.toString());
 
-        m_pullRequest->setNextOffset(result.next_begin_offset());
-        m_pullRequest->getProcessQueue()->setDropped(true);
+        pull_request_->set_next_offset(result.next_begin_offset());
+        pull_request_->process_queue()->set_dropped(true);
 
         // update and persist offset, then removeProcessQueue
-        auto pullRequest = m_pullRequest;
+        auto pullRequest = pull_request_;
         defaultMQPushConsumer->executeTaskLater(
             [defaultMQPushConsumer, pullRequest]() {
               try {
-                defaultMQPushConsumer->getOffsetStore()->updateOffset(pullRequest->getMessageQueue(),
-                                                                      pullRequest->getNextOffset(), false);
-                defaultMQPushConsumer->getOffsetStore()->persist(pullRequest->getMessageQueue());
-                defaultMQPushConsumer->getRebalanceImpl()->removeProcessQueue(pullRequest->getMessageQueue());
+                defaultMQPushConsumer->getOffsetStore()->updateOffset(pullRequest->message_queue(),
+                                                                      pullRequest->next_offset(), false);
+                defaultMQPushConsumer->getOffsetStore()->persist(pullRequest->message_queue());
+                defaultMQPushConsumer->getRebalanceImpl()->removeProcessQueue(pullRequest->message_queue());
 
                 LOG_WARN_NEW("fix the pull request offset, {}", pullRequest->toString());
               } catch (std::exception& e) {
@@ -130,25 +127,25 @@ class AsyncPullCallback : public AutoDeletePullCallback {
   }
 
   void onException(MQException& e) noexcept override {
-    auto defaultMQPushConsumer = m_defaultMQPushConsumer.lock();
+    auto defaultMQPushConsumer = default_mq_push_consumer_.lock();
     if (nullptr == defaultMQPushConsumer) {
       LOG_WARN_NEW("AsyncPullCallback::onException: DefaultMQPushConsumerImpl is released.");
       return;
     }
 
-    if (!UtilAll::isRetryTopic(m_pullRequest->getMessageQueue().getTopic())) {
+    if (!UtilAll::isRetryTopic(pull_request_->message_queue().topic())) {
       LOG_WARN_NEW("execute the pull request exception: {}", e.what());
     }
 
     // TODO
     defaultMQPushConsumer->executePullRequestLater(
-        m_pullRequest, defaultMQPushConsumer->getDefaultMQPushConsumerConfig()->getPullTimeDelayMillsWhenException());
+        pull_request_, defaultMQPushConsumer->getDefaultMQPushConsumerConfig()->getPullTimeDelayMillsWhenException());
   }
 
  private:
-  std::weak_ptr<DefaultMQPushConsumerImpl> m_defaultMQPushConsumer;
-  PullRequestPtr m_pullRequest;
-  SubscriptionDataPtr m_subscriptionData;
+  std::weak_ptr<DefaultMQPushConsumerImpl> default_mq_push_consumer_;
+  PullRequestPtr pull_request_;
+  SubscriptionData* subscription_data_;
 };
 
 DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfigPtr config)
@@ -156,74 +153,16 @@ DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfig
 
 DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(DefaultMQPushConsumerConfigPtr config, RPCHookPtr rpcHook)
     : MQClientImpl(config, rpcHook),
-      m_pushConsumerConfig(config),
-      m_startTime(UtilAll::currentTimeMillis()),
-      m_pause(false),
-      m_consumeOrderly(false),
-      m_rebalanceImpl(new RebalancePushImpl(this)),
-      m_pullAPIWrapper(nullptr),
-      m_offsetStore(nullptr),
-      m_consumeService(nullptr),
-      m_messageListener(nullptr) {}
+      start_time_(UtilAll::currentTimeMillis()),
+      pause_(false),
+      consume_orderly_(false),
+      rebalance_impl_(new RebalancePushImpl(this)),
+      pull_api_wrapper_(nullptr),
+      offset_store_(nullptr),
+      consume_service_(nullptr),
+      message_listener_(nullptr) {}
 
 DefaultMQPushConsumerImpl::~DefaultMQPushConsumerImpl() = default;
-
-int DefaultMQPushConsumerImpl::getMaxReconsumeTimes() {
-  // default reconsume times: 16
-  if (m_pushConsumerConfig->getMaxReconsumeTimes() == -1) {
-    return 16;
-  } else {
-    return m_pushConsumerConfig->getMaxReconsumeTimes();
-  }
-}
-
-bool DefaultMQPushConsumerImpl::sendMessageBack(MessageExtPtr msg, int delayLevel) {
-  return sendMessageBack(msg, delayLevel, null);
-}
-
-bool DefaultMQPushConsumerImpl::sendMessageBack(MessageExtPtr msg, int delayLevel, const std::string& brokerName) {
-  try {
-    std::string brokerAddr = brokerName.empty() ? socketAddress2String(msg->getStoreHost())
-                                                : m_clientInstance->findBrokerAddressInPublish(brokerName);
-
-    m_clientInstance->getMQClientAPIImpl()->consumerSendMessageBack(
-        brokerAddr, msg, m_pushConsumerConfig->getGroupName(), delayLevel, 5000, getMaxReconsumeTimes());
-    return true;
-  } catch (const std::exception& e) {
-    LOG_ERROR_NEW("sendMessageBack exception, group: {}, msg: {}. {}", m_pushConsumerConfig->getGroupName(),
-                  msg->toString(), e.what());
-  }
-  return false;
-}
-
-void DefaultMQPushConsumerImpl::fetchSubscribeMessageQueues(const std::string& topic,
-                                                            std::vector<MQMessageQueue>& mqs) {
-  mqs.clear();
-  try {
-    m_clientInstance->getMQAdminImpl()->fetchSubscribeMessageQueues(topic, mqs);
-  } catch (MQException& e) {
-    LOG_ERROR_NEW("{}", e.what());
-  }
-}
-
-void DefaultMQPushConsumerImpl::doRebalance() {
-  if (!m_pause) {
-    m_rebalanceImpl->doRebalance(isConsumeOrderly());
-  }
-}
-
-void DefaultMQPushConsumerImpl::persistConsumerOffset() {
-  if (isServiceStateOk()) {
-    std::vector<MQMessageQueue> mqs = m_rebalanceImpl->getAllocatedMQ();
-    if (m_pushConsumerConfig->getMessageModel() == BROADCASTING) {
-      m_offsetStore->persistAll(mqs);
-    } else {
-      for (const auto& mq : mqs) {
-        m_offsetStore->persist(mq);
-      }
-    }
-  }
-}
 
 void DefaultMQPushConsumerImpl::start() {
 #ifndef WIN32
@@ -235,97 +174,170 @@ void DefaultMQPushConsumerImpl::start() {
   ::sigaction(SIGPIPE, &sa, 0);
 #endif
 
-  switch (m_serviceState) {
+  switch (service_state_) {
     case CREATE_JUST: {
-      LOG_INFO_NEW("the consumer [{}] start beginning.", m_pushConsumerConfig->getGroupName());
+      LOG_INFO_NEW("the consumer [{}] start beginning.", client_config_->getGroupName());
 
-      m_serviceState = START_FAILED;
+      service_state_ = START_FAILED;
 
-      // data
       checkConfig();
 
       copySubscription();
 
-      if (messageModel() == CLUSTERING) {
-        m_pushConsumerConfig->changeInstanceNameToPID();
+      if (messageModel() == MessageModel::CLUSTERING) {
+        client_config_->changeInstanceNameToPID();
       }
 
-      // ensure m_clientInstance
+      // init client_instance_
       MQClientImpl::start();
 
-      // reset rebalance
-      m_rebalanceImpl->setConsumerGroup(m_pushConsumerConfig->getGroupName());
-      m_rebalanceImpl->setMessageModel(m_pushConsumerConfig->getMessageModel());
-      m_rebalanceImpl->setAllocateMQStrategy(m_pushConsumerConfig->getAllocateMQStrategy());
-      m_rebalanceImpl->setClientInstance(m_clientInstance.get());
+      // init rebalance_impl_
+      rebalance_impl_->set_consumer_group(client_config_->getGroupName());
+      rebalance_impl_->set_message_model(
+          dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getMessageModel());
+      rebalance_impl_->set_allocate_mq_strategy(
+          dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getAllocateMQStrategy());
+      rebalance_impl_->set_client_instance(client_instance_.get());
 
-      m_pullAPIWrapper.reset(new PullAPIWrapper(m_clientInstance.get(), m_pushConsumerConfig->getGroupName()));
+      // init pull_api_wrapper_
+      pull_api_wrapper_.reset(new PullAPIWrapper(client_instance_.get(), client_config_->getGroupName()));
+      // TODO: registerFilterMessageHook
 
-      switch (m_pushConsumerConfig->getMessageModel()) {
-        case BROADCASTING:
-          m_offsetStore.reset(new LocalFileOffsetStore(m_clientInstance.get(), m_pushConsumerConfig->getGroupName()));
+      // init offset_store_
+      switch (dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getMessageModel()) {
+        case MessageModel::BROADCASTING:
+          offset_store_.reset(new LocalFileOffsetStore(client_instance_.get(), client_config_->getGroupName()));
           break;
-        case CLUSTERING:
-          m_offsetStore.reset(
-              new RemoteBrokerOffsetStore(m_clientInstance.get(), m_pushConsumerConfig->getGroupName()));
+        case MessageModel::CLUSTERING:
+          offset_store_.reset(new RemoteBrokerOffsetStore(client_instance_.get(), client_config_->getGroupName()));
           break;
       }
-      m_offsetStore->load();
+      offset_store_->load();
 
-      // checkConfig() guarantee m_pMessageListener is not nullptr
-      if (m_messageListener->getMessageListenerType() == messageListenerOrderly) {
-        LOG_INFO_NEW("start orderly consume service: {}", m_pushConsumerConfig->getGroupName());
-        m_consumeOrderly = true;
-        m_consumeService.reset(
-            new ConsumeMessageOrderlyService(this, m_pushConsumerConfig->getConsumeThreadNum(), m_messageListener));
+      // checkConfig() guarantee message_listener_ is not nullptr
+      if (message_listener_->getMessageListenerType() == messageListenerOrderly) {
+        LOG_INFO_NEW("start orderly consume service: {}", client_config_->getGroupName());
+        consume_orderly_ = true;
+        consume_service_.reset(new ConsumeMessageOrderlyService(
+            this, dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getConsumeThreadNum(),
+            message_listener_));
       } else {
         // for backward compatible, defaultly and concurrently listeners are allocating
         // ConsumeMessageConcurrentlyService
-        LOG_INFO_NEW("start concurrently consume service: {}", m_pushConsumerConfig->getGroupName());
-        m_consumeOrderly = false;
-        m_consumeService.reset(new ConsumeMessageConcurrentlyService(this, m_pushConsumerConfig->getConsumeThreadNum(),
-                                                                     m_messageListener));
+        LOG_INFO_NEW("start concurrently consume service: {}", client_config_->getGroupName());
+        consume_orderly_ = false;
+        consume_service_.reset(new ConsumeMessageConcurrentlyService(
+            this, dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getConsumeThreadNum(),
+            message_listener_));
       }
-      m_consumeService->start();
+      consume_service_->start();
 
       // register consumer
-      bool registerOK = m_clientInstance->registerConsumer(m_pushConsumerConfig->getGroupName(), this);
+      bool registerOK = client_instance_->registerConsumer(client_config_->getGroupName(), this);
       if (!registerOK) {
-        m_serviceState = CREATE_JUST;
-        m_consumeService->shutdown();
-        THROW_MQEXCEPTION(MQClientException, "The cousumer group[" + m_pushConsumerConfig->getGroupName() +
+        service_state_ = CREATE_JUST;
+        consume_service_->shutdown();
+        THROW_MQEXCEPTION(MQClientException, "The cousumer group[" + client_config_->getGroupName() +
                                                  "] has been created before, specify another name please.",
                           -1);
       }
 
-      m_clientInstance->start();
-      LOG_INFO_NEW("the consumer [{}] start OK", m_pushConsumerConfig->getGroupName());
-      m_serviceState = RUNNING;
+      client_instance_->start();
+
+      LOG_INFO_NEW("the consumer [{}] start OK", client_config_->getGroupName());
+      service_state_ = RUNNING;
       break;
     }
     case RUNNING:
     case START_FAILED:
     case SHUTDOWN_ALREADY:
+      THROW_MQEXCEPTION(MQClientException, "The PushConsumer service state not OK, maybe started once", -1);
       break;
     default:
       break;
   }
 
   updateTopicSubscribeInfoWhenSubscriptionChanged();
-  m_clientInstance->sendHeartbeatToAllBrokerWithLock();
-  m_clientInstance->rebalanceImmediately();
+  client_instance_->sendHeartbeatToAllBrokerWithLock();
+  client_instance_->rebalanceImmediately();
+}
+
+void DefaultMQPushConsumerImpl::checkConfig() {
+  std::string groupname = client_config_->getGroupName();
+
+  // check consumerGroup
+  Validators::checkGroup(groupname);
+
+  // consumerGroup
+  if (DEFAULT_CONSUMER_GROUP == groupname) {
+    THROW_MQEXCEPTION(MQClientException,
+                      "consumerGroup can not equal " + DEFAULT_CONSUMER_GROUP + ", please specify another one.", -1);
+  }
+
+  if (dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getMessageModel() != BROADCASTING &&
+      dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getMessageModel() != CLUSTERING) {
+    THROW_MQEXCEPTION(MQClientException, "messageModel is valid", -1);
+  }
+
+  // allocateMessageQueueStrategy
+  if (nullptr == dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getAllocateMQStrategy()) {
+    THROW_MQEXCEPTION(MQClientException, "allocateMessageQueueStrategy is null", -1);
+  }
+
+  // subscription
+  if (subscription_.empty()) {
+    THROW_MQEXCEPTION(MQClientException, "subscription is empty", -1);
+  }
+
+  // messageListener
+  if (message_listener_ == nullptr) {
+    THROW_MQEXCEPTION(MQClientException, "messageListener is null", -1);
+  }
+}
+
+void DefaultMQPushConsumerImpl::copySubscription() {
+  for (const auto& it : subscription_) {
+    LOG_INFO_NEW("buildSubscriptionData: {}, {}", it.first, it.second);
+    SubscriptionData* subscriptionData = FilterAPI::buildSubscriptionData(it.first, it.second);
+    rebalance_impl_->setSubscriptionData(it.first, subscriptionData);
+  }
+
+  switch (dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getMessageModel()) {
+    case BROADCASTING:
+      break;
+    case CLUSTERING: {
+      // auto subscript retry topic
+      std::string retryTopic = UtilAll::getRetryTopic(client_config_->getGroupName());
+      SubscriptionData* subscriptionData = FilterAPI::buildSubscriptionData(retryTopic, SUB_ALL);
+      rebalance_impl_->setSubscriptionData(retryTopic, subscriptionData);
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+void DefaultMQPushConsumerImpl::updateTopicSubscribeInfoWhenSubscriptionChanged() {
+  auto& subTable = rebalance_impl_->getSubscriptionInner();
+  for (const auto& it : subTable) {
+    const auto& topic = it.first;
+    bool ret = client_instance_->updateTopicRouteInfoFromNameServer(topic);
+    if (!ret) {
+      LOG_WARN_NEW("The topic:[{}] not exist", topic);
+    }
+  }
 }
 
 void DefaultMQPushConsumerImpl::shutdown() {
-  switch (m_serviceState) {
+  switch (service_state_) {
     case RUNNING: {
-      m_consumeService->shutdown();
+      consume_service_->shutdown();
       persistConsumerOffset();
-      m_clientInstance->unregisterConsumer(m_pushConsumerConfig->getGroupName());
-      m_clientInstance->shutdown();
-      LOG_INFO_NEW("the consumer [{}] shutdown OK", m_pushConsumerConfig->getGroupName());
-      m_rebalanceImpl->destroy();
-      m_serviceState = SHUTDOWN_ALREADY;
+      client_instance_->unregisterConsumer(client_config_->getGroupName());
+      client_instance_->shutdown();
+      LOG_INFO_NEW("the consumer [{}] shutdown OK", client_config_->getGroupName());
+      rebalance_impl_->destroy();
+      service_state_ = SHUTDOWN_ALREADY;
       break;
     }
     case CREATE_JUST:
@@ -336,9 +348,40 @@ void DefaultMQPushConsumerImpl::shutdown() {
   }
 }
 
+bool DefaultMQPushConsumerImpl::sendMessageBack(MessageExtPtr msg, int delayLevel) {
+  return sendMessageBack(msg, delayLevel, null);
+}
+
+bool DefaultMQPushConsumerImpl::sendMessageBack(MessageExtPtr msg, int delayLevel, const std::string& brokerName) {
+  try {
+    std::string brokerAddr = brokerName.empty() ? socketAddress2String(msg->getStoreHost())
+                                                : client_instance_->findBrokerAddressInPublish(brokerName);
+
+    client_instance_->getMQClientAPIImpl()->consumerSendMessageBack(
+        brokerAddr, msg, dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getGroupName(), delayLevel,
+        5000, getMaxReconsumeTimes());
+    return true;
+  } catch (const std::exception& e) {
+    LOG_ERROR_NEW("sendMessageBack exception, group: {}, msg: {}. {}",
+                  dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getGroupName(), msg->toString(),
+                  e.what());
+  }
+  return false;
+}
+
+void DefaultMQPushConsumerImpl::fetchSubscribeMessageQueues(const std::string& topic,
+                                                            std::vector<MQMessageQueue>& mqs) {
+  mqs.clear();
+  try {
+    client_instance_->getMQAdminImpl()->fetchSubscribeMessageQueues(topic, mqs);
+  } catch (MQException& e) {
+    LOG_ERROR_NEW("{}", e.what());
+  }
+}
+
 void DefaultMQPushConsumerImpl::registerMessageListener(MQMessageListener* messageListener) {
   if (nullptr != messageListener) {
-    m_messageListener = messageListener;
+    message_listener_ = messageListener;
   }
 }
 
@@ -351,138 +394,72 @@ void DefaultMQPushConsumerImpl::registerMessageListener(MessageListenerOrderly* 
 }
 
 MQMessageListener* DefaultMQPushConsumerImpl::getMessageListener() const {
-  return m_messageListener;
+  return message_listener_;
 }
 
 void DefaultMQPushConsumerImpl::subscribe(const std::string& topic, const std::string& subExpression) {
-  m_subTopics[topic] = subExpression;
+  // TODO: change substation after start
+  subscription_[topic] = subExpression;
 }
 
-void DefaultMQPushConsumerImpl::checkConfig() {
-  std::string groupname = m_pushConsumerConfig->getGroupName();
+void DefaultMQPushConsumerImpl::suspend() {
+  pause_ = true;
+  LOG_INFO_NEW("suspend this consumer, {}", client_config_->getGroupName());
+}
 
-  // check consumerGroup
-  Validators::checkGroup(groupname);
+void DefaultMQPushConsumerImpl::resume() {
+  pause_ = false;
+  doRebalance();
+  LOG_INFO_NEW("resume this consumer, {}", client_config_->getGroupName());
+}
 
-  // consumerGroup
-  if (!groupname.compare(DEFAULT_CONSUMER_GROUP)) {
-    THROW_MQEXCEPTION(MQClientException, "consumerGroup can not equal DEFAULT_CONSUMER", -1);
-  }
-
-  if (m_pushConsumerConfig->getMessageModel() != BROADCASTING &&
-      m_pushConsumerConfig->getMessageModel() != CLUSTERING) {
-    THROW_MQEXCEPTION(MQClientException, "messageModel is valid ", -1);
-  }
-
-  if (m_messageListener == nullptr) {
-    THROW_MQEXCEPTION(MQClientException, "messageListener is null ", -1);
+void DefaultMQPushConsumerImpl::doRebalance() {
+  if (!pause_) {
+    rebalance_impl_->doRebalance(isConsumeOrderly());
   }
 }
 
-void DefaultMQPushConsumerImpl::copySubscription() {
-  for (const auto& it : m_subTopics) {
-    LOG_INFO_NEW("buildSubscriptionData: {}, {}", it.first, it.second);
-    SubscriptionDataPtr subscriptionData = FilterAPI::buildSubscriptionData(it.first, it.second);
-    m_rebalanceImpl->setSubscriptionData(it.first, subscriptionData);
-  }
-
-  switch (m_pushConsumerConfig->getMessageModel()) {
-    case BROADCASTING:
-      break;
-    case CLUSTERING: {
-      // auto subscript retry topic
-      std::string retryTopic = UtilAll::getRetryTopic(m_pushConsumerConfig->getGroupName());
-      SubscriptionDataPtr subscriptionData = FilterAPI::buildSubscriptionData(retryTopic, SUB_ALL);
-      m_rebalanceImpl->setSubscriptionData(retryTopic, subscriptionData);
-      break;
+void DefaultMQPushConsumerImpl::persistConsumerOffset() {
+  if (isServiceStateOk()) {
+    std::vector<MQMessageQueue> mqs = rebalance_impl_->getAllocatedMQ();
+    if (dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getMessageModel() == BROADCASTING) {
+      offset_store_->persistAll(mqs);
+    } else {
+      for (const auto& mq : mqs) {
+        offset_store_->persist(mq);
+      }
     }
-    default:
-      break;
   }
 }
 
 void DefaultMQPushConsumerImpl::updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info) {
-  m_rebalanceImpl->setTopicSubscribeInfo(topic, info);
-}
-
-void DefaultMQPushConsumerImpl::updateTopicSubscribeInfoWhenSubscriptionChanged() {
-  auto& subTable = m_rebalanceImpl->getSubscriptionInner();
-  for (const auto& sub : subTable) {
-    bool ret = m_clientInstance->updateTopicRouteInfoFromNameServer(sub.first);
-    if (!ret) {
-      LOG_WARN_NEW("The topic:[{}] not exist", sub.first);
-    }
-  }
-}
-
-std::string DefaultMQPushConsumerImpl::groupName() const {
-  return m_pushConsumerConfig->getGroupName();
-}
-
-MessageModel DefaultMQPushConsumerImpl::messageModel() const {
-  return m_pushConsumerConfig->getMessageModel();
-};
-
-ConsumeType DefaultMQPushConsumerImpl::consumeType() const {
-  return CONSUME_PASSIVELY;
-}
-
-ConsumeFromWhere DefaultMQPushConsumerImpl::consumeFromWhere() const {
-  return m_pushConsumerConfig->getConsumeFromWhere();
-}
-
-std::vector<SubscriptionData> DefaultMQPushConsumerImpl::subscriptions() const {
-  std::vector<SubscriptionData> result;
-  auto& subTable = m_rebalanceImpl->getSubscriptionInner();
-  for (const auto& it : subTable) {
-    result.push_back(*(it.second));
-  }
-  return result;
-}
-
-void DefaultMQPushConsumerImpl::suspend() {
-  m_pause = true;
-  LOG_INFO_NEW("suspend this consumer, {}", m_pushConsumerConfig->getGroupName());
-}
-
-void DefaultMQPushConsumerImpl::resume() {
-  m_pause = false;
-  doRebalance();
-  LOG_INFO_NEW("resume this consumer, {}", m_pushConsumerConfig->getGroupName());
-}
-
-bool DefaultMQPushConsumerImpl::isPause() {
-  return m_pause;
-}
-
-void DefaultMQPushConsumerImpl::setPause(bool pause) {
-  m_pause = pause;
+  rebalance_impl_->setTopicSubscribeInfo(topic, info);
 }
 
 void DefaultMQPushConsumerImpl::updateConsumeOffset(const MQMessageQueue& mq, int64_t offset) {
   if (offset >= 0) {
-    m_offsetStore->updateOffset(mq, offset, false);
+    offset_store_->updateOffset(mq, offset, false);
   } else {
     LOG_ERROR_NEW("updateConsumeOffset of mq:{} error", mq.toString());
   }
 }
 
 void DefaultMQPushConsumerImpl::correctTagsOffset(PullRequestPtr pullRequest) {
-  if (0L == pullRequest->getProcessQueue()->getCacheMsgCount()) {
-    m_offsetStore->updateOffset(pullRequest->getMessageQueue(), pullRequest->getNextOffset(), true);
+  if (0L == pullRequest->process_queue()->getCacheMsgCount()) {
+    offset_store_->updateOffset(pullRequest->message_queue(), pullRequest->next_offset(), true);
   }
 }
 
 void DefaultMQPushConsumerImpl::executePullRequestLater(PullRequestPtr pullRequest, long timeDelay) {
-  m_clientInstance->getPullMessageService()->executePullRequestLater(pullRequest, timeDelay);
+  client_instance_->getPullMessageService()->executePullRequestLater(pullRequest, timeDelay);
 }
 
 void DefaultMQPushConsumerImpl::executePullRequestImmediately(PullRequestPtr pullRequest) {
-  m_clientInstance->getPullMessageService()->executePullRequestImmediately(pullRequest);
+  client_instance_->getPullMessageService()->executePullRequestImmediately(pullRequest);
 }
 
 void DefaultMQPushConsumerImpl::executeTaskLater(const handler_type& task, long timeDelay) {
-  m_clientInstance->getPullMessageService()->executeTaskLater(task, timeDelay);
+  client_instance_->getPullMessageService()->executeTaskLater(task, timeDelay);
 }
 
 void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pullRequest) {
@@ -491,26 +468,27 @@ void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pullRequest) {
     return;
   }
 
-  auto processQueue = pullRequest->getProcessQueue();
-  if (processQueue->isDropped()) {
+  auto processQueue = pullRequest->process_queue();
+  if (processQueue->dropped()) {
     LOG_WARN_NEW("the pull request[{}] is dropped.", pullRequest->toString());
     return;
   }
 
-  processQueue->setLastPullTimestamp(UtilAll::currentTimeMillis());
+  processQueue->set_last_pull_timestamp(UtilAll::currentTimeMillis());
 
   int cachedMessageCount = processQueue->getCacheMsgCount();
-  if (cachedMessageCount > m_pushConsumerConfig->getMaxCacheMsgSizePerQueue()) {
+  if (cachedMessageCount >
+      dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getMaxCacheMsgSizePerQueue()) {
     // too many message in cache, wait to process
     executePullRequestLater(pullRequest, 1000);
     return;
   }
 
   if (isConsumeOrderly()) {
-    if (processQueue->isLocked()) {
-      if (!pullRequest->isLockedFirst()) {
-        const auto offset = m_rebalanceImpl->computePullFromWhere(pullRequest->getMessageQueue());
-        bool brokerBusy = offset < pullRequest->getNextOffset();
+    if (processQueue->locked()) {
+      if (!pullRequest->locked_first()) {
+        const auto offset = rebalance_impl_->computePullFromWhere(pullRequest->message_queue());
+        bool brokerBusy = offset < pullRequest->next_offset();
         LOG_INFO_NEW(
             "the first time to pull message, so fix offset from broker. pullRequest: {} NewOffset: {} brokerBusy: {}",
             pullRequest->toString(), offset, UtilAll::to_string(brokerBusy));
@@ -521,34 +499,38 @@ void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pullRequest) {
               pullRequest->toString(), offset);
         }
 
-        pullRequest->setLockedFirst(true);
-        pullRequest->setNextOffset(offset);
+        pullRequest->set_locked_first(true);
+        pullRequest->set_next_offset(offset);
       }
     } else {
-      executePullRequestLater(pullRequest, m_pushConsumerConfig->getPullTimeDelayMillsWhenException());
+      executePullRequestLater(
+          pullRequest,
+          dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getPullTimeDelayMillsWhenException());
       LOG_INFO_NEW("pull message later because not locked in broker, {}", pullRequest->toString());
       return;
     }
   }
 
-  const auto& messageQueue = pullRequest->getMessageQueue();
-  SubscriptionDataPtr subscriptionData = m_rebalanceImpl->getSubscriptionData(messageQueue.getTopic());
+  const auto& messageQueue = pullRequest->message_queue();
+  SubscriptionData* subscriptionData = rebalance_impl_->getSubscriptionData(messageQueue.topic());
   if (nullptr == subscriptionData) {
-    executePullRequestLater(pullRequest, m_pushConsumerConfig->getPullTimeDelayMillsWhenException());
+    executePullRequestLater(
+        pullRequest,
+        dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getPullTimeDelayMillsWhenException());
     LOG_WARN_NEW("find the consumer's subscription failed, {}", pullRequest->toString());
     return;
   }
 
   bool commitOffsetEnable = false;
   int64_t commitOffsetValue = 0;
-  if (CLUSTERING == m_pushConsumerConfig->getMessageModel()) {
-    commitOffsetValue = m_offsetStore->readOffset(messageQueue, READ_FROM_MEMORY);
+  if (CLUSTERING == dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getMessageModel()) {
+    commitOffsetValue = offset_store_->readOffset(messageQueue, READ_FROM_MEMORY);
     if (commitOffsetValue > 0) {
       commitOffsetEnable = true;
     }
   }
 
-  const auto& subExpression = subscriptionData->getSubString();
+  const auto& subExpression = subscriptionData->sub_string();
 
   int sysFlag = PullSysFlag::buildSysFlag(commitOffsetEnable,      // commitOffset
                                           true,                    // suspend
@@ -557,20 +539,23 @@ void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pullRequest) {
 
   try {
     auto* callback = new AsyncPullCallback(shared_from_this(), pullRequest, subscriptionData);
-    m_pullAPIWrapper->pullKernelImpl(messageQueue,                                 // 1
-                                     subExpression,                                // 2
-                                     subscriptionData->getSubVersion(),            // 3
-                                     pullRequest->getNextOffset(),                 // 4
-                                     32,                                           // 5
-                                     sysFlag,                                      // 6
-                                     commitOffsetValue,                            // 7
-                                     1000 * 15,                                    // 8
-                                     m_pushConsumerConfig->getAsyncPullTimeout(),  // 9
-                                     CommunicationMode::ASYNC,                     // 10
-                                     callback);                                    // 11
+    pull_api_wrapper_->pullKernelImpl(
+        messageQueue,                                                                             // 1
+        subExpression,                                                                            // 2
+        subscriptionData->sub_version(),                                                          // 3
+        pullRequest->next_offset(),                                                               // 4
+        32,                                                                                       // 5
+        sysFlag,                                                                                  // 6
+        commitOffsetValue,                                                                        // 7
+        1000 * 15,                                                                                // 8
+        dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getAsyncPullTimeout(),  // 9
+        CommunicationMode::ASYNC,                                                                 // 10
+        callback);                                                                                // 11
   } catch (MQException& e) {
     LOG_ERROR_NEW("pullKernelImpl exception: {}", e.what());
-    executePullRequestLater(pullRequest, m_pushConsumerConfig->getPullTimeDelayMillsWhenException());
+    executePullRequestLater(
+        pullRequest,
+        dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getPullTimeDelayMillsWhenException());
   }
 }
 
@@ -585,25 +570,60 @@ void DefaultMQPushConsumerImpl::resetRetryTopic(const std::vector<MessageExtPtr>
   }
 }
 
+int DefaultMQPushConsumerImpl::getMaxReconsumeTimes() {
+  // default reconsume times: 16
+  if (dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getMaxReconsumeTimes() == -1) {
+    return 16;
+  } else {
+    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getMaxReconsumeTimes();
+  }
+}
+
+std::string DefaultMQPushConsumerImpl::groupName() const {
+  return client_config_->getGroupName();
+}
+
+MessageModel DefaultMQPushConsumerImpl::messageModel() const {
+  return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getMessageModel();
+};
+
+ConsumeType DefaultMQPushConsumerImpl::consumeType() const {
+  return CONSUME_PASSIVELY;
+}
+
+ConsumeFromWhere DefaultMQPushConsumerImpl::consumeFromWhere() const {
+  return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getConsumeFromWhere();
+}
+
+std::vector<SubscriptionData> DefaultMQPushConsumerImpl::subscriptions() const {
+  std::vector<SubscriptionData> result;
+  auto& subTable = rebalance_impl_->getSubscriptionInner();
+  for (const auto& it : subTable) {
+    result.push_back(*(it.second));
+  }
+  return result;
+}
+
 ConsumerRunningInfo* DefaultMQPushConsumerImpl::consumerRunningInfo() {
   auto* info = new ConsumerRunningInfo();
 
-  info->setProperty(ConsumerRunningInfo::PROP_CONSUME_ORDERLY, UtilAll::to_string(m_consumeOrderly));
-  info->setProperty(ConsumerRunningInfo::PROP_THREADPOOL_CORE_SIZE,
-                    UtilAll::to_string(m_pushConsumerConfig->getConsumeThreadNum()));
-  info->setProperty(ConsumerRunningInfo::PROP_CONSUMER_START_TIMESTAMP, UtilAll::to_string(m_startTime));
+  info->setProperty(ConsumerRunningInfo::PROP_CONSUME_ORDERLY, UtilAll::to_string(consume_orderly_));
+  info->setProperty(
+      ConsumerRunningInfo::PROP_THREADPOOL_CORE_SIZE,
+      UtilAll::to_string(dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getConsumeThreadNum()));
+  info->setProperty(ConsumerRunningInfo::PROP_CONSUMER_START_TIMESTAMP, UtilAll::to_string(start_time_));
 
   auto subSet = subscriptions();
   info->setSubscriptionSet(subSet);
 
-  auto processQueueTable = m_rebalanceImpl->getProcessQueueTable();
+  auto processQueueTable = rebalance_impl_->getProcessQueueTable();
 
   for (const auto& it : processQueueTable) {
     const auto& mq = it.first;
     const auto& pq = it.second;
 
     ProcessQueueInfo pqinfo;
-    pqinfo.setCommitOffset(m_offsetStore->readOffset(mq, MEMORY_FIRST_THEN_STORE));
+    pqinfo.setCommitOffset(offset_store_->readOffset(mq, MEMORY_FIRST_THEN_STORE));
     pq->fillProcessQueueInfo(pqinfo);
     info->setMqTable(mq, pqinfo);
   }

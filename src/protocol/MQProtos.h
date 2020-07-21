@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_PROTOS_H__
-#define __MQ_PROTOS_H__
+#ifndef ROCKETMQ_PROTOCOL_MQPROTOS_H_
+#define ROCKETMQ_PROTOCOL_MQPROTOS_H_
 
 #include "RequestCode.h"
 #include "ResponseCode.h"
 
-#endif  // __MQ_PROTOS_H__
+#endif  // ROCKETMQ_PROTOCOL_MQPROTOS_H_

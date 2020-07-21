@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MESSAGE_BATCH_H__
-#define __MESSAGE_BATCH_H__
+#ifndef ROCKETMQ_MESSAGE_MESSAGEBATCH_H_
+#define ROCKETMQ_MESSAGE_MESSAGEBATCH_H_
 
 #include "MQMessage.h"
 #include "MessageImpl.h"
@@ -27,7 +27,7 @@ class MessageBatch : public MessageImpl {
   static std::shared_ptr<MessageBatch> generateFromList(std::vector<MQMessage>& messages);
 
  public:
-  MessageBatch(std::vector<MQMessage>& messages) : MessageImpl(), m_messages(messages) {}
+  MessageBatch(std::vector<MQMessage>& messages) : MessageImpl(), messages_(messages) {}
 
  public:  // Message
   bool isBatch() const override final { return true; }
@@ -35,12 +35,12 @@ class MessageBatch : public MessageImpl {
  public:
   std::string encode();
 
-  const std::vector<MQMessage>& getMessages() const { return m_messages; }
+  const std::vector<MQMessage>& messages() const { return messages_; }
 
  protected:
-  std::vector<MQMessage> m_messages;
+  std::vector<MQMessage> messages_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __MESSAGE_BATCH_H__
+#endif  // ROCKETMQ_MESSAGE_MESSAGEBATCH_H_

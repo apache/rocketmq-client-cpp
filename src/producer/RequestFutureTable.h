@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __REQUEST_FUTURE_TABLE__
-#define __REQUEST_FUTURE_TABLE__
+#ifndef ROCKETMQ_PRODUCER_REQUESTFUTURETABLE_H_
+#define ROCKETMQ_PRODUCER_REQUESTFUTURETABLE_H_
 
 #include <map>
 #include <memory>
@@ -31,10 +31,10 @@ class RequestFutureTable {
   static std::shared_ptr<RequestResponseFuture> removeRequestFuture(std::string correlationId);
 
  private:
-  static std::map<std::string, std::shared_ptr<RequestResponseFuture>> s_futureTable;
-  static std::mutex s_futureTableMutex;
+  static std::map<std::string, std::shared_ptr<RequestResponseFuture>> future_table_;
+  static std::mutex future_table_mutex_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __REQUEST_FUTURE_TABLE__
+#endif  // ROCKETMQ_PRODUCER_REQUESTFUTURETABLE_H_

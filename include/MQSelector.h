@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_SELECTOR_H__
-#define __MQ_SELECTOR_H__
+#ifndef ROCKETMQ_MQSELECTOR_H_
+#define ROCKETMQ_MQSELECTOR_H_
 
 #include "MQMessage.h"
 #include "MQMessageQueue.h"
@@ -23,7 +23,7 @@
 namespace rocketmq {
 
 /**
- * MQ Selector Interface
+ * MessageQueueSelector - interface for MessageQueue selector
  */
 class ROCKETMQCLIENT_API MessageQueueSelector {
  public:
@@ -34,4 +34,4 @@ class ROCKETMQCLIENT_API MessageQueueSelector {
 
 }  // namespace rocketmq
 
-#endif  // __MQ_SELECTOR_H__
+#endif  // ROCKETMQ_MQSELECTOR_H_

@@ -44,8 +44,8 @@ RemotingCommand::RemotingCommand(int32_t code, CommandCustomHeader* customHeader
 
 RemotingCommand::RemotingCommand(int32_t code, const std::string& remark, CommandCustomHeader* customHeader)
     : RemotingCommand(code,
-                      MQVersion::s_CurrentLanguage,
-                      MQVersion::s_CurrentVersion,
+                      MQVersion::CURRENT_LANGUAGE,
+                      MQVersion::CURRENT_VERSION,
                       createNewRequestId(),
                       0,
                       remark,
@@ -148,8 +148,7 @@ static RemotingCommand* Decode(ByteBuffer& byteBuffer, bool hasPackageLength) {
   int32_t oriHeaderLen = byteBuffer.getInt();
   int32_t headerLength = getHeaderLength(oriHeaderLen);
 
-  // ByteArray headData(headerLength);
-  // byteBuffer.get(headerData);
+  // temporary ByteArray
   ByteArray headerData(byteBuffer.array() + byteBuffer.arrayOffset() + byteBuffer.position(), headerLength);
   byteBuffer.position(byteBuffer.position() + headerLength);
 
@@ -187,8 +186,7 @@ static RemotingCommand* Decode(ByteBuffer& byteBuffer, bool hasPackageLength) {
 
   int32_t bodyLength = length - 4 - headerLength;
   if (bodyLength > 0) {
-    // ByteArrayRef bodyData = std::make_shared<ByteArray>(bodyLength);
-    // byteBuffer.get(*bodyData);
+    // slice ByteArray of byteBuffer to avoid copy data.
     ByteArrayRef bodyData =
         slice(byteBuffer.byte_array(), byteBuffer.arrayOffset() + byteBuffer.position(), bodyLength);
     byteBuffer.position(byteBuffer.position() + bodyLength);

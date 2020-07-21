@@ -14,11 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __ROCKETMQ_LOGGING_H__
-#define __ROCKETMQ_LOGGING_H__
+#ifndef ROCKETMQ_LOG_LOGGING_H_
+#define ROCKETMQ_LOG_LOGGING_H_
 
-#include <memory>
-#include <string>
+#include <memory>  // std::shared_ptr
+#include <string>  // std::string
+#include <vector>  // std::vector
 
 // clang-format off
 #include <spdlog/spdlog.h>
@@ -27,44 +28,48 @@
 
 namespace rocketmq {
 
-enum elogLevel {
-  eLOG_LEVEL_FATAL = 1,
-  eLOG_LEVEL_ERROR = 2,
-  eLOG_LEVEL_WARN = 3,
-  eLOG_LEVEL_INFO = 4,
-  eLOG_LEVEL_DEBUG = 5,
-  eLOG_LEVEL_TRACE = 6,
-  eLOG_LEVEL_LEVEL_NUM = 7
+enum LogLevel {
+  LOG_LEVEL_FATAL = 1,
+  LOG_LEVEL_ERROR = 2,
+  LOG_LEVEL_WARN = 3,
+  LOG_LEVEL_INFO = 4,
+  LOG_LEVEL_DEBUG = 5,
+  LOG_LEVEL_TRACE = 6,
+  LOG_LEVEL_LEVEL_NUM = 7
 };
 
-class logAdapter {
+class LogAdapter {
  public:
-  ~logAdapter();
+  virtual ~LogAdapter();
 
-  static logAdapter* getLogInstance();
+  static LogAdapter* getLogInstance();
 
-  void setLogLevel(elogLevel logLevel);
-  elogLevel getLogLevel();
+  inline spdlog::logger* getSeverityLogger() { return logger_.get(); }
 
   void setLogFileNumAndSize(int logNum, int sizeOfPerFile);
 
-  spdlog::logger* getSeverityLogger() { return m_logger.get(); }
+  inline LogLevel log_level() const { return log_level_; }
+  inline void set_log_level(LogLevel logLevel) {
+    log_level_ = logLevel;
+    setLogLevelInner(logLevel);
+  }
 
  private:
-  logAdapter();
-  void setLogLevelInner(elogLevel logLevel);
+  LogAdapter();
+  void setLogLevelInner(LogLevel logLevel);
 
-  elogLevel m_logLevel;
-  std::string m_logFile;
+ private:
+  LogLevel log_level_;
+  std::string log_file_;
 
-  std::shared_ptr<spdlog::logger> m_logger;
+  std::shared_ptr<spdlog::logger> logger_;
 #if SPDLOG_VER_MAJOR >= 1
-  std::vector<spdlog::sink_ptr> m_logSinks;
+  std::vector<spdlog::sink_ptr> log_sinks_;
 #endif
 };
 
-#define ALOG_ADAPTER logAdapter::getLogInstance()
-#define AGENT_LOGGER ALOG_ADAPTER->getSeverityLogger()
+#define DEFAULT_LOG_ADAPTER LogAdapter::getLogInstance()
+#define DEFAULT_LOGGER DEFAULT_LOG_ADAPTER->getSeverityLogger()
 
 #define SPDLOG_PRINTF(logger, level, format, ...)                        \
   do {                                                                   \
@@ -74,23 +79,23 @@ class logAdapter {
     }                                                                    \
   } while (0)
 
-#define LOG_FATAL(...) SPDLOG_PRINTF(AGENT_LOGGER, spdlog::level::critical, __VA_ARGS__)
-#define LOG_ERROR(...) SPDLOG_PRINTF(AGENT_LOGGER, spdlog::level::err, __VA_ARGS__)
-#define LOG_WARN(...) SPDLOG_PRINTF(AGENT_LOGGER, spdlog::level::warn, __VA_ARGS__)
-#define LOG_INFO(...) SPDLOG_PRINTF(AGENT_LOGGER, spdlog::level::info, __VA_ARGS__)
-#define LOG_DEBUG(...) SPDLOG_PRINTF(AGENT_LOGGER, spdlog::level::debug, __VA_ARGS__)
+#define LOG_FATAL(...) SPDLOG_PRINTF(DEFAULT_LOGGER, spdlog::level::critical, __VA_ARGS__)
+#define LOG_ERROR(...) SPDLOG_PRINTF(DEFAULT_LOGGER, spdlog::level::err, __VA_ARGS__)
+#define LOG_WARN(...) SPDLOG_PRINTF(DEFAULT_LOGGER, spdlog::level::warn, __VA_ARGS__)
+#define LOG_INFO(...) SPDLOG_PRINTF(DEFAULT_LOGGER, spdlog::level::info, __VA_ARGS__)
+#define LOG_DEBUG(...) SPDLOG_PRINTF(DEFAULT_LOGGER, spdlog::level::debug, __VA_ARGS__)
 
 #define SPDLOG_EXT(logger, level, format, ...)                                    \
   do {                                                                            \
     logger->log(level, format " [{}:{}]", ##__VA_ARGS__, __FUNCTION__, __LINE__); \
   } while (0)
 
-#define LOG_FATAL_NEW(...) SPDLOG_EXT(AGENT_LOGGER, spdlog::level::critical, __VA_ARGS__)
-#define LOG_ERROR_NEW(...) SPDLOG_EXT(AGENT_LOGGER, spdlog::level::err, __VA_ARGS__)
-#define LOG_WARN_NEW(...) SPDLOG_EXT(AGENT_LOGGER, spdlog::level::warn, __VA_ARGS__)
-#define LOG_INFO_NEW(...) SPDLOG_EXT(AGENT_LOGGER, spdlog::level::info, __VA_ARGS__)
-#define LOG_DEBUG_NEW(...) SPDLOG_EXT(AGENT_LOGGER, spdlog::level::debug, __VA_ARGS__)
+#define LOG_FATAL_NEW(...) SPDLOG_EXT(DEFAULT_LOGGER, spdlog::level::critical, __VA_ARGS__)
+#define LOG_ERROR_NEW(...) SPDLOG_EXT(DEFAULT_LOGGER, spdlog::level::err, __VA_ARGS__)
+#define LOG_WARN_NEW(...) SPDLOG_EXT(DEFAULT_LOGGER, spdlog::level::warn, __VA_ARGS__)
+#define LOG_INFO_NEW(...) SPDLOG_EXT(DEFAULT_LOGGER, spdlog::level::info, __VA_ARGS__)
+#define LOG_DEBUG_NEW(...) SPDLOG_EXT(DEFAULT_LOGGER, spdlog::level::debug, __VA_ARGS__)
 
 }  // namespace rocketmq
 
-#endif  // __ROCKETMQ_LOGGING_H__
+#endif  // ROCKETMQ_LOG_LOGGING_H_

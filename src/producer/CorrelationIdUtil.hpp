@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __CORRELATION_ID_UTIL_HPP__
-#define __CORRELATION_ID_UTIL_HPP__
+#ifndef ROCKETMQ_PRODUCER_CORRELATIONIDUTIL_HPP_
+#define ROCKETMQ_PRODUCER_CORRELATIONIDUTIL_HPP_
 
 #include <atomic>
 #include <string>
@@ -34,4 +34,4 @@ class CorrelationIdUtil {
 
 }  // namespace rocketmq
 
-#endif  // __CORRELATION_ID_UTIL_HPP__
+#endif  // ROCKETMQ_PRODUCER_CORRELATIONIDUTIL_HPP_

@@ -14,14 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __ALLOCATE_MQ_AVERAGELY_H__
-#define __ALLOCATE_MQ_AVERAGELY_H__
+#ifndef ROCKETMQ_CONSUMER_ALLOCATEMQAVERAGELY_HPP_
+#define ROCKETMQ_CONSUMER_ALLOCATEMQAVERAGELY_HPP_
 
 #include <algorithm>
 
 #include "AllocateMQStrategy.h"
 #include "Logging.h"
-#include "MQClientException.h"
+#include "MQException.h"
 
 namespace rocketmq {
 
@@ -80,4 +80,4 @@ class AllocateMQAveragely : public AllocateMQStrategy {
 
 }  // namespace rocketmq
 
-#endif  // __ALLOCATE_MQ_AVERAGELY_H__
+#endif  // ROCKETMQ_CONSUMER_ALLOCATEMQAVERAGELY_HPP_

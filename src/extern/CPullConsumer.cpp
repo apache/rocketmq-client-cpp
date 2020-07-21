@@ -18,10 +18,10 @@
 
 #include <cstring>
 
+#include "CErrorContainer.h"
 #include "ClientRPCHook.h"
 #include "DefaultMQPullConsumer.h"
 #include "Logging.h"
-#include "MQClientErrorContainer.h"
 
 using namespace rocketmq;
 
@@ -48,7 +48,7 @@ int StartPullConsumer(CPullConsumer* consumer) {
   try {
     reinterpret_cast<DefaultMQPullConsumer*>(consumer)->start();
   } catch (std::exception& e) {
-    MQClientErrorContainer::setErr(std::string(e.what()));
+    CErrorContainer::setErrorMessage(e.what());
     return PULLCONSUMER_START_FAILED;
   }
   return OK;
@@ -118,7 +118,7 @@ int SetPullConsumerLogFileNumAndSize(CPullConsumer* consumer, int fileNum, long 
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ALOG_ADAPTER->setLogFileNumAndSize(fileNum, fileSize);
+  DEFAULT_LOG_ADAPTER->setLogFileNumAndSize(fileNum, fileSize);
   return OK;
 }
 
@@ -126,7 +126,7 @@ int SetPullConsumerLogLevel(CPullConsumer* consumer, CLogLevel level) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ALOG_ADAPTER->setLogLevel((elogLevel)level);
+  DEFAULT_LOG_ADAPTER->set_log_level((LogLevel)level);
   return OK;
 }
 
@@ -150,15 +150,15 @@ int FetchSubscriptionMessageQueues(CPullConsumer* consumer, const char* topic, C
     }
     auto iter = fullMQ.begin();
     for (index = 0; iter != fullMQ.end() && index <= fullMQ.size(); ++iter, index++) {
-      strncpy(temMQ[index].topic, iter->getTopic().c_str(), MAX_TOPIC_LENGTH - 1);
-      strncpy(temMQ[index].brokerName, iter->getBrokerName().c_str(), MAX_BROKER_NAME_ID_LENGTH - 1);
-      temMQ[index].queueId = iter->getQueueId();
+      strncpy(temMQ[index].topic, iter->topic().c_str(), MAX_TOPIC_LENGTH - 1);
+      strncpy(temMQ[index].brokerName, iter->broker_name().c_str(), MAX_BROKER_NAME_ID_LENGTH - 1);
+      temMQ[index].queueId = iter->queue_id();
     }
     *mqs = temMQ;
   } catch (MQException& e) {
     *size = 0;
     *mqs = NULL;
-    MQClientErrorContainer::setErr(std::string(e.what()));
+    CErrorContainer::setErrorMessage(e.what());
     return PULLCONSUMER_FETCH_MQ_FAILED;
   }
   return OK;
@@ -186,7 +186,7 @@ CPullResult Pull(CPullConsumer* consumer,
     cppPullResult =
         reinterpret_cast<DefaultMQPullConsumer*>(consumer)->pull(messageQueue, subExpression, offset, maxNums);
   } catch (std::exception& e) {
-    MQClientErrorContainer::setErr(std::string(e.what()));
+    CErrorContainer::setErrorMessage(e.what());
     cppPullResult.set_pull_status(BROKER_TIMEOUT);
   }
 
@@ -242,7 +242,7 @@ int ReleasePullResult(CPullResult pullResult) {
     try {
       delete ((PullResult*)pullResult.pData);
     } catch (std::exception& e) {
-      MQClientErrorContainer::setErr(std::string(e.what()));
+      CErrorContainer::setErrorMessage(e.what());
       return NULL_POINTER;
     }
   }

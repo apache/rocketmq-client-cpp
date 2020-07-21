@@ -14,15 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_FAULT_STRATEGY_H__
-#define __MQ_FAULT_STRATEGY_H__
+#ifndef ROCKETMQ_PRODUCER_MQFAULTSTRATEGY_H_
+#define ROCKETMQ_PRODUCER_MQFAULTSTRATEGY_H_
 
 #include <string>
 #include <vector>
 
 #include "LatencyFaultTolerancyImpl.h"
 #include "MQMessageQueue.h"
-#include "TopicPublishInfo.h"
+#include "TopicPublishInfo.hpp"
 
 namespace rocketmq {
 
@@ -63,4 +63,4 @@ class MQFaultStrategy {
 
 }  // namespace rocketmq
 
-#endif  // __MQ_FAULT_STRATEGY_H__
+#endif  // ROCKETMQ_PRODUCER_MQFAULTSTRATEGY_H_

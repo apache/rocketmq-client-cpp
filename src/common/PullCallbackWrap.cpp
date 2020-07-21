@@ -19,27 +19,27 @@
 namespace rocketmq {
 
 PullCallbackWrap::PullCallbackWrap(PullCallback* pullCallback, MQClientAPIImpl* pClientAPI)
-    : m_pullCallback(pullCallback), m_pClientAPI(pClientAPI) {}
+    : pull_callback_(pullCallback), client_api_impl_(pClientAPI) {}
 
 void PullCallbackWrap::operationComplete(ResponseFuture* responseFuture) noexcept {
   std::unique_ptr<RemotingCommand> response(responseFuture->getResponseCommand());  // avoid RemotingCommand leak
 
-  if (m_pullCallback == nullptr) {
+  if (pull_callback_ == nullptr) {
     LOG_ERROR("m_pullCallback is NULL, AsyncPull could not continue");
     return;
   }
 
   if (response != nullptr) {
     try {
-      std::unique_ptr<PullResult> pullResult(m_pClientAPI->processPullResponse(response.get()));
+      std::unique_ptr<PullResult> pullResult(client_api_impl_->processPullResponse(response.get()));
       assert(pullResult != nullptr);
-      m_pullCallback->onSuccess(*pullResult);
+      pull_callback_->onSuccess(*pullResult);
     } catch (MQException& e) {
-      m_pullCallback->onException(e);
+      pull_callback_->onException(e);
     }
   } else {
     std::string err;
-    if (!responseFuture->isSendRequestOK()) {
+    if (!responseFuture->send_request_ok()) {
       err = "send request failed";
     } else if (responseFuture->isTimeout()) {
       err = "wait response timeout";
@@ -47,12 +47,12 @@ void PullCallbackWrap::operationComplete(ResponseFuture* responseFuture) noexcep
       err = "unknown reason";
     }
     MQException exception(err, -1, __FILE__, __LINE__);
-    m_pullCallback->onException(exception);
+    pull_callback_->onException(exception);
   }
 
   // auto delete callback
-  if (m_pullCallback->getPullCallbackType() == PULL_CALLBACK_TYPE_AUTO_DELETE) {
-    deleteAndZero(m_pullCallback);
+  if (pull_callback_->getPullCallbackType() == PULL_CALLBACK_TYPE_AUTO_DELETE) {
+    deleteAndZero(pull_callback_);
   }
 }
 

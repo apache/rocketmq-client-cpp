@@ -14,12 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PULL_REQUEST_H__
-#define __PULL_REQUEST_H__
+#ifndef ROCKETMQ_CONSUMER_PULLREQUEST_H_
+#define ROCKETMQ_CONSUMER_PULLREQUEST_H_
 
-#include <atomic>
-#include <memory>
-#include <mutex>
+#include <sstream>  // std::stringstream
 
 #include "MQMessageQueue.h"
 #include "ProcessQueue.h"
@@ -31,34 +29,34 @@ typedef std::shared_ptr<PullRequest> PullRequestPtr;
 
 class ROCKETMQCLIENT_API PullRequest {
  public:
-  PullRequest();
-  virtual ~PullRequest();
+  PullRequest() : next_offset_(0), locked_first_(false) {}
+  virtual ~PullRequest() = default;
 
-  bool isLockedFirst() const;
-  void setLockedFirst(bool lockedFirst);
+  inline bool locked_first() const { return locked_first_; }
+  inline void set_locked_first(bool lockedFirst) { locked_first_ = lockedFirst; }
 
-  const std::string& getConsumerGroup() const;
-  void setConsumerGroup(const std::string& consumerGroup);
+  inline const std::string& consumer_group() const { return consumer_group_; }
+  inline void set_consumer_group(const std::string& consumerGroup) { consumer_group_ = consumerGroup; }
 
-  const MQMessageQueue& getMessageQueue();
-  void setMessageQueue(const MQMessageQueue& messageQueue);
+  inline const MQMessageQueue& message_queue() { return message_queue_; }
+  inline void set_message_queue(const MQMessageQueue& messageQueue) { message_queue_ = messageQueue; }
 
-  int64_t getNextOffset();
-  void setNextOffset(int64_t nextOffset);
+  inline int64_t next_offset() { return next_offset_; }
+  inline void set_next_offset(int64_t nextOffset) { next_offset_ = nextOffset; }
 
-  ProcessQueuePtr getProcessQueue();
-  void setProcessQueue(ProcessQueuePtr processQueue);
+  inline ProcessQueuePtr process_queue() { return process_queue_; }
+  inline void set_process_queue(ProcessQueuePtr processQueue) { process_queue_ = processQueue; }
 
   std::string toString() const;
 
  private:
-  std::string m_consumerGroup;
-  MQMessageQueue m_messageQueue;
-  ProcessQueuePtr m_processQueue;
-  int64_t m_nextOffset;
-  bool m_lockedFirst;
+  std::string consumer_group_;
+  MQMessageQueue message_queue_;
+  ProcessQueuePtr process_queue_;
+  int64_t next_offset_;
+  bool locked_first_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __PULL_REQUEST_H__
+#endif  // ROCKETMQ_CONSUMER_PULLREQUEST_H_

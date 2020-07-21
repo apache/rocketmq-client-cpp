@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __REBALANCE_PUSH_IMPL_H__
-#define __REBALANCE_PUSH_IMPL_H__
+#ifndef ROCKETMQ_CONSUMER_REBALANCEPUSHIMPL_H_
+#define ROCKETMQ_CONSUMER_REBALANCEPUSHIMPL_H_
 
 #include "DefaultMQPushConsumerImpl.h"
 #include "RebalanceImpl.h"
@@ -24,7 +24,7 @@ namespace rocketmq {
 
 class RebalancePushImpl : public RebalanceImpl {
  public:
-  RebalancePushImpl(DefaultMQPushConsumerImpl* consumer);
+  RebalancePushImpl(DefaultMQPushConsumerImpl* consumerImpl);
 
   ConsumeType consumeType() override final { return CONSUME_PASSIVELY; }
 
@@ -41,9 +41,9 @@ class RebalancePushImpl : public RebalanceImpl {
                            std::vector<MQMessageQueue>& mqDivided) override;
 
  private:
-  DefaultMQPushConsumerImpl* m_defaultMQPushConsumer;
+  DefaultMQPushConsumerImpl* default_mq_push_consumer_impl_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __REBALANCE_PUSH_IMPL_H__
+#endif  // ROCKETMQ_CONSUMER_REBALANCEPUSHIMPL_H_

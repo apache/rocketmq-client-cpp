@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __C_COMMON_H__
-#define __C_COMMON_H__
+#ifndef ROCKETMQ_C_CCOMMON_H_
+#define ROCKETMQ_C_CCOMMON_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -84,4 +84,4 @@ typedef enum _CMessageModel_ { BROADCASTING, CLUSTERING } CMessageModel;
 }
 #endif
 
-#endif  // __C_COMMON_H__
+#endif  // ROCKETMQ_C_CCOMMON_H_

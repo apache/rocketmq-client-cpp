@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MESSAGE_ACCESSOR_H__
-#define __MESSAGE_ACCESSOR_H__
+#ifndef ROCKETMQ_MESSAGE_MESSAGEACCESSOR_HPP_
+#define ROCKETMQ_MESSAGE_MESSAGEACCESSOR_HPP_
 
 #include <algorithm>
 
@@ -50,4 +50,4 @@ class MessageAccessor {
 
 }  // namespace rocketmq
 
-#endif  // __MESSAGE_ACCESSOR_H__
+#endif  // ROCKETMQ_CCOMMON_MESSAGEACCESSOR_HPP_

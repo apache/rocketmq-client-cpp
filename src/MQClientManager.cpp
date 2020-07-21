@@ -35,24 +35,24 @@ MQClientInstancePtr MQClientManager::getOrCreateMQClientInstance(const MQClientC
 MQClientInstancePtr MQClientManager::getOrCreateMQClientInstance(const MQClientConfig& clientConfig,
                                                                  RPCHookPtr rpcHook) {
   std::string clientId = clientConfig.buildMQClientId();
-  std::lock_guard<std::mutex> lock(m_mutex);
-  const auto& it = m_instanceTable.find(clientId);
-  if (it != m_instanceTable.end()) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  const auto& it = instance_table_.find(clientId);
+  if (it != instance_table_.end()) {
     return it->second;
   } else {
     // Clone clientConfig in Java, but we don't now.
     auto instance = std::make_shared<MQClientInstance>(clientConfig, clientId, rpcHook);
-    m_instanceTable[clientId] = instance;
+    instance_table_[clientId] = instance;
     LOG_INFO_NEW("Created new MQClientInstance for clientId:[{}]", clientId);
     return instance;
   }
 }
 
 void MQClientManager::removeMQClientInstance(const std::string& clientId) {
-  std::lock_guard<std::mutex> lock(m_mutex);
-  const auto& it = m_instanceTable.find(clientId);
-  if (it != m_instanceTable.end()) {
-    m_instanceTable.erase(it);
+  std::lock_guard<std::mutex> lock(mutex_);
+  const auto& it = instance_table_.find(clientId);
+  if (it != instance_table_.end()) {
+    instance_table_.erase(it);
   }
 }
 

@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __FILTER_API_H__
-#define __FILTER_API_H__
+#ifndef ROCKETMQ_COMMON_FILTERAPI_HPP_
+#define ROCKETMQ_COMMON_FILTERAPI_HPP_
 
-#include <string>
+#include <string>  // std::string
 
-#include "MQClientException.h"
+#include "MQException.h"
 #include "SubscriptionData.h"
 #include "UtilAll.h"
 
@@ -27,12 +27,12 @@ namespace rocketmq {
 
 class FilterAPI {
  public:
-  static SubscriptionDataPtr buildSubscriptionData(const std::string& topic, const std::string& subString) {
+  static SubscriptionData* buildSubscriptionData(const std::string& topic, const std::string& subString) {
     // delete in Rebalance
     std::unique_ptr<SubscriptionData> subscriptionData(new SubscriptionData(topic, subString));
 
-    if (subString.empty() || !subString.compare(SUB_ALL)) {
-      subscriptionData->setSubString(SUB_ALL);
+    if (subString.empty() || SUB_ALL == subString) {
+      subscriptionData->set_sub_string(SUB_ALL);
     } else {
       std::vector<std::string> tags;
       UtilAll::Split(tags, subString, "||");
@@ -42,8 +42,8 @@ class FilterAPI {
           if (!tag.empty()) {
             UtilAll::Trim(tag);
             if (!tag.empty()) {
-              subscriptionData->putTagsSet(tag);
-              subscriptionData->putCodeSet(UtilAll::hash_code(tag));
+              subscriptionData->put_tag(tag);
+              subscriptionData->put_code(UtilAll::hash_code(tag));
             }
           }
         }
@@ -58,4 +58,4 @@ class FilterAPI {
 
 }  // namespace rocketmq
 
-#endif  // __FILTER_API_H__
+#endif  // ROCKETMQ_COMMON_FILTERAPI_HPP_

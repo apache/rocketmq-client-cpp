@@ -14,12 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_CLIENT_MANAGER_H__
-#define __MQ_CLIENT_MANAGER_H__
+#ifndef ROCKETMQ_MQCLIENTMANAGER_H_
+#define ROCKETMQ_MQCLIENTMANAGER_H_
 
-#include <map>
-#include <memory>
-#include <string>
+#include <map>     // std::map
+#include <string>  // std::string
 
 #include "MQClientInstance.h"
 
@@ -40,10 +39,10 @@ class MQClientManager {
   MQClientManager();
 
  private:
-  std::map<std::string, MQClientInstancePtr> m_instanceTable;
-  std::mutex m_mutex;
+  std::map<std::string, MQClientInstancePtr> instance_table_;
+  std::mutex mutex_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __MQ_CLIENT_MANAGER_H__
+#endif  // ROCKETMQ_MQCLIENTMANAGER_H_

@@ -14,18 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "MQClientErrorContainer.h"
+#ifndef ROCKETMQ_CONSUMER_FINDBROKERRESULT_HPP_
+#define ROCKETMQ_CONSUMER_FINDBROKERRESULT_HPP_
+
+#include <string>  // std::string
 
 namespace rocketmq {
 
-thread_local std::string MQClientErrorContainer::t_err;
+class FindBrokerResult {
+ public:
+  FindBrokerResult(const std::string& sbrokerAddr, bool bslave) : broker_addr_(sbrokerAddr), slave_(bslave) {}
 
-void MQClientErrorContainer::setErr(const std::string& str) {
-  t_err = str;
-}
+  inline const std::string& broker_addr() const { return broker_addr_; }
+  inline void set_borker_addr(const std::string& broker_addr) { broker_addr_ = broker_addr; }
 
-const std::string& MQClientErrorContainer::getErr() {
-  return t_err;
-}
+  inline bool slave() const { return slave_; }
+  inline void set_slave(bool slave) { slave_ = slave; }
+
+ private:
+  std::string broker_addr_;
+  bool slave_;
+};
 
 }  // namespace rocketmq
+
+#endif  // ROCKETMQ_CONSUMER_FINDBROKERRESULT_HPP_

@@ -25,7 +25,7 @@
 #include <string>
 
 #include "ByteArray.h"
-#include "MQClientException.h"
+#include "MQException.h"
 #include "MessageSysFlag.h"
 #include "UtilAll.h"
 #include "protocol/header/CommandHeader.h"

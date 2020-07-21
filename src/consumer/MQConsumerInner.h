@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_CONSUMER_INNER_H__
-#define __MQ_CONSUMER_INNER_H__
+#ifndef ROCKETMQ_CONSUMER_MQCONSUMERINNER_H_
+#define ROCKETMQ_CONSUMER_MQCONSUMERINNER_H_
 
 #include <string>
 #include <vector>
@@ -41,9 +41,10 @@ class MQConsumerInner {
   virtual void doRebalance() = 0;
   virtual void persistConsumerOffset() = 0;
   virtual void updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info) = 0;
+
   virtual ConsumerRunningInfo* consumerRunningInfo() = 0;
 };
 
 }  // namespace rocketmq
 
-#endif  // __MQ_CONSUMER_INNER_H__
+#endif  // ROCKETMQ_CONSUMER_MQCONSUMERINNER_H_

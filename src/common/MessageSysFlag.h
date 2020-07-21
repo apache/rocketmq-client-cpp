@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MESSAGE_SYS_FLAG_H__
-#define __MESSAGE_SYS_FLAG_H__
+#ifndef ROCKETMQ_COMMON_MESSAGESYSFLAG_H_
+#define ROCKETMQ_COMMON_MESSAGESYSFLAG_H_
 
 namespace rocketmq {
 
@@ -41,4 +41,4 @@ class MessageSysFlag {
 
 }  // namespace rocketmq
 
-#endif  // __MESSAGE_SYS_FLAG_H__
+#endif  // ROCKETMQ_COMMON_MESSAGESYSFLAG_H_

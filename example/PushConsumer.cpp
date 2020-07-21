@@ -29,7 +29,7 @@ class MyMsgListener : public MessageListenerConcurrently {
   virtual ~MyMsgListener() = default;
 
   ConsumeStatus consumeMessage(std::vector<MQMessageExt>& msgs) override {
-    auto old = g_msgCount.fetch_sub(msgs.size());
+    auto old = g_msg_count.fetch_sub(msgs.size());
     if (old > 0) {
       for (size_t i = 0; i < msgs.size(); ++i) {
         g_tps.Increment();

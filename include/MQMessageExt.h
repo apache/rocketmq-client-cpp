@@ -23,7 +23,7 @@
 namespace rocketmq {
 
 /**
- * MQMessageExt - Reference of MessageExt
+ * MQMessageExt - wrapper for MessageExt
  */
 class ROCKETMQCLIENT_API MQMessageExt : public MQMessage,          // base
                                         virtual public MessageExt  // interface

@@ -19,7 +19,7 @@
 #include "Logging.h"
 #include "MQAdminImpl.h"
 #include "MQClientManager.h"
-#include "TopicPublishInfo.h"
+#include "TopicPublishInfo.hpp"
 #include "UtilAll.h"
 
 namespace rocketmq {
@@ -31,48 +31,48 @@ namespace rocketmq {
 const char* rocketmq_build_time = "VERSION: " ROCKETMQCPP_VERSION ", BUILD DATE: " BUILD_DATE;
 
 void MQClientImpl::start() {
-  if (nullptr == m_clientInstance) {
-    if (nullptr == m_clientConfig) {
+  if (nullptr == client_instance_) {
+    if (nullptr == client_config_) {
       THROW_MQEXCEPTION(MQClientException, "have not clientConfig for create clientInstance.", -1);
     }
 
-    m_clientInstance = MQClientManager::getInstance()->getOrCreateMQClientInstance(*m_clientConfig, m_rpcHook);
+    client_instance_ = MQClientManager::getInstance()->getOrCreateMQClientInstance(*client_config_, rpc_hook_);
   }
 
-  LOG_INFO_NEW("MQClientImpl start, clientId:{}, real nameservAddr:{}", m_clientInstance->getClientId(),
-               m_clientInstance->getNamesrvAddr());
+  LOG_INFO_NEW("MQClientImpl start, clientId:{}, real nameservAddr:{}", client_instance_->getClientId(),
+               client_instance_->getNamesrvAddr());
 }
 
 void MQClientImpl::shutdown() {
-  m_clientInstance = nullptr;
+  client_instance_ = nullptr;
 }
 
 void MQClientImpl::createTopic(const std::string& key, const std::string& newTopic, int queueNum) {
   try {
-    m_clientInstance->getMQAdminImpl()->createTopic(key, newTopic, queueNum);
+    client_instance_->getMQAdminImpl()->createTopic(key, newTopic, queueNum);
   } catch (MQException& e) {
     LOG_ERROR(e.what());
   }
 }
 
 int64_t MQClientImpl::searchOffset(const MQMessageQueue& mq, uint64_t timestamp) {
-  return m_clientInstance->getMQAdminImpl()->searchOffset(mq, timestamp);
+  return client_instance_->getMQAdminImpl()->searchOffset(mq, timestamp);
 }
 
 int64_t MQClientImpl::maxOffset(const MQMessageQueue& mq) {
-  return m_clientInstance->getMQAdminImpl()->maxOffset(mq);
+  return client_instance_->getMQAdminImpl()->maxOffset(mq);
 }
 
 int64_t MQClientImpl::minOffset(const MQMessageQueue& mq) {
-  return m_clientInstance->getMQAdminImpl()->minOffset(mq);
+  return client_instance_->getMQAdminImpl()->minOffset(mq);
 }
 
 int64_t MQClientImpl::earliestMsgStoreTime(const MQMessageQueue& mq) {
-  return m_clientInstance->getMQAdminImpl()->earliestMsgStoreTime(mq);
+  return client_instance_->getMQAdminImpl()->earliestMsgStoreTime(mq);
 }
 
 MQMessageExt MQClientImpl::viewMessage(const std::string& msgId) {
-  return m_clientInstance->getMQAdminImpl()->viewMessage(msgId);
+  return client_instance_->getMQAdminImpl()->viewMessage(msgId);
 }
 
 QueryResult MQClientImpl::queryMessage(const std::string& topic,
@@ -80,20 +80,20 @@ QueryResult MQClientImpl::queryMessage(const std::string& topic,
                                        int maxNum,
                                        int64_t begin,
                                        int64_t end) {
-  return m_clientInstance->getMQAdminImpl()->queryMessage(topic, key, maxNum, begin, end);
+  return client_instance_->getMQAdminImpl()->queryMessage(topic, key, maxNum, begin, end);
 }
 
 bool MQClientImpl::isServiceStateOk() {
-  return m_serviceState == RUNNING;
+  return service_state_ == RUNNING;
 }
 
 MQClientInstancePtr MQClientImpl::getClientInstance() const {
-  return m_clientInstance;
+  return client_instance_;
 }
 
 void MQClientImpl::setClientInstance(MQClientInstancePtr clientInstance) {
-  if (m_serviceState == CREATE_JUST) {
-    m_clientInstance = clientInstance;
+  if (service_state_ == CREATE_JUST) {
+    client_instance_ = clientInstance;
   } else {
     THROW_MQEXCEPTION(MQClientException, "Client already start, can not reset clientInstance!", -1);
   }

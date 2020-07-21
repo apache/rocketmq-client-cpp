@@ -14,15 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MESSAGE_CLIENT_ID_SETTER_H__
-#define __MESSAGE_CLIENT_ID_SETTER_H__
+#ifndef ROCKETMQ_MESSAGE_MESSAGECLIENTIDSETTER_H_
+#define ROCKETMQ_MESSAGE_MESSAGECLIENTIDSETTER_H_
 
 #include <atomic>
 #include <cstdint>
 #include <string>
 
 #include "MQMessage.h"
-#include "MessageAccessor.h"
+#include "MessageAccessor.hpp"
 
 namespace rocketmq {
 
@@ -34,12 +34,13 @@ class MessageClientIDSetter {
     return singleton_;
   }
 
-  /* ID format:
-   *   ip: 4 bytes
-   *   pid: 2 bytes
-   *   random: 4 bytes
-   *   time: 4 bytes
-   *   auto num: 2 bytes
+  /**
+   * ID format:
+   *   4 bytes - ip
+   *   2 bytes - pid
+   *   4 bytes - random
+   *   4 bytes - time
+   *   2 bytes - auto num
    */
   static std::string createUniqID() { return getInstance().createUniqueID(); }
 
@@ -63,13 +64,13 @@ class MessageClientIDSetter {
   std::string createUniqueID();
 
  private:
-  uint64_t mStartTime;
-  uint64_t mNextStartTime;
-  std::atomic<uint16_t> mCounter;
+  uint64_t start_time_;
+  uint64_t next_start_time_;
+  std::atomic<uint16_t> counter_;
 
-  std::string kFixString;
+  std::string fix_string_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __MESSAGE_CLIENT_ID_SETTER_H__
+#endif  // ROCKETMQ_MESSAGE_MESSAGECLIENTIDSETTER_H_

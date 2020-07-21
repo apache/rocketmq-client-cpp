@@ -19,7 +19,7 @@
 #include "ByteArray.h"
 #include "ClientErrorCode.h"
 #include "MessageImpl.h"
-#include "MessageAccessor.h"
+#include "MessageAccessor.hpp"
 #include "MQMessageConst.h"
 #include "UtilAll.h"
 

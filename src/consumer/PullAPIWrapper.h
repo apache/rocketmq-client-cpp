@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PULL_API_WRAPPER_H__
-#define __PULL_API_WRAPPER_H__
+#ifndef ROCKETMQ_CONSUMER_PULLAPIWRAPPER_H_
+#define ROCKETMQ_CONSUMER_PULLAPIWRAPPER_H_
 
-#include <mutex>
+#include <mutex>  // std::mutex
 
 #include "CommunicationMode.h"
 #include "MQClientInstance.h"
@@ -32,7 +32,7 @@ class PullAPIWrapper {
   PullAPIWrapper(MQClientInstance* instance, const std::string& consumerGroup);
   ~PullAPIWrapper();
 
-  PullResult processPullResult(const MQMessageQueue& mq, PullResult& pullResult, SubscriptionDataPtr subscriptionData);
+  PullResult processPullResult(const MQMessageQueue& mq, PullResult& pullResult, SubscriptionData* subscriptionData);
 
   PullResult* pullKernelImpl(const MQMessageQueue& mq,             // 1
                              const std::string& subExpression,     // 2
@@ -52,12 +52,12 @@ class PullAPIWrapper {
   int recalculatePullFromWhichNode(const MQMessageQueue& mq);
 
  private:
-  MQClientInstance* m_clientInstance;
-  std::string m_consumerGroup;
-  std::mutex m_lock;
-  std::map<MQMessageQueue, int /* brokerId */> m_pullFromWhichNodeTable;
+  MQClientInstance* client_instance_;
+  std::string consumer_group_;
+  std::mutex lock_;
+  std::map<MQMessageQueue, int /* brokerId */> pull_from_which_node_table_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __PULL_API_WRAPPER_H__
+#endif  // ROCKETMQ_CONSUMER_PULLAPIWRAPPER_H_

@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __DEFAULT_MQ_PULL_CONSUMER_CONFIG_H__
-#define __DEFAULT_MQ_PULL_CONSUMER_CONFIG_H__
+#ifndef ROCKETMQ_DEFAULTMQPULLCONSUMERCONFIG_H_
+#define ROCKETMQ_DEFAULTMQPULLCONSUMERCONFIG_H_
 
 #include "AllocateMQStrategy.h"
 #include "ConsumeType.h"
@@ -39,4 +39,4 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumerConfig : virtual public MQClientCo
 
 }  // namespace rocketmq
 
-#endif  // __DEFAULT_MQ_PULL_CONSUMER_CONFIG_H__
+#endif  // ROCKETMQ_DEFAULTMQPULLCONSUMERCONFIG_H_

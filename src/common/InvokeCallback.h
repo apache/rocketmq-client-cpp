@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __INVOKE_CALLBACK_H__
-#define __INVOKE_CALLBACK_H__
+#ifndef ROCKETMQ_COMMON_INVOKECALLBACK_H_
+#define ROCKETMQ_COMMON_INVOKECALLBACK_H_
 
 namespace rocketmq {
 
@@ -24,9 +24,10 @@ class ResponseFuture;
 class InvokeCallback {
  public:
   virtual ~InvokeCallback() = default;
+
   virtual void operationComplete(ResponseFuture* responseFuture) noexcept = 0;
 };
 
 }  // namespace rocketmq
 
-#endif  // __INVOKE_CALLBACK_H__
+#endif  // ROCKETMQ_COMMON_INVOKECALLBACK_H_

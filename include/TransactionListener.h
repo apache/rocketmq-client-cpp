@@ -14,14 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TRANSACTION_LISTENER_H__
-#define __TRANSACTION_LISTENER_H__
+#ifndef ROCKETMQ_TRANSACTIONLISTENER_H_
+#define ROCKETMQ_TRANSACTIONLISTENER_H_
 
 #include "MQMessageExt.h"
 #include "TransactionSendResult.h"
 
 namespace rocketmq {
 
+/**
+ * TransactionListener - listener interface for TransactionMQProducer
+ */
 class ROCKETMQCLIENT_API TransactionListener {
  public:
   virtual ~TransactionListener() = default;
@@ -47,4 +50,4 @@ class ROCKETMQCLIENT_API TransactionListener {
 
 }  // namespace rocketmq
 
-#endif  // __TRANSACTION_LISTENER_H__
+#endif  // ROCKETMQ_TRANSACTIONLISTENER_H_

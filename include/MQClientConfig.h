@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_CLIENT_CONFIG_H__
-#define __MQ_CLIENT_CONFIG_H__
+#ifndef ROCKETMQ_MQCLIENTCONFIG_H_
+#define ROCKETMQ_MQCLIENTCONFIG_H_
 
-#include <memory>
-#include <string>
+#include <memory>  // std::shared_ptr
+#include <string>  // std::string
 
 #include "RocketMQClient.h"
 
@@ -28,7 +28,7 @@ class MQClientConfig;
 typedef std::shared_ptr<MQClientConfig> MQClientConfigPtr;
 
 /**
- * MQ Client Config
+ * MQClientConfig - config interface for MQClient
  */
 class ROCKETMQCLIENT_API MQClientConfig {
  public:
@@ -72,4 +72,4 @@ class ROCKETMQCLIENT_API MQClientConfig {
 
 }  // namespace rocketmq
 
-#endif  // __MQ_CLIENT_CONFIG_H__
+#endif  // ROCKETMQ_MQCLIENTCONFIG_H_

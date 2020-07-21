@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_CLIENT_IMPL_H__
-#define __MQ_CLIENT_IMPL_H__
+#ifndef ROCKETMQ_MQCLIENTIMPL_H_
+#define ROCKETMQ_MQCLIENTIMPL_H_
 
 #include "MQAdmin.h"
 #include "MQClientConfig.h"
@@ -27,7 +27,7 @@ namespace rocketmq {
 class MQClientImpl : public MQAdmin {
  public:
   MQClientImpl(MQClientConfigPtr config, RPCHookPtr rpcHook)
-      : m_clientConfig(config), m_rpcHook(rpcHook), m_serviceState(CREATE_JUST), m_clientInstance(nullptr) {}
+      : client_config_(config), rpc_hook_(rpcHook), service_state_(CREATE_JUST), client_instance_(nullptr) {}
 
  public:  // MQAdmin
   void createTopic(const std::string& key, const std::string& newTopic, int queueNum) override;
@@ -51,16 +51,16 @@ class MQClientImpl : public MQAdmin {
   MQClientInstancePtr getClientInstance() const;
   void setClientInstance(MQClientInstancePtr clientInstance);
 
-  RPCHookPtr getRPCHook() { return m_rpcHook; }
-  void setRPCHook(RPCHookPtr rpcHook) { m_rpcHook = rpcHook; }
+  RPCHookPtr getRPCHook() { return rpc_hook_; }
+  void setRPCHook(RPCHookPtr rpcHook) { rpc_hook_ = rpcHook; }
 
  protected:
-  MQClientConfigPtr m_clientConfig;
-  RPCHookPtr m_rpcHook;
-  volatile ServiceState m_serviceState;
-  MQClientInstancePtr m_clientInstance;
+  MQClientConfigPtr client_config_;
+  RPCHookPtr rpc_hook_;
+  volatile ServiceState service_state_;
+  MQClientInstancePtr client_instance_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __MQ_CLIENT_IMPL_H__
+#endif  // ROCKETMQ_MQCLIENTIMPL_H_

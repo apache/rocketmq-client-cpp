@@ -54,7 +54,7 @@ TEST(RemotingCommandTest, Init) {
   EXPECT_EQ(twoRemotingCommand.code(), 13);
   EXPECT_EQ(twoRemotingCommand.opaque(), 0);
   EXPECT_EQ(twoRemotingCommand.remark(), "");
-  EXPECT_EQ(twoRemotingCommand.version(), MQVersion::s_CurrentVersion);
+  EXPECT_EQ(twoRemotingCommand.version(), MQVersion::CURRENT_VERSION);
   EXPECT_EQ(twoRemotingCommand.flag(), 0);
   EXPECT_TRUE(twoRemotingCommand.body() == nullptr);
   EXPECT_TRUE(twoRemotingCommand.readCustomHeader() == nullptr);
@@ -62,12 +62,12 @@ TEST(RemotingCommandTest, Init) {
   RemotingCommand threeRemotingCommand(13, new GetRouteInfoRequestHeader("topic"));
   EXPECT_FALSE(threeRemotingCommand.readCustomHeader() == nullptr);
 
-  RemotingCommand frouRemotingCommand(13, "CPP", MQVersion::s_CurrentVersion, 12, 3, "remark",
+  RemotingCommand frouRemotingCommand(13, MQVersion::CURRENT_LANGUAGE, MQVersion::CURRENT_VERSION, 12, 3, "remark",
                                       new GetRouteInfoRequestHeader("topic"));
   EXPECT_EQ(frouRemotingCommand.code(), 13);
   EXPECT_EQ(frouRemotingCommand.opaque(), 12);
   EXPECT_EQ(frouRemotingCommand.remark(), "remark");
-  EXPECT_EQ(frouRemotingCommand.version(), MQVersion::s_CurrentVersion);
+  EXPECT_EQ(frouRemotingCommand.version(), MQVersion::CURRENT_VERSION);
   EXPECT_EQ(frouRemotingCommand.flag(), 3);
   EXPECT_TRUE(frouRemotingCommand.body() == nullptr);
   EXPECT_FALSE(frouRemotingCommand.readCustomHeader() == nullptr);
@@ -76,7 +76,7 @@ TEST(RemotingCommandTest, Init) {
   EXPECT_EQ(sixRemotingCommand.code(), 13);
   EXPECT_EQ(sixRemotingCommand.opaque(), 12);
   EXPECT_EQ(sixRemotingCommand.remark(), "remark");
-  EXPECT_EQ(sixRemotingCommand.version(), MQVersion::s_CurrentVersion);
+  EXPECT_EQ(sixRemotingCommand.version(), MQVersion::CURRENT_VERSION);
   EXPECT_EQ(sixRemotingCommand.flag(), 3);
   EXPECT_TRUE(sixRemotingCommand.body() == nullptr);
   EXPECT_FALSE(sixRemotingCommand.readCustomHeader() == nullptr);
@@ -85,7 +85,7 @@ TEST(RemotingCommandTest, Init) {
   EXPECT_EQ(sevenRemotingCommand->code(), 13);
   EXPECT_EQ(sevenRemotingCommand->opaque(), 12);
   EXPECT_EQ(sevenRemotingCommand->remark(), "remark");
-  EXPECT_EQ(sevenRemotingCommand->version(), MQVersion::s_CurrentVersion);
+  EXPECT_EQ(sevenRemotingCommand->version(), MQVersion::CURRENT_VERSION);
   EXPECT_EQ(sevenRemotingCommand->flag(), 3);
   EXPECT_TRUE(sevenRemotingCommand->body() == nullptr);
   EXPECT_FALSE(sevenRemotingCommand->readCustomHeader() == nullptr);
@@ -110,7 +110,7 @@ TEST(RemotingCommandTest, Info) {
 }
 
 TEST(RemotingCommandTest, Flag) {
-  RemotingCommand remotingCommand(13, "CPP", MQVersion::s_CurrentVersion, 12, 0, "remark",
+  RemotingCommand remotingCommand(13, MQVersion::CURRENT_LANGUAGE, MQVersion::CURRENT_VERSION, 12, 0, "remark",
                                   new GetRouteInfoRequestHeader("topic"));
   ;
   EXPECT_EQ(remotingCommand.flag(), 0);
@@ -130,8 +130,8 @@ TEST(RemotingCommandTest, Flag) {
 }
 
 TEST(RemotingCommandTest, EncodeAndDecode) {
-  RemotingCommand remotingCommand(MQRequestCode::QUERY_BROKER_OFFSET, "CPP", MQVersion::s_CurrentVersion, 12, 3,
-                                  "remark", nullptr);
+  RemotingCommand remotingCommand(MQRequestCode::QUERY_BROKER_OFFSET, MQVersion::CURRENT_LANGUAGE,
+                                  MQVersion::CURRENT_VERSION, 12, 3, "remark", nullptr);
   remotingCommand.set_body("123123");
 
   auto package = remotingCommand.encode();
@@ -151,8 +151,8 @@ TEST(RemotingCommandTest, EncodeAndDecode) {
   requestHeader->setConsumerGroup("consumerGroup");
   requestHeader->setJstackEnable(false);
 
-  RemotingCommand remotingCommand2(MQRequestCode::GET_CONSUMER_RUNNING_INFO, "CPP", MQVersion::s_CurrentVersion, 12, 3,
-                                   "remark", requestHeader);
+  RemotingCommand remotingCommand2(MQRequestCode::GET_CONSUMER_RUNNING_INFO, MQVersion::CURRENT_LANGUAGE,
+                                   MQVersion::CURRENT_VERSION, 12, 3, "remark", requestHeader);
   remotingCommand2.set_body("123123");
   package = remotingCommand2.encode();
 

@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __DEFAULT_MQ_PRODUCER_CONFIG_H__
-#define __DEFAULT_MQ_PRODUCER_CONFIG_H__
+#ifndef ROCKETMQ_DEFAULTMQPRODUCERCONFIG_H_
+#define ROCKETMQ_DEFAULTMQPRODUCERCONFIG_H_
 
 #include "MQClientConfig.h"
 
@@ -24,7 +24,11 @@ namespace rocketmq {
 class DefaultMQProducerConfig;
 typedef std::shared_ptr<DefaultMQProducerConfig> DefaultMQProducerConfigPtr;
 
-class ROCKETMQCLIENT_API DefaultMQProducerConfig : virtual public MQClientConfig {
+/**
+ * DefaultMQProducerConfig - config interface for DefaultMQProducer
+ */
+class ROCKETMQCLIENT_API DefaultMQProducerConfig : virtual public MQClientConfig  // base interface
+{
  public:
   virtual ~DefaultMQProducerConfig() = default;
 
@@ -50,8 +54,8 @@ class ROCKETMQCLIENT_API DefaultMQProducerConfig : virtual public MQClientConfig
   virtual int getRetryTimes() const = 0;
   virtual void setRetryTimes(int times) = 0;
 
-  virtual int getRetryTimes4Async() const = 0;
-  virtual void setRetryTimes4Async(int times) = 0;
+  virtual int getRetryTimesForAsync() const = 0;
+  virtual void setRetryTimesForAsync(int times) = 0;
 
   virtual bool isRetryAnotherBrokerWhenNotStoreOK() const = 0;
   virtual void setRetryAnotherBrokerWhenNotStoreOK(bool retryAnotherBrokerWhenNotStoreOK) = 0;
@@ -62,4 +66,4 @@ class ROCKETMQCLIENT_API DefaultMQProducerConfig : virtual public MQClientConfig
 
 }  // namespace rocketmq
 
-#endif  // __DEFAULT_MQ_PRODUCER_CONFIG_H__
+#endif  // ROCKETMQ_DEFAULTMQPRODUCERCONFIG_H_

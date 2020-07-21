@@ -18,7 +18,7 @@
 #define ROCKETMQ_MESSAGE_MESSAGEDECODER_H_
 
 #include "ByteBuffer.hpp"
-#include "MQClientException.h"
+#include "MQException.h"
 #include "MQMessageExt.h"
 #include "MessageId.h"
 
@@ -42,16 +42,6 @@ class MessageDecoder {
 
   static std::string encodeMessage(Message& message);
   static std::string encodeMessages(std::vector<MQMessage>& msgs);
-
- public:
-  static const char NAME_VALUE_SEPARATOR;
-  static const char PROPERTY_SEPARATOR;
-  static const int MSG_ID_LENGTH;
-
-  static int MessageMagicCodePostion;
-  static int MessageFlagPostion;
-  static int MessagePhysicOffsetPostion;
-  static int MessageStoreTimestampPostion;
 };
 
 }  // namespace rocketmq

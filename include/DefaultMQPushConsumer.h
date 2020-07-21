@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __DEFAULT_MQ_PUSH_CONSUMER_H__
-#define __DEFAULT_MQ_PUSH_CONSUMER_H__
+#ifndef ROCKETMQ_DEFAULTMQPUSHCONSUMER_H_
+#define ROCKETMQ_DEFAULTMQPUSHCONSUMER_H_
 
 #include "DefaultMQPushConsumerConfigProxy.h"
 #include "MQPushConsumer.h"
@@ -23,7 +23,9 @@
 
 namespace rocketmq {
 
-class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQPushConsumer, public DefaultMQPushConsumerConfigProxy {
+class ROCKETMQCLIENT_API DefaultMQPushConsumer : public DefaultMQPushConsumerConfigProxy,  // base
+                                                 public MQPushConsumer                     // interface
+{
  public:
   DefaultMQPushConsumer(const std::string& groupname);
   DefaultMQPushConsumer(const std::string& groupname, RPCHookPtr rpcHook);
@@ -58,4 +60,4 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public MQPushConsumer, public D
 
 }  // namespace rocketmq
 
-#endif  // __DEFAULT_MQ_PUSH_CONSUMER_H__
+#endif  // ROCKETMQ_DEFAULTMQPUSHCONSUMER_H_

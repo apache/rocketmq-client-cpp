@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SOCKET_UTIL_H__
-#define __SOCKET_UTIL_H__
+#ifndef ROCKETMQ_TRANSPORT_SOCKETUTIL_H_
+#define ROCKETMQ_TRANSPORT_SOCKETUTIL_H_
 
 #include <cstdint>
 
@@ -51,4 +51,4 @@ uint64_t n2hll(uint64_t v);
 
 }  // namespace rocketmq
 
-#endif  // __SOCKET_UTIL_H__
+#endif  // ROCKETMQ_TRANSPORT_SOCKETUTIL_H_

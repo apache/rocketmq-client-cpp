@@ -22,26 +22,26 @@ namespace rocketmq {
 
 ArgHelper::ArgHelper(int argc, char* argv[]) {
   for (int i = 0; i < argc; i++) {
-    m_args.push_back(argv[i]);
+    args_.push_back(argv[i]);
   }
 }
 
 ArgHelper::ArgHelper(std::string arg_str_) {
   std::vector<std::string> v;
   UtilAll::Split(v, arg_str_, " ");
-  m_args.insert(m_args.end(), v.begin(), v.end());
+  args_.insert(args_.end(), v.begin(), v.end());
 }
 
 std::string ArgHelper::get_option(int idx_) const {
-  if ((size_t)idx_ >= m_args.size()) {
+  if ((size_t)idx_ >= args_.size()) {
     return "";
   }
-  return m_args[idx_];
+  return args_[idx_];
 }
 
 bool ArgHelper::is_enable_option(std::string opt_) const {
-  for (size_t i = 0; i < m_args.size(); ++i) {
-    if (opt_ == m_args[i]) {
+  for (size_t i = 0; i < args_.size(); ++i) {
+    if (opt_ == args_[i]) {
       return true;
     }
   }
@@ -50,13 +50,13 @@ bool ArgHelper::is_enable_option(std::string opt_) const {
 
 std::string ArgHelper::get_option_value(std::string opt_) const {
   std::string ret = "";
-  for (size_t i = 0; i < m_args.size(); ++i) {
-    if (opt_ == m_args[i]) {
+  for (size_t i = 0; i < args_.size(); ++i) {
+    if (opt_ == args_[i]) {
       size_t value_idx = ++i;
-      if (value_idx >= m_args.size()) {
+      if (value_idx >= args_.size()) {
         return ret;
       }
-      ret = m_args[value_idx];
+      ret = args_[value_idx];
       return ret;
     }
   }

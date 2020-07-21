@@ -18,7 +18,7 @@
 
 #include "MQClientAPIImpl.h"
 #include "MQClientInstance.h"
-#include "TopicPublishInfo.h"
+#include "TopicPublishInfo.hpp"
 
 namespace rocketmq {
 
@@ -27,9 +27,9 @@ void MQAdminImpl::createTopic(const std::string& key, const std::string& newTopi
 void MQAdminImpl::fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) {
   try {
     TopicRouteDataPtr topicRouteData(
-        m_clientInstance->getMQClientAPIImpl()->getTopicRouteInfoFromNameServer(topic, 1000 * 3));
+        client_instance_->getMQClientAPIImpl()->getTopicRouteInfoFromNameServer(topic, 1000 * 3));
     if (topicRouteData != nullptr) {
-      mqs = m_clientInstance->topicRouteData2TopicSubscribeInfo(topic, topicRouteData);
+      mqs = client_instance_->topicRouteData2TopicSubscribeInfo(topic, topicRouteData);
       if (!mqs.empty()) {
         return;
       } else {
@@ -45,15 +45,15 @@ void MQAdminImpl::fetchSubscribeMessageQueues(const std::string& topic, std::vec
 }
 
 int64_t MQAdminImpl::searchOffset(const MQMessageQueue& mq, int64_t timestamp) {
-  std::string brokerAddr = m_clientInstance->findBrokerAddressInPublish(mq.getBrokerName());
+  std::string brokerAddr = client_instance_->findBrokerAddressInPublish(mq.broker_name());
   if (brokerAddr.empty()) {
-    m_clientInstance->updateTopicRouteInfoFromNameServer(mq.getTopic());
-    brokerAddr = m_clientInstance->findBrokerAddressInPublish(mq.getBrokerName());
+    client_instance_->updateTopicRouteInfoFromNameServer(mq.topic());
+    brokerAddr = client_instance_->findBrokerAddressInPublish(mq.broker_name());
   }
 
   if (!brokerAddr.empty()) {
     try {
-      return m_clientInstance->getMQClientAPIImpl()->searchOffset(brokerAddr, mq.getTopic(), mq.getQueueId(), timestamp,
+      return client_instance_->getMQClientAPIImpl()->searchOffset(brokerAddr, mq.topic(), mq.queue_id(), timestamp,
                                                                   1000 * 3);
     } catch (MQException& e) {
       THROW_MQEXCEPTION(MQClientException, "Invoke Broker exception", -1);
@@ -63,15 +63,15 @@ int64_t MQAdminImpl::searchOffset(const MQMessageQueue& mq, int64_t timestamp) {
 }
 
 int64_t MQAdminImpl::maxOffset(const MQMessageQueue& mq) {
-  std::string brokerAddr = m_clientInstance->findBrokerAddressInPublish(mq.getBrokerName());
+  std::string brokerAddr = client_instance_->findBrokerAddressInPublish(mq.broker_name());
   if (brokerAddr.empty()) {
-    m_clientInstance->updateTopicRouteInfoFromNameServer(mq.getTopic());
-    brokerAddr = m_clientInstance->findBrokerAddressInPublish(mq.getBrokerName());
+    client_instance_->updateTopicRouteInfoFromNameServer(mq.topic());
+    brokerAddr = client_instance_->findBrokerAddressInPublish(mq.broker_name());
   }
 
   if (!brokerAddr.empty()) {
     try {
-      return m_clientInstance->getMQClientAPIImpl()->getMaxOffset(brokerAddr, mq.getTopic(), mq.getQueueId(), 1000 * 3);
+      return client_instance_->getMQClientAPIImpl()->getMaxOffset(brokerAddr, mq.topic(), mq.queue_id(), 1000 * 3);
     } catch (MQException& e) {
       THROW_MQEXCEPTION(MQClientException, "Invoke Broker exception", -1);
     }
@@ -80,33 +80,33 @@ int64_t MQAdminImpl::maxOffset(const MQMessageQueue& mq) {
 }
 
 int64_t MQAdminImpl::minOffset(const MQMessageQueue& mq) {
-  std::string brokerAddr = m_clientInstance->findBrokerAddressInPublish(mq.getBrokerName());
+  std::string brokerAddr = client_instance_->findBrokerAddressInPublish(mq.broker_name());
   if (brokerAddr.empty()) {
-    m_clientInstance->updateTopicRouteInfoFromNameServer(mq.getTopic());
-    brokerAddr = m_clientInstance->findBrokerAddressInPublish(mq.getBrokerName());
+    client_instance_->updateTopicRouteInfoFromNameServer(mq.topic());
+    brokerAddr = client_instance_->findBrokerAddressInPublish(mq.broker_name());
   }
 
   if (!brokerAddr.empty()) {
     try {
-      return m_clientInstance->getMQClientAPIImpl()->getMinOffset(brokerAddr, mq.getTopic(), mq.getQueueId(), 1000 * 3);
+      return client_instance_->getMQClientAPIImpl()->getMinOffset(brokerAddr, mq.topic(), mq.queue_id(), 1000 * 3);
     } catch (const std::exception& e) {
       THROW_MQEXCEPTION(MQClientException, "Invoke Broker[" + brokerAddr + "] exception", -1);
     }
   }
 
-  THROW_MQEXCEPTION(MQClientException, "The broker[" + mq.getBrokerName() + "] not exist", -1);
+  THROW_MQEXCEPTION(MQClientException, "The broker[" + mq.broker_name() + "] not exist", -1);
 }
 
 int64_t MQAdminImpl::earliestMsgStoreTime(const MQMessageQueue& mq) {
-  std::string brokerAddr = m_clientInstance->findBrokerAddressInPublish(mq.getBrokerName());
+  std::string brokerAddr = client_instance_->findBrokerAddressInPublish(mq.broker_name());
   if (brokerAddr.empty()) {
-    m_clientInstance->updateTopicRouteInfoFromNameServer(mq.getTopic());
-    brokerAddr = m_clientInstance->findBrokerAddressInPublish(mq.getBrokerName());
+    client_instance_->updateTopicRouteInfoFromNameServer(mq.topic());
+    brokerAddr = client_instance_->findBrokerAddressInPublish(mq.broker_name());
   }
 
   if (!brokerAddr.empty()) {
     try {
-      return m_clientInstance->getMQClientAPIImpl()->getEarliestMsgStoretime(brokerAddr, mq.getTopic(), mq.getQueueId(),
+      return client_instance_->getMQClientAPIImpl()->getEarliestMsgStoretime(brokerAddr, mq.topic(), mq.queue_id(),
                                                                              1000 * 3);
     } catch (MQException& e) {
       THROW_MQEXCEPTION(MQClientException, "Invoke Broker exception", -1);

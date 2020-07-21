@@ -16,7 +16,7 @@
  */
 #include "DefaultMQProducer.h"
 
-#include "DefaultMQProducerConfigImpl.h"
+#include "DefaultMQProducerConfigImpl.hpp"
 #include "DefaultMQProducerImpl.h"
 #include "UtilAll.h"
 
@@ -38,7 +38,8 @@ DefaultMQProducer::DefaultMQProducer(const std::string& groupname,
     setGroupName(groupname);
   }
 
-  producer_impl_ = DefaultMQProducerImpl::create(getRealConfig(), rpcHook);
+  // create DefaultMQProducerImpl
+  producer_impl_ = DefaultMQProducerImpl::create(real_config(), rpcHook);
 }
 
 DefaultMQProducer::~DefaultMQProducer() = default;
@@ -174,15 +175,15 @@ void DefaultMQProducer::request(MQMessage& msg,
 }
 
 bool DefaultMQProducer::isSendLatencyFaultEnable() const {
-  return std::dynamic_pointer_cast<DefaultMQProducerImpl>(producer_impl_)->isSendLatencyFaultEnable();
+  return dynamic_cast<DefaultMQProducerImpl*>(producer_impl_.get())->isSendLatencyFaultEnable();
 }
 
 void DefaultMQProducer::setSendLatencyFaultEnable(bool sendLatencyFaultEnable) {
-  std::dynamic_pointer_cast<DefaultMQProducerImpl>(producer_impl_)->setSendLatencyFaultEnable(sendLatencyFaultEnable);
+  dynamic_cast<DefaultMQProducerImpl*>(producer_impl_.get())->setSendLatencyFaultEnable(sendLatencyFaultEnable);
 }
 
 void DefaultMQProducer::setRPCHook(RPCHookPtr rpcHook) {
-  std::dynamic_pointer_cast<DefaultMQProducerImpl>(producer_impl_)->setRPCHook(rpcHook);
+  dynamic_cast<DefaultMQProducerImpl*>(producer_impl_.get())->setRPCHook(rpcHook);
 }
 
 }  // namespace rocketmq

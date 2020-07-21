@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SEND_CALLBACK_WRAP_H__
-#define __SEND_CALLBACK_WRAP_H__
+#ifndef ROCKETMQ_COMMON_SENDCALLBACKWRAP_H_
+#define ROCKETMQ_COMMON_SENDCALLBACKWRAP_H_
 
 #include <functional>
 
@@ -26,7 +26,7 @@
 #include "RemotingCommand.h"
 #include "ResponseFuture.h"
 #include "SendCallback.h"
-#include "TopicPublishInfo.h"
+#include "TopicPublishInfo.hpp"
 
 namespace rocketmq {
 
@@ -46,27 +46,27 @@ class SendCallbackWrap : public InvokeCallback {
   void operationComplete(ResponseFuture* responseFuture) noexcept override;
   void onExceptionImpl(ResponseFuture* responseFuture, long timeoutMillis, MQException& e, bool needRetry);
 
-  const std::string& getAddr() { return m_addr; }
-  const MessagePtr getMessage() { return m_msg; }
-  RemotingCommand& getRemotingCommand() { return m_request; }
+  const std::string& getAddr() { return addr_; }
+  const MessagePtr getMessage() { return msg_; }
+  RemotingCommand& getRemotingCommand() { return request_; }
 
-  void setRetrySendTimes(int retrySendTimes) { m_times = retrySendTimes; }
-  int getRetrySendTimes() { return m_times; }
-  int getMaxRetrySendTimes() { return m_timesTotal; }
+  void setRetrySendTimes(int retrySendTimes) { times_ = retrySendTimes; }
+  int getRetrySendTimes() { return times_; }
+  int getMaxRetrySendTimes() { return times_total_; }
 
  private:
-  std::string m_addr;
-  std::string m_brokerName;
-  const MessagePtr m_msg;
-  RemotingCommand m_request;
-  SendCallback* m_sendCallback;
-  TopicPublishInfoPtr m_topicPublishInfo;
-  MQClientInstancePtr m_instance;
-  int m_timesTotal;
-  int m_times;
-  std::weak_ptr<DefaultMQProducerImpl> m_producer;
+  std::string addr_;
+  std::string broker_name_;
+  const MessagePtr msg_;
+  RemotingCommand request_;
+  SendCallback* send_callback_;
+  TopicPublishInfoPtr topic_publish_info_;
+  MQClientInstancePtr instance_;
+  int times_total_;
+  int times_;
+  std::weak_ptr<DefaultMQProducerImpl> producer_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __SEND_CALLBACK_WRAP_H__
+#endif  // ROCKETMQ_COMMON_SENDCALLBACKWRAP_H_

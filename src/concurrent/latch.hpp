@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __LATCH_HPP__
-#define __LATCH_HPP__
+#ifndef ROCKETMQ_CONCURRENT_LATCH_HPP_
+#define ROCKETMQ_CONCURRENT_LATCH_HPP_
 
 #include <atomic>
 #include <cassert>
@@ -143,4 +143,4 @@ class latch {
 
 }  // namespace rocketmq
 
-#endif  // __LATCH_HPP__
+#endif  // ROCKETMQ_CONCURRENT_LATCH_HPP_

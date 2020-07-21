@@ -21,12 +21,12 @@
 
 #include "UtilAll.h"
 
-namespace rocketmq {
-
 static const char* kPullStatusStrings[] = {"FOUND", "NO_NEW_MSG", "NO_MATCHED_MSG",
                                            "NO_LATEST_MSG"
                                            "OFFSET_ILLEGAL",
                                            "BROKER_TIMEOUT"};
+
+namespace rocketmq {
 
 PullResult::PullResult() : pull_status_(NO_MATCHED_MSG), next_begin_offset_(0), min_offset_(0), max_offset_(0) {}
 

@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_MESSAGE_CONST_H__
-#define __MQ_MESSAGE_CONST_H__
+#ifndef ROCKETMQ_MQMESSAGECONST_H_
+#define ROCKETMQ_MQMESSAGECONST_H_
 
 #include <string>  // std::string
 
@@ -68,4 +68,4 @@ class ROCKETMQCLIENT_API MQMessageConst {
 
 }  // namespace rocketmq
 
-#endif  // __MQ_MESSAGE_CONST_H__
+#endif  // ROCKETMQ_MQMESSAGECONST_H_

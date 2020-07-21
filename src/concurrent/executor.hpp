@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __EXECUTOR_HPP__
-#define __EXECUTOR_HPP__
+#ifndef ROCKETMQ_CONCURRENT_EXECUTOR_HPP_
+#define ROCKETMQ_CONCURRENT_EXECUTOR_HPP_
 
 #include <functional>
 #include <future>
@@ -83,4 +83,4 @@ class scheduled_executor_service : virtual public executor_service {
 
 #include "executor_impl.hpp"
 
-#endif  // __EXECUTOR_HPP__
+#endif  // ROCKETMQ_CONCURRENT_EXECUTOR_HPP_

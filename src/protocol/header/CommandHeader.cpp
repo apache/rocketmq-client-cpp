@@ -19,7 +19,7 @@
 #include <sstream>
 
 #include "Logging.h"
-#include "MQClientException.h"
+#include "MQException.h"
 #include "RemotingSerializable.h"
 #include "UtilAll.h"
 

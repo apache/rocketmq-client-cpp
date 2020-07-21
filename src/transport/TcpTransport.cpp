@@ -34,14 +34,14 @@ namespace rocketmq {
 TcpTransport::TcpTransport(ReadCallback readCallback,
                            CloseCallback closeCallback,
                            std::unique_ptr<TcpTransportInfo> info)
-    : m_event(nullptr),
-      m_tcpConnectStatus(TCP_CONNECT_STATUS_CREATED),
-      m_statusMutex(),
-      m_statusEvent(),
-      m_readCallback(readCallback),
-      m_closeCallback(closeCallback),
-      m_info(std::move(info)) {
-  m_startTime = UtilAll::currentTimeMillis();
+    : event_(nullptr),
+      tcp_connect_status_(TCP_CONNECT_STATUS_CREATED),
+      status_mutex_(),
+      status_event_(),
+      read_callback_(readCallback),
+      close_callback_(closeCallback),
+      info_(std::move(info)) {
+  start_time_ = UtilAll::currentTimeMillis();
 }
 
 TcpTransport::~TcpTransport() {
@@ -51,53 +51,53 @@ TcpTransport::~TcpTransport() {
 TcpConnectStatus TcpTransport::closeBufferEvent(bool isDeleted) {
   // closeBufferEvent is idempotent.
   if (setTcpConnectEvent(TCP_CONNECT_STATUS_CLOSED) != TCP_CONNECT_STATUS_CLOSED) {
-    if (m_event != nullptr) {
-      m_event->close();
+    if (event_ != nullptr) {
+      event_->close();
     }
-    if (!isDeleted && m_closeCallback != nullptr) {
-      m_closeCallback(shared_from_this());
+    if (!isDeleted && close_callback_ != nullptr) {
+      close_callback_(shared_from_this());
     }
   }
   return TCP_CONNECT_STATUS_CLOSED;
 }
 
 TcpConnectStatus TcpTransport::getTcpConnectStatus() {
-  return m_tcpConnectStatus;
+  return tcp_connect_status_;
 }
 
 TcpConnectStatus TcpTransport::waitTcpConnectEvent(int timeoutMillis) {
-  if (m_tcpConnectStatus == TCP_CONNECT_STATUS_CONNECTING) {
-    std::unique_lock<std::mutex> lock(m_statusMutex);
-    if (!m_statusEvent.wait_for(lock, std::chrono::milliseconds(timeoutMillis),
-                                [&] { return m_tcpConnectStatus != TCP_CONNECT_STATUS_CONNECTING; })) {
+  if (tcp_connect_status_ == TCP_CONNECT_STATUS_CONNECTING) {
+    std::unique_lock<std::mutex> lock(status_mutex_);
+    if (!status_event_.wait_for(lock, std::chrono::milliseconds(timeoutMillis),
+                                [&] { return tcp_connect_status_ != TCP_CONNECT_STATUS_CONNECTING; })) {
       LOG_INFO("connect timeout");
     }
   }
-  return m_tcpConnectStatus;
+  return tcp_connect_status_;
 }
 
 // internal method
 TcpConnectStatus TcpTransport::setTcpConnectEvent(TcpConnectStatus connectStatus) {
-  TcpConnectStatus oldStatus = m_tcpConnectStatus.exchange(connectStatus, std::memory_order_relaxed);
+  TcpConnectStatus oldStatus = tcp_connect_status_.exchange(connectStatus, std::memory_order_relaxed);
   if (oldStatus == TCP_CONNECT_STATUS_CONNECTING) {
     // awake waiting thread
-    m_statusEvent.notify_all();
+    status_event_.notify_all();
   }
   return oldStatus;
 }
 
 bool TcpTransport::setTcpConnectEventIf(TcpConnectStatus& expectedStatus, TcpConnectStatus newStatus) {
-  bool isSuccessed = m_tcpConnectStatus.compare_exchange_strong(expectedStatus, newStatus);
+  bool isSuccessed = tcp_connect_status_.compare_exchange_strong(expectedStatus, newStatus);
   if (expectedStatus == TCP_CONNECT_STATUS_CONNECTING) {
     // awake waiting thread
-    m_statusEvent.notify_all();
+    status_event_.notify_all();
   }
   return isSuccessed;
 }
 
 void TcpTransport::disconnect(const std::string& addr) {
   // disconnect is idempotent.
-  LOG_INFO_NEW("disconnect:{} start. event:{}", addr, (void*)m_event.get());
+  LOG_INFO_NEW("disconnect:{} start. event:{}", addr, (void*)event_.get());
   closeBufferEvent();
   LOG_INFO_NEW("disconnect:{} completely", addr);
 }
@@ -108,8 +108,8 @@ TcpConnectStatus TcpTransport::connect(const std::string& addr, int timeoutMilli
   TcpConnectStatus curStatus = TCP_CONNECT_STATUS_CREATED;
   if (setTcpConnectEventIf(curStatus, TCP_CONNECT_STATUS_CONNECTING)) {
     // create BufferEvent
-    m_event.reset(EventLoop::GetDefaultEventLoop()->createBufferEvent(-1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE));
-    if (nullptr == m_event) {
+    event_.reset(EventLoop::GetDefaultEventLoop()->createBufferEvent(-1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE));
+    if (nullptr == event_) {
       LOG_ERROR_NEW("create BufferEvent failed");
       return closeBufferEvent();
     }
@@ -132,12 +132,12 @@ TcpConnectStatus TcpTransport::connect(const std::string& addr, int timeoutMilli
         LOG_WARN_NEW("[BUG] TcpTransport object is released.");
       }
     };
-    m_event->setCallback(readCallback, nullptr, eventCallback);
-    m_event->setWatermark(EV_READ, 4, 0);
-    m_event->enable(EV_READ | EV_WRITE);
+    event_->setCallback(readCallback, nullptr, eventCallback);
+    event_->setWatermark(EV_READ, 4, 0);
+    event_->enable(EV_READ | EV_WRITE);
 
-    if (m_event->connect(addr) < 0) {
-      LOG_WARN_NEW("connect to fd:{} failed", m_event->getfd());
+    if (event_->connect(addr) < 0) {
+      LOG_WARN_NEW("connect to fd:{} failed", event_->getfd());
       return closeBufferEvent();
     }
   } else {
@@ -145,7 +145,7 @@ TcpConnectStatus TcpTransport::connect(const std::string& addr, int timeoutMilli
   }
 
   if (timeoutMillis <= 0) {
-    LOG_INFO_NEW("try to connect to fd:{}, addr:{}", m_event->getfd(), addr);
+    LOG_INFO_NEW("try to connect to fd:{}, addr:{}", event_->getfd(), addr);
     return TCP_CONNECT_STATUS_CONNECTING;
   }
 
@@ -250,8 +250,8 @@ void TcpTransport::dataArrived(BufferEvent& event) {
 }
 
 void TcpTransport::messageReceived(ByteArrayRef msg) {
-  if (m_readCallback != nullptr) {
-    m_readCallback(std::move(msg), shared_from_this());
+  if (read_callback_ != nullptr) {
+    read_callback_(std::move(msg), shared_from_this());
   }
 }
 
@@ -264,15 +264,15 @@ bool TcpTransport::sendMessage(const char* data, size_t len) {
       do not need to consider large data which could not send by once, as
       bufferevent could handle this case;
    */
-  return m_event != nullptr && m_event->write(data, len) == 0;
+  return event_ != nullptr && event_->write(data, len) == 0;
 }
 
 const std::string& TcpTransport::getPeerAddrAndPort() {
-  return m_event != nullptr ? m_event->getPeerAddrPort() : null;
+  return event_ != nullptr ? event_->getPeerAddrPort() : null;
 }
 
 const uint64_t TcpTransport::getStartTime() const {
-  return m_startTime;
+  return start_time_;
 }
 
 }  // namespace rocketmq

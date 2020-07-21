@@ -14,14 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PROCESS_QUEUE_H__
-#define __PROCESS_QUEUE_H__
+#ifndef ROCKETMQ_CONSUMER_PROCESSQUEUE_H_
+#define ROCKETMQ_CONSUMER_PROCESSQUEUE_H_
 
-#include <atomic>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <vector>
+#include <atomic>  // std::atomic
+#include <map>     // std::map
+#include <memory>  // std::shared_ptr
+#include <mutex>   // std::mutex
+#include <vector>  // std::vector
 
 #include "MessageExt.h"
 
@@ -34,8 +34,8 @@ typedef std::shared_ptr<ProcessQueue> ProcessQueuePtr;
 
 class ROCKETMQCLIENT_API ProcessQueue {
  public:
-  static const uint64_t RebalanceLockMaxLiveTime;  // ms
-  static const uint64_t RebalanceLockInterval;     // ms
+  static const uint64_t REBALANCE_LOCK_MAX_LIVE_TIME;  // ms
+  static const uint64_t REBALANCE_LOCK_INTERVAL;       // ms
 
  public:
   ProcessQueue();
@@ -51,51 +51,51 @@ class ROCKETMQCLIENT_API ProcessQueue {
   int64_t getCacheMinOffset();
   int64_t getCacheMaxOffset();
 
-  bool isDropped() const;
-  void setDropped(bool dropped);
-
-  bool isLocked() const;
-  void setLocked(bool locked);
-
   int64_t commit();
   void makeMessageToCosumeAgain(std::vector<MessageExtPtr>& msgs);
   void takeMessages(std::vector<MessageExtPtr>& out_msgs, int batchSize);
 
   void clearAllMsgs();
 
-  uint64_t getLastLockTimestamp() const;
-  void setLastLockTimestamp(int64_t lastLockTimestamp);
-
-  std::timed_mutex& getLockConsume();
-
-  uint64_t getLastPullTimestamp() const;
-  void setLastPullTimestamp(uint64_t lastPullTimestamp);
-
-  long getTryUnlockTimes();
-  void incTryUnlockTimes();
-
-  uint64_t getLastConsumeTimestamp();
-  void setLastConsumeTimestamp(uint64_t lastConsumeTimestamp);
-
   void fillProcessQueueInfo(ProcessQueueInfo& info);
 
- private:
-  static const uint64_t PullMaxIdleTime;
+ public:
+  inline std::timed_mutex& lock_consume() { return lock_consume_; }
+
+  inline long try_unlock_times() const { return try_unlock_times_.load(); }
+  inline void inc_try_unlock_times() { try_unlock_times_.fetch_add(1); }
+
+  inline bool dropped() const { return dropped_.load(); }
+  inline void set_dropped(bool dropped) { dropped_.store(dropped); }
+
+  inline uint64_t last_pull_timestamp() const { return last_pull_timestamp_; }
+  inline void set_last_pull_timestamp(uint64_t lastPullTimestamp) { last_pull_timestamp_ = lastPullTimestamp; }
+
+  inline uint64_t last_consume_timestamp() const { return last_consume_timestamp_; }
+  inline void set_last_consume_timestamp(uint64_t lastConsumeTimestamp) {
+    last_consume_timestamp_ = lastConsumeTimestamp;
+  }
+
+  inline bool locked() const { return locked_.load(); }
+  inline void set_locked(bool locked) { locked_.store(locked); }
+
+  inline uint64_t last_lock_timestamp() const { return last_lock_timestamp_; }
+  inline void set_last_lock_timestamp(int64_t lastLockTimestamp) { last_lock_timestamp_ = lastLockTimestamp; }
 
  private:
-  std::mutex m_lockTreeMap;
-  std::map<int64_t, MessageExtPtr> m_msgTreeMap;
-  std::timed_mutex m_lockConsume;
-  std::map<int64_t, MessageExtPtr> m_consumingMsgOrderlyTreeMap;
-  std::atomic<long> m_tryUnlockTimes;
-  volatile int64_t m_queueOffsetMax;
-  std::atomic<bool> m_dropped;
-  volatile uint64_t m_lastPullTimestamp;
-  volatile uint64_t m_lastConsumeTimestamp;
-  std::atomic<bool> m_locked;
-  volatile uint64_t m_lastLockTimestamp;  // ms
+  std::mutex lock_tree_map_;
+  std::map<int64_t, MessageExtPtr> msg_tree_map_;
+  std::timed_mutex lock_consume_;
+  std::map<int64_t, MessageExtPtr> consuming_msg_orderly_tree_map_;
+  std::atomic<long> try_unlock_times_;
+  volatile int64_t queue_offset_max_;
+  std::atomic<bool> dropped_;
+  volatile uint64_t last_pull_timestamp_;
+  volatile uint64_t last_consume_timestamp_;
+  std::atomic<bool> locked_;
+  volatile uint64_t last_lock_timestamp_;  // ms
 };
 
 }  // namespace rocketmq
 
-#endif  // __PROCESS_QUEUE_H__
+#endif  // ROCKETMQ_CONSUMER_PROCESSQUEUE_H_

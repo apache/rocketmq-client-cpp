@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
     do {
       try {
         PullResult result = consumer.pull(mq, "*", getMessageQueueOffset(mq), 32);
-        g_msgCount += result.msg_found_list().size();
+        g_msg_count += result.msg_found_list().size();
         std::cout << result.msg_found_list().size() << std::endl;
         // if pull request timeout or received NULL response, pullStatus will be
         // setted to BROKER_TIMEOUT,
@@ -110,8 +110,8 @@ int main(int argc, char* argv[]) {
   auto end = std::chrono::system_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-  std::cout << "msg count: " << g_msgCount.load() << "\n";
-  std::cout << "per msg time: " << duration.count() / (double)g_msgCount.load() << "ms \n"
+  std::cout << "msg count: " << g_msg_count.load() << "\n";
+  std::cout << "per msg time: " << duration.count() / (double)g_msg_count.load() << "ms \n"
             << "========================finished==============================\n";
 
   consumer.shutdown();

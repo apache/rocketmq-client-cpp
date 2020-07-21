@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __C_MESSAGE_QUEUE_H__
-#define __C_MESSAGE_QUEUE_H__
+#ifndef ROCKETMQ_C_CMESSAGEQUEUE_H_
+#define ROCKETMQ_C_CMESSAGEQUEUE_H_
 
 #include "CCommon.h"
 
@@ -33,4 +33,4 @@ typedef struct _CMessageQueue_ {
 }
 #endif
 
-#endif  // __C_MESSAGE_H__
+#endif  // ROCKETMQ_C_CMESSAGEQUEUE_H_

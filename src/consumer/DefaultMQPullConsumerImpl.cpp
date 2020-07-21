@@ -276,7 +276,7 @@
 // }
 
 // void DefaultMQPullConsumer::subscriptionAutomatically(const std::string& topic) {
-//   SubscriptionDataPtr pSdata = m_rebalanceImpl->getSubscriptionData(topic);
+//   SubscriptionData* pSdata = m_rebalanceImpl->getSubscriptionData(topic);
 //   if (pSdata == nullptr) {
 //     std::unique_ptr<SubscriptionData> subscriptionData(FilterAPI::buildSubscriptionData(topic, SUB_ALL));
 //     m_rebalanceImpl->setSubscriptionData(topic, subscriptionData.release());

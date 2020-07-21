@@ -14,27 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TRANSACTION_MQ_PRODUCER_CONFIG_IMPL_H__
-#define __TRANSACTION_MQ_PRODUCER_CONFIG_IMPL_H__
+#ifndef ROCKETMQ_EXTERN_CERRORCONTAINER_H_
+#define ROCKETMQ_EXTERN_CERRORCONTAINER_H_
 
-#include "DefaultMQProducerConfigImpl.h"
-#include "TransactionMQProducerConfig.h"
+#include <string>  // std::string
 
 namespace rocketmq {
 
-class TransactionMQProducerConfigImpl : virtual public TransactionMQProducerConfig, public DefaultMQProducerConfigImpl {
+class CErrorContainer {
  public:
-  TransactionMQProducerConfigImpl();
-  virtual ~TransactionMQProducerConfigImpl() = default;
-
- public:  // TransactionMQProducerConfig
-  TransactionListener* getTransactionListener() const override;
-  void setTransactionListener(TransactionListener* transactionListener) override;
-
- protected:
-  TransactionListener* m_transactionListener;
+  static const std::string& getErrorMessage();
+  static void setErrorMessage(const std::string& message);
+  static void setErrorMessage(std::string&& message);
 };
 
 }  // namespace rocketmq
 
-#endif  // __TRANSACTION_MQ_PRODUCER_CONFIG_IMPL_H__
+#endif  // ROCKETMQ_EXTERN_MQERRORCONTAINER_H_

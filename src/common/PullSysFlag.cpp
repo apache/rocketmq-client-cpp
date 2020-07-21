@@ -16,12 +16,12 @@
  */
 #include "PullSysFlag.h"
 
-namespace rocketmq {
+static const int FLAG_COMMIT_OFFSET = 0x1 << 0;
+static const int FLAG_SUSPEND = 0x1 << 1;
+static const int FLAG_SUBSCRIPTION = 0x1 << 2;
+static const int FLAG_CLASS_FILTER = 0x1 << 3;
 
-int PullSysFlag::FLAG_COMMIT_OFFSET = 0x1 << 0;
-int PullSysFlag::FLAG_SUSPEND = 0x1 << 1;
-int PullSysFlag::FLAG_SUBSCRIPTION = 0x1 << 2;
-int PullSysFlag::FLAG_CLASS_FILTER = 0x1 << 3;
+namespace rocketmq {
 
 int PullSysFlag::buildSysFlag(bool commitOffset, bool suspend, bool subscription, bool classFilter) {
   int flag = 0;

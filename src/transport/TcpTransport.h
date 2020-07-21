@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TCP_TRANSPORT_H__
-#define __TCP_TRANSPORT_H__
+#ifndef ROCKETMQ_TRANSPORT_TCPTRANSPORT_H_
+#define ROCKETMQ_TRANSPORT_TCPTRANSPORT_H_
 
 #include <atomic>
 #include <condition_variable>
@@ -66,7 +66,7 @@ class TcpTransport : public noncopyable, public std::enable_shared_from_this<Tcp
   const std::string& getPeerAddrAndPort();
   const uint64_t getStartTime() const;
 
-  TcpTransportInfo* getInfo() { return m_info.get(); }
+  TcpTransportInfo* getInfo() { return info_.get(); }
 
  private:
   // don't instance object directly.
@@ -84,22 +84,22 @@ class TcpTransport : public noncopyable, public std::enable_shared_from_this<Tcp
   bool setTcpConnectEventIf(TcpConnectStatus& expectStatus, TcpConnectStatus connectStatus);
 
  private:
-  uint64_t m_startTime;
+  uint64_t start_time_;
 
-  std::unique_ptr<BufferEvent> m_event;  // NOTE: use m_event in callback is unsafe.
+  std::unique_ptr<BufferEvent> event_;  // NOTE: use event_ in callback is unsafe.
 
-  std::atomic<TcpConnectStatus> m_tcpConnectStatus;
-  std::mutex m_statusMutex;
-  std::condition_variable m_statusEvent;
+  std::atomic<TcpConnectStatus> tcp_connect_status_;
+  std::mutex status_mutex_;
+  std::condition_variable status_event_;
 
   // callback
-  ReadCallback m_readCallback;
-  CloseCallback m_closeCallback;
+  ReadCallback read_callback_;
+  CloseCallback close_callback_;
 
   // info
-  std::unique_ptr<TcpTransportInfo> m_info;
+  std::unique_ptr<TcpTransportInfo> info_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __TCP_TRANSPORT__
+#endif  // ROCKETMQ_TRANSPORT_TCPTRANSPORT_H_

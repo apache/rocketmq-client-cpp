@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __C_SEND_RESULT_H__
-#define __C_SEND_RESULT_H__
+#ifndef ROCKETMQ_C_CSENDRESULT_H_
+#define ROCKETMQ_C_CSENDRESULT_H_
 
 #include "CCommon.h"
 
@@ -40,4 +40,4 @@ typedef struct _SendResult_ {
 }
 #endif
 
-#endif  // __C_PRODUCER_H__
+#endif  // ROCKETMQ_C_CSENDRESULT_H_

@@ -14,37 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __NAMESRV_CONFIG_H__
-#define __NAMESRV_CONFIG_H__
+#ifndef ROCKETMQ_PRODUCER_TRANSACTIONMQPRODUCERCONFIGIMPL_HPP_
+#define ROCKETMQ_PRODUCER_TRANSACTIONMQPRODUCERCONFIGIMPL_HPP_
 
-#include <string>
-
-#include "UtilAll.h"
+#include "DefaultMQProducerConfigImpl.hpp"
+#include "TransactionMQProducerConfig.h"
 
 namespace rocketmq {
 
-class NamesrvConfig {
+class TransactionMQProducerConfigImpl : virtual public TransactionMQProducerConfig, public DefaultMQProducerConfigImpl {
  public:
-  NamesrvConfig() {
-    char* home = std::getenv(ROCKETMQ_HOME_ENV.c_str());
-    if (home != nullptr) {
-      m_rocketmqHome = home;
-    }
+  TransactionMQProducerConfigImpl() : transaction_listener_(nullptr) {}
+  virtual ~TransactionMQProducerConfigImpl() = default;
+
+ public:  // TransactionMQProducerConfig
+  TransactionListener* getTransactionListener() const override { return transaction_listener_; }
+  void setTransactionListener(TransactionListener* transactionListener) override {
+    transaction_listener_ = transactionListener;
   }
 
-  const std::string& getRocketmqHome() const { return m_rocketmqHome; }
-
-  void setRocketmqHome(const std::string& rocketmqHome) { m_rocketmqHome = rocketmqHome; }
-
-  const std::string& getKvConfigPath() const { return m_kvConfigPath; }
-
-  void setKvConfigPath(const std::string& kvConfigPath) { m_kvConfigPath = kvConfigPath; }
-
- private:
-  std::string m_rocketmqHome;
-  std::string m_kvConfigPath;
+ protected:
+  TransactionListener* transaction_listener_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __NAMESRV_CONFIG_H__
+#endif  // ROCKETMQ_PRODUCER_TRANSACTIONMQPRODUCERCONFIGIMPL_HPP_

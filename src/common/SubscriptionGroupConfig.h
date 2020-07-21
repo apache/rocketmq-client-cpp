@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SUBSCRIPTION_GROUP_CONFIG_H__
-#define __SUBSCRIPTION_GROUP_CONFIG_H__
+#ifndef ROCKETMQ_COMMON_SUBSCRIPTIONGROUPCONFIG_H_
+#define ROCKETMQ_COMMON_SUBSCRIPTIONGROUPCONFIG_H_
 
-#include <string>
+#include "UtilAll.h"
 
 namespace rocketmq {
 
@@ -47,4 +47,4 @@ class SubscriptionGroupConfig {
 
 }  // namespace rocketmq
 
-#endif  // __SUBSCRIPTION_GROUP_CONFIG_H__
+#endif  // ROCKETMQ_COMMON_SUBSCRIPTIONGROUPCONFIG_H_

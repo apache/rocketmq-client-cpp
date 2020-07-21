@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __C_MESSAGE_H__
-#define __C_MESSAGE_H__
+#ifndef ROCKETMQ_C_CMESSAGE_H_
+#define ROCKETMQ_C_CMESSAGE_H_
 
 #include "CCommon.h"
 
@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-typedef struct CMessage CMessage;
+typedef struct CMessage CMessage;  // alias as MQMessage
 
 ROCKETMQCLIENT_API CMessage* CreateMessage(const char* topic);
 ROCKETMQCLIENT_API int DestroyMessage(CMessage* msg);
@@ -45,4 +45,4 @@ ROCKETMQCLIENT_API int GetOriginDelayTimeLevel(CMessage* msg);
 }
 #endif
 
-#endif  // __C_MESSAGE_H__
+#endif  // ROCKETMQ_C_CMESSAGE_H_

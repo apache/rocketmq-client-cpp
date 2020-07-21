@@ -14,29 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PULL_MESSAGE_SERVICE_HPP__
-#define __PULL_MESSAGE_SERVICE_HPP__
+#ifndef ROCKETMQ_CONSUMER_PULLMESSAGESERVICE_HPP_
+#define ROCKETMQ_CONSUMER_PULLMESSAGESERVICE_HPP_
 
+#include "concurrent/executor.hpp"
 #include "DefaultMQPushConsumerImpl.h"
 #include "Logging.h"
 #include "MQClientInstance.h"
 #include "PullRequest.h"
-#include "concurrent/executor.hpp"
 
 namespace rocketmq {
 
 class PullMessageService {
  public:
   PullMessageService(MQClientInstance* instance)
-      : m_clientInstance(instance), m_scheduledExecutorService(getServiceName(), 1, false) {}
+      : client_instance_(instance), scheduled_executor_service_(getServiceName(), 1, false) {}
 
-  void start() { m_scheduledExecutorService.startup(); }
+  void start() { scheduled_executor_service_.startup(); }
 
-  void shutdown() { m_scheduledExecutorService.shutdown(); }
+  void shutdown() { scheduled_executor_service_.shutdown(); }
 
   void executePullRequestLater(PullRequestPtr pullRequest, long timeDelay) {
-    if (m_clientInstance->isRunning()) {
-      m_scheduledExecutorService.schedule(
+    if (client_instance_->isRunning()) {
+      scheduled_executor_service_.schedule(
           std::bind(&PullMessageService::executePullRequestImmediately, this, pullRequest), timeDelay,
           time_unit::milliseconds);
     } else {
@@ -45,18 +45,18 @@ class PullMessageService {
   }
 
   void executePullRequestImmediately(PullRequestPtr pullRequest) {
-    m_scheduledExecutorService.submit(std::bind(&PullMessageService::pullMessage, this, pullRequest));
+    scheduled_executor_service_.submit(std::bind(&PullMessageService::pullMessage, this, pullRequest));
   }
 
   void executeTaskLater(const handler_type& task, long timeDelay) {
-    m_scheduledExecutorService.schedule(task, timeDelay, time_unit::milliseconds);
+    scheduled_executor_service_.schedule(task, timeDelay, time_unit::milliseconds);
   }
 
   std::string getServiceName() { return "PullMessageService"; }
 
  private:
   void pullMessage(PullRequestPtr pullRequest) {
-    MQConsumerInner* consumer = m_clientInstance->selectConsumer(pullRequest->getConsumerGroup());
+    MQConsumerInner* consumer = client_instance_->selectConsumer(pullRequest->consumer_group());
     if (consumer != nullptr &&
         std::type_index(typeid(*consumer)) == std::type_index(typeid(DefaultMQPushConsumerImpl))) {
       auto* impl = static_cast<DefaultMQPushConsumerImpl*>(consumer);
@@ -67,10 +67,10 @@ class PullMessageService {
   }
 
  private:
-  MQClientInstance* m_clientInstance;
-  scheduled_thread_pool_executor m_scheduledExecutorService;
+  MQClientInstance* client_instance_;
+  scheduled_thread_pool_executor scheduled_executor_service_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __PULL_MESSAGE_SERVICE_HPP__
+#endif  // ROCKETMQ_CONSUMER_PULLMESSAGESERVICE_HPP_

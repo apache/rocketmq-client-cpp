@@ -20,9 +20,9 @@ namespace rocketmq {
 
 Json::Value toJson(const MQMessageQueue& mq) {
   Json::Value outJson;
-  outJson["topic"] = mq.getTopic();
-  outJson["brokerName"] = mq.getBrokerName();
-  outJson["queueId"] = mq.getQueueId();
+  outJson["topic"] = mq.topic();
+  outJson["brokerName"] = mq.broker_name();
+  outJson["queueId"] = mq.queue_id();
   return outJson;
 }
 

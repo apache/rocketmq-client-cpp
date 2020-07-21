@@ -25,7 +25,7 @@
 namespace rocketmq {
 
 /**
- * MQMessage - Reference of Message
+ * MQMessage - wrapper for Message
  */
 class ROCKETMQCLIENT_API MQMessage : virtual public Message  // interface
 {

@@ -14,10 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MESSAGE_LISTENER_H__
-#define __MESSAGE_LISTENER_H__
-
-#include <limits.h>
+#ifndef ROCKETMQ_MQMESSAGELISTENER_H_
+#define ROCKETMQ_MQMESSAGELISTENER_H_
 
 #include "MQMessageExt.h"
 
@@ -32,6 +30,9 @@ enum ConsumeStatus {
 
 enum MessageListenerType { messageListenerDefaultly = 0, messageListenerOrderly = 1, messageListenerConcurrently = 2 };
 
+/**
+ * MQMessageListener - listener interface for MQPushConsumer
+ */
 class ROCKETMQCLIENT_API MQMessageListener {
  public:
   virtual ~MQMessageListener() = default;
@@ -41,11 +42,17 @@ class ROCKETMQCLIENT_API MQMessageListener {
   virtual ConsumeStatus consumeMessage(std::vector<MQMessageExt>& msgs) { return RECONSUME_LATER; };
 };
 
+/**
+ * MessageListenerConcurrently - listener interface for MQPushConsumer in Concurrently mode
+ */
 class ROCKETMQCLIENT_API MessageListenerConcurrently : virtual public MQMessageListener {
  public:
   MessageListenerType getMessageListenerType() override final { return messageListenerConcurrently; }
 };
 
+/**
+ * MessageListenerOrderly - listener interface for MQPushConsumer in Orderly mode
+ */
 class ROCKETMQCLIENT_API MessageListenerOrderly : virtual public MQMessageListener {
  public:
   MessageListenerType getMessageListenerType() override final { return messageListenerOrderly; }
@@ -53,4 +60,4 @@ class ROCKETMQCLIENT_API MessageListenerOrderly : virtual public MQMessageListen
 
 }  // namespace rocketmq
 
-#endif  // __MESSAGE_LISTENER_H__
+#endif  // ROCKETMQ_MQMESSAGELISTENER_H_

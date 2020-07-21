@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TRANSACTION_MQ_PRODUCER_CONFIG_H__
-#define __TRANSACTION_MQ_PRODUCER_CONFIG_H__
+#ifndef ROCKETMQ_TRANSACTIONMQPRODUCERCONFIG_H_
+#define ROCKETMQ_TRANSACTIONMQPRODUCERCONFIG_H_
 
 #include "DefaultMQProducerConfig.h"
 #include "TransactionListener.h"
@@ -25,6 +25,9 @@ namespace rocketmq {
 class TransactionMQProducerConfig;
 typedef std::shared_ptr<TransactionMQProducerConfig> TransactionMQProducerConfigPtr;
 
+/**
+ * TransactionMQProducerConfig - config interface for TransactionMQProducer
+ */
 class ROCKETMQCLIENT_API TransactionMQProducerConfig : virtual public DefaultMQProducerConfig {
  public:
   virtual ~TransactionMQProducerConfig() = default;
@@ -36,4 +39,4 @@ class ROCKETMQCLIENT_API TransactionMQProducerConfig : virtual public DefaultMQP
 
 }  // namespace rocketmq
 
-#endif  // __TRANSACTION_MQ_PRODUCER_CONFIG_H__
+#endif  // ROCKETMQ_TRANSACTIONMQPRODUCERCONFIG_H_

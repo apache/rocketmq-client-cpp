@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __RESPONSE_FUTURE_H__
-#define __RESPONSE_FUTURE_H__
+#ifndef ROCKETMQ_TRANSPORT_RESPONSEFUTURE_H_
+#define ROCKETMQ_TRANSPORT_RESPONSEFUTURE_H_
 
+#include "concurrent/latch.hpp"
 #include "InvokeCallback.h"
 #include "RemotingCommand.h"
-#include "concurrent/latch.hpp"
 
 namespace rocketmq {
 
@@ -46,31 +46,33 @@ class ResponseFuture {
   std::unique_ptr<RemotingCommand> getResponseCommand();
   void setResponseCommand(std::unique_ptr<RemotingCommand> responseCommand);
 
-  int64_t getBeginTimestamp();
-  int64_t getTimeoutMillis();
   bool isTimeout() const;
   int64_t leftTime() const;
 
-  bool isSendRequestOK() const;
-  void setSendRequestOK(bool sendRequestOK = true);
+ public:
+  inline int request_code() const { return request_code_; }
+  inline int opaque() const { return opaque_; }
+  inline int64_t timeout_millis() const { return timeout_millis_; }
 
-  int getRequestCode() const;
-  int getOpaque() const;
+  inline int64_t begin_timestamp() const { return begin_timestamp_; }
+
+  inline bool send_request_ok() const { return send_request_ok_; }
+  inline void set_send_request_ok(bool sendRequestOK = true) { send_request_ok_ = sendRequestOK; };
 
  private:
-  int m_requestCode;
-  int m_opaque;
-  int64_t m_timeoutMillis;
-  std::unique_ptr<InvokeCallback> m_invokeCallback;
+  int request_code_;
+  int opaque_;
+  int64_t timeout_millis_;
+  std::unique_ptr<InvokeCallback> invoke_callback_;
 
-  std::unique_ptr<RemotingCommand> m_responseCommand;
+  int64_t begin_timestamp_;
+  bool send_request_ok_;
 
-  int64_t m_beginTimestamp;
-  bool m_sendRequestOK;
+  std::unique_ptr<RemotingCommand> response_command_;
 
-  std::unique_ptr<latch> m_countDownLatch;  // use for synchronization rpc
+  std::unique_ptr<latch> count_down_latch_;  // use for synchronization rpc
 };
 
 }  // namespace rocketmq
 
-#endif  // __RESPONSE_FUTURE_H__
+#endif  // ROCKETMQ_TRANSPORT_RESPONSEFUTURE_H_

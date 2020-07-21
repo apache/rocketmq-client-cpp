@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __CLIENT_REMOTING_PROCESSOR_H__
-#define __CLIENT_REMOTING_PROCESSOR_H__
+#ifndef ROCKETMQ_CLIENTREMOTINGPROCESSOR_H_
+#define ROCKETMQ_CLIENTREMOTINGPROCESSOR_H_
 
 #include "MQClientInstance.h"
 #include "MQMessageQueue.h"
@@ -40,9 +40,9 @@ class ClientRemotingProcessor : public RequestProcessor {
   void processReplyMessage(std::unique_ptr<MQMessageExt> replyMsg);
 
  private:
-  MQClientInstance* m_clientInstance;
+  MQClientInstance* client_instance_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __CLIENT_REMOTING_PROCESSOR_H__
+#endif  // ROCKETMQ_CLIENTREMOTINGPROCESSOR_H_

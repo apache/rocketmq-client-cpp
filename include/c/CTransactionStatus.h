@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __C_TRANSACTION_STATUS_H__
-#define __C_TRANSACTION_STATUS_H__
+#ifndef ROCKETMQ_C_CTRANSACTIONSTATUS_H_
+#define ROCKETMQ_C_CTRANSACTIONSTATUS_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,4 +31,4 @@ typedef enum E_CTransactionStatus {
 }
 #endif
 
-#endif  // __C_TRANSACTION_STATUS_H__
+#endif  // ROCKETMQ_C_CTRANSACTIONSTATUS_H_

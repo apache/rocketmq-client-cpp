@@ -44,7 +44,7 @@ template <typename T>
 using array_element_t = typename array_traits<T>::element_type;
 
 template <typename T>
-class Array {
+class ROCKETMQCLIENT_API Array {
  public:
   using element_type = array_element_t<T>;
 

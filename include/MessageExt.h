@@ -34,7 +34,7 @@ class MessageExt;
 typedef std::shared_ptr<MessageExt> MessageExtPtr;
 
 /**
- * MessageExt - Message extend class, which was generated on broker
+ * MessageExt - Message extend interface, which was generated on broker
  */
 class ROCKETMQCLIENT_API MessageExt : virtual public Message  // base interface
 {

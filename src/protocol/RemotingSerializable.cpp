@@ -19,7 +19,7 @@
 #include <memory>
 #include <sstream>
 
-#include "MQClientException.h"
+#include "MQException.h"
 
 namespace rocketmq {
 

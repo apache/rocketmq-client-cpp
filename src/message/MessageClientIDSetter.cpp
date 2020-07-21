@@ -42,11 +42,11 @@ MessageClientIDSetter::MessageClientIDSetter() {
   std::memcpy(bin_buf, &ip, 4);
   std::memcpy(bin_buf + 6, &random_num, 4);
 
-  kFixString = UtilAll::bytes2string(bin_buf, 10);
+  fix_string_ = UtilAll::bytes2string(bin_buf, 10);
 
   setStartTime(UtilAll::currentTimeMillis());
 
-  mCounter = 0;
+  counter_ = 0;
 }
 
 MessageClientIDSetter::~MessageClientIDSetter() = default;
@@ -79,25 +79,25 @@ void MessageClientIDSetter::setStartTime(uint64_t millis) {
   nextMonthBegin.tm_min = 0;
   nextMonthBegin.tm_sec = 0;
 
-  mStartTime = std::mktime(&curMonthBegin) * 1000;
-  mNextStartTime = std::mktime(&nextMonthBegin) * 1000;
+  start_time_ = std::mktime(&curMonthBegin) * 1000;
+  next_start_time_ = std::mktime(&nextMonthBegin) * 1000;
 }
 
 std::string MessageClientIDSetter::createUniqueID() {
   uint64_t current = UtilAll::currentTimeMillis();
-  if (current >= mNextStartTime) {
+  if (current >= next_start_time_) {
     setStartTime(current);
     current = UtilAll::currentTimeMillis();
   }
 
-  uint32_t period = ByteOrderUtil::NorminalBigEndian(static_cast<uint32_t>(current - mStartTime));
-  uint16_t seqid = ByteOrderUtil::NorminalBigEndian(mCounter++);
+  uint32_t period = ByteOrderUtil::NorminalBigEndian(static_cast<uint32_t>(current - start_time_));
+  uint16_t seqid = ByteOrderUtil::NorminalBigEndian(counter_++);
 
   char bin_buf[6];
   std::memcpy(bin_buf, &period, 4);
   std::memcpy(bin_buf + 4, &seqid, 2);
 
-  return kFixString + UtilAll::bytes2string(bin_buf, 6);
+  return fix_string_ + UtilAll::bytes2string(bin_buf, 6);
 }
 
 }  // namespace rocketmq

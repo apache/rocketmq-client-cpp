@@ -20,10 +20,10 @@
 #include <functional>
 #include <typeindex>
 
+#include "CErrorContainer.h"
 #include "ClientRPCHook.h"
 #include "DefaultMQProducer.h"
 #include "Logging.h"
-#include "MQClientErrorContainer.h"
 #include "TransactionMQProducer.h"
 #include "UtilAll.h"
 
@@ -32,30 +32,30 @@ using namespace rocketmq;
 class LocalTransactionExecutorInner {
  public:
   LocalTransactionExecutorInner(CLocalTransactionExecutorCallback callback, CMessage* message, void* userData)
-      : m_excutorCallback(callback), m_message(message), m_userData(userData) {}
+      : excutor_callback_(callback), message_(message), user_data_(userData) {}
 
   ~LocalTransactionExecutorInner() = default;
 
  public:
-  CLocalTransactionExecutorCallback m_excutorCallback;
-  CMessage* m_message;
-  void* m_userData;
+  CLocalTransactionExecutorCallback excutor_callback_;
+  CMessage* message_;
+  void* user_data_;
 };
 
 class LocalTransactionListenerInner : public TransactionListener {
  public:
   LocalTransactionListenerInner(CProducer* producer, CLocalTransactionCheckerCallback callback, void* userData)
-      : m_producer(producer), m_checkerCallback(callback), m_userData(userData) {}
+      : producer_(producer), checker_callback_(callback), user_data_(userData) {}
 
   ~LocalTransactionListenerInner() = default;
 
   LocalTransactionState executeLocalTransaction(const MQMessage& message, void* arg) override {
-    if (m_checkerCallback == nullptr) {
+    if (checker_callback_ == nullptr) {
       return LocalTransactionState::UNKNOWN;
     }
     auto* msg = reinterpret_cast<CMessage*>(const_cast<MQMessage*>(&message));
     auto* executorInner = reinterpret_cast<LocalTransactionExecutorInner*>(arg);
-    auto status = executorInner->m_excutorCallback(m_producer, msg, executorInner->m_userData);
+    auto status = executorInner->excutor_callback_(producer_, msg, executorInner->user_data_);
     switch (status) {
       case E_COMMIT_TRANSACTION:
         return LocalTransactionState::COMMIT_MESSAGE;
@@ -67,11 +67,11 @@ class LocalTransactionListenerInner : public TransactionListener {
   }
 
   LocalTransactionState checkLocalTransaction(const MQMessageExt& message) override {
-    if (m_checkerCallback == NULL) {
+    if (checker_callback_ == NULL) {
       return LocalTransactionState::UNKNOWN;
     }
     auto* msgExt = reinterpret_cast<CMessageExt*>(const_cast<MQMessageExt*>(&message));
-    auto status = m_checkerCallback(m_producer, msgExt, m_userData);
+    auto status = checker_callback_(producer_, msgExt, user_data_);
     switch (status) {
       case E_COMMIT_TRANSACTION:
         return LocalTransactionState::COMMIT_MESSAGE;
@@ -83,9 +83,9 @@ class LocalTransactionListenerInner : public TransactionListener {
   }
 
  private:
-  CProducer* m_producer;
-  CLocalTransactionCheckerCallback m_checkerCallback;
-  void* m_userData;
+  CProducer* producer_;
+  CLocalTransactionCheckerCallback checker_callback_;
+  void* user_data_;
 };
 
 class SelectMessageQueueInner : public MessageQueueSelector {
@@ -99,17 +99,17 @@ class SelectMessageQueueInner : public MessageQueueSelector {
 
 class SelectMessageQueue : public MessageQueueSelector {
  public:
-  SelectMessageQueue(QueueSelectorCallback callback) { m_callback = callback; }
+  SelectMessageQueue(QueueSelectorCallback callback) { callback_ = callback; }
 
   MQMessageQueue select(const std::vector<MQMessageQueue>& mqs, const MQMessage& msg, void* arg) override {
     auto* message = reinterpret_cast<CMessage*>(const_cast<MQMessage*>(&msg));
     // Get the index of sending MQMessageQueue through callback function.
-    auto index = m_callback(mqs.size(), message, arg);
+    auto index = callback_(mqs.size(), message, arg);
     return mqs[index];
   }
 
  private:
-  QueueSelectorCallback m_callback;
+  QueueSelectorCallback callback_;
 };
 
 class COnSendCallback : public AutoDeleteSendCallback {
@@ -118,10 +118,10 @@ class COnSendCallback : public AutoDeleteSendCallback {
                   COnSendExceptionCallback sendExceptionCallback,
                   CMessage* message,
                   void* userData)
-      : m_sendSuccessCallback(sendSuccessCallback),
-        m_sendExceptionCallback(sendExceptionCallback),
-        m_message(message),
-        m_userData(userData) {}
+      : send_success_callback_(sendSuccessCallback),
+        send_exception_callback_(sendExceptionCallback),
+        message_(message),
+        user_data_(userData) {}
 
   virtual ~COnSendCallback() = default;
 
@@ -131,7 +131,7 @@ class COnSendCallback : public AutoDeleteSendCallback {
     result.offset = sendResult.getQueueOffset();
     strncpy(result.msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result.msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
-    m_sendSuccessCallback(result, m_message, m_userData);
+    send_success_callback_(result, message_, user_data_);
   }
 
   void onException(MQException& e) noexcept override {
@@ -140,20 +140,20 @@ class COnSendCallback : public AutoDeleteSendCallback {
     exception.line = e.GetLine();
     strncpy(exception.msg, e.what(), MAX_EXEPTION_MSG_LENGTH - 1);
     strncpy(exception.file, e.GetFile(), MAX_EXEPTION_FILE_LENGTH - 1);
-    m_sendExceptionCallback(exception, m_message, m_userData);
+    send_exception_callback_(exception, message_, user_data_);
   }
 
  private:
-  COnSendSuccessCallback m_sendSuccessCallback;
-  COnSendExceptionCallback m_sendExceptionCallback;
-  CMessage* m_message;
-  void* m_userData;
+  COnSendSuccessCallback send_success_callback_;
+  COnSendExceptionCallback send_exception_callback_;
+  CMessage* message_;
+  void* user_data_;
 };
 
 class CSendCallback : public AutoDeleteSendCallback {
  public:
   CSendCallback(CSendSuccessCallback sendSuccessCallback, CSendExceptionCallback sendExceptionCallback)
-      : m_sendSuccessCallback(sendSuccessCallback), m_sendExceptionCallback(sendExceptionCallback) {}
+      : send_success_callback_(sendSuccessCallback), send_exception_callback_(sendExceptionCallback) {}
 
   virtual ~CSendCallback() = default;
 
@@ -163,7 +163,7 @@ class CSendCallback : public AutoDeleteSendCallback {
     result.offset = sendResult.getQueueOffset();
     strncpy(result.msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result.msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
-    m_sendSuccessCallback(result);
+    send_success_callback_(result);
   }
 
   void onException(MQException& e) noexcept override {
@@ -172,12 +172,12 @@ class CSendCallback : public AutoDeleteSendCallback {
     exception.line = e.GetLine();
     strncpy(exception.msg, e.what(), MAX_EXEPTION_MSG_LENGTH - 1);
     strncpy(exception.file, e.GetFile(), MAX_EXEPTION_FILE_LENGTH - 1);
-    m_sendExceptionCallback(exception);
+    send_exception_callback_(exception);
   }
 
  private:
-  CSendSuccessCallback m_sendSuccessCallback;
-  CSendExceptionCallback m_sendExceptionCallback;
+  CSendSuccessCallback send_success_callback_;
+  CSendExceptionCallback send_exception_callback_;
 };
 
 CProducer* CreateProducer(const char* groupId) {
@@ -218,7 +218,7 @@ int StartProducer(CProducer* producer) {
   try {
     reinterpret_cast<DefaultMQProducer*>(producer)->start();
   } catch (std::exception& e) {
-    MQClientErrorContainer::setErr(std::string(e.what()));
+    CErrorContainer::setErrorMessage(e.what());
     return PRODUCER_START_FAILED;
   }
   return OK;
@@ -278,7 +278,7 @@ int SendMessageSync(CProducer* producer, CMessage* msg, CSendResult* result) {
     strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
   } catch (std::exception& e) {
-    MQClientErrorContainer::setErr(std::string(e.what()));
+    CErrorContainer::setErrorMessage(e.what());
     return PRODUCER_SEND_SYNC_FAILED;
   }
   return OK;
@@ -371,7 +371,7 @@ int SendMessageOnewayOrderly(CProducer* producer, CMessage* msg, QueueSelectorCa
     SelectMessageQueue selectMessageQueue(selector);
     defaultMQProducer->sendOneway(*message, &selectMessageQueue, arg);
   } catch (std::exception& e) {
-    MQClientErrorContainer::setErr(std::string(e.what()));
+    CErrorContainer::setErrorMessage(e.what());
     return PRODUCER_SEND_ONEWAY_FAILED;
   }
   return OK;
@@ -410,14 +410,14 @@ int SendMessageOrderly(CProducer* producer,
   try {
     // Constructing SelectMessageQueue objects through function pointer callback
     SelectMessageQueue selectMessageQueue(selectorCallback);
-    SendResult sendResult = defaultMQProducer->send(*message, &selectMessageQueue, arg);
+    SendResult send_result = defaultMQProducer->send(*message, &selectMessageQueue, arg);
     // Convert SendStatus to CSendStatus
-    result->sendStatus = CSendStatus((int)sendResult.getSendStatus());
-    result->offset = sendResult.getQueueOffset();
-    strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+    result->sendStatus = CSendStatus((int)send_result.getSendStatus());
+    result->offset = send_result.getQueueOffset();
+    strncpy(result->msgId, send_result.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
   } catch (std::exception& e) {
-    MQClientErrorContainer::setErr(std::string(e.what()));
+    CErrorContainer::setErrorMessage(e.what());
     return PRODUCER_SEND_ORDERLY_FAILED;
   }
   return OK;
@@ -433,14 +433,14 @@ int SendMessageOrderlyByShardingKey(CProducer* producer, CMessage* msg, const ch
     // Constructing SelectMessageQueue objects through function pointer callback
     int retryTimes = 3;
     SelectMessageQueueInner selectMessageQueue;
-    SendResult sendResult = defaultMQProducer->send(*message, &selectMessageQueue, (void*)shardingKey, retryTimes);
+    SendResult send_esult = defaultMQProducer->send(*message, &selectMessageQueue, (void*)shardingKey, retryTimes);
     // Convert SendStatus to CSendStatus
-    result->sendStatus = CSendStatus((int)sendResult.getSendStatus());
-    result->offset = sendResult.getQueueOffset();
-    strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+    result->sendStatus = CSendStatus((int)send_esult.getSendStatus());
+    result->offset = send_esult.getQueueOffset();
+    strncpy(result->msgId, send_esult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
   } catch (std::exception& e) {
-    MQClientErrorContainer::setErr(std::string(e.what()));
+    CErrorContainer::setErrorMessage(e.what());
     return PRODUCER_SEND_ORDERLY_FAILED;
   }
   return OK;
@@ -458,13 +458,13 @@ int SendMessageTransaction(CProducer* producer,
     auto* transactionMQProducer = reinterpret_cast<DefaultMQProducer*>(producer);
     auto* message = reinterpret_cast<MQMessage*>(msg);
     LocalTransactionExecutorInner executorInner(callback, msg, userData);
-    auto sendResult = transactionMQProducer->sendMessageInTransaction(*message, &executorInner);
-    result->sendStatus = CSendStatus((int)sendResult.getSendStatus());
-    result->offset = sendResult.getQueueOffset();
-    strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+    auto send_result = transactionMQProducer->sendMessageInTransaction(*message, &executorInner);
+    result->sendStatus = CSendStatus((int)send_result.getSendStatus());
+    result->offset = send_result.getQueueOffset();
+    strncpy(result->msgId, send_result.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
   } catch (std::exception& e) {
-    MQClientErrorContainer::setErr(std::string(e.what()));
+    CErrorContainer::setErrorMessage(e.what());
     return PRODUCER_SEND_TRANSACTION_FAILED;
   }
   return OK;
@@ -511,7 +511,7 @@ int SetProducerLogFileNumAndSize(CProducer* producer, int fileNum, long fileSize
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  ALOG_ADAPTER->setLogFileNumAndSize(fileNum, fileSize);
+  DEFAULT_LOG_ADAPTER->setLogFileNumAndSize(fileNum, fileSize);
   return OK;
 }
 
@@ -519,7 +519,7 @@ int SetProducerLogLevel(CProducer* producer, CLogLevel level) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  ALOG_ADAPTER->setLogLevel((elogLevel)level);
+  DEFAULT_LOG_ADAPTER->set_log_level((LogLevel)level);
   return OK;
 }
 

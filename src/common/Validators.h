@@ -14,13 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __VALIDATORST_H__
-#define __VALIDATORST_H__
+#ifndef ROCKETMQ_COMMON_VALIDATORST_H_
+#define ROCKETMQ_COMMON_VALIDATORST_H_
 
-#include <string>
-
-#include "MQClientException.h"
 #include "Message.h"
+#include "MQException.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
@@ -32,12 +30,8 @@ class Validators {
   static void checkTopic(const std::string& topic);
   static void checkGroup(const std::string& group);
   static void checkMessage(const Message& msg, int maxMessageSize);
-
- public:
-  static const std::string validPatternStr;
-  static const int CHARACTER_MAX_LENGTH;
 };
 
 }  // namespace rocketmq
 
-#endif  // __VALIDATORST_H__
+#endif  // ROCKETMQ_COMMON_VALIDATORST_H_

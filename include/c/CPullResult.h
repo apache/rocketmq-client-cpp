@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __C_PULL_RESULT_H__
-#define __C_PULL_RESULT_H__
+#ifndef ROCCKETMQ_C_CPULLRESULT_H_
+#define ROCCKETMQ_C_CPULLRESULT_H_
 
 #include "CCommon.h"
 #include "CMessageExt.h"
@@ -46,4 +46,4 @@ typedef struct _CPullResult_ {
 }
 #endif
 
-#endif  // __C_PULL_RESULT_H__
+#endif  // ROCCKETMQ_C_CPULLRESULT_H_

@@ -36,33 +36,33 @@ class ResponseFutureInfo : public TcpTransportInfo {
   }
 
   void putResponseFuture(int opaque, ResponseFuturePtr future) {
-    std::lock_guard<std::mutex> lock(m_futureTableMutex);
-    const auto it = m_futureTable.find(opaque);
-    if (it != m_futureTable.end()) {
+    std::lock_guard<std::mutex> lock(future_table_mutex_);
+    const auto it = future_table_.find(opaque);
+    if (it != future_table_.end()) {
       LOG_WARN_NEW("[BUG] response futurn with opaque:{} is exist.", opaque);
     }
-    m_futureTable[opaque] = future;
+    future_table_[opaque] = future;
   }
 
   ResponseFuturePtr popResponseFuture(int opaque) {
-    std::lock_guard<std::mutex> lock(m_futureTableMutex);
-    const auto& it = m_futureTable.find(opaque);
-    if (it != m_futureTable.end()) {
+    std::lock_guard<std::mutex> lock(future_table_mutex_);
+    const auto& it = future_table_.find(opaque);
+    if (it != future_table_.end()) {
       auto future = it->second;
-      m_futureTable.erase(it);
+      future_table_.erase(it);
       return future;
     }
     return nullptr;
   }
 
   void scanResponseTable(uint64_t now, std::vector<ResponseFuturePtr>& futureList) {
-    std::lock_guard<std::mutex> lock(m_futureTableMutex);
-    for (auto it = m_futureTable.begin(); it != m_futureTable.end();) {
+    std::lock_guard<std::mutex> lock(future_table_mutex_);
+    for (auto it = future_table_.begin(); it != future_table_.end();) {
       auto& future = it->second;  // NOTE: future is a reference
-      if (future->getBeginTimestamp() + future->getTimeoutMillis() + 1000 <= now) {
-        LOG_WARN_NEW("remove timeout request, code:{}, opaque:{}", future->getRequestCode(), future->getOpaque());
+      if (future->begin_timestamp() + future->timeout_millis() + 1000 <= now) {
+        LOG_WARN_NEW("remove timeout request, code:{}, opaque:{}", future->request_code(), future->opaque());
         futureList.push_back(future);
-        it = m_futureTable.erase(it);
+        it = future_table_.erase(it);
       } else {
         ++it;
       }
@@ -70,8 +70,8 @@ class ResponseFutureInfo : public TcpTransportInfo {
   }
 
   void activeAllResponses() {
-    std::lock_guard<std::mutex> lock(m_futureTableMutex);
-    for (const auto& it : m_futureTable) {
+    std::lock_guard<std::mutex> lock(future_table_mutex_);
+    for (const auto& it : future_table_) {
       auto& future = it.second;
       if (future->hasInvokeCallback()) {
         future->executeInvokeCallback();  // callback async request
@@ -79,71 +79,71 @@ class ResponseFutureInfo : public TcpTransportInfo {
         future->putResponse(nullptr);  // wake up sync request
       }
     }
-    m_futureTable.clear();
+    future_table_.clear();
   }
 
  private:
-  FutureMap m_futureTable;  // opaque -> future
-  std::mutex m_futureTableMutex;
+  FutureMap future_table_;  // opaque -> future
+  std::mutex future_table_mutex_;
 };
 
 TcpRemotingClient::TcpRemotingClient(int workerThreadNum,
                                      uint64_t tcpConnectTimeout,
                                      uint64_t tcpTransportTryLockTimeout)
-    : m_tcpConnectTimeout(tcpConnectTimeout),
-      m_tcpTransportTryLockTimeout(tcpTransportTryLockTimeout),
-      m_namesrvIndex(0),
-      m_dispatchExecutor("MessageDispatchExecutor", 1, false),
-      m_handleExecutor("MessageHandleExecutor", workerThreadNum, false),
-      m_timeoutExecutor("TimeoutScanExecutor", false) {}
+    : tcp_connect_timeout_(tcpConnectTimeout),
+      tcp_transport_try_lock_timeout_(tcpTransportTryLockTimeout),
+      namesrv_index_(0),
+      dispatch_executor_("MessageDispatchExecutor", 1, false),
+      handle_executor_("MessageHandleExecutor", workerThreadNum, false),
+      timeout_executor_("TimeoutScanExecutor", false) {}
 
 TcpRemotingClient::~TcpRemotingClient() {
   LOG_DEBUG_NEW("TcpRemotingClient is destructed.");
 }
 
 void TcpRemotingClient::start() {
-  m_dispatchExecutor.startup();
-  m_handleExecutor.startup();
+  dispatch_executor_.startup();
+  handle_executor_.startup();
 
-  LOG_INFO_NEW("tcpConnectTimeout:{}, tcpTransportTryLockTimeout:{}, pullThreadNum:{}", m_tcpConnectTimeout,
-               m_tcpTransportTryLockTimeout, m_handleExecutor.num_threads());
+  LOG_INFO_NEW("tcpConnectTimeout:{}, tcpTransportTryLockTimeout:{}, pullThreadNums:{}", tcp_connect_timeout_,
+               tcp_transport_try_lock_timeout_, handle_executor_.thread_nums());
 
-  m_timeoutExecutor.startup();
+  timeout_executor_.startup();
 
   // scanResponseTable
-  m_timeoutExecutor.schedule(std::bind(&TcpRemotingClient::scanResponseTablePeriodically, this), 1000 * 3,
+  timeout_executor_.schedule(std::bind(&TcpRemotingClient::scanResponseTablePeriodically, this), 1000 * 3,
                              time_unit::milliseconds);
 }
 
 void TcpRemotingClient::shutdown() {
   LOG_INFO_NEW("TcpRemotingClient::shutdown Begin");
 
-  m_timeoutExecutor.shutdown();
+  timeout_executor_.shutdown();
 
   {
-    std::lock_guard<std::timed_mutex> lock(m_transportTableMutex);
-    for (const auto& trans : m_transportTable) {
+    std::lock_guard<std::timed_mutex> lock(transport_table_mutex_);
+    for (const auto& trans : transport_table_) {
       trans.second->disconnect(trans.first);
     }
-    m_transportTable.clear();
+    transport_table_.clear();
   }
 
-  m_handleExecutor.shutdown();
+  handle_executor_.shutdown();
 
-  m_dispatchExecutor.shutdown();
+  dispatch_executor_.shutdown();
 
-  LOG_INFO_NEW("TcpRemotingClient::shutdown End, m_transportTable:{}", m_transportTable.size());
+  LOG_INFO_NEW("TcpRemotingClient::shutdown End, transport_table_:{}", transport_table_.size());
 }
 
 void TcpRemotingClient::registerRPCHook(RPCHookPtr rpcHook) {
   if (rpcHook != nullptr) {
-    for (auto& hook : m_rpcHooks) {
+    for (auto& hook : rpc_hooks_) {
       if (hook == rpcHook) {
         return;
       }
     }
 
-    m_rpcHooks.push_back(rpcHook);
+    rpc_hooks_.push_back(rpcHook);
   }
 }
 
@@ -154,14 +154,14 @@ void TcpRemotingClient::updateNameServerAddressList(const std::string& addrs) {
     return;
   }
 
-  if (!UtilAll::try_lock_for(m_namesrvLock, 1000 * 10)) {
+  if (!UtilAll::try_lock_for(namesrv_lock_, 1000 * 10)) {
     LOG_ERROR_NEW("updateNameServerAddressList get timed_mutex timeout");
     return;
   }
-  std::lock_guard<std::timed_mutex> lock(m_namesrvLock, std::adopt_lock);
+  std::lock_guard<std::timed_mutex> lock(namesrv_lock_, std::adopt_lock);
 
   // clear first
-  m_namesrvAddrList.clear();
+  namesrv_addr_list_.clear();
 
   std::vector<std::string> out;
   UtilAll::Split(out, addrs, ";");
@@ -172,7 +172,7 @@ void TcpRemotingClient::updateNameServerAddressList(const std::string& addrs) {
     short portNumber;
     if (UtilAll::SplitURL(addr, hostName, portNumber)) {
       LOG_INFO_NEW("update Namesrv:{}", addr);
-      m_namesrvAddrList.push_back(addr);
+      namesrv_addr_list_.push_back(addr);
     } else {
       LOG_INFO_NEW("This may be invalid namer server: [{}]", addr);
     }
@@ -187,15 +187,15 @@ void TcpRemotingClient::scanResponseTablePeriodically() {
   }
 
   // next round
-  m_timeoutExecutor.schedule(std::bind(&TcpRemotingClient::scanResponseTablePeriodically, this), 1000,
+  timeout_executor_.schedule(std::bind(&TcpRemotingClient::scanResponseTablePeriodically, this), 1000,
                              time_unit::milliseconds);
 }
 
 void TcpRemotingClient::scanResponseTable() {
   std::vector<TcpTransportPtr> channelList;
   {
-    std::lock_guard<std::timed_mutex> lock(m_transportTableMutex);
-    for (const auto& trans : m_transportTable) {
+    std::lock_guard<std::timed_mutex> lock(transport_table_mutex_);
+    for (const auto& trans : transport_table_) {
       channelList.push_back(trans.second);
     }
   }
@@ -208,7 +208,7 @@ void TcpRemotingClient::scanResponseTable() {
   }
   for (auto rf : rfList) {
     if (rf->hasInvokeCallback()) {
-      m_handleExecutor.submit(std::bind(&ResponseFuture::executeInvokeCallback, rf));
+      handle_executor_.submit(std::bind(&ResponseFuture::executeInvokeCallback, rf));
     }
   }
 }
@@ -257,9 +257,9 @@ std::unique_ptr<RemotingCommand> TcpRemotingClient::invokeSyncImpl(TcpTransportP
   putResponseFuture(channel, opaque, responseFuture);
 
   if (SendCommand(channel, request)) {
-    responseFuture->setSendRequestOK(true);
+    responseFuture->set_send_request_ok(true);
   } else {
-    responseFuture->setSendRequestOK(false);
+    responseFuture->set_send_request_ok(false);
     popResponseFuture(channel, opaque);  // clean future
     // wake up potential waitResponse() is unnecessary, so not call putResponse()
     LOG_WARN_NEW("send a request command to channel <{}> failed.", channel->getPeerAddrAndPort());
@@ -314,14 +314,14 @@ void TcpRemotingClient::invokeAsyncImpl(TcpTransportPtr channel,
 
   try {
     if (SendCommand(channel, request)) {
-      responseFuture->setSendRequestOK(true);
+      responseFuture->set_send_request_ok(true);
     } else {
       // requestFail
       responseFuture = popResponseFuture(channel, opaque);
       if (responseFuture != nullptr) {
-        responseFuture->setSendRequestOK(false);
+        responseFuture->set_send_request_ok(false);
         if (responseFuture->hasInvokeCallback()) {
-          m_handleExecutor.submit(std::bind(&ResponseFuture::executeInvokeCallback, responseFuture));
+          handle_executor_.submit(std::bind(&ResponseFuture::executeInvokeCallback, responseFuture));
         }
       }
 
@@ -364,8 +364,8 @@ void TcpRemotingClient::invokeOnewayImpl(TcpTransportPtr channel, RemotingComman
 }
 
 void TcpRemotingClient::doBeforeRpcHooks(const std::string& addr, RemotingCommand& request, bool toSent) {
-  if (m_rpcHooks.size() > 0) {
-    for (auto& rpcHook : m_rpcHooks) {
+  if (rpc_hooks_.size() > 0) {
+    for (auto& rpcHook : rpc_hooks_) {
       rpcHook->doBeforeRequest(addr, request, toSent);
     }
   }
@@ -375,8 +375,8 @@ void TcpRemotingClient::doAfterRpcHooks(const std::string& addr,
                                         RemotingCommand& request,
                                         RemotingCommand* response,
                                         bool toSent) {
-  if (m_rpcHooks.size() > 0) {
-    for (auto& rpcHook : m_rpcHooks) {
+  if (rpc_hooks_.size() > 0) {
+    for (auto& rpcHook : rpc_hooks_) {
       rpcHook->doAfterResponse(addr, request, response, toSent);
     }
   }
@@ -394,17 +394,17 @@ TcpTransportPtr TcpRemotingClient::CreateTransport(const std::string& addr) {
   TcpTransportPtr channel;
 
   {
-    // try get m_transportTableMutex until m_tcpTransportTryLockTimeout to avoid blocking long time,
-    // if could not get m_transportTableMutex, return NULL
-    if (!UtilAll::try_lock_for(m_transportTableMutex, 1000 * m_tcpTransportTryLockTimeout)) {
+    // try get transport_table_mutex_ until tcp_transport_try_lock_timeout_ to avoid blocking long time,
+    // if could not get transport_table_mutex_, return NULL
+    if (!UtilAll::try_lock_for(transport_table_mutex_, 1000 * tcp_transport_try_lock_timeout_)) {
       LOG_ERROR_NEW("GetTransport of:{} get timed_mutex timeout", addr);
       return nullptr;
     }
-    std::lock_guard<std::timed_mutex> lock(m_transportTableMutex, std::adopt_lock);
+    std::lock_guard<std::timed_mutex> lock(transport_table_mutex_, std::adopt_lock);
 
     // check for reuse
-    const auto& it = m_transportTable.find(addr);
-    if (it != m_transportTable.end()) {
+    const auto& it = transport_table_.find(addr);
+    if (it != transport_table_.end()) {
       channel = it->second;
     }
 
@@ -420,11 +420,11 @@ TcpTransportPtr TcpRemotingClient::CreateTransport(const std::string& addr) {
         case TCP_CONNECT_STATUS_FAILED:
           LOG_ERROR_NEW("tcpTransport with server disconnected, erase server:{}", addr);
           channel->disconnect(addr);
-          m_transportTable.erase(it);
+          transport_table_.erase(it);
           break;
         default:  // TCP_CONNECT_STATUS_CLOSED
           LOG_ERROR_NEW("go to CLOSED state, erase:{} from transportTable, and reconnect it", addr);
-          m_transportTable.erase(it);
+          transport_table_.erase(it);
           break;
       }
     } else {
@@ -444,13 +444,13 @@ TcpTransportPtr TcpRemotingClient::CreateTransport(const std::string& addr) {
         return nullptr;
       } else {
         // even if connecting failed finally, this server transport will be erased by next CreateTransport
-        m_transportTable[addr] = channel;
+        transport_table_[addr] = channel;
       }
     }
   }
 
   // waiting...
-  TcpConnectStatus connectStatus = channel->waitTcpConnectEvent(static_cast<int>(m_tcpConnectTimeout));
+  TcpConnectStatus connectStatus = channel->waitTcpConnectEvent(static_cast<int>(tcp_connect_timeout_));
   if (connectStatus != TCP_CONNECT_STATUS_CONNECTED) {
     LOG_WARN_NEW("can not connect to server:{}", addr);
     // channel->disconnect(addr);
@@ -462,33 +462,33 @@ TcpTransportPtr TcpRemotingClient::CreateTransport(const std::string& addr) {
 }
 
 TcpTransportPtr TcpRemotingClient::CreateNameServerTransport() {
-  // m_namesrvLock was added to avoid operation of NameServer was blocked by
+  // namesrv_lock_ was added to avoid operation of NameServer was blocked by
   // m_tcpLock, it was used by single Thread mostly, so no performance impact
-  // try get m_tcpLock until m_tcpTransportTryLockTimeout to avoid blocking long
+  // try get m_tcpLock until tcp_transport_try_lock_timeout_ to avoid blocking long
   // time, if could not get m_namesrvlock, return NULL
   LOG_DEBUG_NEW("create namesrv transport");
-  if (!UtilAll::try_lock_for(m_namesrvLock, 1000 * m_tcpTransportTryLockTimeout)) {
+  if (!UtilAll::try_lock_for(namesrv_lock_, 1000 * tcp_transport_try_lock_timeout_)) {
     LOG_ERROR_NEW("CreateNameserverTransport get timed_mutex timeout");
     return nullptr;
   }
-  std::lock_guard<std::timed_mutex> lock(m_namesrvLock, std::adopt_lock);
+  std::lock_guard<std::timed_mutex> lock(namesrv_lock_, std::adopt_lock);
 
-  if (!m_namesrvAddrChoosed.empty()) {
-    auto channel = CreateTransport(m_namesrvAddrChoosed);
+  if (!namesrv_addr_choosed_.empty()) {
+    auto channel = CreateTransport(namesrv_addr_choosed_);
     if (channel != nullptr) {
       return channel;
     } else {
-      m_namesrvAddrChoosed.clear();
+      namesrv_addr_choosed_.clear();
     }
   }
 
-  for (unsigned i = 0; i < m_namesrvAddrList.size(); i++) {
-    auto index = m_namesrvIndex++ % m_namesrvAddrList.size();
-    LOG_INFO_NEW("namesrvIndex is:{}, index:{}, namesrvaddrlist size:{}", m_namesrvIndex, index,
-                 m_namesrvAddrList.size());
-    auto channel = CreateTransport(m_namesrvAddrList[index]);
+  for (unsigned i = 0; i < namesrv_addr_list_.size(); i++) {
+    auto index = namesrv_index_++ % namesrv_addr_list_.size();
+    LOG_INFO_NEW("namesrvIndex is:{}, index:{}, namesrvaddrlist size:{}", namesrv_index_, index,
+                 namesrv_addr_list_.size());
+    auto channel = CreateTransport(namesrv_addr_list_[index]);
     if (channel != nullptr) {
-      m_namesrvAddrChoosed = m_namesrvAddrList[index];
+      namesrv_addr_choosed_ = namesrv_addr_list_[index];
       return channel;
     }
   }
@@ -501,17 +501,17 @@ bool TcpRemotingClient::CloseTransport(const std::string& addr, TcpTransportPtr 
     return CloseNameServerTransport(channel);
   }
 
-  if (!UtilAll::try_lock_for(m_transportTableMutex, 1000 * m_tcpTransportTryLockTimeout)) {
+  if (!UtilAll::try_lock_for(transport_table_mutex_, 1000 * tcp_transport_try_lock_timeout_)) {
     LOG_ERROR_NEW("CloseTransport of:{} get timed_mutex timeout", addr);
     return false;
   }
-  std::lock_guard<std::timed_mutex> lock(m_transportTableMutex, std::adopt_lock);
+  std::lock_guard<std::timed_mutex> lock(transport_table_mutex_, std::adopt_lock);
 
   LOG_INFO_NEW("CloseTransport of:{}", addr);
 
   bool removeItemFromTable = true;
-  const auto& it = m_transportTable.find(addr);
-  if (it != m_transportTable.end()) {
+  const auto& it = transport_table_.find(addr);
+  if (it != transport_table_.end()) {
     if (it->second->getStartTime() != channel->getStartTime()) {
       LOG_INFO_NEW("tcpTransport with addr:{} has been closed before, and has been created again, nothing to do", addr);
       removeItemFromTable = false;
@@ -523,7 +523,7 @@ bool TcpRemotingClient::CloseTransport(const std::string& addr, TcpTransportPtr 
 
   if (removeItemFromTable) {
     LOG_WARN_NEW("closeTransport: erase broker: {}", addr);
-    m_transportTable.erase(addr);
+    transport_table_.erase(addr);
   }
 
   LOG_WARN_NEW("closeTransport: disconnect:{} with state:{}", addr, channel->getTcpConnectStatus());
@@ -537,17 +537,17 @@ bool TcpRemotingClient::CloseTransport(const std::string& addr, TcpTransportPtr 
 }
 
 bool TcpRemotingClient::CloseNameServerTransport(TcpTransportPtr channel) {
-  if (!UtilAll::try_lock_for(m_namesrvLock, 1000 * m_tcpTransportTryLockTimeout)) {
+  if (!UtilAll::try_lock_for(namesrv_lock_, 1000 * tcp_transport_try_lock_timeout_)) {
     LOG_ERROR_NEW("CloseNameServerTransport get timed_mutex timeout");
     return false;
   }
-  std::lock_guard<std::timed_mutex> lock(m_namesrvLock, std::adopt_lock);
+  std::lock_guard<std::timed_mutex> lock(namesrv_lock_, std::adopt_lock);
 
-  std::string addr = m_namesrvAddrChoosed;
+  std::string addr = namesrv_addr_choosed_;
 
   bool removeItemFromTable = CloseTransport(addr, channel);
   if (removeItemFromTable) {
-    m_namesrvAddrChoosed.clear();
+    namesrv_addr_choosed_.clear();
   }
 
   return removeItemFromTable;
@@ -560,11 +560,11 @@ bool TcpRemotingClient::SendCommand(TcpTransportPtr channel, RemotingCommand& ms
 
 void TcpRemotingClient::channelClosed(TcpTransportPtr channel) {
   LOG_DEBUG_NEW("channel of {} is closed.", channel->getPeerAddrAndPort());
-  m_handleExecutor.submit([channel] { static_cast<ResponseFutureInfo*>(channel->getInfo())->activeAllResponses(); });
+  handle_executor_.submit([channel] { static_cast<ResponseFutureInfo*>(channel->getInfo())->activeAllResponses(); });
 }
 
 void TcpRemotingClient::messageReceived(ByteArrayRef msg, TcpTransportPtr channel) {
-  m_dispatchExecutor.submit(std::bind(&TcpRemotingClient::processMessageReceived, this, std::move(msg), channel));
+  dispatch_executor_.submit(std::bind(&TcpRemotingClient::processMessageReceived, this, std::move(msg), channel));
 }
 
 void TcpRemotingClient::processMessageReceived(ByteArrayRef msg, TcpTransportPtr channel) {
@@ -604,7 +604,7 @@ void TcpRemotingClient::processMessageReceived(ByteArrayRef msg, TcpTransportPtr
       TcpTransportPtr channel_;
     };
 
-    m_handleExecutor.submit(task_adaptor(this, std::move(cmd), channel));
+    handle_executor_.submit(task_adaptor(this, std::move(cmd), channel));
   }
 }
 
@@ -613,14 +613,14 @@ void TcpRemotingClient::processResponseCommand(std::unique_ptr<RemotingCommand> 
   int opaque = responseCommand->opaque();
   auto responseFuture = popResponseFuture(channel, opaque);
   if (responseFuture != nullptr) {
-    int code = responseFuture->getRequestCode();
+    int code = responseFuture->request_code();
     LOG_DEBUG_NEW("processResponseCommand, opaque:{}, request code:{}, server:{}", opaque, code,
                   channel->getPeerAddrAndPort());
 
     if (responseFuture->hasInvokeCallback()) {
       responseFuture->setResponseCommand(std::move(responseCommand));
       // bind shared_ptr can save object's life
-      m_handleExecutor.submit(std::bind(&ResponseFuture::executeInvokeCallback, responseFuture));
+      handle_executor_.submit(std::bind(&ResponseFuture::executeInvokeCallback, responseFuture));
     } else {
       responseFuture->putResponse(std::move(responseCommand));
     }
@@ -635,8 +635,8 @@ void TcpRemotingClient::processRequestCommand(std::unique_ptr<RemotingCommand> r
   std::unique_ptr<RemotingCommand> response;
 
   int requestCode = requestCommand->code();
-  const auto& it = m_processorTable.find(requestCode);
-  if (it != m_processorTable.end()) {
+  const auto& it = processor_table_.find(requestCode);
+  if (it != processor_table_.end()) {
     try {
       auto* processor = it->second;
 
@@ -674,15 +674,15 @@ void TcpRemotingClient::putResponseFuture(TcpTransportPtr channel, int opaque, R
   return static_cast<ResponseFutureInfo*>(channel->getInfo())->putResponseFuture(opaque, future);
 }
 
-// NOTE: after call this function, shared_ptr of m_futureTable[opaque] will
-// be erased, so caller must ensure the life cycle of returned shared_ptr;
+// NOTE: after call this function, shared_ptr of future_table_[opaque] will
+// be erased, so caller must ensure the life cycle of returned shared_ptr
 ResponseFuturePtr TcpRemotingClient::popResponseFuture(TcpTransportPtr channel, int opaque) {
   return static_cast<ResponseFutureInfo*>(channel->getInfo())->popResponseFuture(opaque);
 }
 
 void TcpRemotingClient::registerProcessor(MQRequestCode requestCode, RequestProcessor* requestProcessor) {
   // replace
-  m_processorTable[requestCode] = requestProcessor;
+  processor_table_[requestCode] = requestProcessor;
 }
 
 }  // namespace rocketmq

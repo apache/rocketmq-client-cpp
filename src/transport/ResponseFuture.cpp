@@ -21,100 +21,76 @@
 namespace rocketmq {
 
 ResponseFuture::ResponseFuture(int requestCode, int opaque, int64_t timeoutMillis, InvokeCallback* invokeCallback)
-    : m_requestCode(requestCode),
-      m_opaque(opaque),
-      m_timeoutMillis(timeoutMillis),
-      m_invokeCallback(invokeCallback),
-      m_responseCommand(nullptr),
-      m_beginTimestamp(UtilAll::currentTimeMillis()),
-      m_sendRequestOK(false),
-      m_countDownLatch(nullptr) {
+    : request_code_(requestCode),
+      opaque_(opaque),
+      timeout_millis_(timeoutMillis),
+      invoke_callback_(invokeCallback),
+      begin_timestamp_(UtilAll::currentTimeMillis()),
+      send_request_ok_(false),
+      response_command_(nullptr),
+      count_down_latch_(nullptr) {
   if (nullptr == invokeCallback) {
-    m_countDownLatch.reset(new latch(1));
+    count_down_latch_.reset(new latch(1));
   }
 }
 
-ResponseFuture::~ResponseFuture() {}
+ResponseFuture::~ResponseFuture() = default;
 
 void ResponseFuture::releaseThreadCondition() {
-  if (m_countDownLatch != nullptr) {
-    m_countDownLatch->count_down();
+  if (count_down_latch_ != nullptr) {
+    count_down_latch_->count_down();
   }
 }
 
 bool ResponseFuture::hasInvokeCallback() {
-  // if m_invokeCallback is set, this is an async future.
-  return m_invokeCallback != nullptr;
+  // if invoke_callback_ is set, this is an async future.
+  return invoke_callback_ != nullptr;
 }
 
 InvokeCallback* ResponseFuture::releaseInvokeCallback() {
-  return m_invokeCallback.release();
+  return invoke_callback_.release();
 }
 
 void ResponseFuture::executeInvokeCallback() noexcept {
-  if (m_invokeCallback != nullptr) {
-    m_invokeCallback->operationComplete(this);
+  if (invoke_callback_ != nullptr) {
+    invoke_callback_->operationComplete(this);
   }
 }
 
 std::unique_ptr<RemotingCommand> ResponseFuture::waitResponse(int timeoutMillis) {
-  if (m_countDownLatch != nullptr) {
+  if (count_down_latch_ != nullptr) {
     if (timeoutMillis < 0) {
       timeoutMillis = 0;
     }
-    m_countDownLatch->wait(timeoutMillis, time_unit::milliseconds);
+    count_down_latch_->wait(timeoutMillis, time_unit::milliseconds);
   }
-  return std::move(m_responseCommand);
+  return std::move(response_command_);
 }
 
 void ResponseFuture::putResponse(std::unique_ptr<RemotingCommand> responseCommand) {
-  m_responseCommand = std::move(responseCommand);
-  if (m_countDownLatch != nullptr) {
-    m_countDownLatch->count_down();
+  response_command_ = std::move(responseCommand);
+  if (count_down_latch_ != nullptr) {
+    count_down_latch_->count_down();
   }
 }
 
 std::unique_ptr<RemotingCommand> ResponseFuture::getResponseCommand() {
-  return std::move(m_responseCommand);
+  return std::move(response_command_);
 }
 
 void ResponseFuture::setResponseCommand(std::unique_ptr<RemotingCommand> responseCommand) {
-  m_responseCommand = std::move(responseCommand);
-}
-
-int64_t ResponseFuture::getBeginTimestamp() {
-  return m_beginTimestamp;
-}
-
-int64_t ResponseFuture::getTimeoutMillis() {
-  return m_timeoutMillis;
+  response_command_ = std::move(responseCommand);
 }
 
 bool ResponseFuture::isTimeout() const {
-  auto diff = UtilAll::currentTimeMillis() - m_beginTimestamp;
-  return diff > m_timeoutMillis;
+  auto diff = UtilAll::currentTimeMillis() - begin_timestamp_;
+  return diff > timeout_millis_;
 }
 
 int64_t ResponseFuture::leftTime() const {
-  auto diff = UtilAll::currentTimeMillis() - m_beginTimestamp;
-  auto left = m_timeoutMillis - diff;
+  auto diff = UtilAll::currentTimeMillis() - begin_timestamp_;
+  auto left = timeout_millis_ - diff;
   return left < 0 ? 0 : left;
-}
-
-bool ResponseFuture::isSendRequestOK() const {
-  return m_sendRequestOK;
-}
-
-void ResponseFuture::setSendRequestOK(bool sendRequestOK) {
-  m_sendRequestOK = sendRequestOK;
-}
-
-int ResponseFuture::getOpaque() const {
-  return m_opaque;
-}
-
-int ResponseFuture::getRequestCode() const {
-  return m_requestCode;
 }
 
 }  // namespace rocketmq

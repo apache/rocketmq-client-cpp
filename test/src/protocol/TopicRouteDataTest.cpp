@@ -20,7 +20,7 @@
 #include <memory>
 
 #include "ByteArray.h"
-#include "TopicRouteData.h"
+#include "TopicRouteData.hpp"
 
 using testing::InitGoogleMock;
 using testing::InitGoogleTest;
@@ -64,22 +64,17 @@ TEST(TopicRouteDataTest, TopicRouteData) {
   const ByteArray bodyData((char*)data.data(), data.size());
   std::unique_ptr<TopicRouteData> topicRouteData(TopicRouteData::Decode(bodyData));
 
-  EXPECT_EQ(root["orderTopicConf"], topicRouteData->getOrderTopicConf());
+  EXPECT_EQ(root["orderTopicConf"], topicRouteData->order_topic_conf());
 
-  BrokerData broker;
-  broker.brokerName = "testBroker";
-  broker.brokerAddrs[0] = "127.0.0.1:10091";
-  broker.brokerAddrs[1] = "127.0.0.2:10092";
+  BrokerData broker("testBroker");
+  broker.broker_addrs()[0] = "127.0.0.1:10091";
+  broker.broker_addrs()[1] = "127.0.0.2:10092";
 
-  std::vector<BrokerData> brokerDataSt = topicRouteData->getBrokerDatas();
+  std::vector<BrokerData> brokerDataSt = topicRouteData->broker_datas();
   EXPECT_EQ(broker, brokerDataSt[0]);
 
-  QueueData queue;
-  queue.brokerName = "brokerTest";
-  queue.readQueueNums = 8;
-  queue.writeQueueNums = 8;
-  queue.perm = 7;
-  std::vector<QueueData> queueDataSt = topicRouteData->getQueueDatas();
+  QueueData queue("brokerTest", 8, 8, 7);
+  std::vector<QueueData> queueDataSt = topicRouteData->queue_datas();
   EXPECT_EQ(queue, queueDataSt[0]);
 
   EXPECT_EQ(topicRouteData->selectBrokerAddr(), "127.0.0.1:10091");

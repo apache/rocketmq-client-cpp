@@ -16,60 +16,12 @@
  */
 #include "PullRequest.h"
 
-#include <sstream>  // std::stringstream
-
-#include "Logging.h"
-
 namespace rocketmq {
-
-PullRequest::PullRequest() : m_nextOffset(0), m_lockedFirst(false) {}
-
-PullRequest::~PullRequest() {}
-
-bool PullRequest::isLockedFirst() const {
-  return m_lockedFirst;
-}
-
-void PullRequest::setLockedFirst(bool lockedFirst) {
-  m_lockedFirst = lockedFirst;
-}
-
-const std::string& PullRequest::getConsumerGroup() const {
-  return m_consumerGroup;
-}
-
-void PullRequest::setConsumerGroup(const std::string& consumerGroup) {
-  m_consumerGroup = consumerGroup;
-}
-
-const MQMessageQueue& PullRequest::getMessageQueue() {
-  return m_messageQueue;
-}
-
-void PullRequest::setMessageQueue(const MQMessageQueue& messageQueue) {
-  m_messageQueue = messageQueue;
-}
-
-int64_t PullRequest::getNextOffset() {
-  return m_nextOffset;
-}
-
-void PullRequest::setNextOffset(int64_t nextOffset) {
-  m_nextOffset = nextOffset;
-}
-
-ProcessQueuePtr PullRequest::getProcessQueue() {
-  return m_processQueue;
-}
-
-void PullRequest::setProcessQueue(ProcessQueuePtr processQueue) {
-  m_processQueue = processQueue;
-}
 
 std::string PullRequest::toString() const {
   std::stringstream ss;
-  ss << "PullRequest [consumerGroup=" << m_consumerGroup << ", messageQueue=" << m_messageQueue.toString()
-     << ", nextOffset=" << m_nextOffset << "]";
+  ss << "PullRequest [consumerGroup=" << consumer_group_ << ", messageQueue=" << message_queue_.toString()
+     << ", nextOffset=" << next_offset_ << "]";
   return ss.str();
 }
 

@@ -18,28 +18,28 @@
 
 #include <map>  // std::map
 
+#include "CErrorContainer.h"
 #include "ClientRPCHook.h"
 #include "DefaultMQPushConsumer.h"
 #include "Logging.h"
-#include "MQClientErrorContainer.h"
 
 using namespace rocketmq;
 
-class MessageListenerInner : public MessageListenerConcurrently {
+class MessageListenerConcurrentlyInner : public MessageListenerConcurrently {
  public:
-  MessageListenerInner(CPushConsumer* consumer, MessageCallBack callback)
-      : m_consumer(consumer), m_msgReceivedCallback(callback) {}
+  MessageListenerConcurrentlyInner(CPushConsumer* consumer, MessageCallBack callback)
+      : consumer_(consumer), msg_received_callback_(callback) {}
 
-  ~MessageListenerInner() = default;
+  ~MessageListenerConcurrentlyInner() = default;
 
   ConsumeStatus consumeMessage(std::vector<MQMessageExt>& msgs) override {
     // to do user call back
-    if (m_msgReceivedCallback == nullptr) {
+    if (msg_received_callback_ == nullptr) {
       return RECONSUME_LATER;
     }
     for (auto msg : msgs) {
       auto* message = reinterpret_cast<CMessageExt*>(&msg);
-      if (m_msgReceivedCallback(m_consumer, message) != E_CONSUME_SUCCESS) {
+      if (msg_received_callback_(consumer_, message) != E_CONSUME_SUCCESS) {
         return RECONSUME_LATER;
       }
     }
@@ -47,22 +47,22 @@ class MessageListenerInner : public MessageListenerConcurrently {
   }
 
  private:
-  CPushConsumer* m_consumer;
-  MessageCallBack m_msgReceivedCallback;
+  CPushConsumer* consumer_;
+  MessageCallBack msg_received_callback_;
 };
 
 class MessageListenerOrderlyInner : public MessageListenerOrderly {
  public:
   MessageListenerOrderlyInner(CPushConsumer* consumer, MessageCallBack callback)
-      : m_consumer(consumer), m_msgReceivedCallback(callback) {}
+      : consumer_(consumer), msg_received_callback_(callback) {}
 
   ConsumeStatus consumeMessage(std::vector<MQMessageExt>& msgs) override {
-    if (m_msgReceivedCallback == nullptr) {
+    if (msg_received_callback_ == nullptr) {
       return RECONSUME_LATER;
     }
     for (auto msg : msgs) {
       auto* message = reinterpret_cast<CMessageExt*>(&msg);
-      if (m_msgReceivedCallback(m_consumer, message) != E_CONSUME_SUCCESS) {
+      if (msg_received_callback_(consumer_, message) != E_CONSUME_SUCCESS) {
         return RECONSUME_LATER;
       }
     }
@@ -70,8 +70,8 @@ class MessageListenerOrderlyInner : public MessageListenerOrderly {
   }
 
  private:
-  CPushConsumer* m_consumer;
-  MessageCallBack m_msgReceivedCallback;
+  CPushConsumer* consumer_;
+  MessageCallBack msg_received_callback_;
 };
 
 CPushConsumer* CreatePushConsumer(const char* groupId) {
@@ -98,7 +98,7 @@ int StartPushConsumer(CPushConsumer* consumer) {
   try {
     reinterpret_cast<DefaultMQPushConsumer*>(consumer)->start();
   } catch (std::exception& e) {
-    MQClientErrorContainer::setErr(std::string(e.what()));
+    CErrorContainer::setErrorMessage(e.what());
     return PUSHCONSUMER_START_FAILED;
   }
   return OK;
@@ -155,8 +155,17 @@ int RegisterMessageCallback(CPushConsumer* consumer, MessageCallBack callback) {
   if (consumer == NULL || callback == NULL) {
     return NULL_POINTER;
   }
-  auto* listenerInner = new MessageListenerInner(consumer, callback);
+  auto* listenerInner = new MessageListenerConcurrentlyInner(consumer, callback);
   reinterpret_cast<DefaultMQPushConsumer*>(consumer)->registerMessageListener(listenerInner);
+  return OK;
+}
+
+int UnregisterMessageCallback(CPushConsumer* consumer) {
+  if (consumer == NULL) {
+    return NULL_POINTER;
+  }
+  auto* listenerInner = reinterpret_cast<DefaultMQPushConsumer*>(consumer)->getMessageListener();
+  delete listenerInner;
   return OK;
 }
 
@@ -170,15 +179,6 @@ int RegisterMessageCallbackOrderly(CPushConsumer* consumer, MessageCallBack call
 }
 
 int UnregisterMessageCallbackOrderly(CPushConsumer* consumer) {
-  if (consumer == NULL) {
-    return NULL_POINTER;
-  }
-  auto* listenerInner = reinterpret_cast<DefaultMQPushConsumer*>(consumer)->getMessageListener();
-  delete listenerInner;
-  return OK;
-}
-
-int UnregisterMessageCallback(CPushConsumer* consumer) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
@@ -258,7 +258,7 @@ int SetPushConsumerLogFileNumAndSize(CPushConsumer* consumer, int fileNum, long 
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ALOG_ADAPTER->setLogFileNumAndSize(fileNum, fileSize);
+  DEFAULT_LOG_ADAPTER->setLogFileNumAndSize(fileNum, fileSize);
   return OK;
 }
 
@@ -266,6 +266,6 @@ int SetPushConsumerLogLevel(CPushConsumer* consumer, CLogLevel level) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  ALOG_ADAPTER->setLogLevel((elogLevel)level);
+  DEFAULT_LOG_ADAPTER->set_log_level((LogLevel)level);
   return OK;
 }

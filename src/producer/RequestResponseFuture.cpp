@@ -24,85 +24,65 @@ namespace rocketmq {
 RequestResponseFuture::RequestResponseFuture(const std::string& correlationId,
                                              long timeoutMillis,
                                              RequestCallback* requestCallback)
-    : m_correlationId(correlationId),
-      m_requestCallback(requestCallback),
-      m_beginTimestamp(UtilAll::currentTimeMillis()),
-      m_requestMsg(nullptr),
-      m_timeoutMillis(timeoutMillis),
-      m_countDownLatch(nullptr),
-      m_responseMsg(nullptr),
-      m_sendRequestOk(false),
-      m_cause(nullptr) {
+    : correlation_id_(correlationId),
+      request_callback_(requestCallback),
+      begin_timestamp_(UtilAll::currentTimeMillis()),
+      request_msg_(nullptr),
+      timeout_millis_(timeoutMillis),
+      count_down_latch_(nullptr),
+      response_msg_(nullptr),
+      send_request_ok_(false),
+      cause_(nullptr) {
   if (nullptr == requestCallback) {
-    m_countDownLatch.reset(new latch(1));
+    count_down_latch_.reset(new latch(1));
   }
 }
 
 void RequestResponseFuture::executeRequestCallback() noexcept {
-  if (m_requestCallback != nullptr) {
-    if (m_sendRequestOk && m_cause == nullptr) {
+  if (request_callback_ != nullptr) {
+    if (send_request_ok_ && cause_ == nullptr) {
       try {
-        m_requestCallback->onSuccess(std::move(m_responseMsg));
+        request_callback_->onSuccess(std::move(response_msg_));
       } catch (const std::exception& e) {
         LOG_WARN_NEW("RequestCallback throw an exception: {}", e.what());
       }
     } else {
       try {
-        std::rethrow_exception(m_cause);
+        std::rethrow_exception(cause_);
       } catch (MQException& e) {
-        m_requestCallback->onException(e);
+        request_callback_->onException(e);
       } catch (const std::exception& e) {
         LOG_WARN_NEW("unexpected exception in RequestResponseFuture: {}", e.what());
       }
     }
 
     // auto delete callback
-    if (m_requestCallback->getRequestCallbackType() == REQUEST_CALLBACK_TYPE_AUTO_DELETE) {
-      deleteAndZero(m_requestCallback);
+    if (request_callback_->getRequestCallbackType() == REQUEST_CALLBACK_TYPE_AUTO_DELETE) {
+      deleteAndZero(request_callback_);
     }
   }
 }
 
 bool RequestResponseFuture::isTimeout() {
-  auto diff = UtilAll::currentTimeMillis() - m_beginTimestamp;
-  return diff > m_timeoutMillis;
+  auto diff = UtilAll::currentTimeMillis() - begin_timestamp_;
+  return diff > timeout_millis_;
 }
 
 MessagePtr RequestResponseFuture::waitResponseMessage(int64_t timeout) {
-  if (m_countDownLatch != nullptr) {
+  if (count_down_latch_ != nullptr) {
     if (timeout < 0) {
       timeout = 0;
     }
-    m_countDownLatch->wait(timeout, time_unit::milliseconds);
+    count_down_latch_->wait(timeout, time_unit::milliseconds);
   }
-  return m_responseMsg;
+  return response_msg_;
 }
 
 void RequestResponseFuture::putResponseMessage(MessagePtr responseMsg) {
-  m_responseMsg = std::move(responseMsg);
-  if (m_countDownLatch != nullptr) {
-    m_countDownLatch->count_down();
+  response_msg_ = std::move(responseMsg);
+  if (count_down_latch_ != nullptr) {
+    count_down_latch_->count_down();
   }
-}
-
-const std::string& RequestResponseFuture::getCorrelationId() {
-  return m_correlationId;
-}
-
-bool RequestResponseFuture::isSendRequestOk() {
-  return m_sendRequestOk;
-}
-
-void RequestResponseFuture::setSendRequestOk(bool sendRequestOk) {
-  m_sendRequestOk = sendRequestOk;
-}
-
-std::exception_ptr RequestResponseFuture::getCause() {
-  return m_cause;
-}
-
-void RequestResponseFuture::setCause(std::exception_ptr cause) {
-  m_cause = cause;
 }
 
 }  // namespace rocketmq

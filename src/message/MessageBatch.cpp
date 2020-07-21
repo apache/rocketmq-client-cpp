@@ -56,7 +56,7 @@ std::shared_ptr<MessageBatch> MessageBatch::generateFromList(std::vector<MQMessa
 }
 
 std::string MessageBatch::encode() {
-  return MessageDecoder::encodeMessages(m_messages);
+  return MessageDecoder::encodeMessages(messages_);
 }
 
 }  // namespace rocketmq

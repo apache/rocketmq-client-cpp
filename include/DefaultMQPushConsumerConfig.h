@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __DEFAULT_MQ_PUSH_CONSUMER_CONFIG_H__
-#define __DEFAULT_MQ_PUSH_CONSUMER_CONFIG_H__
+#ifndef ROCKETMQ_DEFAULTMQPUSHCONSUMERCONFIG_H_
+#define ROCKETMQ_DEFAULTMQPUSHCONSUMERCONFIG_H_
 
 #include "AllocateMQStrategy.h"
 #include "ConsumeType.h"
@@ -26,7 +26,11 @@ namespace rocketmq {
 class DefaultMQPushConsumerConfig;
 typedef std::shared_ptr<DefaultMQPushConsumerConfig> DefaultMQPushConsumerConfigPtr;
 
-class ROCKETMQCLIENT_API DefaultMQPushConsumerConfig : virtual public MQClientConfig {
+/**
+ * DefaultMQPushConsumerConfig - config for DefaultMQPushConsumer
+ */
+class ROCKETMQCLIENT_API DefaultMQPushConsumerConfig : virtual public MQClientConfig  // base interface
+{
  public:
   virtual ~DefaultMQPushConsumerConfig() = default;
 
@@ -36,8 +40,8 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumerConfig : virtual public MQClientCo
   virtual ConsumeFromWhere getConsumeFromWhere() const = 0;
   virtual void setConsumeFromWhere(ConsumeFromWhere consumeFromWhere) = 0;
 
-  virtual std::string getConsumeTimestamp() = 0;
-  virtual void setConsumeTimestamp(std::string consumeTimestamp) = 0;
+  virtual const std::string& getConsumeTimestamp() const = 0;
+  virtual void setConsumeTimestamp(const std::string& consumeTimestamp) = 0;
 
   /**
    * consuming thread count, default value is cpu cores
@@ -73,4 +77,4 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumerConfig : virtual public MQClientCo
 
 }  // namespace rocketmq
 
-#endif  // __DEFAULT_MQ_PUSH_CONSUMER_CONFIG_H__
+#endif  // ROCKETMQ_DEFAULTMQPUSHCONSUMERCONFIG_H_

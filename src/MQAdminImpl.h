@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_ADMIN_IMPL_H___
-#define __MQ_ADMIN_IMPL_H___
+#ifndef ROCKETMQ_MQADMINIMPL_H_
+#define ROCKETMQ_MQADMINIMPL_H_
 
 #include <string>
 #include <vector>
@@ -29,7 +29,7 @@ namespace rocketmq {
 
 class MQAdminImpl {
  public:
-  MQAdminImpl(MQClientInstance* clientInstance) : m_clientInstance(clientInstance) {}
+  MQAdminImpl(MQClientInstance* clientInstance) : client_instance_(clientInstance) {}
 
   void createTopic(const std::string& key, const std::string& newTopic, int queueNum);
 
@@ -44,9 +44,9 @@ class MQAdminImpl {
   QueryResult queryMessage(const std::string& topic, const std::string& key, int maxNum, int64_t begin, int64_t end);
 
  private:
-  MQClientInstance* m_clientInstance;
+  MQClientInstance* client_instance_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __MQ_ADMIN_IMPL_H___
+#endif  // ROCKETMQ_MQADMINIMPL_H_

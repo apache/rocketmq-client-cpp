@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __DEFAULT_MQ_PRODUCER_H__
-#define __DEFAULT_MQ_PRODUCER_H__
+#ifndef ROCKETMQ_DEFAULTMQPRODUCER_H_
+#define ROCKETMQ_DEFAULTMQPRODUCER_H_
 
 #include "DefaultMQProducerConfigProxy.h"
 #include "MQProducer.h"
@@ -23,7 +23,9 @@
 
 namespace rocketmq {
 
-class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer, public DefaultMQProducerConfigProxy {
+class ROCKETMQCLIENT_API DefaultMQProducer : public DefaultMQProducerConfigProxy,  // base
+                                             public MQProducer                     // interface
+{
  public:
   DefaultMQProducer(const std::string& groupname);
   DefaultMQProducer(const std::string& groupname, RPCHookPtr rpcHook);
@@ -98,4 +100,4 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public MQProducer, public DefaultMQ
 
 }  // namespace rocketmq
 
-#endif  // __DEFAULT_MQ_PRODUCER_H__
+#endif  // ROCKETMQ_DEFAULTMQPRODUCER_H_

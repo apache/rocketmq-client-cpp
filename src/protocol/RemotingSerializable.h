@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __REMOTING_SERIALIZABLE_H__
-#define __REMOTING_SERIALIZABLE_H__
+#ifndef ROCKETMQ_PROTOCOL_REMOTINGSERIALIZABLE_H_
+#define ROCKETMQ_PROTOCOL_REMOTINGSERIALIZABLE_H_
 
 #include <json/json.h>
 
@@ -56,4 +56,4 @@ class RemotingSerializable {
 
 }  // namespace rocketmq
 
-#endif  // __REMOTING_SERIALIZABLE_H__
+#endif  // ROCKETMQ_PROTOCOL_REMOTINGSERIALIZABLE_H_

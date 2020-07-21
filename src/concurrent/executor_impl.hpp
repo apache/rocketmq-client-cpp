@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __EXECUTOR_IMPL_HPP__
-#define __EXECUTOR_IMPL_HPP__
+#ifndef ROCKETMQ_CONCURRENT_EXECUTORIMPL_HPP_
+#define ROCKETMQ_CONCURRENT_EXECUTORIMPL_HPP_
 
 #include <atomic>
 #include <functional>
@@ -40,14 +40,14 @@ class abstract_executor_service : virtual public executor_service {
 
 class thread_pool_executor : public abstract_executor_service {
  public:
-  explicit thread_pool_executor(std::size_t num_threads, bool start_immediately = true)
-      : task_queue_(), state_(STOP), num_threads_(num_threads), free_threads_(0) {
+  explicit thread_pool_executor(std::size_t thread_nums, bool start_immediately = true)
+      : task_queue_(), state_(STOP), thread_nums_(thread_nums), free_threads_(0) {
     if (start_immediately) {
       startup();
     }
   }
-  explicit thread_pool_executor(const std::string& name, std::size_t num_threads, bool start_immediately = true)
-      : task_queue_(), state_(STOP), num_threads_(num_threads), thread_group_(name), free_threads_(0) {
+  explicit thread_pool_executor(const std::string& name, std::size_t thread_nums, bool start_immediately = true)
+      : task_queue_(), state_(STOP), thread_nums_(thread_nums), thread_group_(name), free_threads_(0) {
     if (start_immediately) {
       startup();
     }
@@ -56,7 +56,7 @@ class thread_pool_executor : public abstract_executor_service {
   virtual void startup() {
     if (state_ == STOP) {
       state_ = RUNNING;
-      thread_group_.create_threads(std::bind(&thread_pool_executor::run, this), num_threads_);
+      thread_group_.create_threads(std::bind(&thread_pool_executor::run, this), thread_nums_);
       thread_group_.start();
     }
   }
@@ -72,7 +72,7 @@ class thread_pool_executor : public abstract_executor_service {
 
   bool is_shutdown() override { return state_ != RUNNING; }
 
-  std::size_t num_threads() { return num_threads_; }
+  std::size_t thread_nums() { return thread_nums_; }
 
  protected:
   static const unsigned int ACCEPT_NEW_TASKS = 1U << 0U;
@@ -119,7 +119,7 @@ class thread_pool_executor : public abstract_executor_service {
  private:
   state state_;
 
-  std::size_t num_threads_;
+  std::size_t thread_nums_;
   thread_group thread_group_;
 
   std::mutex wakeup_mutex_;
@@ -145,8 +145,8 @@ struct scheduled_executor_handler : public executor_handler {
 
 class scheduled_thread_pool_executor : public thread_pool_executor, virtual public scheduled_executor_service {
  public:
-  explicit scheduled_thread_pool_executor(std::size_t num_threads, bool start_immediately = true)
-      : thread_pool_executor(num_threads, false),
+  explicit scheduled_thread_pool_executor(std::size_t thread_nums, bool start_immediately = true)
+      : thread_pool_executor(thread_nums, false),
         time_queue_(&scheduled_executor_handler::less),
         stopped_(true),
         single_thread_(false),
@@ -157,9 +157,9 @@ class scheduled_thread_pool_executor : public thread_pool_executor, virtual publ
     }
   }
   explicit scheduled_thread_pool_executor(const std::string& name,
-                                          std::size_t num_threads,
+                                          std::size_t thread_nums,
                                           bool start_immediately = true)
-      : thread_pool_executor(name, num_threads, false),
+      : thread_pool_executor(name, thread_nums, false),
         time_queue_(&scheduled_executor_handler::less),
         stopped_(true),
         single_thread_(false),
@@ -305,4 +305,4 @@ class scheduled_thread_pool_executor : public thread_pool_executor, virtual publ
 
 }  // namespace rocketmq
 
-#endif  // __EXECUTOR_IMPL_HPP__
+#endif  // ROCKETMQ_CONCURRENT_EXECUTORIMPL_HPP_

@@ -14,27 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __DEFAULT_MQ_PUSH_CONSUMER_IMPL_H__
-#define __DEFAULT_MQ_PUSH_CONSUMER_IMPL_H__
+#ifndef ROCKETMQ_CONXUMER_DEFAULTMQPUSHCONSUMERIMPL_H_
+#define ROCKETMQ_CONXUMER_DEFAULTMQPUSHCONSUMERIMPL_H_
 
 #include <memory>
 #include <string>
 #include <thread>
 
+#include "concurrent/executor.hpp"
 #include "DefaultMQPushConsumer.h"
 #include "MQClientImpl.h"
 #include "MQConsumerInner.h"
 #include "PullRequest.h"
-#include "concurrent/executor.hpp"
 
 namespace rocketmq {
 
-class RebalanceImpl;
-class SubscriptionData;
+class AsyncPullCallback;
+class ConsumeMsgService;
 class OffsetStore;
 class PullAPIWrapper;
-class ConsumeMsgService;
-class AsyncPullCallback;
+class RebalanceImpl;
+class SubscriptionData;
 
 class DefaultMQPushConsumerImpl;
 typedef std::shared_ptr<DefaultMQPushConsumerImpl> DefaultMQPushConsumerImplPtr;
@@ -44,6 +44,10 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
                                   public MQClientImpl,
                                   public MQConsumerInner {
  public:
+  /**
+   * create() - Factory method for DefaultMQPushConsumerImpl, used to ensure that all objects of
+   * DefaultMQPushConsumerImpl are managed by std::share_ptr
+   */
   static DefaultMQPushConsumerImplPtr create(DefaultMQPushConsumerConfigPtr config, RPCHookPtr rpcHook = nullptr) {
     if (nullptr == rpcHook) {
       return DefaultMQPushConsumerImplPtr(new DefaultMQPushConsumerImpl(config));
@@ -90,12 +94,10 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
   void doRebalance() override;
   void persistConsumerOffset() override;
   void updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info) override;
+
   ConsumerRunningInfo* consumerRunningInfo() override;
 
  public:
-  bool isPause();
-  void setPause(bool pause);
-
   void updateConsumeOffset(const MQMessageQueue& mq, int64_t offset);
   void correctTagsOffset(PullRequestPtr pullRequest);
 
@@ -107,49 +109,52 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
 
   void resetRetryTopic(const std::vector<MessageExtPtr>& msgs, const std::string& consumerGroup);
 
- public:
-  bool isConsumeOrderly() { return m_consumeOrderly; }
-
-  RebalanceImpl* getRebalanceImpl() const { return m_rebalanceImpl.get(); }
-
-  PullAPIWrapper* getPullAPIWrapper() const { return m_pullAPIWrapper.get(); }
-
-  OffsetStore* getOffsetStore() const { return m_offsetStore.get(); }
-
-  ConsumeMsgService* getConsumerMsgService() const { return m_consumeService.get(); }
-
-  MessageListenerType getMessageListenerType() const {
-    if (nullptr != m_messageListener) {
-      return m_messageListener->getMessageListenerType();
-    }
-    return messageListenerDefaultly;
-  }
-
-  DefaultMQPushConsumerConfig* getDefaultMQPushConsumerConfig() { return m_pushConsumerConfig.get(); }
-
  private:
   void checkConfig();
   void copySubscription();
   void updateTopicSubscribeInfoWhenSubscriptionChanged();
 
+ public:
   int getMaxReconsumeTimes();
 
+  inline bool isPause() const { return pause_; };
+  inline void setPause(bool pause) { pause_ = pause; }
+
+  inline bool isConsumeOrderly() { return consume_orderly_; }
+
+  inline RebalanceImpl* getRebalanceImpl() const { return rebalance_impl_.get(); }
+
+  inline PullAPIWrapper* getPullAPIWrapper() const { return pull_api_wrapper_.get(); }
+
+  inline OffsetStore* getOffsetStore() const { return offset_store_.get(); }
+
+  inline ConsumeMsgService* getConsumerMsgService() const { return consume_service_.get(); }
+
+  inline MessageListenerType getMessageListenerType() const {
+    if (nullptr != message_listener_) {
+      return message_listener_->getMessageListenerType();
+    }
+    return messageListenerDefaultly;
+  }
+
+  inline DefaultMQPushConsumerConfig* getDefaultMQPushConsumerConfig() {
+    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get());
+  }
+
  private:
-  DefaultMQPushConsumerConfigPtr m_pushConsumerConfig;
+  uint64_t start_time_;
 
-  uint64_t m_startTime;
+  volatile bool pause_;
+  bool consume_orderly_;
 
-  volatile bool m_pause;
-  bool m_consumeOrderly;
-
-  std::map<std::string, std::string> m_subTopics;
-  std::unique_ptr<RebalanceImpl> m_rebalanceImpl;
-  std::unique_ptr<PullAPIWrapper> m_pullAPIWrapper;
-  std::unique_ptr<OffsetStore> m_offsetStore;
-  std::unique_ptr<ConsumeMsgService> m_consumeService;
-  MQMessageListener* m_messageListener;
+  std::map<std::string, std::string> subscription_;
+  std::unique_ptr<RebalanceImpl> rebalance_impl_;
+  std::unique_ptr<PullAPIWrapper> pull_api_wrapper_;
+  std::unique_ptr<OffsetStore> offset_store_;
+  std::unique_ptr<ConsumeMsgService> consume_service_;
+  MQMessageListener* message_listener_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __DEFAULT_MQ_PUSH_CONSUMER_IMPL_H__
+#endif  // ROCKETMQ_CONXUMER_DEFAULTMQPUSHCONSUMERIMPL_H_

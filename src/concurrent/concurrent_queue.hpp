@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __CONCURRENT_QUEUE_HPP__
-#define __CONCURRENT_QUEUE_HPP__
+#ifndef ROCKETMQ_CONCURRENT_CONCURRENTQUEUE_HPP_
+#define ROCKETMQ_CONCURRENT_CONCURRENTQUEUE_HPP_
 
 #include <atomic>
 #include <memory>
@@ -152,4 +152,4 @@ class concurrent_queue {
 
 }  // namespace rocketmq
 
-#endif  // __CONCURRENT_QUEUE_HPP__
+#endif  // ROCKETMQ_CONCURRENT_CONCURRENTQUEUE_HPP_

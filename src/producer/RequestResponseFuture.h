@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __REQUEST_RESPONSE_FUTURE__
-#define __REQUEST_RESPONSE_FUTURE__
+#ifndef ROCKETMQ_PRODUCER_REQUESTRESPONSEFUTURE_H_
+#define ROCKETMQ_PRODUCER_REQUESTRESPONSEFUTURE_H_
 
 #include <exception>
 #include <string>
@@ -37,26 +37,27 @@ class RequestResponseFuture {
   MessagePtr waitResponseMessage(int64_t timeout);
   void putResponseMessage(MessagePtr responseMsg);
 
-  const std::string& getCorrelationId();
+ public:
+  inline const std::string& correlation_id() const { return correlation_id_; }
 
-  bool isSendRequestOk();
-  void setSendRequestOk(bool sendRequestOk);
+  inline bool send_request_ok() const { return send_request_ok_; }
+  inline void set_send_request_ok(bool sendRequestOk) { send_request_ok_ = sendRequestOk; }
 
-  std::exception_ptr getCause();
-  void setCause(std::exception_ptr cause);
+  inline std::exception_ptr cause() const { return cause_; }
+  inline void set_cause(std::exception_ptr cause) { cause_ = cause; }
 
  private:
-  std::string m_correlationId;
-  RequestCallback* m_requestCallback;
-  uint64_t m_beginTimestamp;
-  MessagePtr m_requestMsg;
-  long m_timeoutMillis;
-  std::unique_ptr<latch> m_countDownLatch;  // use for synchronization rpc
-  MessagePtr m_responseMsg;
-  bool m_sendRequestOk;
-  std::exception_ptr m_cause;
+  std::string correlation_id_;
+  RequestCallback* request_callback_;
+  uint64_t begin_timestamp_;
+  MessagePtr request_msg_;
+  long timeout_millis_;
+  std::unique_ptr<latch> count_down_latch_;  // use for synchronization rpc
+  MessagePtr response_msg_;
+  bool send_request_ok_;
+  std::exception_ptr cause_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __REQUEST_RESPONSE_FUTURE__
+#endif  // ROCKETMQ_PRODUCER_REQUESTRESPONSEFUTURE_H_

@@ -14,16 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PULL_CALLBACK_H__
-#define __PULL_CALLBACK_H__
+#ifndef ROCKETMQ_PULLCALLBACK_H_
+#define ROCKETMQ_PULLCALLBACK_H_
 
-#include "MQClientException.h"
+#include "MQException.h"
 #include "PullResult.h"
 
 namespace rocketmq {
 
 enum PullCallbackType { PULL_CALLBACK_TYPE_SIMPLE = 0, PULL_CALLBACK_TYPE_AUTO_DELETE = 1 };
 
+/**
+ * PullCallback - callback interface for async pull
+ */
 class ROCKETMQCLIENT_API PullCallback {
  public:
   virtual ~PullCallback() = default;
@@ -34,6 +37,11 @@ class ROCKETMQCLIENT_API PullCallback {
   virtual PullCallbackType getPullCallbackType() const { return PULL_CALLBACK_TYPE_SIMPLE; }
 };
 
+/**
+ * AutoDeletePullCallback - callback interface for async pull
+ *
+ * the object of AutoDeletePullCallback will be deleted automatically by SDK after invoke callback interface
+ */
 class ROCKETMQCLIENT_API AutoDeletePullCallback : public PullCallback {
  public:
   PullCallbackType getPullCallbackType() const override final { return PULL_CALLBACK_TYPE_AUTO_DELETE; }
@@ -41,4 +49,4 @@ class ROCKETMQCLIENT_API AutoDeletePullCallback : public PullCallback {
 
 }  // namespace rocketmq
 
-#endif  // __PULL_CALLBACK_H__
+#endif  // ROCKETMQ_PULLCALLBACK_H_

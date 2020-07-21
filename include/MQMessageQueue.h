@@ -43,14 +43,14 @@ class ROCKETMQCLIENT_API MQMessageQueue {
   std::string toString() const;
 
  public:
-  inline const std::string& getTopic() const { return topic_; };
-  inline void setTopic(const std::string& topic) { topic_ = topic; };
+  inline const std::string& topic() const { return topic_; };
+  inline void set_topic(const std::string& topic) { topic_ = topic; };
 
-  inline const std::string& getBrokerName() const { return broker_name_; };
-  inline void setBrokerName(const std::string& broker_name) { broker_name_ = broker_name; };
+  inline const std::string& broker_name() const { return broker_name_; };
+  inline void set_broker_name(const std::string& broker_name) { broker_name_ = broker_name; };
 
-  inline int getQueueId() const { return queue_id_; };
-  inline void setQueueId(int queue_id) { queue_id_ = queue_id; };
+  inline int queue_id() const { return queue_id_; };
+  inline void set_queue_id(int queue_id) { queue_id_ = queue_id; };
 
  private:
   std::string topic_;

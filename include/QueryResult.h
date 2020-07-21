@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __QUERY_RESULT_H__
-#define __QUERY_RESULT_H__
+#ifndef ROCKETMQ_QUERYRESULT_H_
+#define ROCKETMQ_QUERYRESULT_H_
 
 #include "MQMessageExt.h"
 
@@ -39,4 +39,4 @@ class ROCKETMQCLIENT_API QueryResult {
 
 }  // namespace rocketmq
 
-#endif  // __QUERY_RESULT_H__
+#endif  // ROCKETMQ_QUERYRESULT_H_

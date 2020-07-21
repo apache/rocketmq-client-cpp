@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __DEFAULT_MQ_PULL_CONSUMER_H__
-#define __DEFAULT_MQ_PULL_CONSUMER_H__
+#ifndef ROCCKETMQ_DEFAULTMQPULLCONSUMER_H_
+#define ROCCKETMQ_DEFAULTMQPULLCONSUMER_H_
 
 #include <set>
 #include <string>
@@ -78,4 +78,4 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumer : public MQPullConsumer, public D
 
 }  // namespace rocketmq
 
-#endif  // __DEFAULT_MQ_PULL_CONSUMER_H__
+#endif  // ROCCKETMQ_DEFAULTMQPULLCONSUMER_H_

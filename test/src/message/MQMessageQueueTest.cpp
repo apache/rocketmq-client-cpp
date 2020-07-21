@@ -27,32 +27,32 @@ using rocketmq::MQMessageQueue;
 
 TEST(MessageQueueTest, Init) {
   MQMessageQueue messageQueue;
-  EXPECT_EQ(messageQueue.getBrokerName(), "");
-  EXPECT_EQ(messageQueue.getTopic(), "");
-  EXPECT_EQ(messageQueue.getQueueId(), -1);
+  EXPECT_EQ(messageQueue.broker_name(), "");
+  EXPECT_EQ(messageQueue.topic(), "");
+  EXPECT_EQ(messageQueue.queue_id(), -1);
 
   MQMessageQueue twoMessageQueue("testTopic", "testBroker", 1);
-  EXPECT_EQ(twoMessageQueue.getBrokerName(), "testBroker");
-  EXPECT_EQ(twoMessageQueue.getTopic(), "testTopic");
-  EXPECT_EQ(twoMessageQueue.getQueueId(), 1);
+  EXPECT_EQ(twoMessageQueue.broker_name(), "testBroker");
+  EXPECT_EQ(twoMessageQueue.topic(), "testTopic");
+  EXPECT_EQ(twoMessageQueue.queue_id(), 1);
 
   MQMessageQueue threeMessageQueue("threeTestTopic", "threeTestBroker", 2);
   MQMessageQueue fourMessageQueue(threeMessageQueue);
-  EXPECT_EQ(fourMessageQueue.getBrokerName(), "threeTestBroker");
-  EXPECT_EQ(fourMessageQueue.getTopic(), "threeTestTopic");
-  EXPECT_EQ(fourMessageQueue.getQueueId(), 2);
+  EXPECT_EQ(fourMessageQueue.broker_name(), "threeTestBroker");
+  EXPECT_EQ(fourMessageQueue.topic(), "threeTestTopic");
+  EXPECT_EQ(fourMessageQueue.queue_id(), 2);
 
   fourMessageQueue = twoMessageQueue;
-  EXPECT_EQ(fourMessageQueue.getBrokerName(), "testBroker");
-  EXPECT_EQ(fourMessageQueue.getTopic(), "testTopic");
-  EXPECT_EQ(fourMessageQueue.getQueueId(), 1);
+  EXPECT_EQ(fourMessageQueue.broker_name(), "testBroker");
+  EXPECT_EQ(fourMessageQueue.topic(), "testTopic");
+  EXPECT_EQ(fourMessageQueue.queue_id(), 1);
 
-  fourMessageQueue.setBrokerName("fourTestBroker");
-  fourMessageQueue.setTopic("fourTestTopic");
-  fourMessageQueue.setQueueId(4);
-  EXPECT_EQ(fourMessageQueue.getBrokerName(), "fourTestBroker");
-  EXPECT_EQ(fourMessageQueue.getTopic(), "fourTestTopic");
-  EXPECT_EQ(fourMessageQueue.getQueueId(), 4);
+  fourMessageQueue.set_broker_name("fourTestBroker");
+  fourMessageQueue.set_topic("fourTestTopic");
+  fourMessageQueue.set_queue_id(4);
+  EXPECT_EQ(fourMessageQueue.broker_name(), "fourTestBroker");
+  EXPECT_EQ(fourMessageQueue.topic(), "fourTestTopic");
+  EXPECT_EQ(fourMessageQueue.queue_id(), 4);
 }
 
 TEST(MessageQueueTest, Operators) {
@@ -64,21 +64,21 @@ TEST(MessageQueueTest, Operators) {
   EXPECT_EQ(messageQueue, twoMessageQueue);
   EXPECT_EQ(messageQueue.compareTo(twoMessageQueue), 0);
 
-  twoMessageQueue.setTopic("testTopic");
+  twoMessageQueue.set_topic("testTopic");
   EXPECT_FALSE(messageQueue == twoMessageQueue);
   EXPECT_NE(messageQueue.compareTo(twoMessageQueue), 0);
 
   twoMessageQueue = messageQueue;
   EXPECT_TRUE(messageQueue == twoMessageQueue);
 
-  twoMessageQueue.setQueueId(1);
+  twoMessageQueue.set_queue_id(1);
   EXPECT_FALSE(messageQueue == twoMessageQueue);
   EXPECT_NE(messageQueue.compareTo(twoMessageQueue), 0);
 
   twoMessageQueue = messageQueue;
   EXPECT_TRUE(messageQueue == twoMessageQueue);
 
-  twoMessageQueue.setBrokerName("testBroker");
+  twoMessageQueue.set_broker_name("testBroker");
   EXPECT_FALSE(messageQueue == twoMessageQueue);
   EXPECT_FALSE(messageQueue.compareTo(twoMessageQueue) == 0);
 }

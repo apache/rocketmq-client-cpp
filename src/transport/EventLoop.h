@@ -14,15 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __EVENTLOOP_H__
-#define __EVENTLOOP_H__
+#ifndef ROCKETMQ_TRANSPORT_EVENTLOOP_H_
+#define ROCKETMQ_TRANSPORT_EVENTLOOP_H_
 
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <event2/event.h>
 
-#include <functional>
-#include <memory>
+#include <functional>  // std::function
 
 #include "concurrent/thread.hpp"
 #include "noncopyable.h"
@@ -44,7 +43,7 @@ class EventLoop : public noncopyable {
   void start();
   void stop();
 
-  bool isRunning() { return _is_running; }
+  bool isRunning() { return is_running_; }
 
   BufferEvent* createBufferEvent(socket_t fd, int options);
 
@@ -52,10 +51,10 @@ class EventLoop : public noncopyable {
   void runLoop();
 
  private:
-  struct event_base* m_eventBase;
-  thread m_loopThread;
+  struct event_base* event_base_;
+  thread loop_thread_;
 
-  bool _is_running;  // aotmic is unnecessary
+  bool is_running_;  // aotmic is unnecessary
 };
 
 class TcpTransport;
@@ -74,27 +73,25 @@ class BufferEvent : public noncopyable {
 
   void setCallback(DataCallback readCallback, DataCallback writeCallback, EventCallback eventCallback);
 
-  void setWatermark(short events, size_t lowmark, size_t highmark) {
-    bufferevent_setwatermark(m_bufferEvent, events, lowmark, highmark);
+  inline void setWatermark(short events, size_t lowmark, size_t highmark) {
+    bufferevent_setwatermark(buffer_event_, events, lowmark, highmark);
   }
 
-  int enable(short event) { return bufferevent_enable(m_bufferEvent, event); }
-  int disable(short event) { return bufferevent_disable(m_bufferEvent, event); }
+  inline int enable(short event) { return bufferevent_enable(buffer_event_, event); }
+  inline int disable(short event) { return bufferevent_disable(buffer_event_, event); }
 
   int connect(const std::string& addr);
   void close();
 
-  int write(const void* data, size_t size) { return bufferevent_write(m_bufferEvent, data, size); }
+  inline int write(const void* data, size_t size) { return bufferevent_write(buffer_event_, data, size); }
 
-  size_t read(void* data, size_t size) { return bufferevent_read(m_bufferEvent, data, size); }
+  inline size_t read(void* data, size_t size) { return bufferevent_read(buffer_event_, data, size); }
 
-  struct evbuffer* getInput() {
-    return bufferevent_get_input(m_bufferEvent);
-  }
+  inline struct evbuffer* getInput() { return bufferevent_get_input(buffer_event_); }
 
-  socket_t getfd() const { return bufferevent_getfd(m_bufferEvent); }
+  inline socket_t getfd() const { return bufferevent_getfd(buffer_event_); }
 
-  const std::string& getPeerAddrPort() const { return m_peerAddrPort; }
+  inline const std::string& getPeerAddrPort() const { return peer_addr_port_; }
 
  private:
   static void read_callback(struct bufferevent* bev, void* ctx);
@@ -102,18 +99,18 @@ class BufferEvent : public noncopyable {
   static void event_callback(struct bufferevent* bev, short what, void* ctx);
 
  private:
-  EventLoop* m_eventLoop;
-  struct bufferevent* m_bufferEvent;
-  const bool m_unlockCallbacks;
+  EventLoop* event_loop_;
+  struct bufferevent* buffer_event_;
+  const bool unlock_callbacks_;
 
-  DataCallback m_readCallback;
-  DataCallback m_writeCallback;
-  EventCallback m_eventCallback;
+  DataCallback read_callback_;
+  DataCallback write_callback_;
+  EventCallback event_callback_;
 
   // cached properties
-  std::string m_peerAddrPort;
+  std::string peer_addr_port_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __EVENTLOOP_H__
+#endif  // ROCKETMQ_TRANSPORT_EVENTLOOP_H_

@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __C_ERROR_MESSAGE_H__
-#define __C_ERROR_MESSAGE_H__
+#ifndef ROCCKETMQ_C_CERRORMESSAGE_H_
+#define ROCCKETMQ_C_CERRORMESSAGE_H_
 
 #include "CCommon.h"
 
@@ -29,4 +29,4 @@ ROCKETMQCLIENT_API const char* GetLatestErrorMessage();  // Return the last erro
 }
 #endif
 
-#endif  // __C_ERROR_MESSAGE_H__
+#endif  // ROCCKETMQ_C_CERRORMESSAGE_H_

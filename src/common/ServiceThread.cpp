@@ -22,65 +22,65 @@
 namespace rocketmq {
 
 void ServiceThread::start() {
-  LOG_INFO_NEW("Try to start service thread:{} started:{} lastThread:{}", getServiceName(), m_started.load(),
-               (void*)m_thread.get());
+  LOG_INFO_NEW("Try to start service thread:{} started:{} lastThread:{}", getServiceName(), started_.load(),
+               (void*)thread_.get());
   bool expected = false;
-  if (!m_started.compare_exchange_strong(expected, true)) {
+  if (!started_.compare_exchange_strong(expected, true)) {
     return;
   }
-  m_stopped = false;
-  m_thread.reset(new thread(getServiceName(), &ServiceThread::run, this));
-  m_thread->start();
+  stopped_ = false;
+  thread_.reset(new thread(getServiceName(), &ServiceThread::run, this));
+  thread_->start();
 }
 
 void ServiceThread::shutdown() {
-  LOG_INFO_NEW("Try to shutdown service thread:{} started:{} lastThread:{}", getServiceName(), m_started.load(),
-               (void*)m_thread.get());
+  LOG_INFO_NEW("Try to shutdown service thread:{} started:{} lastThread:{}", getServiceName(), started_.load(),
+               (void*)thread_.get());
   bool expected = true;
-  if (!m_started.compare_exchange_strong(expected, false)) {
+  if (!started_.compare_exchange_strong(expected, false)) {
     return;
   }
-  m_stopped = true;
+  stopped_ = true;
   LOG_INFO_NEW("shutdown thread {}", getServiceName());
 
   wakeup();
 
   int64_t beginTime = UtilAll::currentTimeMillis();
-  m_thread->join();
+  thread_->join();
   int64_t elapsedTime = UtilAll::currentTimeMillis() - beginTime;
   LOG_INFO_NEW("join thread {} elapsed time(ms) {}", getServiceName(), elapsedTime);
 }
 
 void ServiceThread::wakeup() {
   bool expected = false;
-  if (m_hasNotified.compare_exchange_strong(expected, true)) {
-    m_waitPoint.count_down();  // notify
+  if (has_notified_.compare_exchange_strong(expected, true)) {
+    wait_point_.count_down();  // notify
   }
 }
 
 void ServiceThread::waitForRunning(long interval) {
   bool expected = true;
-  if (m_hasNotified.compare_exchange_strong(expected, false)) {
+  if (has_notified_.compare_exchange_strong(expected, false)) {
     onWaitEnd();
     return;
   }
 
   // entry to wait
-  m_waitPoint.reset();
+  wait_point_.reset();
 
   try {
-    m_waitPoint.wait(interval, time_unit::milliseconds);
+    wait_point_.wait(interval, time_unit::milliseconds);
   } catch (const std::exception& e) {
     LOG_WARN_NEW("encounter unexpected exception: {}", e.what());
   }
-  m_hasNotified.store(false);
+  has_notified_.store(false);
   onWaitEnd();
 }
 
 void ServiceThread::onWaitEnd() {}
 
 bool ServiceThread::isStopped() {
-  return m_stopped;
+  return stopped_;
 };
 
 }  // namespace rocketmq

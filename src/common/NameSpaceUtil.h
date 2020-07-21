@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __NAMESPACE_UTIL_H__
-#define __NAMESPACE_UTIL_H__
+#ifndef ROCKETMQ_COMMON_NAMESPACEUTIL_H_
+#define ROCKETMQ_COMMON_NAMESPACEUTIL_H_
 
 #include <string>
 
@@ -33,4 +33,4 @@ class NameSpaceUtil {
 
 }  // namespace rocketmq
 
-#endif  // __NAMESPACE_UTIL_H__
+#endif  // ROCKETMQ_COMMON_NAMESPACEUTIL_H_

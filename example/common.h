@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef ROCKETMQ_CLIENT4CPP_EXAMPLE_COMMON_H_
-#define ROCKETMQ_CLIENT4CPP_EXAMPLE_COMMON_H_
+#ifndef ROCKETMQ_EXAMPLE_COMMON_H_
+#define ROCKETMQ_EXAMPLE_COMMON_H_
 
 #include <atomic>
 #include <chrono>
@@ -33,7 +33,7 @@
 
 #include "PullResult.h"
 
-static std::atomic<int> g_msgCount(1);
+static std::atomic<int> g_msg_count(1);
 
 class RocketmqSendAndConsumerArgs {
  public:
@@ -126,7 +126,7 @@ static void PrintRocketmqSendAndConsumerArgs(const RocketmqSendAndConsumerArgs& 
             << "topic: " << info.topic << std::endl
             << "groupname: " << info.groupname << std::endl
             << "produce content: " << info.body << std::endl
-            << "msg count: " << g_msgCount.load() << std::endl
+            << "msg count: " << g_msg_count.load() << std::endl
             << "thread count: " << info.thread_count << std::endl;
 }
 
@@ -160,7 +160,7 @@ static bool ParseArgs(int argc, char* argv[], RocketmqSendAndConsumerArgs* info)
         info->topic.insert(0, optarg);
         break;
       case 'm':
-        g_msgCount.store(atoi(optarg));
+        g_msg_count.store(atoi(optarg));
         break;
       case 'c':
         info->body.insert(0, optarg);
@@ -208,7 +208,7 @@ static bool ParseArgs(int argc, char* argv[], RocketmqSendAndConsumerArgs* info)
     info->thread_count = thread_count;
   }
   info->printMoreInfo = atoi(arg_help.get_option_value("-v").c_str());
-  g_msgCount = atoi(arg_help.get_option_value("-m").c_str());
+  g_msg_count = atoi(arg_help.get_option_value("-m").c_str());
 #endif
   if (info->groupname.empty() || info->topic.empty() || info->namesrv.empty()) {
     std::cout << "please use -g to setup groupname and -t setup topic \n";
@@ -218,4 +218,4 @@ static bool ParseArgs(int argc, char* argv[], RocketmqSendAndConsumerArgs* info)
   return true;
 }
 
-#endif  // ROCKETMQ_CLIENT4CPP_EXAMPLE_COMMON_H_
+#endif  // ROCKETMQ_EXAMPLE_COMMON_H_

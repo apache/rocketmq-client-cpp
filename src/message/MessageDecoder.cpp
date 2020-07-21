@@ -26,21 +26,14 @@
 #include "ByteOrder.h"
 #include "Logging.h"
 #include "MessageExtImpl.h"
-#include "MessageAccessor.h"
+#include "MessageAccessor.hpp"
 #include "MessageSysFlag.h"
 #include "UtilAll.h"
 
+static const char NAME_VALUE_SEPARATOR = 1;
+static const char PROPERTY_SEPARATOR = 2;
+
 namespace rocketmq {
-
-const int MessageDecoder::MSG_ID_LENGTH = 8 + 8;
-
-const char MessageDecoder::NAME_VALUE_SEPARATOR = 1;
-const char MessageDecoder::PROPERTY_SEPARATOR = 2;
-
-int MessageDecoder::MessageMagicCodePostion = 4;
-int MessageDecoder::MessageFlagPostion = 16;
-int MessageDecoder::MessagePhysicOffsetPostion = 28;
-int MessageDecoder::MessageStoreTimestampPostion = 56;
 
 std::string MessageDecoder::createMessageId(const struct sockaddr* sa, int64_t offset) {
   int msgIDLength = sa->sa_family == AF_INET ? 16 : 28;
@@ -172,10 +165,10 @@ MessageExtPtr MessageDecoder::decode(ByteBuffer& byteBuffer, bool readBody, bool
           uncompress_failed = true;
         }
       } else {
-        // c_str safety
         msgExt->setBody(std::string(body.array(), body.size()));
       }
     } else {
+      // skip body
       byteBuffer.position(byteBuffer.position() + bodyLen);
     }
   }

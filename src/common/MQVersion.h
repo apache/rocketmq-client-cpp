@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_VERSION_H__
-#define __MQ_VERSION_H__
+#ifndef ROCKETMQ_COMMON_MQVERSION_H_
+#define ROCKETMQ_COMMON_MQVERSION_H_
 
 #include <string>
 
@@ -968,12 +968,12 @@ class MQVersion {
     HIGHER_VERSION
   };
 
-  static const int s_CurrentVersion;
-  static const std::string s_CurrentLanguage;
+  static const int CURRENT_VERSION;
+  static const std::string CURRENT_LANGUAGE;
 
   static const char* GetVersionDesc(int value);
 };
 
 }  // namespace rocketmq
 
-#endif  // __MQ_VERSION_H__
+#endif  // ROCKETMQ_COMMON_MQVERSION_H_

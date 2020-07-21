@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "ConsumeMsgService.h"
+
 #include "Logging.h"
 #include "OffsetStore.h"
 #include "RebalanceImpl.h"
@@ -22,24 +23,24 @@
 
 namespace rocketmq {
 
-const uint64_t ConsumeMessageOrderlyService::MaxTimeConsumeContinuously = 60000;
+const uint64_t MAX_TIME_CONSUME_CONTINUOUSLY = 60000;
 
 ConsumeMessageOrderlyService::ConsumeMessageOrderlyService(DefaultMQPushConsumerImpl* consumer,
                                                            int threadCount,
                                                            MQMessageListener* msgListener)
-    : m_consumer(consumer),
-      m_messageListener(msgListener),
-      m_consumeExecutor("OderlyConsumeService", threadCount, false),
-      m_scheduledExecutorService(false) {}
+    : consumer_(consumer),
+      message_listener_(msgListener),
+      consume_executor_("OderlyConsumeService", threadCount, false),
+      scheduled_executor_service_(false) {}
 
 ConsumeMessageOrderlyService::~ConsumeMessageOrderlyService() = default;
 
 void ConsumeMessageOrderlyService::start() {
-  m_consumeExecutor.startup();
+  consume_executor_.startup();
 
-  m_scheduledExecutorService.startup();
-  m_scheduledExecutorService.schedule(std::bind(&ConsumeMessageOrderlyService::lockMQPeriodically, this),
-                                      ProcessQueue::RebalanceLockInterval, time_unit::milliseconds);
+  scheduled_executor_service_.startup();
+  scheduled_executor_service_.schedule(std::bind(&ConsumeMessageOrderlyService::lockMQPeriodically, this),
+                                       ProcessQueue::REBALANCE_LOCK_INTERVAL, time_unit::milliseconds);
 }
 
 void ConsumeMessageOrderlyService::shutdown() {
@@ -48,23 +49,23 @@ void ConsumeMessageOrderlyService::shutdown() {
 }
 
 void ConsumeMessageOrderlyService::stopThreadPool() {
-  m_consumeExecutor.shutdown();
-  m_scheduledExecutorService.shutdown();
+  consume_executor_.shutdown();
+  scheduled_executor_service_.shutdown();
 }
 
 void ConsumeMessageOrderlyService::lockMQPeriodically() {
-  m_consumer->getRebalanceImpl()->lockAll();
+  consumer_->getRebalanceImpl()->lockAll();
 
-  m_scheduledExecutorService.schedule(std::bind(&ConsumeMessageOrderlyService::lockMQPeriodically, this),
-                                      ProcessQueue::RebalanceLockInterval, time_unit::milliseconds);
+  scheduled_executor_service_.schedule(std::bind(&ConsumeMessageOrderlyService::lockMQPeriodically, this),
+                                       ProcessQueue::REBALANCE_LOCK_INTERVAL, time_unit::milliseconds);
 }
 
 void ConsumeMessageOrderlyService::unlockAllMQ() {
-  m_consumer->getRebalanceImpl()->unlockAll(false);
+  consumer_->getRebalanceImpl()->unlockAll(false);
 }
 
 bool ConsumeMessageOrderlyService::lockOneMQ(const MQMessageQueue& mq) {
-  return m_consumer->getRebalanceImpl()->lock(mq);
+  return consumer_->getRebalanceImpl()->lock(mq);
 }
 
 void ConsumeMessageOrderlyService::submitConsumeRequest(std::vector<MessageExtPtr>& msgs,
@@ -72,7 +73,7 @@ void ConsumeMessageOrderlyService::submitConsumeRequest(std::vector<MessageExtPt
                                                         const MQMessageQueue& messageQueue,
                                                         const bool dispathToConsume) {
   if (dispathToConsume) {
-    m_consumeExecutor.submit(
+    consume_executor_.submit(
         std::bind(&ConsumeMessageOrderlyService::ConsumeRequest, this, processQueue, messageQueue));
   }
 }
@@ -88,15 +89,15 @@ void ConsumeMessageOrderlyService::submitConsumeRequestLater(ProcessQueuePtr pro
   timeMillis = std::max(10L, std::min(timeMillis, 30000L));
 
   static std::vector<MessageExtPtr> dummy;
-  m_scheduledExecutorService.schedule(std::bind(&ConsumeMessageOrderlyService::submitConsumeRequest, this,
-                                                std::ref(dummy), processQueue, messageQueue, true),
-                                      timeMillis, time_unit::milliseconds);
+  scheduled_executor_service_.schedule(std::bind(&ConsumeMessageOrderlyService::submitConsumeRequest, this,
+                                                 std::ref(dummy), processQueue, messageQueue, true),
+                                       timeMillis, time_unit::milliseconds);
 }
 
 void ConsumeMessageOrderlyService::tryLockLaterAndReconsume(const MQMessageQueue& mq,
                                                             ProcessQueuePtr processQueue,
                                                             const long delayMills) {
-  m_scheduledExecutorService.schedule(
+  scheduled_executor_service_.schedule(
       [this, mq, processQueue]() {
         bool lockOK = lockOneMQ(mq);
         if (lockOK) {
@@ -109,50 +110,50 @@ void ConsumeMessageOrderlyService::tryLockLaterAndReconsume(const MQMessageQueue
 }
 
 void ConsumeMessageOrderlyService::ConsumeRequest(ProcessQueuePtr processQueue, const MQMessageQueue& messageQueue) {
-  if (processQueue->isDropped()) {
+  if (processQueue->dropped()) {
     LOG_WARN_NEW("run, the message queue not be able to consume, because it's dropped. {}", messageQueue.toString());
     return;
   }
 
-  auto objLock = m_messageQueueLock.fetchLockObject(messageQueue);
+  auto objLock = message_queue_lock_.fetchLockObject(messageQueue);
   std::lock_guard<std::mutex> lock(*objLock);
 
-  if (BROADCASTING == m_consumer->messageModel() || (processQueue->isLocked() && !processQueue->isLockExpired())) {
+  if (BROADCASTING == consumer_->messageModel() || (processQueue->locked() && !processQueue->isLockExpired())) {
     auto beginTime = UtilAll::currentTimeMillis();
     for (bool continueConsume = true; continueConsume;) {
-      if (processQueue->isDropped()) {
+      if (processQueue->dropped()) {
         LOG_WARN_NEW("the message queue not be able to consume, because it's dropped. {}", messageQueue.toString());
         break;
       }
 
-      if (CLUSTERING == m_consumer->messageModel() && !processQueue->isLocked()) {
+      if (CLUSTERING == consumer_->messageModel() && !processQueue->locked()) {
         LOG_WARN_NEW("the message queue not locked, so consume later, {}", messageQueue.toString());
         tryLockLaterAndReconsume(messageQueue, processQueue, 10);
         break;
       }
 
-      if (CLUSTERING == m_consumer->messageModel() && processQueue->isLockExpired()) {
+      if (CLUSTERING == consumer_->messageModel() && processQueue->isLockExpired()) {
         LOG_WARN_NEW("the message queue lock expired, so consume later, {}", messageQueue.toString());
         tryLockLaterAndReconsume(messageQueue, processQueue, 10);
         break;
       }
 
       auto interval = UtilAll::currentTimeMillis() - beginTime;
-      if (interval > MaxTimeConsumeContinuously) {
+      if (interval > MAX_TIME_CONSUME_CONTINUOUSLY) {
         submitConsumeRequestLater(processQueue, messageQueue, 10);
         break;
       }
 
-      const int consumeBatchSize = m_consumer->getDefaultMQPushConsumerConfig()->getConsumeMessageBatchMaxSize();
+      const int consumeBatchSize = consumer_->getDefaultMQPushConsumerConfig()->getConsumeMessageBatchMaxSize();
 
       std::vector<MessageExtPtr> msgs;
       processQueue->takeMessages(msgs, consumeBatchSize);
-      m_consumer->resetRetryTopic(msgs, m_consumer->getDefaultMQPushConsumerConfig()->getGroupName());
+      consumer_->resetRetryTopic(msgs, consumer_->getDefaultMQPushConsumerConfig()->getGroupName());
       if (!msgs.empty()) {
         ConsumeStatus status = RECONSUME_LATER;
         try {
-          std::lock_guard<std::timed_mutex> lock(processQueue->getLockConsume());
-          if (processQueue->isDropped()) {
+          std::lock_guard<std::timed_mutex> lock(processQueue->lock_consume());
+          if (processQueue->dropped()) {
             LOG_WARN_NEW("consumeMessage, the message queue not be able to consume, because it's dropped. {}",
                          messageQueue.toString());
             break;
@@ -162,7 +163,7 @@ void ConsumeMessageOrderlyService::ConsumeRequest(ProcessQueuePtr processQueue, 
           for (const auto& msg : msgs) {
             message_list.emplace_back(msg);
           }
-          status = m_messageListener->consumeMessage(message_list);
+          status = message_listener_->consumeMessage(message_list);
         } catch (const std::exception& e) {
           LOG_WARN_NEW("encounter unexpected exception when consume messages.\n{}", e.what());
         }
@@ -182,15 +183,15 @@ void ConsumeMessageOrderlyService::ConsumeRequest(ProcessQueuePtr processQueue, 
             break;
         }
 
-        if (commitOffset >= 0 && !processQueue->isDropped()) {
-          m_consumer->getOffsetStore()->updateOffset(messageQueue, commitOffset, false);
+        if (commitOffset >= 0 && !processQueue->dropped()) {
+          consumer_->getOffsetStore()->updateOffset(messageQueue, commitOffset, false);
         }
       } else {
         continueConsume = false;
       }
     }
   } else {
-    if (processQueue->isDropped()) {
+    if (processQueue->dropped()) {
       LOG_WARN_NEW("the message queue not be able to consume, because it's dropped. {}", messageQueue.toString());
       return;
     }

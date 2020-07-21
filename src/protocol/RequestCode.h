@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __REQUEST_CODE_H__
-#define __REQUEST_CODE_H__
+#ifndef ROCKETMQ_PROTOCOL_REQUESTCODE_H_
+#define ROCKETMQ_PROTOCOL_REQUESTCODE_H_
 
 namespace rocketmq {
 
@@ -141,4 +141,4 @@ enum MQRequestCode {
 
 }  // namespace rocketmq
 
-#endif  // __REQUEST_CODE_H__
+#endif  // ROCKETMQ_PROTOCOL_REQUESTCODE_H_

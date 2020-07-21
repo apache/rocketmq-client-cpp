@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __VIRTUAL_ENV_UTIL_H__
-#define __VIRTUAL_ENV_UTIL_H__
+#ifndef RROCKETMQ_COMMON_VIRTUALENVUTIL_H_
+#define RROCKETMQ_COMMON_VIRTUALENVUTIL_H_
 
 #include <string>
 
@@ -25,11 +25,8 @@ class VirtualEnvUtil {
  public:
   static std::string buildWithProjectGroup(const std::string& origin, const std::string& projectGroup);
   static std::string clearProjectGroup(const std::string& origin, const std::string& projectGroup);
-
- public:
-  static const char* VIRTUAL_APPGROUP_PREFIX;
 };
 
 }  // namespace rocketmq
 
-#endif  // __VIRTUAL_ENV_UTIL_H__
+#endif  // RROCKETMQ_COMMON_VIRTUALENVUTIL_H_

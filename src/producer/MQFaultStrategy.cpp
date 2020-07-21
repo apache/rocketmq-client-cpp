@@ -32,7 +32,7 @@ const MQMessageQueue& MQFaultStrategy::selectOneMessageQueue(const TopicPublishI
       for (size_t i = 0; i < messageQueueList.size(); i++) {
         auto pos = index++ % messageQueueList.size();
         const auto& mq = messageQueueList[pos];
-        if (m_latencyFaultTolerance.isAvailable(mq.getBrokerName())) {
+        if (m_latencyFaultTolerance.isAvailable(mq.broker_name())) {
           return mq;
         }
       }
@@ -45,8 +45,8 @@ const MQMessageQueue& MQFaultStrategy::selectOneMessageQueue(const TopicPublishI
       static thread_local MQMessageQueue mq;
       mq = tpInfo->selectOneMessageQueue();
       if (!notBestBroker.empty()) {
-        mq.setBrokerName(notBestBroker);
-        mq.setQueueId(tpInfo->getSendWhichQueue().fetch_add(1) % writeQueueNums);
+        mq.set_broker_name(notBestBroker);
+        mq.set_queue_id(tpInfo->getSendWhichQueue().fetch_add(1) % writeQueueNums);
       }
       return mq;
     } else {

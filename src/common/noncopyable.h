@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __NONCOPYABLE_H__
-#define __NONCOPYABLE_H__
+#ifndef ROCKETMQ_COMMON_NONCOPYABLE_H_
+#define ROCKETMQ_COMMON_NONCOPYABLE_H_
 
 namespace rocketmq {
 
@@ -30,4 +30,4 @@ class noncopyable {
 
 }  // namespace rocketmq
 
-#endif  // __NONCOPYABLE_H__
+#endif  // ROCKETMQ_COMMON_NONCOPYABLE_H_

@@ -30,7 +30,7 @@ class Message;
 typedef std::shared_ptr<Message> MessagePtr;
 
 /**
- * Message Interface
+ * Message - interface for messgae
  */
 class ROCKETMQCLIENT_API Message {
  public:

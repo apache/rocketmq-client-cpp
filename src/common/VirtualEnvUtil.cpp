@@ -21,9 +21,9 @@
 
 #include "UtilAll.h"
 
-namespace rocketmq {
+static const char* VIRTUAL_APPGROUP_PREFIX = "%%PROJECT_%s%%";
 
-const char* VirtualEnvUtil::VIRTUAL_APPGROUP_PREFIX = "%%PROJECT_%s%%";
+namespace rocketmq {
 
 std::string VirtualEnvUtil::buildWithProjectGroup(const std::string& origin, const std::string& projectGroup) {
   if (!UtilAll::isBlank(projectGroup)) {

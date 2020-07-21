@@ -20,31 +20,31 @@
 #include "MQClientAPIImpl.h"
 #include "MQClientInstance.h"
 #include "MessageDecoder.h"
-#include "MessageAccessor.h"
-#include "PullResultExt.h"
+#include "MessageAccessor.hpp"
+#include "PullResultExt.hpp"
 #include "PullSysFlag.h"
 
 namespace rocketmq {
 
 PullAPIWrapper::PullAPIWrapper(MQClientInstance* instance, const std::string& consumerGroup) {
-  m_clientInstance = instance;
-  m_consumerGroup = consumerGroup;
+  client_instance_ = instance;
+  consumer_group_ = consumerGroup;
 }
 
 PullAPIWrapper::~PullAPIWrapper() {
-  m_clientInstance = nullptr;
-  m_pullFromWhichNodeTable.clear();
+  client_instance_ = nullptr;
+  pull_from_which_node_table_.clear();
 }
 
 void PullAPIWrapper::updatePullFromWhichNode(const MQMessageQueue& mq, int brokerId) {
-  std::lock_guard<std::mutex> lock(m_lock);
-  m_pullFromWhichNodeTable[mq] = brokerId;
+  std::lock_guard<std::mutex> lock(lock_);
+  pull_from_which_node_table_[mq] = brokerId;
 }
 
 int PullAPIWrapper::recalculatePullFromWhichNode(const MQMessageQueue& mq) {
-  std::lock_guard<std::mutex> lock(m_lock);
-  const auto& it = m_pullFromWhichNodeTable.find(mq);
-  if (it != m_pullFromWhichNodeTable.end()) {
+  std::lock_guard<std::mutex> lock(lock_);
+  const auto& it = pull_from_which_node_table_.find(mq);
+  if (it != pull_from_which_node_table_.end()) {
     return it->second;
   }
   return MASTER_ID;
@@ -52,7 +52,7 @@ int PullAPIWrapper::recalculatePullFromWhichNode(const MQMessageQueue& mq) {
 
 PullResult PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
                                              PullResult& pullResult,
-                                             SubscriptionDataPtr subscriptionData) {
+                                             SubscriptionData* subscriptionData) {
   assert(std::type_index(typeid(pullResult)) == std::type_index(typeid(PullResultExt)));
   auto& pullResultExt = dynamic_cast<PullResultExt&>(pullResult);
 
@@ -66,11 +66,11 @@ PullResult PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
     auto msgList = MessageDecoder::decodes(*byteBuffer);
 
     // filter msg list again
-    if (subscriptionData != nullptr && !subscriptionData->getTagsSet().empty()) {
+    if (subscriptionData != nullptr && !subscriptionData->tags_set().empty()) {
       msgListFilterAgain.reserve(msgList.size());
       for (const auto& msg : msgList) {
         const auto& msgTag = msg->getTags();
-        if (subscriptionData->containTag(msgTag)) {
+        if (subscriptionData->contain_tag(msgTag)) {
           msgListFilterAgain.push_back(msg);
         }
       }
@@ -106,24 +106,24 @@ PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,            
                                            CommunicationMode communicationMode,  // 10
                                            PullCallback* pullCallback) {
   std::unique_ptr<FindBrokerResult> findBrokerResult(
-      m_clientInstance->findBrokerAddressInSubscribe(mq.getBrokerName(), recalculatePullFromWhichNode(mq), false));
+      client_instance_->findBrokerAddressInSubscribe(mq.broker_name(), recalculatePullFromWhichNode(mq), false));
   if (findBrokerResult == nullptr) {
-    m_clientInstance->updateTopicRouteInfoFromNameServer(mq.getTopic());
+    client_instance_->updateTopicRouteInfoFromNameServer(mq.topic());
     findBrokerResult.reset(
-        m_clientInstance->findBrokerAddressInSubscribe(mq.getBrokerName(), recalculatePullFromWhichNode(mq), false));
+        client_instance_->findBrokerAddressInSubscribe(mq.broker_name(), recalculatePullFromWhichNode(mq), false));
   }
 
   if (findBrokerResult != nullptr) {
     int sysFlagInner = sysFlag;
 
-    if (findBrokerResult->slave) {
+    if (findBrokerResult->slave()) {
       sysFlagInner = PullSysFlag::clearCommitOffsetFlag(sysFlagInner);
     }
 
     PullMessageRequestHeader* pRequestHeader = new PullMessageRequestHeader();
-    pRequestHeader->consumerGroup = m_consumerGroup;
-    pRequestHeader->topic = mq.getTopic();
-    pRequestHeader->queueId = mq.getQueueId();
+    pRequestHeader->consumerGroup = consumer_group_;
+    pRequestHeader->topic = mq.topic();
+    pRequestHeader->queueId = mq.queue_id();
     pRequestHeader->queueOffset = offset;
     pRequestHeader->maxMsgNums = maxNums;
     pRequestHeader->sysFlag = sysFlagInner;
@@ -132,11 +132,11 @@ PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,            
     pRequestHeader->subscription = subExpression;
     pRequestHeader->subVersion = subVersion;
 
-    return m_clientInstance->getMQClientAPIImpl()->pullMessage(findBrokerResult->brokerAddr, pRequestHeader,
+    return client_instance_->getMQClientAPIImpl()->pullMessage(findBrokerResult->broker_addr(), pRequestHeader,
                                                                timeoutMillis, communicationMode, pullCallback);
   }
 
-  THROW_MQEXCEPTION(MQClientException, "The broker [" + mq.getBrokerName() + "] not exist", -1);
+  THROW_MQEXCEPTION(MQClientException, "The broker [" + mq.broker_name() + "] not exist", -1);
 }
 
 }  // namespace rocketmq

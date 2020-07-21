@@ -14,14 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __REBALANCE_IMPL_H__
-#define __REBALANCE_IMPL_H__
+#ifndef ROCKETMQ_CONSUMER_REBALANCEIMPL_H_
+#define ROCKETMQ_CONSUMER_REBALANCEIMPL_H_
 
 #include <mutex>
 
 #include "AllocateMQStrategy.h"
 #include "ConsumeType.h"
-#include "MQClientException.h"
+#include "MQException.h"
 #include "MQClientInstance.h"
 #include "MQMessageQueue.h"
 #include "ProcessQueue.h"
@@ -32,7 +32,7 @@ namespace rocketmq {
 
 typedef std::map<MQMessageQueue, ProcessQueuePtr> MQ2PQ;
 typedef std::map<std::string, std::vector<MQMessageQueue>> TOPIC2MQS;
-typedef std::map<std::string, SubscriptionDataPtr> TOPIC2SD;
+typedef std::map<std::string, SubscriptionData*> TOPIC2SD;
 typedef std::map<std::string, std::vector<MQMessageQueue>> BROKER2MQS;
 
 class RebalanceImpl {
@@ -74,8 +74,8 @@ class RebalanceImpl {
 
  public:
   TOPIC2SD& getSubscriptionInner();
-  SubscriptionDataPtr getSubscriptionData(const std::string& topic);
-  void setSubscriptionData(const std::string& topic, SubscriptionDataPtr sd) noexcept;
+  SubscriptionData* getSubscriptionData(const std::string& topic);
+  void setSubscriptionData(const std::string& topic, SubscriptionData* sd) noexcept;
 
   bool getTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& mqs);
   void setTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& mqs);
@@ -88,26 +88,28 @@ class RebalanceImpl {
   std::vector<MQMessageQueue> getAllocatedMQ();
 
  public:
-  void setConsumerGroup(const std::string& groupname) { m_consumerGroup = groupname; }
-  void setMessageModel(MessageModel messageModel) { m_messageModel = messageModel; }
-  void setAllocateMQStrategy(AllocateMQStrategy* allocateMqStrategy) { m_allocateMQStrategy = allocateMqStrategy; }
-  void setClientInstance(MQClientInstance* instance) { m_clientInstance = instance; }
+  inline void set_consumer_group(const std::string& groupname) { consumer_group_ = groupname; }
+  inline void set_message_model(MessageModel messageModel) { message_model_ = messageModel; }
+  inline void set_allocate_mq_strategy(AllocateMQStrategy* allocateMqStrategy) {
+    allocate_mq_strategy_ = allocateMqStrategy;
+  }
+  inline void set_client_instance(MQClientInstance* instance) { client_instance_ = instance; }
 
  protected:
-  MQ2PQ m_processQueueTable;
-  std::mutex m_processQueueTableMutex;
+  MQ2PQ process_queue_table_;
+  std::mutex process_queue_table_mutex_;
 
-  TOPIC2MQS m_topicSubscribeInfoTable;
-  std::mutex m_topicSubscribeInfoTableMutex;
+  TOPIC2MQS topic_subscribe_info_table_;
+  std::mutex topic_subscribe_info_table_mutex_;
 
-  TOPIC2SD m_subscriptionInner;  // don't modify m_subscriptionInner after consumer start.
+  TOPIC2SD subscription_inner_;  // don't modify subscription_inner_ after consumer start.
 
-  std::string m_consumerGroup;
-  MessageModel m_messageModel;
-  AllocateMQStrategy* m_allocateMQStrategy;
-  MQClientInstance* m_clientInstance;
+  std::string consumer_group_;
+  MessageModel message_model_;
+  AllocateMQStrategy* allocate_mq_strategy_;
+  MQClientInstance* client_instance_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __REBALANCE_IMPL_H__
+#endif  // ROCKETMQ_CONSUMER_REBALANCEIMPL_H_

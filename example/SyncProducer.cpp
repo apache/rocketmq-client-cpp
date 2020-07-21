@@ -22,7 +22,7 @@ using namespace rocketmq;
 TpsReportService g_tps;
 
 void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* producer) {
-  while (g_msgCount.fetch_sub(1) > 0) {
+  while (g_msg_count.fetch_sub(1) > 0) {
     MQMessage msg(info->topic,  // topic
                   "*",          // tag
                   info->body);  // body
@@ -56,14 +56,14 @@ int main(int argc, char* argv[]) {
   producer->setGroupName(info.groupname);
   producer->setSendMsgTimeout(3000);
   producer->setRetryTimes(info.retrytimes);
-  producer->setRetryTimes4Async(info.retrytimes);
+  producer->setRetryTimesForAsync(info.retrytimes);
   producer->setSendLatencyFaultEnable(!info.selectUnactiveBroker);
   producer->setTcpTransportTryLockTimeout(1000);
   producer->setTcpTransportConnectTimeout(400);
   producer->start();
 
   std::vector<std::shared_ptr<std::thread>> work_pool;
-  int msgcount = g_msgCount.load();
+  int msgcount = g_msg_count.load();
   g_tps.start();
 
   auto start = std::chrono::system_clock::now();

@@ -16,7 +16,7 @@
  */
 #include "DefaultMQPushConsumer.h"
 
-#include "DefaultMQPushConsumerConfigImpl.h"
+#include "DefaultMQPushConsumerConfigImpl.hpp"
 #include "DefaultMQPushConsumerImpl.h"
 #include "UtilAll.h"
 
@@ -35,7 +35,8 @@ DefaultMQPushConsumer::DefaultMQPushConsumer(const std::string& groupname, RPCHo
     setGroupName(groupname);
   }
 
-  push_consumer_impl_ = DefaultMQPushConsumerImpl::create(getRealConfig(), rpcHook);
+  // create DefaultMQPushConsumerImpl
+  push_consumer_impl_ = DefaultMQPushConsumerImpl::create(real_config(), rpcHook);
 }
 
 DefaultMQPushConsumer::~DefaultMQPushConsumer() = default;
@@ -89,7 +90,7 @@ void DefaultMQPushConsumer::resume() {
 }
 
 void DefaultMQPushConsumer::setRPCHook(RPCHookPtr rpcHook) {
-  std::dynamic_pointer_cast<DefaultMQPushConsumerImpl>(push_consumer_impl_)->setRPCHook(rpcHook);
+  dynamic_cast<DefaultMQPushConsumerImpl*>(push_consumer_impl_.get())->setRPCHook(rpcHook);
 }
 
 }  // namespace rocketmq

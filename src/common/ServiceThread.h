@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SERVICE_THREAD_H__
-#define __SERVICE_THREAD_H__
+#ifndef ROCKETMQ_COMMON_SERVICETHREAD_H_
+#define ROCKETMQ_COMMON_SERVICETHREAD_H_
 
 #include <atomic>
 #include <memory>
@@ -28,12 +28,7 @@ namespace rocketmq {
 class ServiceThread {
  public:
   ServiceThread()
-      : m_waitPoint(1),
-        m_hasNotified(false),
-        m_stopped(false),
-        m_isDaemon(false),
-        m_thread(nullptr),
-        m_started(false) {}
+      : wait_point_(1), has_notified_(false), stopped_(false), is_daemon_(false), thread_(nullptr), started_(false) {}
   virtual ~ServiceThread() = default;
 
   virtual std::string getServiceName() = 0;
@@ -51,16 +46,16 @@ class ServiceThread {
   virtual void onWaitEnd();
 
  protected:
-  latch m_waitPoint;
-  std::atomic<bool> m_hasNotified;
-  volatile bool m_stopped;
-  bool m_isDaemon;
+  latch wait_point_;
+  std::atomic<bool> has_notified_;
+  volatile bool stopped_;
+  bool is_daemon_;
 
  private:
-  std::unique_ptr<thread> m_thread;
-  std::atomic<bool> m_started;
+  std::unique_ptr<thread> thread_;
+  std::atomic<bool> started_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __PULL_MESSAGE_SERVICE_H__
+#endif  // ROCKETMQ_COMMON_SERVICETHREAD_H_

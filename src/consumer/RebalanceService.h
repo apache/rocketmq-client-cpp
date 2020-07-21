@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __REBALANCE_SERVICE_H__
-#define __REBALANCE_SERVICE_H__
+#ifndef ROCKETMQ_CONSUMER_REBALANCESERVICE_H_
+#define ROCKETMQ_CONSUMER_REBALANCESERVICE_H_
 
 #include "Logging.h"
 #include "MQClientInstance.h"
@@ -25,14 +25,14 @@ namespace rocketmq {
 
 class RebalanceService : public ServiceThread {
  public:
-  RebalanceService(MQClientInstance* instance) : m_clientInstance(instance) {}
+  RebalanceService(MQClientInstance* instance) : client_instance_(instance) {}
 
   void run() override {
     LOG_INFO_NEW("{} service started", getServiceName());
 
     while (!isStopped()) {
       waitForRunning(20000);
-      m_clientInstance->doRebalance();
+      client_instance_->doRebalance();
     }
 
     LOG_INFO_NEW("{} service end", getServiceName());
@@ -41,9 +41,9 @@ class RebalanceService : public ServiceThread {
   std::string getServiceName() override { return "RebalanceService"; }
 
  private:
-  MQClientInstance* m_clientInstance;
+  MQClientInstance* client_instance_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __REBALANCE_SERVICE_H__
+#endif  // ROCKETMQ_CONSUMER_REBALANCESERVICE_H_

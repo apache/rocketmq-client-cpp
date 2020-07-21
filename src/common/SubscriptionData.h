@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SUBSCRIPTION_DATA_H__
-#define __SUBSCRIPTION_DATA_H__
+#ifndef ROCKETMQ_SUBSCRIPTIONDATA_H_
+#define ROCKETMQ_SUBSCRIPTIONDATA_H_
 
 #include <json/json.h>
 
@@ -26,32 +26,13 @@
 
 namespace rocketmq {
 
-class SubscriptionData;
-typedef SubscriptionData* SubscriptionDataPtr;
-
 class ROCKETMQCLIENT_API SubscriptionData {
  public:
   SubscriptionData();
   SubscriptionData(const std::string& topic, const std::string& subString);
   SubscriptionData(const SubscriptionData& other);
 
-  virtual ~SubscriptionData() {
-    m_tagSet.clear();
-    m_codeSet.clear();
-  }
-
-  const std::string& getTopic() const;
-
-  const std::string& getSubString() const;
-  void setSubString(const std::string& sub);
-
-  int64_t getSubVersion() const;
-
-  void putTagsSet(const std::string& tag);
-  bool containTag(const std::string& tag);
-  std::vector<std::string>& getTagsSet();
-
-  void putCodeSet(int32_t code);
+  virtual ~SubscriptionData() = default;
 
   bool operator==(const SubscriptionData& other) const;
   bool operator!=(const SubscriptionData& other) const { return !operator==(other); }
@@ -60,14 +41,32 @@ class ROCKETMQCLIENT_API SubscriptionData {
 
   Json::Value toJson() const;
 
+ public:
+  inline const std::string& topic() const { return topic_; }
+
+  inline const std::string& sub_string() const { return sub_string_; }
+  inline void set_sub_string(const std::string& sub) { sub_string_ = sub; }
+
+  inline int64_t sub_version() const { return sub_version_; }
+
+  inline std::vector<std::string>& tags_set() { return tag_set_; }
+
+  inline void put_tag(const std::string& tag) { tag_set_.push_back(tag); }
+
+  inline bool contain_tag(const std::string& tag) const {
+    return std::find(tag_set_.begin(), tag_set_.end(), tag) != tag_set_.end();
+  }
+
+  inline void put_code(int32_t code) { code_set_.push_back(code); }
+
  private:
-  std::string m_topic;
-  std::string m_subString;
-  int64_t m_subVersion;
-  std::vector<std::string> m_tagSet;
-  std::vector<int32_t> m_codeSet;
+  std::string topic_;
+  std::string sub_string_;
+  int64_t sub_version_;
+  std::vector<std::string> tag_set_;
+  std::vector<int32_t> code_set_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __SUBSCRIPTION_DATA_H__
+#endif  // ROCKETMQ_SUBSCRIPTIONDATA_H_

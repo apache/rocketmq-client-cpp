@@ -14,16 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SEND_CALLBACK_H__
-#define __SEND_CALLBACK_H__
+#ifndef ROCKETMQ_SENDCALLBACK_H_
+#define ROCKETMQ_SENDCALLBACK_H_
 
-#include "MQClientException.h"
+#include "MQException.h"
 #include "SendResult.h"
 
 namespace rocketmq {
 
 enum SendCallbackType { SEND_CALLBACK_TYPE_SIMPLE = 0, SEND_CALLBACK_TYPE_AUTO_DELETE = 1 };
 
+/**
+ * SendCallback - callback interface for async send
+ */
 class ROCKETMQCLIENT_API SendCallback {
  public:
   virtual ~SendCallback() = default;
@@ -34,12 +37,17 @@ class ROCKETMQCLIENT_API SendCallback {
   virtual SendCallbackType getSendCallbackType() const { return SEND_CALLBACK_TYPE_SIMPLE; }
 };
 
-// async SendCallback will be deleted automatically by rocketmq cpp after invoke callback interface
-class ROCKETMQCLIENT_API AutoDeleteSendCallback : public SendCallback {
+/**
+ * AutoDeleteSendCallback - callback interface for async send
+ *
+ * the object of AutoDeleteSendCallback will be deleted automatically by SDK after invoke callback interface
+ */
+class ROCKETMQCLIENT_API AutoDeleteSendCallback : public SendCallback  // base interface
+{
  public:
   SendCallbackType getSendCallbackType() const override final { return SEND_CALLBACK_TYPE_AUTO_DELETE; }
 };
 
 }  // namespace rocketmq
 
-#endif  // __SEND_CALLBACK_H__
+#endif  // ROCKETMQ_SENDCALLBACK_H_

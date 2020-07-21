@@ -16,7 +16,7 @@
  */
 #include "Logging.h"
 
-#include <iostream>
+#include <iostream>  // std::cerr, std::endl
 
 #if SPDLOG_VER_MAJOR >= 1
 #include <spdlog/async.h>
@@ -29,103 +29,94 @@
 
 namespace rocketmq {
 
-logAdapter::~logAdapter() {
-  spdlog::drop("default");
-}
-
-logAdapter* logAdapter::getLogInstance() {
-  static logAdapter singleton_;
+LogAdapter* LogAdapter::getLogInstance() {
+  static LogAdapter singleton_;
   return &singleton_;
 }
 
-logAdapter::logAdapter() : m_logLevel(eLOG_LEVEL_INFO) {
-  std::string logDir;
+LogAdapter::LogAdapter() : log_level_(LOG_LEVEL_INFO) {
+  std::string log_dir;
   const char* dir = std::getenv(ROCKETMQ_CPP_LOG_DIR_ENV.c_str());
   if (dir != nullptr && dir[0] != '\0') {
     // FIXME: replace '~' by home directory.
-    logDir = dir;
+    log_dir = dir;
   } else {
-    logDir = UtilAll::getHomeDirectory();
-    logDir.append("/logs/rocketmq-cpp/");
+    log_dir = UtilAll::getHomeDirectory();
+    log_dir.append("/logs/rocketmq-cpp/");
   }
-  if (logDir[logDir.size() - 1] != '/') {
-    logDir.append("/");
+  if (log_dir[log_dir.size() - 1] != '/') {
+    log_dir.append("/");
   }
 
-  if (!UtilAll::existDirectory(logDir)) {
-    UtilAll::createDirectory(logDir);
+  if (!UtilAll::existDirectory(log_dir)) {
+    UtilAll::createDirectory(log_dir);
   }
-  if (!UtilAll::existDirectory(logDir)) {
+  if (!UtilAll::existDirectory(log_dir)) {
     std::cerr << "create log dir error, will exit" << std::endl;
     exit(1);
   }
 
   std::string fileName = UtilAll::to_string(UtilAll::getProcessId()) + "_" + "rocketmq-cpp.log";
-  m_logFile = logDir + fileName;
+  log_file_ = log_dir + fileName;
 
 #if SPDLOG_VER_MAJOR >= 1
   spdlog::init_thread_pool(8192, 1);
 
-  auto rotating_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(m_logFile, 1024 * 1024 * 100, 3);
+  auto rotating_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(log_file_, 1024 * 1024 * 100, 3);
   rotating_sink->set_level(spdlog::level::debug);
   rotating_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [thread@%t] - %v");
-  m_logSinks.push_back(rotating_sink);
+  log_sinks_.push_back(rotating_sink);
 
-  m_logger = std::make_shared<spdlog::async_logger>("default", m_logSinks.begin(), m_logSinks.end(),
-                                                    spdlog::thread_pool(), spdlog::async_overflow_policy::block);
+  logger_ = std::make_shared<spdlog::async_logger>("default", log_sinks_.begin(), log_sinks_.end(),
+                                                   spdlog::thread_pool(), spdlog::async_overflow_policy::block);
 
   // register it if you need to access it globally
-  spdlog::register_logger(m_logger);
+  spdlog::register_logger(logger_);
 
   // when an error occurred, flush disk immediately
-  m_logger->flush_on(spdlog::level::err);
+  logger_->flush_on(spdlog::level::err);
 
   spdlog::flush_every(std::chrono::seconds(3));
 #else
   size_t q_size = 4096;
   spdlog::set_async_mode(q_size);
-  m_logger = spdlog::rotating_logger_mt("default", m_logFile, 1024 * 1024 * 100, 3);
-  m_logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [thread@%t] - %v");
+  logger_ = spdlog::rotating_logger_mt("default", log_file_, 1024 * 1024 * 100, 3);
+  logger_->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [thread@%t] - %v");
 #endif
 
-  setLogLevelInner(m_logLevel);
+  setLogLevelInner(log_level_);
 }
 
-void logAdapter::setLogLevelInner(elogLevel logLevel) {
-  switch (logLevel) {
-    case eLOG_LEVEL_FATAL:
-      m_logger->set_level(spdlog::level::critical);
+LogAdapter::~LogAdapter() {
+  spdlog::drop("default");
+}
+
+void LogAdapter::setLogLevelInner(LogLevel log_level) {
+  switch (log_level) {
+    case LOG_LEVEL_FATAL:
+      logger_->set_level(spdlog::level::critical);
       break;
-    case eLOG_LEVEL_ERROR:
-      m_logger->set_level(spdlog::level::err);
+    case LOG_LEVEL_ERROR:
+      logger_->set_level(spdlog::level::err);
       break;
-    case eLOG_LEVEL_WARN:
-      m_logger->set_level(spdlog::level::warn);
+    case LOG_LEVEL_WARN:
+      logger_->set_level(spdlog::level::warn);
       break;
-    case eLOG_LEVEL_INFO:
-      m_logger->set_level(spdlog::level::info);
+    case LOG_LEVEL_INFO:
+      logger_->set_level(spdlog::level::info);
       break;
-    case eLOG_LEVEL_DEBUG:
-      m_logger->set_level(spdlog::level::debug);
+    case LOG_LEVEL_DEBUG:
+      logger_->set_level(spdlog::level::debug);
       break;
-    case eLOG_LEVEL_TRACE:
-      m_logger->set_level(spdlog::level::trace);
+    case LOG_LEVEL_TRACE:
+      logger_->set_level(spdlog::level::trace);
       break;
     default:
-      m_logger->set_level(spdlog::level::info);
+      logger_->set_level(spdlog::level::info);
       break;
   }
 }
 
-void logAdapter::setLogLevel(elogLevel logLevel) {
-  m_logLevel = logLevel;
-  setLogLevelInner(logLevel);
-}
-
-elogLevel logAdapter::getLogLevel() {
-  return m_logLevel;
-}
-
-void logAdapter::setLogFileNumAndSize(int logNum, int sizeOfPerFile) {}
+void LogAdapter::setLogFileNumAndSize(int logNum, int sizeOfPerFile) {}
 
 }  // namespace rocketmq

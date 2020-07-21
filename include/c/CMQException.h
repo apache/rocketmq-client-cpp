@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __C_MQEXCPTION_H__
-#define __C_MQEXCPTION_H__
+#ifndef ROCKETMQ_C_CMQEXCPTION_H_
+#define ROCKETMQ_C_CMQEXCPTION_H_
 
 #include "CCommon.h"
 
@@ -39,4 +39,4 @@ typedef struct _CMQException_ {
 }
 #endif
 
-#endif
+#endif  // ROCKETMQ_C_CMQEXCPTION_H_

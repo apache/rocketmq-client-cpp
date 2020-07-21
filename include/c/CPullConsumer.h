@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __C_PULL_CONSUMER_H__
-#define __C_PULL_CONSUMER_H__
+#ifndef ROCKETMQ_C_CPULLCONSUMER_H_
+#define ROCKETMQ_C_CPULLCONSUMER_H_
 
 #include "CCommon.h"
 #include "CMessageExt.h"
@@ -58,4 +58,4 @@ ROCKETMQCLIENT_API int ReleasePullResult(CPullResult pullResult);
 }
 #endif
 
-#endif  // __C_PUSH_CONSUMER_H__
+#endif  // ROCKETMQ_C_CPULLCONSUMER_H_

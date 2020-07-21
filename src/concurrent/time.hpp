@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TIME_HPP__
-#define __TIME_HPP__
+#ifndef ROCKETMQ_CONCURRENT_TIME_HPP_
+#define ROCKETMQ_CONCURRENT_TIME_HPP_
 
 #include <cassert>
 #include <chrono>
@@ -48,4 +48,4 @@ inline std::chrono::steady_clock::time_point until_time_point(long delay, time_u
 
 }  // namespace rocketmq
 
-#endif  // __TIME_HPP__
+#endif  // ROCKETMQ_CONCURRENT_TIME_HPP_

@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __CONSUME_MESSAGE_SERVICE_H__
-#define __CONSUME_MESSAGE_SERVICE_H__
+#ifndef ROCKETMQ_CONSUMER_CONSUMEMSGSERVICE_H_
+#define ROCKETMQ_CONSUMER_CONSUMEMSGSERVICE_H_
 
 #include "DefaultMQPushConsumerImpl.h"
 #include "Logging.h"
@@ -62,11 +62,11 @@ class ConsumeMessageConcurrentlyService : public ConsumeMsgService {
                                  const MQMessageQueue& messageQueue);
 
  private:
-  DefaultMQPushConsumerImpl* m_consumer;
-  MQMessageListener* m_messageListener;
+  DefaultMQPushConsumerImpl* consumer_;
+  MQMessageListener* message_listener_;
 
-  thread_pool_executor m_consumeExecutor;
-  scheduled_thread_pool_executor m_scheduledExecutorService;
+  thread_pool_executor consume_executor_;
+  scheduled_thread_pool_executor scheduled_executor_service_;
 };
 
 class ConsumeMessageOrderlyService : public ConsumeMsgService {
@@ -94,17 +94,14 @@ class ConsumeMessageOrderlyService : public ConsumeMsgService {
   bool lockOneMQ(const MQMessageQueue& mq);
 
  private:
-  static const uint64_t MaxTimeConsumeContinuously;
+  DefaultMQPushConsumerImpl* consumer_;
+  MQMessageListener* message_listener_;
 
- private:
-  DefaultMQPushConsumerImpl* m_consumer;
-  MQMessageListener* m_messageListener;
-
-  MessageQueueLock m_messageQueueLock;
-  thread_pool_executor m_consumeExecutor;
-  scheduled_thread_pool_executor m_scheduledExecutorService;
+  MessageQueueLock message_queue_lock_;
+  thread_pool_executor consume_executor_;
+  scheduled_thread_pool_executor scheduled_executor_service_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __CONSUME_MESSAGE_SERVICE_H__
+#endif  // ROCKETMQ_CONSUMER_CONSUMEMSGSERVICE_H_

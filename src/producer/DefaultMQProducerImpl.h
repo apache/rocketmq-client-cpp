@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __DEFAULT_MQ_PRODUCER_IMPL_H__
-#define __DEFAULT_MQ_PRODUCER_IMPL_H__
+#ifndef ROCKETMQ_PRODUCER_DEFAULTMQPRODUCERIMPL_H_
+#define ROCKETMQ_PRODUCER_DEFAULTMQPRODUCERIMPL_H_
 
 #include "CommunicationMode.h"
 #include "DefaultMQProducer.h"
@@ -32,11 +32,18 @@ class thread_pool_executor;
 class DefaultMQProducerImpl;
 typedef std::shared_ptr<DefaultMQProducerImpl> DefaultMQProducerImplPtr;
 
+/**
+ * DefaultMQProducerImpl - implement of DefaultMQProducer
+ */
 class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProducerImpl>,
                               public MQProducer,
                               public MQClientImpl,
                               public MQProducerInner {
  public:
+  /**
+   * create() - Factory method for DefaultMQProducerImpl, used to ensure that all objects of DefaultMQProducerImpl are
+   * managed by std::share_ptr
+   */
   static DefaultMQProducerImplPtr create(DefaultMQProducerConfigPtr config, RPCHookPtr rpcHook = nullptr) {
     if (nullptr == rpcHook) {
       return DefaultMQProducerImplPtr(new DefaultMQProducerImpl(config));
@@ -111,31 +118,21 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
                              MessageExtPtr msg,
                              CheckTransactionStateRequestHeader* checkRequestHeader) override;
 
- public:
-  void initTransactionEnv();
-  void destroyTransactionEnv();
-
-  const MQMessageQueue& selectOneMessageQueue(const TopicPublishInfo* tpInfo, const std::string& lastBrokerName);
-  void updateFaultItem(const std::string& brokerName, const long currentLatency, bool isolation);
-
-  void endTransaction(SendResult& sendResult,
-                      LocalTransactionState localTransactionState,
-                      std::exception_ptr& localException);
-
-  bool isSendLatencyFaultEnable() const;
-  void setSendLatencyFaultEnable(bool sendLatencyFaultEnable);
-
- protected:
+ private:
   SendResult* sendDefaultImpl(MessagePtr msg,
                               CommunicationMode communicationMode,
                               SendCallback* sendCallback,
                               long timeout);
+
   SendResult* sendKernelImpl(MessagePtr msg,
                              const MQMessageQueue& mq,
                              CommunicationMode communicationMode,
                              SendCallback* sendCallback,
                              std::shared_ptr<const TopicPublishInfo> topicPublishInfo,
                              long timeout);
+
+  bool tryToCompressMessage(Message& msg);
+
   SendResult* sendSelectImpl(MessagePtr msg,
                              MessageQueueSelector* selector,
                              void* arg,
@@ -144,6 +141,11 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
                              long timeout);
 
   TransactionSendResult* sendMessageInTransactionImpl(MessagePtr msg, void* arg, long timeout);
+
+  void endTransaction(SendResult& sendResult,
+                      LocalTransactionState localTransactionState,
+                      std::exception_ptr& localException);
+
   void checkTransactionStateImpl(const std::string& addr,
                                  MessageExtPtr message,
                                  long tranStateTableOffset,
@@ -152,18 +154,26 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
                                  const std::string& transactionId,
                                  const std::string& offsetMsgId);
 
-  bool tryToCompressMessage(Message& msg);
-
   MessagePtr batch(std::vector<MQMessage>& msgs);
 
   void prepareSendRequest(Message& msg, long timeout);
 
+ public:
+  const MQMessageQueue& selectOneMessageQueue(const TopicPublishInfo* tpInfo, const std::string& lastBrokerName);
+  void updateFaultItem(const std::string& brokerName, const long currentLatency, bool isolation);
+
+  void initTransactionEnv();
+  void destroyTransactionEnv();
+
+ public:
+  bool isSendLatencyFaultEnable() const;
+  void setSendLatencyFaultEnable(bool sendLatencyFaultEnable);
+
  private:
-  DefaultMQProducerConfigPtr m_producerConfig;
-  std::unique_ptr<MQFaultStrategy> m_mqFaultStrategy;
-  std::unique_ptr<thread_pool_executor> m_checkTransactionExecutor;
+  std::unique_ptr<MQFaultStrategy> mq_fault_strategy_;
+  std::unique_ptr<thread_pool_executor> check_transaction_executor_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __DEFAULT_MQ_PRODUCER_IMPL_H__
+#endif  // ROCKETMQ_PRODUCER_DEFAULTMQPRODUCERIMPL_H_

@@ -18,20 +18,20 @@
 
 namespace rocketmq {
 
-std::map<std::string, std::shared_ptr<RequestResponseFuture>> RequestFutureTable::s_futureTable;
-std::mutex RequestFutureTable::s_futureTableMutex;
+std::map<std::string, std::shared_ptr<RequestResponseFuture>> RequestFutureTable::future_table_;
+std::mutex RequestFutureTable::future_table_mutex_;
 
 void RequestFutureTable::putRequestFuture(std::string correlationId, std::shared_ptr<RequestResponseFuture> future) {
-  std::lock_guard<std::mutex> lock(s_futureTableMutex);
-  s_futureTable[correlationId] = future;
+  std::lock_guard<std::mutex> lock(future_table_mutex_);
+  future_table_[correlationId] = future;
 }
 
 std::shared_ptr<RequestResponseFuture> RequestFutureTable::removeRequestFuture(std::string correlationId) {
-  std::lock_guard<std::mutex> lock(s_futureTableMutex);
-  const auto& it = s_futureTable.find(correlationId);
-  if (it != s_futureTable.end()) {
+  std::lock_guard<std::mutex> lock(future_table_mutex_);
+  const auto& it = future_table_.find(correlationId);
+  if (it != future_table_.end()) {
     auto requestFuture = it->second;
-    s_futureTable.erase(it);
+    future_table_.erase(it);
     return requestFuture;
   }
   return nullptr;

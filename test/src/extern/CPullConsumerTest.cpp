@@ -123,7 +123,7 @@ TEST(CPullConsumerTest, InfoMock) {
   // EXPECT_CALL(*mqPullConsumer,setLogFileSizeAndNum(_,_)).Times(1);
   EXPECT_EQ(SetPullConsumerLogFileNumAndSize(pullConsumer, 1, 2), OK);
 
-  // EXPECT_CALL(*mqPullConsumer,setLogLevel(_)).Times(1);
+  // EXPECT_CALL(*mqPullConsumer,set_log_level(_)).Times(1);
   EXPECT_EQ(SetPullConsumerLogLevel(pullConsumer, E_LOG_LEVEL_INFO), OK);
 
   std::vector<MQMessageQueue> fullMQ;

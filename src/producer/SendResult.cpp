@@ -18,74 +18,17 @@
 
 #include <sstream>
 
-#include "UtilAll.h"
-#include "VirtualEnvUtil.h"
-
 namespace rocketmq {
-
-SendResult::SendResult() : m_sendStatus(SEND_OK), m_queueOffset(0) {}
-
-SendResult::SendResult(const SendStatus& sendStatus,
-                       const std::string& msgId,
-                       const std::string& offsetMsgId,
-                       const MQMessageQueue& messageQueue,
-                       int64_t queueOffset)
-    : m_sendStatus(sendStatus),
-      m_msgId(msgId),
-      m_offsetMsgId(offsetMsgId),
-      m_messageQueue(messageQueue),
-      m_queueOffset(queueOffset) {}
-
-SendResult::SendResult(const SendResult& other) {
-  m_sendStatus = other.m_sendStatus;
-  m_msgId = other.m_msgId;
-  m_offsetMsgId = other.m_offsetMsgId;
-  m_messageQueue = other.m_messageQueue;
-  m_queueOffset = other.m_queueOffset;
-}
-
-SendResult& SendResult::operator=(const SendResult& other) {
-  if (this != &other) {
-    m_sendStatus = other.m_sendStatus;
-    m_msgId = other.m_msgId;
-    m_offsetMsgId = other.m_offsetMsgId;
-    m_messageQueue = other.m_messageQueue;
-    m_queueOffset = other.m_queueOffset;
-  }
-  return *this;
-}
-
-SendResult::~SendResult() = default;
-
-const std::string& SendResult::getMsgId() const {
-  return m_msgId;
-}
-
-const std::string& SendResult::getOffsetMsgId() const {
-  return m_offsetMsgId;
-}
-
-SendStatus SendResult::getSendStatus() const {
-  return m_sendStatus;
-}
-
-const MQMessageQueue& SendResult::getMessageQueue() const {
-  return m_messageQueue;
-}
-
-int64_t SendResult::getQueueOffset() const {
-  return m_queueOffset;
-}
 
 std::string SendResult::toString() const {
   std::stringstream ss;
   ss << "SendResult: ";
-  ss << "sendStatus:" << m_sendStatus;
-  ss << ", msgId:" << m_msgId;
-  ss << ", offsetMsgId:" << m_offsetMsgId;
-  ss << ", queueOffset:" << m_queueOffset;
-  ss << ", transactionId:" << m_transactionId;
-  ss << ", messageQueue:" << m_messageQueue.toString();
+  ss << "sendStatus:" << send_status_;
+  ss << ", msgId:" << msg_id_;
+  ss << ", offsetMsgId:" << offset_msg_id_;
+  ss << ", queueOffset:" << queue_offset_;
+  ss << ", transactionId:" << transaction_id_;
+  ss << ", messageQueue:" << message_queue_.toString();
   return ss.str();
 }
 

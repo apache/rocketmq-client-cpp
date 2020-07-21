@@ -25,10 +25,13 @@
 
 #include "ByteArray.h"
 #include "CommandCustomHeader.h"
-#include "MQClientException.h"
+#include "MQException.h"
 
 namespace rocketmq {
 
+/**
+ * RemotingCommand - rocketmq rpc protocol
+ */
 class ROCKETMQCLIENT_API RemotingCommand {
  public:
   static int32_t createNewRequestId();

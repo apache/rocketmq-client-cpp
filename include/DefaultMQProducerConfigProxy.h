@@ -14,67 +14,95 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __DEFAULT_MQ_PRODUCER_CONFI_PROXY_H__
-#define __DEFAULT_MQ_PRODUCER_CONFI_PROXY_H__
+#ifndef ROCKETMQ_DEFAULTMQPRODUCERCONFIPROXY_H_
+#define ROCKETMQ_DEFAULTMQPRODUCERCONFIPROXY_H_
 
 #include "DefaultMQProducerConfig.h"
 #include "MQClientConfigProxy.h"
 
 namespace rocketmq {
 
-class ROCKETMQCLIENT_API DefaultMQProducerConfigProxy : virtual public DefaultMQProducerConfig,
-                                                        public MQClientConfigProxy {
+/**
+ * DefaultMQProducerConfigProxy - proxy for DefaultMQProducerConfig
+ */
+class ROCKETMQCLIENT_API DefaultMQProducerConfigProxy : public MQClientConfigProxy,             // base
+                                                        virtual public DefaultMQProducerConfig  // interface
+{
  public:
-  DefaultMQProducerConfigProxy(DefaultMQProducerConfigPtr producerConfig)
-      : MQClientConfigProxy(producerConfig), m_producerConfig(producerConfig) {}
+  DefaultMQProducerConfigProxy(DefaultMQProducerConfigPtr producerConfig) : MQClientConfigProxy(producerConfig) {}
   virtual ~DefaultMQProducerConfigProxy() = default;
 
-  DefaultMQProducerConfigPtr getRealConfig() const { return m_producerConfig; }
-
-  int getMaxMessageSize() const override { return m_producerConfig->getMaxMessageSize(); }
-
-  void setMaxMessageSize(int maxMessageSize) override { m_producerConfig->setMaxMessageSize(maxMessageSize); }
-
-  int getCompressMsgBodyOverHowmuch() const override { return m_producerConfig->getCompressMsgBodyOverHowmuch(); }
-
-  void setCompressMsgBodyOverHowmuch(int compressMsgBodyOverHowmuch) override {
-    m_producerConfig->setCompressMsgBodyOverHowmuch(compressMsgBodyOverHowmuch);
+  inline int getMaxMessageSize() const override {
+    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->getMaxMessageSize();
   }
 
-  int getCompressLevel() const override { return m_producerConfig->getCompressLevel(); }
-
-  void setCompressLevel(int compressLevel) override { m_producerConfig->setCompressLevel(compressLevel); }
-
-  int getSendMsgTimeout() const override { return m_producerConfig->getSendMsgTimeout(); }
-
-  void setSendMsgTimeout(int sendMsgTimeout) override { m_producerConfig->setSendMsgTimeout(sendMsgTimeout); }
-
-  int getRetryTimes() const override { return m_producerConfig->getRetryTimes(); }
-
-  void setRetryTimes(int times) override { m_producerConfig->setRetryTimes(times); }
-
-  int getRetryTimes4Async() const override { return m_producerConfig->getRetryTimes4Async(); }
-
-  void setRetryTimes4Async(int times) override { m_producerConfig->setRetryTimes4Async(times); }
-
-  bool isRetryAnotherBrokerWhenNotStoreOK() const override {
-    return m_producerConfig->isRetryAnotherBrokerWhenNotStoreOK();
+  inline void setMaxMessageSize(int maxMessageSize) override {
+    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->setMaxMessageSize(maxMessageSize);
   }
 
-  void setRetryAnotherBrokerWhenNotStoreOK(bool retryAnotherBrokerWhenNotStoreOK) override {
-    m_producerConfig->setRetryAnotherBrokerWhenNotStoreOK(retryAnotherBrokerWhenNotStoreOK);
+  inline int getCompressMsgBodyOverHowmuch() const override {
+    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->getCompressMsgBodyOverHowmuch();
   }
 
-  bool isSendLatencyFaultEnable() const override { return m_producerConfig->isSendLatencyFaultEnable(); }
-
-  void setSendLatencyFaultEnable(bool sendLatencyFaultEnable) override {
-    m_producerConfig->setSendLatencyFaultEnable(sendLatencyFaultEnable);
+  inline void setCompressMsgBodyOverHowmuch(int compressMsgBodyOverHowmuch) override {
+    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())
+        ->setCompressMsgBodyOverHowmuch(compressMsgBodyOverHowmuch);
   }
 
- private:
-  DefaultMQProducerConfigPtr m_producerConfig;
+  inline int getCompressLevel() const override {
+    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->getCompressLevel();
+  }
+
+  inline void setCompressLevel(int compressLevel) override {
+    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->setCompressLevel(compressLevel);
+  }
+
+  inline int getSendMsgTimeout() const override {
+    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->getSendMsgTimeout();
+  }
+
+  inline void setSendMsgTimeout(int sendMsgTimeout) override {
+    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->setSendMsgTimeout(sendMsgTimeout);
+  }
+
+  inline int getRetryTimes() const override {
+    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->getRetryTimes();
+  }
+
+  inline void setRetryTimes(int times) override {
+    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->setRetryTimes(times);
+  }
+
+  inline int getRetryTimesForAsync() const override {
+    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->getRetryTimesForAsync();
+  }
+
+  inline void setRetryTimesForAsync(int times) override {
+    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->setRetryTimesForAsync(times);
+  }
+
+  inline bool isRetryAnotherBrokerWhenNotStoreOK() const override {
+    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->isRetryAnotherBrokerWhenNotStoreOK();
+  }
+
+  inline void setRetryAnotherBrokerWhenNotStoreOK(bool retryAnotherBrokerWhenNotStoreOK) override {
+    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())
+        ->setRetryAnotherBrokerWhenNotStoreOK(retryAnotherBrokerWhenNotStoreOK);
+  }
+
+  inline bool isSendLatencyFaultEnable() const override {
+    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->isSendLatencyFaultEnable();
+  }
+
+  inline void setSendLatencyFaultEnable(bool sendLatencyFaultEnable) override {
+    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->setSendLatencyFaultEnable(sendLatencyFaultEnable);
+  }
+
+  inline DefaultMQProducerConfigPtr real_config() const {
+    return std::dynamic_pointer_cast<DefaultMQProducerConfig>(client_config_);
+  }
 };
 
 }  // namespace rocketmq
 
-#endif  // __DEFAULT_MQ_PRODUCER_CONFI_PROXY_H__
+#endif  // ROCKETMQ_DEFAULTMQPRODUCERCONFIPROXY_H_

@@ -19,12 +19,11 @@
 #include <regex>
 
 #include "MQProtos.h"
-#include "UtilAll.h"
+
+const std::string VALID_PATTERN_STR = "^[a-zA-Z0-9_-]+$";
+const int CHARACTER_MAX_LENGTH = 255;
 
 namespace rocketmq {
-
-const std::string Validators::validPatternStr = "^[a-zA-Z0-9_-]+$";
-const int Validators::CHARACTER_MAX_LENGTH = 255;
 
 bool Validators::regularExpressionMatcher(const std::string& origin, const std::string& patternStr) {
   if (UtilAll::isBlank(origin)) {
@@ -75,8 +74,9 @@ void Validators::checkTopic(const std::string& topic) {
     THROW_MQEXCEPTION(MQClientException, "the topic[" + topic + "] is conflict with default topic.", -1);
   }
 
-  if (!regularExpressionMatcher(topic, validPatternStr)) {
-    std::string str = "the specified topic[" + topic + "] contains illegal characters, allowing only" + validPatternStr;
+  if (!regularExpressionMatcher(topic, VALID_PATTERN_STR)) {
+    std::string str =
+        "the specified topic[" + topic + "] contains illegal characters, allowing only" + VALID_PATTERN_STR;
     THROW_MQEXCEPTION(MQClientException, str, -1);
   }
 }
@@ -86,8 +86,9 @@ void Validators::checkGroup(const std::string& group) {
     THROW_MQEXCEPTION(MQClientException, "the specified group is blank", -1);
   }
 
-  if (!regularExpressionMatcher(group, validPatternStr)) {
-    std::string str = "the specified group[" + group + "] contains illegal characters, allowing only" + validPatternStr;
+  if (!regularExpressionMatcher(group, VALID_PATTERN_STR)) {
+    std::string str =
+        "the specified group[" + group + "] contains illegal characters, allowing only" + VALID_PATTERN_STR;
     THROW_MQEXCEPTION(MQClientException, str, -1);
   }
   if ((int)group.length() > CHARACTER_MAX_LENGTH) {

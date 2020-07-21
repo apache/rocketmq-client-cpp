@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_PULL_CONSUMER_H__
-#define __MQ_PULL_CONSUMER_H__
+#ifndef ROCKETMQ_MQPULLCONSUMER_H_
+#define ROCKETMQ_MQPULLCONSUMER_H_
 
 #include "MQConsumer.h"
 #include "MQueueListener.h"
@@ -100,4 +100,4 @@ class ROCKETMQCLIENT_API MQPullConsumer : public MQConsumer {
 
 }  // namespace rocketmq
 
-#endif  // __MQ_PULL_CONSUMER_H__
+#endif  // ROCKETMQ_MQPULLCONSUMER_H_

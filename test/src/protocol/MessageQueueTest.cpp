@@ -28,9 +28,9 @@ using rocketmq::toJson;
 
 TEST(MessageQueueTest, Json) {
   MQMessageQueue messageQueue("testTopic", "testBroker", 1);
-  EXPECT_EQ(messageQueue.getQueueId(), 1);
-  EXPECT_EQ(messageQueue.getTopic(), "testTopic");
-  EXPECT_EQ(messageQueue.getBrokerName(), "testBroker");
+  EXPECT_EQ(messageQueue.queue_id(), 1);
+  EXPECT_EQ(messageQueue.topic(), "testTopic");
+  EXPECT_EQ(messageQueue.broker_name(), "testBroker");
 
   Json::Value outJson = toJson(messageQueue);
   EXPECT_EQ(outJson["queueId"], 1);

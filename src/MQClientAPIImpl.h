@@ -14,14 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_CLIENT_API_IMPL_H__
-#define __MQ_CLIENT_API_IMPL_H__
+#ifndef ROCKETMQ_MQCLIENTAPIIMPL_H_
+#define ROCKETMQ_MQCLIENTAPIIMPL_H_
 
 #include "CommunicationMode.h"
 #include "DefaultMQProducerImpl.h"
 #include "HeartbeatData.h"
 #include "KVTable.h"
-#include "MQClientException.h"
+#include "MQException.h"
 #include "MQClientInstance.h"
 #include "MQMessageExt.h"
 #include "PullCallback.h"
@@ -29,8 +29,8 @@
 #include "SendResult.h"
 #include "TopicConfig.h"
 #include "TopicList.h"
-#include "TopicPublishInfo.h"
-#include "TopicRouteData.h"
+#include "TopicPublishInfo.hpp"
+#include "TopicRouteData.hpp"
 #include "protocol/body/LockBatchBody.h"
 #include "protocol/header/CommandHeader.h"
 
@@ -54,7 +54,7 @@ class MQClientAPIImpl {
   void start();
   void shutdown();
 
-  void updateNameServerAddr(const std::string& addrs);
+  void updateNameServerAddressList(const std::string& addrs);
 
   void createTopic(const std::string& addr, const std::string& defaultTopic, TopicConfig topicConfig);
 
@@ -159,7 +159,7 @@ class MQClientAPIImpl {
   KVTable getKVListByNamespace(const std::string& projectNamespace, int timeoutMillis);
 
  public:
-  TcpRemotingClient* getRemotingClient() { return m_remotingClient.get(); }
+  TcpRemotingClient* getRemotingClient() { return remoting_client_.get(); }
 
  private:
   friend class SendCallbackWrap;
@@ -191,9 +191,9 @@ class MQClientAPIImpl {
                         PullCallback* pullCallback);
 
  private:
-  std::unique_ptr<TcpRemotingClient> m_remotingClient;
+  std::unique_ptr<TcpRemotingClient> remoting_client_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __MQ_CLIENT_API_IMPL_H__
+#endif  // ROCKETMQ_MQCLIENTAPIIMPL_H_

@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __DEFAULT_MQ_PULL_CONSUMER_CONFIG_PROXY_H__
-#define __DEFAULT_MQ_PULL_CONSUMER_CONFIG_PROXY_H__
+#ifndef ROCKETMQ_DEFAULTMQPULLCONSUMERCONFIGPROXY_H_
+#define ROCKETMQ_DEFAULTMQPULLCONSUMERCONFIGPROXY_H_
 
 #include "DefaultMQPullConsumerConfig.h"
 #include "MQClientConfigProxy.h"
@@ -45,4 +45,4 @@ class ROCKETMQCLIENT_API DefaultMQPullConsumerConfigProxy : virtual public Defau
 
 }  // namespace rocketmq
 
-#endif  // __DEFAULT_MQ_PULL_CONSUMER_CONFIG_PROXY_H__
+#endif  // ROCKETMQ_DEFAULTMQPULLCONSUMERCONFIGPROXY_H_

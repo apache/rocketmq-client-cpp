@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __ARG_HELPER_H__
-#define __ARG_HELPER_H__
+#ifndef ROCKETMQ_EXAMPLE_ARGHELPER_H_
+#define ROCKETMQ_EXAMPLE_ARGHELPER_H_
 
 #include <string>
 #include <vector>
@@ -28,14 +28,15 @@ class ROCKETMQCLIENT_API ArgHelper {
  public:
   ArgHelper(int argc, char* argv[]);
   ArgHelper(std::string arg_str_);
+
   std::string get_option(int idx_) const;
   bool is_enable_option(std::string opt_) const;
   std::string get_option_value(std::string opt_) const;
 
  private:
-  std::vector<std::string> m_args;
+  std::vector<std::string> args_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __ARG_HELPER_H__
+#endif  // ROCKETMQ_EXAMPLE_ARGHELPER_H_

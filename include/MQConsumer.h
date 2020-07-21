@@ -14,18 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_CONSUMER_H__
-#define __MQ_CONSUMER_H__
-
-#include <string>
-#include <vector>
+#ifndef ROCKETMQ_MQCONSUMER_H_
+#define ROCKETMQ_MQCONSUMER_H_
 
 #include "MQMessageExt.h"
 
 namespace rocketmq {
 
 /**
- * MQ Consumer API
+ * MQConsumer - interface for consumer
  */
 class ROCKETMQCLIENT_API MQConsumer {
  public:
@@ -42,4 +39,4 @@ class ROCKETMQCLIENT_API MQConsumer {
 
 }  // namespace rocketmq
 
-#endif  // __MQ_CONSUMER_H__
+#endif  // ROCKETMQ_MQCONSUMER_H_

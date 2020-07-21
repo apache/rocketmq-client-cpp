@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __RESPOONSE_CODE_H__
-#define __RESPOONSE_CODE_H__
+#ifndef ROCKETMQ_PROTOCOL_RESPOONSECODE_H_
+#define ROCKETMQ_PROTOCOL_RESPOONSECODE_H_
 
 namespace rocketmq {
 
@@ -71,4 +71,4 @@ enum MQResponseCode {
 
 }  // namespace rocketmq
 
-#endif  // __RESPOONSE_CODE_H__
+#endif  // ROCKETMQ_PROTOCOL_RESPOONSECODE_H_

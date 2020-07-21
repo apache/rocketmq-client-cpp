@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __THREAD_HPP__
-#define __THREAD_HPP__
+#ifndef ROCKETMQ_CONCURRENT_THREAD_HPP_
+#define ROCKETMQ_CONCURRENT_THREAD_HPP_
 
 #include <functional>
 #include <memory>
@@ -165,4 +165,4 @@ class thread {
 
 }  // namespace rocketmq
 
-#endif  // __THREAD_HPP__
+#endif  // ROCKETMQ_CONCURRENT_THREAD_HPP_

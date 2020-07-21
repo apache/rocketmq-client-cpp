@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TCP_REMOTING_CLIENT_H__
-#define __TCP_REMOTING_CLIENT_H__
+#ifndef ROCKETMQ_TRANSPORT_TCPREMOTINGCLIENT_H_
+#define ROCKETMQ_TRANSPORT_TCPREMOTINGCLIENT_H_
 
 #include <map>
 #include <memory>
@@ -23,7 +23,7 @@
 #include <string>
 #include <vector>
 
-#include "MQClientException.h"
+#include "MQException.h"
 #include "MQProtos.h"
 #include "RPCHook.h"
 #include "RemotingCommand.h"
@@ -59,7 +59,7 @@ class TcpRemotingClient {
 
   void registerProcessor(MQRequestCode requestCode, RequestProcessor* requestProcessor);
 
-  std::vector<std::string> getNameServerAddressList() const { return m_namesrvAddrList; }
+  std::vector<std::string> getNameServerAddressList() const { return namesrv_addr_list_; }
 
  private:
   static bool SendCommand(TcpTransportPtr channel, RemotingCommand& msg);
@@ -103,28 +103,28 @@ class TcpRemotingClient {
   using ProcessorMap = std::map<int, RequestProcessor*>;
   using TransportMap = std::map<std::string, std::shared_ptr<TcpTransport>>;
 
-  ProcessorMap m_processorTable;  // code -> processor
+  ProcessorMap processor_table_;  // code -> processor
 
-  TransportMap m_transportTable;  // addr -> transport
-  std::timed_mutex m_transportTableMutex;
+  TransportMap transport_table_;  // addr -> transport
+  std::timed_mutex transport_table_mutex_;
 
   // FIXME: not strict thread-safe in abnormal scence
-  std::vector<RPCHookPtr> m_rpcHooks;  // for Acl / ONS
+  std::vector<RPCHookPtr> rpc_hooks_;  // for Acl / ONS
 
-  uint64_t m_tcpConnectTimeout;           // ms
-  uint64_t m_tcpTransportTryLockTimeout;  // s
+  uint64_t tcp_connect_timeout_;             // ms
+  uint64_t tcp_transport_try_lock_timeout_;  // s
 
   // NameServer
-  std::timed_mutex m_namesrvLock;
-  std::vector<std::string> m_namesrvAddrList;
-  std::string m_namesrvAddrChoosed;
-  size_t m_namesrvIndex;
+  std::timed_mutex namesrv_lock_;
+  std::vector<std::string> namesrv_addr_list_;
+  std::string namesrv_addr_choosed_;
+  size_t namesrv_index_;
 
-  thread_pool_executor m_dispatchExecutor;
-  thread_pool_executor m_handleExecutor;
-  scheduled_thread_pool_executor m_timeoutExecutor;
+  thread_pool_executor dispatch_executor_;
+  thread_pool_executor handle_executor_;
+  scheduled_thread_pool_executor timeout_executor_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __TCP_REMOTING_CLIENT_H__
+#endif  // ROCKETMQ_TRANSPORT_TCPREMOTINGCLIENT_H_

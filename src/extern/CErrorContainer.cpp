@@ -14,19 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __FIND_BROKER_RESULT_H__
-#define __FIND_BROKER_RESULT_H__
+#include "CErrorContainer.h"
+
+#include <algorithm>  // std::move
 
 namespace rocketmq {
 
-struct FindBrokerResult {
-  FindBrokerResult(const std::string& sbrokerAddr, bool bslave) : brokerAddr(sbrokerAddr), slave(bslave) {}
+static thread_local std::string tErrorMessage;
 
- public:
-  std::string brokerAddr;
-  bool slave;
-};
+const std::string& CErrorContainer::getErrorMessage() {
+  return tErrorMessage;
+}
+
+void CErrorContainer::setErrorMessage(const std::string& message) {
+  tErrorMessage = message;
+}
+
+void CErrorContainer::setErrorMessage(std::string&& message) {
+  tErrorMessage = std::move(message);
+}
 
 }  // namespace rocketmq
-
-#endif  // __FIND_BROKER_RESULT_H__

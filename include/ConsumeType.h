@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __CONSUME_TYPE_H__
-#define __CONSUME_TYPE_H__
+#ifndef ROCKETMQ_CONSUMETYPE_H_
+#define ROCKETMQ_CONSUMETYPE_H_
 
 namespace rocketmq {
 
@@ -60,4 +60,4 @@ enum MessageModel {
 
 }  // namespace rocketmq
 
-#endif  // __CONSUME_TYPE_H__
+#endif  // ROCKETMQ_CONSUMETYPE_H_

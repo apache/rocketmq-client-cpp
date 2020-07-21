@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
   producer.setNamesrvAddr(info.namesrv);
   producer.setSendMsgTimeout(3000);
   producer.setRetryTimes(info.retrytimes);
-  producer.setRetryTimes4Async(info.retrytimes);
+  producer.setRetryTimesForAsync(info.retrytimes);
   producer.setSendLatencyFaultEnable(!info.selectUnactiveBroker);
   producer.setTcpTransportTryLockTimeout(1000);
   producer.setTcpTransportConnectTimeout(400);
@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
 
   // std::this_thread::sleep_for(std::chrono::seconds(10));
 
-  int msg_count = g_msgCount.load();
+  int msg_count = g_msg_count.load();
   for (int count = 0; count < msg_count; count++) {
     try {
       MQMessage msg(info.topic, "Hello world");

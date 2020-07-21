@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_PRODUCER_H__
-#define __MQ_PRODUCER_H__
+#ifndef ROCKETMQ_MQPRODUCER_H_
+#define ROCKETMQ_MQPRODUCER_H_
 
 #include "MQSelector.h"
 #include "RequestCallback.h"
@@ -26,7 +26,7 @@
 namespace rocketmq {
 
 /**
- * MQ Producer API
+ * MQProducer - interface for producer
  */
 class ROCKETMQCLIENT_API MQProducer {
  public:
@@ -87,4 +87,4 @@ class ROCKETMQCLIENT_API MQProducer {
 
 }  // namespace rocketmq
 
-#endif  // __MQ_PRODUCER_H__
+#endif  // ROCKETMQ_MQPRODUCER_H_

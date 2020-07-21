@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __C_BATCH_MESSAGE_H__
-#define __C_BATCH_MESSAGE_H__
+#ifndef ROCKETMQ_C_CBATCHMESSAGE_H_
+#define ROCKETMQ_C_CBATCHMESSAGE_H_
 
 #include "CCommon.h"
 #include "CMessage.h"
@@ -34,4 +34,4 @@ ROCKETMQCLIENT_API int DestroyBatchMessage(CBatchMessage* batchMsg);
 }
 #endif
 
-#endif  // __C_BATCH_MESSAGE_H__
+#endif  // ROCKETMQ_C_CBATCHMESSAGE_H_

@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __COMMAND_HEADER_H__
-#define __COMMAND_HEADER_H__
+#ifndef ROCKETMQ_PROTOCOL_COMMANDHEADER_H_
+#define ROCKETMQ_PROTOCOL_COMMANDHEADER_H_
 
-#include <vector>
+#include <vector>  // std::vector
 
 #include "ByteArray.h"
 #include "CommandCustomHeader.h"
@@ -463,4 +463,4 @@ class NotifyConsumerIdsChangedRequestHeader : public CommandCustomHeader {
 
 }  // namespace rocketmq
 
-#endif  // __COMMAND_HEADER_H__
+#endif  // ROCKETMQ_PROTOCOL_COMMANDHEADER_H_

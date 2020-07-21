@@ -36,7 +36,7 @@ class MyTransactionListener : public TransactionListener {
 };
 
 void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, TransactionMQProducer* producer) {
-  int old = g_msgCount.fetch_sub(1);
+  int old = g_msg_count.fetch_sub(1);
   while (old > 0) {
     MQMessage msg(info->topic,  // topic
                   "*",          // tag
@@ -57,7 +57,7 @@ void SyncProducerWorker(RocketmqSendAndConsumerArgs* info, TransactionMQProducer
     } catch (const MQException& e) {
       std::cout << "send failed: " << e.what() << std::endl;
     }
-    old = g_msgCount.fetch_sub(1);
+    old = g_msg_count.fetch_sub(1);
   }
 }
 
@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
   producer->setGroupName(info.groupname);
   producer->setSendMsgTimeout(3000);
   producer->setRetryTimes(info.retrytimes);
-  producer->setRetryTimes4Async(info.retrytimes);
+  producer->setRetryTimesForAsync(info.retrytimes);
   producer->setSendLatencyFaultEnable(!info.selectUnactiveBroker);
   producer->setTcpTransportTryLockTimeout(1000);
   producer->setTcpTransportConnectTimeout(400);
@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
   producer->start();
 
   std::vector<std::shared_ptr<std::thread>> work_pool;
-  int msgcount = g_msgCount.load();
+  int msgcount = g_msg_count.load();
   g_tps.start();
 
   auto start = std::chrono::system_clock::now();

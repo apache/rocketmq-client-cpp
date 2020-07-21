@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_CLIENT_EXCEPTION_H__
-#define __MQ_CLIENT_EXCEPTION_H__
+#ifndef ROCKETMQ_MQEXCEPTION_H_
+#define ROCKETMQ_MQEXCEPTION_H_
 
 #include <exception>
 #include <ostream>
@@ -26,6 +26,9 @@
 
 namespace rocketmq {
 
+/**
+ * MQException - base exception
+ */
 class ROCKETMQCLIENT_API MQException : public std::exception {
  public:
   MQException(const std::string& msg, int error, const char* file, int line) noexcept
@@ -39,47 +42,47 @@ class ROCKETMQCLIENT_API MQException : public std::exception {
               int error,
               std::exception_ptr cause,
               const char* file,
-              int line) noexcept : m_type(type),
-                                   m_msg(msg),
-                                   m_error(error),
-                                   m_cause(cause),
-                                   m_file(file),
-                                   m_line(line) {}
+              int line) noexcept : type_(type),
+                                   msg_(msg),
+                                   error_(error),
+                                   cause_(cause),
+                                   file_(file),
+                                   line_(line) {}
 
   virtual ~MQException() noexcept = default;
 
   const char* what() const noexcept override {
-    if (m_what_.empty()) {
+    if (what_.empty()) {
       std::stringstream ss;
-      ss << "[" << m_type << "] msg: " << m_msg << ", error: " << m_error << ", in <" << m_file << ":" << m_line << ">";
-      m_what_ = ss.str();
+      ss << "[" << type_ << "] msg: " << msg_ << ", error: " << error_ << ", in <" << file_ << ":" << line_ << ">";
+      what_ = ss.str();
     }
-    return m_what_.c_str();
+    return what_.c_str();
   }
 
-  const char* GetType() const noexcept { return m_type.c_str(); }
+  const char* GetType() const noexcept { return type_.c_str(); }
 
-  const std::string& GetErrorMessage() const noexcept { return m_msg; }
-  const char* GetMsg() const noexcept { return m_msg.c_str(); }
+  const std::string& GetErrorMessage() const noexcept { return msg_; }
+  const char* GetMsg() const noexcept { return msg_.c_str(); }
 
-  int GetError() const noexcept { return m_error; }
+  int GetError() const noexcept { return error_; }
 
-  std::exception_ptr GetCause() const { return m_cause; }
+  std::exception_ptr GetCause() const { return cause_; }
 
-  const char* GetFile() const noexcept { return m_file.c_str(); }
-  int GetLine() const noexcept { return m_line; }
+  const char* GetFile() const noexcept { return file_.c_str(); }
+  int GetLine() const noexcept { return line_; }
 
  protected:
-  std::string m_type;
-  std::string m_msg;
-  int m_error;
+  std::string type_;
+  std::string msg_;
+  int error_;
 
-  std::exception_ptr m_cause;
+  std::exception_ptr cause_;
 
-  std::string m_file;
-  int m_line;
+  std::string file_;
+  int line_;
 
-  mutable std::string m_what_;
+  mutable std::string what_;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const MQException& e) {
@@ -126,4 +129,4 @@ DEFINE_MQEXCEPTION(RequestTimeoutException)
 
 }  // namespace rocketmq
 
-#endif  // __MQ_CLIENT_EXCEPTION_H__
+#endif  // ROCKETMQ_MQEXCEPTION_H_

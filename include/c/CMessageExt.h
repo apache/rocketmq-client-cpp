@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __C_MESSAGE_EXT_H__
-#define __C_MESSAGE_EXT_H__
+#ifndef ROCKETMQ_C_CMESSAGEEXT_H_
+#define ROCKETMQ_C_CMESSAGEEXT_H_
 
 #include "CCommon.h"
 
@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-typedef struct CMessageExt CMessageExt;
+typedef struct CMessageExt CMessageExt;  // alias for MQMessageExt
 
 ROCKETMQCLIENT_API const char* GetMessageTopic(CMessageExt* msgExt);
 ROCKETMQCLIENT_API const char* GetMessageTags(CMessageExt* msgExt);
@@ -45,4 +45,4 @@ ROCKETMQCLIENT_API long long GetMessagePreparedTransactionOffset(CMessageExt* ms
 }
 #endif
 
-#endif  // __C_MESSAGE_EXT_H__
+#endif  // ROCKETMQ_C_CMESSAGEEXT_H_

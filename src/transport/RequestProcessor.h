@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __REQUEST_PROCESSOR_H__
-#define __REQUEST_PROCESSOR_H__
+#ifndef ROCKETMQ_TRANSPORT_REQUESTPROCESSOR_H_
+#define ROCKETMQ_TRANSPORT_REQUESTPROCESSOR_H_
 
 #include "RemotingCommand.h"
 #include "TcpTransport.h"
@@ -31,4 +31,4 @@ class RequestProcessor {
 
 }  // namespace rocketmq
 
-#endif  // __REQUEST_PROCESSOR_H__
+#endif  // ROCKETMQ_TRANSPORT_REQUESTPROCESSOR_H_

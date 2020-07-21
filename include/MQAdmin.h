@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_ADMIN_H__
-#define __MQ_ADMIN_H__
+#ifndef ROCKETMQ_MQADMIN_H_
+#define ROCKETMQ_MQADMIN_H_
 
 #include "MQMessageExt.h"
 #include "MQMessageQueue.h"
@@ -100,4 +100,4 @@ class ROCKETMQCLIENT_API MQAdmin {
 
 }  // namespace rocketmq
 
-#endif  // __MQ_ADMIN_H__
+#endif  // ROCKETMQ_MQADMIN_H_

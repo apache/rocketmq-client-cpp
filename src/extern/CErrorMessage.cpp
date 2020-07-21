@@ -16,7 +16,7 @@
  */
 #include "c/CErrorMessage.h"
 
-#include "MQClientErrorContainer.h"
+#include "CErrorContainer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,7 +25,7 @@ extern "C" {
 using namespace rocketmq;
 
 const char* GetLatestErrorMessage() {
-  return MQClientErrorContainer::getErr().c_str();
+  return CErrorContainer::getErrorMessage().c_str();
 }
 
 #ifdef __cplusplus

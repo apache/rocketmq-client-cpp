@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SEND_RESULT_H__
-#define __SEND_RESULT_H__
+#ifndef ROCKETMQ_SENDRESULT_H_
+#define ROCKETMQ_SENDRESULT_H_
 
 #include "MQMessageQueue.h"
 
@@ -26,38 +26,64 @@ enum SendStatus { SEND_OK, SEND_FLUSH_DISK_TIMEOUT, SEND_FLUSH_SLAVE_TIMEOUT, SE
 
 class ROCKETMQCLIENT_API SendResult {
  public:
-  SendResult();
+  SendResult() : send_status_(SEND_OK), queue_offset_(0) {}
+
   SendResult(const SendStatus& sendStatus,
              const std::string& msgId,
              const std::string& offsetMsgId,
              const MQMessageQueue& messageQueue,
-             int64_t queueOffset);
+             int64_t queueOffset)
+      : send_status_(sendStatus),
+        msg_id_(msgId),
+        offset_msg_id_(offsetMsgId),
+        message_queue_(messageQueue),
+        queue_offset_(queueOffset) {}
 
-  SendResult(const SendResult& other);
-  SendResult& operator=(const SendResult& other);
+  SendResult(const SendResult& other) {
+    send_status_ = other.send_status_;
+    msg_id_ = other.msg_id_;
+    offset_msg_id_ = other.offset_msg_id_;
+    message_queue_ = other.message_queue_;
+    queue_offset_ = other.queue_offset_;
+  }
 
-  virtual ~SendResult();
+  SendResult& operator=(const SendResult& other) {
+    if (this != &other) {
+      send_status_ = other.send_status_;
+      msg_id_ = other.msg_id_;
+      offset_msg_id_ = other.offset_msg_id_;
+      message_queue_ = other.message_queue_;
+      queue_offset_ = other.queue_offset_;
+    }
+    return *this;
+  }
 
-  SendStatus getSendStatus() const;
-  const std::string& getMsgId() const;
-  const std::string& getOffsetMsgId() const;
-  const MQMessageQueue& getMessageQueue() const;
-  int64_t getQueueOffset() const;
+  virtual ~SendResult() = default;
 
-  const std::string& getTransactionId() const { return m_transactionId; }
-  void setTransactionId(const std::string& id) { m_transactionId = id; }
+  inline SendStatus getSendStatus() const { return send_status_; }
+
+  inline const std::string& getMsgId() const { return msg_id_; }
+
+  inline const std::string& getOffsetMsgId() const { return offset_msg_id_; }
+
+  inline const MQMessageQueue& getMessageQueue() const { return message_queue_; }
+
+  inline int64_t getQueueOffset() const { return queue_offset_; }
+
+  inline const std::string& getTransactionId() const { return transaction_id_; }
+  inline void setTransactionId(const std::string& id) { transaction_id_ = id; }
 
   std::string toString() const;
 
  private:
-  SendStatus m_sendStatus;
-  std::string m_msgId;
-  std::string m_offsetMsgId;
-  MQMessageQueue m_messageQueue;
-  int64_t m_queueOffset;
-  std::string m_transactionId;
+  SendStatus send_status_;
+  std::string msg_id_;
+  std::string offset_msg_id_;
+  MQMessageQueue message_queue_;
+  int64_t queue_offset_;
+  std::string transaction_id_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __SEND_RESULT_H__
+#endif  // ROCKETMQ_SENDRESULT_H_

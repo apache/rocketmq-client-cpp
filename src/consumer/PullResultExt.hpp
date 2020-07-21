@@ -14,9 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "PullResult.h"
+#ifndef ROCKETMQ_CONSUMER_PULLRESULTEXT_HPP_
+#define ROCKETMQ_CONSUMER_PULLRESULTEXT_HPP_
 
 #include "ByteArray.h"
+#include "PullResult.h"
 
 namespace rocketmq {
 
@@ -54,3 +56,5 @@ class PullResultExt : public PullResult {
 };
 
 }  // namespace rocketmq
+
+#endif  // ROCKETMQ_CONSUMER_PULLRESULTEXT_HPP_

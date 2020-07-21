@@ -28,26 +28,6 @@ const std::string ConsumerRunningInfo::PROP_CONSUME_TYPE = "PROP_CONSUME_TYPE";
 const std::string ConsumerRunningInfo::PROP_CLIENT_VERSION = "PROP_CLIENT_VERSION";
 const std::string ConsumerRunningInfo::PROP_CONSUMER_START_TIMESTAMP = "PROP_CONSUMER_START_TIMESTAMP";
 
-const std::map<std::string, std::string> ConsumerRunningInfo::getProperties() const {
-  return properties;
-}
-
-void ConsumerRunningInfo::setProperties(const std::map<std::string, std::string>& properties) {
-  this->properties = properties;
-}
-
-void ConsumerRunningInfo::setProperty(const std::string& key, const std::string& value) {
-  properties[key] = value;
-}
-
-const std::map<MQMessageQueue, ProcessQueueInfo> ConsumerRunningInfo::getMqTable() const {
-  return mqTable;
-}
-
-void ConsumerRunningInfo::setMqTable(const MQMessageQueue& queue, ProcessQueueInfo queueInfo) {
-  mqTable[queue] = queueInfo;
-}
-
 /* const std::map<std::string, ConsumeStatus> ConsumerRunningInfo::getStatusTable() const {
   return statusTable;
 }
@@ -56,37 +36,21 @@ void ConsumerRunningInfo::setStatusTable(const std::map<std::string, ConsumeStat
   this->statusTable = statusTable;
 } */
 
-const std::vector<SubscriptionData> ConsumerRunningInfo::getSubscriptionSet() const {
-  return subscriptionSet;
-}
-
-void ConsumerRunningInfo::setSubscriptionSet(const std::vector<SubscriptionData>& subscriptionSet) {
-  this->subscriptionSet = subscriptionSet;
-}
-
-const std::string ConsumerRunningInfo::getJstack() const {
-  return jstack;
-}
-
-void ConsumerRunningInfo::setJstack(const std::string& jstack) {
-  this->jstack = jstack;
-}
-
 std::string ConsumerRunningInfo::encode() {
   Json::Value outData;
 
-  outData[PROP_NAMESERVER_ADDR] = properties[PROP_NAMESERVER_ADDR];
-  outData[PROP_CONSUME_TYPE] = properties[PROP_CONSUME_TYPE];
-  outData[PROP_CLIENT_VERSION] = properties[PROP_CLIENT_VERSION];
-  outData[PROP_CONSUMER_START_TIMESTAMP] = properties[PROP_CONSUMER_START_TIMESTAMP];
-  outData[PROP_CONSUME_ORDERLY] = properties[PROP_CONSUME_ORDERLY];
-  outData[PROP_THREADPOOL_CORE_SIZE] = properties[PROP_THREADPOOL_CORE_SIZE];
+  outData[PROP_NAMESERVER_ADDR] = properties_[PROP_NAMESERVER_ADDR];
+  outData[PROP_CONSUME_TYPE] = properties_[PROP_CONSUME_TYPE];
+  outData[PROP_CLIENT_VERSION] = properties_[PROP_CLIENT_VERSION];
+  outData[PROP_CONSUMER_START_TIMESTAMP] = properties_[PROP_CONSUMER_START_TIMESTAMP];
+  outData[PROP_CONSUME_ORDERLY] = properties_[PROP_CONSUME_ORDERLY];
+  outData[PROP_THREADPOOL_CORE_SIZE] = properties_[PROP_THREADPOOL_CORE_SIZE];
 
   Json::Value root;
-  root["jstack"] = jstack;
+  root["jstack"] = jstack_;
   root["properties"] = outData;
 
-  for (const auto& subscription : subscriptionSet) {
+  for (const auto& subscription : subscription_set_) {
     root["subscriptionSet"].append(subscription.toJson());
   }
 
@@ -95,7 +59,7 @@ std::string ConsumerRunningInfo::encode() {
   Json::Value mq;
   std::string key = "\"mqTable\":";
   key.append("{");
-  for (const auto& it : mqTable) {
+  for (const auto& it : mq_table_) {
     key.append(toJson(it.first).toStyledString());
     key.erase(key.end() - 1);
     key.append(":");

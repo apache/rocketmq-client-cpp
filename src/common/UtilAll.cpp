@@ -154,7 +154,7 @@ bool UtilAll::SplitURL(const std::string& serverURL, std::string& addr, short& n
   }
 
   addr = serverURL.substr(0, pos);
-  if (0 == addr.compare("localhost")) {
+  if ("localhost" == addr) {
     addr = "127.0.0.1";
   }
 
