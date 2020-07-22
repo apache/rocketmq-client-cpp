@@ -45,6 +45,47 @@
 
 namespace rocketmq {
 
+class RequestSendCallback : public AutoDeleteSendCallback {
+ public:
+  RequestSendCallback(std::shared_ptr<RequestResponseFuture> requestFuture) : request_future_(requestFuture) {}
+
+  void onSuccess(SendResult& sendResult) override { request_future_->setSendRequestOk(true); }
+
+  void onException(MQException& e) noexcept override {
+    request_future_->setSendRequestOk(false);
+    request_future_->putResponseMessage(nullptr);
+    request_future_->setCause(std::make_exception_ptr(e));
+  }
+
+ private:
+  std::shared_ptr<RequestResponseFuture> request_future_;
+};
+
+class AsyncRequestSendCallback : public AutoDeleteSendCallback {
+ public:
+  AsyncRequestSendCallback(std::shared_ptr<RequestResponseFuture> requestFuture) : request_future_(requestFuture) {}
+
+  void onSuccess(SendResult& sendResult) override { request_future_->setSendRequestOk(true); }
+
+  void onException(MQException& e) noexcept override {
+    request_future_->setCause(std::make_exception_ptr(e));
+    auto response_future = RequestFutureTable::removeRequestFuture(request_future_->getCorrelationId());
+    if (response_future != nullptr) {
+      // response_future is same as request_future_
+      response_future->setSendRequestOk(false);
+      response_future->putResponseMessage(nullptr);
+      try {
+        response_future->executeRequestCallback();
+      } catch (std::exception& e) {
+        LOG_WARN_NEW("execute requestCallback in requestFail, and callback throw {}", e.what());
+      }
+    }
+  }
+
+ private:
+  std::shared_ptr<RequestResponseFuture> request_future_;
+};
+
 DefaultMQProducerImpl::DefaultMQProducerImpl(DefaultMQProducerConfigPtr config)
     : DefaultMQProducerImpl(config, nullptr) {}
 
@@ -135,7 +176,8 @@ SendResult DefaultMQProducerImpl::send(MQMessage& msg) {
 
 SendResult DefaultMQProducerImpl::send(MQMessage& msg, long timeout) {
   try {
-    std::unique_ptr<SendResult> sendResult(sendDefaultImpl(msg.getMessageImpl(), ComMode_SYNC, nullptr, timeout));
+    std::unique_ptr<SendResult> sendResult(
+        sendDefaultImpl(msg.getMessageImpl(), CommunicationMode::SYNC, nullptr, timeout));
     return *sendResult;
   } catch (MQException& e) {
     LOG_ERROR_NEW("send failed, exception:{}", e.what());
@@ -156,7 +198,7 @@ SendResult DefaultMQProducerImpl::send(MQMessage& msg, const MQMessageQueue& mq,
 
   try {
     std::unique_ptr<SendResult> sendResult(
-        sendKernelImpl(msg.getMessageImpl(), mq, ComMode_SYNC, nullptr, nullptr, timeout));
+        sendKernelImpl(msg.getMessageImpl(), mq, CommunicationMode::SYNC, nullptr, nullptr, timeout));
     return *sendResult;
   } catch (MQException& e) {
     LOG_ERROR_NEW("send failed, exception:{}", e.what());
@@ -170,7 +212,7 @@ void DefaultMQProducerImpl::send(MQMessage& msg, SendCallback* sendCallback) noe
 
 void DefaultMQProducerImpl::send(MQMessage& msg, SendCallback* sendCallback, long timeout) noexcept {
   try {
-    (void)sendDefaultImpl(msg.getMessageImpl(), ComMode_ASYNC, sendCallback, timeout);
+    (void)sendDefaultImpl(msg.getMessageImpl(), CommunicationMode::ASYNC, sendCallback, timeout);
   } catch (MQException& e) {
     LOG_ERROR_NEW("send failed, exception:{}", e.what());
     sendCallback->onException(e);
@@ -199,7 +241,7 @@ void DefaultMQProducerImpl::send(MQMessage& msg,
     }
 
     try {
-      sendKernelImpl(msg.getMessageImpl(), mq, ComMode_ASYNC, sendCallback, nullptr, timeout);
+      sendKernelImpl(msg.getMessageImpl(), mq, CommunicationMode::ASYNC, sendCallback, nullptr, timeout);
     } catch (MQBrokerException& e) {
       std::string info = std::string("unknown exception, ") + e.what();
       THROW_MQEXCEPTION(MQClientException, info, e.GetError());
@@ -218,7 +260,7 @@ void DefaultMQProducerImpl::send(MQMessage& msg,
 
 void DefaultMQProducerImpl::sendOneway(MQMessage& msg) {
   try {
-    sendDefaultImpl(msg.getMessageImpl(), ComMode_ONEWAY, nullptr, m_producerConfig->getSendMsgTimeout());
+    sendDefaultImpl(msg.getMessageImpl(), CommunicationMode::ONEWAY, nullptr, m_producerConfig->getSendMsgTimeout());
   } catch (MQBrokerException e) {
     std::string info = std::string("unknown exception, ") + e.what();
     THROW_MQEXCEPTION(MQClientException, info, e.GetError());
@@ -233,7 +275,8 @@ void DefaultMQProducerImpl::sendOneway(MQMessage& msg, const MQMessageQueue& mq)
   }
 
   try {
-    sendKernelImpl(msg.getMessageImpl(), mq, ComMode_ONEWAY, nullptr, nullptr, m_producerConfig->getSendMsgTimeout());
+    sendKernelImpl(msg.getMessageImpl(), mq, CommunicationMode::ONEWAY, nullptr, nullptr,
+                   m_producerConfig->getSendMsgTimeout());
   } catch (MQBrokerException e) {
     std::string info = std::string("unknown exception, ") + e.what();
     THROW_MQEXCEPTION(MQClientException, info, e.GetError());
@@ -247,7 +290,7 @@ SendResult DefaultMQProducerImpl::send(MQMessage& msg, MessageQueueSelector* sel
 SendResult DefaultMQProducerImpl::send(MQMessage& msg, MessageQueueSelector* selector, void* arg, long timeout) {
   try {
     std::unique_ptr<SendResult> result(
-        sendSelectImpl(msg.getMessageImpl(), selector, arg, ComMode_SYNC, nullptr, timeout));
+        sendSelectImpl(msg.getMessageImpl(), selector, arg, CommunicationMode::SYNC, nullptr, timeout));
     return *result.get();
   } catch (MQException& e) {
     LOG_ERROR_NEW("send failed, exception:{}", e.what());
@@ -269,7 +312,7 @@ void DefaultMQProducerImpl::send(MQMessage& msg,
                                  long timeout) noexcept {
   try {
     try {
-      sendSelectImpl(msg.getMessageImpl(), selector, arg, ComMode_ASYNC, sendCallback, timeout);
+      sendSelectImpl(msg.getMessageImpl(), selector, arg, CommunicationMode::ASYNC, sendCallback, timeout);
     } catch (MQBrokerException& e) {
       std::string info = std::string("unknown exception, ") + e.what();
       THROW_MQEXCEPTION(MQClientException, info, e.GetError());
@@ -288,7 +331,8 @@ void DefaultMQProducerImpl::send(MQMessage& msg,
 
 void DefaultMQProducerImpl::sendOneway(MQMessage& msg, MessageQueueSelector* selector, void* arg) {
   try {
-    sendSelectImpl(msg.getMessageImpl(), selector, arg, ComMode_ONEWAY, nullptr, m_producerConfig->getSendMsgTimeout());
+    sendSelectImpl(msg.getMessageImpl(), selector, arg, CommunicationMode::ONEWAY, nullptr,
+                   m_producerConfig->getSendMsgTimeout());
   } catch (MQBrokerException e) {
     std::string info = std::string("unknown exception, ") + e.what();
     THROW_MQEXCEPTION(MQClientException, info, e.GetError());
@@ -344,22 +388,6 @@ MessagePtr DefaultMQProducerImpl::batch(std::vector<MQMessage>& msgs) {
   }
 }
 
-class RequestSendCallback : public AutoDeleteSendCallback {
- public:
-  RequestSendCallback(std::shared_ptr<RequestResponseFuture> requestFuture) : m_requestFuture(requestFuture) {}
-
-  void onSuccess(SendResult& sendResult) override { m_requestFuture->setSendRequestOk(true); }
-
-  void onException(MQException& e) noexcept override {
-    m_requestFuture->setSendRequestOk(false);
-    m_requestFuture->putResponseMessage(nullptr);
-    m_requestFuture->setCause(std::make_exception_ptr(e));
-  }
-
- private:
-  std::shared_ptr<RequestResponseFuture> m_requestFuture;
-};
-
 MQMessage DefaultMQProducerImpl::request(MQMessage& msg, long timeout) {
   auto beginTimestamp = UtilAll::currentTimeMillis();
   prepareSendRequest(msg, timeout);
@@ -372,8 +400,8 @@ MQMessage DefaultMQProducerImpl::request(MQMessage& msg, long timeout) {
     RequestFutureTable::putRequestFuture(correlationId, requestResponseFuture);
 
     auto cost = UtilAll::currentTimeMillis() - beginTimestamp;
-    sendDefaultImpl(msg.getMessageImpl(), CommunicationMode::ComMode_ASYNC,
-                    new RequestSendCallback(requestResponseFuture), timeout - cost);
+    sendDefaultImpl(msg.getMessageImpl(), CommunicationMode::ASYNC, new RequestSendCallback(requestResponseFuture),
+                    timeout - cost);
 
     responseMessage = requestResponseFuture->waitResponseMessage(timeout - cost);
     if (responseMessage == nullptr) {
@@ -398,6 +426,132 @@ MQMessage DefaultMQProducerImpl::request(MQMessage& msg, long timeout) {
   }
 
   return MQMessage(responseMessage);
+}
+
+void DefaultMQProducerImpl::request(MQMessage& msg, RequestCallback* requestCallback, long timeout) {
+  auto beginTimestamp = UtilAll::currentTimeMillis();
+  prepareSendRequest(msg, timeout);
+  const auto& correlationId = msg.getProperty(MQMessageConst::PROPERTY_CORRELATION_ID);
+
+  auto requestResponseFuture = std::make_shared<RequestResponseFuture>(correlationId, timeout, requestCallback);
+  RequestFutureTable::putRequestFuture(correlationId, requestResponseFuture);
+
+  auto cost = UtilAll::currentTimeMillis() - beginTimestamp;
+  sendDefaultImpl(msg.getMessageImpl(), CommunicationMode::ASYNC, new AsyncRequestSendCallback(requestResponseFuture),
+                  timeout - cost);
+}
+
+MQMessage DefaultMQProducerImpl::request(MQMessage& msg, const MQMessageQueue& mq, long timeout) {
+  auto beginTimestamp = UtilAll::currentTimeMillis();
+  prepareSendRequest(msg, timeout);
+  const auto& correlationId = msg.getProperty(MQMessageConst::PROPERTY_CORRELATION_ID);
+
+  std::exception_ptr eptr = nullptr;
+  MessagePtr responseMessage;
+  try {
+    auto requestResponseFuture = std::make_shared<RequestResponseFuture>(correlationId, timeout, nullptr);
+    RequestFutureTable::putRequestFuture(correlationId, requestResponseFuture);
+
+    auto cost = UtilAll::currentTimeMillis() - beginTimestamp;
+    sendKernelImpl(msg.getMessageImpl(), mq, CommunicationMode::ASYNC, new RequestSendCallback(requestResponseFuture),
+                   nullptr, timeout - cost);
+
+    responseMessage = requestResponseFuture->waitResponseMessage(timeout - cost);
+    if (responseMessage == nullptr) {
+      if (requestResponseFuture->isSendRequestOk()) {
+        std::string info = "send request message to <" + msg.getTopic() + "> OK, but wait reply message timeout, " +
+                           UtilAll::to_string(timeout) + " ms.";
+        THROW_MQEXCEPTION(RequestTimeoutException, info, ClientErrorCode::REQUEST_TIMEOUT_EXCEPTION);
+      } else {
+        std::string info = "send request message to <" + msg.getTopic() + "> fail";
+        THROW_MQEXCEPTION2(MQClientException, info, -1, requestResponseFuture->getCause());
+      }
+    }
+  } catch (...) {
+    eptr = std::current_exception();
+  }
+
+  // finally
+  RequestFutureTable::removeRequestFuture(correlationId);
+
+  if (eptr != nullptr) {
+    std::rethrow_exception(eptr);
+  }
+
+  return MQMessage(responseMessage);
+}
+
+void DefaultMQProducerImpl::request(MQMessage& msg,
+                                    const MQMessageQueue& mq,
+                                    RequestCallback* requestCallback,
+                                    long timeout) {
+  auto beginTimestamp = UtilAll::currentTimeMillis();
+  prepareSendRequest(msg, timeout);
+  const auto& correlationId = msg.getProperty(MQMessageConst::PROPERTY_CORRELATION_ID);
+
+  auto requestResponseFuture = std::make_shared<RequestResponseFuture>(correlationId, timeout, requestCallback);
+  RequestFutureTable::putRequestFuture(correlationId, requestResponseFuture);
+
+  auto cost = UtilAll::currentTimeMillis() - beginTimestamp;
+  sendKernelImpl(msg.getMessageImpl(), mq, CommunicationMode::ASYNC,
+                 new AsyncRequestSendCallback(requestResponseFuture), nullptr, timeout - cost);
+}
+
+MQMessage DefaultMQProducerImpl::request(MQMessage& msg, MessageQueueSelector* selector, void* arg, long timeout) {
+  auto beginTimestamp = UtilAll::currentTimeMillis();
+  prepareSendRequest(msg, timeout);
+  const auto& correlationId = msg.getProperty(MQMessageConst::PROPERTY_CORRELATION_ID);
+
+  std::exception_ptr eptr = nullptr;
+  MessagePtr responseMessage;
+  try {
+    auto requestResponseFuture = std::make_shared<RequestResponseFuture>(correlationId, timeout, nullptr);
+    RequestFutureTable::putRequestFuture(correlationId, requestResponseFuture);
+
+    auto cost = UtilAll::currentTimeMillis() - beginTimestamp;
+    sendSelectImpl(msg.getMessageImpl(), selector, arg, CommunicationMode::ASYNC,
+                   new RequestSendCallback(requestResponseFuture), timeout - cost);
+
+    responseMessage = requestResponseFuture->waitResponseMessage(timeout - cost);
+    if (responseMessage == nullptr) {
+      if (requestResponseFuture->isSendRequestOk()) {
+        std::string info = "send request message to <" + msg.getTopic() + "> OK, but wait reply message timeout, " +
+                           UtilAll::to_string(timeout) + " ms.";
+        THROW_MQEXCEPTION(RequestTimeoutException, info, ClientErrorCode::REQUEST_TIMEOUT_EXCEPTION);
+      } else {
+        std::string info = "send request message to <" + msg.getTopic() + "> fail";
+        THROW_MQEXCEPTION2(MQClientException, info, -1, requestResponseFuture->getCause());
+      }
+    }
+  } catch (...) {
+    eptr = std::current_exception();
+  }
+
+  // finally
+  RequestFutureTable::removeRequestFuture(correlationId);
+
+  if (eptr != nullptr) {
+    std::rethrow_exception(eptr);
+  }
+
+  return MQMessage(responseMessage);
+}
+
+void DefaultMQProducerImpl::request(MQMessage& msg,
+                                    MessageQueueSelector* selector,
+                                    void* arg,
+                                    RequestCallback* requestCallback,
+                                    long timeout) {
+  auto beginTimestamp = UtilAll::currentTimeMillis();
+  prepareSendRequest(msg, timeout);
+  const auto& correlationId = msg.getProperty(MQMessageConst::PROPERTY_CORRELATION_ID);
+
+  auto requestResponseFuture = std::make_shared<RequestResponseFuture>(correlationId, timeout, requestCallback);
+  RequestFutureTable::putRequestFuture(correlationId, requestResponseFuture);
+
+  auto cost = UtilAll::currentTimeMillis() - beginTimestamp;
+  sendSelectImpl(msg.getMessageImpl(), selector, arg, CommunicationMode::ASYNC,
+                 new AsyncRequestSendCallback(requestResponseFuture), timeout - cost);
 }
 
 void DefaultMQProducerImpl::prepareSendRequest(Message& msg, long timeout) {
@@ -441,7 +595,7 @@ SendResult* DefaultMQProducerImpl::sendDefaultImpl(MessagePtr msg,
   if (topicPublishInfo != nullptr && topicPublishInfo->ok()) {
     bool callTimeout = false;
     std::unique_ptr<SendResult> sendResult;
-    int timesTotal = communicationMode == CommunicationMode::ComMode_SYNC ? 1 + m_producerConfig->getRetryTimes() : 1;
+    int timesTotal = communicationMode == CommunicationMode::SYNC ? 1 + m_producerConfig->getRetryTimes() : 1;
     int times = 0;
     std::string lastBrokerName;
     for (; times < timesTotal; times++) {
@@ -466,11 +620,11 @@ SendResult* DefaultMQProducerImpl::sendDefaultImpl(MessagePtr msg,
         endTimestamp = UtilAll::currentTimeMillis();
         updateFaultItem(mq.getBrokerName(), endTimestamp - beginTimestampPrev, false);
         switch (communicationMode) {
-          case ComMode_ASYNC:
+          case CommunicationMode::ASYNC:
             return nullptr;
-          case ComMode_ONEWAY:
+          case CommunicationMode::ONEWAY:
             return nullptr;
-          case ComMode_SYNC:
+          case CommunicationMode::SYNC:
             if (sendResult->getSendStatus() != SEND_OK) {
               if (m_producerConfig->isRetryAnotherBrokerWhenNotStoreOK()) {
                 continue;
@@ -569,7 +723,7 @@ SendResult* DefaultMQProducerImpl::sendKernelImpl(MessagePtr msg,
 
       SendResult* sendResult = nullptr;
       switch (communicationMode) {
-        case ComMode_ASYNC: {
+        case CommunicationMode::ASYNC: {
           long costTimeAsync = UtilAll::currentTimeMillis() - beginStartTime;
           if (timeout < costTimeAsync) {
             THROW_MQEXCEPTION(RemotingTooMuchRequestException, "sendKernelImpl call timeout", -1);
@@ -578,8 +732,8 @@ SendResult* DefaultMQProducerImpl::sendKernelImpl(MessagePtr msg,
               brokerAddr, mq.getBrokerName(), msg, std::move(requestHeader), timeout, communicationMode, sendCallback,
               topicPublishInfo, m_clientInstance, m_producerConfig->getRetryTimes4Async(), shared_from_this());
         } break;
-        case ComMode_ONEWAY:
-        case ComMode_SYNC: {
+        case CommunicationMode::ONEWAY:
+        case CommunicationMode::SYNC: {
           long costTimeSync = UtilAll::currentTimeMillis() - beginStartTime;
           if (timeout < costTimeSync) {
             THROW_MQEXCEPTION(RemotingTooMuchRequestException, "sendKernelImpl call timeout", -1);
@@ -637,7 +791,7 @@ TransactionSendResult* DefaultMQProducerImpl::sendMessageInTransactionImpl(Messa
   MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_TRANSACTION_PREPARED, "true");
   MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_PRODUCER_GROUP, m_producerConfig->getGroupName());
   try {
-    sendResult.reset(sendDefaultImpl(msg, ComMode_SYNC, nullptr, timeout));
+    sendResult.reset(sendDefaultImpl(msg, CommunicationMode::SYNC, nullptr, timeout));
   } catch (MQException& e) {
     THROW_MQEXCEPTION(MQClientException, "send message Exception", -1);
   }

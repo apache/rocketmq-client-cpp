@@ -146,6 +146,33 @@ MQMessage DefaultMQProducer::request(MQMessage& msg, long timeout) {
   return producer_impl_->request(msg, timeout);
 }
 
+void DefaultMQProducer::request(MQMessage& msg, RequestCallback* requestCallback, long timeout) {
+  producer_impl_->request(msg, requestCallback, timeout);
+}
+
+MQMessage DefaultMQProducer::request(MQMessage& msg, const MQMessageQueue& mq, long timeout) {
+  return producer_impl_->request(msg, mq, timeout);
+}
+
+void DefaultMQProducer::request(MQMessage& msg,
+                                const MQMessageQueue& mq,
+                                RequestCallback* requestCallback,
+                                long timeout) {
+  producer_impl_->request(msg, mq, requestCallback, timeout);
+}
+
+MQMessage DefaultMQProducer::request(MQMessage& msg, MessageQueueSelector* selector, void* arg, long timeout) {
+  return producer_impl_->request(msg, selector, arg, timeout);
+}
+
+void DefaultMQProducer::request(MQMessage& msg,
+                                MessageQueueSelector* selector,
+                                void* arg,
+                                RequestCallback* requestCallback,
+                                long timeout) {
+  producer_impl_->request(msg, selector, arg, requestCallback, timeout);
+}
+
 bool DefaultMQProducer::isSendLatencyFaultEnable() const {
   return std::dynamic_pointer_cast<DefaultMQProducerImpl>(producer_impl_)->isSendLatencyFaultEnable();
 }

@@ -130,14 +130,14 @@ SendResult* MQClientAPIImpl::sendMessage(const std::string& addr,
   request.set_body(msg->getBody());
 
   switch (communicationMode) {
-    case ComMode_ONEWAY:
+    case CommunicationMode::ONEWAY:
       m_remotingClient->invokeOneway(addr, request);
       return nullptr;
-    case ComMode_ASYNC:
+    case CommunicationMode::ASYNC:
       sendMessageAsync(addr, brokerName, msg, std::move(request), sendCallback, topicPublishInfo, instance,
                        timeoutMillis, retryTimesWhenSendFailed, producer);
       return nullptr;
-    case ComMode_SYNC:
+    case CommunicationMode::SYNC:
       return sendMessageSync(addr, brokerName, msg, request, timeoutMillis);
     default:
       assert(false);
@@ -244,10 +244,10 @@ PullResult* MQClientAPIImpl::pullMessage(const std::string& addr,
   RemotingCommand request(PULL_MESSAGE, requestHeader);
 
   switch (communicationMode) {
-    case ComMode_ASYNC:
+    case CommunicationMode::ASYNC:
       pullMessageAsync(addr, request, timeoutMillis, pullCallback);
       return nullptr;
-    case ComMode_SYNC:
+    case CommunicationMode::SYNC:
       return pullMessageSync(addr, request, timeoutMillis);
     default:
       assert(false);

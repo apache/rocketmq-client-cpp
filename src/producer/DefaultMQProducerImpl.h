@@ -92,7 +92,17 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
   SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq) override;
   SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, long timeout) override;
 
+  // RPC
   MQMessage request(MQMessage& msg, long timeout) override;
+  void request(MQMessage& msg, RequestCallback* requestCallback, long timeout) override;
+  MQMessage request(MQMessage& msg, const MQMessageQueue& mq, long timeout) override;
+  void request(MQMessage&, const MQMessageQueue& mq, RequestCallback* requestCallback, long timeout) override;
+  MQMessage request(MQMessage& msg, MessageQueueSelector* selector, void* arg, long timeout) override;
+  void request(MQMessage& msg,
+               MessageQueueSelector* selector,
+               void* arg,
+               RequestCallback* requestCallback,
+               long timeout) override;
 
  public:  // MQProducerInner
   TransactionListener* getCheckListener() override;

@@ -85,6 +85,10 @@ void RequestResponseFuture::putResponseMessage(MessagePtr responseMsg) {
   }
 }
 
+const std::string& RequestResponseFuture::getCorrelationId() {
+  return m_correlationId;
+}
+
 bool RequestResponseFuture::isSendRequestOk() {
   return m_sendRequestOk;
 }

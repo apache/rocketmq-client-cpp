@@ -18,6 +18,7 @@
 #define __MQ_PRODUCER_H__
 
 #include "MQSelector.h"
+#include "RequestCallback.h"
 #include "SendCallback.h"
 #include "SendResult.h"
 #include "TransactionSendResult.h"
@@ -73,6 +74,15 @@ class ROCKETMQCLIENT_API MQProducer {
 
   // RPC
   virtual MQMessage request(MQMessage& msg, long timeout) = 0;
+  virtual void request(MQMessage& msg, RequestCallback* requestCallback, long timeout) = 0;
+  virtual MQMessage request(MQMessage& msg, const MQMessageQueue& mq, long timeout) = 0;
+  virtual void request(MQMessage& msg, const MQMessageQueue& mq, RequestCallback* requestCallback, long timeout) = 0;
+  virtual MQMessage request(MQMessage& msg, MessageQueueSelector* selector, void* arg, long timeout) = 0;
+  virtual void request(MQMessage& msg,
+                       MessageQueueSelector* selector,
+                       void* arg,
+                       RequestCallback* requestCallback,
+                       long timeout) = 0;
 };
 
 }  // namespace rocketmq

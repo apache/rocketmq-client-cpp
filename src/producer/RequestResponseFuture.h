@@ -37,6 +37,8 @@ class RequestResponseFuture {
   MessagePtr waitResponseMessage(int64_t timeout);
   void putResponseMessage(MessagePtr responseMsg);
 
+  const std::string& getCorrelationId();
+
   bool isSendRequestOk();
   void setSendRequestOk(bool sendRequestOk);
 
