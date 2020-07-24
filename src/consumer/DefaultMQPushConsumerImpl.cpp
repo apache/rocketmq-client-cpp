@@ -96,9 +96,7 @@ class AsyncPullCallback : public PullCallback {
         }
         pullRequest->setNextOffset(result.nextBeginOffset);
 
-        vector<MQMessageExt> msgs;
-        pullRequest->getMessage(msgs);
-        if ((msgs.size() == 0) && (result.nextBeginOffset > 0)) {
+        if ((pullRequest->getCacheMsgCount() == 0) && (result.nextBeginOffset > 0)) {
           m_callbackOwner->updateConsumeOffset(pullRequest->m_messageQueue, result.nextBeginOffset);
         }
         if (bProducePullRequest) {
@@ -118,9 +116,7 @@ class AsyncPullCallback : public PullCallback {
         }
         pullRequest->setNextOffset(result.nextBeginOffset);
 
-        vector<MQMessageExt> msgs;
-        pullRequest->getMessage(msgs);
-        if ((msgs.size() == 0) && (result.nextBeginOffset > 0)) {
+        if ((pullRequest->getCacheMsgCount() == 0) && (result.nextBeginOffset > 0)) {
           m_callbackOwner->updateConsumeOffset(pullRequest->m_messageQueue, result.nextBeginOffset);
         }
         if (bProducePullRequest) {
@@ -740,9 +736,7 @@ void DefaultMQPushConsumerImpl::pullMessage(boost::weak_ptr<PullRequest> pullReq
           break;
         }
         request->setNextOffset(pullResult.nextBeginOffset);
-        vector<MQMessageExt> msgs;
-        request->getMessage(msgs);
-        if ((msgs.size() == 0) && (pullResult.nextBeginOffset > 0)) {
+        if ((request->getCacheMsgCount() == 0) && (pullResult.nextBeginOffset > 0)) {
           updateConsumeOffset(messageQueue, pullResult.nextBeginOffset);
         }
         producePullMsgTask(request);
@@ -756,9 +750,7 @@ void DefaultMQPushConsumerImpl::pullMessage(boost::weak_ptr<PullRequest> pullReq
           break;
         }
         request->setNextOffset(pullResult.nextBeginOffset);
-        vector<MQMessageExt> msgs;
-        request->getMessage(msgs);
-        if ((msgs.size() == 0) && (pullResult.nextBeginOffset > 0)) {
+        if ((request->getCacheMsgCount() == 0) && (pullResult.nextBeginOffset > 0)) {
           updateConsumeOffset(messageQueue, pullResult.nextBeginOffset);
         }
         producePullMsgTask(request);
