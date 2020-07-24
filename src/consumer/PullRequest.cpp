@@ -92,7 +92,7 @@ int64 PullRequest::getCacheMaxOffset() {
 
 int PullRequest::getCacheMsgCount() {
   boost::lock_guard<boost::mutex> lock(m_pullRequestLock);
-  return m_msgTreeMap.size();
+  return m_msgTreeMap.size() + m_msgTreeMapTemp.size();
 }
 
 void PullRequest::getMessageByQueueOffset(vector<MQMessageExt>& msgs, int64 minQueueOffset, int64 maxQueueOffset) {
