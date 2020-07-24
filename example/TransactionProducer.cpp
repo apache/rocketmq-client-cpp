@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "common.h"
+#include "TransactionMQProducer.h"
 
 using namespace rocketmq;
 

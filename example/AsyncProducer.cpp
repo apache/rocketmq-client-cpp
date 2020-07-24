@@ -16,6 +16,7 @@
  */
 #include "common.h"
 #include "concurrent/latch.hpp"
+#include "DefaultMQProducer.h"
 
 using namespace rocketmq;
 

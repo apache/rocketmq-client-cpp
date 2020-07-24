@@ -32,7 +32,7 @@ class MessageListenerInner : public MessageListenerConcurrently {
 
   ~MessageListenerInner() = default;
 
-  ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) override {
+  ConsumeStatus consumeMessage(std::vector<MQMessageExt>& msgs) override {
     // to do user call back
     if (m_msgReceivedCallback == nullptr) {
       return RECONSUME_LATER;
@@ -56,7 +56,7 @@ class MessageListenerOrderlyInner : public MessageListenerOrderly {
   MessageListenerOrderlyInner(CPushConsumer* consumer, MessageCallBack callback)
       : m_consumer(consumer), m_msgReceivedCallback(callback) {}
 
-  ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) override {
+  ConsumeStatus consumeMessage(std::vector<MQMessageExt>& msgs) override {
     if (m_msgReceivedCallback == nullptr) {
       return RECONSUME_LATER;
     }

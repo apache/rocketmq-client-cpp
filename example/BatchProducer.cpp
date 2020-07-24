@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "common.h"
+#include "DefaultMQProducer.h"
 
 using namespace rocketmq;
 

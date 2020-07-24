@@ -38,7 +38,7 @@ class ROCKETMQCLIENT_API MQMessageListener {
 
   virtual MessageListenerType getMessageListenerType() { return messageListenerDefaultly; }
 
-  virtual ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) { return RECONSUME_LATER; };
+  virtual ConsumeStatus consumeMessage(std::vector<MQMessageExt>& msgs) { return RECONSUME_LATER; };
 };
 
 class ROCKETMQCLIENT_API MessageListenerConcurrently : virtual public MQMessageListener {

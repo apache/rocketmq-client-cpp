@@ -30,12 +30,9 @@
 #include "ArgHelper.h"
 #endif
 
-#include "DefaultMQProducer.h"
-#include "DefaultMQPullConsumer.h"
-#include "DefaultMQPushConsumer.h"
-#include "TransactionMQProducer.h"
+#include "PullResult.h"
 
-std::atomic<int> g_msgCount(1);
+static std::atomic<int> g_msgCount(1);
 
 class RocketmqSendAndConsumerArgs {
  public:

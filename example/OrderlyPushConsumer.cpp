@@ -16,6 +16,7 @@
  */
 #include "common.h"
 #include "concurrent/latch.hpp"
+#include "DefaultMQPushConsumer.h"
 
 using namespace rocketmq;
 
@@ -27,7 +28,7 @@ class MyMsgListener : public MessageListenerOrderly {
   MyMsgListener() {}
   virtual ~MyMsgListener() {}
 
-  virtual ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) override {
+  virtual ConsumeStatus consumeMessage(std::vector<MQMessageExt>& msgs) override {
     auto old = g_msgCount.fetch_sub(msgs.size());
     if (old > 0) {
       for (size_t i = 0; i < msgs.size(); ++i) {

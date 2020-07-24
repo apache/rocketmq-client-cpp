@@ -19,7 +19,8 @@
 #include "../src/common/UtilAll.h"
 #include "common.h"
 #include "MessageUtil.h"
-#include "common.h"
+#include "DefaultMQProducer.h"
+#include "DefaultMQPushConsumer.h"
 
 using namespace rocketmq;
 
@@ -28,7 +29,7 @@ class MyResponseMessageListener : public MessageListenerConcurrently {
   MyResponseMessageListener(DefaultMQProducer* replyProducer) : m_replyProducer(replyProducer) {}
   virtual ~MyResponseMessageListener() = default;
 
-  ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) override {
+  ConsumeStatus consumeMessage(std::vector<MQMessageExt>& msgs) override {
     for (const auto& msg : msgs) {
       try {
         std::cout << "handle message: " << msg.toString() << std::endl;
