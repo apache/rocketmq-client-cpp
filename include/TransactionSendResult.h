@@ -27,9 +27,9 @@ class ROCKETMQCLIENT_API TransactionSendResult : public SendResult {
  public:
   TransactionSendResult(const SendResult& sendResult) : SendResult(sendResult), local_transaction_state_(UNKNOWN) {}
 
-  inline LocalTransactionState getLocalTransactionState() const { return local_transaction_state_; }
+  inline LocalTransactionState local_transaction_state() const { return local_transaction_state_; }
 
-  inline void setLocalTransactionState(LocalTransactionState localTransactionState) {
+  inline void set_local_transaction_state(LocalTransactionState localTransactionState) {
     local_transaction_state_ = localTransactionState;
   }
 

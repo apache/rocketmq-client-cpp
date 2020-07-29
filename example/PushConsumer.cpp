@@ -36,7 +36,7 @@ class MyMsgListener : public MessageListenerConcurrently {
         if (msgs[i] == nullptr) {
           std::cout << "error!!!" << std::endl;
         } else {
-          std::cout << msgs[i].getMsgId() << ", body: " << msgs[i].getBody() << std::endl;
+          std::cout << msgs[i].msg_id() << ", body: " << msgs[i].body() << std::endl;
         }
       }
       if (old <= msgs.size()) {
@@ -57,15 +57,15 @@ int main(int argc, char* argv[]) {
   PrintRocketmqSendAndConsumerArgs(info);
 
   auto* consumer = new DefaultMQPushConsumer(info.groupname);
-  consumer->setNamesrvAddr(info.namesrv);
-  consumer->setGroupName(info.groupname);
-  consumer->setTcpTransportTryLockTimeout(1000);
-  consumer->setTcpTransportConnectTimeout(400);
-  consumer->setConsumeThreadNum(info.thread_count);
-  consumer->setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
+  consumer->set_namesrv_addr(info.namesrv);
+  consumer->set_group_name(info.groupname);
+  consumer->set_tcp_transport_try_lock_timeout(1000);
+  consumer->set_tcp_transport_connect_timeout(400);
+  consumer->set_consume_thread_nums(info.thread_count);
+  consumer->set_consume_from_where(CONSUME_FROM_LAST_OFFSET);
 
   if (info.broadcasting) {
-    consumer->setMessageModel(BROADCASTING);
+    consumer->set_message_model(BROADCASTING);
   }
 
   consumer->subscribe(info.topic, "*");

@@ -30,86 +30,86 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumerConfigProxy : public MQClientConfi
       : MQClientConfigProxy(consumerConfig) {}
   virtual ~DefaultMQPushConsumerConfigProxy() = default;
 
-  inline MessageModel getMessageModel() const override {
-    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getMessageModel();
+  MessageModel message_model() const override {
+    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->message_model();
   }
 
-  inline void setMessageModel(MessageModel messageModel) override {
-    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->setMessageModel(messageModel);
+  void set_message_model(MessageModel messageModel) override {
+    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->set_message_model(messageModel);
   }
 
-  inline ConsumeFromWhere getConsumeFromWhere() const override {
-    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getConsumeFromWhere();
+  ConsumeFromWhere consume_from_where() const override {
+    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->consume_from_where();
   }
 
-  inline void setConsumeFromWhere(ConsumeFromWhere consumeFromWhere) override {
-    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->setConsumeFromWhere(consumeFromWhere);
+  void set_consume_from_where(ConsumeFromWhere consumeFromWhere) override {
+    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->set_consume_from_where(consumeFromWhere);
   }
 
-  inline const std::string& getConsumeTimestamp() const override {
-    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getConsumeTimestamp();
+  const std::string& consume_timestamp() const override {
+    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->consume_timestamp();
   }
 
-  inline void setConsumeTimestamp(const std::string& consumeTimestamp) override {
-    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->setConsumeTimestamp(consumeTimestamp);
+  void set_consume_timestamp(const std::string& consumeTimestamp) override {
+    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->set_consume_timestamp(consumeTimestamp);
   }
 
-  inline int getConsumeThreadNum() const override {
-    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getConsumeThreadNum();
+  int consume_thread_nums() const override {
+    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->consume_thread_nums();
   }
 
-  inline void setConsumeThreadNum(int threadNum) override {
-    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->setConsumeThreadNum(threadNum);
+  void set_consume_thread_nums(int threadNum) override {
+    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->set_consume_thread_nums(threadNum);
   }
 
-  inline int getConsumeMessageBatchMaxSize() const override {
-    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getConsumeMessageBatchMaxSize();
+  int consume_message_batch_max_size() const override {
+    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->consume_message_batch_max_size();
   }
 
-  inline void setConsumeMessageBatchMaxSize(int consumeMessageBatchMaxSize) override {
+  void set_consume_message_batch_max_size(int consumeMessageBatchMaxSize) override {
     dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())
-        ->setConsumeMessageBatchMaxSize(consumeMessageBatchMaxSize);
+        ->set_consume_message_batch_max_size(consumeMessageBatchMaxSize);
   }
 
-  inline int getMaxCacheMsgSizePerQueue() const override {
-    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getMaxCacheMsgSizePerQueue();
+  int max_cache_msg_size_per_queue() const override {
+    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->max_cache_msg_size_per_queue();
   }
 
-  inline void setMaxCacheMsgSizePerQueue(int maxCacheSize) override {
-    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->setMaxCacheMsgSizePerQueue(maxCacheSize);
+  void set_max_cache_msg_size_per_queue(int maxCacheSize) override {
+    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->set_max_cache_msg_size_per_queue(maxCacheSize);
   }
 
-  inline int getAsyncPullTimeout() const override {
-    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getAsyncPullTimeout();
+  int async_pull_timeout() const override {
+    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->async_pull_timeout();
   }
 
-  inline void setAsyncPullTimeout(int asyncPullTimeout) override {
-    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->setAsyncPullTimeout(asyncPullTimeout);
+  void set_async_pull_timeout(int asyncPullTimeout) override {
+    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->set_async_pull_timeout(asyncPullTimeout);
   }
 
-  inline int getMaxReconsumeTimes() const override {
-    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getMaxReconsumeTimes();
+  int max_reconsume_times() const override {
+    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->max_reconsume_times();
   }
 
-  inline void setMaxReconsumeTimes(int maxReconsumeTimes) override {
-    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->setMaxReconsumeTimes(maxReconsumeTimes);
+  void set_max_reconsume_times(int maxReconsumeTimes) override {
+    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->set_max_reconsume_times(maxReconsumeTimes);
   }
 
-  inline long getPullTimeDelayMillsWhenException() const override {
-    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getPullTimeDelayMillsWhenException();
+  long pull_time_delay_mills_when_exception() const override {
+    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->pull_time_delay_mills_when_exception();
   }
 
-  inline void setPullTimeDelayMillsWhenException(long pullTimeDelayMillsWhenException) override {
+  void set_pull_time_delay_mills_when_exception(long pullTimeDelayMillsWhenException) override {
     dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())
-        ->setPullTimeDelayMillsWhenException(pullTimeDelayMillsWhenException);
+        ->set_pull_time_delay_mills_when_exception(pullTimeDelayMillsWhenException);
   }
 
-  inline AllocateMQStrategy* getAllocateMQStrategy() const override {
-    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->getAllocateMQStrategy();
+  AllocateMQStrategy* allocate_mq_strategy() const override {
+    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->allocate_mq_strategy();
   }
 
-  inline void setAllocateMQStrategy(AllocateMQStrategy* strategy) override {
-    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->setAllocateMQStrategy(strategy);
+  void set_allocate_mq_strategy(AllocateMQStrategy* strategy) override {
+    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->set_allocate_mq_strategy(strategy);
   }
 
   inline DefaultMQPushConsumerConfigPtr real_config() const {

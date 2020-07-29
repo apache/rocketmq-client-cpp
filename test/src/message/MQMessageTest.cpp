@@ -31,97 +31,97 @@ using rocketmq::MQMessageConst;
 
 TEST(MessageTest, Init) {
   MQMessage messageOne;
-  EXPECT_EQ(messageOne.getTopic(), "");
-  EXPECT_EQ(messageOne.getBody(), "");
-  EXPECT_EQ(messageOne.getTags(), "");
-  EXPECT_EQ(messageOne.getFlag(), 0);
+  EXPECT_EQ(messageOne.topic(), "");
+  EXPECT_EQ(messageOne.body(), "");
+  EXPECT_EQ(messageOne.tags(), "");
+  EXPECT_EQ(messageOne.flag(), 0);
 
   MQMessage messageTwo("test", "testBody");
-  EXPECT_EQ(messageTwo.getTopic(), "test");
-  EXPECT_EQ(messageTwo.getBody(), "testBody");
-  EXPECT_EQ(messageTwo.getTags(), "");
-  EXPECT_EQ(messageTwo.getFlag(), 0);
+  EXPECT_EQ(messageTwo.topic(), "test");
+  EXPECT_EQ(messageTwo.body(), "testBody");
+  EXPECT_EQ(messageTwo.tags(), "");
+  EXPECT_EQ(messageTwo.flag(), 0);
 
   MQMessage messageThree("test", "tagTest", "testBody");
-  EXPECT_EQ(messageThree.getTopic(), "test");
-  EXPECT_EQ(messageThree.getBody(), "testBody");
-  EXPECT_EQ(messageThree.getTags(), "tagTest");
-  EXPECT_EQ(messageThree.getFlag(), 0);
+  EXPECT_EQ(messageThree.topic(), "test");
+  EXPECT_EQ(messageThree.body(), "testBody");
+  EXPECT_EQ(messageThree.tags(), "tagTest");
+  EXPECT_EQ(messageThree.flag(), 0);
 
   MQMessage messageFour("test", "tagTest", "testKey", "testBody");
-  EXPECT_EQ(messageFour.getTopic(), "test");
-  EXPECT_EQ(messageFour.getBody(), "testBody");
-  EXPECT_EQ(messageFour.getTags(), "tagTest");
-  EXPECT_EQ(messageFour.getKeys(), "testKey");
-  EXPECT_EQ(messageFour.getFlag(), 0);
+  EXPECT_EQ(messageFour.topic(), "test");
+  EXPECT_EQ(messageFour.body(), "testBody");
+  EXPECT_EQ(messageFour.tags(), "tagTest");
+  EXPECT_EQ(messageFour.keys(), "testKey");
+  EXPECT_EQ(messageFour.flag(), 0);
 
   MQMessage messageFive("test", "tagTest", "testKey", 1, "testBody", 2);
-  EXPECT_EQ(messageFive.getTopic(), "test");
-  EXPECT_EQ(messageFive.getBody(), "testBody");
-  EXPECT_EQ(messageFive.getTags(), "tagTest");
-  EXPECT_EQ(messageFive.getKeys(), "testKey");
-  EXPECT_EQ(messageFive.getFlag(), 1);
+  EXPECT_EQ(messageFive.topic(), "test");
+  EXPECT_EQ(messageFive.body(), "testBody");
+  EXPECT_EQ(messageFive.tags(), "tagTest");
+  EXPECT_EQ(messageFive.keys(), "testKey");
+  EXPECT_EQ(messageFive.flag(), 1);
 
   MQMessage messageSix(messageFive);
-  EXPECT_EQ(messageSix.getTopic(), "test");
-  EXPECT_EQ(messageSix.getBody(), "testBody");
-  EXPECT_EQ(messageSix.getTags(), "tagTest");
-  EXPECT_EQ(messageSix.getKeys(), "testKey");
-  EXPECT_EQ(messageSix.getFlag(), 1);
+  EXPECT_EQ(messageSix.topic(), "test");
+  EXPECT_EQ(messageSix.body(), "testBody");
+  EXPECT_EQ(messageSix.tags(), "tagTest");
+  EXPECT_EQ(messageSix.keys(), "testKey");
+  EXPECT_EQ(messageSix.flag(), 1);
 }
 
 TEST(MessageTest, GetterAndSetter) {
   MQMessage message;
 
-  EXPECT_EQ(message.getTopic(), "");  // default
-  message.setTopic("testTopic");
-  EXPECT_EQ(message.getTopic(), "testTopic");
+  EXPECT_EQ(message.topic(), "");  // default
+  message.set_topic("testTopic");
+  EXPECT_EQ(message.topic(), "testTopic");
 
   const char* topic = "testTopic";
-  message.setTopic(topic, 5);
-  EXPECT_EQ(message.getTopic(), "testT");
+  message.set_topic(topic, 5);
+  EXPECT_EQ(message.topic(), "testT");
 
-  EXPECT_EQ(message.getBody(), "");  // default
-  message.setBody("testBody");
-  EXPECT_EQ(message.getBody(), "testBody");
+  EXPECT_EQ(message.body(), "");  // default
+  message.set_body("testBody");
+  EXPECT_EQ(message.body(), "testBody");
 
-  EXPECT_EQ(message.getTags(), "");  // default
-  message.setTags("testTags");
-  EXPECT_EQ(message.getTags(), "testTags");
+  EXPECT_EQ(message.tags(), "");  // default
+  message.set_tags("testTags");
+  EXPECT_EQ(message.tags(), "testTags");
 
-  EXPECT_EQ(message.getKeys(), "");  // default
-  message.setKeys("testKeys");
-  EXPECT_EQ(message.getKeys(), "testKeys");
+  EXPECT_EQ(message.keys(), "");  // default
+  message.set_keys("testKeys");
+  EXPECT_EQ(message.keys(), "testKeys");
 
-  EXPECT_EQ(message.getFlag(), 0);  // default
-  message.setFlag(2);
-  EXPECT_EQ(message.getFlag(), 2);
+  EXPECT_EQ(message.flag(), 0);  // default
+  message.set_flag(2);
+  EXPECT_EQ(message.flag(), 2);
 
-  EXPECT_EQ(message.isWaitStoreMsgOK(), true);  // default
-  message.setWaitStoreMsgOK(false);
-  EXPECT_EQ(message.isWaitStoreMsgOK(), false);
-  message.setWaitStoreMsgOK(true);
-  EXPECT_EQ(message.isWaitStoreMsgOK(), true);
+  EXPECT_EQ(message.wait_store_msg_ok(), true);  // default
+  message.set_wait_store_msg_ok(false);
+  EXPECT_EQ(message.wait_store_msg_ok(), false);
+  message.set_wait_store_msg_ok(true);
+  EXPECT_EQ(message.wait_store_msg_ok(), true);
 
-  EXPECT_EQ(message.getDelayTimeLevel(), 0);  // default
-  message.setDelayTimeLevel(1);
-  EXPECT_EQ(message.getDelayTimeLevel(), 1);
+  EXPECT_EQ(message.delay_time_level(), 0);  // default
+  message.set_delay_time_level(1);
+  EXPECT_EQ(message.delay_time_level(), 1);
 }
 
 TEST(MessageTest, Properties) {
   MQMessage message;
 
-  EXPECT_EQ(message.getProperties().size(), 1);
+  EXPECT_EQ(message.properties().size(), 1);
   EXPECT_EQ(message.getProperty(MQMessageConst::PROPERTY_TRANSACTION_PREPARED), "");
 
   message.putProperty(MQMessageConst::PROPERTY_TRANSACTION_PREPARED, "true");
-  EXPECT_EQ(message.getProperties().size(), 2);
+  EXPECT_EQ(message.properties().size(), 2);
   EXPECT_EQ(message.getProperty(MQMessageConst::PROPERTY_TRANSACTION_PREPARED), "true");
 
   std::map<std::string, std::string> newProperties;
   newProperties[MQMessageConst::PROPERTY_TRANSACTION_PREPARED] = "false";
-  message.setProperties(newProperties);
-  EXPECT_EQ(message.getProperties().size(), 1);
+  message.set_properties(newProperties);
+  EXPECT_EQ(message.properties().size(), 1);
   EXPECT_EQ(message.getProperty(MQMessageConst::PROPERTY_TRANSACTION_PREPARED), "false");
 }
 

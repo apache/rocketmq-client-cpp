@@ -40,32 +40,32 @@ class DefaultMQProducerConfigImpl : virtual public DefaultMQProducerConfig, publ
 
   virtual ~DefaultMQProducerConfigImpl() = default;
 
-  int getMaxMessageSize() const override { return max_message_size_; }
-  void setMaxMessageSize(int maxMessageSize) override { max_message_size_ = maxMessageSize; }
+  int max_message_size() const override { return max_message_size_; }
+  void set_max_message_size(int maxMessageSize) override { max_message_size_ = maxMessageSize; }
 
-  int getCompressMsgBodyOverHowmuch() const override { return compress_msg_body_over_howmuch_; }
-  void setCompressMsgBodyOverHowmuch(int compressMsgBodyOverHowmuch) override {
+  int compress_msg_body_over_howmuch() const override { return compress_msg_body_over_howmuch_; }
+  void set_compress_msg_body_over_howmuch(int compressMsgBodyOverHowmuch) override {
     compress_msg_body_over_howmuch_ = compressMsgBodyOverHowmuch;
   }
 
-  int getCompressLevel() const override { return compress_level_; }
-  void setCompressLevel(int compressLevel) override {
+  int compress_level() const override { return compress_level_; }
+  void set_compress_level(int compressLevel) override {
     if ((compressLevel >= 0 && compressLevel <= 9) || compressLevel == -1) {
       compress_level_ = compressLevel;
     }
   }
 
-  int getSendMsgTimeout() const override { return send_msg_timeout_; }
-  void setSendMsgTimeout(int sendMsgTimeout) override { send_msg_timeout_ = sendMsgTimeout; }
+  int send_msg_timeout() const override { return send_msg_timeout_; }
+  void set_send_msg_timeout(int sendMsgTimeout) override { send_msg_timeout_ = sendMsgTimeout; }
 
-  int getRetryTimes() const override { return retry_times_; }
-  void setRetryTimes(int times) override { retry_times_ = std::min(std::max(0, times), 15); }
+  int retry_times() const override { return retry_times_; }
+  void set_retry_times(int times) override { retry_times_ = std::min(std::max(0, times), 15); }
 
-  int getRetryTimesForAsync() const override { return retry_times_for_async_; }
-  void setRetryTimesForAsync(int times) override { retry_times_for_async_ = std::min(std::max(0, times), 15); }
+  int retry_times_for_async() const override { return retry_times_for_async_; }
+  void set_retry_times_for_async(int times) override { retry_times_for_async_ = std::min(std::max(0, times), 15); }
 
-  bool isRetryAnotherBrokerWhenNotStoreOK() const override { return retry_another_broker_when_not_store_ok_; }
-  void setRetryAnotherBrokerWhenNotStoreOK(bool retryAnotherBrokerWhenNotStoreOK) override {
+  bool retry_another_broker_when_not_store_ok() const override { return retry_another_broker_when_not_store_ok_; }
+  void set_retry_another_broker_when_not_store_ok(bool retryAnotherBrokerWhenNotStoreOK) override {
     retry_another_broker_when_not_store_ok_ = retryAnotherBrokerWhenNotStoreOK;
   }
 

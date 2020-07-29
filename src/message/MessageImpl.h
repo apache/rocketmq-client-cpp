@@ -44,36 +44,36 @@ class MessageImpl : public noncopyable,     // base
   void putProperty(const std::string& name, const std::string& value) override;
   void clearProperty(const std::string& name) override;
 
-  const std::string& getTopic() const override;
-  void setTopic(const std::string& topic) override;
-  void setTopic(const char* body, int len) override;
+  const std::string& topic() const override;
+  void set_topic(const std::string& topic) override;
+  void set_topic(const char* body, int len) override;
 
-  const std::string& getTags() const override;
-  void setTags(const std::string& tags) override;
+  const std::string& tags() const override;
+  void set_tags(const std::string& tags) override;
 
-  const std::string& getKeys() const override;
-  void setKeys(const std::string& keys) override;
-  void setKeys(const std::vector<std::string>& keys) override;
+  const std::string& keys() const override;
+  void set_keys(const std::string& keys) override;
+  void set_keys(const std::vector<std::string>& keys) override;
 
-  int getDelayTimeLevel() const override;
-  void setDelayTimeLevel(int level) override;
+  int delay_time_level() const override;
+  void set_delay_time_level(int level) override;
 
-  bool isWaitStoreMsgOK() const override;
-  void setWaitStoreMsgOK(bool waitStoreMsgOK) override;
+  bool wait_store_msg_ok() const override;
+  void set_wait_store_msg_ok(bool waitStoreMsgOK) override;
 
-  int32_t getFlag() const override;
-  void setFlag(int32_t flag) override;
+  int32_t flag() const override;
+  void set_flag(int32_t flag) override;
 
-  const std::string& getBody() const override;
-  void setBody(const std::string& body) override;
-  void setBody(std::string&& body) override;
+  const std::string& body() const override;
+  void set_body(const std::string& body) override;
+  void set_body(std::string&& body) override;
 
-  const std::string& getTransactionId() const override;
-  void setTransactionId(const std::string& transactionId) override;
+  const std::string& transaction_id() const override;
+  void set_transaction_id(const std::string& transactionId) override;
 
-  const std::map<std::string, std::string>& getProperties() const override;
-  void setProperties(const std::map<std::string, std::string>& properties) override;
-  void setProperties(std::map<std::string, std::string>&& properties) override;
+  const std::map<std::string, std::string>& properties() const override;
+  void set_properties(const std::map<std::string, std::string>& properties) override;
+  void set_properties(std::map<std::string, std::string>&& properties) override;
 
   std::string toString() const override;
 

@@ -89,64 +89,64 @@ MessageExtPtr MessageDecoder::decode(ByteBuffer& byteBuffer, bool readBody, bool
 
   // 1 TOTALSIZE
   int32_t storeSize = byteBuffer.getInt();
-  msgExt->setStoreSize(storeSize);
+  msgExt->set_store_size(storeSize);
 
   // 2 MAGICCODE sizeof(int)
   byteBuffer.getInt();
 
   // 3 BODYCRC
   int32_t bodyCRC = byteBuffer.getInt();
-  msgExt->setBodyCRC(bodyCRC);
+  msgExt->set_body_crc(bodyCRC);
 
   // 4 QUEUEID
   int32_t queueId = byteBuffer.getInt();
-  msgExt->setQueueId(queueId);
+  msgExt->set_queue_id(queueId);
 
   // 5 FLAG
   int32_t flag = byteBuffer.getInt();
-  msgExt->setFlag(flag);
+  msgExt->set_flag(flag);
 
   // 6 QUEUEOFFSET
   int64_t queueOffset = byteBuffer.getLong();
-  msgExt->setQueueOffset(queueOffset);
+  msgExt->set_queue_offset(queueOffset);
 
   // 7 PHYSICALOFFSET
   int64_t physicOffset = byteBuffer.getLong();
-  msgExt->setCommitLogOffset(physicOffset);
+  msgExt->set_commit_log_offset(physicOffset);
 
   // 8 SYSFLAG
   int32_t sysFlag = byteBuffer.getInt();
-  msgExt->setSysFlag(sysFlag);
+  msgExt->set_sys_flag(sysFlag);
 
   // 9 BORNTIMESTAMP
   int64_t bornTimeStamp = byteBuffer.getLong();
-  msgExt->setBornTimestamp(bornTimeStamp);
+  msgExt->set_born_timestamp(bornTimeStamp);
 
   // 10 BORNHOST
   int bornhostIPLength = (sysFlag & MessageSysFlag::BORNHOST_V6_FLAG) == 0 ? 4 : 16;
   ByteArray bornHost(bornhostIPLength);
   byteBuffer.get(bornHost, 0, bornhostIPLength);
   int32_t bornPort = byteBuffer.getInt();
-  msgExt->setBornHost(ipPort2SocketAddress(bornHost, bornPort));
+  msgExt->set_born_host(ipPort2SocketAddress(bornHost, bornPort));
 
   // 11 STORETIMESTAMP
   int64_t storeTimestamp = byteBuffer.getLong();
-  msgExt->setStoreTimestamp(storeTimestamp);
+  msgExt->set_store_timestamp(storeTimestamp);
 
   // 12 STOREHOST
   int storehostIPLength = (sysFlag & MessageSysFlag::STOREHOST_V6_FLAG) == 0 ? 4 : 16;
   ByteArray storeHost(bornhostIPLength);
   byteBuffer.get(storeHost, 0, storehostIPLength);
   int32_t storePort = byteBuffer.getInt();
-  msgExt->setStoreHost(ipPort2SocketAddress(storeHost, storePort));
+  msgExt->set_store_host(ipPort2SocketAddress(storeHost, storePort));
 
   // 13 RECONSUMETIMES
   int32_t reconsumeTimes = byteBuffer.getInt();
-  msgExt->setReconsumeTimes(reconsumeTimes);
+  msgExt->set_reconsume_times(reconsumeTimes);
 
   // 14 Prepared Transaction Offset
   int64_t preparedTransactionOffset = byteBuffer.getLong();
-  msgExt->setPreparedTransactionOffset(preparedTransactionOffset);
+  msgExt->set_prepared_transaction_offset(preparedTransactionOffset);
 
   // 15 BODY
   int uncompress_failed = false;
@@ -160,12 +160,12 @@ MessageExtPtr MessageDecoder::decode(ByteBuffer& byteBuffer, bool readBody, bool
       if (deCompressBody && (sysFlag & MessageSysFlag::COMPRESSED_FLAG) == MessageSysFlag::COMPRESSED_FLAG) {
         std::string origin_body;
         if (UtilAll::inflate(body, origin_body)) {
-          msgExt->setBody(std::move(origin_body));
+          msgExt->set_body(std::move(origin_body));
         } else {
           uncompress_failed = true;
         }
       } else {
-        msgExt->setBody(std::string(body.array(), body.size()));
+        msgExt->set_body(std::string(body.array(), body.size()));
       }
     } else {
       // skip body
@@ -177,7 +177,7 @@ MessageExtPtr MessageDecoder::decode(ByteBuffer& byteBuffer, bool readBody, bool
   int8_t topicLen = byteBuffer.get();
   ByteArray topic(topicLen);
   byteBuffer.get(topic);
-  msgExt->setTopic(topic.array(), topic.size());
+  msgExt->set_topic(topic.array(), topic.size());
 
   // 17 properties
   int16_t propertiesLen = byteBuffer.getShort();
@@ -190,11 +190,11 @@ MessageExtPtr MessageDecoder::decode(ByteBuffer& byteBuffer, bool readBody, bool
   }
 
   // 18 msg ID
-  std::string msgId = createMessageId(msgExt->getStoreHost(), (int64_t)msgExt->getCommitLogOffset());
-  msgExt->MessageExtImpl::setMsgId(msgId);
+  std::string msgId = createMessageId(msgExt->store_host(), (int64_t)msgExt->commit_log_offset());
+  msgExt->MessageExtImpl::set_msg_id(msgId);
 
   if (uncompress_failed) {
-    LOG_WARN_NEW("can not uncompress message, id:{}", msgExt->getMsgId());
+    LOG_WARN_NEW("can not uncompress message, id:{}", msgExt->msg_id());
   }
 
   return msgExt;
@@ -254,9 +254,9 @@ std::map<std::string, std::string> MessageDecoder::string2messageProperties(cons
 }
 
 std::string MessageDecoder::encodeMessage(Message& message) {
-  const auto& body = message.getBody();
+  const auto& body = message.body();
   uint32_t bodyLen = body.size();
-  std::string properties = MessageDecoder::messageProperties2String(message.getProperties());
+  std::string properties = MessageDecoder::messageProperties2String(message.properties());
   uint16_t propertiesLength = (int16_t)properties.size();
   uint32_t storeSize = 4                        // 1 TOTALSIZE
                        + 4                      // 2 MAGICCODE
@@ -283,7 +283,7 @@ std::string MessageDecoder::encodeMessage(Message& message) {
   encodeMsg.append((char*)&bodyCrc_net, sizeof(uint32_t));
 
   // 4 FLAG
-  uint32_t flag = message.getFlag();
+  uint32_t flag = message.flag();
   uint32_t flag_net = ByteOrderUtil::NorminalBigEndian(flag);
   encodeMsg.append((char*)&flag_net, sizeof(uint32_t));
 

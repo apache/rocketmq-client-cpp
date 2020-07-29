@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef ROCKETMQ_MESSAGE_MESSAGEEXT_H_
-#define ROCKETMQ_MESSAGE_MESSAGEEXT_H_
+#ifndef ROCKETMQ_MESSAGE_MESSAGEEXTIMPL_H_
+#define ROCKETMQ_MESSAGE_MESSAGEEXTIMPL_H_
 
 #include "MessageExt.h"
 #include "MessageImpl.h"
@@ -43,46 +43,46 @@ class MessageExtImpl : public MessageImpl,        // base
   static TopicFilterType parseTopicFilterType(int32_t sysFlag);
 
  public:  // MessageExt
-  int32_t getStoreSize() const override;
-  void setStoreSize(int32_t storeSize) override;
+  int32_t store_size() const override;
+  void set_store_size(int32_t storeSize) override;
 
-  int32_t getBodyCRC() const override;
-  void setBodyCRC(int32_t bodyCRC) override;
+  int32_t body_crc() const override;
+  void set_body_crc(int32_t bodyCRC) override;
 
-  int32_t getQueueId() const override;
-  void setQueueId(int32_t queueId) override;
+  int32_t queue_id() const override;
+  void set_queue_id(int32_t queueId) override;
 
-  int64_t getQueueOffset() const override;
-  void setQueueOffset(int64_t queueOffset) override;
+  int64_t queue_offset() const override;
+  void set_queue_offset(int64_t queueOffset) override;
 
-  int64_t getCommitLogOffset() const override;
-  void setCommitLogOffset(int64_t physicOffset) override;
+  int64_t commit_log_offset() const override;
+  void set_commit_log_offset(int64_t physicOffset) override;
 
-  int32_t getSysFlag() const override;
-  void setSysFlag(int32_t sysFlag) override;
+  int32_t sys_flag() const override;
+  void set_sys_flag(int32_t sysFlag) override;
 
-  int64_t getBornTimestamp() const override;
-  void setBornTimestamp(int64_t bornTimestamp) override;
+  int64_t born_timestamp() const override;
+  void set_born_timestamp(int64_t bornTimestamp) override;
 
-  const struct sockaddr* getBornHost() const override;
-  std::string getBornHostString() const override;
-  void setBornHost(const struct sockaddr* bornHost) override;
+  const struct sockaddr* born_host() const override;
+  std::string born_host_string() const override;
+  void set_born_host(const struct sockaddr* bornHost) override;
 
-  int64_t getStoreTimestamp() const override;
-  void setStoreTimestamp(int64_t storeTimestamp) override;
+  int64_t store_timestamp() const override;
+  void set_store_timestamp(int64_t storeTimestamp) override;
 
-  const struct sockaddr* getStoreHost() const override;
-  std::string getStoreHostString() const override;
-  void setStoreHost(const struct sockaddr* storeHost) override;
+  const struct sockaddr* store_host() const override;
+  std::string store_host_string() const override;
+  void set_store_host(const struct sockaddr* storeHost) override;
 
-  int32_t getReconsumeTimes() const override;
-  void setReconsumeTimes(int32_t reconsumeTimes) override;
+  int32_t reconsume_times() const override;
+  void set_reconsume_times(int32_t reconsumeTimes) override;
 
-  int64_t getPreparedTransactionOffset() const override;
-  void setPreparedTransactionOffset(int64_t preparedTransactionOffset) override;
+  int64_t prepared_transaction_offset() const override;
+  void set_prepared_transaction_offset(int64_t preparedTransactionOffset) override;
 
-  const std::string& getMsgId() const override;
-  void setMsgId(const std::string& msgId) override;
+  const std::string& msg_id() const override;
+  void set_msg_id(const std::string& msgId) override;
 
   std::string toString() const override;
 
@@ -104,14 +104,14 @@ class MessageExtImpl : public MessageImpl,        // base
 
 class MessageClientExtImpl : public MessageExtImpl {
  public:  // MessageExt
-  const std::string& getMsgId() const override;
-  void setMsgId(const std::string& msgId) override;
+  const std::string& msg_id() const override;
+  void set_msg_id(const std::string& msgId) override;
 
  public:
-  const std::string& getOffsetMsgId() const;
-  void setOffsetMsgId(const std::string& offsetMsgId);
+  const std::string& offset_msg_id() const;
+  void set_offset_msg_id(const std::string& offsetMsgId);
 };
 
 }  // namespace rocketmq
 
-#endif  // ROCKETMQ_MESSAGE_MESSAGEEXT_H_
+#endif  // ROCKETMQ_MESSAGE_MESSAGEEXTIMPL_H_

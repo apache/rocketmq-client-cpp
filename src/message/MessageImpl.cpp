@@ -38,17 +38,123 @@ MessageImpl::MessageImpl(const std::string& topic,
                          bool waitStoreMsgOK)
     : topic_(topic), flag_(flag), body_(body) {
   if (tags.length() > 0) {
-    setTags(tags);
+    set_tags(tags);
   }
 
   if (keys.length() > 0) {
-    setKeys(keys);
+    set_keys(keys);
   }
 
-  setWaitStoreMsgOK(waitStoreMsgOK);
+  set_wait_store_msg_ok(waitStoreMsgOK);
 }
 
 MessageImpl::~MessageImpl() = default;
+
+const std::string& MessageImpl::topic() const {
+  return topic_;
+}
+
+void MessageImpl::set_topic(const std::string& topic) {
+  topic_ = topic;
+}
+
+void MessageImpl::set_topic(const char* topic, int len) {
+  topic_.clear();
+  topic_.append(topic, len);
+}
+
+const std::string& MessageImpl::tags() const {
+  return getProperty(MQMessageConst::PROPERTY_TAGS);
+}
+
+void MessageImpl::set_tags(const std::string& tags) {
+  putProperty(MQMessageConst::PROPERTY_TAGS, tags);
+}
+
+const std::string& MessageImpl::keys() const {
+  return getProperty(MQMessageConst::PROPERTY_KEYS);
+}
+
+void MessageImpl::set_keys(const std::string& keys) {
+  putProperty(MQMessageConst::PROPERTY_KEYS, keys);
+}
+
+void MessageImpl::set_keys(const std::vector<std::string>& keys) {
+  if (keys.empty()) {
+    return;
+  }
+
+  std::string strKeys;
+  auto it = keys.begin();
+  strKeys += *it;
+  for (it++; it != keys.end(); it++) {
+    strKeys += MQMessageConst::KEY_SEPARATOR;
+    strKeys += *it;
+  }
+
+  set_keys(strKeys);
+}
+
+int MessageImpl::delay_time_level() const {
+  std::string tmp = getProperty(MQMessageConst::PROPERTY_DELAY_TIME_LEVEL);
+  if (!tmp.empty()) {
+    return atoi(tmp.c_str());
+  }
+  return 0;
+}
+
+void MessageImpl::set_delay_time_level(int level) {
+  putProperty(MQMessageConst::PROPERTY_DELAY_TIME_LEVEL, UtilAll::to_string(level));
+}
+
+bool MessageImpl::wait_store_msg_ok() const {
+  std::string tmp = getProperty(MQMessageConst::PROPERTY_WAIT_STORE_MSG_OK);
+  return tmp.empty() || UtilAll::stob(tmp);
+}
+
+void MessageImpl::set_wait_store_msg_ok(bool waitStoreMsgOK) {
+  putProperty(MQMessageConst::PROPERTY_WAIT_STORE_MSG_OK, UtilAll::to_string(waitStoreMsgOK));
+}
+
+int32_t MessageImpl::flag() const {
+  return flag_;
+}
+
+void MessageImpl::set_flag(int32_t flag) {
+  flag_ = flag;
+}
+
+const std::string& MessageImpl::body() const {
+  return body_;
+}
+
+void MessageImpl::set_body(const std::string& body) {
+  body_ = body;
+}
+
+void MessageImpl::set_body(std::string&& body) {
+  body_ = std::move(body);
+}
+
+const std::string& MessageImpl::transaction_id() const {
+  return transaction_id_;
+}
+
+void MessageImpl::set_transaction_id(const std::string& transactionId) {
+  transaction_id_ = transactionId;
+}
+
+const std::map<std::string, std::string>& MessageImpl::properties() const {
+  return properties_;
+}
+
+void MessageImpl::set_properties(const std::map<std::string, std::string>& properties) {
+  properties_ = properties;
+}
+
+void MessageImpl::set_properties(std::map<std::string, std::string>&& properties) {
+  properties_ = std::move(properties);
+}
 
 const std::string& MessageImpl::getProperty(const std::string& name) const {
   const auto& it = properties_.find(name);
@@ -66,115 +172,9 @@ void MessageImpl::clearProperty(const std::string& name) {
   properties_.erase(name);
 }
 
-const std::string& MessageImpl::getTopic() const {
-  return topic_;
-}
-
-void MessageImpl::setTopic(const std::string& topic) {
-  topic_ = topic;
-}
-
-void MessageImpl::setTopic(const char* body, int len) {
-  topic_.clear();
-  topic_.append(body, len);
-}
-
-const std::string& MessageImpl::getTags() const {
-  return getProperty(MQMessageConst::PROPERTY_TAGS);
-}
-
-void MessageImpl::setTags(const std::string& tags) {
-  putProperty(MQMessageConst::PROPERTY_TAGS, tags);
-}
-
-const std::string& MessageImpl::getKeys() const {
-  return getProperty(MQMessageConst::PROPERTY_KEYS);
-}
-
-void MessageImpl::setKeys(const std::string& keys) {
-  putProperty(MQMessageConst::PROPERTY_KEYS, keys);
-}
-
-void MessageImpl::setKeys(const std::vector<std::string>& keys) {
-  if (keys.empty()) {
-    return;
-  }
-
-  std::string strKeys;
-  auto it = keys.begin();
-  strKeys += *it;
-  for (it++; it != keys.end(); it++) {
-    strKeys += MQMessageConst::KEY_SEPARATOR;
-    strKeys += *it;
-  }
-
-  setKeys(strKeys);
-}
-
-int MessageImpl::getDelayTimeLevel() const {
-  std::string tmp = getProperty(MQMessageConst::PROPERTY_DELAY_TIME_LEVEL);
-  if (!tmp.empty()) {
-    return atoi(tmp.c_str());
-  }
-  return 0;
-}
-
-void MessageImpl::setDelayTimeLevel(int level) {
-  putProperty(MQMessageConst::PROPERTY_DELAY_TIME_LEVEL, UtilAll::to_string(level));
-}
-
-bool MessageImpl::isWaitStoreMsgOK() const {
-  std::string tmp = getProperty(MQMessageConst::PROPERTY_WAIT_STORE_MSG_OK);
-  return tmp.empty() || UtilAll::stob(tmp);
-}
-
-void MessageImpl::setWaitStoreMsgOK(bool waitStoreMsgOK) {
-  putProperty(MQMessageConst::PROPERTY_WAIT_STORE_MSG_OK, UtilAll::to_string(waitStoreMsgOK));
-}
-
-int32_t MessageImpl::getFlag() const {
-  return flag_;
-}
-
-void MessageImpl::setFlag(int32_t flag) {
-  flag_ = flag;
-}
-
-const std::string& MessageImpl::getBody() const {
-  return body_;
-}
-
-void MessageImpl::setBody(const std::string& body) {
-  body_ = body;
-}
-
-void MessageImpl::setBody(std::string&& body) {
-  body_ = std::move(body);
-}
-
-const std::string& MessageImpl::getTransactionId() const {
-  return transaction_id_;
-}
-
-void MessageImpl::setTransactionId(const std::string& transactionId) {
-  transaction_id_ = transactionId;
-}
-
-const std::map<std::string, std::string>& MessageImpl::getProperties() const {
-  return properties_;
-}
-
-void MessageImpl::setProperties(const std::map<std::string, std::string>& properties) {
-  properties_ = properties;
-}
-
-void MessageImpl::setProperties(std::map<std::string, std::string>&& properties) {
-  properties_ = std::move(properties);
-}
-
 std::string MessageImpl::toString() const {
   std::stringstream ss;
-  ss << "Message [topic=" << topic_ << ", flag=" << flag_ << ", tag=" << getTags() << ", transactionId='"
+  ss << "Message [topic=" << topic_ << ", flag=" << flag_ << ", tag=" << tags() << ", transactionId='"
      << transaction_id_ + "']";
   return ss.str();
 }

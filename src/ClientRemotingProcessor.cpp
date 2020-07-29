@@ -70,7 +70,7 @@ RemotingCommand* ClientRemotingProcessor::checkTransactionState(const std::strin
     if (messageExt != nullptr) {
       const auto& transactionId = messageExt->getProperty(MQMessageConst::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);
       if (!transactionId.empty()) {
-        messageExt->setTransactionId(transactionId);
+        messageExt->set_transaction_id(transactionId);
       }
       const auto& group = messageExt->getProperty(MQMessageConst::PROPERTY_PRODUCER_GROUP);
       if (!group.empty()) {
@@ -148,36 +148,36 @@ RemotingCommand* ClientRemotingProcessor::receiveReplyMessage(RemotingCommand* r
   try {
     std::unique_ptr<MQMessageExt> msg(new MQMessageExt);
 
-    msg->setTopic(requestHeader->getTopic());
-    msg->setQueueId(requestHeader->getQueueId());
-    msg->setStoreTimestamp(requestHeader->getStoreTimestamp());
+    msg->set_topic(requestHeader->getTopic());
+    msg->set_queue_id(requestHeader->getQueueId());
+    msg->set_store_timestamp(requestHeader->getStoreTimestamp());
 
     if (!requestHeader->getBornHost().empty()) {
-      msg->setBornHost(string2SocketAddress(requestHeader->getBornHost()));
+      msg->set_born_host(string2SocketAddress(requestHeader->getBornHost()));
     }
 
     if (!requestHeader->getStoreHost().empty()) {
-      msg->setStoreHost(string2SocketAddress(requestHeader->getStoreHost()));
+      msg->set_store_host(string2SocketAddress(requestHeader->getStoreHost()));
     }
 
     auto body = request->body();
     if ((requestHeader->getSysFlag() & MessageSysFlag::COMPRESSED_FLAG) == MessageSysFlag::COMPRESSED_FLAG) {
       std::string origin_body;
       if (UtilAll::inflate(*body, origin_body)) {
-        msg->setBody(std::move(origin_body));
+        msg->set_body(std::move(origin_body));
       } else {
         LOG_WARN_NEW("err when uncompress constant");
       }
     } else {
-      msg->setBody(std::string(body->array(), body->size()));
+      msg->set_body(std::string(body->array(), body->size()));
     }
 
-    msg->setFlag(requestHeader->getFlag());
+    msg->set_flag(requestHeader->getFlag());
     MessageAccessor::setProperties(*msg, MessageDecoder::string2messageProperties(requestHeader->getProperties()));
     MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_REPLY_MESSAGE_ARRIVE_TIME,
                                  UtilAll::to_string(receiveTime));
-    msg->setBornTimestamp(requestHeader->getBornTimestamp());
-    msg->setReconsumeTimes(requestHeader->getReconsumeTimes());
+    msg->set_born_timestamp(requestHeader->getBornTimestamp());
+    msg->set_reconsume_times(requestHeader->getReconsumeTimes());
     LOG_DEBUG_NEW("receive reply message:{}", msg->toString());
 
     processReplyMessage(std::move(msg));
@@ -200,7 +200,7 @@ void ClientRemotingProcessor::processReplyMessage(std::unique_ptr<MQMessageExt> 
     requestResponseFuture->putResponseMessage(std::move(replyMsg));
     requestResponseFuture->executeRequestCallback();
   } else {
-    auto bornHost = replyMsg->getBornHostString();
+    auto bornHost = replyMsg->born_host_string();
     LOG_WARN_NEW("receive reply message, but not matched any request, CorrelationId: {} , reply from host: {}",
                  correlationId, bornHost);
   }

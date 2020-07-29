@@ -36,64 +36,64 @@ using rocketmq::TopicFilterType;
 
 TEST(MessageExtTest, MessageClientExtImpl) {
   MessageClientExtImpl messageClientExt;
-  EXPECT_EQ(messageClientExt.getQueueOffset(), 0);
-  EXPECT_EQ(messageClientExt.getCommitLogOffset(), 0);
-  EXPECT_EQ(messageClientExt.getBornTimestamp(), 0);
-  EXPECT_EQ(messageClientExt.getStoreTimestamp(), 0);
-  EXPECT_EQ(messageClientExt.getPreparedTransactionOffset(), 0);
-  EXPECT_EQ(messageClientExt.getQueueId(), 0);
-  EXPECT_EQ(messageClientExt.getStoreSize(), 0);
-  EXPECT_EQ(messageClientExt.getReconsumeTimes(), 3);
-  EXPECT_EQ(messageClientExt.getBodyCRC(), 0);
-  EXPECT_EQ(messageClientExt.getMsgId(), "");
-  EXPECT_EQ(messageClientExt.getOffsetMsgId(), "");
+  EXPECT_EQ(messageClientExt.queue_offset(), 0);
+  EXPECT_EQ(messageClientExt.commit_log_offset(), 0);
+  EXPECT_EQ(messageClientExt.born_timestamp(), 0);
+  EXPECT_EQ(messageClientExt.store_timestamp(), 0);
+  EXPECT_EQ(messageClientExt.prepared_transaction_offset(), 0);
+  EXPECT_EQ(messageClientExt.queue_id(), 0);
+  EXPECT_EQ(messageClientExt.store_size(), 0);
+  EXPECT_EQ(messageClientExt.reconsume_times(), 3);
+  EXPECT_EQ(messageClientExt.body_crc(), 0);
+  EXPECT_EQ(messageClientExt.msg_id(), "");
+  EXPECT_EQ(messageClientExt.offset_msg_id(), "");
 
-  messageClientExt.setQueueOffset(1);
-  EXPECT_EQ(messageClientExt.getQueueOffset(), 1);
+  messageClientExt.set_queue_offset(1);
+  EXPECT_EQ(messageClientExt.queue_offset(), 1);
 
-  messageClientExt.setCommitLogOffset(1024);
-  EXPECT_EQ(messageClientExt.getCommitLogOffset(), 1024);
+  messageClientExt.set_commit_log_offset(1024);
+  EXPECT_EQ(messageClientExt.commit_log_offset(), 1024);
 
-  messageClientExt.setBornTimestamp(1024);
-  EXPECT_EQ(messageClientExt.getBornTimestamp(), 1024);
+  messageClientExt.set_born_timestamp(1024);
+  EXPECT_EQ(messageClientExt.born_timestamp(), 1024);
 
-  messageClientExt.setStoreTimestamp(2048);
-  EXPECT_EQ(messageClientExt.getStoreTimestamp(), 2048);
+  messageClientExt.set_store_timestamp(2048);
+  EXPECT_EQ(messageClientExt.store_timestamp(), 2048);
 
-  messageClientExt.setPreparedTransactionOffset(4096);
-  EXPECT_EQ(messageClientExt.getPreparedTransactionOffset(), 4096);
+  messageClientExt.set_prepared_transaction_offset(4096);
+  EXPECT_EQ(messageClientExt.prepared_transaction_offset(), 4096);
 
-  messageClientExt.setQueueId(2);
-  EXPECT_EQ(messageClientExt.getQueueId(), 2);
+  messageClientExt.set_queue_id(2);
+  EXPECT_EQ(messageClientExt.queue_id(), 2);
 
-  messageClientExt.setStoreSize(12);
-  EXPECT_EQ(messageClientExt.getStoreSize(), 12);
+  messageClientExt.set_store_size(12);
+  EXPECT_EQ(messageClientExt.store_size(), 12);
 
-  messageClientExt.setReconsumeTimes(48);
-  EXPECT_EQ(messageClientExt.getReconsumeTimes(), 48);
+  messageClientExt.set_reconsume_times(48);
+  EXPECT_EQ(messageClientExt.reconsume_times(), 48);
 
-  messageClientExt.setBodyCRC(32);
-  EXPECT_EQ(messageClientExt.getBodyCRC(), 32);
+  messageClientExt.set_body_crc(32);
+  EXPECT_EQ(messageClientExt.body_crc(), 32);
 
-  messageClientExt.setMsgId("MsgId");
-  EXPECT_EQ(messageClientExt.getMsgId(), "");
+  messageClientExt.set_msg_id("MsgId");
+  EXPECT_EQ(messageClientExt.msg_id(), "");
   messageClientExt.putProperty(MQMessageConst::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX, "MsgId");
-  EXPECT_EQ(messageClientExt.getMsgId(), "MsgId");
+  EXPECT_EQ(messageClientExt.msg_id(), "MsgId");
 
-  messageClientExt.setOffsetMsgId("offsetMsgId");
-  EXPECT_EQ(messageClientExt.getOffsetMsgId(), "offsetMsgId");
+  messageClientExt.set_offset_msg_id("offsetMsgId");
+  EXPECT_EQ(messageClientExt.offset_msg_id(), "offsetMsgId");
 
-  messageClientExt.setBornTimestamp(1111);
-  EXPECT_EQ(messageClientExt.getBornTimestamp(), 1111);
+  messageClientExt.set_born_timestamp(1111);
+  EXPECT_EQ(messageClientExt.born_timestamp(), 1111);
 
-  messageClientExt.setStoreTimestamp(2222);
-  EXPECT_EQ(messageClientExt.getStoreTimestamp(), 2222);
+  messageClientExt.set_store_timestamp(2222);
+  EXPECT_EQ(messageClientExt.store_timestamp(), 2222);
 
-  messageClientExt.setBornHost(rocketmq::string2SocketAddress("127.0.0.1:10091"));
-  EXPECT_EQ(messageClientExt.getBornHostString(), "127.0.0.1:10091");
+  messageClientExt.set_born_host(rocketmq::string2SocketAddress("127.0.0.1:10091"));
+  EXPECT_EQ(messageClientExt.born_host_string(), "127.0.0.1:10091");
 
-  messageClientExt.setStoreHost(rocketmq::string2SocketAddress("127.0.0.2:10092"));
-  EXPECT_EQ(messageClientExt.getStoreHostString(), "127.0.0.2:10092");
+  messageClientExt.set_store_host(rocketmq::string2SocketAddress("127.0.0.2:10092"));
+  EXPECT_EQ(messageClientExt.store_host_string(), "127.0.0.2:10092");
 }
 
 TEST(MessageExtTest, MessageExt) {
@@ -101,18 +101,18 @@ TEST(MessageExtTest, MessageExt) {
   struct sockaddr* storeHost = rocketmq::copySocketAddress(nullptr, rocketmq::string2SocketAddress("127.0.0.2:10092"));
 
   MQMessageExt messageExt(2, 1024, bronHost, 2048, storeHost, "msgId");
-  EXPECT_EQ(messageExt.getQueueOffset(), 0);
-  EXPECT_EQ(messageExt.getCommitLogOffset(), 0);
-  EXPECT_EQ(messageExt.getBornTimestamp(), 1024);
-  EXPECT_EQ(messageExt.getStoreTimestamp(), 2048);
-  EXPECT_EQ(messageExt.getPreparedTransactionOffset(), 0);
-  EXPECT_EQ(messageExt.getQueueId(), 2);
-  EXPECT_EQ(messageExt.getStoreSize(), 0);
-  EXPECT_EQ(messageExt.getReconsumeTimes(), 3);
-  EXPECT_EQ(messageExt.getBodyCRC(), 0);
-  EXPECT_EQ(messageExt.getMsgId(), "msgId");
-  EXPECT_EQ(messageExt.getBornHostString(), "127.0.0.1:10091");
-  EXPECT_EQ(messageExt.getStoreHostString(), "127.0.0.2:10092");
+  EXPECT_EQ(messageExt.queue_offset(), 0);
+  EXPECT_EQ(messageExt.commit_log_offset(), 0);
+  EXPECT_EQ(messageExt.born_timestamp(), 1024);
+  EXPECT_EQ(messageExt.store_timestamp(), 2048);
+  EXPECT_EQ(messageExt.prepared_transaction_offset(), 0);
+  EXPECT_EQ(messageExt.queue_id(), 2);
+  EXPECT_EQ(messageExt.store_size(), 0);
+  EXPECT_EQ(messageExt.reconsume_times(), 3);
+  EXPECT_EQ(messageExt.body_crc(), 0);
+  EXPECT_EQ(messageExt.msg_id(), "msgId");
+  EXPECT_EQ(messageExt.born_host_string(), "127.0.0.1:10091");
+  EXPECT_EQ(messageExt.store_host_string(), "127.0.0.2:10092");
 
   free(bronHost);
   free(storeHost);

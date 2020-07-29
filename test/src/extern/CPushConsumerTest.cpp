@@ -71,7 +71,7 @@ TEST(CPushComsumerTest, Info) {
   EXPECT_STREQ(GetPushConsumerGroupID(cPushConsumer), "testGroupTwo");
 
   EXPECT_EQ(SetPushConsumerNameServerAddress(cPushConsumer, "127.0.0.1:9876"), OK);
-  EXPECT_EQ(mqPushConsumer->getNamesrvAddr(), "127.0.0.1:9876");
+  EXPECT_EQ(mqPushConsumer->namesrv_addr(), "127.0.0.1:9876");
 
   EXPECT_EQ(Subscribe(cPushConsumer, "testTopic", "testSub"), OK);
 
@@ -86,20 +86,20 @@ TEST(CPushComsumerTest, Info) {
   EXPECT_EQ(UnregisterMessageCallback(cPushConsumer), OK);
 
   EXPECT_EQ(SetPushConsumerThreadCount(cPushConsumer, 10), OK);
-  EXPECT_EQ(mqPushConsumer->getConsumeThreadNum(), 10);
+  EXPECT_EQ(mqPushConsumer->consume_thread_nums(), 10);
 
   EXPECT_EQ(SetPushConsumerMessageBatchMaxSize(cPushConsumer, 1024), OK);
-  EXPECT_EQ(mqPushConsumer->getConsumeMessageBatchMaxSize(), 1024);
+  EXPECT_EQ(mqPushConsumer->consume_message_batch_max_size(), 1024);
 
   EXPECT_EQ(SetPushConsumerInstanceName(cPushConsumer, "instance"), OK);
-  EXPECT_EQ(mqPushConsumer->getInstanceName(), "instance");
+  EXPECT_EQ(mqPushConsumer->instance_name(), "instance");
 
   EXPECT_EQ(SetPushConsumerSessionCredentials(cPushConsumer, "accessKey", "secretKey", "channel"), OK);
   // SessionCredentials sessionCredentials = mqPushConsumer->getSessionCredentials();
   // EXPECT_EQ(sessionCredentials.getAccessKey(), "accessKey");
 
   EXPECT_EQ(SetPushConsumerMessageModel(cPushConsumer, BROADCASTING), OK);
-  EXPECT_EQ(mqPushConsumer->getMessageModel(), MessageModel::BROADCASTING);
+  EXPECT_EQ(mqPushConsumer->message_model(), MessageModel::BROADCASTING);
 
   DestroyPushConsumer(cPushConsumer);
 }

@@ -34,45 +34,45 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumerConfig : virtual public MQClientCo
  public:
   virtual ~DefaultMQPushConsumerConfig() = default;
 
-  virtual MessageModel getMessageModel() const = 0;
-  virtual void setMessageModel(MessageModel messageModel) = 0;
+  virtual MessageModel message_model() const = 0;
+  virtual void set_message_model(MessageModel messageModel) = 0;
 
-  virtual ConsumeFromWhere getConsumeFromWhere() const = 0;
-  virtual void setConsumeFromWhere(ConsumeFromWhere consumeFromWhere) = 0;
+  virtual ConsumeFromWhere consume_from_where() const = 0;
+  virtual void set_consume_from_where(ConsumeFromWhere consumeFromWhere) = 0;
 
-  virtual const std::string& getConsumeTimestamp() const = 0;
-  virtual void setConsumeTimestamp(const std::string& consumeTimestamp) = 0;
+  virtual const std::string& consume_timestamp() const = 0;
+  virtual void set_consume_timestamp(const std::string& consumeTimestamp) = 0;
 
   /**
    * consuming thread count, default value is cpu cores
    */
-  virtual int getConsumeThreadNum() const = 0;
-  virtual void setConsumeThreadNum(int threadNum) = 0;
+  virtual int consume_thread_nums() const = 0;
+  virtual void set_consume_thread_nums(int threadNum) = 0;
 
   /**
    * the pull number of message size by each pullMsg for orderly consume, default value is 1
    */
-  virtual int getConsumeMessageBatchMaxSize() const = 0;
-  virtual void setConsumeMessageBatchMaxSize(int consumeMessageBatchMaxSize) = 0;
+  virtual int consume_message_batch_max_size() const = 0;
+  virtual void set_consume_message_batch_max_size(int consumeMessageBatchMaxSize) = 0;
 
   /**
    * max cache msg size per Queue in memory if consumer could not consume msgs immediately,
    * default maxCacheMsgSize per Queue is 1000, set range is:1~65535
    */
-  virtual int getMaxCacheMsgSizePerQueue() const = 0;
-  virtual void setMaxCacheMsgSizePerQueue(int maxCacheSize) = 0;
+  virtual int max_cache_msg_size_per_queue() const = 0;
+  virtual void set_max_cache_msg_size_per_queue(int maxCacheSize) = 0;
 
-  virtual int getAsyncPullTimeout() const = 0;
-  virtual void setAsyncPullTimeout(int asyncPullTimeout) = 0;
+  virtual int async_pull_timeout() const = 0;
+  virtual void set_async_pull_timeout(int asyncPullTimeout) = 0;
 
-  virtual int getMaxReconsumeTimes() const = 0;
-  virtual void setMaxReconsumeTimes(int maxReconsumeTimes) = 0;
+  virtual int max_reconsume_times() const = 0;
+  virtual void set_max_reconsume_times(int maxReconsumeTimes) = 0;
 
-  virtual long getPullTimeDelayMillsWhenException() const = 0;
-  virtual void setPullTimeDelayMillsWhenException(long pullTimeDelayMillsWhenException) = 0;
+  virtual long pull_time_delay_mills_when_exception() const = 0;
+  virtual void set_pull_time_delay_mills_when_exception(long pullTimeDelayMillsWhenException) = 0;
 
-  virtual AllocateMQStrategy* getAllocateMQStrategy() const = 0;
-  virtual void setAllocateMQStrategy(AllocateMQStrategy* strategy) = 0;
+  virtual AllocateMQStrategy* allocate_mq_strategy() const = 0;
+  virtual void set_allocate_mq_strategy(AllocateMQStrategy* strategy) = 0;
 };
 
 }  // namespace rocketmq

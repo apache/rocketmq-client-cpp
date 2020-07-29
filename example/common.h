@@ -103,7 +103,7 @@ class TpsReportService {
 
 /*
 static void PrintResult(rocketmq::SendResult* result) {
-  std::cout << "sendresult = " << result->getSendStatus()
+  std::cout << "sendresult = " << result->send_status()
             << ", msgid = " << result->getMsgId()
             << ", queueOffset = " << result->getQueueOffset() << ","
             << result->getMessageQueue().toString() << endl;

@@ -33,9 +33,9 @@ DefaultMQProducer::DefaultMQProducer(const std::string& groupname,
     : DefaultMQProducerConfigProxy(producerConfig), producer_impl_(nullptr) {
   // set default group name
   if (groupname.empty()) {
-    setGroupName(DEFAULT_PRODUCER_GROUP);
+    set_group_name(DEFAULT_PRODUCER_GROUP);
   } else {
-    setGroupName(groupname);
+    set_group_name(groupname);
   }
 
   // create DefaultMQProducerImpl
@@ -69,7 +69,7 @@ SendResult DefaultMQProducer::send(MQMessage& msg, const MQMessageQueue& mq, lon
 }
 
 void DefaultMQProducer::send(MQMessage& msg, SendCallback* sendCallback) noexcept {
-  producer_impl_->send(msg, sendCallback, getSendMsgTimeout());
+  producer_impl_->send(msg, sendCallback, send_msg_timeout());
 }
 
 void DefaultMQProducer::send(MQMessage& msg, SendCallback* sendCallback, long timeout) noexcept {
@@ -174,11 +174,11 @@ void DefaultMQProducer::request(MQMessage& msg,
   producer_impl_->request(msg, selector, arg, requestCallback, timeout);
 }
 
-bool DefaultMQProducer::isSendLatencyFaultEnable() const {
+bool DefaultMQProducer::send_latency_fault_enable() const {
   return dynamic_cast<DefaultMQProducerImpl*>(producer_impl_.get())->isSendLatencyFaultEnable();
 }
 
-void DefaultMQProducer::setSendLatencyFaultEnable(bool sendLatencyFaultEnable) {
+void DefaultMQProducer::set_send_latency_fault_enable(bool sendLatencyFaultEnable) {
   dynamic_cast<DefaultMQProducerImpl*>(producer_impl_.get())->setSendLatencyFaultEnable(sendLatencyFaultEnable);
 }
 

@@ -47,8 +47,7 @@ void ProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* produc
 
       auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
       if (duration.count() >= 500) {
-        std::cout << "send RT more than: " << duration.count() << "ms with msgid: " << sendResult.getMsgId()
-                  << std::endl;
+        std::cout << "send RT more than: " << duration.count() << "ms with msgid: " << sendResult.msg_id() << std::endl;
       }
     } catch (const MQException& e) {
       std::cout << "send failed: " << e.what() << std::endl;
@@ -64,14 +63,14 @@ int main(int argc, char* argv[]) {
   PrintRocketmqSendAndConsumerArgs(info);
 
   auto* producer = new DefaultMQProducer(info.groupname);
-  producer->setNamesrvAddr(info.namesrv);
-  producer->setGroupName(info.groupname);
-  producer->setSendMsgTimeout(3000);
-  producer->setRetryTimes(info.retrytimes);
-  producer->setRetryTimesForAsync(info.retrytimes);
-  producer->setSendLatencyFaultEnable(!info.selectUnactiveBroker);
-  producer->setTcpTransportTryLockTimeout(1000);
-  producer->setTcpTransportConnectTimeout(400);
+  producer->set_namesrv_addr(info.namesrv);
+  producer->set_group_name(info.groupname);
+  producer->set_send_msg_timeout(3000);
+  producer->set_retry_times(info.retrytimes);
+  producer->set_retry_times_for_async(info.retrytimes);
+  producer->set_send_latency_fault_enable(!info.selectUnactiveBroker);
+  producer->set_tcp_transport_try_lock_timeout(1000);
+  producer->set_tcp_transport_connect_timeout(400);
   producer->start();
 
   std::vector<std::shared_ptr<std::thread>> work_pool;

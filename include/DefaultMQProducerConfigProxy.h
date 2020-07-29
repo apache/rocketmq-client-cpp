@@ -32,70 +32,70 @@ class ROCKETMQCLIENT_API DefaultMQProducerConfigProxy : public MQClientConfigPro
   DefaultMQProducerConfigProxy(DefaultMQProducerConfigPtr producerConfig) : MQClientConfigProxy(producerConfig) {}
   virtual ~DefaultMQProducerConfigProxy() = default;
 
-  inline int getMaxMessageSize() const override {
-    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->getMaxMessageSize();
+  int max_message_size() const override {
+    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->max_message_size();
   }
 
-  inline void setMaxMessageSize(int maxMessageSize) override {
-    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->setMaxMessageSize(maxMessageSize);
+  void set_max_message_size(int maxMessageSize) override {
+    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->set_max_message_size(maxMessageSize);
   }
 
-  inline int getCompressMsgBodyOverHowmuch() const override {
-    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->getCompressMsgBodyOverHowmuch();
+  int compress_msg_body_over_howmuch() const override {
+    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->compress_msg_body_over_howmuch();
   }
 
-  inline void setCompressMsgBodyOverHowmuch(int compressMsgBodyOverHowmuch) override {
+  void set_compress_msg_body_over_howmuch(int compressMsgBodyOverHowmuch) override {
     dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())
-        ->setCompressMsgBodyOverHowmuch(compressMsgBodyOverHowmuch);
+        ->set_compress_msg_body_over_howmuch(compressMsgBodyOverHowmuch);
   }
 
-  inline int getCompressLevel() const override {
-    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->getCompressLevel();
+  int compress_level() const override {
+    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->compress_level();
   }
 
-  inline void setCompressLevel(int compressLevel) override {
-    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->setCompressLevel(compressLevel);
+  void set_compress_level(int compressLevel) override {
+    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->set_compress_level(compressLevel);
   }
 
-  inline int getSendMsgTimeout() const override {
-    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->getSendMsgTimeout();
+  int send_msg_timeout() const override {
+    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->send_msg_timeout();
   }
 
-  inline void setSendMsgTimeout(int sendMsgTimeout) override {
-    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->setSendMsgTimeout(sendMsgTimeout);
+  void set_send_msg_timeout(int sendMsgTimeout) override {
+    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->set_send_msg_timeout(sendMsgTimeout);
   }
 
-  inline int getRetryTimes() const override {
-    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->getRetryTimes();
+  int retry_times() const override {
+    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->retry_times();
   }
 
-  inline void setRetryTimes(int times) override {
-    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->setRetryTimes(times);
+  void set_retry_times(int times) override {
+    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->set_retry_times(times);
   }
 
-  inline int getRetryTimesForAsync() const override {
-    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->getRetryTimesForAsync();
+  int retry_times_for_async() const override {
+    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->retry_times_for_async();
   }
 
-  inline void setRetryTimesForAsync(int times) override {
-    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->setRetryTimesForAsync(times);
+  void set_retry_times_for_async(int times) override {
+    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->set_retry_times_for_async(times);
   }
 
-  inline bool isRetryAnotherBrokerWhenNotStoreOK() const override {
-    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->isRetryAnotherBrokerWhenNotStoreOK();
+  bool retry_another_broker_when_not_store_ok() const override {
+    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->retry_another_broker_when_not_store_ok();
   }
 
-  inline void setRetryAnotherBrokerWhenNotStoreOK(bool retryAnotherBrokerWhenNotStoreOK) override {
+  void set_retry_another_broker_when_not_store_ok(bool retryAnotherBrokerWhenNotStoreOK) override {
     dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())
-        ->setRetryAnotherBrokerWhenNotStoreOK(retryAnotherBrokerWhenNotStoreOK);
+        ->set_retry_another_broker_when_not_store_ok(retryAnotherBrokerWhenNotStoreOK);
   }
 
-  inline bool isSendLatencyFaultEnable() const override {
-    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->isSendLatencyFaultEnable();
+  bool send_latency_fault_enable() const override {
+    return dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->send_latency_fault_enable();
   }
 
-  inline void setSendLatencyFaultEnable(bool sendLatencyFaultEnable) override {
-    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->setSendLatencyFaultEnable(sendLatencyFaultEnable);
+  void set_send_latency_fault_enable(bool sendLatencyFaultEnable) override {
+    dynamic_cast<DefaultMQProducerConfig*>(client_config_.get())->set_send_latency_fault_enable(sendLatencyFaultEnable);
   }
 
   inline DefaultMQProducerConfigPtr real_config() const {

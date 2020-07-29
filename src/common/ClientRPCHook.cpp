@@ -48,8 +48,8 @@ void ClientRPCHook::doAfterResponse(const std::string& remoteAddr,
 
 void ClientRPCHook::signCommand(RemotingCommand& command) {
   std::map<std::string, std::string> headerMap;
-  headerMap.insert(std::make_pair(ACCESS_KEY, session_credentials_.getAccessKey()));
-  headerMap.insert(std::make_pair(ONS_CHANNEL_KEY, session_credentials_.getAuthChannel()));
+  headerMap.insert(std::make_pair(ACCESS_KEY, session_credentials_.access_key()));
+  headerMap.insert(std::make_pair(ONS_CHANNEL_KEY, session_credentials_.auth_channel()));
 
   LOG_DEBUG_NEW("before insert declared filed, MAP SIZE is:{}", headerMap.size());
   auto* header = command.readCustomHeader();
@@ -70,12 +70,12 @@ void ClientRPCHook::signCommand(RemotingCommand& command) {
   LOG_DEBUG_NEW("total msg info are:{}, size is:{}", totalMsg, totalMsg.size());
 
   char* sign =
-      rocketmqSignature::spas_sign(totalMsg.c_str(), totalMsg.size(), session_credentials_.getSecretKey().c_str());
+      rocketmqSignature::spas_sign(totalMsg.c_str(), totalMsg.size(), session_credentials_.secret_key().c_str());
   if (sign != nullptr) {
     std::string signature(static_cast<const char*>(sign));
     command.set_ext_field(SIGNATURE_KEY, signature);
-    command.set_ext_field(ACCESS_KEY, session_credentials_.getAccessKey());
-    command.set_ext_field(ONS_CHANNEL_KEY, session_credentials_.getAuthChannel());
+    command.set_ext_field(ACCESS_KEY, session_credentials_.access_key());
+    command.set_ext_field(ONS_CHANNEL_KEY, session_credentials_.auth_channel());
     rocketmqSignature::spas_mem_free(sign);
   } else {
     LOG_ERROR_NEW("signature for request failed");

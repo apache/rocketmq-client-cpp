@@ -62,92 +62,92 @@ void MQMessage::clearProperty(const std::string& name) {
   message_impl_->clearProperty(name);
 }
 
-const std::string& MQMessage::getTopic() const {
-  return message_impl_->getTopic();
+const std::string& MQMessage::topic() const {
+  return message_impl_->topic();
 }
 
-void MQMessage::setTopic(const std::string& topic) {
-  message_impl_->setTopic(topic);
+void MQMessage::set_topic(const std::string& topic) {
+  message_impl_->set_topic(topic);
 }
 
-void MQMessage::setTopic(const char* body, int len) {
-  message_impl_->setTopic(body, len);
+void MQMessage::set_topic(const char* body, int len) {
+  message_impl_->set_topic(body, len);
 }
 
-const std::string& MQMessage::getTags() const {
-  return message_impl_->getTags();
+const std::string& MQMessage::tags() const {
+  return message_impl_->tags();
 }
 
-void MQMessage::setTags(const std::string& tags) {
-  message_impl_->setTags(tags);
+void MQMessage::set_tags(const std::string& tags) {
+  message_impl_->set_tags(tags);
 }
 
-const std::string& MQMessage::getKeys() const {
-  return message_impl_->getKeys();
+const std::string& MQMessage::keys() const {
+  return message_impl_->keys();
 }
 
-void MQMessage::setKeys(const std::string& keys) {
-  message_impl_->setKeys(keys);
+void MQMessage::set_keys(const std::string& keys) {
+  message_impl_->set_keys(keys);
 }
 
-void MQMessage::setKeys(const std::vector<std::string>& keys) {
-  message_impl_->setKeys(keys);
+void MQMessage::set_keys(const std::vector<std::string>& keys) {
+  message_impl_->set_keys(keys);
 }
 
-int MQMessage::getDelayTimeLevel() const {
-  return message_impl_->getDelayTimeLevel();
+int MQMessage::delay_time_level() const {
+  return message_impl_->delay_time_level();
 }
 
-void MQMessage::setDelayTimeLevel(int level) {
-  message_impl_->setDelayTimeLevel(level);
+void MQMessage::set_delay_time_level(int level) {
+  message_impl_->set_delay_time_level(level);
 }
 
-bool MQMessage::isWaitStoreMsgOK() const {
-  return message_impl_->isWaitStoreMsgOK();
+bool MQMessage::wait_store_msg_ok() const {
+  return message_impl_->wait_store_msg_ok();
 }
 
-void MQMessage::setWaitStoreMsgOK(bool waitStoreMsgOK) {
-  message_impl_->setWaitStoreMsgOK(waitStoreMsgOK);
+void MQMessage::set_wait_store_msg_ok(bool waitStoreMsgOK) {
+  message_impl_->set_wait_store_msg_ok(waitStoreMsgOK);
 }
 
-int32_t MQMessage::getFlag() const {
-  return message_impl_->getFlag();
+int32_t MQMessage::flag() const {
+  return message_impl_->flag();
 }
 
-void MQMessage::setFlag(int32_t flag) {
-  message_impl_->setFlag(flag);
+void MQMessage::set_flag(int32_t flag) {
+  message_impl_->set_flag(flag);
 }
 
-const std::string& MQMessage::getBody() const {
-  return message_impl_->getBody();
+const std::string& MQMessage::body() const {
+  return message_impl_->body();
 }
 
-void MQMessage::setBody(const std::string& body) {
-  message_impl_->setBody(body);
+void MQMessage::set_body(const std::string& body) {
+  message_impl_->set_body(body);
 }
 
-void MQMessage::setBody(std::string&& body) {
-  message_impl_->setBody(std::move(body));
+void MQMessage::set_body(std::string&& body) {
+  message_impl_->set_body(std::move(body));
 }
 
-const std::string& MQMessage::getTransactionId() const {
-  return message_impl_->getTransactionId();
+const std::string& MQMessage::transaction_id() const {
+  return message_impl_->transaction_id();
 }
 
-void MQMessage::setTransactionId(const std::string& transactionId) {
-  message_impl_->setTransactionId(transactionId);
+void MQMessage::set_transaction_id(const std::string& transactionId) {
+  message_impl_->set_transaction_id(transactionId);
 }
 
-const std::map<std::string, std::string>& MQMessage::getProperties() const {
-  return message_impl_->getProperties();
+const std::map<std::string, std::string>& MQMessage::properties() const {
+  return message_impl_->properties();
 }
 
-void MQMessage::setProperties(const std::map<std::string, std::string>& properties) {
-  message_impl_->setProperties(properties);
+void MQMessage::set_properties(const std::map<std::string, std::string>& properties) {
+  message_impl_->set_properties(properties);
 }
 
-void MQMessage::setProperties(std::map<std::string, std::string>&& properties) {
-  message_impl_->setProperties(std::move(properties));
+void MQMessage::set_properties(std::map<std::string, std::string>&& properties) {
+  message_impl_->set_properties(std::move(properties));
 }
 
 bool MQMessage::isBatch() const {

@@ -33,116 +33,116 @@ MQMessageExt::MQMessageExt(int queueId,
 
 MQMessageExt::~MQMessageExt() = default;
 
-int32_t MQMessageExt::getStoreSize() const {
-  return dynamic_cast<MessageExt*>(message_impl_.get())->getStoreSize();
+int32_t MQMessageExt::store_size() const {
+  return dynamic_cast<MessageExt*>(message_impl_.get())->store_size();
 }
 
-void MQMessageExt::setStoreSize(int32_t storeSize) {
-  dynamic_cast<MessageExt*>(message_impl_.get())->setStoreSize(storeSize);
+void MQMessageExt::set_store_size(int32_t storeSize) {
+  dynamic_cast<MessageExt*>(message_impl_.get())->set_store_size(storeSize);
 }
 
-int32_t MQMessageExt::getBodyCRC() const {
-  return dynamic_cast<MessageExt*>(message_impl_.get())->getBodyCRC();
+int32_t MQMessageExt::body_crc() const {
+  return dynamic_cast<MessageExt*>(message_impl_.get())->body_crc();
 }
 
-void MQMessageExt::setBodyCRC(int32_t bodyCRC) {
-  dynamic_cast<MessageExt*>(message_impl_.get())->setBodyCRC(bodyCRC);
+void MQMessageExt::set_body_crc(int32_t bodyCRC) {
+  dynamic_cast<MessageExt*>(message_impl_.get())->set_body_crc(bodyCRC);
 }
 
-int32_t MQMessageExt::getQueueId() const {
-  return dynamic_cast<MessageExt*>(message_impl_.get())->getQueueId();
+int32_t MQMessageExt::queue_id() const {
+  return dynamic_cast<MessageExt*>(message_impl_.get())->queue_id();
 }
 
-void MQMessageExt::setQueueId(int32_t queueId) {
-  dynamic_cast<MessageExt*>(message_impl_.get())->setQueueId(queueId);
+void MQMessageExt::set_queue_id(int32_t queueId) {
+  dynamic_cast<MessageExt*>(message_impl_.get())->set_queue_id(queueId);
 }
 
-int64_t MQMessageExt::getQueueOffset() const {
-  return dynamic_cast<MessageExt*>(message_impl_.get())->getQueueOffset();
+int64_t MQMessageExt::queue_offset() const {
+  return dynamic_cast<MessageExt*>(message_impl_.get())->queue_offset();
 }
 
-void MQMessageExt::setQueueOffset(int64_t queueOffset) {
-  dynamic_cast<MessageExt*>(message_impl_.get())->setQueueOffset(queueOffset);
+void MQMessageExt::set_queue_offset(int64_t queueOffset) {
+  dynamic_cast<MessageExt*>(message_impl_.get())->set_queue_offset(queueOffset);
 }
 
-int64_t MQMessageExt::getCommitLogOffset() const {
-  return dynamic_cast<MessageExt*>(message_impl_.get())->getCommitLogOffset();
+int64_t MQMessageExt::commit_log_offset() const {
+  return dynamic_cast<MessageExt*>(message_impl_.get())->commit_log_offset();
 }
 
-void MQMessageExt::setCommitLogOffset(int64_t physicOffset) {
-  dynamic_cast<MessageExt*>(message_impl_.get())->setCommitLogOffset(physicOffset);
+void MQMessageExt::set_commit_log_offset(int64_t physicOffset) {
+  dynamic_cast<MessageExt*>(message_impl_.get())->set_commit_log_offset(physicOffset);
 }
 
-int32_t MQMessageExt::getSysFlag() const {
-  return dynamic_cast<MessageExt*>(message_impl_.get())->getSysFlag();
+int32_t MQMessageExt::sys_flag() const {
+  return dynamic_cast<MessageExt*>(message_impl_.get())->sys_flag();
 }
 
-void MQMessageExt::setSysFlag(int32_t sysFlag) {
-  dynamic_cast<MessageExt*>(message_impl_.get())->setSysFlag(sysFlag);
+void MQMessageExt::set_sys_flag(int32_t sysFlag) {
+  dynamic_cast<MessageExt*>(message_impl_.get())->set_sys_flag(sysFlag);
 }
 
-int64_t MQMessageExt::getBornTimestamp() const {
-  return dynamic_cast<MessageExt*>(message_impl_.get())->getBornTimestamp();
+int64_t MQMessageExt::born_timestamp() const {
+  return dynamic_cast<MessageExt*>(message_impl_.get())->born_timestamp();
 }
 
-void MQMessageExt::setBornTimestamp(int64_t bornTimestamp) {
-  dynamic_cast<MessageExt*>(message_impl_.get())->setBornTimestamp(bornTimestamp);
+void MQMessageExt::set_born_timestamp(int64_t bornTimestamp) {
+  dynamic_cast<MessageExt*>(message_impl_.get())->set_born_timestamp(bornTimestamp);
 }
 
-std::string MQMessageExt::getBornHostString() const {
-  return dynamic_cast<MessageExt*>(message_impl_.get())->getBornHostString();
+std::string MQMessageExt::born_host_string() const {
+  return dynamic_cast<MessageExt*>(message_impl_.get())->born_host_string();
 }
 
-const struct sockaddr* MQMessageExt::getBornHost() const {
-  return dynamic_cast<MessageExt*>(message_impl_.get())->getBornHost();
+const struct sockaddr* MQMessageExt::born_host() const {
+  return dynamic_cast<MessageExt*>(message_impl_.get())->born_host();
 }
 
-void MQMessageExt::setBornHost(const struct sockaddr* bornHost) {
-  dynamic_cast<MessageExt*>(message_impl_.get())->setBornHost(bornHost);
+void MQMessageExt::set_born_host(const struct sockaddr* bornHost) {
+  dynamic_cast<MessageExt*>(message_impl_.get())->set_born_host(bornHost);
 }
 
-int64_t MQMessageExt::getStoreTimestamp() const {
-  return dynamic_cast<MessageExt*>(message_impl_.get())->getStoreTimestamp();
+int64_t MQMessageExt::store_timestamp() const {
+  return dynamic_cast<MessageExt*>(message_impl_.get())->store_timestamp();
 }
 
-void MQMessageExt::setStoreTimestamp(int64_t storeTimestamp) {
-  dynamic_cast<MessageExt*>(message_impl_.get())->setStoreTimestamp(storeTimestamp);
+void MQMessageExt::set_store_timestamp(int64_t storeTimestamp) {
+  dynamic_cast<MessageExt*>(message_impl_.get())->set_store_timestamp(storeTimestamp);
 }
 
-std::string MQMessageExt::getStoreHostString() const {
-  return dynamic_cast<MessageExt*>(message_impl_.get())->getStoreHostString();
+std::string MQMessageExt::store_host_string() const {
+  return dynamic_cast<MessageExt*>(message_impl_.get())->store_host_string();
 }
 
-const struct sockaddr* MQMessageExt::getStoreHost() const {
-  return dynamic_cast<MessageExt*>(message_impl_.get())->getStoreHost();
+const struct sockaddr* MQMessageExt::store_host() const {
+  return dynamic_cast<MessageExt*>(message_impl_.get())->store_host();
 }
 
-void MQMessageExt::setStoreHost(const struct sockaddr* storeHost) {
-  dynamic_cast<MessageExt*>(message_impl_.get())->setStoreHost(storeHost);
+void MQMessageExt::set_store_host(const struct sockaddr* storeHost) {
+  dynamic_cast<MessageExt*>(message_impl_.get())->set_store_host(storeHost);
 }
 
-int32_t MQMessageExt::getReconsumeTimes() const {
-  return dynamic_cast<MessageExt*>(message_impl_.get())->getReconsumeTimes();
+int32_t MQMessageExt::reconsume_times() const {
+  return dynamic_cast<MessageExt*>(message_impl_.get())->reconsume_times();
 }
 
-void MQMessageExt::setReconsumeTimes(int32_t reconsumeTimes) {
-  dynamic_cast<MessageExt*>(message_impl_.get())->setReconsumeTimes(reconsumeTimes);
+void MQMessageExt::set_reconsume_times(int32_t reconsumeTimes) {
+  dynamic_cast<MessageExt*>(message_impl_.get())->set_reconsume_times(reconsumeTimes);
 }
 
-int64_t MQMessageExt::getPreparedTransactionOffset() const {
-  return dynamic_cast<MessageExt*>(message_impl_.get())->getPreparedTransactionOffset();
+int64_t MQMessageExt::prepared_transaction_offset() const {
+  return dynamic_cast<MessageExt*>(message_impl_.get())->prepared_transaction_offset();
 }
 
-void MQMessageExt::setPreparedTransactionOffset(int64_t preparedTransactionOffset) {
-  dynamic_cast<MessageExt*>(message_impl_.get())->setPreparedTransactionOffset(preparedTransactionOffset);
+void MQMessageExt::set_prepared_transaction_offset(int64_t preparedTransactionOffset) {
+  dynamic_cast<MessageExt*>(message_impl_.get())->set_prepared_transaction_offset(preparedTransactionOffset);
 }
 
-const std::string& MQMessageExt::getMsgId() const {
-  return dynamic_cast<MessageExt*>(message_impl_.get())->getMsgId();
+const std::string& MQMessageExt::msg_id() const {
+  return dynamic_cast<MessageExt*>(message_impl_.get())->msg_id();
 }
 
-void MQMessageExt::setMsgId(const std::string& msgId) {
-  dynamic_cast<MessageExt*>(message_impl_.get())->setMsgId(msgId);
+void MQMessageExt::set_msg_id(const std::string& msgId) {
+  dynamic_cast<MessageExt*>(message_impl_.get())->set_msg_id(msgId);
 }
 
 }  // namespace rocketmq

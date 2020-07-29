@@ -97,9 +97,9 @@ void Validators::checkGroup(const std::string& group) {
 }
 
 void Validators::checkMessage(const Message& msg, int maxMessageSize) {
-  checkTopic(msg.getTopic());
+  checkTopic(msg.topic());
 
-  const auto& body = msg.getBody();
+  const auto& body = msg.body();
   if (body.empty()) {
     THROW_MQEXCEPTION(MQClientException, "the message body is empty", MESSAGE_ILLEGAL);
   }

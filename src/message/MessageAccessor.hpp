@@ -28,7 +28,7 @@ class MessageAccessor {
   static inline void clearProperty(Message& msg, const std::string& name) { msg.clearProperty(name); }
 
   static inline void setProperties(Message& msg, std::map<std::string, std::string>&& properties) {
-    msg.setProperties(std::move(properties));
+    msg.set_properties(std::move(properties));
   }
 
   static inline void putProperty(Message& msg, const std::string& name, const std::string& value) {

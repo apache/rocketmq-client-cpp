@@ -61,7 +61,7 @@ void RebalancePushImpl::removeDirtyOffset(const MQMessageQueue& mq) {
 int64_t RebalancePushImpl::computePullFromWhere(const MQMessageQueue& mq) {
   int64_t result = -1;
   ConsumeFromWhere consumeFromWhere =
-      default_mq_push_consumer_impl_->getDefaultMQPushConsumerConfig()->getConsumeFromWhere();
+      default_mq_push_consumer_impl_->getDefaultMQPushConsumerConfig()->consume_from_where();
   OffsetStore* offsetStore = default_mq_push_consumer_impl_->getOffsetStore();
   switch (consumeFromWhere) {
     case CONSUME_FROM_LAST_OFFSET: {
@@ -119,7 +119,7 @@ int64_t RebalancePushImpl::computePullFromWhere(const MQMessageQueue& mq) {
           try {
             // FIXME: parseDate by YYYYMMDDHHMMSS
             auto timestamp =
-                std::stoull(default_mq_push_consumer_impl_->getDefaultMQPushConsumerConfig()->getConsumeTimestamp());
+                std::stoull(default_mq_push_consumer_impl_->getDefaultMQPushConsumerConfig()->consume_timestamp());
             result = default_mq_push_consumer_impl_->searchOffset(mq, timestamp);
           } catch (MQClientException& e) {
             LOG_ERROR_NEW("CONSUME_FROM_TIMESTAMP error, searchOffset of mq:{}, return 0", mq.toString());

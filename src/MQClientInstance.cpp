@@ -53,7 +53,7 @@ MQClientInstance::MQClientInstance(const MQClientConfig& clientConfig, const std
   client_remoting_processor_.reset(new ClientRemotingProcessor(this));
   mq_client_api_impl_.reset(new MQClientAPIImpl(client_remoting_processor_.get(), rpcHook, clientConfig));
 
-  std::string namesrvAddr = clientConfig.getNamesrvAddr();
+  std::string namesrvAddr = clientConfig.namesrv_addr();
   if (!namesrvAddr.empty()) {
     mq_client_api_impl_->updateNameServerAddressList(namesrvAddr);
     LOG_INFO_NEW("user specified name server address: {}", namesrvAddr);

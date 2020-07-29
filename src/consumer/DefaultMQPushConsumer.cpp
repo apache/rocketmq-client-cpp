@@ -30,9 +30,9 @@ DefaultMQPushConsumer::DefaultMQPushConsumer(const std::string& groupname, RPCHo
       push_consumer_impl_(nullptr) {
   // set default group name
   if (groupname.empty()) {
-    setGroupName(DEFAULT_CONSUMER_GROUP);
+    set_group_name(DEFAULT_CONSUMER_GROUP);
   } else {
-    setGroupName(groupname);
+    set_group_name(groupname);
   }
 
   // create DefaultMQPushConsumerImpl

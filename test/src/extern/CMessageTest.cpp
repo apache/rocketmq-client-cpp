@@ -30,34 +30,34 @@ using rocketmq::MQMessage;
 TEST(CMessagesTest, CheckProperties) {
   CMessage* message = CreateMessage(NULL);
   MQMessage* mqMessage = (MQMessage*)message;
-  EXPECT_EQ(mqMessage->getTopic(), "");
+  EXPECT_EQ(mqMessage->topic(), "");
 
   SetMessageTopic(message, "testTopic");
-  EXPECT_EQ(mqMessage->getTopic(), "testTopic");
+  EXPECT_EQ(mqMessage->topic(), "testTopic");
 
   SetMessageTags(message, "testTags");
-  EXPECT_EQ(mqMessage->getTags(), "testTags");
+  EXPECT_EQ(mqMessage->tags(), "testTags");
 
   SetMessageKeys(message, "testKeys");
-  EXPECT_EQ(mqMessage->getKeys(), "testKeys");
+  EXPECT_EQ(mqMessage->keys(), "testKeys");
 
   SetMessageBody(message, "testBody");
-  EXPECT_EQ(mqMessage->getBody(), "testBody");
+  EXPECT_EQ(mqMessage->body(), "testBody");
 
   SetByteMessageBody(message, "testBody", 5);
-  EXPECT_EQ(mqMessage->getBody(), "testB");
+  EXPECT_EQ(mqMessage->body(), "testB");
 
   SetMessageProperty(message, "testProperty", "testValue");
   EXPECT_EQ(mqMessage->getProperty("testProperty"), "testValue");
 
   SetDelayTimeLevel(message, 1);
-  EXPECT_EQ(mqMessage->getDelayTimeLevel(), 1);
+  EXPECT_EQ(mqMessage->delay_time_level(), 1);
 
   EXPECT_EQ(DestroyMessage(message), OK);
 
   message = CreateMessage("testTopic");
   mqMessage = (MQMessage*)message;
-  EXPECT_EQ(mqMessage->getTopic(), "testTopic");
+  EXPECT_EQ(mqMessage->topic(), "testTopic");
 
   EXPECT_EQ(DestroyMessage(message), OK);
 }

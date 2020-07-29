@@ -69,7 +69,7 @@ PullResult PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
     if (subscriptionData != nullptr && !subscriptionData->tags_set().empty()) {
       msgListFilterAgain.reserve(msgList.size());
       for (const auto& msg : msgList) {
-        const auto& msgTag = msg->getTags();
+        const auto& msgTag = msg->tags();
         if (subscriptionData->contain_tag(msgTag)) {
           msgListFilterAgain.push_back(msg);
         }
@@ -81,7 +81,7 @@ PullResult PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
     for (auto& msg : msgListFilterAgain) {
       const auto& tranMsg = msg->getProperty(MQMessageConst::PROPERTY_TRANSACTION_PREPARED);
       if (UtilAll::stob(tranMsg)) {
-        msg->setTransactionId(msg->getProperty(MQMessageConst::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX));
+        msg->set_transaction_id(msg->getProperty(MQMessageConst::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX));
       }
       MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_MIN_OFFSET,
                                    UtilAll::to_string(pullResult.min_offset()));

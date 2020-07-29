@@ -79,7 +79,7 @@ CPushConsumer* CreatePushConsumer(const char* groupId) {
     return NULL;
   }
   auto* defaultMQPushConsumer = new DefaultMQPushConsumer(groupId);
-  defaultMQPushConsumer->setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
+  defaultMQPushConsumer->set_consume_from_where(CONSUME_FROM_LAST_OFFSET);
   return reinterpret_cast<CPushConsumer*>(defaultMQPushConsumer);
 }
 
@@ -116,7 +116,7 @@ int SetPushConsumerGroupID(CPushConsumer* consumer, const char* groupId) {
   if (consumer == NULL || groupId == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->setGroupName(groupId);
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->set_group_name(groupId);
   return OK;
 }
 
@@ -124,14 +124,14 @@ const char* GetPushConsumerGroupID(CPushConsumer* consumer) {
   if (consumer == NULL) {
     return NULL;
   }
-  return reinterpret_cast<DefaultMQPushConsumer*>(consumer)->getGroupName().c_str();
+  return reinterpret_cast<DefaultMQPushConsumer*>(consumer)->group_name().c_str();
 }
 
 int SetPushConsumerNameServerAddress(CPushConsumer* consumer, const char* namesrv) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->setNamesrvAddr(namesrv);
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->set_namesrv_addr(namesrv);
   return OK;
 }
 
@@ -191,7 +191,7 @@ int SetPushConsumerMessageModel(CPushConsumer* consumer, CMessageModel messageMo
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->setMessageModel(MessageModel((int)messageModel));
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->set_message_model(MessageModel((int)messageModel));
   return OK;
 }
 
@@ -199,7 +199,7 @@ int SetPushConsumerThreadCount(CPushConsumer* consumer, int threadCount) {
   if (consumer == NULL || threadCount == 0) {
     return NULL_POINTER;
   }
-  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->setConsumeThreadNum(threadCount);
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->set_consume_thread_nums(threadCount);
   return OK;
 }
 
@@ -207,7 +207,7 @@ int SetPushConsumerMessageBatchMaxSize(CPushConsumer* consumer, int batchSize) {
   if (consumer == NULL || batchSize == 0) {
     return NULL_POINTER;
   }
-  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->setConsumeMessageBatchMaxSize(batchSize);
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->set_consume_message_batch_max_size(batchSize);
   return OK;
 }
 
@@ -215,7 +215,7 @@ int SetPushConsumerMaxCacheMessageSize(CPushConsumer* consumer, int maxCacheSize
   if (consumer == NULL || maxCacheSize <= 0) {
     return NULL_POINTER;
   }
-  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->setMaxCacheMsgSizePerQueue(maxCacheSize);
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->set_max_cache_msg_size_per_queue(maxCacheSize);
   return OK;
 }
 
@@ -229,7 +229,7 @@ int SetPushConsumerInstanceName(CPushConsumer* consumer, const char* instanceNam
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->setInstanceName(instanceName);
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->set_instance_name(instanceName);
   return OK;
 }
 

@@ -36,7 +36,7 @@ class DefaultMQPushConsumerConfigImpl : virtual public DefaultMQPushConsumerConf
       : message_model_(MessageModel::CLUSTERING),
         consume_from_where_(ConsumeFromWhere::CONSUME_FROM_LAST_OFFSET),
         consume_timestamp_("0"),
-        consume_thread_num_(std::min(8, (int)std::thread::hardware_concurrency())),
+        consume_thread_nums_(std::min(8, (int)std::thread::hardware_concurrency())),
         consume_message_batch_max_size_(1),
         max_msg_cache_size_(1000),
         async_pull_timeout_(30 * 1000),
@@ -45,49 +45,49 @@ class DefaultMQPushConsumerConfigImpl : virtual public DefaultMQPushConsumerConf
         allocate_mq_strategy_(new AllocateMQAveragely()) {}
   virtual ~DefaultMQPushConsumerConfigImpl() = default;
 
-  MessageModel getMessageModel() const override { return message_model_; }
-  void setMessageModel(MessageModel messageModel) override { message_model_ = messageModel; }
+  MessageModel message_model() const override { return message_model_; }
+  void set_message_model(MessageModel messageModel) override { message_model_ = messageModel; }
 
-  ConsumeFromWhere getConsumeFromWhere() const override { return consume_from_where_; }
-  void setConsumeFromWhere(ConsumeFromWhere consumeFromWhere) override { consume_from_where_ = consumeFromWhere; }
+  ConsumeFromWhere consume_from_where() const override { return consume_from_where_; }
+  void set_consume_from_where(ConsumeFromWhere consumeFromWhere) override { consume_from_where_ = consumeFromWhere; }
 
-  const std::string& getConsumeTimestamp() const override { return consume_timestamp_; }
-  void setConsumeTimestamp(const std::string& consumeTimestamp) override { consume_timestamp_ = consumeTimestamp; }
+  const std::string& consume_timestamp() const override { return consume_timestamp_; }
+  void set_consume_timestamp(const std::string& consumeTimestamp) override { consume_timestamp_ = consumeTimestamp; }
 
-  int getConsumeThreadNum() const override { return consume_thread_num_; }
-  void setConsumeThreadNum(int threadNum) override {
+  int consume_thread_nums() const override { return consume_thread_nums_; }
+  void set_consume_thread_nums(int threadNum) override {
     if (threadNum > 0) {
-      consume_thread_num_ = threadNum;
+      consume_thread_nums_ = threadNum;
     }
   }
 
-  int getConsumeMessageBatchMaxSize() const override { return consume_message_batch_max_size_; }
-  void setConsumeMessageBatchMaxSize(int consumeMessageBatchMaxSize) override {
+  int consume_message_batch_max_size() const override { return consume_message_batch_max_size_; }
+  void set_consume_message_batch_max_size(int consumeMessageBatchMaxSize) override {
     if (consumeMessageBatchMaxSize >= 1) {
       consume_message_batch_max_size_ = consumeMessageBatchMaxSize;
     }
   }
 
-  int getMaxCacheMsgSizePerQueue() const override { return max_msg_cache_size_; }
-  void setMaxCacheMsgSizePerQueue(int maxCacheSize) override {
+  int max_cache_msg_size_per_queue() const override { return max_msg_cache_size_; }
+  void set_max_cache_msg_size_per_queue(int maxCacheSize) override {
     if (maxCacheSize > 0 && maxCacheSize < 65535) {
       max_msg_cache_size_ = maxCacheSize;
     }
   }
 
-  int getAsyncPullTimeout() const override { return async_pull_timeout_; }
-  void setAsyncPullTimeout(int asyncPullTimeout) override { async_pull_timeout_ = asyncPullTimeout; }
+  int async_pull_timeout() const override { return async_pull_timeout_; }
+  void set_async_pull_timeout(int asyncPullTimeout) override { async_pull_timeout_ = asyncPullTimeout; }
 
-  int getMaxReconsumeTimes() const override { return max_reconsume_times_; }
-  void setMaxReconsumeTimes(int maxReconsumeTimes) override { max_reconsume_times_ = maxReconsumeTimes; }
+  int max_reconsume_times() const override { return max_reconsume_times_; }
+  void set_max_reconsume_times(int maxReconsumeTimes) override { max_reconsume_times_ = maxReconsumeTimes; }
 
-  long getPullTimeDelayMillsWhenException() const override { return pull_time_delay_mills_when_exception_; }
-  void setPullTimeDelayMillsWhenException(long pullTimeDelayMillsWhenException) override {
+  long pull_time_delay_mills_when_exception() const override { return pull_time_delay_mills_when_exception_; }
+  void set_pull_time_delay_mills_when_exception(long pullTimeDelayMillsWhenException) override {
     pull_time_delay_mills_when_exception_ = pullTimeDelayMillsWhenException;
   }
 
-  AllocateMQStrategy* getAllocateMQStrategy() const override { return allocate_mq_strategy_.get(); }
-  void setAllocateMQStrategy(AllocateMQStrategy* strategy) override { allocate_mq_strategy_.reset(strategy); }
+  AllocateMQStrategy* allocate_mq_strategy() const override { return allocate_mq_strategy_.get(); }
+  void set_allocate_mq_strategy(AllocateMQStrategy* strategy) override { allocate_mq_strategy_.reset(strategy); }
 
  protected:
   MessageModel message_model_;
@@ -95,7 +95,7 @@ class DefaultMQPushConsumerConfigImpl : virtual public DefaultMQPushConsumerConf
   ConsumeFromWhere consume_from_where_;
   std::string consume_timestamp_;
 
-  int consume_thread_num_;
+  int consume_thread_nums_;
   int consume_message_batch_max_size_;
   int max_msg_cache_size_;
 

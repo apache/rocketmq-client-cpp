@@ -52,7 +52,7 @@ void ProcessQueue::putMessage(const std::vector<MessageExtPtr>& msgs) {
   std::lock_guard<std::mutex> lock(lock_tree_map_);
 
   for (const auto& msg : msgs) {
-    int64_t offset = msg->getQueueOffset();
+    int64_t offset = msg->queue_offset();
     msg_tree_map_[offset] = msg;
     if (offset > queue_offset_max_) {
       queue_offset_max_ = offset;
@@ -74,8 +74,8 @@ int64_t ProcessQueue::removeMessage(const std::vector<MessageExtPtr>& msgs) {
     LOG_DEBUG_NEW("offset result is:{}, queue_offset_max is:{}, msgs size:{}", result, queue_offset_max_, msgs.size());
 
     for (auto& msg : msgs) {
-      LOG_DEBUG_NEW("remove these msg from msg_tree_map, its offset:{}", msg->getQueueOffset());
-      msg_tree_map_.erase(msg->getQueueOffset());
+      LOG_DEBUG_NEW("remove these msg from msg_tree_map, its offset:{}", msg->queue_offset());
+      msg_tree_map_.erase(msg->queue_offset());
     }
 
     if (!msg_tree_map_.empty()) {
@@ -121,8 +121,8 @@ int64_t ProcessQueue::commit() {
 void ProcessQueue::makeMessageToCosumeAgain(std::vector<MessageExtPtr>& msgs) {
   std::lock_guard<std::mutex> lock(lock_tree_map_);
   for (const auto& msg : msgs) {
-    msg_tree_map_[msg->getQueueOffset()] = msg;
-    consuming_msg_orderly_tree_map_.erase(msg->getQueueOffset());
+    msg_tree_map_[msg->queue_offset()] = msg;
+    consuming_msg_orderly_tree_map_.erase(msg->queue_offset());
   }
 }
 

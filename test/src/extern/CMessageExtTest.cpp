@@ -32,50 +32,50 @@ TEST(CMessageExtTest, CheckProperties) {
   MQMessageExt* mqMessageExt = new MQMessageExt();
   CMessageExt* messageExt = (CMessageExt*)mqMessageExt;
 
-  mqMessageExt->setTopic("testTopic");
-  EXPECT_EQ(GetMessageTopic(messageExt), mqMessageExt->getTopic());
+  mqMessageExt->set_topic("testTopic");
+  EXPECT_EQ(GetMessageTopic(messageExt), mqMessageExt->topic());
 
-  mqMessageExt->setTags("testTags");
-  EXPECT_EQ(GetMessageTags(messageExt), mqMessageExt->getTags());
+  mqMessageExt->set_tags("testTags");
+  EXPECT_EQ(GetMessageTags(messageExt), mqMessageExt->tags());
 
-  mqMessageExt->setKeys("testKeys");
-  EXPECT_EQ(GetMessageKeys(messageExt), mqMessageExt->getKeys());
+  mqMessageExt->set_keys("testKeys");
+  EXPECT_EQ(GetMessageKeys(messageExt), mqMessageExt->keys());
 
-  mqMessageExt->setBody("testBody");
-  EXPECT_EQ(GetMessageBody(messageExt), mqMessageExt->getBody());
+  mqMessageExt->set_body("testBody");
+  EXPECT_EQ(GetMessageBody(messageExt), mqMessageExt->body());
 
   mqMessageExt->putProperty("testProperty", "testValue");
   EXPECT_EQ(GetMessageProperty(messageExt, "testProperty"), mqMessageExt->getProperty("testProperty"));
 
-  mqMessageExt->setMsgId("msgId123456");
-  EXPECT_EQ(GetMessageId(messageExt), mqMessageExt->getMsgId());
+  mqMessageExt->set_msg_id("msgId123456");
+  EXPECT_EQ(GetMessageId(messageExt), mqMessageExt->msg_id());
 
-  mqMessageExt->setDelayTimeLevel(1);
-  EXPECT_EQ(GetMessageDelayTimeLevel(messageExt), mqMessageExt->getDelayTimeLevel());
+  mqMessageExt->set_delay_time_level(1);
+  EXPECT_EQ(GetMessageDelayTimeLevel(messageExt), mqMessageExt->delay_time_level());
 
-  mqMessageExt->setQueueId(4);
-  EXPECT_EQ(GetMessageQueueId(messageExt), mqMessageExt->getQueueId());
+  mqMessageExt->set_queue_id(4);
+  EXPECT_EQ(GetMessageQueueId(messageExt), mqMessageExt->queue_id());
 
-  mqMessageExt->setReconsumeTimes(1234567);
-  EXPECT_EQ(GetMessageReconsumeTimes(messageExt), mqMessageExt->getReconsumeTimes());
+  mqMessageExt->set_reconsume_times(1234567);
+  EXPECT_EQ(GetMessageReconsumeTimes(messageExt), mqMessageExt->reconsume_times());
 
-  mqMessageExt->setStoreSize(127);
-  EXPECT_EQ(GetMessageStoreSize(messageExt), mqMessageExt->getStoreSize());
+  mqMessageExt->set_store_size(127);
+  EXPECT_EQ(GetMessageStoreSize(messageExt), mqMessageExt->store_size());
 
-  mqMessageExt->setBornTimestamp(9876543);
-  EXPECT_EQ(GetMessageBornTimestamp(messageExt), mqMessageExt->getBornTimestamp());
+  mqMessageExt->set_born_timestamp(9876543);
+  EXPECT_EQ(GetMessageBornTimestamp(messageExt), mqMessageExt->born_timestamp());
 
-  mqMessageExt->setStoreTimestamp(123123);
-  EXPECT_EQ(GetMessageStoreTimestamp(messageExt), mqMessageExt->getStoreTimestamp());
+  mqMessageExt->set_store_timestamp(123123);
+  EXPECT_EQ(GetMessageStoreTimestamp(messageExt), mqMessageExt->store_timestamp());
 
-  mqMessageExt->setQueueOffset(1024);
-  EXPECT_EQ(GetMessageQueueOffset(messageExt), mqMessageExt->getQueueOffset());
+  mqMessageExt->set_queue_offset(1024);
+  EXPECT_EQ(GetMessageQueueOffset(messageExt), mqMessageExt->queue_offset());
 
-  mqMessageExt->setCommitLogOffset(2048);
-  EXPECT_EQ(GetMessageCommitLogOffset(messageExt), mqMessageExt->getCommitLogOffset());
+  mqMessageExt->set_commit_log_offset(2048);
+  EXPECT_EQ(GetMessageCommitLogOffset(messageExt), mqMessageExt->commit_log_offset());
 
-  mqMessageExt->setPreparedTransactionOffset(4096);
-  EXPECT_EQ(GetMessagePreparedTransactionOffset(messageExt), mqMessageExt->getPreparedTransactionOffset());
+  mqMessageExt->set_prepared_transaction_offset(4096);
+  EXPECT_EQ(GetMessagePreparedTransactionOffset(messageExt), mqMessageExt->prepared_transaction_offset());
 
   delete mqMessageExt;
 }

@@ -66,7 +66,7 @@ int SetPullConsumerGroupID(CPullConsumer* consumer, const char* groupId) {
   if (consumer == NULL || groupId == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<DefaultMQPullConsumer*>(consumer)->setGroupName(groupId);
+  reinterpret_cast<DefaultMQPullConsumer*>(consumer)->set_group_name(groupId);
   return OK;
 }
 
@@ -74,14 +74,14 @@ const char* GetPullConsumerGroupID(CPullConsumer* consumer) {
   if (consumer == NULL) {
     return NULL;
   }
-  return reinterpret_cast<DefaultMQPullConsumer*>(consumer)->getGroupName().c_str();
+  return reinterpret_cast<DefaultMQPullConsumer*>(consumer)->group_name().c_str();
 }
 
 int SetPullConsumerNameServerAddress(CPullConsumer* consumer, const char* namesrv) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<DefaultMQPullConsumer*>(consumer)->setNamesrvAddr(namesrv);
+  reinterpret_cast<DefaultMQPullConsumer*>(consumer)->set_namesrv_addr(namesrv);
   return OK;
 }
 

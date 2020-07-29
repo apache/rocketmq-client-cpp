@@ -37,22 +37,22 @@ class ROCKETMQCLIENT_API SessionCredentials {
 
   ~SessionCredentials() = default;
 
-  inline const std::string& getAccessKey() const { return access_key_; }
-  inline void setAccessKey(const std::string& accessKey) { access_key_ = accessKey; }
-
-  inline const std::string& getSecretKey() const { return secret_key_; }
-  inline void setSecretKey(const std::string& secretKey) { secret_key_ = secretKey; }
-
-  inline const std::string& getSignature() const { return signature_; }
-  inline void setSignature(const std::string& signature) { signature_ = signature; }
-
-  inline const std::string& getSignatureMethod() const { return signature_method_; }
-  inline void setSignatureMethod(const std::string& signatureMethod) { signature_method_ = signatureMethod; }
-
-  inline const std::string& getAuthChannel() const { return auth_channel_; }
-  inline void setAuthChannel(const std::string& channel) { auth_channel_ = channel; }
-
   bool isValid() const { return !access_key_.empty() && !secret_key_.empty() && !auth_channel_.empty(); }
+
+  inline const std::string& access_key() const { return access_key_; }
+  inline void set_access_key(const std::string& accessKey) { access_key_ = accessKey; }
+
+  inline const std::string& secret_key() const { return secret_key_; }
+  inline void set_secret_key(const std::string& secretKey) { secret_key_ = secretKey; }
+
+  inline const std::string& signature() const { return signature_; }
+  inline void set_signature(const std::string& signature) { signature_ = signature; }
+
+  inline const std::string& signature_method() const { return signature_method_; }
+  inline void set_signature_method(const std::string& signatureMethod) { signature_method_ = signatureMethod; }
+
+  inline const std::string& auth_channel() const { return auth_channel_; }
+  inline void set_auth_channel(const std::string& channel) { auth_channel_ = channel; }
 
  private:
   std::string access_key_;

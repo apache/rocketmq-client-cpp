@@ -30,48 +30,35 @@ class ROCKETMQCLIENT_API MQClientConfigProxy : virtual public MQClientConfig  //
   MQClientConfigProxy(MQClientConfigPtr clientConfig) : client_config_(clientConfig) {}
   virtual ~MQClientConfigProxy() = default;
 
-  inline std::string buildMQClientId() const override { return client_config_->buildMQClientId(); }
+  std::string buildMQClientId() const override { return client_config_->buildMQClientId(); }
+  void changeInstanceNameToPID() override { client_config_->changeInstanceNameToPID(); }
 
-  inline const std::string& getGroupName() const override { return client_config_->getGroupName(); }
+ public:
+  const std::string& group_name() const override { return client_config_->group_name(); }
+  void set_group_name(const std::string& groupname) override { client_config_->set_group_name(groupname); }
 
-  inline void setGroupName(const std::string& groupname) override { client_config_->setGroupName(groupname); }
+  const std::string& namesrv_addr() const override { return client_config_->namesrv_addr(); }
+  void set_namesrv_addr(const std::string& namesrvAddr) override { client_config_->set_namesrv_addr(namesrvAddr); }
 
-  inline const std::string& getNamesrvAddr() const override { return client_config_->getNamesrvAddr(); }
+  const std::string& instance_name() const override { return client_config_->instance_name(); }
+  void set_instance_name(const std::string& instanceName) override { client_config_->set_instance_name(instanceName); }
 
-  inline void setNamesrvAddr(const std::string& namesrvAddr) override { client_config_->setNamesrvAddr(namesrvAddr); }
+  const std::string& unit_name() const override { return client_config_->unit_name(); }
+  void set_unit_name(std::string unitName) override { client_config_->set_unit_name(unitName); }
 
-  inline const std::string& getInstanceName() const override { return client_config_->getInstanceName(); }
-
-  inline void setInstanceName(const std::string& instanceName) override {
-    client_config_->setInstanceName(instanceName);
+  int tcp_transport_worker_thread_nums() const override { return client_config_->tcp_transport_worker_thread_nums(); }
+  void set_tcp_transport_worker_thread_nums(int num) override {
+    client_config_->set_tcp_transport_worker_thread_nums(num);
   }
 
-  inline void changeInstanceNameToPID() override { client_config_->changeInstanceNameToPID(); }
-
-  inline const std::string& getUnitName() const override { return client_config_->getUnitName(); }
-
-  inline void setUnitName(std::string unitName) override { client_config_->setUnitName(unitName); }
-
-  inline int getTcpTransportWorkerThreadNum() const override {
-    return client_config_->getTcpTransportWorkerThreadNum();
+  uint64_t tcp_transport_connect_timeout() const override { return client_config_->tcp_transport_connect_timeout(); }
+  void set_tcp_transport_connect_timeout(uint64_t timeout) override {
+    client_config_->set_tcp_transport_connect_timeout(timeout);
   }
 
-  inline void setTcpTransportWorkerThreadNum(int num) override { client_config_->setTcpTransportWorkerThreadNum(num); }
-
-  inline uint64_t getTcpTransportConnectTimeout() const override {
-    return client_config_->getTcpTransportConnectTimeout();
-  }
-
-  inline void setTcpTransportConnectTimeout(uint64_t timeout) override {
-    client_config_->setTcpTransportConnectTimeout(timeout);
-  }
-
-  inline uint64_t getTcpTransportTryLockTimeout() const override {
-    return client_config_->getTcpTransportTryLockTimeout();
-  }
-
-  inline void setTcpTransportTryLockTimeout(uint64_t timeout) override {
-    client_config_->setTcpTransportTryLockTimeout(timeout);
+  uint64_t tcp_transport_try_lock_timeout() const override { return client_config_->tcp_transport_try_lock_timeout(); }
+  void set_tcp_transport_try_lock_timeout(uint64_t timeout) override {
+    client_config_->set_tcp_transport_try_lock_timeout(timeout);
   }
 
   inline MQClientConfigPtr real_config() const { return client_config_; }

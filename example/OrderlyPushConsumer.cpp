@@ -33,7 +33,7 @@ class MyMsgListener : public MessageListenerOrderly {
     if (old > 0) {
       for (size_t i = 0; i < msgs.size(); ++i) {
         g_tps.Increment();
-        std::cout << msgs[i].getMsgId() << ", body: " << msgs[i].getBody() << std::endl;
+        std::cout << msgs[i].msg_id() << ", body: " << msgs[i].body() << std::endl;
       }
       if (old <= msgs.size()) {
         g_finished.count_down();
@@ -53,13 +53,13 @@ int main(int argc, char* argv[]) {
   PrintRocketmqSendAndConsumerArgs(info);
 
   auto* consumer = new DefaultMQPushConsumer(info.groupname);
-  consumer->setNamesrvAddr(info.namesrv);
-  consumer->setGroupName(info.groupname);
-  consumer->setTcpTransportTryLockTimeout(1000);
-  consumer->setTcpTransportConnectTimeout(400);
-  consumer->setConsumeThreadNum(info.thread_count);
-  consumer->setConsumeMessageBatchMaxSize(31);
-  consumer->setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
+  consumer->set_namesrv_addr(info.namesrv);
+  consumer->set_group_name(info.groupname);
+  consumer->set_tcp_transport_try_lock_timeout(1000);
+  consumer->set_tcp_transport_connect_timeout(400);
+  consumer->set_consume_thread_nums(info.thread_count);
+  consumer->set_consume_message_batch_max_size(31);
+  consumer->set_consume_from_where(CONSUME_FROM_LAST_OFFSET);
   consumer->subscribe(info.topic, "*");
 
   MyMsgListener msglistener;

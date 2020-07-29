@@ -66,123 +66,123 @@ TopicFilterType MessageExtImpl::parseTopicFilterType(int32_t sysFlag) {
   return SINGLE_TAG;
 }
 
-int32_t MessageExtImpl::getStoreSize() const {
+int32_t MessageExtImpl::store_size() const {
   return store_size_;
 }
 
-void MessageExtImpl::setStoreSize(int32_t storeSize) {
+void MessageExtImpl::set_store_size(int32_t storeSize) {
   store_size_ = storeSize;
 }
 
-int32_t MessageExtImpl::getBodyCRC() const {
+int32_t MessageExtImpl::body_crc() const {
   return body_crc_;
 }
 
-void MessageExtImpl::setBodyCRC(int32_t bodyCRC) {
+void MessageExtImpl::set_body_crc(int32_t bodyCRC) {
   body_crc_ = bodyCRC;
 }
 
-int32_t MessageExtImpl::getQueueId() const {
+int32_t MessageExtImpl::queue_id() const {
   return queue_id_;
 }
 
-void MessageExtImpl::setQueueId(int32_t queueId) {
+void MessageExtImpl::set_queue_id(int32_t queueId) {
   queue_id_ = queueId;
 }
 
-int64_t MessageExtImpl::getQueueOffset() const {
+int64_t MessageExtImpl::queue_offset() const {
   return queue_offset_;
 }
 
-void MessageExtImpl::setQueueOffset(int64_t queueOffset) {
+void MessageExtImpl::set_queue_offset(int64_t queueOffset) {
   queue_offset_ = queueOffset;
 }
 
-int64_t MessageExtImpl::getCommitLogOffset() const {
+int64_t MessageExtImpl::commit_log_offset() const {
   return commit_log_offset_;
 }
 
-void MessageExtImpl::setCommitLogOffset(int64_t physicOffset) {
+void MessageExtImpl::set_commit_log_offset(int64_t physicOffset) {
   commit_log_offset_ = physicOffset;
 }
 
-int32_t MessageExtImpl::getSysFlag() const {
+int32_t MessageExtImpl::sys_flag() const {
   return sys_flag_;
 }
 
-void MessageExtImpl::setSysFlag(int32_t sysFlag) {
+void MessageExtImpl::set_sys_flag(int32_t sysFlag) {
   sys_flag_ = sysFlag;
 }
 
-int64_t MessageExtImpl::getBornTimestamp() const {
+int64_t MessageExtImpl::born_timestamp() const {
   return born_timestamp_;
 }
 
-void MessageExtImpl::setBornTimestamp(int64_t bornTimestamp) {
+void MessageExtImpl::set_born_timestamp(int64_t bornTimestamp) {
   born_timestamp_ = bornTimestamp;
 }
 
-const struct sockaddr* MessageExtImpl::getBornHost() const {
+const struct sockaddr* MessageExtImpl::born_host() const {
   return born_host_;
 }
 
-std::string MessageExtImpl::getBornHostString() const {
+std::string MessageExtImpl::born_host_string() const {
   return socketAddress2String(born_host_);
 }
 
-void MessageExtImpl::setBornHost(const struct sockaddr* bornHost) {
+void MessageExtImpl::set_born_host(const struct sockaddr* bornHost) {
   born_host_ = copySocketAddress(born_host_, bornHost);
 }
 
-int64_t MessageExtImpl::getStoreTimestamp() const {
+int64_t MessageExtImpl::store_timestamp() const {
   return store_timestamp_;
 }
 
-void MessageExtImpl::setStoreTimestamp(int64_t storeTimestamp) {
+void MessageExtImpl::set_store_timestamp(int64_t storeTimestamp) {
   store_timestamp_ = storeTimestamp;
 }
 
-const struct sockaddr* MessageExtImpl::getStoreHost() const {
+const struct sockaddr* MessageExtImpl::store_host() const {
   return store_host_;
 }
 
-std::string MessageExtImpl::getStoreHostString() const {
+std::string MessageExtImpl::store_host_string() const {
   return socketAddress2String(store_host_);
 }
 
-void MessageExtImpl::setStoreHost(const struct sockaddr* storeHost) {
+void MessageExtImpl::set_store_host(const struct sockaddr* storeHost) {
   store_host_ = copySocketAddress(store_host_, storeHost);
 }
 
-const std::string& MessageExtImpl::getMsgId() const {
+const std::string& MessageExtImpl::msg_id() const {
   return msg_id_;
 }
 
-void MessageExtImpl::setMsgId(const std::string& msgId) {
+void MessageExtImpl::set_msg_id(const std::string& msgId) {
   msg_id_ = msgId;
 }
 
-int32_t MessageExtImpl::getReconsumeTimes() const {
+int32_t MessageExtImpl::reconsume_times() const {
   return reconsume_times_;
 }
 
-void MessageExtImpl::setReconsumeTimes(int32_t reconsumeTimes) {
+void MessageExtImpl::set_reconsume_times(int32_t reconsumeTimes) {
   reconsume_times_ = reconsumeTimes;
 }
 
-int64_t MessageExtImpl::getPreparedTransactionOffset() const {
+int64_t MessageExtImpl::prepared_transaction_offset() const {
   return prepared_transaction_offset_;
 }
 
-void MessageExtImpl::setPreparedTransactionOffset(int64_t preparedTransactionOffset) {
+void MessageExtImpl::set_prepared_transaction_offset(int64_t preparedTransactionOffset) {
   prepared_transaction_offset_ = preparedTransactionOffset;
 }
 
 std::string MessageExtImpl::toString() const {
   std::stringstream ss;
   ss << "MessageExt [queueId=" << queue_id_ << ", storeSize=" << store_size_ << ", queueOffset=" << queue_offset_
-     << ", sysFlag=" << sys_flag_ << ", bornTimestamp=" << born_timestamp_ << ", bornHost=" << getBornHostString()
-     << ", storeTimestamp=" << store_timestamp_ << ", storeHost=" << getStoreHostString() << ", msgId=" << getMsgId()
+     << ", sysFlag=" << sys_flag_ << ", bornTimestamp=" << born_timestamp_ << ", bornHost=" << born_host_string()
+     << ", storeTimestamp=" << store_timestamp_ << ", storeHost=" << store_host_string() << ", msgId=" << msg_id()
      << ", commitLogOffset=" << commit_log_offset_ << ", bodyCRC=" << body_crc_
      << ", reconsumeTimes=" << reconsume_times_ << ", preparedTransactionOffset=" << prepared_transaction_offset_
      << ", toString()=" << MessageImpl::toString() << "]";
@@ -193,22 +193,22 @@ std::string MessageExtImpl::toString() const {
 // MessageClientExtImpl
 // ============================
 
-const std::string& MessageClientExtImpl::getMsgId() const {
+const std::string& MessageClientExtImpl::msg_id() const {
   const auto& unique_id = MessageClientIDSetter::getUniqID(*this);
-  return unique_id.empty() ? getOffsetMsgId() : unique_id;
+  return unique_id.empty() ? offset_msg_id() : unique_id;
 }
 
-void MessageClientExtImpl::setMsgId(const std::string& msgId) {
+void MessageClientExtImpl::set_msg_id(const std::string& msgId) {
   // DO NOTHING
   // MessageClientIDSetter::setUniqID(*this);
 }
 
-const std::string& MessageClientExtImpl::getOffsetMsgId() const {
-  return MessageExtImpl::getMsgId();
+const std::string& MessageClientExtImpl::offset_msg_id() const {
+  return MessageExtImpl::msg_id();
 }
 
-void MessageClientExtImpl::setOffsetMsgId(const std::string& offsetMsgId) {
-  return MessageExtImpl::setMsgId(offsetMsgId);
+void MessageClientExtImpl::set_offset_msg_id(const std::string& offsetMsgId) {
+  return MessageExtImpl::set_msg_id(offsetMsgId);
 }
 
 }  // namespace rocketmq

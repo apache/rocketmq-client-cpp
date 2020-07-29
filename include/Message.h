@@ -37,50 +37,51 @@ class ROCKETMQCLIENT_API Message {
   virtual ~Message() = default;
 
  public:
+  // topic
+  virtual const std::string& topic() const = 0;
+  virtual void set_topic(const std::string& topic) = 0;
+  virtual void set_topic(const char* topic, int len) = 0;
+
+  // tags
+  virtual const std::string& tags() const = 0;
+  virtual void set_tags(const std::string& tags) = 0;
+
+  // keys
+  virtual const std::string& keys() const = 0;
+  virtual void set_keys(const std::string& keys) = 0;
+  virtual void set_keys(const std::vector<std::string>& keys) = 0;
+
+  // delay time level
+  virtual int delay_time_level() const = 0;
+  virtual void set_delay_time_level(int level) = 0;
+
+  // wait store message ok
+  virtual bool wait_store_msg_ok() const = 0;
+  virtual void set_wait_store_msg_ok(bool waitStoreMsgOK) = 0;
+
+  // flag
+  virtual int32_t flag() const = 0;
+  virtual void set_flag(int32_t flag) = 0;
+
+  // body
+  virtual const std::string& body() const = 0;
+  virtual void set_body(const std::string& body) = 0;
+  virtual void set_body(std::string&& body) = 0;
+
+  // transaction id
+  virtual const std::string& transaction_id() const = 0;
+  virtual void set_transaction_id(const std::string& transactionId) = 0;
+
+  // properties
+  virtual const std::map<std::string, std::string>& properties() const = 0;
+  virtual void set_properties(const std::map<std::string, std::string>& properties) = 0;
+  virtual void set_properties(std::map<std::string, std::string>&& properties) = 0;
+
+ public:
   // property
   virtual const std::string& getProperty(const std::string& name) const = 0;
   virtual void putProperty(const std::string& name, const std::string& value) = 0;
   virtual void clearProperty(const std::string& name) = 0;
-
-  // topic
-  virtual const std::string& getTopic() const = 0;
-  virtual void setTopic(const std::string& topic) = 0;
-  virtual void setTopic(const char* body, int len) = 0;
-
-  // tags
-  virtual const std::string& getTags() const = 0;
-  virtual void setTags(const std::string& tags) = 0;
-
-  // keys
-  virtual const std::string& getKeys() const = 0;
-  virtual void setKeys(const std::string& keys) = 0;
-  virtual void setKeys(const std::vector<std::string>& keys) = 0;
-
-  // delay time level
-  virtual int getDelayTimeLevel() const = 0;
-  virtual void setDelayTimeLevel(int level) = 0;
-
-  // wait store message ok
-  virtual bool isWaitStoreMsgOK() const = 0;
-  virtual void setWaitStoreMsgOK(bool waitStoreMsgOK) = 0;
-
-  // flag
-  virtual int32_t getFlag() const = 0;
-  virtual void setFlag(int32_t flag) = 0;
-
-  // body
-  virtual const std::string& getBody() const = 0;
-  virtual void setBody(const std::string& body) = 0;
-  virtual void setBody(std::string&& body) = 0;
-
-  // transaction id
-  virtual const std::string& getTransactionId() const = 0;
-  virtual void setTransactionId(const std::string& transactionId) = 0;
-
-  // properties
-  virtual const std::map<std::string, std::string>& getProperties() const = 0;
-  virtual void setProperties(const std::map<std::string, std::string>& properties) = 0;
-  virtual void setProperties(std::map<std::string, std::string>&& properties) = 0;
 
   // batch flag
   virtual bool isBatch() const { return false; }

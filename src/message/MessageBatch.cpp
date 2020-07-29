@@ -28,30 +28,30 @@ std::shared_ptr<MessageBatch> MessageBatch::generateFromList(std::vector<MQMessa
 
   // check messages
   for (auto& message : messages) {
-    if (message.getDelayTimeLevel() > 0) {
+    if (message.delay_time_level() > 0) {
       THROW_MQEXCEPTION(MQClientException, "TimeDelayLevel in not supported for batching", -1);
     }
     if (is_first) {
       is_first = false;
-      topic = message.getTopic();
-      wait_store_msg_ok = message.isWaitStoreMsgOK();
+      topic = message.topic();
+      wait_store_msg_ok = message.wait_store_msg_ok();
 
       if (UtilAll::isRetryTopic(topic)) {
         THROW_MQEXCEPTION(MQClientException, "Retry Group is not supported for batching", -1);
       }
     } else {
-      if (message.getTopic() != topic) {
+      if (message.topic() != topic) {
         THROW_MQEXCEPTION(MQClientException, "The topic of the messages in one batch should be the same", -1);
       }
-      if (message.isWaitStoreMsgOK() != wait_store_msg_ok) {
+      if (message.wait_store_msg_ok() != wait_store_msg_ok) {
         THROW_MQEXCEPTION(MQClientException, "The waitStoreMsgOK of the messages in one batch should the same", -2);
       }
     }
   }
 
   auto batchMessage = std::make_shared<MessageBatch>(messages);
-  batchMessage->setTopic(topic);
-  batchMessage->setWaitStoreMsgOK(wait_store_msg_ok);
+  batchMessage->set_topic(topic);
+  batchMessage->set_wait_store_msg_ok(wait_store_msg_ok);
   return batchMessage;
 }
 

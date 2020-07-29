@@ -34,9 +34,9 @@ namespace rocketmq {
 MQClientAPIImpl::MQClientAPIImpl(ClientRemotingProcessor* clientRemotingProcessor,
                                  RPCHookPtr rpcHook,
                                  const MQClientConfig& clientConfig)
-    : remoting_client_(new TcpRemotingClient(clientConfig.getTcpTransportWorkerThreadNum(),
-                                             clientConfig.getTcpTransportConnectTimeout(),
-                                             clientConfig.getTcpTransportTryLockTimeout())) {
+    : remoting_client_(new TcpRemotingClient(clientConfig.tcp_transport_worker_thread_nums(),
+                                             clientConfig.tcp_transport_connect_timeout(),
+                                             clientConfig.tcp_transport_try_lock_timeout())) {
   remoting_client_->registerRPCHook(rpcHook);
   remoting_client_->registerProcessor(CHECK_TRANSACTION_STATE, clientRemotingProcessor);
   remoting_client_->registerProcessor(NOTIFY_CONSUMER_IDS_CHANGED, clientRemotingProcessor);
@@ -128,7 +128,7 @@ SendResult* MQClientAPIImpl::sendMessage(const std::string& addr,
   }
 
   RemotingCommand request(code, header.release());
-  request.set_body(msg->getBody());
+  request.set_body(msg->body());
 
   switch (communicationMode) {
     case CommunicationMode::ONEWAY:
@@ -212,7 +212,7 @@ SendResult* MQClientAPIImpl::processSendResponse(const std::string& brokerName,
   auto* responseHeader = response->decodeCommandCustomHeader<SendMessageResponseHeader>();
   assert(responseHeader != nullptr);
 
-  MQMessageQueue messageQueue(msg->getTopic(), brokerName, responseHeader->queueId);
+  MQMessageQueue messageQueue(msg->topic(), brokerName, responseHeader->queueId);
 
   std::string uniqMsgId = MessageClientIDSetter::getUniqID(*msg);
 
@@ -232,7 +232,7 @@ SendResult* MQClientAPIImpl::processSendResponse(const std::string& brokerName,
 
   SendResult* sendResult =
       new SendResult(sendStatus, uniqMsgId, responseHeader->msgId, messageQueue, responseHeader->queueOffset);
-  sendResult->setTransactionId(responseHeader->transactionId);
+  sendResult->set_transaction_id(responseHeader->transactionId);
 
   return sendResult;
 }
@@ -560,10 +560,10 @@ void MQClientAPIImpl::consumerSendMessageBack(const std::string& addr,
                                               int maxConsumeRetryTimes) {
   auto* requestHeader = new ConsumerSendMsgBackRequestHeader();
   requestHeader->group = consumerGroup;
-  requestHeader->originTopic = msg->getTopic();
-  requestHeader->offset = msg->getCommitLogOffset();
+  requestHeader->originTopic = msg->topic();
+  requestHeader->offset = msg->commit_log_offset();
   requestHeader->delayLevel = delayLevel;
-  requestHeader->originMsgId = msg->getMsgId();
+  requestHeader->originMsgId = msg->msg_id();
   requestHeader->maxReconsumeTimes = maxConsumeRetryTimes;
 
   RemotingCommand request(CONSUMER_SEND_MSG_BACK, requestHeader);

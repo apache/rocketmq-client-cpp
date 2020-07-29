@@ -65,7 +65,7 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(std::vector<MessageExtPtr
                                                        const MQMessageQueue& messageQueue) {
   if (processQueue->dropped()) {
     LOG_WARN_NEW("the message queue not be able to consume, because it's dropped. group={} {}",
-                 consumer_->getDefaultMQPushConsumerConfig()->getGroupName(), messageQueue.toString());
+                 consumer_->getDefaultMQPushConsumerConfig()->group_name(), messageQueue.toString());
     return;
   }
 
@@ -76,7 +76,7 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(std::vector<MessageExtPtr
   }
 
   consumer_->resetRetryTopic(
-      msgs, consumer_->getDefaultMQPushConsumerConfig()->getGroupName());  // set where to sendMessageBack
+      msgs, consumer_->getDefaultMQPushConsumerConfig()->group_name());  // set where to sendMessageBack
 
   ConsumeStatus status = RECONSUME_LATER;
   try {
@@ -132,11 +132,11 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(std::vector<MessageExtPtr
       int idx = ackIndex + 1;
       for (auto iter = msgs.begin() + idx; iter != msgs.end(); idx++) {
         LOG_WARN_NEW("consume fail, MQ is:{}, its msgId is:{}, index is:{}, reconsume times is:{}",
-                     messageQueue.toString(), (*iter)->getMsgId(), idx, (*iter)->getReconsumeTimes());
+                     messageQueue.toString(), (*iter)->msg_id(), idx, (*iter)->reconsume_times());
         auto& msg = (*iter);
         bool result = consumer_->sendMessageBack(msg, 0, messageQueue.broker_name());
         if (!result) {
-          msg->setReconsumeTimes(msg->getReconsumeTimes() + 1);
+          msg->set_reconsume_times(msg->reconsume_times() + 1);
           msgBackFailed.push_back(msg);
           iter = msgs.erase(iter);
         } else {

@@ -60,24 +60,24 @@ int main(int argc, char* argv[]) {
   PrintRocketmqSendAndConsumerArgs(info);
 
   DefaultMQProducer producer("");
-  producer.setNamesrvAddr(info.namesrv);
-  producer.setSendMsgTimeout(3000);
-  producer.setRetryTimes(info.retrytimes);
-  producer.setRetryTimesForAsync(info.retrytimes);
-  producer.setSendLatencyFaultEnable(!info.selectUnactiveBroker);
-  producer.setTcpTransportTryLockTimeout(1000);
-  producer.setTcpTransportConnectTimeout(400);
+  producer.set_namesrv_addr(info.namesrv);
+  producer.set_send_msg_timeout(3000);
+  producer.set_retry_times(info.retrytimes);
+  producer.set_retry_times_for_async(info.retrytimes);
+  producer.set_send_latency_fault_enable(!info.selectUnactiveBroker);
+  producer.set_tcp_transport_try_lock_timeout(1000);
+  producer.set_tcp_transport_connect_timeout(400);
   producer.start();
 
   DefaultMQPushConsumer consumer(info.groupname);
-  consumer.setNamesrvAddr(info.namesrv);
-  consumer.setTcpTransportTryLockTimeout(1000);
-  consumer.setTcpTransportConnectTimeout(400);
-  consumer.setConsumeThreadNum(info.thread_count);
-  consumer.setConsumeFromWhere(CONSUME_FROM_LAST_OFFSET);
+  consumer.set_namesrv_addr(info.namesrv);
+  consumer.set_tcp_transport_try_lock_timeout(1000);
+  consumer.set_tcp_transport_connect_timeout(400);
+  consumer.set_consume_thread_nums(info.thread_count);
+  consumer.set_consume_from_where(CONSUME_FROM_LAST_OFFSET);
 
   // recommend client configs
-  consumer.setPullTimeDelayMillsWhenException(0L);
+  consumer.set_pull_time_delay_mills_when_exception(0L);
 
   consumer.subscribe(info.topic, "*");
 

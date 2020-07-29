@@ -37,37 +37,38 @@ class ROCKETMQCLIENT_API MQClientConfig {
   // clientId = clientIP @ processId [ @ unitName ]
   virtual std::string buildMQClientId() const = 0;
 
-  virtual const std::string& getGroupName() const = 0;
-  virtual void setGroupName(const std::string& groupname) = 0;
-
-  virtual const std::string& getNamesrvAddr() const = 0;
-  virtual void setNamesrvAddr(const std::string& namesrvAddr) = 0;
-
-  virtual const std::string& getInstanceName() const = 0;
-  virtual void setInstanceName(const std::string& instanceName) = 0;
-
   virtual void changeInstanceNameToPID() = 0;
 
-  virtual const std::string& getUnitName() const = 0;
-  virtual void setUnitName(std::string unitName) = 0;
+ public:
+  virtual const std::string& group_name() const = 0;
+  virtual void set_group_name(const std::string& groupname) = 0;
+
+  virtual const std::string& namesrv_addr() const = 0;
+  virtual void set_namesrv_addr(const std::string& namesrvAddr) = 0;
+
+  virtual const std::string& instance_name() const = 0;
+  virtual void set_instance_name(const std::string& instanceName) = 0;
+
+  virtual const std::string& unit_name() const = 0;
+  virtual void set_unit_name(std::string unitName) = 0;
 
   /**
    * the num of threads to distribute network data
    **/
-  virtual int getTcpTransportWorkerThreadNum() const = 0;
-  virtual void setTcpTransportWorkerThreadNum(int num) = 0;
+  virtual int tcp_transport_worker_thread_nums() const = 0;
+  virtual void set_tcp_transport_worker_thread_nums(int num) = 0;
 
   /**
    * timeout of tcp connect
    **/
-  virtual uint64_t getTcpTransportConnectTimeout() const = 0;
-  virtual void setTcpTransportConnectTimeout(uint64_t timeout) = 0;  // ms
+  virtual uint64_t tcp_transport_connect_timeout() const = 0;
+  virtual void set_tcp_transport_connect_timeout(uint64_t timeout) = 0;  // ms
 
   /**
    * timeout of tryLock tcpTransport, the minimun value is 1000ms
    **/
-  virtual uint64_t getTcpTransportTryLockTimeout() const = 0;
-  virtual void setTcpTransportTryLockTimeout(uint64_t timeout) = 0;  // ms
+  virtual uint64_t tcp_transport_try_lock_timeout() const = 0;
+  virtual void set_tcp_transport_try_lock_timeout(uint64_t timeout) = 0;  // ms
 };
 
 }  // namespace rocketmq

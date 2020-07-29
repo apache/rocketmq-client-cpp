@@ -71,77 +71,77 @@ TEST(MessageDecoderTest, Decode) {
 
   // 1 TOTALSIZE  4=0+4
   byteBuffer->putInt(111);
-  msgExt.setStoreSize(111);
+  msgExt.set_store_size(111);
 
   // 2 MAGICCODE sizeof(int)  8=4+4
   byteBuffer->putInt(14);
 
   // 3 BODYCRC  12=8+4
   byteBuffer->putInt(24);
-  msgExt.setBodyCRC(24);
+  msgExt.set_body_crc(24);
 
   // 4 QUEUEID  16=12+4
   byteBuffer->putInt(4);
-  msgExt.setQueueId(4);
+  msgExt.set_queue_id(4);
 
   // 5 FLAG  20=16+4
   byteBuffer->putInt(4);
-  msgExt.setFlag(4);
+  msgExt.set_flag(4);
 
   // 6 QUEUEOFFSET  28=20+8
   byteBuffer->putLong(1024LL);
-  msgExt.setQueueOffset(1024LL);
+  msgExt.set_queue_offset(1024LL);
 
   // 7 PHYSICALOFFSET  36=28+8
   byteBuffer->putLong(2048LL);
-  msgExt.setCommitLogOffset(2048LL);
+  msgExt.set_commit_log_offset(2048LL);
 
   // 8 SYSFLAG  40=36+4
   byteBuffer->putInt(0);
-  msgExt.setSysFlag(0);
+  msgExt.set_sys_flag(0);
 
   // 9 BORNTIMESTAMP  48=40+8
   byteBuffer->putLong(4096LL);
-  msgExt.setBornTimestamp(4096LL);
+  msgExt.set_born_timestamp(4096LL);
 
   // 10 BORNHOST  56=48+4+4
   byteBuffer->putInt(ntohl(inet_addr("127.0.0.1")));
   byteBuffer->putInt(10091);
-  msgExt.setBornHost(rocketmq::string2SocketAddress("127.0.0.1:10091"));
+  msgExt.set_born_host(rocketmq::string2SocketAddress("127.0.0.1:10091"));
 
   // 11 STORETIMESTAMP  64=56+8
   byteBuffer->putLong(4096LL);
-  msgExt.setStoreTimestamp(4096LL);
+  msgExt.set_store_timestamp(4096LL);
 
   // 12 STOREHOST  72=64+4+4
   byteBuffer->putInt(ntohl(inet_addr("127.0.0.2")));
   byteBuffer->putInt(10092);
-  msgExt.setStoreHost(rocketmq::string2SocketAddress("127.0.0.2:10092"));
+  msgExt.set_store_host(rocketmq::string2SocketAddress("127.0.0.2:10092"));
 
   // 13 RECONSUMETIMES 76=72+4
   byteBuffer->putInt(18);
-  msgExt.setReconsumeTimes(18);
+  msgExt.set_reconsume_times(18);
 
   // 14 Prepared Transaction Offset  84=76+8
   byteBuffer->putLong(12LL);
-  msgExt.setPreparedTransactionOffset(12LL);
+  msgExt.set_prepared_transaction_offset(12LL);
 
   // 15 BODY  98=84+4+10
   std::string body("1234567890");
   byteBuffer->putInt(body.size());
   byteBuffer->put(*stoba(body));
-  msgExt.setBody(body);
+  msgExt.set_body(body);
 
   // 16 TOPIC  109=98+1+10
   std::string topic = "topic_1234";
   byteBuffer->put((int8_t)topic.size());
   byteBuffer->put(*stoba(topic));
-  msgExt.setTopic(topic);
+  msgExt.set_topic(topic);
 
   // 17 PROPERTIES 111=109+2
   byteBuffer->putShort(0);
 
-  msgExt.setMsgId(MessageDecoder::createMessageId(msgExt.getStoreHost(), (int64_t)msgExt.getCommitLogOffset()));
+  msgExt.set_msg_id(MessageDecoder::createMessageId(msgExt.store_host(), (int64_t)msgExt.commit_log_offset()));
 
   byteBuffer->flip();
   auto msgs = MessageDecoder::decodes(*byteBuffer);
@@ -153,7 +153,7 @@ TEST(MessageDecoderTest, Decode) {
 
   byteBuffer->rewind();
   msgs = MessageDecoder::decodes(*byteBuffer, false);
-  EXPECT_EQ(msgs[0]->getBody(), "");
+  EXPECT_EQ(msgs[0]->body(), "");
 
   //===============================================================
 
@@ -162,7 +162,7 @@ TEST(MessageDecoderTest, Decode) {
   // 8 SYSFLAG  40=36+4
   byteBuffer->position(36);
   byteBuffer->putInt(0 | MessageSysFlag::COMPRESSED_FLAG);
-  msgExt.setSysFlag(0 | MessageSysFlag::COMPRESSED_FLAG);
+  msgExt.set_sys_flag(0 | MessageSysFlag::COMPRESSED_FLAG);
 
   // 15 Body 84
   std::string compressedBody;
@@ -170,12 +170,12 @@ TEST(MessageDecoderTest, Decode) {
   byteBuffer->position(84);
   byteBuffer->putInt(compressedBody.size());
   byteBuffer->put(*stoba(compressedBody));
-  msgExt.setBody(compressedBody);
+  msgExt.set_body(compressedBody);
 
   // 16 TOPIC
   byteBuffer->put((int8_t)topic.size());
   byteBuffer->put(*stoba(topic));
-  msgExt.setTopic(topic);
+  msgExt.set_topic(topic);
 
   // 17 PROPERTIES
   std::map<std::string, std::string> properties;
@@ -184,13 +184,13 @@ TEST(MessageDecoderTest, Decode) {
   std::string props = MessageDecoder::messageProperties2String(properties);
   byteBuffer->putShort(props.size());
   byteBuffer->put(*stoba(props));
-  msgExt.setProperties(properties);
-  msgExt.setMsgId("123456");
+  msgExt.set_properties(properties);
+  msgExt.set_msg_id("123456");
 
   byteBuffer->flip();
 
   byteBuffer->putInt(byteBuffer->limit());
-  msgExt.setStoreSize(byteBuffer->limit());
+  msgExt.set_store_size(byteBuffer->limit());
 
   byteBuffer->rewind();
   msgs = MessageDecoder::decodes(*byteBuffer);

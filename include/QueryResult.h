@@ -24,17 +24,17 @@ namespace rocketmq {
 class ROCKETMQCLIENT_API QueryResult {
  public:
   QueryResult(uint64_t indexLastUpdateTimestamp, const std::vector<MQMessageExt>& messageList) {
-    m_indexLastUpdateTimestamp = indexLastUpdateTimestamp;
-    m_messageList = messageList;
+    index_last_update_timestamp_ = indexLastUpdateTimestamp;
+    message_list_ = messageList;
   }
 
-  uint64_t getIndexLastUpdateTimestamp() { return m_indexLastUpdateTimestamp; }
+  uint64_t index_last_update_timestamp() { return index_last_update_timestamp_; }
 
-  std::vector<MQMessageExt>& getMessageList() { return m_messageList; }
+  std::vector<MQMessageExt>& message_list() { return message_list_; }
 
  private:
-  uint64_t m_indexLastUpdateTimestamp;
-  std::vector<MQMessageExt> m_messageList;
+  uint64_t index_last_update_timestamp_;
+  std::vector<MQMessageExt> message_list_;
 };
 
 }  // namespace rocketmq

@@ -49,8 +49,8 @@ int main(int argc, char* argv[]) {
   }
   PrintRocketmqSendAndConsumerArgs(info);
   DefaultMQPullConsumer consumer("please_rename_unique_group_name");
-  consumer.setNamesrvAddr(info.namesrv);
-  consumer.setGroupName(info.groupname);
+  consumer.set_namesrv_addr(info.namesrv);
+  consumer.set_group_name(info.groupname);
   consumer.registerMessageQueueListener(info.topic, NULL);
   consumer.start();
   std::vector<MQMessageQueue> mqs;

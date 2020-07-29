@@ -27,9 +27,9 @@ DefaultMQPullConsumer::DefaultMQPullConsumer(const std::string& groupname, RPCHo
     : DefaultMQPullConsumerConfigProxy(nullptr), m_pullConsumerDelegate(nullptr) {
   // set default group name
   if (groupname.empty()) {
-    setGroupName(DEFAULT_CONSUMER_GROUP);
+    set_group_name(DEFAULT_CONSUMER_GROUP);
   } else {
-    setGroupName(groupname);
+    set_group_name(groupname);
   }
 
   // TODO: DefaultMQPullConsumerImpl

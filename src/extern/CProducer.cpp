@@ -127,9 +127,9 @@ class COnSendCallback : public AutoDeleteSendCallback {
 
   void onSuccess(SendResult& sendResult) override {
     CSendResult result;
-    result.sendStatus = CSendStatus((int)sendResult.getSendStatus());
-    result.offset = sendResult.getQueueOffset();
-    strncpy(result.msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+    result.sendStatus = CSendStatus((int)sendResult.send_status());
+    result.offset = sendResult.queue_offset();
+    strncpy(result.msgId, sendResult.msg_id().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result.msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
     send_success_callback_(result, message_, user_data_);
   }
@@ -159,9 +159,9 @@ class CSendCallback : public AutoDeleteSendCallback {
 
   void onSuccess(SendResult& sendResult) override {
     CSendResult result;
-    result.sendStatus = CSendStatus((int)sendResult.getSendStatus());
-    result.offset = sendResult.getQueueOffset();
-    strncpy(result.msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+    result.sendStatus = CSendStatus((int)sendResult.send_status());
+    result.offset = sendResult.queue_offset();
+    strncpy(result.msgId, sendResult.msg_id().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result.msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
     send_success_callback_(result);
   }
@@ -236,7 +236,7 @@ int SetProducerNameServerAddress(CProducer* producer, const char* namesrv) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<DefaultMQProducer*>(producer)->setNamesrvAddr(namesrv);
+  reinterpret_cast<DefaultMQProducer*>(producer)->set_namesrv_addr(namesrv);
   return OK;
 }
 
@@ -257,7 +257,7 @@ int SendMessageSync(CProducer* producer, CMessage* msg, CSendResult* result) {
     auto* defaultMQProducer = reinterpret_cast<DefaultMQProducer*>(producer);
     auto* message = reinterpret_cast<MQMessage*>(msg);
     auto sendResult = defaultMQProducer->send(*message);
-    switch (sendResult.getSendStatus()) {
+    switch (sendResult.send_status()) {
       case SEND_OK:
         result->sendStatus = E_SEND_OK;
         break;
@@ -274,8 +274,8 @@ int SendMessageSync(CProducer* producer, CMessage* msg, CSendResult* result) {
         result->sendStatus = E_SEND_OK;
         break;
     }
-    result->offset = sendResult.getQueueOffset();
-    strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+    result->offset = sendResult.queue_offset();
+    strncpy(result->msgId, sendResult.msg_id().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
   } catch (std::exception& e) {
     CErrorContainer::setErrorMessage(e.what());
@@ -292,7 +292,7 @@ int SendBatchMessage(CProducer* producer, CBatchMessage* batcMsg, CSendResult* r
     auto* defaultMQProducer = reinterpret_cast<DefaultMQProducer*>(producer);
     auto* message = reinterpret_cast<std::vector<MQMessage>*>(batcMsg);
     auto sendResult = defaultMQProducer->send(*message);
-    switch (sendResult.getSendStatus()) {
+    switch (sendResult.send_status()) {
       case SEND_OK:
         result->sendStatus = E_SEND_OK;
         break;
@@ -309,8 +309,8 @@ int SendBatchMessage(CProducer* producer, CBatchMessage* batcMsg, CSendResult* r
         result->sendStatus = E_SEND_OK;
         break;
     }
-    result->offset = sendResult.getQueueOffset();
-    strncpy(result->msgId, sendResult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+    result->offset = sendResult.queue_offset();
+    strncpy(result->msgId, sendResult.msg_id().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
   } catch (std::exception& e) {
     return PRODUCER_SEND_SYNC_FAILED;
@@ -412,9 +412,9 @@ int SendMessageOrderly(CProducer* producer,
     SelectMessageQueue selectMessageQueue(selectorCallback);
     SendResult send_result = defaultMQProducer->send(*message, &selectMessageQueue, arg);
     // Convert SendStatus to CSendStatus
-    result->sendStatus = CSendStatus((int)send_result.getSendStatus());
-    result->offset = send_result.getQueueOffset();
-    strncpy(result->msgId, send_result.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+    result->sendStatus = CSendStatus((int)send_result.send_status());
+    result->offset = send_result.queue_offset();
+    strncpy(result->msgId, send_result.msg_id().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
   } catch (std::exception& e) {
     CErrorContainer::setErrorMessage(e.what());
@@ -435,9 +435,9 @@ int SendMessageOrderlyByShardingKey(CProducer* producer, CMessage* msg, const ch
     SelectMessageQueueInner selectMessageQueue;
     SendResult send_esult = defaultMQProducer->send(*message, &selectMessageQueue, (void*)shardingKey, retryTimes);
     // Convert SendStatus to CSendStatus
-    result->sendStatus = CSendStatus((int)send_esult.getSendStatus());
-    result->offset = send_esult.getQueueOffset();
-    strncpy(result->msgId, send_esult.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+    result->sendStatus = CSendStatus((int)send_esult.send_status());
+    result->offset = send_esult.queue_offset();
+    strncpy(result->msgId, send_esult.msg_id().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
   } catch (std::exception& e) {
     CErrorContainer::setErrorMessage(e.what());
@@ -459,9 +459,9 @@ int SendMessageTransaction(CProducer* producer,
     auto* message = reinterpret_cast<MQMessage*>(msg);
     LocalTransactionExecutorInner executorInner(callback, msg, userData);
     auto send_result = transactionMQProducer->sendMessageInTransaction(*message, &executorInner);
-    result->sendStatus = CSendStatus((int)send_result.getSendStatus());
-    result->offset = send_result.getQueueOffset();
-    strncpy(result->msgId, send_result.getMsgId().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
+    result->sendStatus = CSendStatus((int)send_result.send_status());
+    result->offset = send_result.queue_offset();
+    strncpy(result->msgId, send_result.msg_id().c_str(), MAX_MESSAGE_ID_LENGTH - 1);
     result->msgId[MAX_MESSAGE_ID_LENGTH - 1] = 0;
   } catch (std::exception& e) {
     CErrorContainer::setErrorMessage(e.what());
@@ -474,7 +474,7 @@ int SetProducerGroupName(CProducer* producer, const char* groupName) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<DefaultMQProducer*>(producer)->setGroupName(groupName);
+  reinterpret_cast<DefaultMQProducer*>(producer)->set_group_name(groupName);
   return OK;
 }
 
@@ -482,7 +482,7 @@ int SetProducerInstanceName(CProducer* producer, const char* instanceName) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<DefaultMQProducer*>(producer)->setInstanceName(instanceName);
+  reinterpret_cast<DefaultMQProducer*>(producer)->set_instance_name(instanceName);
   return OK;
 }
 
@@ -527,7 +527,7 @@ int SetProducerSendMsgTimeout(CProducer* producer, int timeout) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<DefaultMQProducer*>(producer)->setSendMsgTimeout(timeout);
+  reinterpret_cast<DefaultMQProducer*>(producer)->set_send_msg_timeout(timeout);
   return OK;
 }
 
@@ -535,7 +535,7 @@ int SetProducerCompressMsgBodyOverHowmuch(CProducer* producer, int howmuch) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<DefaultMQProducer*>(producer)->setCompressMsgBodyOverHowmuch(howmuch);
+  reinterpret_cast<DefaultMQProducer*>(producer)->set_compress_msg_body_over_howmuch(howmuch);
   return OK;
 }
 
@@ -543,7 +543,7 @@ int SetProducerCompressLevel(CProducer* producer, int level) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<DefaultMQProducer*>(producer)->setCompressLevel(level);
+  reinterpret_cast<DefaultMQProducer*>(producer)->set_compress_level(level);
   return OK;
 }
 
@@ -551,6 +551,6 @@ int SetProducerMaxMessageSize(CProducer* producer, int size) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<DefaultMQProducer*>(producer)->setMaxMessageSize(size);
+  reinterpret_cast<DefaultMQProducer*>(producer)->set_max_message_size(size);
   return OK;
 }

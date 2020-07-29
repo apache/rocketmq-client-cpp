@@ -174,25 +174,25 @@ TEST(CProducerTest, Info) {
   CProducer* cProducer = CreateProducer("groupTest");
   DefaultMQProducer* defaultMQProducer = (DefaultMQProducer*)cProducer;
   EXPECT_TRUE(cProducer != NULL);
-  EXPECT_EQ(defaultMQProducer->getGroupName(), "groupTest");
+  EXPECT_EQ(defaultMQProducer->group_name(), "groupTest");
 
   EXPECT_EQ(SetProducerNameServerAddress(cProducer, "127.0.0.1:9876"), OK);
-  EXPECT_EQ(defaultMQProducer->getNamesrvAddr(), "127.0.0.1:9876");
+  EXPECT_EQ(defaultMQProducer->namesrv_addr(), "127.0.0.1:9876");
 
   EXPECT_EQ(SetProducerGroupName(cProducer, "testGroup"), OK);
-  EXPECT_EQ(defaultMQProducer->getGroupName(), "testGroup");
+  EXPECT_EQ(defaultMQProducer->group_name(), "testGroup");
 
   EXPECT_EQ(SetProducerInstanceName(cProducer, "instance"), OK);
-  EXPECT_EQ(defaultMQProducer->getInstanceName(), "instance");
+  EXPECT_EQ(defaultMQProducer->instance_name(), "instance");
 
   EXPECT_EQ(SetProducerSendMsgTimeout(cProducer, 1), OK);
-  EXPECT_EQ(defaultMQProducer->getSendMsgTimeout(), 1);
+  EXPECT_EQ(defaultMQProducer->send_msg_timeout(), 1);
 
   EXPECT_EQ(SetProducerMaxMessageSize(cProducer, 2), OK);
-  EXPECT_EQ(defaultMQProducer->getMaxMessageSize(), 2);
+  EXPECT_EQ(defaultMQProducer->max_message_size(), 2);
 
   EXPECT_EQ(SetProducerCompressLevel(cProducer, 1), OK);
-  EXPECT_EQ(defaultMQProducer->getCompressLevel(), 1);
+  EXPECT_EQ(defaultMQProducer->compress_level(), 1);
 
   EXPECT_EQ(SetProducerSessionCredentials(NULL, NULL, NULL, NULL), NULL_POINTER);
   EXPECT_EQ(SetProducerSessionCredentials(cProducer, "accessKey", "secretKey", "channel"), OK);

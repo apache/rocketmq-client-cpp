@@ -23,7 +23,7 @@ using namespace rocketmq;
 CMessage* CreateMessage(const char* topic) {
   auto* msg = new MQMessage();
   if (topic != NULL) {
-    msg->setTopic(topic);
+    msg->set_topic(topic);
   }
   return reinterpret_cast<CMessage*>(msg);
 }
@@ -40,7 +40,7 @@ int SetMessageTopic(CMessage* msg, const char* topic) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<MQMessage*>(msg)->setTopic(topic);
+  reinterpret_cast<MQMessage*>(msg)->set_topic(topic);
   return OK;
 }
 
@@ -48,7 +48,7 @@ int SetMessageTags(CMessage* msg, const char* tags) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<MQMessage*>(msg)->setTags(tags);
+  reinterpret_cast<MQMessage*>(msg)->set_tags(tags);
   return OK;
 }
 
@@ -56,7 +56,7 @@ int SetMessageKeys(CMessage* msg, const char* keys) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<MQMessage*>(msg)->setKeys(keys);
+  reinterpret_cast<MQMessage*>(msg)->set_keys(keys);
   return OK;
 }
 
@@ -64,7 +64,7 @@ int SetMessageBody(CMessage* msg, const char* body) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<MQMessage*>(msg)->setBody(std::string(body));
+  reinterpret_cast<MQMessage*>(msg)->set_body(std::string(body));
   return OK;
 }
 
@@ -73,7 +73,7 @@ int SetByteMessageBody(CMessage* msg, const char* body, int len) {
     return NULL_POINTER;
   }
 
-  reinterpret_cast<MQMessage*>(msg)->setBody(std::string(body, len));
+  reinterpret_cast<MQMessage*>(msg)->set_body(std::string(body, len));
   return OK;
 }
 
@@ -89,7 +89,7 @@ int SetDelayTimeLevel(CMessage* msg, int level) {
   if (msg == NULL) {
     return NULL_POINTER;
   }
-  reinterpret_cast<MQMessage*>(msg)->setDelayTimeLevel(level);
+  reinterpret_cast<MQMessage*>(msg)->set_delay_time_level(level);
   return OK;
 }
 
@@ -97,28 +97,28 @@ const char* GetOriginMessageTopic(CMessage* msg) {
   if (msg == NULL) {
     return NULL;
   }
-  return reinterpret_cast<MQMessage*>(msg)->getTopic().c_str();
+  return reinterpret_cast<MQMessage*>(msg)->topic().c_str();
 }
 
 const char* GetOriginMessageTags(CMessage* msg) {
   if (msg == NULL) {
     return NULL;
   }
-  return reinterpret_cast<MQMessage*>(msg)->getTags().c_str();
+  return reinterpret_cast<MQMessage*>(msg)->tags().c_str();
 }
 
 const char* GetOriginMessageKeys(CMessage* msg) {
   if (msg == NULL) {
     return NULL;
   }
-  return reinterpret_cast<MQMessage*>(msg)->getKeys().c_str();
+  return reinterpret_cast<MQMessage*>(msg)->keys().c_str();
 }
 
 const char* GetOriginMessageBody(CMessage* msg) {
   if (msg == NULL) {
     return NULL;
   }
-  return reinterpret_cast<MQMessage*>(msg)->getBody().c_str();
+  return reinterpret_cast<MQMessage*>(msg)->body().c_str();
 }
 
 const char* GetOriginMessageProperty(CMessage* msg, const char* key) {
@@ -132,5 +132,5 @@ int GetOriginDelayTimeLevel(CMessage* msg) {
   if (msg == NULL) {
     return -1;
   }
-  return reinterpret_cast<MQMessage*>(msg)->getDelayTimeLevel();
+  return reinterpret_cast<MQMessage*>(msg)->delay_time_level();
 }

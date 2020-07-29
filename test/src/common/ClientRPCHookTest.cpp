@@ -35,9 +35,9 @@ using rocketmq::SessionCredentials;
 
 TEST(ClientRPCHookTest, BeforeRequest) {
   SessionCredentials sessionCredentials;
-  sessionCredentials.setAccessKey("accessKey");
-  sessionCredentials.setSecretKey("secretKey");
-  sessionCredentials.setAuthChannel("onsChannel");
+  sessionCredentials.set_access_key("accessKey");
+  sessionCredentials.set_secret_key("secretKey");
+  sessionCredentials.set_auth_channel("onsChannel");
 
   ClientRPCHook clientRPCHook(sessionCredentials);
 

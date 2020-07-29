@@ -88,8 +88,8 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public DefaultMQProducerConfigProxy
                long timeout) override;
 
  public:  // DefaultMQProducerConfig
-  bool isSendLatencyFaultEnable() const override;
-  void setSendLatencyFaultEnable(bool sendLatencyFaultEnable) override;
+  bool send_latency_fault_enable() const override;
+  void set_send_latency_fault_enable(bool sendLatencyFaultEnable) override;
 
  public:
   void setRPCHook(RPCHookPtr rpcHook);

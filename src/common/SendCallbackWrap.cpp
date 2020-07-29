@@ -162,7 +162,7 @@ void SendCallbackWrap::onExceptionImpl(ResponseFuture* responseFuture,
       }
     }
     std::string addr = instance_->findBrokerAddressInPublish(retryBrokerName);
-    LOG_INFO_NEW("async send msg by retry {} times. topic={}, brokerAddr={}, brokerName={}", times_, msg_->getTopic(),
+    LOG_INFO_NEW("async send msg by retry {} times. topic={}, brokerAddr={}, brokerName={}", times_, msg_->topic(),
                  addr, retryBrokerName);
     try {
       // new request

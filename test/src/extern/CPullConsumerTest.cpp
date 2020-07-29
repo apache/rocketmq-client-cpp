@@ -147,10 +147,10 @@ TEST(CPullConsumerTest, Init) {
   EXPECT_FALSE(pullConsumer == NULL);
 
   EXPECT_EQ(SetPullConsumerGroupID(pullConsumer, "groupId"), OK);
-  EXPECT_EQ(GetPullConsumerGroupID(pullConsumer), defaultMQPullConsumer->getGroupName().c_str());
+  EXPECT_EQ(GetPullConsumerGroupID(pullConsumer), defaultMQPullConsumer->group_name().c_str());
 
   EXPECT_EQ(SetPullConsumerNameServerAddress(pullConsumer, "127.0.0.1:10091"), OK);
-  EXPECT_EQ(defaultMQPullConsumer->getNamesrvAddr(), "127.0.0.1:10091");
+  EXPECT_EQ(defaultMQPullConsumer->namesrv_addr(), "127.0.0.1:10091");
 
   EXPECT_EQ(SetPullConsumerSessionCredentials(pullConsumer, "accessKey", "secretKey", "channel"), OK);
   // SessionCredentials sessionCredentials = defaultMQPullConsumer->getSessionCredentials();
@@ -168,10 +168,10 @@ TEST(CPullConsumerTest, CheckNull) {
   EXPECT_FALSE(pullConsumer == NULL);
 
   EXPECT_EQ(SetPullConsumerGroupID(pullConsumer, "groupId"), OK);
-  EXPECT_EQ(GetPullConsumerGroupID(pullConsumer), defaultMQPullConsumer->getGroupName().c_str());
+  EXPECT_EQ(GetPullConsumerGroupID(pullConsumer), defaultMQPullConsumer->group_name().c_str());
 
   EXPECT_EQ(SetPullConsumerNameServerAddress(pullConsumer, "127.0.0.1:10091"), OK);
-  EXPECT_EQ(defaultMQPullConsumer->getNamesrvAddr(), "127.0.0.1:10091");
+  EXPECT_EQ(defaultMQPullConsumer->namesrv_addr(), "127.0.0.1:10091");
 
   EXPECT_EQ(SetPullConsumerSessionCredentials(pullConsumer, "accessKey", "secretKey", "channel"), OK);
   // SessionCredentials sessionCredentials = defaultMQPullConsumer->getSessionCredentials();
