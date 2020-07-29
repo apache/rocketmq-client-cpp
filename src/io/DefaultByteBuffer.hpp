@@ -32,8 +32,7 @@ class DefaultByteBuffer : public ByteBuffer {
 
   DefaultByteBuffer(int32_t cap, int32_t lim) : ByteBuffer(-1, 0, lim, cap, std::make_shared<ByteArray>(cap), 0) {}
 
-  DefaultByteBuffer(ByteArrayRef buf, int32_t off, int32_t len)
-      : ByteBuffer(-1, off, off + len, buf->size(), std::move(buf), 0) {}
+  DefaultByteBuffer(ByteArrayRef buf, int32_t off, int32_t len) : ByteBuffer(-1, off, off + len, buf->size(), buf, 0) {}
 
   DefaultByteBuffer(ByteArrayRef buf, int32_t mark, int32_t pos, int32_t lim, int32_t cap, int32_t off)
       : ByteBuffer(mark, pos, lim, cap, std::move(buf), off) {}
