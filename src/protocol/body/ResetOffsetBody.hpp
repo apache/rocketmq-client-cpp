@@ -14,22 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __RESET_OFFSET_BODY__
-#define __RESET_OFFSET_BODY__
+#ifndef ROCKETMQ_PROTOCOL_BODY_RESETOFFSETBODY_HPP_
+#define ROCKETMQ_PROTOCOL_BODY_RESETOFFSETBODY_HPP_
 
 #include <map>  // std::map
 
-#include "ByteArray.h"
 #include "MQMessageQueue.h"
+#include "RemotingSerializable.h"
 
 namespace rocketmq {
 
 class ResetOffsetBody {
  public:
-  static ResetOffsetBody* Decode(const ByteArray& bodyData);
+  static ResetOffsetBody* Decode(const ByteArray& bodyData) {
+    // FIXME: object as key
+    Json::Value root = RemotingSerializable::fromJson(bodyData);
+    auto& qds = root["offsetTable"];
+    std::unique_ptr<ResetOffsetBody> body(new ResetOffsetBody());
+    Json::Value::Members members = qds.getMemberNames();
+    for (const auto& member : members) {
+      Json::Value key = RemotingSerializable::fromJson(member);
+      MQMessageQueue mq(key["topic"].asString(), key["brokerName"].asString(), key["queueId"].asInt());
+      int64_t offset = qds[member].asInt64();
+      body->offset_table_.emplace(std::move(mq), offset);
+    }
+    return body.release();
+  }
 
-  std::map<MQMessageQueue, int64_t> getOffsetTable();
-  void setOffsetTable(const MQMessageQueue& mq, int64_t offset);
+ public:
+  std::map<MQMessageQueue, int64_t>& offset_table() { return offset_table_; }
 
  private:
   std::map<MQMessageQueue, int64_t> offset_table_;
@@ -37,4 +50,4 @@ class ResetOffsetBody {
 
 }  // namespace rocketmq
 
-#endif  // __RESET_OFFSET_BODY__
+#endif  // ROCKETMQ_PROTOCOL_BODY_RESETOFFSETBODY_HPP_

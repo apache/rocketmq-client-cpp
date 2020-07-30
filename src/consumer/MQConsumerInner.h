@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "ConsumeType.h"
-#include "SubscriptionData.h"
+#include "protocol/heartbeat/SubscriptionData.hpp"
 
 namespace rocketmq {
 
@@ -32,7 +32,7 @@ class MQConsumerInner {
   virtual ~MQConsumerInner() = default;
 
  public:  // MQConsumerInner in Java Client
-  virtual std::string groupName() const = 0;
+  virtual const std::string& groupName() const = 0;
   virtual MessageModel messageModel() const = 0;
   virtual ConsumeType consumeType() const = 0;
   virtual ConsumeFromWhere consumeFromWhere() const = 0;

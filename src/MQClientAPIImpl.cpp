@@ -28,6 +28,7 @@
 #include "PullResultExt.hpp"
 #include "SendCallbackWrap.h"
 #include "TcpRemotingClient.h"
+#include "protocol/body/LockBatchResponseBody.hpp"
 
 namespace rocketmq {
 
@@ -595,7 +596,7 @@ void MQClientAPIImpl::lockBatchMQ(const std::string& addr,
       auto requestBody = response->body();
       if (requestBody != nullptr && requestBody->size() > 0) {
         std::unique_ptr<LockBatchResponseBody> body(LockBatchResponseBody::Decode(*requestBody));
-        mqs = body->getLockOKMQSet();
+        mqs = std::move(body->lock_ok_mq_set());
       } else {
         mqs.clear();
       }

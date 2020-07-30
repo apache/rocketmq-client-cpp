@@ -16,16 +16,16 @@
  */
 #include "ClientRemotingProcessor.h"
 
-#include "ConsumerRunningInfo.h"
 #include "MessageDecoder.h"
 #include "MQProtos.h"
 #include "MessageAccessor.hpp"
 #include "MessageSysFlag.h"
 #include "RequestFutureTable.h"
 #include "SocketUtil.h"
-#include "protocol/body/ResetOffsetBody.h"
+#include "protocol/body/ConsumerRunningInfo.h"
+#include "protocol/body/ResetOffsetBody.hpp"
 #include "protocol/header/CommandHeader.h"
-#include "protocol/header/ReplyMessageRequestHeader.h"
+#include "protocol/header/ReplyMessageRequestHeader.hpp"
 
 namespace rocketmq {
 
@@ -106,7 +106,7 @@ RemotingCommand* ClientRemotingProcessor::resetOffset(RemotingCommand* request) 
   if (requestBody != nullptr && requestBody->size() > 0) {
     std::unique_ptr<ResetOffsetBody> body(ResetOffsetBody::Decode(*requestBody));
     if (body != nullptr) {
-      client_instance_->resetOffset(responseHeader->getGroup(), responseHeader->getTopic(), body->getOffsetTable());
+      client_instance_->resetOffset(responseHeader->getGroup(), responseHeader->getTopic(), body->offset_table());
     } else {
       LOG_ERROR("resetOffset failed as received data could not be unserialized");
     }
@@ -148,20 +148,20 @@ RemotingCommand* ClientRemotingProcessor::receiveReplyMessage(RemotingCommand* r
   try {
     std::unique_ptr<MQMessageExt> msg(new MQMessageExt);
 
-    msg->set_topic(requestHeader->getTopic());
-    msg->set_queue_id(requestHeader->getQueueId());
-    msg->set_store_timestamp(requestHeader->getStoreTimestamp());
+    msg->set_topic(requestHeader->topic());
+    msg->set_queue_id(requestHeader->queue_id());
+    msg->set_store_timestamp(requestHeader->store_timestamp());
 
-    if (!requestHeader->getBornHost().empty()) {
-      msg->set_born_host(string2SocketAddress(requestHeader->getBornHost()));
+    if (!requestHeader->born_host().empty()) {
+      msg->set_born_host(string2SocketAddress(requestHeader->born_host()));
     }
 
-    if (!requestHeader->getStoreHost().empty()) {
-      msg->set_store_host(string2SocketAddress(requestHeader->getStoreHost()));
+    if (!requestHeader->store_host().empty()) {
+      msg->set_store_host(string2SocketAddress(requestHeader->store_host()));
     }
 
     auto body = request->body();
-    if ((requestHeader->getSysFlag() & MessageSysFlag::COMPRESSED_FLAG) == MessageSysFlag::COMPRESSED_FLAG) {
+    if ((requestHeader->sys_flag() & MessageSysFlag::COMPRESSED_FLAG) == MessageSysFlag::COMPRESSED_FLAG) {
       std::string origin_body;
       if (UtilAll::inflate(*body, origin_body)) {
         msg->set_body(std::move(origin_body));
@@ -172,12 +172,12 @@ RemotingCommand* ClientRemotingProcessor::receiveReplyMessage(RemotingCommand* r
       msg->set_body(std::string(body->array(), body->size()));
     }
 
-    msg->set_flag(requestHeader->getFlag());
-    MessageAccessor::setProperties(*msg, MessageDecoder::string2messageProperties(requestHeader->getProperties()));
+    msg->set_flag(requestHeader->flag());
+    MessageAccessor::setProperties(*msg, MessageDecoder::string2messageProperties(requestHeader->properties()));
     MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_REPLY_MESSAGE_ARRIVE_TIME,
                                  UtilAll::to_string(receiveTime));
-    msg->set_born_timestamp(requestHeader->getBornTimestamp());
-    msg->set_reconsume_times(requestHeader->getReconsumeTimes());
+    msg->set_born_timestamp(requestHeader->born_timestamp());
+    msg->set_reconsume_times(requestHeader->reconsume_times());
     LOG_DEBUG_NEW("receive reply message:{}", msg->toString());
 
     processReplyMessage(std::move(msg));

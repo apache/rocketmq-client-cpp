@@ -19,7 +19,7 @@
 #include "Logging.h"
 #include "MQClientAPIImpl.h"
 #include "MQClientInstance.h"
-#include "MessageQueue.h"
+#include "MessageQueue.hpp"
 #include "UtilAll.h"
 
 namespace rocketmq {

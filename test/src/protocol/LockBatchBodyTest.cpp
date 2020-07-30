@@ -21,7 +21,9 @@
 
 #include "ByteArray.h"
 #include "MQMessageQueue.h"
-#include "protocol/body/LockBatchBody.h"
+#include "protocol/body/LockBatchRequestBody.hpp"
+#include "protocol/body/LockBatchResponseBody.hpp"
+#include "protocol/body/UnlockBatchRequestBody.hpp"
 
 using testing::InitGoogleMock;
 using testing::InitGoogleTest;
@@ -36,18 +38,18 @@ using rocketmq::UnlockBatchRequestBody;
 TEST(LockBatchBodyTest, LockBatchRequestBody) {
   LockBatchRequestBody lockBatchRequestBody;
 
-  lockBatchRequestBody.setClientId("testClientId");
-  EXPECT_EQ(lockBatchRequestBody.getClientId(), "testClientId");
+  lockBatchRequestBody.set_client_id("testClientId");
+  EXPECT_EQ(lockBatchRequestBody.client_id(), "testClientId");
 
-  lockBatchRequestBody.setConsumerGroup("testGroup");
-  EXPECT_EQ(lockBatchRequestBody.getConsumerGroup(), "testGroup");
+  lockBatchRequestBody.set_consumer_group("testGroup");
+  EXPECT_EQ(lockBatchRequestBody.consumer_group(), "testGroup");
 
   std::vector<MQMessageQueue> messageQueueList;
   messageQueueList.push_back(MQMessageQueue("testTopic", "testBroker", 1));
   messageQueueList.push_back(MQMessageQueue("testTopic", "testBroker", 2));
 
-  lockBatchRequestBody.setMqSet(messageQueueList);
-  EXPECT_EQ(lockBatchRequestBody.getMqSet(), messageQueueList);
+  lockBatchRequestBody.set_mq_set(messageQueueList);
+  EXPECT_EQ(lockBatchRequestBody.mq_set(), messageQueueList);
 
   std::string outData = lockBatchRequestBody.encode();
 
@@ -81,7 +83,7 @@ TEST(LockBatchBodyTest, LockBatchResponseBody) {
   std::unique_ptr<LockBatchResponseBody> lockBatchResponseBody(LockBatchResponseBody::Decode(bodyData));
 
   MQMessageQueue messageQueue("testTopic", "testBroker", 1);
-  EXPECT_EQ(messageQueue, lockBatchResponseBody->getLockOKMQSet()[0]);
+  EXPECT_EQ(messageQueue, lockBatchResponseBody->lock_ok_mq_set()[0]);
 }
 
 int main(int argc, char* argv[]) {

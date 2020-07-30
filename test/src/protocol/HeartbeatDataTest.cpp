@@ -19,11 +19,7 @@
 
 #include <vector>
 
-#include "ConsumeType.h"
-#include "HeartbeatData.h"
-#include "SubscriptionData.h"
-
-using std::vector;
+#include "protocol/heartbeat/HeartbeatData.hpp"
 
 using testing::InitGoogleMock;
 using testing::InitGoogleTest;
@@ -38,24 +34,16 @@ using rocketmq::ProducerData;
 using rocketmq::SubscriptionData;
 
 TEST(HeartbeatDataTest, ProducerData) {
-  ProducerData producerData;
-  producerData.groupName = "testGroup";
+  ProducerData producerData("testGroup");
 
   Json::Value outJson = producerData.toJson();
   EXPECT_EQ(outJson["groupName"], "testGroup");
 }
 
 TEST(HeartbeatDataTest, ConsumerData) {
-  ConsumerData consumerData;
-  consumerData.groupName = "testGroup";
-  consumerData.consumeType = ConsumeType::CONSUME_ACTIVELY;
-  consumerData.messageModel = MessageModel::BROADCASTING;
-  consumerData.consumeFromWhere = ConsumeFromWhere::CONSUME_FROM_TIMESTAMP;
-
-  vector<SubscriptionData> subs;
-  subs.push_back(SubscriptionData("testTopic", "sub"));
-
-  consumerData.subscriptionDataSet = subs;
+  ConsumerData consumerData("testGroup", ConsumeType::CONSUME_ACTIVELY, MessageModel::BROADCASTING,
+                            ConsumeFromWhere::CONSUME_FROM_TIMESTAMP,
+                            std::vector<SubscriptionData>{SubscriptionData("testTopic", "sub")});
 
   Json::Value outJson = consumerData.toJson();
 
@@ -72,28 +60,17 @@ TEST(HeartbeatDataTest, ConsumerData) {
 
 TEST(HeartbeatDataTest, HeartbeatData) {
   HeartbeatData heartbeatData;
-  heartbeatData.setClientID("testClientId");
+  heartbeatData.set_client_id("testClientId");
 
-  ProducerData producerData;
-  producerData.groupName = "testGroup";
+  EXPECT_TRUE(heartbeatData.producer_data_set().empty());
+  heartbeatData.producer_data_set().emplace_back("testGroup");
+  EXPECT_FALSE(heartbeatData.producer_data_set().empty());
 
-  EXPECT_TRUE(heartbeatData.isProducerDataSetEmpty());
-  heartbeatData.insertDataToProducerDataSet(producerData);
-  EXPECT_FALSE(heartbeatData.isProducerDataSetEmpty());
-
-  ConsumerData consumerData;
-  consumerData.groupName = "testGroup";
-  consumerData.consumeType = ConsumeType::CONSUME_ACTIVELY;
-  consumerData.messageModel = MessageModel::BROADCASTING;
-  consumerData.consumeFromWhere = ConsumeFromWhere::CONSUME_FROM_TIMESTAMP;
-
-  vector<SubscriptionData> subs;
-  subs.push_back(SubscriptionData("testTopic", "sub"));
-
-  consumerData.subscriptionDataSet = subs;
-  EXPECT_TRUE(heartbeatData.isConsumerDataSetEmpty());
-  heartbeatData.insertDataToConsumerDataSet(consumerData);
-  EXPECT_FALSE(heartbeatData.isConsumerDataSetEmpty());
+  EXPECT_TRUE(heartbeatData.consumer_data_set().empty());
+  heartbeatData.consumer_data_set().emplace_back("testGroup", ConsumeType::CONSUME_ACTIVELY, MessageModel::BROADCASTING,
+                                                 ConsumeFromWhere::CONSUME_FROM_TIMESTAMP,
+                                                 std::vector<SubscriptionData>{SubscriptionData("testTopic", "sub")});
+  EXPECT_FALSE(heartbeatData.consumer_data_set().empty());
 
   std::string outData = heartbeatData.encode();
 

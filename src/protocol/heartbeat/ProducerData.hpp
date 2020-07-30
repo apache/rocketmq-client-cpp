@@ -14,32 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ResetOffsetBody.h"
+#ifndef ROCKETMQ_PROTOCOL_HEARTBEAT_PRODUCERDATA_H_
+#define ROCKETMQ_PROTOCOL_HEARTBEAT_PRODUCERDATA_H_
 
-#include "RemotingSerializable.h"
+#include <string>  // std::string
+
+#include <json/json.h>
 
 namespace rocketmq {
 
-ResetOffsetBody* ResetOffsetBody::Decode(const ByteArray& bodyData) {
-  // FIXME: object as key
-  Json::Value root = RemotingSerializable::fromJson(bodyData);
-  Json::Value qds = root["offsetTable"];
-  std::unique_ptr<ResetOffsetBody> body(new ResetOffsetBody());
-  for (unsigned int i = 0; i < qds.size(); i++) {
-    Json::Value qd = qds[i];
-    MQMessageQueue mq(qd["brokerName"].asString(), qd["topic"].asString(), qd["queueId"].asInt());
-    int64_t offset = qd["offset"].asInt64();
-    body->setOffsetTable(mq, offset);
+class ProducerData {
+ public:
+  ProducerData(const std::string& group_name) : group_name_(group_name) {}
+
+  bool operator<(const ProducerData& other) const { return group_name_ < other.group_name_; }
+
+  Json::Value toJson() const {
+    Json::Value root;
+    root["groupName"] = group_name_;
+    return root;
   }
-  return body.release();
-}
 
-std::map<MQMessageQueue, int64_t> ResetOffsetBody::getOffsetTable() {
-  return offset_table_;
-}
+ public:
+  inline const std::string& group_name() const { return group_name_; }
+  inline void group_name(const std::string& group_name) { group_name_ = group_name; }
 
-void ResetOffsetBody::setOffsetTable(const MQMessageQueue& mq, int64_t offset) {
-  offset_table_[mq] = offset;
-}
+ private:
+  std::string group_name_;
+};
 
 }  // namespace rocketmq
+
+#endif  // ROCKETMQ_PROTOCOL_HEARTBEAT_PRODUCERDATA_H_

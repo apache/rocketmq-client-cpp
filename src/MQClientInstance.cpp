@@ -19,7 +19,7 @@
 #include <typeindex>
 
 #include "ClientRemotingProcessor.h"
-#include "ConsumerRunningInfo.h"
+#include "protocol/body/ConsumerRunningInfo.h"
 #include "Logging.h"
 #include "MQAdminImpl.h"
 #include "MQClientAPIImpl.h"
@@ -375,8 +375,8 @@ void MQClientInstance::persistAllConsumerOffset() {
 
 void MQClientInstance::sendHeartbeatToAllBroker() {
   std::unique_ptr<HeartbeatData> heartbeatData(prepareHeartbeatData());
-  bool producerEmpty = heartbeatData->isProducerDataSetEmpty();
-  bool consumerEmpty = heartbeatData->isConsumerDataSetEmpty();
+  bool producerEmpty = heartbeatData->producer_data_set().empty();
+  bool consumerEmpty = heartbeatData->consumer_data_set().empty();
   if (producerEmpty && consumerEmpty) {
     LOG_WARN_NEW("sending heartbeat, but no consumer and no producer");
     return;
@@ -481,7 +481,7 @@ HeartbeatData* MQClientInstance::prepareHeartbeatData() {
   HeartbeatData* pHeartbeatData = new HeartbeatData();
 
   // clientID
-  pHeartbeatData->setClientID(client_id_);
+  pHeartbeatData->set_client_id(client_id_);
 
   // Consumer
   insertConsumerInfoToHeartBeatData(pHeartbeatData);
@@ -492,29 +492,21 @@ HeartbeatData* MQClientInstance::prepareHeartbeatData() {
   return pHeartbeatData;
 }
 
-void MQClientInstance::insertConsumerInfoToHeartBeatData(HeartbeatData* pHeartbeatData) {
+void MQClientInstance::insertConsumerInfoToHeartBeatData(HeartbeatData* heartbeatData) {
   std::lock_guard<std::mutex> lock(consumer_table_mutex_);
   for (const auto& it : consumer_table_) {
     const auto* consumer = it.second;
-    ConsumerData consumerData;
-    consumerData.groupName = consumer->groupName();
-    consumerData.consumeType = consumer->consumeType();
-    consumerData.messageModel = consumer->messageModel();
-    consumerData.consumeFromWhere = consumer->consumeFromWhere();
-    std::vector<SubscriptionData> result = consumer->subscriptions();
-    consumerData.subscriptionDataSet.swap(result);
     // TODO: unitMode
-
-    pHeartbeatData->insertDataToConsumerDataSet(consumerData);
+    heartbeatData->consumer_data_set().emplace_back(consumer->groupName(), consumer->consumeType(),
+                                                    consumer->messageModel(), consumer->consumeFromWhere(),
+                                                    consumer->subscriptions());
   }
 }
 
-void MQClientInstance::insertProducerInfoToHeartBeatData(HeartbeatData* pHeartbeatData) {
+void MQClientInstance::insertProducerInfoToHeartBeatData(HeartbeatData* heartbeatData) {
   std::lock_guard<std::mutex> lock(producer_table_mutex_);
   for (const auto& it : producer_table_) {
-    ProducerData producerData;
-    producerData.groupName = it.first;
-    pHeartbeatData->insertDataToProducerDataSet(producerData);
+    heartbeatData->producer_data_set().emplace_back(it.first);
   }
 }
 

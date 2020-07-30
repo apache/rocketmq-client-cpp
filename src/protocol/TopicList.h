@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TOPIC_LIST_H__
-#define __TOPIC_LIST_H__
+#ifndef ROCKETMQ_PROTOCOL_TOPICLIST_H_
+#define ROCKETMQ_PROTOCOL_TOPICLIST_H_
 
 #include <string>  // std::string
 #include <vector>  // std::vector
@@ -34,4 +34,4 @@ class TopicList {
 
 }  // namespace rocketmq
 
-#endif  // __TOPIC_LIST_H__
+#endif  // ROCKETMQ_PROTOCOL_TOPICLIST_H_

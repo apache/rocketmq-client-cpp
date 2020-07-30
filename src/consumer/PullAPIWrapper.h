@@ -23,7 +23,7 @@
 #include "MQClientInstance.h"
 #include "MQMessageQueue.h"
 #include "PullCallback.h"
-#include "SubscriptionData.h"
+#include "protocol/heartbeat/SubscriptionData.hpp"
 
 namespace rocketmq {
 

@@ -34,7 +34,7 @@
 #include "SessionCredentials.h"
 #include "TcpTransport.h"
 #include "UtilAll.h"
-#include "protocol/body/ResetOffsetBody.h"
+#include "protocol/body/ResetOffsetBody.hpp"
 #include "protocol/header/CommandHeader.h"
 
 using testing::_;

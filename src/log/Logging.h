@@ -23,7 +23,11 @@
 
 // clang-format off
 #include <spdlog/spdlog.h>
+#if !defined(SPDLOG_FMT_EXTERNAL)
 #include <spdlog/fmt/bundled/printf.h>
+#else
+#include <fmt/printf.h>
+#endif
 // clang-format on
 
 namespace rocketmq {

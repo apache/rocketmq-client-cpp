@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PROCESS_QUEUE_INFO_H__
-#define __PROCESS_QUEUE_INFO_H__
+#ifndef ROCKETMQ_PROTOCOL_BODY_PROCESS_QUEUE_INFO_HPP_
+#define ROCKETMQ_PROTOCOL_BODY_PROCESS_QUEUE_INFO_HPP_
 
 #include <json/json.h>
 
@@ -92,4 +92,4 @@ class ProcessQueueInfo {
 
 }  // namespace rocketmq
 
-#endif  // __PROCESS_QUEUE_INFO_H__
+#endif  // ROCKETMQ_PROTOCOL_BODY_PROCESS_QUEUE_INFO_HPP_

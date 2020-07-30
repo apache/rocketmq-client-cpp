@@ -20,30 +20,30 @@
 #include <string>  // std::string
 
 #include "MQException.h"
-#include "SubscriptionData.h"
+#include "protocol/heartbeat/SubscriptionData.hpp"
 #include "UtilAll.h"
 
 namespace rocketmq {
 
 class FilterAPI {
  public:
-  static SubscriptionData* buildSubscriptionData(const std::string& topic, const std::string& subString) {
+  static SubscriptionData* buildSubscriptionData(const std::string& topic, const std::string& sub_string) {
     // delete in Rebalance
-    std::unique_ptr<SubscriptionData> subscriptionData(new SubscriptionData(topic, subString));
+    std::unique_ptr<SubscriptionData> subscription_data(new SubscriptionData(topic, sub_string));
 
-    if (subString.empty() || SUB_ALL == subString) {
-      subscriptionData->set_sub_string(SUB_ALL);
+    if (sub_string.empty() || SUB_ALL == sub_string) {
+      subscription_data->set_sub_string(SUB_ALL);
     } else {
       std::vector<std::string> tags;
-      UtilAll::Split(tags, subString, "||");
+      UtilAll::Split(tags, sub_string, "||");
 
       if (!tags.empty()) {
         for (auto tag : tags) {
           if (!tag.empty()) {
             UtilAll::Trim(tag);
             if (!tag.empty()) {
-              subscriptionData->put_tag(tag);
-              subscriptionData->put_code(UtilAll::hash_code(tag));
+              subscription_data->code_set().push_back(UtilAll::hash_code(tag));
+              subscription_data->tags_set().push_back(std::move(tag));
             }
           }
         }
@@ -52,7 +52,7 @@ class FilterAPI {
       }
     }
 
-    return subscriptionData.release();
+    return subscription_data.release();
   }
 };
 

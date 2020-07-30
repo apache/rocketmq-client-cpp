@@ -17,7 +17,7 @@
 #include "ProcessQueue.h"
 
 #include "Logging.h"
-#include "ProcessQueueInfo.h"
+#include "protocol/body/ProcessQueueInfo.hpp"
 #include "UtilAll.h"
 
 static const uint64_t PULL_MAX_IDLE_TIME = 120000;  // ms

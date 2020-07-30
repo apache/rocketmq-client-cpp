@@ -22,7 +22,7 @@
 
 #include "CommunicationMode.h"
 #include "ConsumeMsgService.h"
-#include "ConsumerRunningInfo.h"
+#include "protocol/body/ConsumerRunningInfo.h"
 #include "FilterAPI.hpp"
 #include "Logging.h"
 #include "MQAdminImpl.h"
@@ -579,7 +579,7 @@ int DefaultMQPushConsumerImpl::getMaxReconsumeTimes() {
   }
 }
 
-std::string DefaultMQPushConsumerImpl::groupName() const {
+const std::string& DefaultMQPushConsumerImpl::groupName() const {
   return client_config_->group_name();
 }
 

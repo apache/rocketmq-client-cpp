@@ -85,7 +85,7 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
   void resume() override;
 
  public:  // MQConsumerInner
-  std::string groupName() const override;
+  const std::string& groupName() const override;
   MessageModel messageModel() const override;
   ConsumeType consumeType() const override;
   ConsumeFromWhere consumeFromWhere() const override;

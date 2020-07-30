@@ -17,7 +17,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "MessageQueue.h"
+#include "MessageQueue.hpp"
 
 using testing::InitGoogleMock;
 using testing::InitGoogleTest;

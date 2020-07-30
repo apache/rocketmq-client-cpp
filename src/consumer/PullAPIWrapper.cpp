@@ -70,7 +70,7 @@ PullResult PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
       msgListFilterAgain.reserve(msgList.size());
       for (const auto& msg : msgList) {
         const auto& msgTag = msg->tags();
-        if (subscriptionData->contain_tag(msgTag)) {
+        if (subscriptionData->containsTag(msgTag)) {
           msgListFilterAgain.push_back(msg);
         }
       }

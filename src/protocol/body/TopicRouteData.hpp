@@ -123,12 +123,12 @@ class TopicRouteData {
     for (auto bd : bds) {
       std::string broker_name = bd["brokerName"].asString();
       LOG_DEBUG_NEW("brokerName:{}", broker_name);
+      auto& bas = bd["brokerAddrs"];
+      Json::Value::Members members = bas.getMemberNames();
       std::map<int, std::string> broker_addrs;
-      Json::Value bas = bd["brokerAddrs"];
-      Json::Value::Members mbs = bas.getMemberNames();
-      for (const auto& key : mbs) {
-        int id = std::stoi(key);
-        std::string addr = bas[key].asString();
+      for (const auto& member : members) {
+        int id = std::stoi(member);
+        std::string addr = bas[member].asString();
         broker_addrs.emplace(id, std::move(addr));
         LOG_DEBUG_NEW("brokerId:{}, brokerAddr:{}", id, addr);
       }

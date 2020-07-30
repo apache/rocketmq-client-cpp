@@ -22,9 +22,8 @@
 #include <set>
 #include <utility>
 
-#include "ConsumerRunningInfo.h"
+#include "protocol/body/ConsumerRunningInfo.h"
 #include "FindBrokerResult.hpp"
-#include "HeartbeatData.h"
 #include "MQClientConfig.h"
 #include "MQException.h"
 #include "MQConsumerInner.h"
@@ -32,7 +31,8 @@
 #include "MQProducerInner.h"
 #include "ServiceState.h"
 #include "TopicPublishInfo.hpp"
-#include "TopicRouteData.hpp"
+#include "protocol/body/TopicRouteData.hpp"
+#include "protocol/heartbeat/HeartbeatData.hpp"
 #include "concurrent/executor.hpp"
 
 namespace rocketmq {

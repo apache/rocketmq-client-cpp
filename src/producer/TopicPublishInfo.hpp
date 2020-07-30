@@ -23,7 +23,7 @@
 
 #include "MQException.h"
 #include "MQMessageQueue.h"
-#include "TopicRouteData.hpp"
+#include "protocol/body/TopicRouteData.hpp"
 
 namespace rocketmq {
 

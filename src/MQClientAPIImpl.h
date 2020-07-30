@@ -19,7 +19,6 @@
 
 #include "CommunicationMode.h"
 #include "DefaultMQProducerImpl.h"
-#include "HeartbeatData.h"
 #include "KVTable.h"
 #include "MQException.h"
 #include "MQClientInstance.h"
@@ -30,9 +29,11 @@
 #include "TopicConfig.h"
 #include "TopicList.h"
 #include "TopicPublishInfo.hpp"
-#include "TopicRouteData.hpp"
-#include "protocol/body/LockBatchBody.h"
+#include "protocol/body/TopicRouteData.hpp"
+#include "protocol/body/LockBatchRequestBody.hpp"
+#include "protocol/body/UnlockBatchRequestBody.hpp"
 #include "protocol/header/CommandHeader.h"
+#include "protocol/heartbeat/HeartbeatData.hpp"
 
 namespace rocketmq {
 

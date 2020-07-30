@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MESSAGE_QUEUE_H__
-#define __MESSAGE_QUEUE_H__
+#ifndef ROCKETMQ_PROTOCOL_MESSAGEQUEUE_H_
+#define ROCKETMQ_PROTOCOL_MESSAGEQUEUE_H_
 
 #include <json/json.h>
 
@@ -23,8 +23,14 @@
 
 namespace rocketmq {
 
-Json::Value toJson(const MQMessageQueue& mq);
+inline Json::Value toJson(const MQMessageQueue& mq) {
+  Json::Value root;
+  root["topic"] = mq.topic();
+  root["brokerName"] = mq.broker_name();
+  root["queueId"] = mq.queue_id();
+  return root;
+}
 
 }  // namespace rocketmq
 
-#endif  // __MESSAGE_QUEUE_H__
+#endif  // ROCKETMQ_PROTOCOL_MESSAGEQUEUE_H_

@@ -20,7 +20,7 @@
 #include <memory>
 
 #include "ByteArray.h"
-#include "TopicRouteData.hpp"
+#include "protocol/body/TopicRouteData.hpp"
 
 using testing::InitGoogleMock;
 using testing::InitGoogleTest;

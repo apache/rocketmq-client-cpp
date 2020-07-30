@@ -17,9 +17,9 @@
 #ifndef ROCKETMQ_PROTOCOL_CONSUMERRUNNINGINFO_H_
 #define ROCKETMQ_PROTOCOL_CONSUMERRUNNINGINFO_H_
 
-#include "MessageQueue.h"
-#include "ProcessQueueInfo.h"
-#include "SubscriptionData.h"
+#include "MessageQueue.hpp"
+#include "ProcessQueueInfo.hpp"
+#include "protocol/heartbeat/SubscriptionData.hpp"
 
 namespace rocketmq {
 

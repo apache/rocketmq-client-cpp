@@ -26,7 +26,7 @@
 #include "MQMessageQueue.h"
 #include "ProcessQueue.h"
 #include "PullRequest.h"
-#include "SubscriptionData.h"
+#include "protocol/heartbeat/SubscriptionData.hpp"
 
 namespace rocketmq {
 

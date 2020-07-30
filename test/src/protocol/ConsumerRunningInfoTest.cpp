@@ -24,9 +24,6 @@
 #include <string>
 
 #include "ConsumerRunningInfo.h"
-#include "MessageQueue.h"
-#include "ProcessQueueInfo.h"
-#include "SubscriptionData.h"
 
 using std::map;
 using std::string;
