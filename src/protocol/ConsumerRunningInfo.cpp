@@ -16,6 +16,7 @@
  */
 #include "ConsumerRunningInfo.h"
 
+#include "RemotingSerializable.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
@@ -89,8 +90,7 @@ std::string ConsumerRunningInfo::encode() {
     root["subscriptionSet"].append(subscription.toJson());
   }
 
-  Json::FastWriter fastwrite;
-  std::string finals = fastwrite.write(root);
+  std::string finals = RemotingSerializable::toJson(root);
 
   Json::Value mq;
   std::string key = "\"mqTable\":";

@@ -261,7 +261,7 @@ void DefaultMQProducerImpl::send(MQMessage& msg,
 void DefaultMQProducerImpl::sendOneway(MQMessage& msg) {
   try {
     sendDefaultImpl(msg.getMessageImpl(), CommunicationMode::ONEWAY, nullptr, m_producerConfig->getSendMsgTimeout());
-  } catch (MQBrokerException e) {
+  } catch (MQBrokerException& e) {
     std::string info = std::string("unknown exception, ") + e.what();
     THROW_MQEXCEPTION(MQClientException, info, e.GetError());
   }
@@ -277,7 +277,7 @@ void DefaultMQProducerImpl::sendOneway(MQMessage& msg, const MQMessageQueue& mq)
   try {
     sendKernelImpl(msg.getMessageImpl(), mq, CommunicationMode::ONEWAY, nullptr, nullptr,
                    m_producerConfig->getSendMsgTimeout());
-  } catch (MQBrokerException e) {
+  } catch (MQBrokerException& e) {
     std::string info = std::string("unknown exception, ") + e.what();
     THROW_MQEXCEPTION(MQClientException, info, e.GetError());
   }
@@ -333,7 +333,7 @@ void DefaultMQProducerImpl::sendOneway(MQMessage& msg, MessageQueueSelector* sel
   try {
     sendSelectImpl(msg.getMessageImpl(), selector, arg, CommunicationMode::ONEWAY, nullptr,
                    m_producerConfig->getSendMsgTimeout());
-  } catch (MQBrokerException e) {
+  } catch (MQBrokerException& e) {
     std::string info = std::string("unknown exception, ") + e.what();
     THROW_MQEXCEPTION(MQClientException, info, e.GetError());
   }
