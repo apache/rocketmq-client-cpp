@@ -25,8 +25,7 @@
 
 namespace rocketmq {
 
-MQMessage MessageUtil::createReplyMessage(const Message& requestMessage,
-                                          const std::string& body) throw(MQClientException) {
+MQMessage MessageUtil::createReplyMessage(const Message& requestMessage, const std::string& body) {
   const auto& cluster = requestMessage.getProperty(MQMessageConst::PROPERTY_CLUSTER);
   if (!cluster.empty()) {
     auto replyMessage = std::make_shared<MessageImpl>(UtilAll::getReplyTopic(cluster), body);

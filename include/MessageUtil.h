@@ -24,7 +24,7 @@ namespace rocketmq {
 
 class ROCKETMQCLIENT_API MessageUtil {
  public:
-  static MQMessage createReplyMessage(const Message& requestMessage, const std::string& body) throw(MQClientException);
+  static MQMessage createReplyMessage(const Message& requestMessage, const std::string& body);
 
   static const std::string& getReplyToClient(const Message& msg);
 };

@@ -215,7 +215,7 @@ void TcpRemotingClient::scanResponseTable() {
 
 std::unique_ptr<RemotingCommand> TcpRemotingClient::invokeSync(const std::string& addr,
                                                                RemotingCommand& request,
-                                                               int timeoutMillis) throw(RemotingException) {
+                                                               int timeoutMillis) {
   auto beginStartTime = UtilAll::currentTimeMillis();
   auto channel = GetTransport(addr);
   if (channel != nullptr) {
@@ -247,10 +247,9 @@ std::unique_ptr<RemotingCommand> TcpRemotingClient::invokeSync(const std::string
   }
 }
 
-std::unique_ptr<RemotingCommand> TcpRemotingClient::invokeSyncImpl(
-    TcpTransportPtr channel,
-    RemotingCommand& request,
-    int64_t timeoutMillis) throw(RemotingTimeoutException, RemotingSendRequestException) {
+std::unique_ptr<RemotingCommand> TcpRemotingClient::invokeSyncImpl(TcpTransportPtr channel,
+                                                                   RemotingCommand& request,
+                                                                   int64_t timeoutMillis) {
   int code = request.code();
   int opaque = request.opaque();
 
@@ -281,7 +280,7 @@ std::unique_ptr<RemotingCommand> TcpRemotingClient::invokeSyncImpl(
 void TcpRemotingClient::invokeAsync(const std::string& addr,
                                     RemotingCommand& request,
                                     InvokeCallback* invokeCallback,
-                                    int64_t timeoutMillis) throw(RemotingException) {
+                                    int64_t timeoutMillis) {
   auto beginStartTime = UtilAll::currentTimeMillis();
   auto channel = GetTransport(addr);
   if (channel != nullptr) {
@@ -305,7 +304,7 @@ void TcpRemotingClient::invokeAsync(const std::string& addr,
 void TcpRemotingClient::invokeAsyncImpl(TcpTransportPtr channel,
                                         RemotingCommand& request,
                                         int64_t timeoutMillis,
-                                        InvokeCallback* invokeCallback) throw(RemotingSendRequestException) {
+                                        InvokeCallback* invokeCallback) {
   int code = request.code();
   int opaque = request.opaque();
 
@@ -335,7 +334,7 @@ void TcpRemotingClient::invokeAsyncImpl(TcpTransportPtr channel,
   }
 }
 
-void TcpRemotingClient::invokeOneway(const std::string& addr, RemotingCommand& request) throw(RemotingException) {
+void TcpRemotingClient::invokeOneway(const std::string& addr, RemotingCommand& request) {
   auto channel = GetTransport(addr);
   if (channel != nullptr) {
     try {
@@ -351,8 +350,7 @@ void TcpRemotingClient::invokeOneway(const std::string& addr, RemotingCommand& r
   }
 }
 
-void TcpRemotingClient::invokeOnewayImpl(TcpTransportPtr channel,
-                                         RemotingCommand& request) throw(RemotingSendRequestException) {
+void TcpRemotingClient::invokeOnewayImpl(TcpTransportPtr channel, RemotingCommand& request) {
   request.markOnewayRPC();
   try {
     if (!SendCommand(channel, request)) {

@@ -179,9 +179,9 @@ class MQClientAPIImpl {
                         MQClientInstancePtr instance,
                         int64_t timeoutMilliseconds,
                         int retryTimesWhenSendFailed,
-                        DefaultMQProducerImplPtr producer) throw(RemotingException);
+                        DefaultMQProducerImplPtr producer);
 
-  void sendMessageAsyncImpl(SendCallbackWrap* cbw, int64_t timeoutMillis) throw(RemotingException);
+  void sendMessageAsyncImpl(SendCallbackWrap* cbw, int64_t timeoutMillis);
 
   PullResult* pullMessageSync(const std::string& addr, RemotingCommand& request, int timeoutMillis);
 

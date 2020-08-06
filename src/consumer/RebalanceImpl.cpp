@@ -224,7 +224,7 @@ void RebalanceImpl::lockAll() {
   }
 }
 
-void RebalanceImpl::doRebalance(const bool isOrder) throw(MQClientException) {
+void RebalanceImpl::doRebalance(const bool isOrder) {
   LOG_DEBUG("start doRebalance");
   for (const auto& it : m_subscriptionInner) {
     const std::string& topic = it.first;

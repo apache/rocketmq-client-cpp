@@ -28,7 +28,7 @@ namespace rocketmq {
 template <typename A>
 class Buffer {
  protected:
-  Buffer(int32_t mark, int32_t pos, int32_t lim, int32_t cap) throw(std::invalid_argument) {
+  Buffer(int32_t mark, int32_t pos, int32_t lim, int32_t cap) {
     if (cap < 0) {
       throw std::invalid_argument("Negative capacity: " + UtilAll::to_string(cap));
     }
@@ -45,7 +45,7 @@ class Buffer {
   }
 
  public:
-  Buffer& position(int new_position) throw(std::invalid_argument) {
+  Buffer& position(int new_position) {
     if ((new_position > limit_) || (new_position < 0)) {
       throw std::invalid_argument("");
     }
@@ -56,7 +56,7 @@ class Buffer {
     return *this;
   }
 
-  Buffer& limit(int new_limit) throw(std::invalid_argument) {
+  Buffer& limit(int new_limit) {
     if ((new_limit > capacity_) || (new_limit < 0)) {
       throw std::invalid_argument("");
     }

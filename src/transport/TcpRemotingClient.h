@@ -48,14 +48,14 @@ class TcpRemotingClient {
 
   std::unique_ptr<RemotingCommand> invokeSync(const std::string& addr,
                                               RemotingCommand& request,
-                                              int timeoutMillis = 3000) throw(RemotingException);
+                                              int timeoutMillis = 3000);
 
   void invokeAsync(const std::string& addr,
                    RemotingCommand& request,
                    InvokeCallback* invokeCallback,
-                   int64_t timeoutMillis) throw(RemotingException);
+                   int64_t timeoutMillis);
 
-  void invokeOneway(const std::string& addr, RemotingCommand& request) throw(RemotingException);
+  void invokeOneway(const std::string& addr, RemotingCommand& request);
 
   void registerProcessor(MQRequestCode requestCode, RequestProcessor* requestProcessor);
 
@@ -84,13 +84,12 @@ class TcpRemotingClient {
 
   std::unique_ptr<RemotingCommand> invokeSyncImpl(TcpTransportPtr channel,
                                                   RemotingCommand& request,
-                                                  int64_t timeoutMillis) throw(RemotingTimeoutException,
-                                                                               RemotingSendRequestException);
+                                                  int64_t timeoutMillis);
   void invokeAsyncImpl(TcpTransportPtr channel,
                        RemotingCommand& request,
                        int64_t timeoutMillis,
-                       InvokeCallback* invokeCallback) throw(RemotingSendRequestException);
-  void invokeOnewayImpl(TcpTransportPtr channel, RemotingCommand& request) throw(RemotingSendRequestException);
+                       InvokeCallback* invokeCallback);
+  void invokeOnewayImpl(TcpTransportPtr channel, RemotingCommand& request);
 
   // rpc hook
   void doBeforeRpcHooks(const std::string& addr, RemotingCommand& request, bool toSent);

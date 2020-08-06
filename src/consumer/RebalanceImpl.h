@@ -49,7 +49,7 @@ class RebalanceImpl {
   bool lock(MQMessageQueue mq);
   void lockAll();
 
-  void doRebalance(const bool isOrder = false) throw(MQClientException);
+  void doRebalance(const bool isOrder = false);
 
   void destroy();
 
