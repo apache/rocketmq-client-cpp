@@ -20,6 +20,7 @@
 #include <atomic>
 #include <cstdint>
 #include <string>
+#include <cstddef>
 
 namespace rocketmq {
 
@@ -48,7 +49,7 @@ class StringIdMaker {
   void setStartTime(uint64_t millis);
 
   static uint32_t getIP();
-  static void hexdump(unsigned char* buffer, char* out_buff, unsigned long index);
+  static void hexdump(unsigned char* buffer, char* out_buff, std::size_t index);
 
  private:
   uint64_t mStartTime;
