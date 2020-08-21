@@ -131,7 +131,7 @@ void ConsumeMessageOrderlyService::ConsumeRequest(ProcessQueuePtr processQueue, 
         break;
       }
 
-      if (CLUSTERING == m_consumer->messageModel() && !processQueue->isLockExpired()) {
+      if (CLUSTERING == m_consumer->messageModel() && processQueue->isLockExpired()) {
         LOG_WARN_NEW("the message queue lock expired, so consume later, {}", messageQueue.toString());
         tryLockLaterAndReconsume(messageQueue, processQueue, 10);
         break;
