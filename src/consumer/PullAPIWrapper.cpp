@@ -94,16 +94,17 @@ PullResult PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
                     pullResultExt.max_offset(), std::move(msgListFilterAgain));
 }
 
-PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,             // 1
-                                           const std::string& subExpression,     // 2
-                                           int64_t subVersion,                   // 3
-                                           int64_t offset,                       // 4
-                                           int maxNums,                          // 5
-                                           int sysFlag,                          // 6
-                                           int64_t commitOffset,                 // 7
-                                           int brokerSuspendMaxTimeMillis,       // 8
-                                           int timeoutMillis,                    // 9
-                                           CommunicationMode communicationMode,  // 10
+PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,
+                                           const std::string& subExpression,
+                                           const std::string& expressionType,
+                                           int64_t subVersion,
+                                           int64_t offset,
+                                           int maxNums,
+                                           int sysFlag,
+                                           int64_t commitOffset,
+                                           int brokerSuspendMaxTimeMillis,
+                                           int timeoutMillis,
+                                           CommunicationMode communicationMode,
                                            PullCallback* pullCallback) {
   std::unique_ptr<FindBrokerResult> findBrokerResult(
       client_instance_->findBrokerAddressInSubscribe(mq.broker_name(), recalculatePullFromWhichNode(mq), false));

@@ -34,16 +34,17 @@ class PullAPIWrapper {
 
   PullResult processPullResult(const MQMessageQueue& mq, PullResult& pullResult, SubscriptionData* subscriptionData);
 
-  PullResult* pullKernelImpl(const MQMessageQueue& mq,             // 1
-                             const std::string& subExpression,     // 2
-                             int64_t subVersion,                   // 3
-                             int64_t offset,                       // 4
-                             int maxNums,                          // 5
-                             int sysFlag,                          // 6
-                             int64_t commitOffset,                 // 7
-                             int brokerSuspendMaxTimeMillis,       // 8
-                             int timeoutMillis,                    // 9
-                             CommunicationMode communicationMode,  // 10
+  PullResult* pullKernelImpl(const MQMessageQueue& mq,
+                             const std::string& subExpression,
+                             const std::string& expressionType,
+                             int64_t subVersion,
+                             int64_t offset,
+                             int maxNums,
+                             int sysFlag,
+                             int64_t commitOffset,
+                             int brokerSuspendMaxTimeMillis,
+                             int timeoutMillis,
+                             CommunicationMode communicationMode,
                              PullCallback* pullCallback);
 
  private:

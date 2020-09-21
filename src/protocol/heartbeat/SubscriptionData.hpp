@@ -24,15 +24,19 @@
 
 #include <json/json.h>
 
+#include "ExpressionType.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
 
 class SubscriptionData {
  public:
-  SubscriptionData() : sub_version_(UtilAll::currentTimeMillis()) {}
+  SubscriptionData() : sub_version_(UtilAll::currentTimeMillis()), expression_type_(ExpressionType::TAG) {}
   SubscriptionData(const std::string& topic, const std::string& subString)
-      : topic_(topic), sub_string_(subString), sub_version_(UtilAll::currentTimeMillis()) {}
+      : topic_(topic),
+        sub_string_(subString),
+        sub_version_(UtilAll::currentTimeMillis()),
+        expression_type_(ExpressionType::TAG) {}
 
   SubscriptionData(const SubscriptionData& other) {
     sub_string_ = other.sub_string_;
@@ -40,14 +44,15 @@ class SubscriptionData {
     tag_set_ = other.tag_set_;
     topic_ = other.topic_;
     code_set_ = other.code_set_;
+    expression_type_ = other.expression_type_;
   }
 
   virtual ~SubscriptionData() = default;
 
   bool operator==(const SubscriptionData& other) const {
     // FIXME: tags
-    return topic_ == other.topic_ && sub_string_ == other.sub_string_ && sub_version_ == other.sub_version_ &&
-           tag_set_.size() == other.tag_set_.size();
+    return expression_type_ == expression_type_ && topic_ == other.topic_ && sub_string_ == other.sub_string_ &&
+           sub_version_ == other.sub_version_ && tag_set_.size() == other.tag_set_.size();
   }
   bool operator!=(const SubscriptionData& other) const { return !operator==(other); }
 
@@ -93,12 +98,15 @@ class SubscriptionData {
 
   inline std::vector<int32_t>& code_set() { return code_set_; }
 
+  inline const std::string& expression_type() { return expression_type_; }
+
  private:
   std::string topic_;
   std::string sub_string_;
   int64_t sub_version_;
   std::vector<std::string> tag_set_;
   std::vector<int32_t> code_set_;
+  std::string expression_type_;
 };
 
 }  // namespace rocketmq

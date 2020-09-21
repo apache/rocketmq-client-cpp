@@ -481,6 +481,7 @@ void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pull_request) {
     auto* callback = new AsyncPullCallback(shared_from_this(), pull_request, subscription_data);
     pull_api_wrapper_->pullKernelImpl(message_queue,                                        // mq
                                       subExpression,                                        // subExpression
+                                      subscription_data->expression_type(),                 // expressionType
                                       subscription_data->sub_version(),                     // subVersion
                                       pull_request->next_offset(),                          // offset
                                       getDefaultMQPushConsumerConfig()->pull_batch_size(),  // maxNums
