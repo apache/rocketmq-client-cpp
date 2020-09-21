@@ -55,7 +55,7 @@ void MQClientImpl::createTopic(const std::string& key, const std::string& newTop
   }
 }
 
-int64_t MQClientImpl::searchOffset(const MQMessageQueue& mq, uint64_t timestamp) {
+int64_t MQClientImpl::searchOffset(const MQMessageQueue& mq, int64_t timestamp) {
   return client_instance_->getMQAdminImpl()->searchOffset(mq, timestamp);
 }
 

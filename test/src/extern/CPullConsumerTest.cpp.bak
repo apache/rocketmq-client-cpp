@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include "DefaultMQPullConsumer.h"
+#include "DefaultLitePullConsumer.h"
 #include "MQClientInstance.h"
 #include "MessageExtImpl.h"
 #include "MQMessageQueue.h"

@@ -47,7 +47,7 @@ class ROCKETMQCLIENT_API MQAdmin {
    * @param timestamp from when in milliseconds.
    * @return offset
    */
-  virtual int64_t searchOffset(const MQMessageQueue& mq, uint64_t timestamp) = 0;
+  virtual int64_t searchOffset(const MQMessageQueue& mq, int64_t timestamp) = 0;
 
   /**
    * Gets the max offset

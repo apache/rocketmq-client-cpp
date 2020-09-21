@@ -73,6 +73,7 @@ class thread_pool_executor : public abstract_executor_service {
   bool is_shutdown() override { return state_ != RUNNING; }
 
   std::size_t thread_nums() { return thread_nums_; }
+  void set_thread_nums(std::size_t thread_nums) { thread_nums_ = thread_nums; }
 
  protected:
   static const unsigned int ACCEPT_NEW_TASKS = 1U << 0U;

@@ -57,7 +57,7 @@ class concurrent_queue {
   typedef T value_type;
   typedef concurrent_queue_node<value_type> node_type;
 
-  ~concurrent_queue() {
+  virtual ~concurrent_queue() {
     // clear this queue
     while (_clear_when_destruct) {
       if (nullptr == pop_front()) {

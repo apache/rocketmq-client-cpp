@@ -14,29 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef ROCKETMQ_DEFAULTMQPULLCONSUMERCONFIG_H_
-#define ROCKETMQ_DEFAULTMQPULLCONSUMERCONFIG_H_
+#ifndef ROCKETMQ_TOPICMESSAGEQUEUECHANGLISTENER_H_
+#define ROCKETMQ_TOPICMESSAGEQUEUECHANGLISTENER_H_
 
-#include "AllocateMQStrategy.h"
-#include "ConsumeType.h"
-#include "MQClientConfig.h"
+#include <vector>  // std::vector
+
+#include "MQMessageQueue.h"
 
 namespace rocketmq {
 
-class DefaultMQPullConsumerConfig;
-typedef std::shared_ptr<DefaultMQPullConsumerConfig> DefaultMQPullConsumerConfigPtr;
-
-class ROCKETMQCLIENT_API DefaultMQPullConsumerConfig : virtual public MQClientConfig {
+class ROCKETMQCLIENT_API TopicMessageQueueChangeListener {
  public:
-  virtual ~DefaultMQPullConsumerConfig() = default;
+  virtual ~TopicMessageQueueChangeListener() = default;
 
-  virtual MessageModel getMessageModel() const = 0;
-  virtual void setMessageModel(MessageModel messageModel) = 0;
-
-  virtual AllocateMQStrategy* getAllocateMQStrategy() const = 0;
-  virtual void setAllocateMQStrategy(AllocateMQStrategy* strategy) = 0;
+  virtual void onChanged(const std::string& topic, const std::vector<MQMessageQueue>& messageQueues) = 0;
 };
 
 }  // namespace rocketmq
 
-#endif  // ROCKETMQ_DEFAULTMQPULLCONSUMERCONFIG_H_
+#endif  // ROCKETMQ_TOPICMESSAGEQUEUECHANGLISTENER_H_

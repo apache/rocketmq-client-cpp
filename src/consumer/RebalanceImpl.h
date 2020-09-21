@@ -102,7 +102,7 @@ class RebalanceImpl {
   TOPIC2MQS topic_subscribe_info_table_;
   std::mutex topic_subscribe_info_table_mutex_;
 
-  TOPIC2SD subscription_inner_;  // don't modify subscription_inner_ after consumer start.
+  TOPIC2SD subscription_inner_;  // don't modify subscription_inner_ after the consumer started.
 
   std::string consumer_group_;
   MessageModel message_model_;

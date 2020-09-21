@@ -14,19 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __MQ_LISTENER_H__
-#define __MQ_LISTENER_H__
+#ifndef ROCKETMQ_MESSAGEQUEUELISTENER_H_
+#define ROCKETMQ_MESSAGEQUEUELISTENER_H_
 
-#include <string>
-#include <vector>
+#include <string>  // std::string
+#include <vector>  // std::vector
 
 #include "MQMessageQueue.h"
 
 namespace rocketmq {
 
-class ROCKETMQCLIENT_API MQueueListener {
+class MessageQueueListener {
  public:
-  virtual ~MQueueListener() = default;
+  virtual ~MessageQueueListener() = default;
 
   virtual void messageQueueChanged(const std::string& topic,
                                    std::vector<MQMessageQueue>& mqAll,
@@ -35,4 +35,4 @@ class ROCKETMQCLIENT_API MQueueListener {
 
 }  // namespace rocketmq
 
-#endif  // __MQ_LISTENER_H__
+#endif  // ROCKETMQ_MESSAGESELECTOR_H_

@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __REBALANCE_PULL_IMPL_H__
-#define __REBALANCE_PULL_IMPL_H__
+#ifndef ROCKETMQ_CONSUMER_REBALANCELITEPULLIMPL_H_
+#define ROCKETMQ_CONSUMER_REBALANCELITEPULLIMPL_H_
 
-#include "DefaultMQPullConsumer.h"
+#include "DefaultLitePullConsumerImpl.h"
 #include "RebalanceImpl.h"
 
 namespace rocketmq {
@@ -27,9 +27,9 @@ typedef std::map<std::string, std::vector<MQMessageQueue>> TOPIC2MQS;
 typedef std::map<std::string, SubscriptionData*> TOPIC2SD;
 typedef std::map<std::string, std::vector<MQMessageQueue>> BROKER2MQS;
 
-class RebalancePullImpl : public RebalanceImpl {
+class RebalanceLitePullImpl : public RebalanceImpl {
  public:
-  RebalancePullImpl(DefaultMQPullConsumer* consumer);
+  RebalanceLitePullImpl(DefaultLitePullConsumerImpl* consumerImpl);
 
   ConsumeType consumeType() override final { return CONSUME_ACTIVELY; }
 
@@ -46,9 +46,9 @@ class RebalancePullImpl : public RebalanceImpl {
                            std::vector<MQMessageQueue>& mqDivided) override;
 
  private:
-  DefaultMQPullConsumer* m_defaultMQPullConsumer;
+  DefaultLitePullConsumerImpl* lite_pull_consumer_impl_;
 };
 
 }  // namespace rocketmq
 
-#endif  // __REBALANCE_PULL_IMPL_H__
+#endif  // ROCKETMQ_CONSUMER_REBALANCELITEPULLIMPL_H_

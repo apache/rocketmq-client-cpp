@@ -31,7 +31,7 @@ class MQClientImpl : public MQAdmin {
 
  public:  // MQAdmin
   void createTopic(const std::string& key, const std::string& newTopic, int queueNum) override;
-  int64_t searchOffset(const MQMessageQueue& mq, uint64_t timestamp) override;
+  int64_t searchOffset(const MQMessageQueue& mq, int64_t timestamp) override;
   int64_t maxOffset(const MQMessageQueue& mq) override;
   int64_t minOffset(const MQMessageQueue& mq) override;
   int64_t earliestMsgStoreTime(const MQMessageQueue& mq) override;

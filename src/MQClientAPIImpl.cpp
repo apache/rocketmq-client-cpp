@@ -331,7 +331,7 @@ MQMessageExt MQClientAPIImpl::viewMessage(const std::string& addr, int64_t phyof
 int64_t MQClientAPIImpl::searchOffset(const std::string& addr,
                                       const std::string& topic,
                                       int queueId,
-                                      uint64_t timestamp,
+                                      int64_t timestamp,
                                       int timeoutMillis) {
   auto* requestHeader = new SearchOffsetRequestHeader();
   requestHeader->topic = topic;

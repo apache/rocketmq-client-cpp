@@ -20,10 +20,11 @@ static const int FLAG_COMMIT_OFFSET = 0x1 << 0;
 static const int FLAG_SUSPEND = 0x1 << 1;
 static const int FLAG_SUBSCRIPTION = 0x1 << 2;
 static const int FLAG_CLASS_FILTER = 0x1 << 3;
+static const int FLAG_LITE_PULL_MESSAGE = 0x1 << 4;
 
 namespace rocketmq {
 
-int PullSysFlag::buildSysFlag(bool commitOffset, bool suspend, bool subscription, bool classFilter) {
+int PullSysFlag::buildSysFlag(bool commitOffset, bool suspend, bool subscription, bool classFilter, bool litePull) {
   int flag = 0;
 
   if (commitOffset) {
@@ -40,6 +41,10 @@ int PullSysFlag::buildSysFlag(bool commitOffset, bool suspend, bool subscription
 
   if (classFilter) {
     flag |= FLAG_CLASS_FILTER;
+  }
+
+  if (litePull) {
+    flag |= FLAG_LITE_PULL_MESSAGE;
   }
 
   return flag;
@@ -63,6 +68,10 @@ bool PullSysFlag::hasSubscriptionFlag(int sysFlag) {
 
 bool PullSysFlag::hasClassFilterFlag(int sysFlag) {
   return (sysFlag & FLAG_CLASS_FILTER) == FLAG_CLASS_FILTER;
+}
+
+bool PullSysFlag::hasLitePullFlag(int sysFlag) {
+  return (sysFlag & FLAG_LITE_PULL_MESSAGE) == FLAG_LITE_PULL_MESSAGE;
 }
 
 }  // namespace rocketmq

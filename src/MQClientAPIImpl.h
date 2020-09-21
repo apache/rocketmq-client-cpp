@@ -91,7 +91,7 @@ class MQClientAPIImpl {
   int64_t searchOffset(const std::string& addr,
                        const std::string& topic,
                        int queueId,
-                       uint64_t timestamp,
+                       int64_t timestamp,
                        int timeoutMillis);
 
   int64_t getMaxOffset(const std::string& addr, const std::string& topic, int queueId, int timeoutMillis);
