@@ -29,6 +29,9 @@ class ROCKETMQCLIENT_API MQMessageExt : public MQMessage,          // base
                                         virtual public MessageExt  // interface
 {
  public:
+  static std::vector<MQMessageExt> from_list(std::vector<MessageExtPtr>& msg_list);
+
+ public:
   MQMessageExt();
   MQMessageExt(int queueId,
                int64_t bornTimestamp,
