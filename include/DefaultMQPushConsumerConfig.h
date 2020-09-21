@@ -50,26 +50,26 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumerConfig : virtual public MQClientCo
   virtual void set_consume_thread_nums(int threadNum) = 0;
 
   /**
+   * max cache msg size per Queue in memory if consumer could not consume msgs immediately,
+   * default maxCacheMsgSize per Queue is 1000, set range is:1~65535
+   */
+  virtual int pull_threshold_for_queue() const = 0;
+  virtual void set_pull_threshold_for_queue(int maxCacheSize) = 0;
+
+  /**
    * the pull number of message size by each pullMsg for orderly consume, default value is 1
    */
   virtual int consume_message_batch_max_size() const = 0;
   virtual void set_consume_message_batch_max_size(int consumeMessageBatchMaxSize) = 0;
 
-  /**
-   * max cache msg size per Queue in memory if consumer could not consume msgs immediately,
-   * default maxCacheMsgSize per Queue is 1000, set range is:1~65535
-   */
-  virtual int max_cache_msg_size_per_queue() const = 0;
-  virtual void set_max_cache_msg_size_per_queue(int maxCacheSize) = 0;
-
-  virtual int async_pull_timeout() const = 0;
-  virtual void set_async_pull_timeout(int asyncPullTimeout) = 0;
+  virtual int pull_batch_size() const = 0;
+  virtual void set_pull_batch_size(int pull_batch_size) = 0;
 
   virtual int max_reconsume_times() const = 0;
   virtual void set_max_reconsume_times(int maxReconsumeTimes) = 0;
 
-  virtual long pull_time_delay_mills_when_exception() const = 0;
-  virtual void set_pull_time_delay_mills_when_exception(long pullTimeDelayMillsWhenException) = 0;
+  virtual long pull_time_delay_millis_when_exception() const = 0;
+  virtual void set_pull_time_delay_millis_when_exception(long pull_time_delay_millis_when_exception) = 0;
 
   virtual AllocateMQStrategy* allocate_mq_strategy() const = 0;
   virtual void set_allocate_mq_strategy(AllocateMQStrategy* strategy) = 0;

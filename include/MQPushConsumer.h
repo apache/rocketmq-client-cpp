@@ -17,7 +17,7 @@
 #ifndef ROCKETMQ_MQPUSHCONSUMER_H_
 #define ROCKETMQ_MQPUSHCONSUMER_H_
 
-#include "MQConsumer.h"
+#include "MQMessageExt.h"
 #include "MQMessageListener.h"
 
 namespace rocketmq {
@@ -25,21 +25,24 @@ namespace rocketmq {
 /**
  * MQPushConsumer - interface for push consumer
  */
-class ROCKETMQCLIENT_API MQPushConsumer : public MQConsumer  // base interface
-{
+class ROCKETMQCLIENT_API MQPushConsumer {
  public:  // MQPushConsumer in Java
-  // [[deprecated]]
-  virtual void registerMessageListener(MQMessageListener* messageListener) = 0;
-  virtual void registerMessageListener(MessageListenerConcurrently* messageListener) = 0;
-  virtual void registerMessageListener(MessageListenerOrderly* messageListener) = 0;
+  virtual void start() = 0;
+  virtual void shutdown() = 0;
+
+  virtual void suspend() = 0;
+  virtual void resume() = 0;
 
   virtual MQMessageListener* getMessageListener() const = 0;
+
+  virtual void registerMessageListener(MessageListenerConcurrently* messageListener) = 0;
+  virtual void registerMessageListener(MessageListenerOrderly* messageListener) = 0;
 
   virtual void subscribe(const std::string& topic, const std::string& subExpression) = 0;
   // virtual void subscribe(const std::string& topic, MessageSelector* selector) = 0;
 
-  virtual void suspend() = 0;
-  virtual void resume() = 0;
+  virtual bool sendMessageBack(MessageExtPtr msg, int delay_level) = 0;
+  virtual bool sendMessageBack(MessageExtPtr msg, int delay_level, const std::string& broker_name) = 0;
 };
 
 }  // namespace rocketmq

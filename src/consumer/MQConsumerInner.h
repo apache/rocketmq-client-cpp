@@ -36,11 +36,17 @@ class MQConsumerInner {
   virtual MessageModel messageModel() const = 0;
   virtual ConsumeType consumeType() const = 0;
   virtual ConsumeFromWhere consumeFromWhere() const = 0;
+
   virtual std::vector<SubscriptionData> subscriptions() const = 0;
 
-  virtual void doRebalance() = 0;
-  virtual void persistConsumerOffset() = 0;
+  // service discovery
   virtual void updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info) = 0;
+
+  // load balancing
+  virtual void doRebalance() = 0;
+
+  // offset persistence
+  virtual void persistConsumerOffset() = 0;
 
   virtual ConsumerRunningInfo* consumerRunningInfo() = 0;
 };

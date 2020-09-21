@@ -215,7 +215,7 @@ int SetPushConsumerMaxCacheMessageSize(CPushConsumer* consumer, int maxCacheSize
   if (consumer == NULL || maxCacheSize <= 0) {
     return NULL_POINTER;
   }
-  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->set_max_cache_msg_size_per_queue(maxCacheSize);
+  reinterpret_cast<DefaultMQPushConsumer*>(consumer)->set_pull_threshold_for_queue(maxCacheSize);
   return OK;
 }
 

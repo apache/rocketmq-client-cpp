@@ -29,27 +29,25 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumer : public DefaultMQPushConsumerCon
  public:
   DefaultMQPushConsumer(const std::string& groupname);
   DefaultMQPushConsumer(const std::string& groupname, RPCHookPtr rpcHook);
+
   virtual ~DefaultMQPushConsumer();
 
- public:  // MQConsumer
+ public:  // MQPushConsumer
   void start() override;
   void shutdown() override;
 
-  bool sendMessageBack(MessageExtPtr msg, int delayLevel) override;
-  bool sendMessageBack(MessageExtPtr msg, int delayLevel, const std::string& brokerName) override;
-  void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) override;
-
- public:  // MQPushConsumer
-  void registerMessageListener(MQMessageListener* messageListener) override;
-  void registerMessageListener(MessageListenerConcurrently* messageListener) override;
-  void registerMessageListener(MessageListenerOrderly* messageListener) override;
+  void suspend() override;
+  void resume() override;
 
   MQMessageListener* getMessageListener() const override;
 
+  void registerMessageListener(MessageListenerConcurrently* messageListener) override;
+  void registerMessageListener(MessageListenerOrderly* messageListener) override;
+
   void subscribe(const std::string& topic, const std::string& subExpression) override;
 
-  void suspend() override;
-  void resume() override;
+  bool sendMessageBack(MessageExtPtr msg, int delayLevel) override;
+  bool sendMessageBack(MessageExtPtr msg, int delayLevel, const std::string& brokerName) override;
 
  public:
   void setRPCHook(RPCHookPtr rpcHook);

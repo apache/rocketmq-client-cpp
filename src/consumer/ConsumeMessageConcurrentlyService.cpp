@@ -75,8 +75,7 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(std::vector<MessageExtPtr
     return;
   }
 
-  consumer_->resetRetryTopic(
-      msgs, consumer_->getDefaultMQPushConsumerConfig()->group_name());  // set where to sendMessageBack
+  consumer_->resetRetryAndNamespace(msgs);  // set where to sendMessageBack
 
   ConsumeStatus status = RECONSUME_LATER;
   try {

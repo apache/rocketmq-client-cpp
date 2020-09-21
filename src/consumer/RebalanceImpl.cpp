@@ -467,7 +467,6 @@ void RebalanceImpl::destroy() {
   for (const auto& it : process_queue_table_) {
     it.second->set_dropped(true);
   }
-
   process_queue_table_.clear();
 }
 

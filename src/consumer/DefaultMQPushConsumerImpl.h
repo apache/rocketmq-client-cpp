@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef ROCKETMQ_CONXUMER_DEFAULTMQPUSHCONSUMERIMPL_H_
-#define ROCKETMQ_CONXUMER_DEFAULTMQPUSHCONSUMERIMPL_H_
+#ifndef ROCKETMQ_CONSUMER_DEFAULTMQPUSHCONSUMERIMPL_H_
+#define ROCKETMQ_CONSUMER_DEFAULTMQPUSHCONSUMERIMPL_H_
 
 #include <memory>
 #include <string>
@@ -43,6 +43,9 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
                                   public MQPushConsumer,
                                   public MQClientImpl,
                                   public MQConsumerInner {
+ private:
+  class AsyncPullCallback;
+
  public:
   /**
    * create() - Factory method for DefaultMQPushConsumerImpl, used to ensure that all objects of
@@ -63,72 +66,66 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
  public:
   virtual ~DefaultMQPushConsumerImpl();
 
- public:  // MQClient
+ public:  // MQPushConsumer
   void start() override;
   void shutdown() override;
 
- public:  // MQConsumer
-  bool sendMessageBack(MessageExtPtr msg, int delayLevel) override;
-  bool sendMessageBack(MessageExtPtr msg, int delayLevel, const std::string& brokerName) override;
-  void fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) override;
-
- public:  // MQPushConsumer
-  void registerMessageListener(MQMessageListener* messageListener) override;
-  void registerMessageListener(MessageListenerConcurrently* messageListener) override;
-  void registerMessageListener(MessageListenerOrderly* messageListener) override;
+  void suspend() override;
+  void resume() override;
 
   MQMessageListener* getMessageListener() const override;
 
+  void registerMessageListener(MessageListenerConcurrently* messageListener) override;
+  void registerMessageListener(MessageListenerOrderly* messageListener) override;
+
   void subscribe(const std::string& topic, const std::string& subExpression) override;
 
-  void suspend() override;
-  void resume() override;
+  bool sendMessageBack(MessageExtPtr msg, int delayLevel) override;
+  bool sendMessageBack(MessageExtPtr msg, int delayLevel, const std::string& brokerName) override;
 
  public:  // MQConsumerInner
   const std::string& groupName() const override;
   MessageModel messageModel() const override;
   ConsumeType consumeType() const override;
   ConsumeFromWhere consumeFromWhere() const override;
+
   std::vector<SubscriptionData> subscriptions() const override;
 
-  void doRebalance() override;
-  void persistConsumerOffset() override;
+  // service discovery
   void updateTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& info) override;
+
+  // load balancing
+  void doRebalance() override;
+
+  // offset persistence
+  void persistConsumerOffset() override;
 
   ConsumerRunningInfo* consumerRunningInfo() override;
 
  public:
-  void updateConsumeOffset(const MQMessageQueue& mq, int64_t offset);
-  void correctTagsOffset(PullRequestPtr pullRequest);
-
   void executePullRequestLater(PullRequestPtr pullRequest, long timeDelay);
   void executePullRequestImmediately(PullRequestPtr pullRequest);
-  void executeTaskLater(const handler_type& task, long timeDelay);
 
   void pullMessage(PullRequestPtr pullrequest);
 
-  void resetRetryTopic(const std::vector<MessageExtPtr>& msgs, const std::string& consumerGroup);
+  void resetRetryAndNamespace(const std::vector<MessageExtPtr>& msgs);
+
+  void updateConsumeOffset(const MQMessageQueue& mq, int64_t offset);
 
  private:
   void checkConfig();
   void copySubscription();
   void updateTopicSubscribeInfoWhenSubscriptionChanged();
 
+  void correctTagsOffset(PullRequestPtr pullRequest);
+
+  void executeTaskLater(const handler_type& task, long timeDelay);
+
  public:
-  int getMaxReconsumeTimes();
+  inline bool pause() const { return pause_; };
+  inline void set_pause(bool pause) { pause_ = pause; }
 
-  inline bool isPause() const { return pause_; };
-  inline void setPause(bool pause) { pause_ = pause; }
-
-  inline bool isConsumeOrderly() { return consume_orderly_; }
-
-  inline RebalanceImpl* getRebalanceImpl() const { return rebalance_impl_.get(); }
-
-  inline PullAPIWrapper* getPullAPIWrapper() const { return pull_api_wrapper_.get(); }
-
-  inline OffsetStore* getOffsetStore() const { return offset_store_.get(); }
-
-  inline ConsumeMsgService* getConsumerMsgService() const { return consume_service_.get(); }
+  inline bool consume_orderly() { return consume_orderly_; }
 
   inline MessageListenerType getMessageListenerType() const {
     if (nullptr != message_listener_) {
@@ -137,7 +134,11 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
     return messageListenerDefaultly;
   }
 
-  inline DefaultMQPushConsumerConfig* getDefaultMQPushConsumerConfig() {
+  inline RebalanceImpl* getRebalanceImpl() const { return rebalance_impl_.get(); }
+
+  inline OffsetStore* getOffsetStore() const { return offset_store_.get(); }
+
+  inline DefaultMQPushConsumerConfig* getDefaultMQPushConsumerConfig() const {
     return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get());
   }
 
@@ -148,13 +149,15 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
   bool consume_orderly_;
 
   std::map<std::string, std::string> subscription_;
+
+  MQMessageListener* message_listener_;
+  std::unique_ptr<ConsumeMsgService> consume_service_;
+
   std::unique_ptr<RebalanceImpl> rebalance_impl_;
   std::unique_ptr<PullAPIWrapper> pull_api_wrapper_;
   std::unique_ptr<OffsetStore> offset_store_;
-  std::unique_ptr<ConsumeMsgService> consume_service_;
-  MQMessageListener* message_listener_;
 };
 
 }  // namespace rocketmq
 
-#endif  // ROCKETMQ_CONXUMER_DEFAULTMQPUSHCONSUMERIMPL_H_
+#endif  // ROCKETMQ_CONSUMER_DEFAULTMQPUSHCONSUMERIMPL_H_

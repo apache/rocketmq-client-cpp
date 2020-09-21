@@ -37,11 +37,11 @@ class DefaultMQPushConsumerConfigImpl : virtual public DefaultMQPushConsumerConf
         consume_from_where_(ConsumeFromWhere::CONSUME_FROM_LAST_OFFSET),
         consume_timestamp_("0"),
         consume_thread_nums_(std::min(8, (int)std::thread::hardware_concurrency())),
+        pull_threshold_for_queue_(1000),
         consume_message_batch_max_size_(1),
-        max_msg_cache_size_(1000),
-        async_pull_timeout_(30 * 1000),
-        max_reconsume_times_(-1),
-        pull_time_delay_mills_when_exception_(3000),
+        pull_batch_size_(32),
+        max_reconsume_times_(16),
+        pull_time_delay_millis_when_exception_(3000),
         allocate_mq_strategy_(new AllocateMQAveragely()) {}
   virtual ~DefaultMQPushConsumerConfigImpl() = default;
 
@@ -61,6 +61,9 @@ class DefaultMQPushConsumerConfigImpl : virtual public DefaultMQPushConsumerConf
     }
   }
 
+  int pull_threshold_for_queue() const override { return pull_threshold_for_queue_; }
+  void set_pull_threshold_for_queue(int maxCacheSize) override { pull_threshold_for_queue_ = maxCacheSize; }
+
   int consume_message_batch_max_size() const override { return consume_message_batch_max_size_; }
   void set_consume_message_batch_max_size(int consumeMessageBatchMaxSize) override {
     if (consumeMessageBatchMaxSize >= 1) {
@@ -68,22 +71,15 @@ class DefaultMQPushConsumerConfigImpl : virtual public DefaultMQPushConsumerConf
     }
   }
 
-  int max_cache_msg_size_per_queue() const override { return max_msg_cache_size_; }
-  void set_max_cache_msg_size_per_queue(int maxCacheSize) override {
-    if (maxCacheSize > 0 && maxCacheSize < 65535) {
-      max_msg_cache_size_ = maxCacheSize;
-    }
-  }
-
-  int async_pull_timeout() const override { return async_pull_timeout_; }
-  void set_async_pull_timeout(int asyncPullTimeout) override { async_pull_timeout_ = asyncPullTimeout; }
+  int pull_batch_size() const override { return pull_batch_size_; }
+  void set_pull_batch_size(int pull_batch_size) override { pull_batch_size_ = pull_batch_size; }
 
   int max_reconsume_times() const override { return max_reconsume_times_; }
   void set_max_reconsume_times(int maxReconsumeTimes) override { max_reconsume_times_ = maxReconsumeTimes; }
 
-  long pull_time_delay_mills_when_exception() const override { return pull_time_delay_mills_when_exception_; }
-  void set_pull_time_delay_mills_when_exception(long pullTimeDelayMillsWhenException) override {
-    pull_time_delay_mills_when_exception_ = pullTimeDelayMillsWhenException;
+  long pull_time_delay_millis_when_exception() const override { return pull_time_delay_millis_when_exception_; }
+  void set_pull_time_delay_millis_when_exception(long pull_time_delay_millis_when_exception) override {
+    pull_time_delay_millis_when_exception_ = pull_time_delay_millis_when_exception;
   }
 
   AllocateMQStrategy* allocate_mq_strategy() const override { return allocate_mq_strategy_.get(); }
@@ -96,13 +92,15 @@ class DefaultMQPushConsumerConfigImpl : virtual public DefaultMQPushConsumerConf
   std::string consume_timestamp_;
 
   int consume_thread_nums_;
-  int consume_message_batch_max_size_;
-  int max_msg_cache_size_;
 
-  int async_pull_timeout_;  // 30s
+  int pull_threshold_for_queue_;
+
+  int consume_message_batch_max_size_;  // 1
+  int pull_batch_size_;                 // 32
+
   int max_reconsume_times_;
 
-  long pull_time_delay_mills_when_exception_;  // 3000
+  long pull_time_delay_millis_when_exception_;  // 3000
 
   std::unique_ptr<AllocateMQStrategy> allocate_mq_strategy_;
 };

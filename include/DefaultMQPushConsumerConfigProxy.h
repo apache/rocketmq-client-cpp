@@ -62,6 +62,14 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumerConfigProxy : public MQClientConfi
     dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->set_consume_thread_nums(threadNum);
   }
 
+  int pull_threshold_for_queue() const override {
+    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->pull_threshold_for_queue();
+  }
+
+  void set_pull_threshold_for_queue(int maxCacheSize) override {
+    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->set_pull_threshold_for_queue(maxCacheSize);
+  }
+
   int consume_message_batch_max_size() const override {
     return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->consume_message_batch_max_size();
   }
@@ -71,20 +79,12 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumerConfigProxy : public MQClientConfi
         ->set_consume_message_batch_max_size(consumeMessageBatchMaxSize);
   }
 
-  int max_cache_msg_size_per_queue() const override {
-    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->max_cache_msg_size_per_queue();
+  int pull_batch_size() const override {
+    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->pull_batch_size();
   }
 
-  void set_max_cache_msg_size_per_queue(int maxCacheSize) override {
-    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->set_max_cache_msg_size_per_queue(maxCacheSize);
-  }
-
-  int async_pull_timeout() const override {
-    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->async_pull_timeout();
-  }
-
-  void set_async_pull_timeout(int asyncPullTimeout) override {
-    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->set_async_pull_timeout(asyncPullTimeout);
+  void set_pull_batch_size(int pull_batch_size) override {
+    dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->set_pull_batch_size(pull_batch_size);
   }
 
   int max_reconsume_times() const override {
@@ -95,13 +95,13 @@ class ROCKETMQCLIENT_API DefaultMQPushConsumerConfigProxy : public MQClientConfi
     dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->set_max_reconsume_times(maxReconsumeTimes);
   }
 
-  long pull_time_delay_mills_when_exception() const override {
-    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->pull_time_delay_mills_when_exception();
+  long pull_time_delay_millis_when_exception() const override {
+    return dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())->pull_time_delay_millis_when_exception();
   }
 
-  void set_pull_time_delay_mills_when_exception(long pullTimeDelayMillsWhenException) override {
+  void set_pull_time_delay_millis_when_exception(long pull_time_delay_millis_when_exception) override {
     dynamic_cast<DefaultMQPushConsumerConfig*>(client_config_.get())
-        ->set_pull_time_delay_mills_when_exception(pullTimeDelayMillsWhenException);
+        ->set_pull_time_delay_millis_when_exception(pull_time_delay_millis_when_exception);
   }
 
   AllocateMQStrategy* allocate_mq_strategy() const override {

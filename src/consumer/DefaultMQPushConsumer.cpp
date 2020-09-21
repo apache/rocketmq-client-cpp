@@ -49,20 +49,16 @@ void DefaultMQPushConsumer::shutdown() {
   push_consumer_impl_->shutdown();
 }
 
-bool DefaultMQPushConsumer::sendMessageBack(MessageExtPtr msg, int delayLevel) {
-  return push_consumer_impl_->sendMessageBack(msg, delayLevel);
+void DefaultMQPushConsumer::suspend() {
+  push_consumer_impl_->suspend();
 }
 
-bool DefaultMQPushConsumer::sendMessageBack(MessageExtPtr msg, int delayLevel, const std::string& brokerName) {
-  return push_consumer_impl_->sendMessageBack(msg, delayLevel, brokerName);
+void DefaultMQPushConsumer::resume() {
+  push_consumer_impl_->resume();
 }
 
-void DefaultMQPushConsumer::fetchSubscribeMessageQueues(const std::string& topic, std::vector<MQMessageQueue>& mqs) {
-  push_consumer_impl_->fetchSubscribeMessageQueues(topic, mqs);
-}
-
-void DefaultMQPushConsumer::registerMessageListener(MQMessageListener* messageListener) {
-  push_consumer_impl_->registerMessageListener(messageListener);
+MQMessageListener* DefaultMQPushConsumer::getMessageListener() const {
+  return push_consumer_impl_->getMessageListener();
 }
 
 void DefaultMQPushConsumer::registerMessageListener(MessageListenerConcurrently* messageListener) {
@@ -73,20 +69,16 @@ void DefaultMQPushConsumer::registerMessageListener(MessageListenerOrderly* mess
   push_consumer_impl_->registerMessageListener(messageListener);
 }
 
-MQMessageListener* DefaultMQPushConsumer::getMessageListener() const {
-  return push_consumer_impl_->getMessageListener();
-}
-
 void DefaultMQPushConsumer::subscribe(const std::string& topic, const std::string& subExpression) {
   push_consumer_impl_->subscribe(topic, subExpression);
 }
 
-void DefaultMQPushConsumer::suspend() {
-  push_consumer_impl_->suspend();
+bool DefaultMQPushConsumer::sendMessageBack(MessageExtPtr msg, int delayLevel) {
+  return push_consumer_impl_->sendMessageBack(msg, delayLevel);
 }
 
-void DefaultMQPushConsumer::resume() {
-  push_consumer_impl_->resume();
+bool DefaultMQPushConsumer::sendMessageBack(MessageExtPtr msg, int delayLevel, const std::string& brokerName) {
+  return push_consumer_impl_->sendMessageBack(msg, delayLevel, brokerName);
 }
 
 void DefaultMQPushConsumer::setRPCHook(RPCHookPtr rpcHook) {

@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
   consumer.set_consume_from_where(CONSUME_FROM_LAST_OFFSET);
 
   // recommend client configs
-  consumer.set_pull_time_delay_mills_when_exception(0L);
+  consumer.set_pull_time_delay_millis_when_exception(0L);
 
   consumer.subscribe(info.topic, "*");
 

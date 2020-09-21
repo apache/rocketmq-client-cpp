@@ -148,7 +148,7 @@ void ConsumeMessageOrderlyService::ConsumeRequest(ProcessQueuePtr processQueue, 
 
       std::vector<MessageExtPtr> msgs;
       processQueue->takeMessages(msgs, consumeBatchSize);
-      consumer_->resetRetryTopic(msgs, consumer_->getDefaultMQPushConsumerConfig()->group_name());
+      consumer_->resetRetryAndNamespace(msgs);
       if (!msgs.empty()) {
         ConsumeStatus status = RECONSUME_LATER;
         try {
