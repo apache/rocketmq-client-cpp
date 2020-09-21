@@ -21,14 +21,20 @@
 
 namespace rocketmq {
 
-static const std::string ENDPOINT_PREFIX = "http://";
-static const unsigned int ENDPOINT_PREFIX_LENGTH = ENDPOINT_PREFIX.length();
-
-class NameSpaceUtil {
+class NamespaceUtil {
  public:
-  static bool isEndPointURL(std::string nameServerAddr);
+  static std::string withoutNamespace(const std::string& resourceWithNamespace);
+  static std::string withoutNamespace(const std::string& resourceWithNamespace, const std::string& name_space);
 
-  static std::string formatNameServerURL(std::string nameServerAddr);
+  static std::string wrapNamespace(const std::string& name_space, const std::string& resourceWithoutNamespace);
+
+  static std::string withoutRetryAndDLQ(const std::string& originalResource);
+
+  static bool isSystemResource(const std::string& resource);
+
+  static bool isEndPointURL(const std::string& nameServerAddr);
+
+  static std::string formatNameServerURL(const std::string& nameServerAddr);
 };
 
 }  // namespace rocketmq

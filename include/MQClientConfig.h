@@ -50,7 +50,10 @@ class ROCKETMQCLIENT_API MQClientConfig {
   virtual void set_instance_name(const std::string& instanceName) = 0;
 
   virtual const std::string& unit_name() const = 0;
-  virtual void set_unit_name(std::string unitName) = 0;
+  virtual void set_unit_name(const std::string& unitName) = 0;
+
+  virtual const std::string& name_space() const = 0;
+  virtual void set_name_space(const std::string& name_space) = 0;
 
   /**
    * the num of threads to distribute network data

@@ -21,7 +21,7 @@
 #include <thread>     // std::thread::hardware_concurrency
 
 #include "MQClientConfig.h"
-#include "NameSpaceUtil.h"
+#include "NamespaceUtil.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
@@ -67,14 +67,17 @@ class MQClientConfigImpl : virtual public MQClientConfig {
 
   const std::string& namesrv_addr() const override { return namesrv_addr_; }
   void set_namesrv_addr(const std::string& namesrvAddr) override {
-    namesrv_addr_ = NameSpaceUtil::formatNameServerURL(namesrvAddr);
+    namesrv_addr_ = NamespaceUtil::formatNameServerURL(namesrvAddr);
   }
 
   const std::string& instance_name() const override { return instance_name_; }
   void set_instance_name(const std::string& instanceName) override { instance_name_ = instanceName; }
 
   const std::string& unit_name() const override { return unit_name_; }
-  void set_unit_name(std::string unitName) override { unit_name_ = unitName; }
+  void set_unit_name(const std::string& unitName) override { unit_name_ = unitName; }
+
+  const std::string& name_space() const override { return name_space_; }
+  void set_name_space(const std::string& name_space) override { name_space_ = name_space; }
 
   int tcp_transport_worker_thread_nums() const override { return tcp_worker_thread_nums_; }
   void set_tcp_transport_worker_thread_nums(int num) override {
@@ -96,6 +99,7 @@ class MQClientConfigImpl : virtual public MQClientConfig {
   std::string instance_name_;
   std::string group_name_;
   std::string unit_name_;
+  std::string name_space_;
 
   int tcp_worker_thread_nums_;
   uint64_t tcp_connect_timeout;              // ms

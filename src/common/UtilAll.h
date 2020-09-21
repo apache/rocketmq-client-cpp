@@ -97,8 +97,12 @@ class UtilAll {
   static std::string bytes2string(const char* bytes, size_t len);
   static void string2bytes(char* dest, const std::string& src);
 
-  static bool isRetryTopic(const std::string& topic);
+  static bool isRetryTopic(const std::string& resource);
+  static bool isDLQTopic(const std::string& resource);
+
   static std::string getRetryTopic(const std::string& consumerGroup);
+  static std::string getDLQTopic(const std::string& consumerGroup);
+
   static std::string getReplyTopic(const std::string& clusterName);
 
   static void Trim(std::string& str);

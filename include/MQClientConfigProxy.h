@@ -44,7 +44,10 @@ class ROCKETMQCLIENT_API MQClientConfigProxy : virtual public MQClientConfig  //
   void set_instance_name(const std::string& instanceName) override { client_config_->set_instance_name(instanceName); }
 
   const std::string& unit_name() const override { return client_config_->unit_name(); }
-  void set_unit_name(std::string unitName) override { client_config_->set_unit_name(unitName); }
+  void set_unit_name(const std::string& unitName) override { client_config_->set_unit_name(unitName); }
+
+  const std::string& name_space() const override { return client_config_->name_space(); }
+  void set_name_space(const std::string& name_space) override { client_config_->set_name_space(name_space); }
 
   int tcp_transport_worker_thread_nums() const override { return client_config_->tcp_transport_worker_thread_nums(); }
   void set_tcp_transport_worker_thread_nums(int num) override {

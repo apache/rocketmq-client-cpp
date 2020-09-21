@@ -117,12 +117,20 @@ void UtilAll::string2bytes(char* dest, const std::string& src) {
   }
 }
 
-bool UtilAll::isRetryTopic(const std::string& topic) {
-  return topic.find(RETRY_GROUP_TOPIC_PREFIX) == 0;
+bool UtilAll::isRetryTopic(const std::string& resource) {
+  return resource.find(RETRY_GROUP_TOPIC_PREFIX) == 0;
+}
+
+bool UtilAll::isDLQTopic(const std::string& resource) {
+  return resource.find(DLQ_GROUP_TOPIC_PREFIX) == 0;
 }
 
 std::string UtilAll::getRetryTopic(const std::string& consumerGroup) {
   return RETRY_GROUP_TOPIC_PREFIX + consumerGroup;
+}
+
+std::string UtilAll::getDLQTopic(const std::string& consumerGroup) {
+  return DLQ_GROUP_TOPIC_PREFIX + consumerGroup;
 }
 
 std::string UtilAll::getReplyTopic(const std::string& clusterName) {
