@@ -37,18 +37,17 @@ void ConsumerRunningInfo::setStatusTable(const std::map<std::string, ConsumeStat
 } */
 
 std::string ConsumerRunningInfo::encode() {
-  Json::Value outData;
+  Json::Value out_data;
 
-  outData[PROP_NAMESERVER_ADDR] = properties_[PROP_NAMESERVER_ADDR];
-  outData[PROP_CONSUME_TYPE] = properties_[PROP_CONSUME_TYPE];
-  outData[PROP_CLIENT_VERSION] = properties_[PROP_CLIENT_VERSION];
-  outData[PROP_CONSUMER_START_TIMESTAMP] = properties_[PROP_CONSUMER_START_TIMESTAMP];
-  outData[PROP_CONSUME_ORDERLY] = properties_[PROP_CONSUME_ORDERLY];
-  outData[PROP_THREADPOOL_CORE_SIZE] = properties_[PROP_THREADPOOL_CORE_SIZE];
+  for (const auto& it : properties_) {
+    const auto& name = it.first;
+    const auto& value = it.second;
+    out_data[name] = value;
+  }
 
   Json::Value root;
   root["jstack"] = jstack_;
-  root["properties"] = outData;
+  root["properties"] = out_data;
 
   for (const auto& subscription : subscription_set_) {
     root["subscriptionSet"].append(subscription.toJson());

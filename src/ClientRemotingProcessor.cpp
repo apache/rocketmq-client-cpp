@@ -116,7 +116,7 @@ RemotingCommand* ClientRemotingProcessor::resetOffset(RemotingCommand* request) 
 
 RemotingCommand* ClientRemotingProcessor::getConsumerRunningInfo(const std::string& addr, RemotingCommand* request) {
   auto* requestHeader = request->decodeCommandCustomHeader<GetConsumerRunningInfoRequestHeader>();
-  LOG_INFO("getConsumerRunningInfo, group:{}", requestHeader->getConsumerGroup());
+  LOG_INFO_NEW("getConsumerRunningInfo, group:{}", requestHeader->getConsumerGroup());
 
   std::unique_ptr<RemotingCommand> response(
       new RemotingCommand(MQResponseCode::SYSTEM_ERROR, "not set any response code"));
