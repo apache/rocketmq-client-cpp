@@ -76,23 +76,67 @@ int64_t RemoteBrokerOffsetStore::readOffset(const MQMessageQueue& mq, ReadOffset
 }
 
 void RemoteBrokerOffsetStore::persist(const MQMessageQueue& mq) {
-  std::map<MQMessageQueue, int64_t> offsetTable;
+  int64_t offset = -1;
   {
     std::lock_guard<std::mutex> lock(lock_);
-    offsetTable = offset_table_;
+    const auto& it = offset_table_.find(mq);
+    if (it != offset_table_.end()) {
+      offset = it->second;
+    }
   }
 
-  const auto& it = offsetTable.find(mq);
-  if (it != offsetTable.end()) {
+  if (offset >= 0) {
     try {
-      updateConsumeOffsetToBroker(mq, it->second);
+      updateConsumeOffsetToBroker(mq, offset);
+      LOG_INFO_NEW("[persist] Group: {} ClientId: {} updateConsumeOffsetToBroker {} {}", group_name_,
+                   client_instance_->getClientId(), mq.toString(), offset);
     } catch (MQException& e) {
       LOG_ERROR("updateConsumeOffsetToBroker error");
     }
   }
 }
 
-void RemoteBrokerOffsetStore::persistAll(const std::vector<MQMessageQueue>& mq) {}
+void RemoteBrokerOffsetStore::persistAll(std::vector<MQMessageQueue>& mqs) {
+  if (mqs.empty()) {
+    return;
+  }
+
+  std::sort(mqs.begin(), mqs.end());
+
+  std::vector<MQMessageQueue> unused_mqs;
+
+  std::map<MQMessageQueue, int64_t> offset_table;
+  {
+    std::lock_guard<std::mutex> lock(lock_);
+    offset_table = offset_table_;
+  }
+
+  for (const auto& it : offset_table) {
+    const auto& mq = it.first;
+    auto offset = it.second;
+    if (offset >= 0) {
+      if (std::binary_search(mqs.begin(), mqs.end(), mq)) {
+        try {
+          updateConsumeOffsetToBroker(mq, offset);
+          LOG_INFO_NEW("[persistAll] Group: {} ClientId: {} updateConsumeOffsetToBroker {} {}", group_name_,
+                       client_instance_->getClientId(), mq.toString(), offset);
+        } catch (std::exception& e) {
+          LOG_ERROR_NEW("updateConsumeOffsetToBroker exception, {} {}", mq.toString(), e.what());
+        }
+      } else {
+        unused_mqs.push_back(mq);
+      }
+    }
+  }
+
+  if (!unused_mqs.empty()) {
+    std::lock_guard<std::mutex> lock(lock_);
+    for (const auto& mq : unused_mqs) {
+      offset_table_.erase(mq);
+      LOG_INFO_NEW("remove unused mq, {}, {}", mq.toString(), group_name_);
+    }
+  }
+}
 
 void RemoteBrokerOffsetStore::removeOffset(const MQMessageQueue& mq) {
   std::lock_guard<std::mutex> lock(lock_);
@@ -118,14 +162,14 @@ void RemoteBrokerOffsetStore::updateConsumeOffsetToBroker(const MQMessageQueue& 
     requestHeader->commitOffset = offset;
 
     try {
-      LOG_INFO("oneway updateConsumeOffsetToBroker of mq:%s, its offset is:%lld", mq.toString().c_str(), offset);
       return client_instance_->getMQClientAPIImpl()->updateConsumerOffsetOneway(findBrokerResult->broker_addr(),
                                                                                 requestHeader, 1000 * 5);
     } catch (MQException& e) {
       LOG_ERROR(e.what());
     }
+  } else {
+    LOG_WARN("The broker not exist");
   }
-  LOG_WARN("The broker not exist");
 }
 
 int64_t RemoteBrokerOffsetStore::fetchConsumeOffsetFromBroker(const MQMessageQueue& mq) {

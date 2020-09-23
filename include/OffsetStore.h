@@ -40,7 +40,7 @@ class ROCKETMQCLIENT_API OffsetStore {
   virtual void updateOffset(const MQMessageQueue& mq, int64_t offset, bool increaseOnly) = 0;
   virtual int64_t readOffset(const MQMessageQueue& mq, ReadOffsetType type) = 0;
   virtual void persist(const MQMessageQueue& mq) = 0;
-  virtual void persistAll(const std::vector<MQMessageQueue>& mq) = 0;
+  virtual void persistAll(std::vector<MQMessageQueue>& mqs) = 0;
   virtual void removeOffset(const MQMessageQueue& mq) = 0;
 };
 

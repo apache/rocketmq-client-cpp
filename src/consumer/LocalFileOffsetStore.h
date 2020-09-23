@@ -34,7 +34,7 @@ class LocalFileOffsetStore : public OffsetStore {
   void updateOffset(const MQMessageQueue& mq, int64_t offset, bool increaseOnly) override;
   int64_t readOffset(const MQMessageQueue& mq, ReadOffsetType type) override;
   void persist(const MQMessageQueue& mq) override;
-  void persistAll(const std::vector<MQMessageQueue>& mq) override;
+  void persistAll(std::vector<MQMessageQueue>& mqs) override;
   void removeOffset(const MQMessageQueue& mq) override;
 
  private:

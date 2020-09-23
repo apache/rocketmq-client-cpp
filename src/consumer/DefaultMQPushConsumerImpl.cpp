@@ -549,13 +549,7 @@ bool DefaultMQPushConsumerImpl::sendMessageBack(MessageExtPtr msg, int delay_lev
 void DefaultMQPushConsumerImpl::persistConsumerOffset() {
   if (isServiceStateOk()) {
     std::vector<MQMessageQueue> mqs = rebalance_impl_->getAllocatedMQ();
-    if (getDefaultMQPushConsumerConfig()->message_model() == BROADCASTING) {
-      offset_store_->persistAll(mqs);
-    } else {
-      for (const auto& mq : mqs) {
-        offset_store_->persist(mq);
-      }
-    }
+    offset_store_->persistAll(mqs);
   }
 }
 

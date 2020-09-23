@@ -105,7 +105,7 @@ int64_t LocalFileOffsetStore::readOffset(const MQMessageQueue& mq, ReadOffsetTyp
 
 void LocalFileOffsetStore::persist(const MQMessageQueue& mq) {}
 
-void LocalFileOffsetStore::persistAll(const std::vector<MQMessageQueue>& mqs) {
+void LocalFileOffsetStore::persistAll(std::vector<MQMessageQueue>& mqs) {
   if (mqs.empty()) {
     return;
   }
