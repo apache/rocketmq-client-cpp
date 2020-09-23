@@ -22,12 +22,23 @@
 namespace rocketmq {
 
 enum PullStatus {
+  /**
+   * Founded
+   */
   FOUND,
+  /**
+   * No new message can be pull
+   */
   NO_NEW_MSG,
+  /**
+   * Filtering results can not match
+   */
   NO_MATCHED_MSG,
   NO_LATEST_MSG,
-  OFFSET_ILLEGAL,
-  BROKER_TIMEOUT  // indicate pull request timeout or received NULL response
+  /**
+   * Illegal offset,may be too big or too small
+   */
+  OFFSET_ILLEGAL
 };
 
 class PullResult {

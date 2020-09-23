@@ -32,7 +32,9 @@ class PullAPIWrapper {
   PullAPIWrapper(MQClientInstance* instance, const std::string& consumerGroup);
   ~PullAPIWrapper();
 
-  PullResult processPullResult(const MQMessageQueue& mq, PullResult& pullResult, SubscriptionData* subscriptionData);
+  PullResult* processPullResult(const MQMessageQueue& mq,
+                                std::unique_ptr<PullResult> pull_result,
+                                SubscriptionData* subscriptionData);
 
   PullResult* pullKernelImpl(const MQMessageQueue& mq,
                              const std::string& subExpression,

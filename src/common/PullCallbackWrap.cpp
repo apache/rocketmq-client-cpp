@@ -31,9 +31,9 @@ void PullCallbackWrap::operationComplete(ResponseFuture* responseFuture) noexcep
 
   if (response != nullptr) {
     try {
-      std::unique_ptr<PullResult> pullResult(client_api_impl_->processPullResponse(response.get()));
-      assert(pullResult != nullptr);
-      pull_callback_->onSuccess(*pullResult);
+      std::unique_ptr<PullResult> pull_result(client_api_impl_->processPullResponse(response.get()));
+      assert(pull_result != nullptr);
+      pull_callback_->onSuccess(std::move(pull_result));
     } catch (MQException& e) {
       pull_callback_->onException(e);
     }

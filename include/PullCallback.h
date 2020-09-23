@@ -31,7 +31,7 @@ class ROCKETMQCLIENT_API PullCallback {
  public:
   virtual ~PullCallback() = default;
 
-  virtual void onSuccess(PullResult& pullResult) = 0;
+  virtual void onSuccess(std::unique_ptr<PullResult> pull_result) = 0;
   virtual void onException(MQException& e) noexcept = 0;
 
   virtual PullCallbackType getPullCallbackType() const { return PULL_CALLBACK_TYPE_SIMPLE; }

@@ -21,10 +21,9 @@
 
 #include "UtilAll.h"
 
-static const char* kPullStatusStrings[] = {"FOUND", "NO_NEW_MSG", "NO_MATCHED_MSG",
-                                           "NO_LATEST_MSG"
-                                           "OFFSET_ILLEGAL",
-                                           "BROKER_TIMEOUT"};
+static const char* kPullStatusStrings[] = {
+    "FOUND", "NO_NEW_MSG", "NO_MATCHED_MSG", "NO_LATEST_MSG", "OFFSET_ILLEGAL",
+};
 
 namespace rocketmq {
 

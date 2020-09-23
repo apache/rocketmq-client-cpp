@@ -50,48 +50,52 @@ int PullAPIWrapper::recalculatePullFromWhichNode(const MQMessageQueue& mq) {
   return MASTER_ID;
 }
 
-PullResult PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
-                                             PullResult& pullResult,
-                                             SubscriptionData* subscriptionData) {
-  assert(std::type_index(typeid(pullResult)) == std::type_index(typeid(PullResultExt)));
-  auto& pullResultExt = dynamic_cast<PullResultExt&>(pullResult);
+PullResult* PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
+                                              std::unique_ptr<PullResult> pull_result,
+                                              SubscriptionData* subscription_data) {
+  auto* pull_result_ext = dynamic_cast<PullResultExt*>(pull_result.get());
+  if (pull_result_ext == nullptr) {
+    return pull_result.release();
+  }
 
   // update node
-  updatePullFromWhichNode(mq, pullResultExt.suggert_which_boker_id());
+  updatePullFromWhichNode(mq, pull_result_ext->suggert_which_boker_id());
 
-  std::vector<MessageExtPtr> msgListFilterAgain;
-  if (FOUND == pullResultExt.pull_status()) {
+  std::vector<MessageExtPtr> msg_list_filter_again;
+  if (FOUND == pull_result_ext->pull_status()) {
     // decode all msg list
-    std::unique_ptr<ByteBuffer> byteBuffer(ByteBuffer::wrap(pullResultExt.message_binary()));
+    std::unique_ptr<ByteBuffer> byteBuffer(ByteBuffer::wrap(pull_result_ext->message_binary()));
     auto msgList = MessageDecoder::decodes(*byteBuffer);
 
     // filter msg list again
-    if (subscriptionData != nullptr && !subscriptionData->tags_set().empty()) {
-      msgListFilterAgain.reserve(msgList.size());
+    if (subscription_data != nullptr && !subscription_data->tags_set().empty()) {
+      msg_list_filter_again.reserve(msgList.size());
       for (const auto& msg : msgList) {
         const auto& msgTag = msg->tags();
-        if (subscriptionData->containsTag(msgTag)) {
-          msgListFilterAgain.push_back(msg);
+        if (subscription_data->containsTag(msgTag)) {
+          msg_list_filter_again.push_back(msg);
         }
       }
     } else {
-      msgListFilterAgain.swap(msgList);
+      msg_list_filter_again.swap(msgList);
     }
 
-    for (auto& msg : msgListFilterAgain) {
-      const auto& tranMsg = msg->getProperty(MQMessageConst::PROPERTY_TRANSACTION_PREPARED);
-      if (UtilAll::stob(tranMsg)) {
-        msg->set_transaction_id(msg->getProperty(MQMessageConst::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX));
+    if (!msg_list_filter_again.empty()) {
+      std::string min_offset = UtilAll::to_string(pull_result_ext->min_offset());
+      std::string max_offset = UtilAll::to_string(pull_result_ext->max_offset());
+      for (auto& msg : msg_list_filter_again) {
+        const auto& tranMsg = msg->getProperty(MQMessageConst::PROPERTY_TRANSACTION_PREPARED);
+        if (UtilAll::stob(tranMsg)) {
+          msg->set_transaction_id(msg->getProperty(MQMessageConst::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX));
+        }
+        MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_MIN_OFFSET, min_offset);
+        MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_MAX_OFFSET, max_offset);
       }
-      MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_MIN_OFFSET,
-                                   UtilAll::to_string(pullResult.min_offset()));
-      MessageAccessor::putProperty(*msg, MQMessageConst::PROPERTY_MAX_OFFSET,
-                                   UtilAll::to_string(pullResult.max_offset()));
     }
   }
 
-  return PullResult(pullResultExt.pull_status(), pullResultExt.next_begin_offset(), pullResultExt.min_offset(),
-                    pullResultExt.max_offset(), std::move(msgListFilterAgain));
+  return new PullResult(pull_result_ext->pull_status(), pull_result_ext->next_begin_offset(),
+                        pull_result_ext->min_offset(), pull_result_ext->max_offset(), std::move(msg_list_filter_again));
 }
 
 PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,
