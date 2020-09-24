@@ -278,17 +278,17 @@ uint32_t UtilAll::getIP() {
 
 std::string UtilAll::getHomeDirectory() {
 #ifndef WIN32
-  char* homeEnv = std::getenv("HOME");
-  std::string homeDir;
-  if (homeEnv == NULL) {
-    homeDir.append(getpwuid(getuid())->pw_dir);
+  char* home_env = std::getenv("HOME");
+  std::string home_dir;
+  if (home_env == NULL) {
+    home_dir.append(getpwuid(getuid())->pw_dir);
   } else {
-    homeDir.append(homeEnv);
+    home_dir.append(home_env);
   }
 #else
-  std::string homeDir(std::getenv("USERPROFILE"));
+  std::string home_dir(std::getenv("USERPROFILE"));
 #endif
-  return homeDir;
+  return home_dir;
 }
 
 static bool createDirectoryInner(const char* dir) {

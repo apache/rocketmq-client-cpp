@@ -511,7 +511,7 @@ int SetProducerLogFileNumAndSize(CProducer* producer, int fileNum, long fileSize
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  DEFAULT_LOG_ADAPTER->setLogFileNumAndSize(fileNum, fileSize);
+  DEFAULT_LOGGER_INSTANCE->setLogFileNumAndSize(fileNum, fileSize);
   return OK;
 }
 
@@ -519,7 +519,7 @@ int SetProducerLogLevel(CProducer* producer, CLogLevel level) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  DEFAULT_LOG_ADAPTER->set_log_level((LogLevel)level);
+  DEFAULT_LOGGER_INSTANCE->set_log_level((LogLevel)level);
   return OK;
 }
 

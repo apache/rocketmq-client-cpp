@@ -42,38 +42,45 @@ enum LogLevel {
   LOG_LEVEL_LEVEL_NUM = 7
 };
 
-class LogAdapter {
+class Logger {
  public:
-  virtual ~LogAdapter();
+  static Logger* getLoggerInstance();
 
-  static LogAdapter* getLogInstance();
+ public:
+  virtual ~Logger();
 
   inline spdlog::logger* getSeverityLogger() { return logger_.get(); }
 
   void setLogFileNumAndSize(int logNum, int sizeOfPerFile);
 
   inline LogLevel log_level() const { return log_level_; }
-  inline void set_log_level(LogLevel logLevel) {
-    log_level_ = logLevel;
-    setLogLevelInner(logLevel);
+  inline void set_log_level(LogLevel log_level) {
+    log_level_ = log_level;
+    set_log_level_(log_level);
   }
 
  private:
-  LogAdapter();
-  void setLogLevelInner(LogLevel logLevel);
+  Logger(const std::string& name);
+
+  void init_log_dir_();
+  void init_spdlog_env_();
+
+  std::shared_ptr<spdlog::logger> create_rotating_logger_(const std::string& name,
+                                                          const std::string& filepath,
+                                                          std::size_t max_size,
+                                                          std::size_t max_files);
+
+  void set_log_level_(LogLevel log_level);
 
  private:
   LogLevel log_level_;
   std::string log_file_;
 
   std::shared_ptr<spdlog::logger> logger_;
-#if SPDLOG_VER_MAJOR >= 1
-  std::vector<spdlog::sink_ptr> log_sinks_;
-#endif
 };
 
-#define DEFAULT_LOG_ADAPTER LogAdapter::getLogInstance()
-#define DEFAULT_LOGGER DEFAULT_LOG_ADAPTER->getSeverityLogger()
+#define DEFAULT_LOGGER_INSTANCE Logger::getLoggerInstance()
+#define DEFAULT_LOGGER DEFAULT_LOGGER_INSTANCE->getSeverityLogger()
 
 #define SPDLOG_PRINTF(logger, level, format, ...)                        \
   do {                                                                   \

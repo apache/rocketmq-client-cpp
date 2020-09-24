@@ -29,12 +29,30 @@
 
 namespace rocketmq {
 
-LogAdapter* LogAdapter::getLogInstance() {
-  static LogAdapter singleton_;
+Logger* Logger::getLoggerInstance() {
+  static Logger singleton_("default");
   return &singleton_;
 }
 
-LogAdapter::LogAdapter() : log_level_(LOG_LEVEL_INFO) {
+Logger::Logger(const std::string& name) : log_level_(LOG_LEVEL_INFO) {
+  try {
+    init_log_dir_();
+    init_spdlog_env_();
+    logger_ = create_rotating_logger_(name, log_file_, 1024 * 1024 * 100, 3);
+    set_log_level_(log_level_);
+  } catch (std::exception& e) {
+    std::cerr << "initialite logger failed" << std::endl;
+    exit(-1);
+  }
+}
+
+Logger::~Logger() {
+  if (logger_ != nullptr) {
+    spdlog::drop(logger_->name());
+  }
+}
+
+void Logger::init_log_dir_() {
   std::string log_dir;
   const char* dir = std::getenv(ROCKETMQ_CPP_LOG_DIR_ENV.c_str());
   if (dir != nullptr && dir[0] != '\0') {
@@ -47,51 +65,34 @@ LogAdapter::LogAdapter() : log_level_(LOG_LEVEL_INFO) {
   if (log_dir[log_dir.size() - 1] != '/') {
     log_dir.append("/");
   }
+  std::string log_file_name = UtilAll::to_string(UtilAll::getProcessId()) + "_" + "rocketmq-cpp.log";
+  log_file_ = log_dir + log_file_name;
+}
 
-  if (!UtilAll::existDirectory(log_dir)) {
-    UtilAll::createDirectory(log_dir);
-  }
-  if (!UtilAll::existDirectory(log_dir)) {
-    std::cerr << "create log dir error, will exit" << std::endl;
-    exit(1);
-  }
-
-  std::string fileName = UtilAll::to_string(UtilAll::getProcessId()) + "_" + "rocketmq-cpp.log";
-  log_file_ = log_dir + fileName;
-
-#if SPDLOG_VER_MAJOR >= 1
-  spdlog::init_thread_pool(8192, 1);
-
-  auto rotating_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(log_file_, 1024 * 1024 * 100, 3);
-  rotating_sink->set_level(spdlog::level::debug);
-  rotating_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [thread@%t] - %v");
-  log_sinks_.push_back(rotating_sink);
-
-  logger_ = std::make_shared<spdlog::async_logger>("default", log_sinks_.begin(), log_sinks_.end(),
-                                                   spdlog::thread_pool(), spdlog::async_overflow_policy::block);
-
-  // register it if you need to access it globally
-  spdlog::register_logger(logger_);
-
+void Logger::init_spdlog_env_() {
+  spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [thread@%t] - %v");
   // when an error occurred, flush disk immediately
-  logger_->flush_on(spdlog::level::err);
-
+  spdlog::flush_on(spdlog::level::err);
+#if SPDLOG_VER_MAJOR >= 1
+  spdlog::init_thread_pool(spdlog::details::default_async_q_size, 1);
   spdlog::flush_every(std::chrono::seconds(3));
 #else
-  size_t q_size = 4096;
-  spdlog::set_async_mode(q_size);
-  logger_ = spdlog::rotating_logger_mt("default", log_file_, 1024 * 1024 * 100, 3);
-  logger_->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [thread@%t] - %v");
+  spdlog::set_async_mode(8192, async_overflow_policy::block_retry, nullptr, std::chrono::milliseconds(3000), nullptr);
 #endif
-
-  setLogLevelInner(log_level_);
 }
 
-LogAdapter::~LogAdapter() {
-  spdlog::drop("default");
+std::shared_ptr<spdlog::logger> Logger::create_rotating_logger_(const std::string& name,
+                                                                const std::string& filepath,
+                                                                std::size_t max_size,
+                                                                std::size_t max_files) {
+#if SPDLOG_VER_MAJOR >= 1
+  return spdlog::create_async<spdlog::sinks::rotating_file_sink_mt>(name, filepath, max_size, max_files);
+#else
+  return spdlog::rotating_logger_mt(name, filepath, max_size, max_files);
+#endif
 }
 
-void LogAdapter::setLogLevelInner(LogLevel log_level) {
+void Logger::set_log_level_(LogLevel log_level) {
   switch (log_level) {
     case LOG_LEVEL_FATAL:
       logger_->set_level(spdlog::level::critical);
@@ -117,6 +118,12 @@ void LogAdapter::setLogLevelInner(LogLevel log_level) {
   }
 }
 
-void LogAdapter::setLogFileNumAndSize(int logNum, int sizeOfPerFile) {}
+void Logger::setLogFileNumAndSize(int logNum, int sizeOfPerFile) {
+  // FIXME: set after clients started
+  auto name = logger_->name();
+  spdlog::drop(name);
+  logger_ = create_rotating_logger_(name, log_file_, sizeOfPerFile, logNum);
+  set_log_level_(log_level_);
+}
 
 }  // namespace rocketmq

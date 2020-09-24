@@ -258,7 +258,7 @@ int SetPushConsumerLogFileNumAndSize(CPushConsumer* consumer, int fileNum, long 
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  DEFAULT_LOG_ADAPTER->setLogFileNumAndSize(fileNum, fileSize);
+  DEFAULT_LOGGER_INSTANCE->setLogFileNumAndSize(fileNum, fileSize);
   return OK;
 }
 
@@ -266,6 +266,6 @@ int SetPushConsumerLogLevel(CPushConsumer* consumer, CLogLevel level) {
   if (consumer == NULL) {
     return NULL_POINTER;
   }
-  DEFAULT_LOG_ADAPTER->set_log_level((LogLevel)level);
+  DEFAULT_LOGGER_INSTANCE->set_log_level((LogLevel)level);
   return OK;
 }
