@@ -88,7 +88,7 @@ TEST(commandHeader, ConsumerSendMsgBackRequestHeader) {
   EXPECT_EQ(requestMap["group"], group);
   EXPECT_EQ(requestMap["delayLevel"], "2");
   EXPECT_EQ(requestMap["offset"], "3027");
-  EXPECT_EQ(requestMap["unitMode"], "1");
+  EXPECT_EQ(requestMap["unitMode"], "true");
   EXPECT_EQ(requestMap["originMsgId"], originMsgId);
   EXPECT_EQ(requestMap["originTopic"], originTopic);
   EXPECT_EQ(requestMap["maxReconsumeTimes"], "12");
@@ -98,7 +98,7 @@ TEST(commandHeader, ConsumerSendMsgBackRequestHeader) {
   EXPECT_EQ(outData["group"], group);
   EXPECT_EQ(outData["delayLevel"], 2);
   EXPECT_EQ(outData["offset"], "3027");
-  EXPECT_EQ(outData["unitMode"], "1");
+  EXPECT_EQ(outData["unitMode"], "true");
   EXPECT_EQ(outData["originMsgId"], originMsgId);
   EXPECT_EQ(outData["originTopic"], originTopic);
   EXPECT_EQ(outData["maxReconsumeTimes"], 12);
@@ -197,7 +197,7 @@ TEST(commandHeader, EndTransactionRequestHeader) {
   EXPECT_EQ(requestMap["tranStateTableOffset"], "1000");
   EXPECT_EQ(requestMap["commitLogOffset"], "2000");
   EXPECT_EQ(requestMap["commitOrRollback"], "3000");
-  EXPECT_EQ(requestMap["fromTransactionCheck"], "1");
+  EXPECT_EQ(requestMap["fromTransactionCheck"], "true");
 
   Value outData;
   header.Encode(outData);
@@ -207,7 +207,7 @@ TEST(commandHeader, EndTransactionRequestHeader) {
   EXPECT_EQ(outData["tranStateTableOffset"], "1000");
   EXPECT_EQ(outData["commitLogOffset"], "2000");
   EXPECT_EQ(outData["commitOrRollback"], "3000");
-  EXPECT_EQ(outData["fromTransactionCheck"], "1");
+  EXPECT_EQ(outData["fromTransactionCheck"], "true");
 
   EXPECT_NO_THROW(header.toString());
 }
@@ -251,8 +251,8 @@ TEST(commandHeader, SendMessageRequestHeader) {
   EXPECT_EQ(requestMap["flag"], "5");
   EXPECT_EQ(requestMap["properties"], properties);
   EXPECT_EQ(requestMap["reconsumeTimes"], "6");
-  EXPECT_EQ(requestMap["unitMode"], "1");
-  EXPECT_EQ(requestMap["batch"], "0");
+  EXPECT_EQ(requestMap["unitMode"], "true");
+  EXPECT_EQ(requestMap["batch"], "false");
 
   Value outData;
   header.Encode(outData);
@@ -266,8 +266,8 @@ TEST(commandHeader, SendMessageRequestHeader) {
   EXPECT_EQ(outData["flag"], flag);
   EXPECT_EQ(outData["properties"], properties);
   EXPECT_EQ(outData["reconsumeTimes"], "6");
-  EXPECT_EQ(outData["unitMode"], "1");
-  EXPECT_EQ(outData["batch"], "0");
+  EXPECT_EQ(outData["unitMode"], "true");
+  EXPECT_EQ(outData["batch"], "false");
 }
 
 TEST(commandHeader, SendMessageRequestHeaderV2) {
@@ -309,8 +309,8 @@ TEST(commandHeader, SendMessageRequestHeaderV2) {
   EXPECT_EQ(requestMap["h"], "5");
   EXPECT_EQ(requestMap["i"], properties);
   EXPECT_EQ(requestMap["j"], "6");
-  EXPECT_EQ(requestMap["k"], "1");
-  EXPECT_EQ(requestMap["m"], "0");
+  EXPECT_EQ(requestMap["k"], "true");
+  EXPECT_EQ(requestMap["m"], "false");
 
   Value outData;
   header.Encode(outData);
@@ -324,8 +324,8 @@ TEST(commandHeader, SendMessageRequestHeaderV2) {
   EXPECT_EQ(outData["h"], flag);
   EXPECT_EQ(outData["i"], properties);
   EXPECT_EQ(outData["j"], "6");
-  EXPECT_EQ(outData["k"], "1");
-  EXPECT_EQ(outData["m"], "0");
+  EXPECT_EQ(outData["k"], "true");
+  EXPECT_EQ(outData["m"], "false");
 
   SendMessageRequestHeader v1;
   header.CreateSendMessageRequestHeaderV1(v1);
@@ -523,7 +523,7 @@ TEST(commandHeader, GetConsumerRunningInfoRequestHeader) {
   header.SetDeclaredFieldOfCommandHeader(requestMap);
   EXPECT_EQ(requestMap["clientId"], "testClientId");
   EXPECT_EQ(requestMap["consumerGroup"], "testConsumer");
-  EXPECT_EQ(requestMap["jstackEnable"], "1");
+  EXPECT_EQ(requestMap["jstackEnable"], "true");
 
   Value outData;
   header.Encode(outData);

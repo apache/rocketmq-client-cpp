@@ -41,6 +41,7 @@
 #include <fstream>
 #include <map>
 #include <sstream>
+#include <type_traits>
 #include "RocketMQClient.h"
 
 using namespace std;
@@ -93,6 +94,43 @@ inline void deleteAndZero(Type& pointer) {
 #define SIZET_FMT "%zu"
 #endif
 
+namespace detail {
+
+template <typename T, bool = false>
+struct UseStdToString {
+  typedef std::false_type type;
+};
+
+template <typename T>
+struct UseStdToString<T, true> {
+  typedef std::true_type type;
+};
+
+template <typename T>
+inline std::string to_string(const T& v, std::false_type) {
+  std::ostringstream stm;
+  stm << v;
+  return stm.str();
+}
+
+template <typename T>
+inline std::string to_string(const T& v, std::true_type) {
+  return std::to_string(v);
+}
+
+template <typename T>
+inline std::string to_string(const T& v) {
+  return to_string(v, typename UseStdToString < T,
+                   std::is_arithmetic<T>::value && !std::is_same<bool, typename std::decay<T>::type>::value > ::type{});
+}
+
+template <>
+inline std::string to_string<bool>(const bool& v) {
+  return v ? "true" : "false";
+}
+
+}  // namespace detail
+
 //<!************************************************************************
 class UtilAll {
  public:
@@ -107,9 +145,7 @@ class UtilAll {
 
   template <typename T>
   static string to_string(const T& n) {
-    std::ostringstream stm;
-    stm << n;
-    return stm.str();
+    return detail::to_string(n);
   }
 
   static bool to_bool(std::string const& s) { return atoi(s.c_str()); }
