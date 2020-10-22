@@ -43,10 +43,10 @@ class RebalanceImpl {
                 MQClientInstance* clientInstance);
   virtual ~RebalanceImpl();
 
-  void unlock(MQMessageQueue mq, const bool oneway = false);
+  void unlock(const MQMessageQueue& mq, const bool oneway = false);
   void unlockAll(const bool oneway = false);
 
-  bool lock(MQMessageQueue mq);
+  bool lock(const MQMessageQueue& mq);
   void lockAll();
 
   void doRebalance(const bool isOrder = false);

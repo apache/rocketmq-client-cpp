@@ -36,7 +36,7 @@ RebalanceImpl::~RebalanceImpl() {
   }
 }
 
-void RebalanceImpl::unlock(MQMessageQueue mq, const bool oneway) {
+void RebalanceImpl::unlock(const MQMessageQueue& mq, const bool oneway) {
   std::unique_ptr<FindBrokerResult> findBrokerResult(
       client_instance_->findBrokerAddressInSubscribe(mq.broker_name(), MASTER_ID, true));
   if (findBrokerResult) {
@@ -119,7 +119,7 @@ std::shared_ptr<BROKER2MQS> RebalanceImpl::buildProcessQueueTableByBrokerName() 
   return brokerMqs;
 }
 
-bool RebalanceImpl::lock(MQMessageQueue mq) {
+bool RebalanceImpl::lock(const MQMessageQueue& mq) {
   std::unique_ptr<FindBrokerResult> findBrokerResult(
       client_instance_->findBrokerAddressInSubscribe(mq.broker_name(), MASTER_ID, true));
   if (findBrokerResult) {
