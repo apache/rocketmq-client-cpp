@@ -29,7 +29,7 @@ declare fname_openssl="openssl*.tar.gz"
 declare fname_libevent="libevent*.zip"
 declare fname_jsoncpp="jsoncpp*.zip"
 declare fname_boost="boost*.tar.gz"
-declare fname_openssl_down="openssl-1.1.1d.tar.gz"
+declare fname_openssl_down="openssl-1.1.1i.tar.gz"
 declare fname_libevent_down="release-2.1.11-stable.zip"
 declare fname_jsoncpp_down="0.10.7.zip"
 declare fname_boost_down="1.58.0/boost_1_58_0.tar.gz"
@@ -212,7 +212,8 @@ BuildOpenSSL() {
   if [ -e ${fname_openssl} ]; then
     echo "${fname_openssl} is exist"
   else
-    wget https://www.openssl.org/source/old/1.1.1/${fname_openssl_down} -O ${fname_openssl_down}
+    #wget https://www.openssl.org/source/old/1.1.1/${fname_openssl_down} -O ${fname_openssl_down}
+    wget https://www.openssl.org/source/openssl-1.1.1i.tar.gz -o ${fname_openssl_down}
   fi
   tar -zxvf ${fname_openssl} &> unzipopenssl.txt
   if [ $? -ne 0 ]; then
@@ -342,7 +343,11 @@ BuildJsonCPP() {
   echo "build jsoncpp success."
   if [ ! -f ${install_lib_dir}/lib/libjsoncpp.a ]; then
     echo " ./bin/lib directory is not libjsoncpp.a"
-    cp ${install_lib_dir}/lib/x86_64-linux-gnu/libjsoncpp.a ${install_lib_dir}/lib/
+    if [ "$(uname -m)" = "aarch64" ]; then
+      cp ${install_lib_dir}/lib/aarch64-linux-gnu/libjsoncpp.a ${install_lib_dir}/lib/
+    else
+      cp ${install_lib_dir}/lib/x86_64-linux-gnu/libjsoncpp.a ${install_lib_dir}/lib/
+    fi
   fi
 }
 
@@ -372,9 +377,13 @@ BuildBoost() {
   pwd
   if [ $verbose -eq 0 ]; then
     echo "build boost without detail log."
-    ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static release install --prefix=${install_lib_dir} &> boostbuild.txt
+    if [ "$(uname -m)" = "aarch64" ]; then
+      ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static release install --prefix=${install_lib_dir} architecture=arm &> boostbuild.txt
+    fi 
   else
-    ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static release install --prefix=${install_lib_dir}
+    if [ "$(uname -m)" = "aarch64" ]; then
+      ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static release install --prefix=${install_lib_dir} architecture=arm
+    fi 
   fi
   if [ $? -ne 0 ]; then
     exit 1
@@ -408,6 +417,9 @@ BuildRocketMQClient() {
       ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DCMAKE_BUILD_TYPE=Debug"
   else
       ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DCMAKE_BUILD_TYPE=Release"
+  fi
+  if [ "$(uname -m)" = "aarch64" ]; then
+      ROCKETMQ_CMAKE_FLAG=$ROCKETMQ_CMAKE_FLAG" -DBUILD_FOR_ARM=ON"
   fi
   cmake .. $ROCKETMQ_CMAKE_FLAG
   if [ $verbose -eq 0 ]; then
