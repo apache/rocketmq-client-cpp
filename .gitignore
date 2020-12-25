@@ -8,6 +8,9 @@
 # cmake
 cmake-build-debug/
 
+# clangd
+.cache/
+
 # project
 bin
 build
