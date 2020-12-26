@@ -212,10 +212,10 @@ BuildOpenSSL() {
   if [ -e ${fname_openssl} ]; then
     echo "${fname_openssl} is exist"
   else
-    #wget https://www.openssl.org/source/old/1.1.1/${fname_openssl_down} -O ${fname_openssl_down}
-    wget https://www.openssl.org/source/openssl-1.1.1i.tar.gz -o ${fname_openssl_down}
+    wget https://www.openssl.org/source/${fname_openssl_down} -O ${fname_openssl_down}
   fi
   tar -zxvf ${fname_openssl} &> unzipopenssl.txt
+
   if [ $? -ne 0 ]; then
     exit 1
   fi
@@ -232,6 +232,7 @@ BuildOpenSSL() {
     ./config shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir}
   fi
   if [ $? -ne 0 ]; then
+    echo $?
     exit 1
   fi
   if [ $verbose -eq 0 ]; then
@@ -379,11 +380,16 @@ BuildBoost() {
     echo "build boost without detail log."
     if [ "$(uname -m)" = "aarch64" ]; then
       ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static release install --prefix=${install_lib_dir} architecture=arm &> boostbuild.txt
-    fi 
+    else
+      ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static release install --prefix=${install_lib_dir} &> boostbuild.txt
+    fi
   else
     if [ "$(uname -m)" = "aarch64" ]; then
       ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static release install --prefix=${install_lib_dir} architecture=arm
-    fi 
+    else
+      echo ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static release install --prefix=${install_lib_dir}
+      ./b2 -j$cpu_num cflags=-fPIC cxxflags=-fPIC --with-atomic --with-thread --with-system --with-chrono --with-date_time --with-log --with-regex --with-serialization --with-filesystem --with-locale --with-iostreams threading=multi link=static release install --prefix=${install_lib_dir}
+    fi
   fi
   if [ $? -ne 0 ]; then
     exit 1
