@@ -184,7 +184,7 @@ ELSE ()
             )
 
     option(BUILD_FOR_ARM "Build for arm64 platform" ON)
-    if (NOT ${BUILD_FOR_ARM} MATCHES "ON")
+    if (NOT ${BUILD_FOR_ARM})
       if (CMAKE_BUILD_BITS EQUAL 32)
           list(APPEND CXX_FLAGS "-m32")
       else () #not-condition
