@@ -232,7 +232,6 @@ BuildOpenSSL() {
     ./config shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir}
   fi
   if [ $? -ne 0 ]; then
-    echo $?
     exit 1
   fi
   if [ $verbose -eq 0 ]; then
