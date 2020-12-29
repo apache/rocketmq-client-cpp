@@ -343,11 +343,7 @@ BuildJsonCPP() {
   echo "build jsoncpp success."
   if [ ! -f ${install_lib_dir}/lib/libjsoncpp.a ]; then
     echo " ./bin/lib directory is not libjsoncpp.a"
-    if [ "$(uname -m)" = "aarch64" ]; then
-      cp ${install_lib_dir}/lib/aarch64-linux-gnu/libjsoncpp.a ${install_lib_dir}/lib/
-    else
-      cp ${install_lib_dir}/lib/x86_64-linux-gnu/libjsoncpp.a ${install_lib_dir}/lib/
-    fi
+    cp ${install_lib_dir}/lib/$(uname- m)-linux-gnu/libjsoncpp.a ${install_lib_dir}/lib/
   fi
 }
 
