@@ -20,7 +20,7 @@
 #include <cstdlib>  // std::calloc, std::free
 #include <cstring>  // std::memcpy
 
-#include <stdexcept>    // std::bad_alloc
+#include <new>          // std::bad_alloc
 #include <type_traits>  // std::enable_if, std::is_arithmetic, std::is_pointer, std::is_class
 
 #include "RocketMQClient.h"
