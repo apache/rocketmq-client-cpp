@@ -143,6 +143,22 @@ SendResult DefaultMQProducer::send(std::vector<MQMessage>& msgs, const MQMessage
   return producer_impl_->send(msgs, mq, timeout);
 }
 
+void DefaultMQProducer::send(std::vector<MQMessage>& msgs, SendCallback* sendCallback) {
+  producer_impl_->send(msgs, sendCallback);
+}
+
+void DefaultMQProducer::send(std::vector<MQMessage>& msgs, SendCallback* sendCallback, long timeout) {
+  producer_impl_->send(msgs, sendCallback, timeout);
+}
+
+void DefaultMQProducer::send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, SendCallback* sendCallback) {
+  producer_impl_->send(msgs, mq, sendCallback);
+}
+
+void DefaultMQProducer::send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, SendCallback* sendCallback, long timeout) {
+  producer_impl_->send(msgs, mq, sendCallback, timeout);
+}
+
 MQMessage DefaultMQProducer::request(MQMessage& msg, long timeout) {
   return producer_impl_->request(msg, timeout);
 }

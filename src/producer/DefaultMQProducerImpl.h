@@ -93,11 +93,16 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
   // Transaction
   TransactionSendResult sendMessageInTransaction(MQMessage& msg, void* arg) override;
 
-  // Batch: power by sync send, caller will be responsible for the lifecycle of messages.
+  // Batch
   SendResult send(std::vector<MQMessage>& msgs) override;
   SendResult send(std::vector<MQMessage>& msgs, long timeout) override;
   SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq) override;
   SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, long timeout) override;
+
+  void send(std::vector<MQMessage>& msgs, SendCallback* sendCallback) override;
+  void send(std::vector<MQMessage>& msgs, SendCallback* sendCallback, long timeout) override;
+  void send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, SendCallback* sendCallback) override;
+  void send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, SendCallback* sendCallback, long timeout) override;
 
   // RPC
   MQMessage request(MQMessage& msg, long timeout) override;

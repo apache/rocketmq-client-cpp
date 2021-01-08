@@ -75,6 +75,11 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public DefaultMQProducerConfigProxy
   SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq) override;
   SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, long timeout) override;
 
+  void send(std::vector<MQMessage>& msgs, SendCallback* sendCallback) override;
+  void send(std::vector<MQMessage>& msgs, SendCallback* sendCallback, long timeout) override;
+  void send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, SendCallback* sendCallback) override;
+  void send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, SendCallback* sendCallback, long timeout) override;
+
   // RPC
   MQMessage request(MQMessage& msg, long timeout) override;
   void request(MQMessage& msg, RequestCallback* requestCallback, long timeout) override;

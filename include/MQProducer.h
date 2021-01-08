@@ -72,6 +72,11 @@ class ROCKETMQCLIENT_API MQProducer {
   virtual SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq) = 0;
   virtual SendResult send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, long timeout) = 0;
 
+  virtual void send(std::vector<MQMessage>& msgs, SendCallback* sendCallback) = 0;
+  virtual void send(std::vector<MQMessage>& msgs, SendCallback* sendCallback, long timeout) = 0;
+  virtual void send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, SendCallback* sendCallback) = 0;
+  virtual void send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, SendCallback* sendCallback, long timeout) = 0;
+
   // RPC
   virtual MQMessage request(MQMessage& msg, long timeout) = 0;
   virtual void request(MQMessage& msg, RequestCallback* requestCallback, long timeout) = 0;

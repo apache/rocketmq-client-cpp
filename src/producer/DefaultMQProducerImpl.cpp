@@ -358,6 +358,26 @@ SendResult DefaultMQProducerImpl::send(std::vector<MQMessage>& msgs, const MQMes
   return send(batchMessage, mq, timeout);
 }
 
+void DefaultMQProducerImpl::send(std::vector<MQMessage>& msgs, SendCallback* sendCallback) {
+  MQMessage batchMessage(batch(msgs));
+  send(batchMessage, sendCallback);
+}
+
+void DefaultMQProducerImpl::send(std::vector<MQMessage>& msgs, SendCallback* sendCallback, long timeout) {
+  MQMessage batchMessage(batch(msgs));
+  send(batchMessage, sendCallback, timeout);
+}
+
+void DefaultMQProducerImpl::send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, SendCallback* sendCallback) {
+  MQMessage batchMessage(batch(msgs));
+  send(batchMessage, mq, sendCallback);
+}
+
+void DefaultMQProducerImpl::send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, SendCallback* sendCallback, long timeout) {
+  MQMessage batchMessage(batch(msgs));
+  send(batchMessage, mq, sendCallback, timeout);
+}
+
 MessagePtr DefaultMQProducerImpl::batch(std::vector<MQMessage>& msgs) {
   if (msgs.size() < 1) {
     THROW_MQEXCEPTION(MQClientException, "msgs need one message at least", -1);
