@@ -50,9 +50,9 @@
 #endif
 
 #ifdef WIN32
-#define FILE_SEPARATOR "\\"
+#define FILE_SEPARATOR '\\'
 #else
-#define FILE_SEPARATOR "/"
+#define FILE_SEPARATOR '/'
 #endif
 
 #endif  // ROCKETMQ_ROCKETMQCLIENT_H_

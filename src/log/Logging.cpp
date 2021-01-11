@@ -62,8 +62,8 @@ void Logger::init_log_dir_() {
     log_dir = UtilAll::getHomeDirectory();
     log_dir.append("/logs/rocketmq-cpp/");
   }
-  if (log_dir[log_dir.size() - 1] != '/') {
-    log_dir.append("/");
+  if (log_dir[log_dir.size() - 1] != FILE_SEPARATOR) {
+    log_dir += FILE_SEPARATOR;
   }
   std::string log_file_name = UtilAll::to_string(UtilAll::getProcessId()) + "_" + "rocketmq-cpp.log";
   log_file_ = log_dir + log_file_name;

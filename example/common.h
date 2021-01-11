@@ -132,7 +132,7 @@ static void PrintRocketmqSendAndConsumerArgs(const RocketmqSendAndConsumerArgs& 
 
 static void help() {
   std::cout << "need option, like follow:\n"
-               "-n nameserver addr, if not set -n and -i ,no nameSrv will be got\n"
+               "-n nameserver addr, if not set -n, no namesrv will be got\n"
                "-g groupname\n"
                "-t msg topic\n"
                "-m messagecout(default value: 1)\n"
@@ -148,7 +148,7 @@ static void help() {
 static bool ParseArgs(int argc, char* argv[], RocketmqSendAndConsumerArgs* info) {
 #ifndef WIN32
   int ch;
-  while ((ch = getopt(argc, argv, "n:g:t:m:c:b:h:r:T:bu")) != -1) {
+  while ((ch = getopt(argc, argv, "n:g:t:m:c:br:uT:vh")) != -1) {
     switch (ch) {
       case 'n':
         info->namesrv.insert(0, optarg);

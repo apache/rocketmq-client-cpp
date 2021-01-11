@@ -291,16 +291,16 @@ std::string UtilAll::getHomeDirectory() {
   return home_dir;
 }
 
-static bool createDirectoryInner(const char* dir) {
-  if (dir == nullptr) {
-    std::cerr << "directory is nullptr" << std::endl;
+static bool createDirectoryInner(const std::string& dir) {
+  if (dir.empty()) {
+    std::cerr << "directory is empty" << std::endl;
     return false;
   }
-  if (access(dir, F_OK) == -1) {
+  if (access(dir.c_str(), F_OK) == -1) {
 #ifdef _WIN32
-    int flag = mkdir(dir);
+    int flag = mkdir(dir.c_str());
 #else
-    int flag = mkdir(dir, 0755);
+    int flag = mkdir(dir.c_str(), 0755);
 #endif
     return flag == 0;
   }
@@ -308,17 +308,19 @@ static bool createDirectoryInner(const char* dir) {
 }
 
 void UtilAll::createDirectory(std::string const& dir) {
-  const char* ptr = dir.c_str();
-  if (access(ptr, F_OK) == 0) {
+  if (dir.empty()) {
     return;
   }
-  char buff[2048] = {0};
-  for (unsigned int i = 0; i < dir.size(); i++) {
-    if (i != 0 && (*(ptr + i) == '/' || *(ptr + i) == '\\')) {
-      memcpy(buff, ptr, i);
-      createDirectoryInner(buff);
-      memset(buff, 0, 1024);
+  if (access(dir.c_str(), F_OK) == 0) {
+    return;
+  }
+  for (size_t i = 0; i < dir.size(); i++) {
+    if (i != 0 && dir[i] == FILE_SEPARATOR) {
+      createDirectoryInner(dir.substr(0, i));
     }
+  }
+  if (dir[dir.size() - 1] != FILE_SEPARATOR) {
+    createDirectoryInner(dir);
   }
   return;
 }

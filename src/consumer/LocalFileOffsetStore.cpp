@@ -38,8 +38,8 @@ LocalFileOffsetStore::LocalFileOffsetStore(MQClientInstance* instance, const std
   if (!UtilAll::existDirectory(storeDir)) {
     UtilAll::createDirectory(storeDir);
     if (!UtilAll::existDirectory(storeDir)) {
-      LOG_ERROR("create offset store dir:%s error", storeDir.c_str());
-      std::string errorMsg("create offset store dir failed: ");
+      LOG_ERROR_NEW("create offset store directory failed: {}", storeDir);
+      std::string errorMsg("create offset store directory failed: ");
       errorMsg.append(storeDir);
       THROW_MQEXCEPTION(MQClientException, errorMsg, -1);
     }
