@@ -244,12 +244,12 @@ void RebalanceImpl::rebalanceByTopic(const std::string& topic, const bool isOrde
     case BROADCASTING: {
       std::vector<MQMessageQueue> mqSet;
       if (!getTopicSubscribeInfo(topic, mqSet)) {
-        bool changed = updateProcessQueueTableInRebalance(topic, mqSet, isOrder);
-        if (changed) {
-          messageQueueChanged(topic, mqSet, mqSet);
-        }
-      } else {
         LOG_WARN_NEW("doRebalance, {}, but the topic[{}] not exist.", consumer_group_, topic);
+        return;
+      }
+      bool changed = updateProcessQueueTableInRebalance(topic, mqSet, isOrder);
+      if (changed) {
+        messageQueueChanged(topic, mqSet, mqSet);
       }
     } break;
     case CLUSTERING: {
