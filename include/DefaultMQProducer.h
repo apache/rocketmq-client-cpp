@@ -39,6 +39,8 @@ class ROCKETMQCLIENT_API DefaultMQProducer : public DefaultMQProducerConfigProxy
   void start() override;
   void shutdown() override;
 
+  std::vector<MQMessageQueue> fetchPublishMessageQueues(const std::string& topic) override;
+
   // Sync: caller will be responsible for the lifecycle of messages.
   SendResult send(MQMessage& msg) override;
   SendResult send(MQMessage& msg, long timeout) override;

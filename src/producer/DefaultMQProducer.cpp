@@ -52,6 +52,10 @@ void DefaultMQProducer::shutdown() {
   producer_impl_->shutdown();
 }
 
+std::vector<MQMessageQueue> DefaultMQProducer::fetchPublishMessageQueues(const std::string& topic) {
+  return producer_impl_->fetchPublishMessageQueues(topic);
+}
+
 SendResult DefaultMQProducer::send(MQMessage& msg) {
   return producer_impl_->send(msg);
 }
@@ -155,7 +159,10 @@ void DefaultMQProducer::send(std::vector<MQMessage>& msgs, const MQMessageQueue&
   producer_impl_->send(msgs, mq, sendCallback);
 }
 
-void DefaultMQProducer::send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, SendCallback* sendCallback, long timeout) {
+void DefaultMQProducer::send(std::vector<MQMessage>& msgs,
+                             const MQMessageQueue& mq,
+                             SendCallback* sendCallback,
+                             long timeout) {
   producer_impl_->send(msgs, mq, sendCallback, timeout);
 }
 

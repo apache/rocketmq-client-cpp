@@ -17,6 +17,7 @@
 #ifndef ROCKETMQ_MQPRODUCER_H_
 #define ROCKETMQ_MQPRODUCER_H_
 
+#include "MQMessageQueue.h"
 #include "MQSelector.h"
 #include "RequestCallback.h"
 #include "SendCallback.h"
@@ -35,6 +36,8 @@ class ROCKETMQCLIENT_API MQProducer {
  public:  // MQProducer
   virtual void start() = 0;
   virtual void shutdown() = 0;
+
+  virtual std::vector<MQMessageQueue> fetchPublishMessageQueues(const std::string& topic) = 0;
 
   // Sync
   virtual SendResult send(MQMessage& msg) = 0;
@@ -75,7 +78,10 @@ class ROCKETMQCLIENT_API MQProducer {
   virtual void send(std::vector<MQMessage>& msgs, SendCallback* sendCallback) = 0;
   virtual void send(std::vector<MQMessage>& msgs, SendCallback* sendCallback, long timeout) = 0;
   virtual void send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, SendCallback* sendCallback) = 0;
-  virtual void send(std::vector<MQMessage>& msgs, const MQMessageQueue& mq, SendCallback* sendCallback, long timeout) = 0;
+  virtual void send(std::vector<MQMessage>& msgs,
+                    const MQMessageQueue& mq,
+                    SendCallback* sendCallback,
+                    long timeout) = 0;
 
   // RPC
   virtual MQMessage request(MQMessage& msg, long timeout) = 0;

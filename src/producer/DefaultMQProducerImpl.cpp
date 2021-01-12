@@ -18,6 +18,7 @@
 
 #include <cassert>
 #include <typeindex>
+#include "MQMessageQueue.h"
 
 #ifndef WIN32
 #include <signal.h>
@@ -40,6 +41,7 @@
 #include "RequestFutureTable.h"
 #include "TopicPublishInfo.hpp"
 #include "TransactionMQProducer.h"
+#include "UtilAll.h"
 #include "Validators.h"
 #include "protocol/header/CommandHeader.h"
 
@@ -156,6 +158,15 @@ void DefaultMQProducerImpl::shutdown() {
       break;
     default:
       break;
+  }
+}
+
+std::vector<MQMessageQueue> DefaultMQProducerImpl::fetchPublishMessageQueues(const std::string& topic) {
+  auto topicPublishInfo = client_instance_->tryToFindTopicPublishInfo(topic);
+  if (topicPublishInfo != nullptr) {
+    return topicPublishInfo->getMessageQueueList();
+  } else {
+    return std::vector<MQMessageQueue>{};
   }
 }
 
