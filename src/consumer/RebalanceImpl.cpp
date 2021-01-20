@@ -47,15 +47,15 @@ void RebalanceImpl::unlock(const MQMessageQueue& mq, const bool oneway) {
 
     try {
       client_instance_->getMQClientAPIImpl()->unlockBatchMQ(findBrokerResult->broker_addr(), unlockBatchRequest.get(),
-                                                            1000);
+                                                            1000, oneway);
 
       ProcessQueuePtr processQueue = getProcessQueue(mq);
-      if (processQueue) {
+      if (processQueue != nullptr) {
         processQueue->set_locked(false);
-        LOG_INFO_NEW("the message queue unlock OK, mq:{}", mq.toString());
-      } else {
-        LOG_ERROR_NEW("the message queue unlock Failed, mq:{}", mq.toString());
       }
+
+      LOG_WARN_NEW("unlock messageQueue. group:{}, clientId:{}, mq:{}", consumer_group_,
+                   client_instance_->getClientId(), mq.toString());
     } catch (MQException& e) {
       LOG_ERROR_NEW("unlockBatchMQ exception, mq:{}", mq.toString());
     }
@@ -86,14 +86,12 @@ void RebalanceImpl::unlockAll(const bool oneway) {
 
       try {
         client_instance_->getMQClientAPIImpl()->unlockBatchMQ(findBrokerResult->broker_addr(), unlockBatchRequest.get(),
-                                                              1000);
+                                                              1000, oneway);
         for (const auto& mq : mqs) {
           ProcessQueuePtr processQueue = getProcessQueue(mq);
-          if (processQueue) {
+          if (processQueue != nullptr) {
             processQueue->set_locked(false);
-            LOG_INFO_NEW("the message queue unlock OK, mq:{}", mq.toString());
-          } else {
-            LOG_ERROR_NEW("the message queue unlock Failed, mq:{}", mq.toString());
+            LOG_INFO_NEW("the message queue unlock OK, Group: {} {}", consumer_group_, mq.toString());
           }
         }
       } catch (MQException& e) {
@@ -139,27 +137,24 @@ bool RebalanceImpl::lock(const MQMessageQueue& mq) {
       if (!lockedMq.empty()) {
         for (const auto& mmqq : lockedMq) {
           ProcessQueuePtr processQueue = getProcessQueue(mq);
-          if (processQueue) {
+          if (processQueue != nullptr) {
             processQueue->set_locked(true);
             processQueue->set_last_lock_timestamp(UtilAll::currentTimeMillis());
+          }
+
+          if (mmqq == mq) {
             lockOK = true;
-            LOG_INFO_NEW("the message queue locked OK, mq:{}", mmqq.toString());
-          } else {
-            LOG_WARN_NEW("the message queue locked OK, but it is released, mq:{}", mmqq.toString());
           }
         }
-
-        lockedMq.clear();
-      } else {
-        LOG_ERROR_NEW("the message queue locked Failed, mq:{}", mq.toString());
       }
 
+      LOG_INFO_NEW("the message queue lock {}, {} {}", lockOK ? "OK" : "Failed", consumer_group_, mq.toString());
       return lockOK;
     } catch (MQException& e) {
       LOG_ERROR_NEW("lockBatchMQ exception, mq:{}", mq.toString());
     }
   } else {
-    LOG_ERROR_NEW("lock findBrokerAddressInSubscribe ret null for broker:{}", mq.broker_name());
+    LOG_ERROR_NEW("lock: findBrokerAddressInSubscribe() returen null for broker:{}", mq.broker_name());
   }
 
   return false;
@@ -196,21 +191,22 @@ void RebalanceImpl::lockAll() {
           lockOKMQSet.insert(mq);
 
           ProcessQueuePtr processQueue = getProcessQueue(mq);
-          if (processQueue) {
+          if (processQueue != nullptr) {
+            if (!processQueue->locked()) {
+              LOG_INFO_NEW("the message queue locked OK, Group: {} {}", consumer_group_, mq.toString());
+            }
+
             processQueue->set_locked(true);
             processQueue->set_last_lock_timestamp(UtilAll::currentTimeMillis());
-            LOG_INFO_NEW("the message queue locked OK, mq:{}", mq.toString());
-          } else {
-            LOG_WARN_NEW("the message queue locked OK, but it is released, mq:{}", mq.toString());
           }
         }
 
         for (const auto& mq : mqs) {
           if (lockOKMQSet.find(mq) == lockOKMQSet.end()) {
             ProcessQueuePtr processQueue = getProcessQueue(mq);
-            if (processQueue) {
-              LOG_WARN_NEW("the message queue locked Failed, mq:{}", mq.toString());
+            if (processQueue != nullptr) {
               processQueue->set_locked(false);
+              LOG_WARN_NEW("the message queue locked Failed, Group: {} {}", consumer_group_, mq.toString());
             }
           }
         }
@@ -218,7 +214,7 @@ void RebalanceImpl::lockAll() {
         LOG_ERROR_NEW("lockBatchMQ fails");
       }
     } else {
-      LOG_ERROR_NEW("lockAll findBrokerAddressInSubscribe ret null for broker:{}", brokerName);
+      LOG_ERROR_NEW("lockAll: findBrokerAddressInSubscribe() return null for broker:{}", brokerName);
     }
   }
 }
