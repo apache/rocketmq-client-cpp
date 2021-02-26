@@ -231,7 +231,7 @@ std::unique_ptr<RemotingCommand> TcpRemotingClient::invokeSync(const std::string
     } catch (const RemotingSendRequestException& e) {
       LOG_WARN_NEW("invokeSync: send request exception, so close the channel[{}]", channel->getPeerAddrAndPort());
       CloseTransport(addr, channel);
-      throw e;
+      throw;
     } catch (const RemotingTimeoutException& e) {
       int code = request.code();
       if (code != GET_CONSUMER_LIST_BY_GROUP) {
@@ -240,7 +240,7 @@ std::unique_ptr<RemotingCommand> TcpRemotingClient::invokeSync(const std::string
                      channel->getPeerAddrAndPort());
       }
       LOG_WARN_NEW("invokeSync: wait response timeout exception, the channel[{}]", channel->getPeerAddrAndPort());
-      throw e;
+      throw;
     }
   } else {
     THROW_MQEXCEPTION(RemotingConnectException, "connect to <" + addr + "> failed", -1);
@@ -294,7 +294,7 @@ void TcpRemotingClient::invokeAsync(const std::string& addr,
     } catch (const RemotingSendRequestException& e) {
       LOG_WARN_NEW("invokeAsync: send request exception, so close the channel[{}]", channel->getPeerAddrAndPort());
       CloseTransport(addr, channel);
-      throw e;
+      throw;
     }
   } else {
     THROW_MQEXCEPTION(RemotingConnectException, "connect to <" + addr + "> failed", -1);
@@ -343,7 +343,7 @@ void TcpRemotingClient::invokeOneway(const std::string& addr, RemotingCommand& r
     } catch (const RemotingSendRequestException& e) {
       LOG_WARN_NEW("invokeOneway: send request exception, so close the channel[{}]", channel->getPeerAddrAndPort());
       CloseTransport(addr, channel);
-      throw e;
+      throw;
     }
   } else {
     THROW_MQEXCEPTION(RemotingConnectException, "connect to <" + addr + "> failed", -1);

@@ -167,7 +167,7 @@ void MQClientAPIImpl::sendMessageAsync(const std::string& addr,
     sendMessageAsyncImpl(cbw, timeoutMillis);
   } catch (RemotingException& e) {
     deleteAndZero(cbw);
-    throw e;
+    throw;
   }
 }
 
@@ -268,7 +268,7 @@ void MQClientAPIImpl::pullMessageAsync(const std::string& addr,
     remoting_client_->invokeAsync(addr, request, cbw, timeoutMillis);
   } catch (RemotingException& e) {
     deleteAndZero(cbw);
-    throw e;
+    throw;
   }
 }
 

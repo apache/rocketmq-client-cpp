@@ -58,7 +58,7 @@ void AsyncProducerWorker(RocketmqSendAndConsumerArgs* info, DefaultMQProducer* p
       producer->send(msg, callback);  // auto delete
     } catch (std::exception& e) {
       std::cout << "[BUG]:" << e.what() << std::endl;
-      throw e;
+      throw;
     }
   }
 }

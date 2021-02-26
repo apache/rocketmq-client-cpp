@@ -180,7 +180,7 @@ SendResult DefaultMQProducerImpl::send(MQMessage& msg, long timeout) {
     return *sendResult;
   } catch (MQException& e) {
     LOG_ERROR_NEW("send failed, exception:{}", e.what());
-    throw e;
+    throw;
   }
 }
 
@@ -200,7 +200,7 @@ SendResult DefaultMQProducerImpl::send(MQMessage& msg, const MQMessageQueue& mq,
     return *sendResult;
   } catch (MQException& e) {
     LOG_ERROR_NEW("send failed, exception:{}", e.what());
-    throw e;
+    throw;
   }
 }
 
@@ -292,7 +292,7 @@ SendResult DefaultMQProducerImpl::send(MQMessage& msg, MessageQueueSelector* sel
     return *result.get();
   } catch (MQException& e) {
     LOG_ERROR_NEW("send failed, exception:{}", e.what());
-    throw e;
+    throw;
   }
 }
 
@@ -345,7 +345,7 @@ TransactionSendResult DefaultMQProducerImpl::sendMessageInTransaction(MQMessage&
     return *sendResult;
   } catch (MQException& e) {
     LOG_ERROR_NEW("sendMessageInTransaction failed, exception:{}", e.what());
-    throw e;
+    throw;
   }
 }
 
@@ -774,7 +774,7 @@ SendResult* DefaultMQProducerImpl::sendKernelImpl(MessagePtr msg,
 
       return sendResult;
     } catch (MQException& e) {
-      throw e;
+      throw;
     }
   }
 
