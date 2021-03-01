@@ -14,6 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <cstring>
+#include <string>
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -40,8 +42,11 @@ TEST(cmessages, originMessage) {
   SetMessageKeys(message, "testKeys");
   EXPECT_STREQ(GetOriginMessageKeys(message), "testKeys");
 
-  SetMessageBody(message, "testBody");
-  EXPECT_STREQ(GetOriginMessageBody(message), "testBody");
+  std::string body("test_body");
+  body.append(3, '\0');
+  SetMessageBody(message, body.c_str());
+  EXPECT_STREQ(GetOriginMessageBody(message), body.c_str());
+  EXPECT_EQ(GetOriginMessageBodyLength(message), body.length());
 
   SetMessageProperty(message, "testKey", "testValue");
   EXPECT_STREQ(GetOriginMessageProperty(message, "testKey"), "testValue");

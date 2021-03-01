@@ -39,6 +39,7 @@ ROCKETMQCLIENT_API const char* GetOriginMessageTopic(CMessage* msg);
 ROCKETMQCLIENT_API const char* GetOriginMessageTags(CMessage* msg);
 ROCKETMQCLIENT_API const char* GetOriginMessageKeys(CMessage* msg);
 ROCKETMQCLIENT_API const char* GetOriginMessageBody(CMessage* msg);
+ROCKETMQCLIENT_API int GetOriginMessageBodyLength(CMessage* msg);
 ROCKETMQCLIENT_API const char* GetOriginMessageProperty(CMessage* msg, const char* key);
 ROCKETMQCLIENT_API int GetOriginDelayTimeLevel(CMessage* msg);
 

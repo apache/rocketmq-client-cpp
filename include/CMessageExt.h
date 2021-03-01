@@ -31,6 +31,7 @@ ROCKETMQCLIENT_API const char* GetMessageTopic(CMessageExt* msgExt);
 ROCKETMQCLIENT_API const char* GetMessageTags(CMessageExt* msgExt);
 ROCKETMQCLIENT_API const char* GetMessageKeys(CMessageExt* msgExt);
 ROCKETMQCLIENT_API const char* GetMessageBody(CMessageExt* msgExt);
+ROCKETMQCLIENT_API int GetMessageBodyLength(CMessageExt* msgExt);
 ROCKETMQCLIENT_API const char* GetMessageProperty(CMessageExt* msgExt, const char* key);
 ROCKETMQCLIENT_API const char* GetMessageId(CMessageExt* msgExt);
 ROCKETMQCLIENT_API int GetMessageDelayTimeLevel(CMessageExt* msgExt);

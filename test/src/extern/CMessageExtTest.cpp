@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include <string>
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -41,8 +41,11 @@ TEST(cmessageExt, info) {
   mqMessageExt->setKeys("testKeys");
   EXPECT_EQ(GetMessageKeys(messageExt), mqMessageExt->getKeys());
 
-  mqMessageExt->setBody("testBody");
+  std::string body("testBody");
+  body.append(3, '\0');
+  mqMessageExt->setBody(body.c_str(), body.length());
   EXPECT_EQ(GetMessageBody(messageExt), mqMessageExt->getBody());
+  EXPECT_EQ(GetMessageBodyLength(messageExt), body.length());
 
   mqMessageExt->setProperty("testKey", "testValues");
   EXPECT_EQ(GetMessageProperty(messageExt, "testKey"), mqMessageExt->getProperty("testKey"));
