@@ -42,7 +42,7 @@ void RequestResponseFuture::executeRequestCallback() noexcept {
   if (request_callback_ != nullptr) {
     if (send_request_ok_ && cause_ == nullptr) {
       try {
-        request_callback_->onSuccess(std::move(response_msg_));
+        request_callback_->invokeOnSuccess(std::move(response_msg_));
       } catch (const std::exception& e) {
         LOG_WARN_NEW("RequestCallback throw an exception: {}", e.what());
       }
@@ -50,15 +50,10 @@ void RequestResponseFuture::executeRequestCallback() noexcept {
       try {
         std::rethrow_exception(cause_);
       } catch (MQException& e) {
-        request_callback_->onException(e);
+        request_callback_->invokeOnException(e);
       } catch (const std::exception& e) {
         LOG_WARN_NEW("unexpected exception in RequestResponseFuture: {}", e.what());
       }
-    }
-
-    // auto delete callback
-    if (request_callback_->getRequestCallbackType() == REQUEST_CALLBACK_TYPE_AUTO_DELETE) {
-      deleteAndZero(request_callback_);
     }
   }
 }

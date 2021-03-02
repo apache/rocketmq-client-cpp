@@ -35,6 +35,23 @@ class ROCKETMQCLIENT_API SendCallback {
   virtual void onException(MQException& e) noexcept = 0;
 
   virtual SendCallbackType getSendCallbackType() const { return SEND_CALLBACK_TYPE_SIMPLE; }
+
+ public:
+  inline void invokeOnSuccess(SendResult& send_result) {
+    auto type = getSendCallbackType();
+    onSuccess(send_result);
+    if (type == SEND_CALLBACK_TYPE_AUTO_DELETE && getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
+      delete this;
+    }
+  }
+
+  inline void invokeOnException(MQException& exception) noexcept {
+    auto type = getSendCallbackType();
+    onException(exception);
+    if (type == SEND_CALLBACK_TYPE_AUTO_DELETE && getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
+      delete this;
+    }
+  }
 };
 
 /**

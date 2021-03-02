@@ -213,10 +213,7 @@ void DefaultMQProducerImpl::send(MQMessage& msg, SendCallback* sendCallback, lon
     (void)sendDefaultImpl(msg.getMessageImpl(), ASYNC, sendCallback, timeout);
   } catch (MQException& e) {
     LOG_ERROR_NEW("send failed, exception:{}", e.what());
-    sendCallback->onException(e);
-    if (sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
-      deleteAndZero(sendCallback);
-    }
+    sendCallback->invokeOnException(e);
   } catch (std::exception& e) {
     LOG_FATAL_NEW("[BUG] encounter unexcepted exception: {}", e.what());
     exit(-1);
@@ -246,10 +243,7 @@ void DefaultMQProducerImpl::send(MQMessage& msg,
     }
   } catch (MQException& e) {
     LOG_ERROR_NEW("send failed, exception:{}", e.what());
-    sendCallback->onException(e);
-    if (sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
-      deleteAndZero(sendCallback);
-    }
+    sendCallback->invokeOnException(e);
   } catch (std::exception& e) {
     LOG_FATAL_NEW("[BUG] encounter unexcepted exception: {}", e.what());
     exit(-1);
@@ -318,10 +312,7 @@ void DefaultMQProducerImpl::send(MQMessage& msg,
     }
   } catch (MQException& e) {
     LOG_ERROR_NEW("send failed, exception:{}", e.what());
-    sendCallback->onException(e);
-    if (sendCallback->getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
-      deleteAndZero(sendCallback);
-    }
+    sendCallback->invokeOnException(e);
   } catch (std::exception& e) {
     LOG_FATAL_NEW("[BUG] encounter unexcepted exception: {}", e.what());
     exit(-1);

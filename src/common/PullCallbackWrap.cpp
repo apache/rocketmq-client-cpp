@@ -33,9 +33,9 @@ void PullCallbackWrap::operationComplete(ResponseFuture* responseFuture) noexcep
     try {
       std::unique_ptr<PullResult> pull_result(client_api_impl_->processPullResponse(response.get()));
       assert(pull_result != nullptr);
-      pull_callback_->onSuccess(std::move(pull_result));
+      pull_callback_->invokeOnSuccess(std::move(pull_result));
     } catch (MQException& e) {
-      pull_callback_->onException(e);
+      pull_callback_->invokeOnException(e);
     }
   } else {
     std::string err;
@@ -47,12 +47,7 @@ void PullCallbackWrap::operationComplete(ResponseFuture* responseFuture) noexcep
       err = "unknown reason";
     }
     MQException exception(err, -1, __FILE__, __LINE__);
-    pull_callback_->onException(exception);
-  }
-
-  // auto delete callback
-  if (pull_callback_->getPullCallbackType() == PULL_CALLBACK_TYPE_AUTO_DELETE) {
-    deleteAndZero(pull_callback_);
+    pull_callback_->invokeOnException(exception);
   }
 }
 

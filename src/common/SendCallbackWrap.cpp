@@ -22,9 +22,9 @@
 #include "Logging.h"
 #include "MQClientAPIImpl.h"
 #include "MQClientInstance.h"
-#include "MessageDecoder.h"
 #include "MQMessageQueue.h"
 #include "MQProtos.h"
+#include "MessageDecoder.h"
 #include "PullAPIWrapper.h"
 #include "PullResultExt.hpp"
 #include "TopicPublishInfo.hpp"
@@ -57,12 +57,7 @@ void SendCallbackWrap::operationComplete(ResponseFuture* responseFuture) noexcep
   auto producer = producer_.lock();
   if (nullptr == producer) {
     MQException exception("DefaultMQProducer is released.", -1, __FILE__, __LINE__);
-    send_callback_->onException(exception);
-
-    // auto delete callback
-    if (send_callback_->getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
-      deleteAndZero(send_callback_);
-    }
+    send_callback_->invokeOnException(exception);
     return;
   }
 
@@ -99,16 +94,11 @@ void SendCallbackWrap::operationComplete(ResponseFuture* responseFuture) noexcep
       // }
 
       try {
-        send_callback_->onSuccess(*sendResult);
+        send_callback_->invokeOnSuccess(*sendResult);
       } catch (...) {
       }
 
       producer->updateFaultItem(broker_name_, UtilAll::currentTimeMillis() - responseFuture->begin_timestamp(), false);
-
-      // auto delete callback
-      if (send_callback_->getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
-        deleteAndZero(send_callback_);
-      }
     } catch (MQException& e) {
       producer->updateFaultItem(broker_name_, UtilAll::currentTimeMillis() - responseFuture->begin_timestamp(), true);
       LOG_ERROR("operationComplete: processSendResponse exception: %s", e.what());
@@ -136,12 +126,7 @@ void SendCallbackWrap::onExceptionImpl(ResponseFuture* responseFuture,
   auto producer = producer_.lock();
   if (nullptr == producer) {
     MQException exception("DefaultMQProducer is released.", -1, __FILE__, __LINE__);
-    send_callback_->onException(exception);
-
-    // auto delete callback
-    if (send_callback_->getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
-      deleteAndZero(send_callback_);
-    }
+    send_callback_->invokeOnException(exception);
     return;
   }
 
@@ -180,12 +165,7 @@ void SendCallbackWrap::onExceptionImpl(ResponseFuture* responseFuture,
       return onExceptionImpl(responseFuture, responseFuture->leftTime(), e1, true);
     }
   } else {
-    send_callback_->onException(e);
-
-    // auto delete callback
-    if (send_callback_->getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
-      deleteAndZero(send_callback_);
-    }
+    send_callback_->invokeOnException(e);
   }
 }
 
