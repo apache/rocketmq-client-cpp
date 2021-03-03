@@ -157,7 +157,7 @@ PrintParams() {
 
 Prepare() {
   if [ -e ${down_dir} ]; then
-    echo "${down_dir} is exist"
+    echo "${down_dir} exists"
     #cd ${down_dir}
     #ls |grep -v ${fname_libevent} |grep -v ${fname_jsoncpp} | grep -v ${fname_boost} |xargs rm -rf
   else
@@ -182,21 +182,21 @@ Prepare() {
   fi
 
   if [ -e ${build_dir} ]; then
-    echo "${build_dir} is exist"
+    echo "${build_dir} exists"
     #rm -rf ${build_dir}/*
   else
     mkdir -p ${build_dir}
   fi
 
   if [ -e ${packet_dir} ]; then
-    echo "${packet_dir} is exist"
+    echo "${packet_dir} exists"
     #rm -rf ${packet_dir}/*
   else
     mkdir -p ${packet_dir}
   fi
 
   if [ -e ${install_lib_dir} ]; then
-    echo "${install_lib_dir} is exist"
+    echo "${install_lib_dir} exists"
   else
     mkdir -p ${install_lib_dir}
   fi
@@ -210,7 +210,7 @@ BuildOpenSSL() {
 
   cd ${down_dir}
   if [ -e ${fname_openssl} ]; then
-    echo "${fname_openssl} is exist"
+    echo "${fname_openssl} exists"
   else
     wget https://www.openssl.org/source/old/1.1.1/${fname_openssl_down} -O ${fname_openssl_down}
   fi
@@ -256,7 +256,7 @@ BuildLibevent() {
 
   cd ${down_dir}
   if [ -e ${fname_libevent} ]; then
-    echo "${fname_libevent} is exist"
+    echo "${fname_libevent} exists"
   else
     wget https://github.com/libevent/libevent/archive/${fname_libevent_down} -O libevent-${fname_libevent_down}
   fi
@@ -305,7 +305,7 @@ BuildJsonCPP() {
   cd ${down_dir}
 
   if [ -e ${fname_jsoncpp} ]; then
-    echo "${fname_jsoncpp} is exist"
+    echo "${fname_jsoncpp} exists"
   else
     wget https://github.com/open-source-parsers/jsoncpp/archive/${fname_jsoncpp_down} -O jsoncpp-${fname_jsoncpp_down}
   fi
@@ -354,7 +354,7 @@ BuildBoost() {
 
   cd ${down_dir}
   if [ -e ${fname_boost} ]; then
-    echo "${fname_boost} is exist"
+    echo "${fname_boost} exists"
   else
     wget http://sourceforge.net/projects/boost/files/boost/${fname_boost_down}
   fi
@@ -430,12 +430,12 @@ BuildGoogleTest() {
     return 0
   fi
   if [ -f ./bin/lib/libgtest.a ]; then
-    echo "libgteest already exist no need build test"
+    echo "GTest already exists, no need build"
     return 0
   fi
   cd ${down_dir}
   if [ -e release-1.8.1.tar.gz ]; then
-    echo "${fname_boost} is exist"
+    echo "${fname_boost} exists"
   else
     wget https://github.com/abseil/googletest/archive/release-1.8.1.tar.gz
   fi

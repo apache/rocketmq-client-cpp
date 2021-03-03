@@ -47,6 +47,14 @@ const char* GetMessageBody(CMessageExt* msg) {
   }
   return ((MQMessageExt*)msg)->getBody().c_str();
 }
+
+int GetMessageBodyLength(CMessageExt* msgExt) {
+  if (NULL == msgExt) {
+    return 0;
+  }
+  return reinterpret_cast<MQMessageExt*>(msgExt)->getBody().length();
+}
+
 const char* GetMessageProperty(CMessageExt* msg, const char* key) {
   if (msg == NULL) {
     return NULL;

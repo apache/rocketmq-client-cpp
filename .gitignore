@@ -6,3 +6,5 @@ libs/signature/lib
 tmp_*
 Testing
 .vscode
+.cache
+compile_commands.json
