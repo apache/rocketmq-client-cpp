@@ -46,8 +46,8 @@ TEST(cmessages, originMessage) {
   std::string body("test_body");
   body.append(3, '\0');
   SetMessageBody(message, body.c_str());
-  EXPECT_STREQ(GetOriginMessageBody(message), body.c_str());
-  EXPECT_EQ(GetOriginMessageBodyLength(message), body.length());
+  std::string retrieved_body(GetOriginMessageBody(message), GetOriginMessageBodyLength(message));
+  EXPECT_TRUE(body == retrieved_body);
 
   SetMessageProperty(message, "testKey", "testValue");
   EXPECT_STREQ(GetOriginMessageProperty(message, "testKey"), "testValue");

@@ -45,8 +45,8 @@ TEST(cmessageExt, info) {
   std::string body("testBody");
   body.append(3, '\0');
   mqMessageExt->setBody(body.c_str(), body.length());
-  EXPECT_EQ(GetMessageBody(messageExt), mqMessageExt->getBody());
-  EXPECT_EQ(GetMessageBodyLength(messageExt), body.length());
+  std::string retrieved_body(GetMessageBody(messageExt), GetMessageBodyLength(messageExt));
+  EXPECT_TRUE(body == retrieved_body);
 
   mqMessageExt->setProperty("testKey", "testValues");
   EXPECT_EQ(GetMessageProperty(messageExt, "testKey"), mqMessageExt->getProperty("testKey"));
