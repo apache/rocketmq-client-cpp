@@ -116,7 +116,7 @@ int GetOriginMessageBodyLength(CMessage* msg) {
   if (NULL == msg) {
     return 0;
   }
-  return static_cast<MQMessage*>(msg)->getBody().length();
+  return reinterpret_cast<MQMessage*>(msg)->getBody().length();
 }
 const char* GetOriginMessageProperty(CMessage* msg, const char* key) {
   if (msg == NULL) {

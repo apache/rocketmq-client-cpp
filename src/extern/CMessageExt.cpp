@@ -52,7 +52,7 @@ int GetMessageBodyLength(CMessageExt* msgExt) {
   if (NULL == msgExt) {
     return 0;
   }
-  return static_cast<MQMessageExt*>(msgExt)->getBody().length();
+  return reinterpret_cast<MQMessageExt*>(msgExt)->getBody().length();
 }
 
 const char* GetMessageProperty(CMessageExt* msg, const char* key) {
