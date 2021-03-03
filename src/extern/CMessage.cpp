@@ -60,6 +60,10 @@ int SetMessageKeys(CMessage* msg, const char* keys) {
   ((MQMessage*)msg)->setKeys(keys);
   return OK;
 }
+
+/**
+ * DO NOT USE THIS FUNCTION, IT IS ERROR-PRONE.
+ */
 int SetMessageBody(CMessage* msg, const char* body) {
   if (msg == NULL) {
     return NULL_POINTER;
