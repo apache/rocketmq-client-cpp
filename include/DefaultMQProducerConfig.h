@@ -32,36 +32,39 @@ class ROCKETMQCLIENT_API DefaultMQProducerConfig : virtual public MQClientConfig
  public:
   virtual ~DefaultMQProducerConfig() = default;
 
-  // if msgbody size larger than maxMsgBodySize, exception will be throwed
+  virtual int async_send_thread_nums() const = 0;
+  virtual void set_async_send_thread_nums(int async_send_thread_nums) = 0;
+
+  // if msgbody size larger than max_message_size, exception will be throwed
   virtual int max_message_size() const = 0;
-  virtual void set_max_message_size(int maxMessageSize) = 0;
+  virtual void set_max_message_size(int max_message_size) = 0;
 
   /*
-   * if msgBody size is large than m_compressMsgBodyOverHowmuch
-   *  rocketmq cpp will compress msgBody according to compressLevel
+   * if msgBody size is large than compress_msg_body_over_howmuch,
+   * sdk will compress message body according to compress_level
    */
   virtual int compress_msg_body_over_howmuch() const = 0;
-  virtual void set_compress_msg_body_over_howmuch(int compressMsgBodyOverHowmuch) = 0;
+  virtual void set_compress_msg_body_over_howmuch(int compress_msg_body_over_howmuch) = 0;
 
   virtual int compress_level() const = 0;
-  virtual void set_compress_level(int compressLevel) = 0;
+  virtual void set_compress_level(int compress_level) = 0;
 
   // set and get timeout of per msg
   virtual int send_msg_timeout() const = 0;
-  virtual void set_send_msg_timeout(int sendMsgTimeout) = 0;
+  virtual void set_send_msg_timeout(int send_msg_timeout) = 0;
 
   // set msg max retry times, default retry times is 5
   virtual int retry_times() const = 0;
-  virtual void set_retry_times(int times) = 0;
+  virtual void set_retry_times(int retry_times) = 0;
 
   virtual int retry_times_for_async() const = 0;
-  virtual void set_retry_times_for_async(int times) = 0;
+  virtual void set_retry_times_for_async(int retry_times) = 0;
 
   virtual bool retry_another_broker_when_not_store_ok() const = 0;
-  virtual void set_retry_another_broker_when_not_store_ok(bool retryAnotherBrokerWhenNotStoreOK) = 0;
+  virtual void set_retry_another_broker_when_not_store_ok(bool retry_another_broker_when_not_store_ok) = 0;
 
   virtual bool send_latency_fault_enable() const { return false; };
-  virtual void set_send_latency_fault_enable(bool sendLatencyFaultEnable){};
+  virtual void set_send_latency_fault_enable(bool send_latency_fault_enable){};
 };
 
 }  // namespace rocketmq

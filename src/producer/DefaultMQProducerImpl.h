@@ -22,6 +22,7 @@
 #include "MQClientImpl.h"
 #include "MQProducerInner.h"
 #include "MessageBatch.h"
+#include "concurrent/executor.hpp"
 
 namespace rocketmq {
 
@@ -178,6 +179,7 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
 
  private:
   std::unique_ptr<MQFaultStrategy> mq_fault_strategy_;
+  std::unique_ptr<thread_pool_executor> async_send_executor_;
   std::unique_ptr<thread_pool_executor> check_transaction_executor_;
 };
 
