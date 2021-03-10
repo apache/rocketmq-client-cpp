@@ -159,21 +159,16 @@ void MQClientAPIImpl::sendMessageAsync(const std::string& addr,
                                        int64_t timeoutMillis,
                                        int retryTimesWhenSendFailed,
                                        DefaultMQProducerImplPtr producer) {
-  // delete in future
-  auto* cbw = new SendCallbackWrap(addr, brokerName, msg, std::forward<RemotingCommand>(request), sendCallback,
-                                   topicPublishInfo, instance, retryTimesWhenSendFailed, 0, producer);
-
-  try {
-    sendMessageAsyncImpl(cbw, timeoutMillis);
-  } catch (RemotingException& e) {
-    deleteAndZero(cbw);
-    throw;
-  }
+  std::unique_ptr<InvokeCallback> cbw(
+      new SendCallbackWrap(addr, brokerName, msg, std::forward<RemotingCommand>(request), sendCallback,
+                           topicPublishInfo, instance, retryTimesWhenSendFailed, 0, producer));
+  sendMessageAsyncImpl(cbw, timeoutMillis);
 }
 
-void MQClientAPIImpl::sendMessageAsyncImpl(SendCallbackWrap* cbw, int64_t timeoutMillis) {
-  const auto& addr = cbw->getAddr();
-  auto& request = cbw->getRemotingCommand();
+void MQClientAPIImpl::sendMessageAsyncImpl(std::unique_ptr<InvokeCallback>& cbw, int64_t timeoutMillis) {
+  auto* scbw = static_cast<SendCallbackWrap*>(cbw.get());
+  const auto& addr = scbw->getAddr();
+  auto& request = scbw->getRemotingCommand();
   remoting_client_->invokeAsync(addr, request, cbw, timeoutMillis);
 }
 
@@ -261,15 +256,8 @@ void MQClientAPIImpl::pullMessageAsync(const std::string& addr,
                                        RemotingCommand& request,
                                        int timeoutMillis,
                                        PullCallback* pullCallback) {
-  // delete in future
-  auto* cbw = new PullCallbackWrap(pullCallback, this);
-
-  try {
-    remoting_client_->invokeAsync(addr, request, cbw, timeoutMillis);
-  } catch (RemotingException& e) {
-    deleteAndZero(cbw);
-    throw;
-  }
+  std::unique_ptr<InvokeCallback> cbw(new PullCallbackWrap(pullCallback, this));
+  remoting_client_->invokeAsync(addr, request, cbw, timeoutMillis);
 }
 
 PullResult* MQClientAPIImpl::pullMessageSync(const std::string& addr, RemotingCommand& request, int timeoutMillis) {

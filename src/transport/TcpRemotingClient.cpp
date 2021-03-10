@@ -279,7 +279,7 @@ std::unique_ptr<RemotingCommand> TcpRemotingClient::invokeSyncImpl(TcpTransportP
 
 void TcpRemotingClient::invokeAsync(const std::string& addr,
                                     RemotingCommand& request,
-                                    InvokeCallback* invokeCallback,
+                                    std::unique_ptr<InvokeCallback>& invokeCallback,
                                     int64_t timeoutMillis) {
   auto beginStartTime = UtilAll::currentTimeMillis();
   auto channel = GetTransport(addr);
@@ -304,33 +304,27 @@ void TcpRemotingClient::invokeAsync(const std::string& addr,
 void TcpRemotingClient::invokeAsyncImpl(TcpTransportPtr channel,
                                         RemotingCommand& request,
                                         int64_t timeoutMillis,
-                                        InvokeCallback* invokeCallback) {
+                                        std::unique_ptr<InvokeCallback>& invokeCallback) {
   int code = request.code();
   int opaque = request.opaque();
 
   // delete in callback
-  auto responseFuture = std::make_shared<ResponseFuture>(code, opaque, timeoutMillis, invokeCallback);
+  auto responseFuture = std::make_shared<ResponseFuture>(code, opaque, timeoutMillis, std::move(invokeCallback));
   putResponseFuture(channel, opaque, responseFuture);
 
-  try {
-    if (SendCommand(channel, request)) {
-      responseFuture->set_send_request_ok(true);
-    } else {
-      // requestFail
-      responseFuture = popResponseFuture(channel, opaque);
-      if (responseFuture != nullptr) {
-        responseFuture->set_send_request_ok(false);
-        if (responseFuture->hasInvokeCallback()) {
-          handle_executor_.submit(std::bind(&ResponseFuture::executeInvokeCallback, responseFuture));
-        }
+  if (SendCommand(channel, request)) {
+    responseFuture->set_send_request_ok(true);
+  } else {
+    // request fail
+    responseFuture = popResponseFuture(channel, opaque);
+    if (responseFuture != nullptr) {
+      responseFuture->set_send_request_ok(false);
+      if (responseFuture->hasInvokeCallback()) {
+        handle_executor_.submit(std::bind(&ResponseFuture::executeInvokeCallback, responseFuture));
       }
-
-      LOG_WARN_NEW("send a request command to channel <{}> failed.", channel->getPeerAddrAndPort());
     }
-  } catch (const std::exception& e) {
-    LOG_WARN_NEW("send a request command to channel <{}> Exception.\n{}", channel->getPeerAddrAndPort(), e.what());
-    THROW_MQEXCEPTION(RemotingSendRequestException, "send request to <" + channel->getPeerAddrAndPort() + "> failed",
-                      -1);
+
+    LOG_WARN_NEW("send a request command to channel <{}> failed.", channel->getPeerAddrAndPort());
   }
 }
 
@@ -553,7 +547,7 @@ bool TcpRemotingClient::CloseNameServerTransport(TcpTransportPtr channel) {
   return removeItemFromTable;
 }
 
-bool TcpRemotingClient::SendCommand(TcpTransportPtr channel, RemotingCommand& msg) {
+bool TcpRemotingClient::SendCommand(TcpTransportPtr channel, RemotingCommand& msg) noexcept {
   auto package = msg.encode();
   return channel->sendMessage(package->array(), package->size());
 }

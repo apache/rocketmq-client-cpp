@@ -17,9 +17,10 @@
 #ifndef ROCKETMQ_TRANSPORT_RESPONSEFUTURE_H_
 #define ROCKETMQ_TRANSPORT_RESPONSEFUTURE_H_
 
-#include "concurrent/latch.hpp"
+#include <memory>
 #include "InvokeCallback.h"
 #include "RemotingCommand.h"
+#include "concurrent/latch.hpp"
 
 namespace rocketmq {
 
@@ -28,13 +29,15 @@ typedef std::shared_ptr<ResponseFuture> ResponseFuturePtr;
 
 class ResponseFuture {
  public:
-  ResponseFuture(int requestCode, int opaque, int64_t timeoutMillis, InvokeCallback* invokeCallback = nullptr);
+  ResponseFuture(int requestCode,
+                 int opaque,
+                 int64_t timeoutMillis,
+                 std::unique_ptr<InvokeCallback> invokeCallback = nullptr);
   virtual ~ResponseFuture();
 
   void releaseThreadCondition();
 
   bool hasInvokeCallback();
-  InvokeCallback* releaseInvokeCallback();
 
   void executeInvokeCallback() noexcept;
 
@@ -58,6 +61,8 @@ class ResponseFuture {
 
   inline bool send_request_ok() const { return send_request_ok_; }
   inline void set_send_request_ok(bool sendRequestOK = true) { send_request_ok_ = sendRequestOK; };
+
+  inline std::unique_ptr<InvokeCallback>& invoke_callback() { return invoke_callback_; }
 
  private:
   int request_code_;

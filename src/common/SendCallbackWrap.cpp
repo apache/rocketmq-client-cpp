@@ -156,9 +156,7 @@ void SendCallbackWrap::onExceptionImpl(ResponseFuture* responseFuture,
       // resend
       addr_ = std::move(addr);
       broker_name_ = std::move(retryBrokerName);
-      instance_->getMQClientAPIImpl()->sendMessageAsyncImpl(this, timeoutMillis);
-
-      responseFuture->releaseInvokeCallback();  // for avoid delete this SendCallbackWrap
+      instance_->getMQClientAPIImpl()->sendMessageAsyncImpl(responseFuture->invoke_callback(), timeoutMillis);
       return;
     } catch (MQException& e1) {
       producer->updateFaultItem(broker_name_, 3000, true);

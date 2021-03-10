@@ -20,8 +20,8 @@
 #include "CommunicationMode.h"
 #include "DefaultMQProducerImpl.h"
 #include "KVTable.h"
-#include "MQException.h"
 #include "MQClientInstance.h"
+#include "MQException.h"
 #include "MQMessageExt.h"
 #include "PullCallback.h"
 #include "SendCallback.h"
@@ -29,8 +29,8 @@
 #include "TopicConfig.h"
 #include "TopicList.h"
 #include "TopicPublishInfo.hpp"
-#include "protocol/body/TopicRouteData.hpp"
 #include "protocol/body/LockBatchRequestBody.hpp"
+#include "protocol/body/TopicRouteData.hpp"
 #include "protocol/body/UnlockBatchRequestBody.hpp"
 #include "protocol/header/CommandHeader.h"
 #include "protocol/heartbeat/HeartbeatData.hpp"
@@ -40,7 +40,7 @@ namespace rocketmq {
 class TcpRemotingClient;
 class ClientRemotingProcessor;
 class RPCHook;
-class SendCallbackWrap;
+class InvokeCallback;
 
 /**
  * wrap all RPC API
@@ -182,7 +182,7 @@ class MQClientAPIImpl {
                         int retryTimesWhenSendFailed,
                         DefaultMQProducerImplPtr producer);
 
-  void sendMessageAsyncImpl(SendCallbackWrap* cbw, int64_t timeoutMillis);
+  void sendMessageAsyncImpl(std::unique_ptr<InvokeCallback>& cbw, int64_t timeoutMillis);
 
   PullResult* pullMessageSync(const std::string& addr, RemotingCommand& request, int timeoutMillis);
 

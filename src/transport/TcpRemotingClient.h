@@ -52,7 +52,7 @@ class TcpRemotingClient {
 
   void invokeAsync(const std::string& addr,
                    RemotingCommand& request,
-                   InvokeCallback* invokeCallback,
+                   std::unique_ptr<InvokeCallback>& invokeCallback,
                    int64_t timeoutMillis);
 
   void invokeOneway(const std::string& addr, RemotingCommand& request);
@@ -62,7 +62,7 @@ class TcpRemotingClient {
   std::vector<std::string> getNameServerAddressList() const { return namesrv_addr_list_; }
 
  private:
-  static bool SendCommand(TcpTransportPtr channel, RemotingCommand& msg);
+  static bool SendCommand(TcpTransportPtr channel, RemotingCommand& msg) noexcept;
 
   void channelClosed(TcpTransportPtr channel);
 
@@ -88,7 +88,7 @@ class TcpRemotingClient {
   void invokeAsyncImpl(TcpTransportPtr channel,
                        RemotingCommand& request,
                        int64_t timeoutMillis,
-                       InvokeCallback* invokeCallback);
+                       std::unique_ptr<InvokeCallback>& invokeCallback);
   void invokeOnewayImpl(TcpTransportPtr channel, RemotingCommand& request);
 
   // rpc hook
