@@ -511,7 +511,9 @@ int SetProducerLogFileNumAndSize(CProducer* producer, int fileNum, long fileSize
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  DEFAULT_LOGGER_INSTANCE->setLogFileNumAndSize(fileNum, fileSize);
+  auto& default_logger_config = GetDefaultLoggerConfig();
+  default_logger_config.set_file_count(fileNum);
+  default_logger_config.set_file_size(fileSize);
   return OK;
 }
 
@@ -519,7 +521,8 @@ int SetProducerLogLevel(CProducer* producer, CLogLevel level) {
   if (producer == NULL) {
     return NULL_POINTER;
   }
-  DEFAULT_LOGGER_INSTANCE->set_log_level((LogLevel)level);
+  auto& default_logger_config = GetDefaultLoggerConfig();
+  default_logger_config.set_level(static_cast<LogLevel>(level));
   return OK;
 }
 

@@ -19,6 +19,7 @@
 
 #include <memory>  // std::shared_ptr
 #include <string>  // std::string
+#include <utility>
 #include <vector>  // std::vector
 
 // clang-format off
@@ -42,70 +43,159 @@ enum LogLevel {
   LOG_LEVEL_LEVEL_NUM = 7
 };
 
+class LoggerConfig {
+ public:
+  LoggerConfig(const std::string& name, const std::string& path)
+      : LoggerConfig(name, LOG_LEVEL_INFO, path, 1024 * 1024 * 100, 3) {}
+  LoggerConfig(const std::string& name, LogLevel level, const std::string& path, int file_size, int file_count)
+      : name_(name), level_(level), path_(path), file_size_(file_size), file_count_(file_count) {}
+
+ public:
+  inline const std::string& name() const { return name_; }
+  inline void set_name(const std::string& name) { name_ = name; }
+
+  inline LogLevel level() const { return level_; }
+  inline void set_level(LogLevel level) { level_ = level; }
+
+  inline const std::string& path() const { return path_; }
+  inline void set_path(const std::string& path) { path_ = path; }
+
+  inline int file_size() const { return file_size_; }
+  inline void set_file_size(int file_size) { file_size_ = file_size; }
+
+  inline int file_count() const { return file_count_; }
+  inline void set_file_count(int file_count) { file_count_ = file_count; }
+
+  inline bool config_spdlog() const { return config_spdlog_; }
+  inline void set_config_spdlog(bool config_spdlog) { config_spdlog_ = config_spdlog; }
+
+ private:
+  std::string name_;
+  LogLevel level_;
+  std::string path_;
+  int file_size_;
+  int file_count_;
+  bool config_spdlog_{true};
+};
+
 class Logger {
  public:
-  static Logger* getLoggerInstance();
+  Logger(const LoggerConfig& config);
 
- public:
   virtual ~Logger();
 
-  inline spdlog::logger* getSeverityLogger() { return logger_.get(); }
+  template <typename FormatString, typename... Args>
+  inline void Log(spdlog::source_loc&& location,
+                  spdlog::level::level_enum level,
+                  FormatString&& format,
+                  Args&&... args) {
+    logger_->log(std::forward<spdlog::source_loc>(location), level, format, std::forward<Args>(args)...);
+  }
 
-  void setLogFileNumAndSize(int logNum, int sizeOfPerFile);
+  template <typename FormatString, typename... Args>
+  inline void Trace(spdlog::source_loc&& location, FormatString&& format, Args&&... args) {
+    Log(std::forward<spdlog::source_loc>(location), spdlog::level::trace, std::forward<FormatString>(format),
+        std::forward<Args>(args)...);
+  }
 
-  inline LogLevel log_level() const { return log_level_; }
-  inline void set_log_level(LogLevel log_level) {
-    log_level_ = log_level;
-    set_log_level_(log_level);
+  template <typename FormatString, typename... Args>
+  inline void Debug(spdlog::source_loc&& location, FormatString&& format, Args&&... args) {
+    Log(std::forward<spdlog::source_loc>(location), spdlog::level::debug, std::forward<FormatString>(format),
+        std::forward<Args>(args)...);
+  }
+
+  template <typename FormatString, typename... Args>
+  inline void Info(spdlog::source_loc&& location, FormatString&& format, Args&&... args) {
+    Log(std::forward<spdlog::source_loc>(location), spdlog::level::info, std::forward<FormatString>(format),
+        std::forward<Args>(args)...);
+  }
+
+  template <typename FormatString, typename... Args>
+  inline void Warn(spdlog::source_loc&& location, FormatString&& format, Args&&... args) {
+    Log(std::forward<spdlog::source_loc>(location), spdlog::level::warn, std::forward<FormatString>(format),
+        std::forward<Args>(args)...);
+  }
+
+  template <typename FormatString, typename... Args>
+  inline void Error(spdlog::source_loc&& location, FormatString&& format, Args&&... args) {
+    Log(std::forward<spdlog::source_loc>(location), spdlog::level::err, std::forward<FormatString>(format),
+        std::forward<Args>(args)...);
+  }
+
+  template <typename FormatString, typename... Args>
+  inline void Fatal(spdlog::source_loc&& location, FormatString&& format, Args&&... args) {
+    Log(std::forward<spdlog::source_loc>(location), spdlog::level::critical, std::forward<FormatString>(format),
+        std::forward<Args>(args)...);
+  }
+
+  template <typename FormatString, typename... Args>
+  inline void Printf(spdlog::source_loc&& location,
+                     spdlog::level::level_enum level,
+                     FormatString&& format,
+                     Args&&... args) {
+    if (logger_->should_log(level)) {
+      std::string message = fmt::sprintf(format, std::forward<Args>(args)...);
+      logger_->log(std::forward<spdlog::source_loc>(location), level, message);
+    }
+  }
+
+  template <typename FormatString, typename... Args>
+  inline void TracePrintf(spdlog::source_loc&& location, FormatString&& format, Args&&... args) {
+    Printf(std::forward<spdlog::source_loc>(location), spdlog::level::trace, std::forward<FormatString>(format),
+           std::forward<Args>(args)...);
+  }
+
+  template <typename FormatString, typename... Args>
+  inline void DebugPrintf(spdlog::source_loc&& location, FormatString&& format, Args&&... args) {
+    Printf(std::forward<spdlog::source_loc>(location), spdlog::level::debug, std::forward<FormatString>(format),
+           std::forward<Args>(args)...);
+  }
+
+  template <typename FormatString, typename... Args>
+  inline void InfoPrintf(spdlog::source_loc&& location, FormatString&& format, Args&&... args) {
+    Printf(std::forward<spdlog::source_loc>(location), spdlog::level::info, std::forward<FormatString>(format),
+           std::forward<Args>(args)...);
+  }
+
+  template <typename FormatString, typename... Args>
+  inline void WarnPrintf(spdlog::source_loc&& location, FormatString&& format, Args&&... args) {
+    Printf(std::forward<spdlog::source_loc>(location), spdlog::level::warn, std::forward<FormatString>(format),
+           std::forward<Args>(args)...);
+  }
+
+  template <typename FormatString, typename... Args>
+  inline void ErrorPrintf(spdlog::source_loc&& location, FormatString&& format, Args&&... args) {
+    Printf(std::forward<spdlog::source_loc>(location), spdlog::level::err, std::forward<FormatString>(format),
+           std::forward<Args>(args)...);
+  }
+
+  template <typename FormatString, typename... Args>
+  inline void FatalPrintf(spdlog::source_loc&& location, FormatString&& format, Args&&... args) {
+    Printf(std::forward<spdlog::source_loc>(location), spdlog::level::critical, std::forward<FormatString>(format),
+           std::forward<Args>(args)...);
   }
 
  private:
-  Logger(const std::string& name);
-
-  void init_log_dir_();
-  void init_spdlog_env_();
-
-  std::shared_ptr<spdlog::logger> create_rotating_logger_(const std::string& name,
-                                                          const std::string& filepath,
-                                                          std::size_t max_size,
-                                                          std::size_t max_files);
-
-  void set_log_level_(LogLevel log_level);
-
- private:
-  LogLevel log_level_;
-  std::string log_file_;
-
   std::shared_ptr<spdlog::logger> logger_;
 };
 
-#define DEFAULT_LOGGER_INSTANCE Logger::getLoggerInstance()
-#define DEFAULT_LOGGER DEFAULT_LOGGER_INSTANCE->getSeverityLogger()
+LoggerConfig& GetDefaultLoggerConfig();
+Logger& GetDefaultLogger();
 
-#define SPDLOG_PRINTF(logger, level, format, ...)                        \
-  do {                                                                   \
-    if (logger->should_log(level)) {                                     \
-      std::string message = fmt::sprintf(format, ##__VA_ARGS__);         \
-      logger->log(level, "{} [{}:{}]", message, __FUNCTION__, __LINE__); \
-    }                                                                    \
-  } while (0)
+#define LOG_SOURCE_LOCATION \
+  spdlog::source_loc { __FILE__, __LINE__, SPDLOG_FUNCTION }
 
-#define LOG_FATAL(...) SPDLOG_PRINTF(DEFAULT_LOGGER, spdlog::level::critical, __VA_ARGS__)
-#define LOG_ERROR(...) SPDLOG_PRINTF(DEFAULT_LOGGER, spdlog::level::err, __VA_ARGS__)
-#define LOG_WARN(...) SPDLOG_PRINTF(DEFAULT_LOGGER, spdlog::level::warn, __VA_ARGS__)
-#define LOG_INFO(...) SPDLOG_PRINTF(DEFAULT_LOGGER, spdlog::level::info, __VA_ARGS__)
-#define LOG_DEBUG(...) SPDLOG_PRINTF(DEFAULT_LOGGER, spdlog::level::debug, __VA_ARGS__)
+#define LOG_FATAL(...) GetDefaultLogger().FatalPrintf(LOG_SOURCE_LOCATION, __VA_ARGS__)
+#define LOG_ERROR(...) GetDefaultLogger().ErrorPrintf(LOG_SOURCE_LOCATION, __VA_ARGS__)
+#define LOG_WARN(...) GetDefaultLogger().WarnPrintf(LOG_SOURCE_LOCATION, __VA_ARGS__)
+#define LOG_INFO(...) GetDefaultLogger().InfoPrintf(LOG_SOURCE_LOCATION, __VA_ARGS__)
+#define LOG_DEBUG(...) GetDefaultLogger().DebugPrintf(LOG_SOURCE_LOCATION, __VA_ARGS__)
 
-#define SPDLOG_EXT(logger, level, format, ...)                                    \
-  do {                                                                            \
-    logger->log(level, format " [{}:{}]", ##__VA_ARGS__, __FUNCTION__, __LINE__); \
-  } while (0)
-
-#define LOG_FATAL_NEW(...) SPDLOG_EXT(DEFAULT_LOGGER, spdlog::level::critical, __VA_ARGS__)
-#define LOG_ERROR_NEW(...) SPDLOG_EXT(DEFAULT_LOGGER, spdlog::level::err, __VA_ARGS__)
-#define LOG_WARN_NEW(...) SPDLOG_EXT(DEFAULT_LOGGER, spdlog::level::warn, __VA_ARGS__)
-#define LOG_INFO_NEW(...) SPDLOG_EXT(DEFAULT_LOGGER, spdlog::level::info, __VA_ARGS__)
-#define LOG_DEBUG_NEW(...) SPDLOG_EXT(DEFAULT_LOGGER, spdlog::level::debug, __VA_ARGS__)
+#define LOG_FATAL_NEW(...) GetDefaultLogger().Fatal(LOG_SOURCE_LOCATION, __VA_ARGS__)
+#define LOG_ERROR_NEW(...) GetDefaultLogger().Error(LOG_SOURCE_LOCATION, __VA_ARGS__)
+#define LOG_WARN_NEW(...) GetDefaultLogger().Warn(LOG_SOURCE_LOCATION, __VA_ARGS__)
+#define LOG_INFO_NEW(...) GetDefaultLogger().Info(LOG_SOURCE_LOCATION, __VA_ARGS__)
+#define LOG_DEBUG_NEW(...) GetDefaultLogger().Debug(LOG_SOURCE_LOCATION, __VA_ARGS__)
 
 }  // namespace rocketmq
 
