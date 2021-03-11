@@ -478,7 +478,9 @@ void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pull_request) {
                                           false);                  // class filter
 
   try {
-    auto* callback = new AsyncPullCallback(shared_from_this(), pull_request, subscription_data);
+    std::unique_ptr<AsyncPullCallback> callback(
+        new AsyncPullCallback(shared_from_this(), pull_request, subscription_data));
+
     pull_api_wrapper_->pullKernelImpl(message_queue,                                        // mq
                                       subExpression,                                        // subExpression
                                       subscription_data->expression_type(),                 // expressionType
@@ -490,7 +492,9 @@ void DefaultMQPushConsumerImpl::pullMessage(PullRequestPtr pull_request) {
                                       BROKER_SUSPEND_MAX_TIME_MILLIS,        // brokerSuspendMaxTimeMillis
                                       CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND,  // timeoutMillis
                                       CommunicationMode::ASYNC,              // communicationMode
-                                      callback);                             // pullCallback
+                                      callback.get());                       // pullCallback
+
+    (void)callback.release();
   } catch (MQException& e) {
     LOG_ERROR_NEW("pullKernelImpl exception: {}", e.what());
     executePullRequestLater(pull_request, getDefaultMQPushConsumerConfig()->pull_time_delay_millis_when_exception());
