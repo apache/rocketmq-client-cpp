@@ -27,29 +27,29 @@ namespace rocketmq {
 class MessageId {
  public:
   MessageId() : MessageId(nullptr, 0) {}
-  MessageId(struct sockaddr* address, int64_t offset) : address_(nullptr), offset_(offset) { setAddress(address); }
+  MessageId(const struct sockaddr* address, int64_t offset) : address_(SockaddrToStorage(address)), offset_(offset) {}
 
-  MessageId(const MessageId& other) : MessageId(other.address_, other.offset_) {}
-  MessageId(MessageId&& other) : address_(other.address_), offset_(other.offset_) { other.address_ = nullptr; }
+  MessageId(const MessageId& other) : MessageId(other.getAddress(), other.offset_) {}
+  MessageId(MessageId&& other) : address_(std::move(other.address_)), offset_(other.offset_) {}
 
-  virtual ~MessageId() { std::free(address_); }
+  virtual ~MessageId() = default;
 
   MessageId& operator=(const MessageId& other) {
     if (&other != this) {
-      setAddress(other.address_);
+      setAddress(other.getAddress());
       this->offset_ = other.offset_;
     }
     return *this;
   }
 
-  const struct sockaddr* getAddress() const { return address_; }
-  void setAddress(struct sockaddr* address) { address_ = copySocketAddress(address_, address); }
+  const struct sockaddr* getAddress() const { return reinterpret_cast<sockaddr*>(address_.get()); }
+  void setAddress(const struct sockaddr* address) { address_ = SockaddrToStorage(address); }
 
   int64_t getOffset() const { return offset_; }
   void setOffset(int64_t offset) { offset_ = offset; }
 
  private:
-  struct sockaddr* address_;
+  std::unique_ptr<sockaddr_storage> address_;
   int64_t offset_;
 };
 

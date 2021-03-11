@@ -207,9 +207,9 @@ int BufferEvent::connect(const std::string& addr) {
   }
 
   try {
-    auto* sa = string2SocketAddress(addr);  // resolve domain
-    peer_addr_port_ = socketAddress2String(sa);
-    return bufferevent_socket_connect(buffer_event_, sa, sockaddr_size(sa));
+    auto* sa = StringToSockaddr(addr);  // resolve domain
+    peer_addr_port_ = SockaddrToString(sa);
+    return bufferevent_socket_connect(buffer_event_, sa, SockaddrSize(sa));
   } catch (const std::exception& e) {
     LOG_ERROR_NEW("can not connect to {}, {}", addr, e.what());
     return -1;

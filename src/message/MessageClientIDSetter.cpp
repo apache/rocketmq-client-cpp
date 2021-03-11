@@ -25,7 +25,8 @@
 #include <unistd.h>
 #endif
 
-#include "ByteOrder.h"
+#include "ByteBuffer.hpp"
+#include "SocketUtil.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
@@ -33,16 +34,28 @@ namespace rocketmq {
 MessageClientIDSetter::MessageClientIDSetter() {
   std::srand((uint32_t)std::time(NULL));
 
-  uint32_t pid = ByteOrderUtil::NorminalBigEndian(static_cast<uint32_t>(UtilAll::getProcessId()));
-  uint32_t ip = ByteOrderUtil::NorminalBigEndian(UtilAll::getIP());
-  uint32_t random_num = ByteOrderUtil::NorminalBigEndian(static_cast<uint32_t>(std::rand()));
+  std::unique_ptr<ByteBuffer> buffer;
+  sockaddr* addr = GetSelfIP();
+  if (addr != nullptr) {
+    buffer.reset(ByteBuffer::allocate(SockaddrSize(addr) + 2 + 4));
+    if (addr->sa_family == AF_INET) {
+      auto* sin = (struct sockaddr_in*)addr;
+      buffer->put(ByteArray(reinterpret_cast<char*>(&sin->sin_addr), kIPv4AddrSize));
+    } else if (addr->sa_family == AF_INET6) {
+      auto* sin6 = (struct sockaddr_in6*)addr;
+      buffer->put(ByteArray(reinterpret_cast<char*>(&sin6->sin6_addr), kIPv6AddrSize));
+    } else {
+      (void)buffer.release();
+    }
+  }
+  if (buffer == nullptr) {
+    buffer.reset(ByteBuffer::allocate(4 + 2 + 4));
+    buffer->putInt(UtilAll::currentTimeMillis());
+  }
+  buffer->putShort(UtilAll::getProcessId());
+  buffer->putInt(std::rand());
 
-  char bin_buf[10];
-  std::memcpy(bin_buf + 2, &pid, 4);
-  std::memcpy(bin_buf, &ip, 4);
-  std::memcpy(bin_buf + 6, &random_num, 4);
-
-  fix_string_ = UtilAll::bytes2string(bin_buf, 10);
+  fixed_string_ = UtilAll::bytes2string(buffer->array(), buffer->position());
 
   setStartTime(UtilAll::currentTimeMillis());
 
@@ -93,11 +106,8 @@ std::string MessageClientIDSetter::createUniqueID() {
   uint32_t period = ByteOrderUtil::NorminalBigEndian(static_cast<uint32_t>(current - start_time_));
   uint16_t seqid = ByteOrderUtil::NorminalBigEndian(counter_++);
 
-  char bin_buf[6];
-  std::memcpy(bin_buf, &period, 4);
-  std::memcpy(bin_buf + 4, &seqid, 2);
-
-  return fix_string_ + UtilAll::bytes2string(bin_buf, 6);
+  return fixed_string_ + UtilAll::bytes2string(reinterpret_cast<char*>(&period), sizeof(period)) +
+         UtilAll::bytes2string(reinterpret_cast<char*>(&seqid), sizeof(seqid));
 }
 
 }  // namespace rocketmq

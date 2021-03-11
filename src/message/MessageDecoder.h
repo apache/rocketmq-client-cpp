@@ -17,8 +17,13 @@
 #ifndef ROCKETMQ_MESSAGE_MESSAGEDECODER_H_
 #define ROCKETMQ_MESSAGE_MESSAGEDECODER_H_
 
+#ifndef WIN32
+#include <sys/socket.h>  // sockaddr
+#else
+#include <Winsock2.h>
+#endif
+
 #include "ByteBuffer.hpp"
-#include "MQException.h"
 #include "MQMessageExt.h"
 #include "MessageId.h"
 

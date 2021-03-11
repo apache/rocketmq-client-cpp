@@ -94,9 +94,9 @@ class MessageExtImpl : public MessageImpl,        // base
   int64_t commit_log_offset_;
   int32_t sys_flag_;
   int64_t born_timestamp_;
-  struct sockaddr* born_host_;
+  std::unique_ptr<sockaddr_storage> born_host_;
   int64_t store_timestamp_;
-  struct sockaddr* store_host_;
+  std::unique_ptr<sockaddr_storage> store_host_;
   int32_t reconsume_times_;
   int64_t prepared_transaction_offset_;
   std::string msg_id_;

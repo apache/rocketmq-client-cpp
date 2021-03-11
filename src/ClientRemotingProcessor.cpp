@@ -16,9 +16,9 @@
  */
 #include "ClientRemotingProcessor.h"
 
-#include "MessageDecoder.h"
 #include "MQProtos.h"
 #include "MessageAccessor.hpp"
+#include "MessageDecoder.h"
 #include "MessageSysFlag.h"
 #include "RequestFutureTable.h"
 #include "SocketUtil.h"
@@ -153,11 +153,11 @@ RemotingCommand* ClientRemotingProcessor::receiveReplyMessage(RemotingCommand* r
     msg->set_store_timestamp(requestHeader->store_timestamp());
 
     if (!requestHeader->born_host().empty()) {
-      msg->set_born_host(string2SocketAddress(requestHeader->born_host()));
+      msg->set_born_host(StringToSockaddr(requestHeader->born_host()));
     }
 
     if (!requestHeader->store_host().empty()) {
-      msg->set_store_host(string2SocketAddress(requestHeader->store_host()));
+      msg->set_store_host(StringToSockaddr(requestHeader->store_host()));
     }
 
     auto body = request->body();

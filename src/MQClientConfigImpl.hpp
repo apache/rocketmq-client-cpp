@@ -22,6 +22,7 @@
 
 #include "MQClientConfig.h"
 #include "NamespaceUtil.h"
+#include "SocketUtil.h"
 #include "UtilAll.h"
 
 namespace rocketmq {
@@ -45,7 +46,7 @@ class MQClientConfigImpl : virtual public MQClientConfig {
 
   std::string buildMQClientId() const override {
     std::string clientId;
-    clientId.append(UtilAll::getLocalAddress());  // clientIP
+    clientId.append(GetLocalAddress());  // clientIP
     clientId.append("@");
     clientId.append(instance_name_);  // instanceName
     if (!unit_name_.empty()) {

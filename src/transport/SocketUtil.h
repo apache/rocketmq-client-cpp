@@ -17,13 +17,14 @@
 #ifndef ROCKETMQ_TRANSPORT_SOCKETUTIL_H_
 #define ROCKETMQ_TRANSPORT_SOCKETUTIL_H_
 
-#include <cstdint>
+#include <cstddef>  // size_t
+#include <cstdint>  // uint16_t
 
 #include <string>
 
 #ifndef WIN32
-#include <arpa/inet.h>
-#include <sys/socket.h>
+#include <netinet/in.h>  // sockaddr_in, AF_INET, sockaddr_in6, AF_INET6
+#include <sys/socket.h>  // sockaddr, sockaddr_storage
 #else
 #include <Winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
@@ -33,21 +34,41 @@
 
 namespace rocketmq {
 
-static inline size_t sockaddr_size(const struct sockaddr* sa) {
-  return sa->sa_family == AF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
+const size_t kIPv4AddrSize = 4;
+const size_t kIPv6AddrSize = 16;
+
+static inline size_t IpaddrSize(const sockaddr* sa) {
+  assert(sa != nullptr);
+  assert(sa->sa_family == AF_INET || sa->sa_family == AF_INET6);
+  return sa->sa_family == AF_INET6 ? kIPv6AddrSize : kIPv4AddrSize;
 }
 
-struct sockaddr* ipPort2SocketAddress(const ByteArray& ip, uint16_t port);
+static inline size_t IpaddrSize(const sockaddr_storage* ss) {
+  return IpaddrSize(reinterpret_cast<const sockaddr*>(ss));
+}
 
-struct sockaddr* string2SocketAddress(const std::string& addr);
-std::string socketAddress2String(const struct sockaddr* addr);
+static inline size_t SockaddrSize(const sockaddr* sa) {
+  assert(sa != nullptr);
+  assert(sa->sa_family == AF_INET || sa->sa_family == AF_INET6);
+  return sa->sa_family == AF_INET6 ? sizeof(sockaddr_in6) : sizeof(sockaddr_in);
+}
 
-struct sockaddr* lookupNameServers(const std::string& hostname);
+static inline size_t SockaddrSize(const sockaddr_storage* ss) {
+  return SockaddrSize(reinterpret_cast<const sockaddr*>(ss));
+}
 
-struct sockaddr* copySocketAddress(struct sockaddr* dst, const struct sockaddr* src);
+std::unique_ptr<sockaddr_storage> SockaddrToStorage(const sockaddr* src);
 
-uint64_t h2nll(uint64_t v);
-uint64_t n2hll(uint64_t v);
+sockaddr* IPPortToSockaddr(const ByteArray& ip, uint16_t port);
+
+sockaddr* StringToSockaddr(const std::string& addr);
+std::string SockaddrToString(const sockaddr* addr);
+
+sockaddr* LookupNameServers(const std::string& hostname);
+
+sockaddr* GetSelfIP();
+const std::string& GetLocalHostname();
+const std::string& GetLocalAddress();
 
 }  // namespace rocketmq
 

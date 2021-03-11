@@ -20,14 +20,18 @@
 #include <sstream>    // std::stringstream
 
 #ifndef WIN32
-#include <netinet/in.h>  // struct sockaddr, sockaddr_in, sockaddr_in6
+#include <arpa/inet.h>   // htons
+#include <netinet/in.h>  // sockaddr_in, sockaddr_in6
+#else
+#include "Winsock2.h"
 #endif
 
 #include "ByteOrder.h"
 #include "Logging.h"
-#include "MessageExtImpl.h"
 #include "MessageAccessor.hpp"
+#include "MessageExtImpl.h"
 #include "MessageSysFlag.h"
+#include "SocketUtil.h"
 #include "UtilAll.h"
 
 static const char NAME_VALUE_SEPARATOR = 1;
@@ -36,37 +40,35 @@ static const char PROPERTY_SEPARATOR = 2;
 namespace rocketmq {
 
 std::string MessageDecoder::createMessageId(const struct sockaddr* sa, int64_t offset) {
-  int msgIDLength = sa->sa_family == AF_INET ? 16 : 28;
-  std::unique_ptr<ByteBuffer> byteBuffer(ByteBuffer::allocate(msgIDLength));
+  int msgIdLength = IpaddrSize(sa) + /* port field size */ 4 + sizeof(offset);
+  std::unique_ptr<ByteBuffer> byteBuffer(ByteBuffer::allocate(msgIdLength));
   if (sa->sa_family == AF_INET) {
     struct sockaddr_in* sin = (struct sockaddr_in*)sa;
-    byteBuffer->put(ByteArray((char*)&sin->sin_addr, 4));
-    byteBuffer->putInt(ByteOrderUtil::NorminalBigEndian(sin->sin_port));
+    byteBuffer->put(ByteArray(reinterpret_cast<char*>(&sin->sin_addr), kIPv4AddrSize));
+    byteBuffer->putInt(ntohs(sin->sin_port));
   } else {
     struct sockaddr_in6* sin6 = (struct sockaddr_in6*)sa;
-    byteBuffer->put(ByteArray((char*)&sin6->sin6_addr, 16));
-    byteBuffer->putInt(ByteOrderUtil::NorminalBigEndian(sin6->sin6_port));
+    byteBuffer->put(ByteArray(reinterpret_cast<char*>(&sin6->sin6_addr), kIPv6AddrSize));
+    byteBuffer->putInt(ntohs(sin6->sin6_port));
   }
   byteBuffer->putLong(offset);
   byteBuffer->flip();
-  return UtilAll::bytes2string(byteBuffer->array(), msgIDLength);
+  return UtilAll::bytes2string(byteBuffer->array(), msgIdLength);
 }
 
 MessageId MessageDecoder::decodeMessageId(const std::string& msgId) {
-  size_t ip_length = msgId.length() == 32 ? 4 * 2 : 16 * 2;
+  size_t ip_length = msgId.length() == 32 ? kIPv4AddrSize * 2 : kIPv6AddrSize * 2;
 
   ByteArray byteArray(ip_length / 2);
   std::string ip = msgId.substr(0, ip_length);
   UtilAll::string2bytes(byteArray.array(), ip);
 
   std::string port = msgId.substr(ip_length, 8);
-  // uint32_t portInt = ByteOrderUtil::NorminalBigEndian<uint32_t>(std::stoul(port, nullptr, 16));
   uint32_t portInt = std::stoul(port, nullptr, 16);
 
-  auto* sin = ipPort2SocketAddress(byteArray, portInt);
+  auto* sin = IPPortToSockaddr(byteArray, portInt);
 
   std::string offset = msgId.substr(ip_length + 8);
-  // uint64_t offsetInt = ByteOrderUtil::NorminalBigEndian<uint64_t>(std::stoull(offset, nullptr, 16));
   uint64_t offsetInt = std::stoull(offset, nullptr, 16);
 
   return MessageId(sin, offsetInt);
@@ -123,22 +125,22 @@ MessageExtPtr MessageDecoder::decode(ByteBuffer& byteBuffer, bool readBody, bool
   msgExt->set_born_timestamp(bornTimeStamp);
 
   // 10 BORNHOST
-  int bornhostIPLength = (sysFlag & MessageSysFlag::BORNHOST_V6_FLAG) == 0 ? 4 : 16;
-  ByteArray bornHost(bornhostIPLength);
-  byteBuffer.get(bornHost, 0, bornhostIPLength);
+  int bornHostLength = (sysFlag & MessageSysFlag::BORNHOST_V6_FLAG) == 0 ? kIPv4AddrSize : kIPv6AddrSize;
+  ByteArray bornHost(bornHostLength);
+  byteBuffer.get(bornHost, 0, bornHostLength);
   int32_t bornPort = byteBuffer.getInt();
-  msgExt->set_born_host(ipPort2SocketAddress(bornHost, bornPort));
+  msgExt->set_born_host(IPPortToSockaddr(bornHost, bornPort));
 
   // 11 STORETIMESTAMP
   int64_t storeTimestamp = byteBuffer.getLong();
   msgExt->set_store_timestamp(storeTimestamp);
 
   // 12 STOREHOST
-  int storehostIPLength = (sysFlag & MessageSysFlag::STOREHOST_V6_FLAG) == 0 ? 4 : 16;
-  ByteArray storeHost(bornhostIPLength);
+  int storehostIPLength = (sysFlag & MessageSysFlag::STOREHOST_V6_FLAG) == 0 ? kIPv4AddrSize : kIPv6AddrSize;
+  ByteArray storeHost(bornHostLength);
   byteBuffer.get(storeHost, 0, storehostIPLength);
   int32_t storePort = byteBuffer.getInt();
-  msgExt->set_store_host(ipPort2SocketAddress(storeHost, storePort));
+  msgExt->set_store_host(IPPortToSockaddr(storeHost, storePort));
 
   // 13 RECONSUMETIMES
   int32_t reconsumeTimes = byteBuffer.getInt();

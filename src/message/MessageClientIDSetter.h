@@ -68,7 +68,7 @@ class MessageClientIDSetter {
   uint64_t next_start_time_;
   std::atomic<uint16_t> counter_;
 
-  std::string fix_string_;
+  std::string fixed_string_;
 };
 
 }  // namespace rocketmq

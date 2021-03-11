@@ -44,20 +44,14 @@ MessageExtImpl::MessageExtImpl(int queueId,
       commit_log_offset_(0),
       sys_flag_(0),
       born_timestamp_(bornTimestamp),
-      born_host_(nullptr),
+      born_host_(SockaddrToStorage(bornHost)),
       store_timestamp_(storeTimestamp),
-      store_host_(nullptr),
+      store_host_(SockaddrToStorage(storeHost)),
       reconsume_times_(3),
       prepared_transaction_offset_(0),
-      msg_id_(msgId) {
-  born_host_ = copySocketAddress(born_host_, bornHost);
-  store_host_ = copySocketAddress(store_host_, storeHost);
-}
+      msg_id_(msgId) {}
 
-MessageExtImpl::~MessageExtImpl() {
-  free(born_host_);
-  free(store_host_);
-}
+MessageExtImpl::~MessageExtImpl() = default;
 
 TopicFilterType MessageExtImpl::parseTopicFilterType(int32_t sysFlag) {
   if ((sysFlag & MessageSysFlag::MULTI_TAGS_FLAG) == MessageSysFlag::MULTI_TAGS_FLAG) {
@@ -123,15 +117,15 @@ void MessageExtImpl::set_born_timestamp(int64_t bornTimestamp) {
 }
 
 const struct sockaddr* MessageExtImpl::born_host() const {
-  return born_host_;
+  return reinterpret_cast<sockaddr*>(born_host_.get());
 }
 
 std::string MessageExtImpl::born_host_string() const {
-  return socketAddress2String(born_host_);
+  return SockaddrToString(born_host());
 }
 
 void MessageExtImpl::set_born_host(const struct sockaddr* bornHost) {
-  born_host_ = copySocketAddress(born_host_, bornHost);
+  born_host_ = SockaddrToStorage(bornHost);
 }
 
 int64_t MessageExtImpl::store_timestamp() const {
@@ -143,15 +137,15 @@ void MessageExtImpl::set_store_timestamp(int64_t storeTimestamp) {
 }
 
 const struct sockaddr* MessageExtImpl::store_host() const {
-  return store_host_;
+  return reinterpret_cast<sockaddr*>(store_host_.get());
 }
 
 std::string MessageExtImpl::store_host_string() const {
-  return socketAddress2String(store_host_);
+  return SockaddrToString(store_host());
 }
 
 void MessageExtImpl::set_store_host(const struct sockaddr* storeHost) {
-  store_host_ = copySocketAddress(store_host_, storeHost);
+  store_host_ = SockaddrToStorage(storeHost);
 }
 
 const std::string& MessageExtImpl::msg_id() const {

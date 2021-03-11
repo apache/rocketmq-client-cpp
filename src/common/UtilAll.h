@@ -112,10 +112,6 @@ class UtilAll {
   static int Split(std::vector<std::string>& ret_, const std::string& strIn, const char sep);
   static int Split(std::vector<std::string>& ret_, const std::string& strIn, const std::string& sep);
 
-  static std::string getLocalHostName();
-  static std::string getLocalAddress();
-  static uint32_t getIP();
-
   static std::string getHomeDirectory();
   static void createDirectory(std::string const& dir);
   static bool existDirectory(std::string const& dir);
@@ -138,10 +134,6 @@ class UtilAll {
   // Returns true on success.
   // Returns false on failure..
   static bool ReplaceFile(const std::string& from_path, const std::string& to_path);
-
- private:
-  static std::string sLocalHostName;
-  static std::string sLocalIpAddress;
 };
 
 template <typename T>

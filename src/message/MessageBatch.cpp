@@ -16,8 +16,9 @@
  */
 #include "MessageBatch.h"
 
-#include "MessageDecoder.h"
+#include "MQException.h"
 #include "MessageClientIDSetter.h"
+#include "MessageDecoder.h"
 
 namespace rocketmq {
 

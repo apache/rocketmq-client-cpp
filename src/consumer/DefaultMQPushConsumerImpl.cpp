@@ -536,8 +536,8 @@ bool DefaultMQPushConsumerImpl::sendMessageBack(MessageExtPtr msg, int delay_lev
   try {
     msg->set_topic(NamespaceUtil::wrapNamespace(client_config_->name_space(), msg->topic()));
 
-    std::string brokerAddr = brokerName.empty() ? socketAddress2String(msg->store_host())
-                                                : client_instance_->findBrokerAddressInPublish(brokerName);
+    std::string brokerAddr =
+        brokerName.empty() ? msg->store_host_string() : client_instance_->findBrokerAddressInPublish(brokerName);
 
     client_instance_->getMQClientAPIImpl()->consumerSendMessageBack(
         brokerAddr, msg, getDefaultMQPushConsumerConfig()->group_name(), delay_level, 5000,

@@ -16,73 +16,115 @@
  */
 #include "SocketUtil.h"
 
-#include <cstdlib>  // std::realloc
-#include <cstring>  // std::memset, std::memcpy
+#include <cstdlib>  // std::abort
+#include <cstring>  // std::memcpy, std::memset
 
-#include <sstream>
-#include <stdexcept>
+#include <iostream>
+#include <stdexcept>  // std::invalid_argument, std::runtime_error
+#include <string>
+
+#ifndef WIN32
+#include <arpa/inet.h>  // htons
+#include <unistd.h>     // gethostname
+#else
+#include <Winsock2.h>
+#endif
 
 #include <event2/event.h>
 
-#ifndef WIN32
-#include <netdb.h>
-#include <unistd.h>
-#endif
-
-#include "ByteOrder.h"
 #include "MQException.h"
-#include "UtilAll.h"
 
 namespace rocketmq {
 
-union sockaddr_union {
-  struct sockaddr_in sin;
-  struct sockaddr_in6 sin6;
-};
-
-thread_local static sockaddr_union sin_buf;
-
-struct sockaddr* ipPort2SocketAddress(const ByteArray& ip, uint16_t port) {
-  if (ip.size() == 4) {
-    struct sockaddr_in* sin = &sin_buf.sin;
-    sin->sin_family = AF_INET;
-    sin->sin_port = ByteOrderUtil::NorminalBigEndian<uint16_t>(port);
-    ByteOrderUtil::Read<decltype(sin->sin_addr)>(&sin->sin_addr, ip.array());
-    return (struct sockaddr*)sin;
-  } else if (ip.size() == 16) {
-    struct sockaddr_in6* sin6 = &sin_buf.sin6;
-    sin6->sin6_family = AF_INET6;
-    sin6->sin6_port = ByteOrderUtil::NorminalBigEndian<uint16_t>(port);
-    ByteOrderUtil::Read<decltype(sin6->sin6_addr)>(&sin6->sin6_addr, ip.array());
-    return (struct sockaddr*)sin6;
+std::unique_ptr<sockaddr_storage> SockaddrToStorage(const sockaddr* src) {
+  if (src == nullptr) {
+    return nullptr;
   }
-  return nullptr;
+  std::unique_ptr<sockaddr_storage> ss(new sockaddr_storage);
+  std::memcpy(ss.get(), src, SockaddrSize(src));
+  return ss;
 }
 
-struct sockaddr* string2SocketAddress(const std::string& addr) {
-  std::string::size_type start_pos = addr[0] == '/' ? 1 : 0;
-  auto colon_pos = addr.find_last_of(":");
-  std::string host = addr.substr(start_pos, colon_pos - start_pos);
-  std::string port = addr.substr(colon_pos + 1, addr.length() - colon_pos);
-  auto* sa = lookupNameServers(host);
-  if (sa != nullptr) {
-    if (sa->sa_family == AF_INET) {
-      auto* sin = (struct sockaddr_in*)sa;
-      sin->sin_port = htons((uint16_t)std::stoi(port));
-    } else {
-      auto* sin6 = (struct sockaddr_in6*)sa;
-      sin6->sin6_port = htons((uint16_t)std::stoi(port));
-    }
+thread_local sockaddr_storage ss_buffer;
+
+sockaddr* IPPortToSockaddr(const ByteArray& ip, uint16_t port) {
+  sockaddr_storage* ss = &ss_buffer;
+  if (ip.size() == kIPv4AddrSize) {
+    auto* sin = reinterpret_cast<sockaddr_in*>(ss);
+    sin->sin_family = AF_INET;
+    sin->sin_port = htons(port);
+    std::memcpy(&sin->sin_addr, ip.array(), kIPv4AddrSize);
+  } else if (ip.size() == kIPv6AddrSize) {
+    auto* sin6 = reinterpret_cast<sockaddr_in6*>(&ss);
+    sin6->sin6_family = AF_INET6;
+    sin6->sin6_port = htons(port);
+    std::memcpy(&sin6->sin6_addr, ip.array(), kIPv6AddrSize);
+  } else {
+    throw std::invalid_argument("invalid ip size");
   }
+  return reinterpret_cast<sockaddr*>(ss);
+}
+
+sockaddr* StringToSockaddr(const std::string& addr) {
+  if (addr.empty()) {
+    throw std::invalid_argument("invalid address");
+  }
+
+  std::string::size_type start_pos = addr[0] == '/' ? 1 : 0;
+  auto colon_pos = addr.find_last_of(':');
+  auto bracket_pos = addr.find_last_of(']');
+  if (bracket_pos != std::string::npos) {
+    // ipv6 address
+    if (addr.at(start_pos) != '[') {
+      throw std::invalid_argument("invalid address");
+    }
+    if (colon_pos == std::string::npos) {
+      throw std::invalid_argument("invalid address");
+    }
+    if (colon_pos < bracket_pos) {
+      // have not port
+      if (bracket_pos != addr.size() - 1) {
+        throw std::invalid_argument("invalid address");
+      }
+      colon_pos = addr.size();
+    } else if (colon_pos != bracket_pos + 1) {
+      throw std::invalid_argument("invalid address");
+    }
+  } else if (colon_pos == std::string::npos) {
+    // have not port
+    colon_pos = addr.size();
+  }
+
+  decltype(bracket_pos) fix_bracket = bracket_pos == std::string::npos ? 0 : 1;
+  std::string host = addr.substr(start_pos + fix_bracket, colon_pos - start_pos - fix_bracket * 2);
+  auto* sa = LookupNameServers(host);
+
+  std::string port = colon_pos >= addr.size() ? "0" : addr.substr(colon_pos + 1);
+  uint32_t n = std::stoul(port);
+  if (n > std::numeric_limits<uint16_t>::max()) {
+    throw std::out_of_range("port is to large");
+  }
+  uint16_t port_num = htons(static_cast<uint16_t>(n));
+
+  if (sa->sa_family == AF_INET) {
+    auto* sin = reinterpret_cast<sockaddr_in*>(sa);
+    sin->sin_port = port_num;
+  } else if (sa->sa_family == AF_INET6) {
+    auto* sin6 = reinterpret_cast<sockaddr_in6*>(sa);
+    sin6->sin6_port = port_num;
+  } else {
+    throw std::runtime_error("don't support non-inet address families");
+  }
+
   return sa;
 }
 
 /**
- * converts an address from network format to presentation format (a.b.c.d)
+ * converts an address from network format to presentation format
  */
-std::string socketAddress2String(const struct sockaddr* addr) {
+std::string SockaddrToString(const sockaddr* addr) {
   if (nullptr == addr) {
-    return "127.0.0.1";
+    return std::string();
   }
 
   char buf[128];
@@ -90,38 +132,40 @@ std::string socketAddress2String(const struct sockaddr* addr) {
   uint16_t port = 0;
 
   if (addr->sa_family == AF_INET) {
-    auto* sin = (struct sockaddr_in*)addr;
-    if (nullptr != evutil_inet_ntop(AF_INET, &sin->sin_addr, buf, sizeof(buf))) {
-      address = buf;
+    const auto* sin = reinterpret_cast<const sockaddr_in*>(addr);
+    if (nullptr == evutil_inet_ntop(AF_INET, &sin->sin_addr, buf, sizeof(buf))) {
+      throw std::runtime_error("can not convert AF_INET address to text form");
     }
+    address = buf;
     port = ntohs(sin->sin_port);
   } else if (addr->sa_family == AF_INET6) {
-    auto* sin6 = (struct sockaddr_in6*)addr;
-    if (nullptr != evutil_inet_ntop(AF_INET6, &sin6->sin6_addr, buf, sizeof(buf))) {
-      address = buf;
+    const auto* sin6 = reinterpret_cast<const sockaddr_in6*>(addr);
+    if (nullptr == evutil_inet_ntop(AF_INET6, &sin6->sin6_addr, buf, sizeof(buf))) {
+      throw std::runtime_error("can not convert AF_INET6 address to text form");
     }
+    address = buf;
     port = ntohs(sin6->sin6_port);
   } else {
-    throw std::runtime_error("don't support non-inet Address families.");
+    throw std::runtime_error("don't support non-inet address families");
   }
 
-  if (!address.empty() && port != 0) {
-    if (addr->sa_family == AF_INET6) {
-      address = "[" + address + "]";
-    }
-    address += ":" + UtilAll::to_string(port);
+  if (addr->sa_family == AF_INET6) {
+    address = "[" + address + "]";
+  }
+  if (port != 0) {
+    address += ":" + std::to_string(port);
   }
 
   return address;
 }
 
-struct sockaddr* lookupNameServers(const std::string& hostname) {
+sockaddr* LookupNameServers(const std::string& hostname) {
   if (hostname.empty()) {
-    return nullptr;
+    throw std::invalid_argument("invalid hostname");
   }
 
-  struct evutil_addrinfo hints;
-  struct evutil_addrinfo* answer = NULL;
+  evutil_addrinfo hints;
+  evutil_addrinfo* answer = nullptr;
 
   /* Build the hints to tell getaddrinfo how to act. */
   std::memset(&hints, 0, sizeof(hints));
@@ -131,48 +175,63 @@ struct sockaddr* lookupNameServers(const std::string& hostname) {
   hints.ai_flags = EVUTIL_AI_ADDRCONFIG; /* Only return addresses we can use. */
 
   // Look up the hostname.
-  int err = evutil_getaddrinfo(hostname.c_str(), NULL, &hints, &answer);
+  int err = evutil_getaddrinfo(hostname.c_str(), nullptr, &hints, &answer);
   if (err != 0) {
-    std::string info = "Failed to resolve host name(" + hostname + "): " + evutil_gai_strerror(err);
+    std::string info = "Failed to resolve hostname(" + hostname + "): " + evutil_gai_strerror(err);
     THROW_MQEXCEPTION(UnknownHostException, info, -1);
   }
 
-  struct sockaddr* sin = nullptr;
+  sockaddr_storage* ss = &ss_buffer;
 
-  for (struct evutil_addrinfo* ai = answer; ai != NULL; ai = ai->ai_next) {
+  bool hit = false;
+  for (struct evutil_addrinfo* ai = answer; ai != nullptr; ai = ai->ai_next) {
     auto* ai_addr = ai->ai_addr;
     if (ai_addr->sa_family != AF_INET && ai_addr->sa_family != AF_INET6) {
       continue;
     }
-    sin = (struct sockaddr*)&sin_buf;
-    std::memcpy(sin, ai_addr, sockaddr_size(ai_addr));
+    std::memcpy(ss, ai_addr, SockaddrSize(ai_addr));
+    hit = true;
     break;
   }
 
   evutil_freeaddrinfo(answer);
 
-  return sin;
-}
-
-struct sockaddr* copySocketAddress(struct sockaddr* dst, const struct sockaddr* src) {
-  if (src != nullptr) {
-    if (dst == nullptr || dst->sa_family != src->sa_family) {
-      dst = (struct sockaddr*)std::realloc(dst, sizeof(union sockaddr_union));
-    }
-    std::memcpy(dst, src, sockaddr_size(src));
-  } else {
-    free(dst);
-    dst = nullptr;
+  if (!hit) {
+    throw std::runtime_error("hostname is non-inet address family");
   }
-  return dst;
+
+  return reinterpret_cast<sockaddr*>(ss);
 }
 
-uint64_t h2nll(uint64_t v) {
-  return ByteOrderUtil::NorminalBigEndian(v);
+sockaddr* GetSelfIP() {
+  try {
+    return LookupNameServers(GetLocalHostname());
+  } catch (const UnknownHostException& e) {
+    return LookupNameServers("localhost");
+  }
 }
 
-uint64_t n2hll(uint64_t v) {
-  return ByteOrderUtil::NorminalBigEndian(v);
+const std::string& GetLocalHostname() {
+  static std::string local_hostname = []() {
+    char name[1024];
+    if (::gethostname(name, sizeof(name)) != 0) {
+      return std::string();
+    }
+    return std::string(name);
+  }();
+  return local_hostname;
+}
+
+const std::string& GetLocalAddress() {
+  static std::string local_address = []() {
+    try {
+      return SockaddrToString(GetSelfIP());
+    } catch (std::exception& e) {
+      std::cerr << e.what() << std::endl;
+      std::abort();
+    }
+  }();
+  return local_address;
 }
 
 }  // namespace rocketmq
