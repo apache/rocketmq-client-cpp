@@ -14,10 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "MessageId.h"
+#include "SocketUtil.h"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-
-#include "MessageId.h"
 
 using namespace std;
 using testing::InitGoogleMock;
@@ -27,12 +28,12 @@ using testing::Return;
 using rocketmq::MessageId;
 
 TEST(MessageIdTest, MessageId) {
-  MessageId msgId(rocketmq::string2SocketAddress("127.0.0.1:10091"), 1024);
-  EXPECT_EQ(rocketmq::socketAddress2String(msgId.getAddress()), "127.0.0.1:10091");
+  MessageId msgId(rocketmq::StringToSockaddr("127.0.0.1:10091"), 1024);
+  EXPECT_EQ(rocketmq::SockaddrToString(msgId.getAddress()), "127.0.0.1:10091");
   EXPECT_EQ(msgId.getOffset(), 1024);
 
-  msgId.setAddress(rocketmq::string2SocketAddress("127.0.0.2:10092"));
-  EXPECT_EQ(rocketmq::socketAddress2String(msgId.getAddress()), "127.0.0.2:10092");
+  msgId.setAddress(rocketmq::StringToSockaddr("127.0.0.2:10092"));
+  EXPECT_EQ(rocketmq::SockaddrToString(msgId.getAddress()), "127.0.0.2:10092");
 
   msgId.setOffset(2048);
   EXPECT_EQ(msgId.getOffset(), 2048);

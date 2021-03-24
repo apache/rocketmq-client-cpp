@@ -14,18 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "ClientRemotingProcessor.h"
+
+#include <map>
+#include <memory>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <json/value.h>
 #include <json/writer.h>
 
-#include <map>
-#include <memory>
-
 #include "ByteArray.h"
 #include "ClientRPCHook.h"
-#include "ClientRemotingProcessor.h"
-#include "ConsumerRunningInfo.h"
 #include "MQClientConfigImpl.hpp"
 #include "MQClientInstance.h"
 #include "MQMessageQueue.h"
@@ -34,6 +34,7 @@
 #include "SessionCredentials.h"
 #include "TcpTransport.h"
 #include "UtilAll.h"
+#include "protocol/body/ConsumerRunningInfo.h"
 #include "protocol/body/ResetOffsetBody.hpp"
 #include "protocol/header/CommandHeader.h"
 

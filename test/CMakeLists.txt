@@ -22,9 +22,8 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${CMAKE_SOURCE_DIR}/bin/lib64/cmake;${CMAKE_SOURCE_DIR}/bin/lib/cmake")
 
 # Find dependencies
-if (CMAKE_VERSION VERSION_LESS "3.0")
-    find_package(GTest 1.10.0 REQUIRED CONFIG)
-else ()
+#find_package(GTest REQUIRED CONFIG)
+if (NOT GTest_FOUND)
     include_directories("${CMAKE_SOURCE_DIR}/bin/include")
 
     if (EXISTS "${CMAKE_SOURCE_DIR}/bin/lib64/libgtest.a")
@@ -55,7 +54,7 @@ function(config_test file)
         endif()
     endif()
 
-    if (CMAKE_VERSION VERSION_LESS "3.0")
+    if (GTest_FOUND)
         if (BUILD_ROCKETMQ_SHARED)
             target_link_libraries(${basename} rocketmq_shared
                 GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)

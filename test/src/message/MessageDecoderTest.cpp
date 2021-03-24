@@ -14,16 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
+#include "MessageDecoder.h"
 
 #include <string>
 #include <vector>
 
+#include <arpa/inet.h>
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
 #include "ByteArray.h"
 #include "ByteBuffer.hpp"
-#include "MessageDecoder.h"
 #include "MQMessage.h"
 #include "MQMessageConst.h"
 #include "MQMessageExt.h"
@@ -39,12 +41,12 @@ using testing::Return;
 
 using rocketmq::ByteArray;
 using rocketmq::ByteBuffer;
-using rocketmq::MessageSysFlag;
 using rocketmq::MessageDecoder;
+using rocketmq::MessageId;
+using rocketmq::MessageSysFlag;
 using rocketmq::MQMessage;
 using rocketmq::MQMessageConst;
 using rocketmq::MQMessageExt;
-using rocketmq::MessageId;
 using rocketmq::RemotingCommand;
 using rocketmq::SendMessageRequestHeader;
 using rocketmq::stoba;
@@ -52,13 +54,13 @@ using rocketmq::UtilAll;
 
 // TODO
 TEST(MessageDecoderTest, MessageId) {
-  std::string strMsgId = MessageDecoder::createMessageId(rocketmq::string2SocketAddress("127.0.0.1:10091"), 1024LL);
+  std::string strMsgId = MessageDecoder::createMessageId(rocketmq::StringToSockaddr("127.0.0.1:10091"), 1024LL);
   EXPECT_EQ(strMsgId, "7F0000010000276B0000000000000400");
 
   MessageId msgId = MessageDecoder::decodeMessageId(strMsgId);
   EXPECT_EQ(msgId.getOffset(), 1024LL);
 
-  std::string strMsgId2 = MessageDecoder::createMessageId(rocketmq::string2SocketAddress("/172.16.2.114:0"), 123456LL);
+  std::string strMsgId2 = MessageDecoder::createMessageId(rocketmq::StringToSockaddr("/172.16.2.114:0"), 123456LL);
   EXPECT_EQ(strMsgId2, "AC10027200000000000000000001E240");
 
   MessageId msgId2 = MessageDecoder::decodeMessageId(strMsgId2);
@@ -107,7 +109,7 @@ TEST(MessageDecoderTest, Decode) {
   // 10 BORNHOST  56=48+4+4
   byteBuffer->putInt(ntohl(inet_addr("127.0.0.1")));
   byteBuffer->putInt(10091);
-  msgExt.set_born_host(rocketmq::string2SocketAddress("127.0.0.1:10091"));
+  msgExt.set_born_host(rocketmq::StringToSockaddr("127.0.0.1:10091"));
 
   // 11 STORETIMESTAMP  64=56+8
   byteBuffer->putLong(4096LL);
@@ -116,7 +118,7 @@ TEST(MessageDecoderTest, Decode) {
   // 12 STOREHOST  72=64+4+4
   byteBuffer->putInt(ntohl(inet_addr("127.0.0.2")));
   byteBuffer->putInt(10092);
-  msgExt.set_store_host(rocketmq::string2SocketAddress("127.0.0.2:10092"));
+  msgExt.set_store_host(rocketmq::StringToSockaddr("127.0.0.2:10092"));
 
   // 13 RECONSUMETIMES 76=72+4
   byteBuffer->putInt(18);

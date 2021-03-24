@@ -14,6 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "protocol/body/ConsumerRunningInfo.h"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <json/reader.h>
@@ -22,8 +24,6 @@
 #include <iostream>
 #include <map>
 #include <string>
-
-#include "ConsumerRunningInfo.h"
 
 using std::map;
 using std::string;

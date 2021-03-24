@@ -14,11 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "protocol/body/ProcessQueueInfo.hpp"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "MQMessageExt.h"
-#include "ProcessQueueInfo.h"
 
 using testing::InitGoogleMock;
 using testing::InitGoogleTest;

@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "ResponseFuture.h"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "InvokeCallback.h"
 #include "RemotingCommand.h"
-#include "ResponseFuture.h"
 #include "UtilAll.h"
 #include "protocol/RequestCode.h"
 
@@ -48,8 +49,8 @@ TEST(ResponseFutureTest, Init) {
   EXPECT_FALSE(responseFuture.hasInvokeCallback());
 
   // ~ResponseFuture delete callback
-  auto* callback = new MockInvokeCallback();
-  ResponseFuture twoResponseFuture(MQRequestCode::QUERY_BROKER_OFFSET, 4, 1000, callback);
+  ResponseFuture twoResponseFuture(MQRequestCode::QUERY_BROKER_OFFSET, 4, 1000,
+                                   std::unique_ptr<InvokeCallback>(new MockInvokeCallback()));
   EXPECT_TRUE(twoResponseFuture.hasInvokeCallback());
 }
 

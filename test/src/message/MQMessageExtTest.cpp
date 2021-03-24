@@ -89,18 +89,19 @@ TEST(MessageExtTest, MessageClientExtImpl) {
   messageClientExt.set_store_timestamp(2222);
   EXPECT_EQ(messageClientExt.store_timestamp(), 2222);
 
-  messageClientExt.set_born_host(rocketmq::string2SocketAddress("127.0.0.1:10091"));
+  messageClientExt.set_born_host(rocketmq::StringToSockaddr("127.0.0.1:10091"));
   EXPECT_EQ(messageClientExt.born_host_string(), "127.0.0.1:10091");
 
-  messageClientExt.set_store_host(rocketmq::string2SocketAddress("127.0.0.2:10092"));
+  messageClientExt.set_store_host(rocketmq::StringToSockaddr("127.0.0.2:10092"));
   EXPECT_EQ(messageClientExt.store_host_string(), "127.0.0.2:10092");
 }
 
 TEST(MessageExtTest, MessageExt) {
-  struct sockaddr* bronHost = rocketmq::copySocketAddress(nullptr, rocketmq::string2SocketAddress("127.0.0.1:10091"));
-  struct sockaddr* storeHost = rocketmq::copySocketAddress(nullptr, rocketmq::string2SocketAddress("127.0.0.2:10092"));
+  auto bronHost = rocketmq::SockaddrToStorage(rocketmq::StringToSockaddr("127.0.0.1:10091"));
+  auto storeHost = rocketmq::SockaddrToStorage(rocketmq::StringToSockaddr("127.0.0.2:10092"));
 
-  MQMessageExt messageExt(2, 1024, bronHost, 2048, storeHost, "msgId");
+  MQMessageExt messageExt(2, 1024, reinterpret_cast<sockaddr*>(bronHost.get()), 2048,
+                          reinterpret_cast<sockaddr*>(storeHost.get()), "msgId");
   EXPECT_EQ(messageExt.queue_offset(), 0);
   EXPECT_EQ(messageExt.commit_log_offset(), 0);
   EXPECT_EQ(messageExt.born_timestamp(), 1024);
@@ -113,9 +114,6 @@ TEST(MessageExtTest, MessageExt) {
   EXPECT_EQ(messageExt.msg_id(), "msgId");
   EXPECT_EQ(messageExt.born_host_string(), "127.0.0.1:10091");
   EXPECT_EQ(messageExt.store_host_string(), "127.0.0.2:10092");
-
-  free(bronHost);
-  free(storeHost);
 }
 
 TEST(MessageExtTest, ParseTopicFilterType) {
