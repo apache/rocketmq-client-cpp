@@ -22,7 +22,7 @@
 
 namespace rocketmq {
 
-enum PullCallbackType { PULL_CALLBACK_TYPE_SIMPLE = 0, PULL_CALLBACK_TYPE_AUTO_DELETE = 1 };
+enum class PullCallbackType { kSimple, kAutoDelete };
 
 /**
  * PullCallback - callback interface for async pull
@@ -34,24 +34,11 @@ class ROCKETMQCLIENT_API PullCallback {
   virtual void onSuccess(std::unique_ptr<PullResult> pull_result) = 0;
   virtual void onException(MQException& e) noexcept = 0;
 
-  virtual PullCallbackType getPullCallbackType() const { return PULL_CALLBACK_TYPE_SIMPLE; }
+  virtual PullCallbackType getPullCallbackType() const { return PullCallbackType::kSimple; }
 
  public:
-  inline void invokeOnSuccess(std::unique_ptr<PullResult> pull_result) {
-    auto type = getPullCallbackType();
-    onSuccess(std::move(pull_result));
-    if (type == PULL_CALLBACK_TYPE_AUTO_DELETE && getPullCallbackType() == PULL_CALLBACK_TYPE_AUTO_DELETE) {
-      delete this;
-    }
-  }
-
-  inline void invokeOnException(MQException& exception) noexcept {
-    auto type = getPullCallbackType();
-    onException(exception);
-    if (type == PULL_CALLBACK_TYPE_AUTO_DELETE && getPullCallbackType() == PULL_CALLBACK_TYPE_AUTO_DELETE) {
-      delete this;
-    }
-  }
+  void invokeOnSuccess(std::unique_ptr<PullResult> pull_result) noexcept;
+  void invokeOnException(MQException& exception) noexcept;
 };
 
 /**
@@ -61,7 +48,7 @@ class ROCKETMQCLIENT_API PullCallback {
  */
 class ROCKETMQCLIENT_API AutoDeletePullCallback : public PullCallback {
  public:
-  PullCallbackType getPullCallbackType() const override final { return PULL_CALLBACK_TYPE_AUTO_DELETE; }
+  PullCallbackType getPullCallbackType() const override final { return PullCallbackType::kAutoDelete; }
 };
 
 }  // namespace rocketmq

@@ -21,6 +21,30 @@
 
 namespace rocketmq {
 
+void RequestCallback::invokeOnSuccess(MQMessage message) noexcept {
+  auto type = getRequestCallbackType();
+  try {
+    onSuccess(std::move(message));
+  } catch (const std::exception& e) {
+    LOG_WARN_NEW("encounter exception when invoke RequestCallback::onSuccess(), {}", e.what());
+  }
+  if (type == RequestCallbackType::kAutoDelete) {
+    delete this;
+  }
+}
+
+void RequestCallback::invokeOnException(MQException& exception) noexcept {
+  auto type = getRequestCallbackType();
+  try {
+    onException(exception);
+  } catch (const std::exception& e) {
+    LOG_WARN_NEW("encounter exception when invoke RequestCallback::onException(), {}", e.what());
+  }
+  if (type == RequestCallbackType::kAutoDelete) {
+    delete this;
+  }
+}
+
 RequestResponseFuture::RequestResponseFuture(const std::string& correlationId,
                                              long timeoutMillis,
                                              RequestCallback* requestCallback)

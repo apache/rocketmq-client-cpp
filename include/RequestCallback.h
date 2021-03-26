@@ -22,7 +22,7 @@
 
 namespace rocketmq {
 
-enum RequestCallbackType { REQUEST_CALLBACK_TYPE_SIMPLE = 0, REQUEST_CALLBACK_TYPE_AUTO_DELETE = 1 };
+enum class RequestCallbackType { kSimple, kAutoDelete };
 
 /**
  * RequestCallback - callback interface for async request
@@ -34,24 +34,11 @@ class ROCKETMQCLIENT_API RequestCallback {
   virtual void onSuccess(MQMessage message) = 0;
   virtual void onException(MQException& e) noexcept = 0;
 
-  virtual RequestCallbackType getRequestCallbackType() const { return REQUEST_CALLBACK_TYPE_SIMPLE; }
+  virtual RequestCallbackType getRequestCallbackType() const { return RequestCallbackType::kSimple; }
 
  public:
-  inline void invokeOnSuccess(MQMessage message) {
-    auto type = getRequestCallbackType();
-    onSuccess(std::move(message));
-    if (type == REQUEST_CALLBACK_TYPE_AUTO_DELETE && getRequestCallbackType() == REQUEST_CALLBACK_TYPE_AUTO_DELETE) {
-      delete this;
-    }
-  }
-
-  inline void invokeOnException(MQException& exception) noexcept {
-    auto type = getRequestCallbackType();
-    onException(exception);
-    if (type == REQUEST_CALLBACK_TYPE_AUTO_DELETE && getRequestCallbackType() == REQUEST_CALLBACK_TYPE_AUTO_DELETE) {
-      delete this;
-    }
-  }
+  void invokeOnSuccess(MQMessage message) noexcept;
+  void invokeOnException(MQException& exception) noexcept;
 };
 
 /**
@@ -61,7 +48,7 @@ class ROCKETMQCLIENT_API RequestCallback {
  */
 class ROCKETMQCLIENT_API AutoDeleteRequestCallback : public RequestCallback {
  public:
-  RequestCallbackType getRequestCallbackType() const override final { return REQUEST_CALLBACK_TYPE_AUTO_DELETE; }
+  RequestCallbackType getRequestCallbackType() const override final { return RequestCallbackType::kAutoDelete; }
 };
 
 }  // namespace rocketmq

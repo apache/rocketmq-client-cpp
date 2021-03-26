@@ -32,6 +32,30 @@
 
 namespace rocketmq {
 
+void SendCallback::invokeOnSuccess(SendResult& send_result) noexcept {
+  auto type = getSendCallbackType();
+  try {
+    onSuccess(send_result);
+  } catch (const std::exception& e) {
+    LOG_WARN_NEW("encounter exception when invoke SendCallback::onSuccess(), {}", e.what());
+  }
+  if (type == SendCallbackType::kAutoDelete) {
+    delete this;
+  }
+}
+
+void SendCallback::invokeOnException(MQException& exception) noexcept {
+  auto type = getSendCallbackType();
+  try {
+    onException(exception);
+  } catch (const std::exception& e) {
+    LOG_WARN_NEW("encounter exception when invoke SendCallback::onException(), {}", e.what());
+  }
+  if (type == SendCallbackType::kAutoDelete) {
+    delete this;
+  }
+}
+
 SendCallbackWrap::SendCallbackWrap(const std::string& addr,
                                    const std::string& brokerName,
                                    const MessagePtr msg,

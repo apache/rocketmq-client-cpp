@@ -18,6 +18,30 @@
 
 namespace rocketmq {
 
+void PullCallback::invokeOnSuccess(std::unique_ptr<PullResult> pull_result) noexcept {
+  auto type = getPullCallbackType();
+  try {
+    onSuccess(std::move(pull_result));
+  } catch (const std::exception& e) {
+    LOG_WARN_NEW("encounter exception when invoke PullCallback::onSuccess(), {}", e.what());
+  }
+  if (type == PullCallbackType::kAutoDelete) {
+    delete this;
+  }
+}
+
+void PullCallback::invokeOnException(MQException& exception) noexcept {
+  auto type = getPullCallbackType();
+  try {
+    onException(exception);
+  } catch (const std::exception& e) {
+    LOG_WARN_NEW("encounter exception when invoke PullCallback::onException(), {}", e.what());
+  }
+  if (type == PullCallbackType::kAutoDelete) {
+    delete this;
+  }
+}
+
 PullCallbackWrap::PullCallbackWrap(PullCallback* pullCallback, MQClientAPIImpl* pClientAPI)
     : pull_callback_(pullCallback), client_api_impl_(pClientAPI) {}
 

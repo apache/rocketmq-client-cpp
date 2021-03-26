@@ -22,7 +22,7 @@
 
 namespace rocketmq {
 
-enum SendCallbackType { SEND_CALLBACK_TYPE_SIMPLE = 0, SEND_CALLBACK_TYPE_AUTO_DELETE = 1 };
+enum class SendCallbackType { kSimple, kAutoDelete };
 
 /**
  * SendCallback - callback interface for async send
@@ -34,24 +34,11 @@ class ROCKETMQCLIENT_API SendCallback {
   virtual void onSuccess(SendResult& sendResult) = 0;
   virtual void onException(MQException& e) noexcept = 0;
 
-  virtual SendCallbackType getSendCallbackType() const { return SEND_CALLBACK_TYPE_SIMPLE; }
+  virtual SendCallbackType getSendCallbackType() const { return SendCallbackType::kSimple; }
 
  public:
-  inline void invokeOnSuccess(SendResult& send_result) {
-    auto type = getSendCallbackType();
-    onSuccess(send_result);
-    if (type == SEND_CALLBACK_TYPE_AUTO_DELETE && getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
-      delete this;
-    }
-  }
-
-  inline void invokeOnException(MQException& exception) noexcept {
-    auto type = getSendCallbackType();
-    onException(exception);
-    if (type == SEND_CALLBACK_TYPE_AUTO_DELETE && getSendCallbackType() == SEND_CALLBACK_TYPE_AUTO_DELETE) {
-      delete this;
-    }
-  }
+  void invokeOnSuccess(SendResult& send_result) noexcept;
+  void invokeOnException(MQException& exception) noexcept;
 };
 
 /**
@@ -62,7 +49,7 @@ class ROCKETMQCLIENT_API SendCallback {
 class ROCKETMQCLIENT_API AutoDeleteSendCallback : public SendCallback  // base interface
 {
  public:
-  SendCallbackType getSendCallbackType() const override final { return SEND_CALLBACK_TYPE_AUTO_DELETE; }
+  SendCallbackType getSendCallbackType() const override final { return SendCallbackType::kAutoDelete; }
 };
 
 }  // namespace rocketmq
