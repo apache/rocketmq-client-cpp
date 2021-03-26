@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+#
 # ref: https://cristianadam.eu/20190501/bundling-together-static-libraries-with-cmake/
 
 set(STATIC_LIBRARY_REGEX "${CMAKE_STATIC_LIBRARY_SUFFIX}")
@@ -50,7 +50,8 @@ function(bundle_static_library tgt_name bundled_tgt_name)
           _recursively_collect_dependencies(${dependency})
         endif()
       else()
-        string(REGEX MATCH ${STATIC_LIBRARY_REGEX} IS_STATIC_LIBRARY ${dependency})
+        string(REGEX MATCH ${STATIC_LIBRARY_REGEX} IS_STATIC_LIBRARY
+                     ${dependency})
         if(IS_STATIC_LIBRARY)
           list(APPEND static_libs ${dependency})
         endif()
@@ -69,42 +70,60 @@ function(bundle_static_library tgt_name bundled_tgt_name)
       ${LIBRARY_OUTPUT_PATH}/${CMAKE_STATIC_LIBRARY_PREFIX}${bundled_tgt_name}${CMAKE_STATIC_LIBRARY_SUFFIX}
   )
 
+  message(STATUS "Bundling static library: ${bundled_tgt_full_name}")
   if(CMAKE_CXX_COMPILER_ID MATCHES "^(AppleClang|Clang|GNU)$")
-    file(WRITE ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in
-         "CREATE ${bundled_tgt_full_name}\n")
+    if(APPLE)
+      find_program(LIB_TOOL libtool REQUIRED)
 
-    foreach(tgt IN LISTS static_libs)
-      if(TARGET ${tgt})
-        file(APPEND ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in
-             "ADDLIB $<TARGET_FILE:${tgt}>\n")
-      else()
-        file(APPEND ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in
-             "ADDLIB ${tgt}\n")
+      foreach(tgt IN LISTS static_libs)
+        if(TARGET ${tgt})
+          list(APPEND static_libs_full_names $<TARGET_FILE:${tgt}>)
+        else()
+          list(APPEND static_libs_full_names ${tgt})
+        endif()
+      endforeach()
+
+      add_custom_command(
+        OUTPUT ${bundled_tgt_full_name}
+        COMMAND ${LIB_TOOL} -no_warning_for_no_symbols -static -o
+                ${bundled_tgt_full_name} ${static_libs_full_names}
+        COMMENT "Bundling ${bundled_tgt_name}"
+        VERBATIM)
+    else()
+      file(WRITE ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in
+           "CREATE ${bundled_tgt_full_name}\n")
+
+      foreach(tgt IN LISTS static_libs)
+        if(TARGET ${tgt})
+          file(APPEND ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in
+               "ADDLIB $<TARGET_FILE:${tgt}>\n")
+        else()
+          file(APPEND ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in
+               "ADDLIB ${tgt}\n")
+        endif()
+      endforeach()
+
+      file(APPEND ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in "SAVE\n")
+      file(APPEND ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in "END\n")
+
+      file(
+        GENERATE
+        OUTPUT ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri
+        INPUT ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in)
+
+      set(AR_TOOL ${CMAKE_AR})
+      if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+        set(AR_TOOL ${CMAKE_CXX_COMPILER_AR})
       endif()
-    endforeach()
 
-    file(APPEND ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in "SAVE\n")
-    file(APPEND ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in "END\n")
-
-    file(
-      GENERATE
-      OUTPUT ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri
-      INPUT ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in)
-
-    set(ar_tool ${CMAKE_AR})
-    if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
-      set(ar_tool ${CMAKE_CXX_COMPILER_AR})
+      add_custom_command(
+        OUTPUT ${bundled_tgt_full_name}
+        COMMAND ${AR_TOOL} -M < ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri
+        COMMENT "Bundling ${bundled_tgt_name}"
+        VERBATIM)
     endif()
-
-    message(
-      STATUS "** Bundled static library: ${bundled_tgt_full_name}")
-    add_custom_command(
-      OUTPUT ${bundled_tgt_full_name}
-      COMMAND ${ar_tool} -M < ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri
-      COMMENT "Bundling ${bundled_tgt_name}"
-      VERBATIM)
   elseif(MSVC)
-    find_program(lib_tool lib)
+    find_program(LIB_TOOL lib REQUIRED)
 
     foreach(tgt IN LISTS static_libs)
       list(APPEND static_libs_full_names $<TARGET_FILE:${tgt}>)
@@ -112,7 +131,7 @@ function(bundle_static_library tgt_name bundled_tgt_name)
 
     add_custom_command(
       OUTPUT ${bundled_tgt_full_name}
-      COMMAND ${lib_tool} /NOLOGO /OUT:${bundled_tgt_full_name}
+      COMMAND ${LIB_TOOL} /NOLOGO /OUT:${bundled_tgt_full_name}
               ${static_libs_full_names}
       COMMENT "Bundling ${bundled_tgt_name}"
       VERBATIM)

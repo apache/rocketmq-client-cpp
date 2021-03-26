@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+#
 # Find jsoncpp
 #
 # Find the jsoncpp includes and library
@@ -30,59 +30,58 @@
 #  JSONCPP_LIBRARIES, the libraries needed to use jsoncpp.
 
 # Support preference of static libs by adjusting CMAKE_FIND_LIBRARY_SUFFIXES
-if (JSONCPP_USE_STATIC_LIBS)
-    set(_jsoncpp_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES :${CMAKE_FIND_LIBRARY_SUFFIXES})
-    if (WIN32)
-        list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 .lib .a)
-    else ()
-        set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
-    endif ()
-else ()
-    set(_jsoncpp_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES :${CMAKE_FIND_LIBRARY_SUFFIXES})
-    if (WIN32)
-        list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 .dll .so)
-    elseif (APPLE)
-        set(CMAKE_FIND_LIBRARY_SUFFIXES .dylib)
-    else ()
-        set(CMAKE_FIND_LIBRARY_SUFFIXES .so)
-    endif ()
-endif ()
+if(JSONCPP_USE_STATIC_LIBS)
+  set(_jsoncpp_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES :${CMAKE_FIND_LIBRARY_SUFFIXES})
+  if(WIN32)
+    list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 .lib .a)
+  else()
+    set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+  endif()
+else()
+  set(_jsoncpp_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES :${CMAKE_FIND_LIBRARY_SUFFIXES})
+  if(WIN32)
+    list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 .dll .so)
+  elseif(APPLE)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES .dylib)
+  else()
+    set(CMAKE_FIND_LIBRARY_SUFFIXES .so)
+  endif()
+endif()
 
 set(JSONCPP_INCLUDE_SEARCH_PATH /usr/local/include /usr/include)
 set(JSONCPP_LIBRARIES_SEARCH_PATH /usr/local/lib /usr/lib)
-if (JSONCPP_ROOT)
-    list(INSERT JSONCPP_INCLUDE_SEARCH_PATH 0 ${JSONCPP_ROOT}/include)
-    list(INSERT JSONCPP_LIBRARIES_SEARCH_PATH 0 ${JSONCPP_ROOT}/lib)
-endif ()
+if(JSONCPP_ROOT)
+  list(INSERT JSONCPP_INCLUDE_SEARCH_PATH 0 ${JSONCPP_ROOT}/include)
+  list(INSERT JSONCPP_LIBRARIES_SEARCH_PATH 0 ${JSONCPP_ROOT}/lib)
+endif()
 
-find_path(JSONCPP_INCLUDE_DIRS
-        NAMES json.h json/json.h
-        PATHS ${JSONCPP_INCLUDE_SEARCH_PATH}
-        PATH_SUFFIXES jsoncpp)
+find_path(
+  JSONCPP_JSON_DIR
+  NAMES json/json.h json.h
+  PATHS ${JSONCPP_INCLUDE_SEARCH_PATH}
+  PATH_SUFFIXES jsoncpp
+  NO_DEFAULT_PATH)
 
-find_library(JSONCPP_LIBRARIES
-        NAMES jsoncpp
-        PATHS ${JSONCPP_LIBRARIES_SEARCH_PATH})
+find_library(
+  JSONCPP_JSONCPP_LIBRARY
+  NAMES jsoncpp
+  PATHS ${JSONCPP_LIBRARIES_SEARCH_PATH}
+  NO_DEFAULT_PATH)
 
-if (JSONCPP_LIBRARIES AND JSONCPP_INCLUDE_DIRS)
-    set(JSONCPP_FOUND "YES")
-else (JSONCPP_LIBRARIES AND JSONCPP_INCLUDE_DIRS)
-    set(JSONCPP_FOUND "NO")
-endif (JSONCPP_LIBRARIES AND JSONCPP_INCLUDE_DIRS)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(Jsoncpp REQUIRED_VARS JSONCPP_JSON_DIR
+                                                        JSONCPP_JSONCPP_LIBRARY)
 
-if (JSONCPP_FOUND)
-    if (NOT JSONCPP_FIND_QUIETLY)
-        message(STATUS "Found JSONCpp: ${JSONCPP_LIBRARIES}")
-    endif (NOT JSONCPP_FIND_QUIETLY)
-else (JSONCPP_FOUND)
-    if (JSONCPP_FIND_REQUIRED)
-        message(FATAL_ERROR "Could not find JSONCPP library, include: ${JSONCPP_INCLUDE_DIRS}, lib: ${JSONCPP_LIBRARIES}")
-    endif (JSONCPP_FIND_REQUIRED)
-endif (JSONCPP_FOUND)
+if(JSONCPP_FOUND)
+  set(JSONCPP_INCLUDE_DIRS ${JSONCPP_JSON_DIR})
+  set(JSONCPP_LIBRARIES ${JSONCPP_JSONCPP_LIBRARY})
+endif(JSONCPP_FOUND)
+unset(JSONCPP_JSON_DIR)
+unset(JSONCPP_JSONCPP_LIBRARY)
 
-mark_as_advanced(JSONCPP_LIBRARIES JSONCPP_INCLUDE_DIRS)
+mark_as_advanced(JSONCPP_INCLUDE_DIRS JSONCPP_LIBRARIES)
 
 # Restore the original find library ordering
-if (JSONCPP_USE_STATIC_LIBS)
-    set(CMAKE_FIND_LIBRARY_SUFFIXES ${_jsoncpp_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
-endif ()
+if(JSONCPP_USE_STATIC_LIBS)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ${_jsoncpp_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
+endif()
