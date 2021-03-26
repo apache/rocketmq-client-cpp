@@ -81,20 +81,15 @@ LoggerConfig& GetDefaultLoggerConfig() {
   return default_logger_config;
 }
 
-static std::once_flag default_logger_init_flag;
-static std::unique_ptr<Logger> default_logger;
-
 Logger& GetDefaultLogger() {
-  if (default_logger == nullptr) {
-    std::call_once(default_logger_init_flag, [] {
-      auto& default_logger_config = GetDefaultLoggerConfig();
-      if (default_logger_config.config_spdlog()) {
-        ConfigSpdlog();
-      }
-      default_logger.reset(new Logger(default_logger_config));
-    });
-  }
-  return *default_logger;
+  static Logger default_logger = []() {
+    auto& default_logger_config = GetDefaultLoggerConfig();
+    if (default_logger_config.config_spdlog()) {
+      ConfigSpdlog();
+    }
+    return Logger(default_logger_config);
+  }();
+  return default_logger;
 }
 
 Logger::Logger(const LoggerConfig& config) {
