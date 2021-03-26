@@ -69,7 +69,7 @@ function(bundle_static_library tgt_name bundled_tgt_name)
       ${LIBRARY_OUTPUT_PATH}/${CMAKE_STATIC_LIBRARY_PREFIX}${bundled_tgt_name}${CMAKE_STATIC_LIBRARY_SUFFIX}
   )
 
-  if(CMAKE_CXX_COMPILER_ID MATCHES "^(Clang|GNU)$")
+  if(CMAKE_CXX_COMPILER_ID MATCHES "^(AppleClang|Clang|GNU)$")
     file(WRITE ${CMAKE_BINARY_DIR}/${bundled_tgt_name}.mri.in
          "CREATE ${bundled_tgt_full_name}\n")
 
