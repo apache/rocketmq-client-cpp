@@ -16,6 +16,8 @@
  */
 #include "PullCallbackWrap.h"
 
+#include <cassert>
+
 namespace rocketmq {
 
 void PullCallback::invokeOnSuccess(std::unique_ptr<PullResult> pull_result) noexcept {

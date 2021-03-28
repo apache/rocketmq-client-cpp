@@ -16,6 +16,8 @@
  */
 #include "ClientRemotingProcessor.h"
 
+#include <cassert>
+
 #include "MQProtos.h"
 #include "MessageAccessor.hpp"
 #include "MessageDecoder.h"

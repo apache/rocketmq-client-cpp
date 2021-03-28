@@ -17,9 +17,10 @@
 #ifndef ROCKETMQ_CONCURRENT_LATCH_HPP_
 #define ROCKETMQ_CONCURRENT_LATCH_HPP_
 
-#include <atomic>
 #include <cassert>
 #include <cstddef>
+
+#include <atomic>
 #include <future>
 #include <thread>
 

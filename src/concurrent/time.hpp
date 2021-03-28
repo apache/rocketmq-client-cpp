@@ -18,6 +18,7 @@
 #define ROCKETMQ_CONCURRENT_TIME_HPP_
 
 #include <cassert>
+
 #include <chrono>
 
 namespace rocketmq {

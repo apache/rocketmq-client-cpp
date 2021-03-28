@@ -18,6 +18,7 @@
 
 #include <cassert>
 #include <cstring>
+
 #include <typeindex>
 
 #include "ClientRemotingProcessor.h"

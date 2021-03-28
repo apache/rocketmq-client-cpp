@@ -16,6 +16,8 @@
  */
 #include "UtilAll.h"
 
+#include <cassert>
+
 #include <chrono>
 #include <iostream>
 #include <thread>

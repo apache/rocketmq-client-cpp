@@ -17,6 +17,7 @@
 #ifndef ROCKETMQ_TRANSPORT_SOCKETUTIL_H_
 #define ROCKETMQ_TRANSPORT_SOCKETUTIL_H_
 
+#include <cassert>  // assert
 #include <cstddef>  // size_t
 #include <cstdint>  // uint16_t
 

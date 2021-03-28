@@ -16,6 +16,8 @@
  */
 #include "SendCallbackWrap.h"
 
+#include <cassert>
+
 #include <typeindex>
 
 #include "DefaultMQProducer.h"
