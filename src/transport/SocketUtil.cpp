@@ -20,6 +20,7 @@
 #include <cstring>  // std::memcpy, std::memset
 
 #include <iostream>
+#include <limits>
 #include <stdexcept>  // std::invalid_argument, std::runtime_error
 #include <string>
 
