@@ -358,7 +358,7 @@ int64_t MQClientAPIImpl::getMaxOffset(const std::string& addr,
   assert(response != nullptr);
   switch (response->code()) {
     case SUCCESS: {
-      auto* responseHeader = response->decodeCommandCustomHeader<GetMaxOffsetResponseHeader>(GET_MAX_OFFSET);
+      auto* responseHeader = response->decodeCommandCustomHeader<GetMaxOffsetResponseHeader>();
       return responseHeader->offset;
     }
     default:
