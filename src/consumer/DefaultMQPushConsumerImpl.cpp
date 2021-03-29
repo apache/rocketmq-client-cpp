@@ -321,9 +321,16 @@ void DefaultMQPushConsumerImpl::updateTopicSubscribeInfoWhenSubscriptionChanged(
   auto& subTable = rebalance_impl_->getSubscriptionInner();
   for (const auto& it : subTable) {
     const auto& topic = it.first;
-    bool ret = client_instance_->updateTopicRouteInfoFromNameServer(topic);
-    if (!ret) {
-      LOG_WARN_NEW("The topic:[{}] not exist", topic);
+    auto topic_route_data = client_instance_->getTopicRouteData(topic);
+    if (topic_route_data != nullptr) {
+      std::vector<MQMessageQueue> subscribeInfo =
+          MQClientInstance::topicRouteData2TopicSubscribeInfo(topic, topic_route_data);
+      updateTopicSubscribeInfo(topic, subscribeInfo);
+    } else {
+      bool ret = client_instance_->updateTopicRouteInfoFromNameServer(topic);
+      if (!ret) {
+        LOG_WARN_NEW("The topic[{}] not exist, or its route data not changed", topic);
+      }
     }
   }
 }
