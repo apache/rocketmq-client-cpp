@@ -564,7 +564,7 @@ void TcpRemotingClient::messageReceived(ByteArrayRef msg, TcpTransportPtr channe
 void TcpRemotingClient::processMessageReceived(ByteArrayRef msg, TcpTransportPtr channel) {
   std::unique_ptr<RemotingCommand> cmd;
   try {
-    cmd.reset(RemotingCommand::Decode(std::move(msg)));
+    cmd = RemotingCommand::Decode(std::move(msg));
   } catch (...) {
     LOG_ERROR_NEW("processMessageReceived error");
     return;
@@ -635,7 +635,7 @@ void TcpRemotingClient::processRequestCommand(std::unique_ptr<RemotingCommand> r
       auto* processor = it->second;
 
       doBeforeRpcHooks(channel->getPeerAddrAndPort(), *requestCommand, false);
-      response.reset(processor->processRequest(channel, requestCommand.get()));
+      response = processor->processRequest(channel, requestCommand.get());
       doAfterRpcHooks(channel->getPeerAddrAndPort(), *response, response.get(), true);
     } catch (std::exception& e) {
       LOG_ERROR_NEW("process request exception. {}", e.what());

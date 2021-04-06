@@ -23,9 +23,6 @@
 namespace rocketmq {
 
 typedef std::map<MQMessageQueue, ProcessQueuePtr> MQ2PQ;
-typedef std::map<std::string, std::vector<MQMessageQueue>> TOPIC2MQS;
-typedef std::map<std::string, SubscriptionData*> TOPIC2SD;
-typedef std::map<std::string, std::vector<MQMessageQueue>> BROKER2MQS;
 
 class RebalanceLitePullImpl : public RebalanceImpl {
  public:

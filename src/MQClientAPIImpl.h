@@ -59,32 +59,34 @@ class MQClientAPIImpl {
 
   void createTopic(const std::string& addr, const std::string& defaultTopic, TopicConfig topicConfig);
 
-  SendResult* sendMessage(const std::string& addr,
-                          const std::string& brokerName,
-                          const MessagePtr msg,
-                          std::unique_ptr<SendMessageRequestHeader> requestHeader,
-                          int timeoutMillis,
-                          CommunicationMode communicationMode,
-                          DefaultMQProducerImplPtr producer);
-  SendResult* sendMessage(const std::string& addr,
-                          const std::string& brokerName,
-                          const MessagePtr msg,
-                          std::unique_ptr<SendMessageRequestHeader> requestHeader,
-                          int timeoutMillis,
-                          CommunicationMode communicationMode,
-                          SendCallback* sendCallback,
-                          TopicPublishInfoPtr topicPublishInfo,
-                          MQClientInstancePtr instance,
-                          int retryTimesWhenSendFailed,
-                          DefaultMQProducerImplPtr producer);
-  SendResult* processSendResponse(const std::string& brokerName, const MessagePtr msg, RemotingCommand* pResponse);
+  std::unique_ptr<SendResult> sendMessage(const std::string& addr,
+                                          const std::string& brokerName,
+                                          const MessagePtr msg,
+                                          std::unique_ptr<SendMessageRequestHeader> requestHeader,
+                                          int timeoutMillis,
+                                          CommunicationMode communicationMode,
+                                          DefaultMQProducerImplPtr producer);
+  std::unique_ptr<SendResult> sendMessage(const std::string& addr,
+                                          const std::string& brokerName,
+                                          const MessagePtr msg,
+                                          std::unique_ptr<SendMessageRequestHeader> requestHeader,
+                                          int timeoutMillis,
+                                          CommunicationMode communicationMode,
+                                          SendCallback* sendCallback,
+                                          TopicPublishInfoPtr topicPublishInfo,
+                                          MQClientInstancePtr instance,
+                                          int retryTimesWhenSendFailed,
+                                          DefaultMQProducerImplPtr producer);
+  std::unique_ptr<SendResult> processSendResponse(const std::string& brokerName,
+                                                  const MessagePtr msg,
+                                                  RemotingCommand* pResponse);
 
-  PullResult* pullMessage(const std::string& addr,
-                          PullMessageRequestHeader* requestHeader,
-                          int timeoutMillis,
-                          CommunicationMode communicationMode,
-                          PullCallback* pullCallback);
-  PullResult* processPullResponse(RemotingCommand* pResponse);
+  std::unique_ptr<PullResult> pullMessage(const std::string& addr,
+                                          PullMessageRequestHeader* requestHeader,
+                                          int timeoutMillis,
+                                          CommunicationMode communicationMode,
+                                          PullCallback* pullCallback);
+  std::unique_ptr<PullResult> processPullResponse(RemotingCommand* pResponse);
 
   MQMessageExt viewMessage(const std::string& addr, int64_t phyoffset, int timeoutMillis);
 
@@ -141,9 +143,9 @@ class MQClientAPIImpl {
                      int timeoutMillis,
                      bool oneway = false);
 
-  TopicRouteData* getTopicRouteInfoFromNameServer(const std::string& topic, int timeoutMillis);
+  std::unique_ptr<TopicRouteData> getTopicRouteInfoFromNameServer(const std::string& topic, int timeoutMillis);
 
-  TopicList* getTopicListFromNameServer();
+  std::unique_ptr<TopicList> getTopicListFromNameServer();
 
   int wipeWritePermOfBroker(const std::string& namesrvAddr, const std::string& brokerName, int timeoutMillis);
 
@@ -165,11 +167,11 @@ class MQClientAPIImpl {
  private:
   friend class SendCallbackWrap;
 
-  SendResult* sendMessageSync(const std::string& addr,
-                              const std::string& brokerName,
-                              const MessagePtr msg,
-                              RemotingCommand& request,
-                              int timeoutMillis);
+  std::unique_ptr<SendResult> sendMessageSync(const std::string& addr,
+                                              const std::string& brokerName,
+                                              const MessagePtr msg,
+                                              RemotingCommand& request,
+                                              int timeoutMillis);
 
   void sendMessageAsync(const std::string& addr,
                         const std::string& brokerName,
@@ -184,7 +186,7 @@ class MQClientAPIImpl {
 
   void sendMessageAsyncImpl(std::unique_ptr<InvokeCallback>& cbw, int64_t timeoutMillis);
 
-  PullResult* pullMessageSync(const std::string& addr, RemotingCommand& request, int timeoutMillis);
+  std::unique_ptr<PullResult> pullMessageSync(const std::string& addr, RemotingCommand& request, int timeoutMillis);
 
   void pullMessageAsync(const std::string& addr,
                         RemotingCommand& request,

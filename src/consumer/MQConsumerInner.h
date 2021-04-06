@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "ConsumeType.h"
+#include "MQMessageQueue.h"
 #include "protocol/heartbeat/SubscriptionData.hpp"
 
 namespace rocketmq {
@@ -48,7 +49,7 @@ class MQConsumerInner {
   // offset persistence
   virtual void persistConsumerOffset() = 0;
 
-  virtual ConsumerRunningInfo* consumerRunningInfo() = 0;
+  virtual std::unique_ptr<ConsumerRunningInfo> consumerRunningInfo() = 0;
 };
 
 }  // namespace rocketmq

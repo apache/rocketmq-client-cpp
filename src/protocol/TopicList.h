@@ -26,7 +26,7 @@ namespace rocketmq {
 
 class TopicList {
  public:
-  static TopicList* Decode(const ByteArray& mem) { return new TopicList(); }
+  static std::unique_ptr<TopicList> Decode(const ByteArray& mem) { return std::unique_ptr<TopicList>(new TopicList()); }
 
  private:
   std::vector<std::string> topic_list_;

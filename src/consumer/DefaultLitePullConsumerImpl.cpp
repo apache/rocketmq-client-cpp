@@ -22,11 +22,11 @@
 
 #include "AssignedMessageQueue.hpp"
 #include "FilterAPI.hpp"
+#include "LocalFileOffsetStore.h"
 #include "MQAdminImpl.h"
 #include "MQClientAPIImpl.h"
 #include "MQClientInstance.h"
 #include "NamespaceUtil.h"
-#include "LocalFileOffsetStore.h"
 #include "PullAPIWrapper.h"
 #include "PullSysFlag.h"
 #include "RebalanceLitePullImpl.h"
@@ -186,7 +186,7 @@ class DefaultLitePullConsumerImpl::PullTaskImpl : public std::enable_shared_from
       if (consumer->subscription_type_ == SubscriptionType::SUBSCRIBE) {
         subscription_data = consumer->rebalance_impl_->getSubscriptionData(message_queue_.topic());
       } else {
-        subscription_data = FilterAPI::buildSubscriptionData(message_queue_.topic(), SUB_ALL);
+        subscription_data = FilterAPI::buildSubscriptionData(message_queue_.topic(), SUB_ALL).release();
       }
 
       std::unique_ptr<PullResult> pull_result(
@@ -502,8 +502,7 @@ void DefaultLitePullConsumerImpl::subscribe(const std::string& topic, const std:
       THROW_MQEXCEPTION(MQClientException, "Topic can not be null or empty.", -1);
     }
     set_subscription_type(SubscriptionType::SUBSCRIBE);
-    auto* subscription_data = FilterAPI::buildSubscriptionData(topic, subExpression);
-    rebalance_impl_->setSubscriptionData(topic, subscription_data);
+    rebalance_impl_->setSubscriptionData(topic, FilterAPI::buildSubscriptionData(topic, subExpression));
 
     message_queue_listener_.reset(new MessageQueueListenerImpl(shared_from_this()));
     assigned_message_queue_->set_rebalance_impl(rebalance_impl_.get());
@@ -600,29 +599,29 @@ int64_t DefaultLitePullConsumerImpl::fetchConsumeOffset(const MQMessageQueue& me
   return rebalance_impl_->computePullFromWhere(messageQueue);
 }
 
-PullResult* DefaultLitePullConsumerImpl::pull(const MQMessageQueue& mq,
-                                              SubscriptionData* subscription_data,
-                                              int64_t offset,
-                                              int max_nums) {
+std::unique_ptr<PullResult> DefaultLitePullConsumerImpl::pull(const MQMessageQueue& mq,
+                                                              SubscriptionData* subscription_data,
+                                                              int64_t offset,
+                                                              int max_nums) {
   return pull(mq, subscription_data, offset, max_nums,
               getDefaultLitePullConsumerConfig()->consumer_pull_timeout_millis());
 }
 
-PullResult* DefaultLitePullConsumerImpl::pull(const MQMessageQueue& mq,
-                                              SubscriptionData* subscription_data,
-                                              int64_t offset,
-                                              int max_nums,
-                                              long timeout) {
+std::unique_ptr<PullResult> DefaultLitePullConsumerImpl::pull(const MQMessageQueue& mq,
+                                                              SubscriptionData* subscription_data,
+                                                              int64_t offset,
+                                                              int max_nums,
+                                                              long timeout) {
   return pullSyncImpl(mq, subscription_data, offset, max_nums,
                       getDefaultLitePullConsumerConfig()->long_polling_enable(), timeout);
 }
 
-PullResult* DefaultLitePullConsumerImpl::pullSyncImpl(const MQMessageQueue& mq,
-                                                      SubscriptionData* subscription_data,
-                                                      int64_t offset,
-                                                      int max_nums,
-                                                      bool block,
-                                                      long timeout) {
+std::unique_ptr<PullResult> DefaultLitePullConsumerImpl::pullSyncImpl(const MQMessageQueue& mq,
+                                                                      SubscriptionData* subscription_data,
+                                                                      int64_t offset,
+                                                                      int max_nums,
+                                                                      bool block,
+                                                                      long timeout) {
   if (offset < 0) {
     THROW_MQEXCEPTION(MQClientException, "offset < 0", -1);
   }
@@ -838,8 +837,8 @@ void DefaultLitePullConsumerImpl::registerTopicMessageQueueChangeListener(
   }
 }
 
-ConsumerRunningInfo* DefaultLitePullConsumerImpl::consumerRunningInfo() {
-  auto* info = new ConsumerRunningInfo();
+std::unique_ptr<ConsumerRunningInfo> DefaultLitePullConsumerImpl::consumerRunningInfo() {
+  std::unique_ptr<ConsumerRunningInfo> info(new ConsumerRunningInfo());
 
   info->setProperty(ConsumerRunningInfo::PROP_CONSUMER_START_TIMESTAMP, UtilAll::to_string(start_time_));
 

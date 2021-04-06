@@ -37,7 +37,7 @@ MessageClientIDSetter::MessageClientIDSetter() {
   std::unique_ptr<ByteBuffer> buffer;
   sockaddr* addr = GetSelfIP();
   if (addr != nullptr) {
-    buffer.reset(ByteBuffer::allocate(SockaddrSize(addr) + 2 + 4));
+    buffer = ByteBuffer::allocate(SockaddrSize(addr) + 2 + 4);
     if (addr->sa_family == AF_INET) {
       auto* sin = (struct sockaddr_in*)addr;
       buffer->put(ByteArray(reinterpret_cast<char*>(&sin->sin_addr), kIPv4AddrSize));
@@ -49,7 +49,7 @@ MessageClientIDSetter::MessageClientIDSetter() {
     }
   }
   if (buffer == nullptr) {
-    buffer.reset(ByteBuffer::allocate(4 + 2 + 4));
+    buffer = ByteBuffer::allocate(4 + 2 + 4);
     buffer->putInt(UtilAll::currentTimeMillis());
   }
   buffer->putShort(UtilAll::getProcessId());

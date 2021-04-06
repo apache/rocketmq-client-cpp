@@ -20,6 +20,7 @@
 #include <cstdlib>  // std::memcpy
 
 #include <algorithm>  // std::move
+#include <memory>     // std::unique_ptr
 #include <typeindex>  // std::type_index
 
 #include "ByteBuffer.hpp"
@@ -38,17 +39,19 @@ class DefaultByteBuffer : public ByteBuffer {
       : ByteBuffer(mark, pos, lim, cap, std::move(buf), off) {}
 
  public:
-  ByteBuffer* slice() override {
-    return new DefaultByteBuffer(byte_array_, -1, 0, remaining(), remaining(), position() + offset_);
+  std::unique_ptr<ByteBuffer> slice() override {
+    return std::unique_ptr<ByteBuffer>(
+        new DefaultByteBuffer(byte_array_, -1, 0, remaining(), remaining(), position() + offset_));
   }
 
-  ByteBuffer* duplicate() override {
-    return new DefaultByteBuffer(byte_array_, mark_value(), position(), limit(), capacity(), offset_);
+  std::unique_ptr<ByteBuffer> duplicate() override {
+    return std::unique_ptr<ByteBuffer>(
+        new DefaultByteBuffer(byte_array_, mark_value(), position(), limit(), capacity(), offset_));
   }
 
-  ByteBuffer* asReadOnlyBuffer() override {
+  std::unique_ptr<ByteBuffer> asReadOnlyBuffer() override {
     // return new HeapByteBufferR(byte_array_, mark_value(), position(), limit(), capacity(), offset_);
-    return nullptr;
+    return std::unique_ptr<ByteBuffer>();
   }
 
   char get() override { return (*byte_array_)[ix(nextGetIndex())]; }

@@ -17,6 +17,7 @@
 #ifndef ROCKETMQ_PROTOCOL_COMMANDHEADER_H_
 #define ROCKETMQ_PROTOCOL_COMMANDHEADER_H_
 
+#include <memory>  // std::unique_ptr
 #include <vector>  // std::vector
 
 #include "ByteArray.h"
@@ -71,7 +72,7 @@ class CheckTransactionStateRequestHeader : public CommandCustomHeader {
  public:
   CheckTransactionStateRequestHeader() : tranStateTableOffset(0), commitLogOffset(0) {}
 
-  static CheckTransactionStateRequestHeader* Decode(std::map<std::string, std::string>& extFields);
+  static std::unique_ptr<CheckTransactionStateRequestHeader> Decode(std::map<std::string, std::string>& extFields);
   void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) override;
   std::string toString() const;
 
@@ -139,7 +140,7 @@ class SendMessageRequestHeader : public CommandCustomHeader {
 
 class SendMessageRequestHeaderV2 : public CommandCustomHeader {
  public:
-  static SendMessageRequestHeaderV2* createSendMessageRequestHeaderV2(SendMessageRequestHeader* v1);
+  static std::unique_ptr<SendMessageRequestHeaderV2> createSendMessageRequestHeaderV2(SendMessageRequestHeader* v1);
 
   void Encode(Json::Value& outData) override;
   void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) override;
@@ -167,7 +168,7 @@ class SendMessageResponseHeader : public CommandCustomHeader {
  public:
   SendMessageResponseHeader() : queueId(0), queueOffset(0) {}
 
-  static SendMessageResponseHeader* Decode(std::map<std::string, std::string>& extFields);
+  static std::unique_ptr<SendMessageResponseHeader> Decode(std::map<std::string, std::string>& extFields);
   void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) override;
 
  public:
@@ -209,7 +210,7 @@ class PullMessageResponseHeader : public CommandCustomHeader {
  public:
   PullMessageResponseHeader() : suggestWhichBrokerId(0), nextBeginOffset(0), minOffset(0), maxOffset(0) {}
 
-  static PullMessageResponseHeader* Decode(std::map<std::string, std::string>& extFields);
+  static std::unique_ptr<PullMessageResponseHeader> Decode(std::map<std::string, std::string>& extFields);
   void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) override;
 
  public:
@@ -241,7 +242,7 @@ class GetMinOffsetResponseHeader : public CommandCustomHeader {
  public:
   GetMinOffsetResponseHeader() : offset(0) {}
 
-  static GetMinOffsetResponseHeader* Decode(std::map<std::string, std::string>& extFields);
+  static std::unique_ptr<GetMinOffsetResponseHeader> Decode(std::map<std::string, std::string>& extFields);
   void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) override;
 
  public:
@@ -264,7 +265,7 @@ class GetMaxOffsetResponseHeader : public CommandCustomHeader {
  public:
   GetMaxOffsetResponseHeader() : offset(0) {}
 
-  static GetMaxOffsetResponseHeader* Decode(std::map<std::string, std::string>& extFields);
+  static std::unique_ptr<GetMaxOffsetResponseHeader> Decode(std::map<std::string, std::string>& extFields);
   void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) override;
 
  public:
@@ -288,7 +289,7 @@ class SearchOffsetResponseHeader : public CommandCustomHeader {
  public:
   SearchOffsetResponseHeader() : offset(0) {}
 
-  static SearchOffsetResponseHeader* Decode(std::map<std::string, std::string>& extFields);
+  static std::unique_ptr<SearchOffsetResponseHeader> Decode(std::map<std::string, std::string>& extFields);
   void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) override;
 
  public:
@@ -322,7 +323,7 @@ class GetEarliestMsgStoretimeResponseHeader : public CommandCustomHeader {
  public:
   GetEarliestMsgStoretimeResponseHeader() : timestamp(0) {}
 
-  static GetEarliestMsgStoretimeResponseHeader* Decode(std::map<std::string, std::string>& extFields);
+  static std::unique_ptr<GetEarliestMsgStoretimeResponseHeader> Decode(std::map<std::string, std::string>& extFields);
   void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) override;
 
  public:
@@ -355,7 +356,7 @@ class QueryConsumerOffsetResponseHeader : public CommandCustomHeader {
  public:
   QueryConsumerOffsetResponseHeader() : offset(0) {}
 
-  static QueryConsumerOffsetResponseHeader* Decode(std::map<std::string, std::string>& extFields);
+  static std::unique_ptr<QueryConsumerOffsetResponseHeader> Decode(std::map<std::string, std::string>& extFields);
   void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) override;
 
  public:
@@ -395,7 +396,7 @@ class ConsumerSendMsgBackRequestHeader : public CommandCustomHeader {
 
 class GetConsumerListByGroupResponseBody : public CommandCustomHeader {
  public:
-  static GetConsumerListByGroupResponseBody* Decode(const ByteArray& bodyData);
+  static std::unique_ptr<GetConsumerListByGroupResponseBody> Decode(const ByteArray& bodyData);
   void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) override;
 
  public:
@@ -406,7 +407,7 @@ class ResetOffsetRequestHeader : public CommandCustomHeader {
  public:
   ResetOffsetRequestHeader() : timestamp(0), isForce(false) {}
 
-  static ResetOffsetRequestHeader* Decode(std::map<std::string, std::string>& extFields);
+  static std::unique_ptr<ResetOffsetRequestHeader> Decode(std::map<std::string, std::string>& extFields);
 
   const std::string& getTopic() const;
   void setTopic(const std::string& tmp);
@@ -431,7 +432,7 @@ class GetConsumerRunningInfoRequestHeader : public CommandCustomHeader {
  public:
   GetConsumerRunningInfoRequestHeader() : jstackEnable(false) {}
 
-  static GetConsumerRunningInfoRequestHeader* Decode(std::map<std::string, std::string>& extFields);
+  static std::unique_ptr<GetConsumerRunningInfoRequestHeader> Decode(std::map<std::string, std::string>& extFields);
   void Encode(Json::Value& extFields) override;
   void SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) override;
 
@@ -452,7 +453,7 @@ class GetConsumerRunningInfoRequestHeader : public CommandCustomHeader {
 
 class NotifyConsumerIdsChangedRequestHeader : public CommandCustomHeader {
  public:
-  static NotifyConsumerIdsChangedRequestHeader* Decode(std::map<std::string, std::string>& extFields);
+  static std::unique_ptr<NotifyConsumerIdsChangedRequestHeader> Decode(std::map<std::string, std::string>& extFields);
 
   const std::string& getConsumerGroup() const;
   void setConsumerGroup(const std::string& tmp);

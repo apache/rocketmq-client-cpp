@@ -156,7 +156,7 @@ TEST(RemotingCommandTest, EncodeAndDecode) {
   remotingCommand2.set_body("123123");
   package = remotingCommand2.encode();
 
-  decodeRemtingCommand.reset(RemotingCommand::Decode(package, true));
+  decodeRemtingCommand = RemotingCommand::Decode(package, true);
 
   auto* header = decodeRemtingCommand->decodeCommandCustomHeader<GetConsumerRunningInfoRequestHeader>();
   EXPECT_EQ(requestHeader->getClientId(), header->getClientId());

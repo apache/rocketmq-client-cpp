@@ -16,11 +16,13 @@
  */
 #include "PullAPIWrapper.h"
 
+#include <memory>
+
 #include "ByteBuffer.hpp"
 #include "MQClientAPIImpl.h"
 #include "MQClientInstance.h"
-#include "MessageDecoder.h"
 #include "MessageAccessor.hpp"
+#include "MessageDecoder.h"
 #include "PullResultExt.hpp"
 #include "PullSysFlag.h"
 
@@ -50,12 +52,12 @@ int PullAPIWrapper::recalculatePullFromWhichNode(const MQMessageQueue& mq) {
   return MASTER_ID;
 }
 
-PullResult* PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
-                                              std::unique_ptr<PullResult> pull_result,
-                                              SubscriptionData* subscription_data) {
+std::unique_ptr<PullResult> PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
+                                                              std::unique_ptr<PullResult> pull_result,
+                                                              SubscriptionData* subscription_data) {
   auto* pull_result_ext = dynamic_cast<PullResultExt*>(pull_result.get());
   if (pull_result_ext == nullptr) {
-    return pull_result.release();
+    return pull_result;
   }
 
   // update node
@@ -94,28 +96,29 @@ PullResult* PullAPIWrapper::processPullResult(const MQMessageQueue& mq,
     }
   }
 
-  return new PullResult(pull_result_ext->pull_status(), pull_result_ext->next_begin_offset(),
-                        pull_result_ext->min_offset(), pull_result_ext->max_offset(), std::move(msg_list_filter_again));
+  return std::unique_ptr<PullResult>(new PullResult(pull_result_ext->pull_status(),
+                                                    pull_result_ext->next_begin_offset(), pull_result_ext->min_offset(),
+                                                    pull_result_ext->max_offset(), std::move(msg_list_filter_again)));
 }
 
-PullResult* PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,
-                                           const std::string& subExpression,
-                                           const std::string& expressionType,
-                                           int64_t subVersion,
-                                           int64_t offset,
-                                           int maxNums,
-                                           int sysFlag,
-                                           int64_t commitOffset,
-                                           int brokerSuspendMaxTimeMillis,
-                                           int timeoutMillis,
-                                           CommunicationMode communicationMode,
-                                           PullCallback* pullCallback) {
+std::unique_ptr<PullResult> PullAPIWrapper::pullKernelImpl(const MQMessageQueue& mq,
+                                                           const std::string& subExpression,
+                                                           const std::string& expressionType,
+                                                           int64_t subVersion,
+                                                           int64_t offset,
+                                                           int maxNums,
+                                                           int sysFlag,
+                                                           int64_t commitOffset,
+                                                           int brokerSuspendMaxTimeMillis,
+                                                           int timeoutMillis,
+                                                           CommunicationMode communicationMode,
+                                                           PullCallback* pullCallback) {
   std::unique_ptr<FindBrokerResult> findBrokerResult(
       client_instance_->findBrokerAddressInSubscribe(mq.broker_name(), recalculatePullFromWhichNode(mq), false));
   if (findBrokerResult == nullptr) {
     client_instance_->updateTopicRouteInfoFromNameServer(mq.topic());
-    findBrokerResult.reset(
-        client_instance_->findBrokerAddressInSubscribe(mq.broker_name(), recalculatePullFromWhichNode(mq), false));
+    findBrokerResult =
+        client_instance_->findBrokerAddressInSubscribe(mq.broker_name(), recalculatePullFromWhichNode(mq), false);
   }
 
   if (findBrokerResult != nullptr) {

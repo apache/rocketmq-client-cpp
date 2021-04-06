@@ -127,28 +127,28 @@ class DefaultMQProducerImpl : public std::enable_shared_from_this<DefaultMQProdu
                              CheckTransactionStateRequestHeader* checkRequestHeader) override;
 
  private:
-  SendResult* sendDefaultImpl(MessagePtr msg,
-                              CommunicationMode communicationMode,
-                              SendCallback* sendCallback,
-                              long timeout);
+  std::unique_ptr<SendResult> sendDefaultImpl(MessagePtr msg,
+                                              CommunicationMode communicationMode,
+                                              SendCallback* sendCallback,
+                                              long timeout);
 
-  SendResult* sendKernelImpl(MessagePtr msg,
-                             const MQMessageQueue& mq,
-                             CommunicationMode communicationMode,
-                             SendCallback* sendCallback,
-                             std::shared_ptr<const TopicPublishInfo> topicPublishInfo,
-                             long timeout);
+  std::unique_ptr<SendResult> sendKernelImpl(MessagePtr msg,
+                                             const MQMessageQueue& mq,
+                                             CommunicationMode communicationMode,
+                                             SendCallback* sendCallback,
+                                             std::shared_ptr<const TopicPublishInfo> topicPublishInfo,
+                                             long timeout);
 
   bool tryToCompressMessage(Message& msg);
 
-  SendResult* sendSelectImpl(MessagePtr msg,
-                             MessageQueueSelector* selector,
-                             void* arg,
-                             CommunicationMode communicationMode,
-                             SendCallback* sendCallback,
-                             long timeout);
+  std::unique_ptr<SendResult> sendSelectImpl(MessagePtr msg,
+                                             MessageQueueSelector* selector,
+                                             void* arg,
+                                             CommunicationMode communicationMode,
+                                             SendCallback* sendCallback,
+                                             long timeout);
 
-  TransactionSendResult* sendMessageInTransactionImpl(MessagePtr msg, void* arg, long timeout);
+  std::unique_ptr<TransactionSendResult> sendMessageInTransactionImpl(MessagePtr msg, void* arg, long timeout);
 
   void endTransaction(SendResult& sendResult,
                       LocalTransactionState localTransactionState,

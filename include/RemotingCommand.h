@@ -67,7 +67,7 @@ class ROCKETMQCLIENT_API RemotingCommand {
   template <class H>
   H* decodeCommandCustomHeader(bool useCache = true);
 
-  static RemotingCommand* Decode(ByteArrayRef array, bool hasPackageLength = false);
+  static std::unique_ptr<RemotingCommand> Decode(ByteArrayRef array, bool hasPackageLength = false);
 
   std::string toString() const;
 
@@ -116,9 +116,9 @@ H* RemotingCommand::decodeCommandCustomHeader(bool useCache) {
   }
 
   try {
-    H* header = H::Decode(ext_fields_);
-    custom_header_.reset(header);
-    return header;
+    std::unique_ptr<H> header = H::Decode(ext_fields_);
+    custom_header_ = std::move(header);
+    return static_cast<H*>(custom_header_.get());
   } catch (std::exception& e) {
     THROW_MQEXCEPTION(RemotingCommandException, e.what(), -1);
   }

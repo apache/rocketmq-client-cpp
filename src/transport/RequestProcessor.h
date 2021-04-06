@@ -26,7 +26,7 @@ class RequestProcessor {
  public:
   virtual ~RequestProcessor() = default;
 
-  virtual RemotingCommand* processRequest(TcpTransportPtr channel, RemotingCommand* request) = 0;
+  virtual std::unique_ptr<RemotingCommand> processRequest(TcpTransportPtr channel, RemotingCommand* request) = 0;
 };
 
 }  // namespace rocketmq

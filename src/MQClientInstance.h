@@ -22,18 +22,18 @@
 #include <set>
 #include <utility>
 
-#include "protocol/body/ConsumerRunningInfo.h"
 #include "FindBrokerResult.hpp"
 #include "MQClientConfig.h"
-#include "MQException.h"
 #include "MQConsumerInner.h"
+#include "MQException.h"
 #include "MQMessageQueue.h"
 #include "MQProducerInner.h"
 #include "ServiceState.h"
 #include "TopicPublishInfo.hpp"
+#include "concurrent/executor.hpp"
+#include "protocol/body/ConsumerRunningInfo.h"
 #include "protocol/body/TopicRouteData.hpp"
 #include "protocol/heartbeat/HeartbeatData.hpp"
-#include "concurrent/executor.hpp"
 
 namespace rocketmq {
 
@@ -83,9 +83,11 @@ class MQClientInstance {
   MQProducerInner* selectProducer(const std::string& group);
   MQConsumerInner* selectConsumer(const std::string& group);
 
-  FindBrokerResult* findBrokerAddressInAdmin(const std::string& brokerName);
+  std::unique_ptr<FindBrokerResult> findBrokerAddressInAdmin(const std::string& brokerName);
   std::string findBrokerAddressInPublish(const std::string& brokerName);
-  FindBrokerResult* findBrokerAddressInSubscribe(const std::string& brokerName, int brokerId, bool onlyThisBroker);
+  std::unique_ptr<FindBrokerResult> findBrokerAddressInSubscribe(const std::string& brokerName,
+                                                                 int brokerId,
+                                                                 bool onlyThisBroker);
 
   void findConsumerIds(const std::string& topic, const std::string& group, std::vector<std::string>& cids);
 
@@ -95,7 +97,7 @@ class MQClientInstance {
                    const std::string& topic,
                    const std::map<MQMessageQueue, int64_t>& offsetTable);
 
-  ConsumerRunningInfo* consumerRunningInfo(const std::string& consumerGroup);
+  std::unique_ptr<ConsumerRunningInfo> consumerRunningInfo(const std::string& consumerGroup);
 
  public:
   TopicPublishInfoPtr tryToFindTopicPublishInfo(const std::string& topic);
@@ -133,7 +135,7 @@ class MQClientInstance {
 
   // heartbeat
   void sendHeartbeatToAllBroker();
-  HeartbeatData* prepareHeartbeatData();
+  std::unique_ptr<HeartbeatData> prepareHeartbeatData();
   void insertConsumerInfoToHeartBeatData(HeartbeatData* pHeartbeatData);
   void insertProducerInfoToHeartBeatData(HeartbeatData* pHeartbeatData);
 

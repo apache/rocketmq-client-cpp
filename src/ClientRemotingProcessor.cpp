@@ -35,7 +35,8 @@ ClientRemotingProcessor::ClientRemotingProcessor(MQClientInstance* clientInstanc
 
 ClientRemotingProcessor::~ClientRemotingProcessor() = default;
 
-RemotingCommand* ClientRemotingProcessor::processRequest(TcpTransportPtr channel, RemotingCommand* request) {
+std::unique_ptr<RemotingCommand> ClientRemotingProcessor::processRequest(TcpTransportPtr channel,
+                                                                         RemotingCommand* request) {
   const auto& addr = channel->getPeerAddrAndPort();
   LOG_DEBUG_NEW("processRequest, code:{}, addr:{}", request->code(), addr);
   switch (request->code()) {
@@ -61,7 +62,8 @@ RemotingCommand* ClientRemotingProcessor::processRequest(TcpTransportPtr channel
   return nullptr;
 }
 
-RemotingCommand* ClientRemotingProcessor::checkTransactionState(const std::string& addr, RemotingCommand* request) {
+std::unique_ptr<RemotingCommand> ClientRemotingProcessor::checkTransactionState(const std::string& addr,
+                                                                                RemotingCommand* request) {
   auto* requestHeader = request->decodeCommandCustomHeader<CheckTransactionStateRequestHeader>();
   assert(requestHeader != nullptr);
 
@@ -95,14 +97,14 @@ RemotingCommand* ClientRemotingProcessor::checkTransactionState(const std::strin
   return nullptr;
 }
 
-RemotingCommand* ClientRemotingProcessor::notifyConsumerIdsChanged(RemotingCommand* request) {
+std::unique_ptr<RemotingCommand> ClientRemotingProcessor::notifyConsumerIdsChanged(RemotingCommand* request) {
   auto* requestHeader = request->decodeCommandCustomHeader<NotifyConsumerIdsChangedRequestHeader>();
   LOG_INFO_NEW("notifyConsumerIdsChanged, group:{}", requestHeader->getConsumerGroup());
   client_instance_->rebalanceImmediately();
   return nullptr;
 }
 
-RemotingCommand* ClientRemotingProcessor::resetOffset(RemotingCommand* request) {
+std::unique_ptr<RemotingCommand> ClientRemotingProcessor::resetOffset(RemotingCommand* request) {
   auto* responseHeader = request->decodeCommandCustomHeader<ResetOffsetRequestHeader>();
   auto requestBody = request->body();
   if (requestBody != nullptr && requestBody->size() > 0) {
@@ -116,7 +118,8 @@ RemotingCommand* ClientRemotingProcessor::resetOffset(RemotingCommand* request) 
   return nullptr;  // as resetOffset is oneWayRPC, do not need return any response
 }
 
-RemotingCommand* ClientRemotingProcessor::getConsumerRunningInfo(const std::string& addr, RemotingCommand* request) {
+std::unique_ptr<RemotingCommand> ClientRemotingProcessor::getConsumerRunningInfo(const std::string& addr,
+                                                                                 RemotingCommand* request) {
   auto* requestHeader = request->decodeCommandCustomHeader<GetConsumerRunningInfoRequestHeader>();
   LOG_INFO_NEW("getConsumerRunningInfo, group:{}", requestHeader->getConsumerGroup());
 
@@ -137,10 +140,10 @@ RemotingCommand* ClientRemotingProcessor::getConsumerRunningInfo(const std::stri
     response->set_remark("The Consumer Group not exist in this consumer");
   }
 
-  return response.release();
+  return response;
 }
 
-RemotingCommand* ClientRemotingProcessor::receiveReplyMessage(RemotingCommand* request) {
+std::unique_ptr<RemotingCommand> ClientRemotingProcessor::receiveReplyMessage(RemotingCommand* request) {
   std::unique_ptr<RemotingCommand> response(
       new RemotingCommand(MQResponseCode::SYSTEM_ERROR, "not set any response code"));
 
@@ -192,7 +195,7 @@ RemotingCommand* ClientRemotingProcessor::receiveReplyMessage(RemotingCommand* r
     response->set_remark("process reply message fail");
   }
 
-  return response.release();
+  return response;
 }
 
 void ClientRemotingProcessor::processReplyMessage(std::unique_ptr<MQMessageExt> replyMsg) {

@@ -21,14 +21,14 @@
 #include <mutex>   // std::mutex
 #include <string>  // std::string
 
-#include "concurrent/blocking_queue.hpp"
-#include "concurrent/executor.hpp"
 #include "DefaultLitePullConsumer.h"
-#include "MessageQueueListener.h"
-#include "MessageQueueLock.hpp"
 #include "MQClientImpl.h"
 #include "MQConsumerInner.h"
+#include "MessageQueueListener.h"
+#include "MessageQueueLock.hpp"
 #include "TopicMessageQueueChangeListener.h"
+#include "concurrent/blocking_queue.hpp"
+#include "concurrent/executor.hpp"
 
 namespace rocketmq {
 
@@ -125,7 +125,7 @@ class DefaultLitePullConsumerImpl : public std::enable_shared_from_this<DefaultL
   // offset persistence
   void persistConsumerOffset() override;
 
-  ConsumerRunningInfo* consumerRunningInfo() override;
+  std::unique_ptr<ConsumerRunningInfo> consumerRunningInfo() override;
 
  private:
   void checkConfig();
@@ -149,18 +149,21 @@ class DefaultLitePullConsumerImpl : public std::enable_shared_from_this<DefaultL
   int64_t nextPullOffset(const MQMessageQueue& messageQueue);
   int64_t fetchConsumeOffset(const MQMessageQueue& messageQueue);
 
-  PullResult* pull(const MQMessageQueue& mq, SubscriptionData* subscription_data, int64_t offset, int max_nums);
-  PullResult* pull(const MQMessageQueue& mq,
-                   SubscriptionData* subscription_data,
-                   int64_t offset,
-                   int max_nums,
-                   long timeout);
-  PullResult* pullSyncImpl(const MQMessageQueue& mq,
-                           SubscriptionData* subscription_data,
-                           int64_t offset,
-                           int max_nums,
-                           bool block,
-                           long timeout);
+  std::unique_ptr<PullResult> pull(const MQMessageQueue& mq,
+                                   SubscriptionData* subscription_data,
+                                   int64_t offset,
+                                   int max_nums);
+  std::unique_ptr<PullResult> pull(const MQMessageQueue& mq,
+                                   SubscriptionData* subscription_data,
+                                   int64_t offset,
+                                   int max_nums,
+                                   long timeout);
+  std::unique_ptr<PullResult> pullSyncImpl(const MQMessageQueue& mq,
+                                           SubscriptionData* subscription_data,
+                                           int64_t offset,
+                                           int max_nums,
+                                           bool block,
+                                           long timeout);
 
   void submitConsumeRequest(ConsumeRequest* consume_request);
 

@@ -32,7 +32,7 @@ namespace rocketmq {
 
 typedef std::map<MQMessageQueue, ProcessQueuePtr> MQ2PQ;
 typedef std::map<std::string, std::vector<MQMessageQueue>> TOPIC2MQS;
-typedef std::map<std::string, SubscriptionData*> TOPIC2SD;
+typedef std::map<std::string, std::unique_ptr<SubscriptionData>> TOPIC2SD;
 typedef std::map<std::string, std::vector<MQMessageQueue>> BROKER2MQS;
 
 class RebalanceImpl {
@@ -75,7 +75,7 @@ class RebalanceImpl {
  public:
   TOPIC2SD& getSubscriptionInner();
   SubscriptionData* getSubscriptionData(const std::string& topic);
-  void setSubscriptionData(const std::string& topic, SubscriptionData* sd) noexcept;
+  void setSubscriptionData(const std::string& topic, std::unique_ptr<SubscriptionData> sd) noexcept;
 
   bool getTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& mqs);
   void setTopicSubscribeInfo(const std::string& topic, std::vector<MQMessageQueue>& mqs);

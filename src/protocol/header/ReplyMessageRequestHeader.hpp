@@ -26,7 +26,7 @@ namespace rocketmq {
 
 class ReplyMessageRequestHeader : public CommandCustomHeader {
  public:
-  static ReplyMessageRequestHeader* Decode(std::map<std::string, std::string>& extFields) {
+  static std::unique_ptr<ReplyMessageRequestHeader> Decode(std::map<std::string, std::string>& extFields) {
     std::unique_ptr<ReplyMessageRequestHeader> header(new ReplyMessageRequestHeader());
 
     header->producer_group_ = extFields.at("producerGroup");
@@ -61,7 +61,7 @@ class ReplyMessageRequestHeader : public CommandCustomHeader {
     header->store_host_ = extFields.at("storeHost");
     header->store_timestamp_ = std::stoll(extFields.at("storeTimestamp"));
 
-    return header.release();
+    return header;
   }
 
  public:

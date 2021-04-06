@@ -19,18 +19,18 @@
 
 #include <sstream>  // std::stringstream
 
-#include "ByteArray.h"
 #include "Buffer.hpp"
+#include "ByteArray.h"
 #include "ByteOrder.h"
 
 namespace rocketmq {
 
 class ByteBuffer : public Buffer<char> {
  public:
-  static ByteBuffer* allocate(int32_t capacity);
+  static std::unique_ptr<ByteBuffer> allocate(int32_t capacity);
 
-  static ByteBuffer* wrap(ByteArrayRef array, int32_t offset, int32_t length);
-  static ByteBuffer* wrap(ByteArrayRef array) { return wrap(array, 0, array->size()); }
+  static std::unique_ptr<ByteBuffer> wrap(ByteArrayRef array, int32_t offset, int32_t length);
+  static std::unique_ptr<ByteBuffer> wrap(ByteArrayRef array) { return wrap(array, 0, array->size()); }
 
  protected:
   ByteBuffer(int32_t mark, int32_t pos, int32_t lim, int32_t cap, ByteArrayRef byte_array, int32_t offset)
@@ -46,9 +46,9 @@ class ByteBuffer : public Buffer<char> {
   virtual ~ByteBuffer() = default;
 
  public:
-  virtual ByteBuffer* slice() = 0;
-  virtual ByteBuffer* duplicate() = 0;
-  virtual ByteBuffer* asReadOnlyBuffer() = 0;
+  virtual std::unique_ptr<ByteBuffer> slice() = 0;
+  virtual std::unique_ptr<ByteBuffer> duplicate() = 0;
+  virtual std::unique_ptr<ByteBuffer> asReadOnlyBuffer() = 0;
 
   // get/put routine
   // ======================

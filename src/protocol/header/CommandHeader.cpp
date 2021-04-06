@@ -95,7 +95,7 @@ void CreateTopicRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::str
 // CheckTransactionStateRequestHeader
 //######################################
 
-CheckTransactionStateRequestHeader* CheckTransactionStateRequestHeader::Decode(
+std::unique_ptr<CheckTransactionStateRequestHeader> CheckTransactionStateRequestHeader::Decode(
     std::map<std::string, std::string>& extFields) {
   std::unique_ptr<CheckTransactionStateRequestHeader> header(new CheckTransactionStateRequestHeader());
   header->tranStateTableOffset = std::stoll(extFields.at("tranStateTableOffset"));
@@ -116,7 +116,7 @@ CheckTransactionStateRequestHeader* CheckTransactionStateRequestHeader::Decode(
     header->offsetMsgId = it->second;
   }
 
-  return header.release();
+  return header;
 }
 
 void CheckTransactionStateRequestHeader::SetDeclaredFieldOfCommandHeader(
@@ -246,8 +246,9 @@ void SendMessageRequestHeader::setReconsumeTimes(int _reconsumeTimes) {
 // SendMessageRequestHeaderV2
 //######################################
 
-SendMessageRequestHeaderV2* SendMessageRequestHeaderV2::createSendMessageRequestHeaderV2(SendMessageRequestHeader* v1) {
-  SendMessageRequestHeaderV2* v2 = new SendMessageRequestHeaderV2();
+std::unique_ptr<SendMessageRequestHeaderV2> SendMessageRequestHeaderV2::createSendMessageRequestHeaderV2(
+    SendMessageRequestHeader* v1) {
+  std::unique_ptr<SendMessageRequestHeaderV2> v2(new SendMessageRequestHeaderV2());
   v2->a = v1->producerGroup;
   v2->b = v1->topic;
   v2->c = v1->defaultTopic;
@@ -312,7 +313,8 @@ void SendMessageRequestHeaderV2::SetDeclaredFieldOfCommandHeader(std::map<std::s
 // SendMessageResponseHeader
 //######################################
 
-SendMessageResponseHeader* SendMessageResponseHeader::Decode(std::map<std::string, std::string>& extFields) {
+std::unique_ptr<SendMessageResponseHeader> SendMessageResponseHeader::Decode(
+    std::map<std::string, std::string>& extFields) {
   std::unique_ptr<SendMessageResponseHeader> header(new SendMessageResponseHeader());
   header->msgId = extFields.at("msgId");
   header->queueId = std::stoi(extFields.at("queueId"));
@@ -323,7 +325,7 @@ SendMessageResponseHeader* SendMessageResponseHeader::Decode(std::map<std::strin
     header->transactionId = it->second;
   }
 
-  return header.release();
+  return header;
 }
 
 void SendMessageResponseHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
@@ -378,13 +380,14 @@ void PullMessageRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::str
 // PullMessageResponseHeader
 //######################################
 
-PullMessageResponseHeader* PullMessageResponseHeader::Decode(std::map<std::string, std::string>& extFields) {
+std::unique_ptr<PullMessageResponseHeader> PullMessageResponseHeader::Decode(
+    std::map<std::string, std::string>& extFields) {
   std::unique_ptr<PullMessageResponseHeader> header(new PullMessageResponseHeader());
   header->suggestWhichBrokerId = std::stoll(extFields.at("suggestWhichBrokerId"));
   header->nextBeginOffset = std::stoll(extFields.at("nextBeginOffset"));
   header->minOffset = std::stoll(extFields.at("minOffset"));
   header->maxOffset = std::stoll(extFields.at("maxOffset"));
-  return header.release();
+  return header;
 }
 
 void PullMessageResponseHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
@@ -422,10 +425,11 @@ void GetMinOffsetRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::st
 // GetMinOffsetResponseHeader
 //######################################
 
-GetMinOffsetResponseHeader* GetMinOffsetResponseHeader::Decode(std::map<std::string, std::string>& extFields) {
+std::unique_ptr<GetMinOffsetResponseHeader> GetMinOffsetResponseHeader::Decode(
+    std::map<std::string, std::string>& extFields) {
   std::unique_ptr<GetMinOffsetResponseHeader> header(new GetMinOffsetResponseHeader());
   header->offset = std::stoll(extFields.at("offset"));
-  return header.release();
+  return header;
 }
 
 void GetMinOffsetResponseHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
@@ -451,10 +455,11 @@ void GetMaxOffsetRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::st
 // GetMaxOffsetResponseHeader
 //######################################
 
-GetMaxOffsetResponseHeader* GetMaxOffsetResponseHeader::Decode(std::map<std::string, std::string>& extFields) {
+std::unique_ptr<GetMaxOffsetResponseHeader> GetMaxOffsetResponseHeader::Decode(
+    std::map<std::string, std::string>& extFields) {
   std::unique_ptr<GetMaxOffsetResponseHeader> header(new GetMaxOffsetResponseHeader());
   header->offset = std::stoll(extFields.at("offset"));
-  return header.release();
+  return header;
 }
 
 void GetMaxOffsetResponseHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
@@ -482,10 +487,11 @@ void SearchOffsetRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<std::st
 // SearchOffsetResponseHeader
 //######################################
 
-SearchOffsetResponseHeader* SearchOffsetResponseHeader::Decode(std::map<std::string, std::string>& extFields) {
+std::unique_ptr<SearchOffsetResponseHeader> SearchOffsetResponseHeader::Decode(
+    std::map<std::string, std::string>& extFields) {
   std::unique_ptr<SearchOffsetResponseHeader> header(new SearchOffsetResponseHeader());
   header->offset = std::stoll(extFields.at("offset"));
-  return header.release();
+  return header;
 }
 
 void SearchOffsetResponseHeader::SetDeclaredFieldOfCommandHeader(std::map<std::string, std::string>& requestMap) {
@@ -524,11 +530,11 @@ void GetEarliestMsgStoretimeRequestHeader::SetDeclaredFieldOfCommandHeader(
 // GetEarliestMsgStoretimeResponseHeader
 //######################################
 
-GetEarliestMsgStoretimeResponseHeader* GetEarliestMsgStoretimeResponseHeader::Decode(
+std::unique_ptr<GetEarliestMsgStoretimeResponseHeader> GetEarliestMsgStoretimeResponseHeader::Decode(
     std::map<std::string, std::string>& extFields) {
   std::unique_ptr<GetEarliestMsgStoretimeResponseHeader> header(new GetEarliestMsgStoretimeResponseHeader());
   header->timestamp = std::stoll(extFields.at("timestamp"));
-  return header.release();
+  return header;
 }
 
 void GetEarliestMsgStoretimeResponseHeader::SetDeclaredFieldOfCommandHeader(
@@ -570,11 +576,11 @@ void QueryConsumerOffsetRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<
 // QueryConsumerOffsetResponseHeader
 //######################################
 
-QueryConsumerOffsetResponseHeader* QueryConsumerOffsetResponseHeader::Decode(
+std::unique_ptr<QueryConsumerOffsetResponseHeader> QueryConsumerOffsetResponseHeader::Decode(
     std::map<std::string, std::string>& extFields) {
   std::unique_ptr<QueryConsumerOffsetResponseHeader> header(new QueryConsumerOffsetResponseHeader());
   header->offset = std::stoll(extFields.at("offset"));
-  return header.release();
+  return header;
 }
 
 void QueryConsumerOffsetResponseHeader::SetDeclaredFieldOfCommandHeader(
@@ -642,14 +648,15 @@ void ConsumerSendMsgBackRequestHeader::SetDeclaredFieldOfCommandHeader(std::map<
 // GetConsumerListByGroupResponseBody
 //######################################
 
-GetConsumerListByGroupResponseBody* GetConsumerListByGroupResponseBody::Decode(const ByteArray& bodyData) {
+std::unique_ptr<GetConsumerListByGroupResponseBody> GetConsumerListByGroupResponseBody::Decode(
+    const ByteArray& bodyData) {
   Json::Value root = RemotingSerializable::fromJson(bodyData);
   auto& ids = root["consumerIdList"];
   std::unique_ptr<GetConsumerListByGroupResponseBody> body(new GetConsumerListByGroupResponseBody());
   for (unsigned int i = 0; i < ids.size(); i++) {
     body->consumerIdList.push_back(ids[i].asString());
   }
-  return body.release();
+  return body;
 }
 
 void GetConsumerListByGroupResponseBody::SetDeclaredFieldOfCommandHeader(
@@ -659,7 +666,8 @@ void GetConsumerListByGroupResponseBody::SetDeclaredFieldOfCommandHeader(
 // ResetOffsetRequestHeader
 //######################################
 
-ResetOffsetRequestHeader* ResetOffsetRequestHeader::Decode(std::map<std::string, std::string>& extFields) {
+std::unique_ptr<ResetOffsetRequestHeader> ResetOffsetRequestHeader::Decode(
+    std::map<std::string, std::string>& extFields) {
   std::unique_ptr<ResetOffsetRequestHeader> header(new ResetOffsetRequestHeader());
   header->topic = extFields.at("topic");
   header->group = extFields.at("group");
@@ -667,7 +675,7 @@ ResetOffsetRequestHeader* ResetOffsetRequestHeader::Decode(std::map<std::string,
   header->isForce = UtilAll::stob(extFields.at("isForce"));
   LOG_INFO_NEW("topic:{}, group:{}, timestamp:{}, isForce:{}", header->topic, header->group, header->timestamp,
                header->isForce);
-  return header.release();
+  return header;
 }
 
 void ResetOffsetRequestHeader::setTopic(const std::string& tmp) {
@@ -706,7 +714,7 @@ const bool ResetOffsetRequestHeader::getForceFlag() const {
 // GetConsumerRunningInfoRequestHeader
 //######################################
 
-GetConsumerRunningInfoRequestHeader* GetConsumerRunningInfoRequestHeader::Decode(
+std::unique_ptr<GetConsumerRunningInfoRequestHeader> GetConsumerRunningInfoRequestHeader::Decode(
     std::map<std::string, std::string>& extFields) {
   std::unique_ptr<GetConsumerRunningInfoRequestHeader> header(new GetConsumerRunningInfoRequestHeader());
   header->consumerGroup = extFields.at("consumerGroup");
@@ -714,7 +722,7 @@ GetConsumerRunningInfoRequestHeader* GetConsumerRunningInfoRequestHeader::Decode
   header->jstackEnable = UtilAll::stob(extFields.at("jstackEnable"));
   LOG_INFO("consumerGroup:%s, clientId:%s,  jstackEnable:%d", header->consumerGroup.c_str(), header->clientId.c_str(),
            header->jstackEnable);
-  return header.release();
+  return header;
 }
 
 void GetConsumerRunningInfoRequestHeader::Encode(Json::Value& extFields) {
@@ -758,11 +766,11 @@ void GetConsumerRunningInfoRequestHeader::setJstackEnable(const bool& jstackEnab
 // NotifyConsumerIdsChangedRequestHeader
 //######################################
 
-NotifyConsumerIdsChangedRequestHeader* NotifyConsumerIdsChangedRequestHeader::Decode(
+std::unique_ptr<NotifyConsumerIdsChangedRequestHeader> NotifyConsumerIdsChangedRequestHeader::Decode(
     std::map<std::string, std::string>& extFields) {
   std::unique_ptr<NotifyConsumerIdsChangedRequestHeader> header(new NotifyConsumerIdsChangedRequestHeader());
   header->consumerGroup = extFields.at("consumerGroup");
-  return header.release();
+  return header;
 }
 
 const std::string& NotifyConsumerIdsChangedRequestHeader::getConsumerGroup() const {

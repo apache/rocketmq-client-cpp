@@ -32,22 +32,22 @@ class PullAPIWrapper {
   PullAPIWrapper(MQClientInstance* instance, const std::string& consumerGroup);
   ~PullAPIWrapper();
 
-  PullResult* processPullResult(const MQMessageQueue& mq,
-                                std::unique_ptr<PullResult> pull_result,
-                                SubscriptionData* subscriptionData);
+  std::unique_ptr<PullResult> processPullResult(const MQMessageQueue& mq,
+                                                std::unique_ptr<PullResult> pull_result,
+                                                SubscriptionData* subscriptionData);
 
-  PullResult* pullKernelImpl(const MQMessageQueue& mq,
-                             const std::string& subExpression,
-                             const std::string& expressionType,
-                             int64_t subVersion,
-                             int64_t offset,
-                             int maxNums,
-                             int sysFlag,
-                             int64_t commitOffset,
-                             int brokerSuspendMaxTimeMillis,
-                             int timeoutMillis,
-                             CommunicationMode communicationMode,
-                             PullCallback* pullCallback);
+  std::unique_ptr<PullResult> pullKernelImpl(const MQMessageQueue& mq,
+                                             const std::string& subExpression,
+                                             const std::string& expressionType,
+                                             int64_t subVersion,
+                                             int64_t offset,
+                                             int maxNums,
+                                             int sysFlag,
+                                             int64_t commitOffset,
+                                             int brokerSuspendMaxTimeMillis,
+                                             int timeoutMillis,
+                                             CommunicationMode communicationMode,
+                                             PullCallback* pullCallback);
 
  private:
   void updatePullFromWhichNode(const MQMessageQueue& mq, int brokerId);

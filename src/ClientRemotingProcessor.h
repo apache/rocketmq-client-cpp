@@ -28,13 +28,13 @@ class ClientRemotingProcessor : public RequestProcessor {
   ClientRemotingProcessor(MQClientInstance* clientInstance);
   virtual ~ClientRemotingProcessor();
 
-  RemotingCommand* processRequest(TcpTransportPtr channel, RemotingCommand* request) override;
+  std::unique_ptr<RemotingCommand> processRequest(TcpTransportPtr channel, RemotingCommand* request) override;
 
-  RemotingCommand* checkTransactionState(const std::string& addr, RemotingCommand* request);
-  RemotingCommand* notifyConsumerIdsChanged(RemotingCommand* request);
-  RemotingCommand* resetOffset(RemotingCommand* request);
-  RemotingCommand* getConsumerRunningInfo(const std::string& addr, RemotingCommand* request);
-  RemotingCommand* receiveReplyMessage(RemotingCommand* request);
+  std::unique_ptr<RemotingCommand> checkTransactionState(const std::string& addr, RemotingCommand* request);
+  std::unique_ptr<RemotingCommand> notifyConsumerIdsChanged(RemotingCommand* request);
+  std::unique_ptr<RemotingCommand> resetOffset(RemotingCommand* request);
+  std::unique_ptr<RemotingCommand> getConsumerRunningInfo(const std::string& addr, RemotingCommand* request);
+  std::unique_ptr<RemotingCommand> receiveReplyMessage(RemotingCommand* request);
 
  private:
   void processReplyMessage(std::unique_ptr<MQMessageExt> replyMsg);

@@ -22,16 +22,16 @@
 
 namespace rocketmq {
 
-ByteBuffer* ByteBuffer::allocate(int32_t capacity) {
+std::unique_ptr<ByteBuffer> ByteBuffer::allocate(int32_t capacity) {
   if (capacity < 0) {
     throw std::invalid_argument("");
   }
-  return new DefaultByteBuffer(capacity, capacity);
+  return std::unique_ptr<ByteBuffer>(new DefaultByteBuffer(capacity, capacity));
 }
 
-ByteBuffer* ByteBuffer::wrap(ByteArrayRef array, int32_t offset, int32_t length) {
+std::unique_ptr<ByteBuffer> ByteBuffer::wrap(ByteArrayRef array, int32_t offset, int32_t length) {
   try {
-    return new DefaultByteBuffer(std::move(array), offset, length);
+    return std::unique_ptr<ByteBuffer>(new DefaultByteBuffer(std::move(array), offset, length));
   } catch (const std::exception& x) {
     throw std::runtime_error("IndexOutOfBoundsException");
   }

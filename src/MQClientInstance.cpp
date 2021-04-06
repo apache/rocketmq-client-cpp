@@ -19,7 +19,6 @@
 #include <typeindex>
 
 #include "ClientRemotingProcessor.h"
-#include "protocol/body/ConsumerRunningInfo.h"
 #include "Logging.h"
 #include "MQAdminImpl.h"
 #include "MQClientAPIImpl.h"
@@ -33,6 +32,7 @@
 #include "TcpRemotingClient.h"
 #include "TopicPublishInfo.hpp"
 #include "UtilAll.h"
+#include "protocol/body/ConsumerRunningInfo.h"
 
 namespace rocketmq {
 
@@ -415,8 +415,7 @@ bool MQClientInstance::updateTopicRouteInfoFromNameServer(const std::string& top
     try {
       TopicRouteDataPtr topicRouteData;
       if (isDefault) {
-        topicRouteData.reset(
-            mq_client_api_impl_->getTopicRouteInfoFromNameServer(AUTO_CREATE_TOPIC_KEY_TOPIC, 1000 * 3));
+        topicRouteData = mq_client_api_impl_->getTopicRouteInfoFromNameServer(AUTO_CREATE_TOPIC_KEY_TOPIC, 1000 * 3);
         if (topicRouteData != nullptr) {
           auto& queueDatas = topicRouteData->queue_datas();
           for (auto& qd : queueDatas) {
@@ -427,7 +426,7 @@ bool MQClientInstance::updateTopicRouteInfoFromNameServer(const std::string& top
         }
         LOG_DEBUG_NEW("getTopicRouteInfoFromNameServer is null for topic: {}", topic);
       } else {
-        topicRouteData.reset(mq_client_api_impl_->getTopicRouteInfoFromNameServer(topic, 1000 * 3));
+        topicRouteData = mq_client_api_impl_->getTopicRouteInfoFromNameServer(topic, 1000 * 3);
       }
       if (topicRouteData != nullptr) {
         LOG_INFO_NEW("updateTopicRouteInfoFromNameServer has data");
@@ -477,19 +476,19 @@ bool MQClientInstance::updateTopicRouteInfoFromNameServer(const std::string& top
   return false;
 }
 
-HeartbeatData* MQClientInstance::prepareHeartbeatData() {
-  HeartbeatData* pHeartbeatData = new HeartbeatData();
+std::unique_ptr<HeartbeatData> MQClientInstance::prepareHeartbeatData() {
+  std::unique_ptr<HeartbeatData> heartbeat_data(new HeartbeatData());
 
   // clientID
-  pHeartbeatData->set_client_id(client_id_);
+  heartbeat_data->set_client_id(client_id_);
 
   // Consumer
-  insertConsumerInfoToHeartBeatData(pHeartbeatData);
+  insertConsumerInfoToHeartBeatData(heartbeat_data.get());
 
   // Producer
-  insertProducerInfoToHeartBeatData(pHeartbeatData);
+  insertProducerInfoToHeartBeatData(heartbeat_data.get());
 
-  return pHeartbeatData;
+  return heartbeat_data;
 }
 
 void MQClientInstance::insertConsumerInfoToHeartBeatData(HeartbeatData* heartbeatData) {
@@ -769,7 +768,7 @@ TopicPublishInfoPtr MQClientInstance::tryToFindTopicPublishInfo(const std::strin
   }
 }
 
-FindBrokerResult* MQClientInstance::findBrokerAddressInAdmin(const std::string& brokerName) {
+std::unique_ptr<FindBrokerResult> MQClientInstance::findBrokerAddressInAdmin(const std::string& brokerName) {
   BrokerAddrMAP brokerTable(getBrokerAddrTable());
   bool found = false;
   bool slave = false;
@@ -788,7 +787,7 @@ FindBrokerResult* MQClientInstance::findBrokerAddressInAdmin(const std::string& 
 
   brokerTable.clear();
   if (found) {
-    return new FindBrokerResult(brokerAddr, slave);
+    return std::unique_ptr<FindBrokerResult>(new FindBrokerResult(brokerAddr, slave));
   }
 
   return nullptr;
@@ -817,9 +816,9 @@ std::string MQClientInstance::findBrokerAddressInPublish(const std::string& brok
   return null;
 }
 
-FindBrokerResult* MQClientInstance::findBrokerAddressInSubscribe(const std::string& brokerName,
-                                                                 int brokerId,
-                                                                 bool onlyThisBroker) {
+std::unique_ptr<FindBrokerResult> MQClientInstance::findBrokerAddressInSubscribe(const std::string& brokerName,
+                                                                                 int brokerId,
+                                                                                 bool onlyThisBroker) {
   std::string brokerAddr;
   bool slave = false;
   bool found = false;
@@ -846,7 +845,7 @@ FindBrokerResult* MQClientInstance::findBrokerAddressInSubscribe(const std::stri
   brokerTable.clear();
 
   if (found) {
-    return new FindBrokerResult(brokerAddr, slave);
+    return std::unique_ptr<FindBrokerResult>(new FindBrokerResult(brokerAddr, slave));
   }
 
   return nullptr;
@@ -950,7 +949,7 @@ void MQClientInstance::resetOffset(const std::string& group,
   }
 }
 
-ConsumerRunningInfo* MQClientInstance::consumerRunningInfo(const std::string& consumerGroup) {
+std::unique_ptr<ConsumerRunningInfo> MQClientInstance::consumerRunningInfo(const std::string& consumerGroup) {
   auto* consumer = selectConsumer(consumerGroup);
   if (consumer != nullptr) {
     std::unique_ptr<ConsumerRunningInfo> runningInfo(consumer->consumerRunningInfo());
@@ -967,7 +966,7 @@ ConsumerRunningInfo* MQClientInstance::consumerRunningInfo(const std::string& co
       runningInfo->setProperty(ConsumerRunningInfo::PROP_CLIENT_VERSION,
                                MQVersion::GetVersionDesc(MQVersion::CURRENT_VERSION));
 
-      return runningInfo.release();
+      return runningInfo;
     }
   }
 

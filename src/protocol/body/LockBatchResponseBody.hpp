@@ -28,7 +28,7 @@ namespace rocketmq {
 
 class LockBatchResponseBody {
  public:
-  static LockBatchResponseBody* Decode(const ByteArray& bodyData) {
+  static std::unique_ptr<LockBatchResponseBody> Decode(const ByteArray& bodyData) {
     Json::Value root = RemotingSerializable::fromJson(bodyData);
     auto& mqs = root["lockOKMQSet"];
     std::unique_ptr<LockBatchResponseBody> body(new LockBatchResponseBody());
@@ -37,7 +37,7 @@ class LockBatchResponseBody {
       LOG_INFO_NEW("LockBatchResponseBody MQ:{}", mq.toString());
       body->lock_ok_mq_set().push_back(std::move(mq));
     }
-    return body.release();
+    return body;
   }
 
  public:

@@ -62,8 +62,8 @@ class DefaultMQPushConsumerImpl::AsyncPullCallback : public AutoDeletePullCallba
       return;
     }
 
-    pull_result.reset(consumer->pull_api_wrapper_->processPullResult(pull_request_->message_queue(),
-                                                                     std::move(pull_result), subscription_data_));
+    pull_result = consumer->pull_api_wrapper_->processPullResult(pull_request_->message_queue(), std::move(pull_result),
+                                                                 subscription_data_);
     switch (pull_result->pull_status()) {
       case FOUND: {
         int64_t prev_request_offset = pull_request_->next_offset();
@@ -298,8 +298,7 @@ void DefaultMQPushConsumerImpl::checkConfig() {
 void DefaultMQPushConsumerImpl::copySubscription() {
   for (const auto& it : subscription_) {
     LOG_INFO_NEW("buildSubscriptionData: {}, {}", it.first, it.second);
-    SubscriptionData* subscriptionData = FilterAPI::buildSubscriptionData(it.first, it.second);
-    rebalance_impl_->setSubscriptionData(it.first, subscriptionData);
+    rebalance_impl_->setSubscriptionData(it.first, FilterAPI::buildSubscriptionData(it.first, it.second));
   }
 
   switch (getDefaultMQPushConsumerConfig()->message_model()) {
@@ -308,8 +307,7 @@ void DefaultMQPushConsumerImpl::copySubscription() {
     case CLUSTERING: {
       // auto subscript retry topic
       std::string retryTopic = UtilAll::getRetryTopic(client_config_->group_name());
-      SubscriptionData* subscriptionData = FilterAPI::buildSubscriptionData(retryTopic, SUB_ALL);
-      rebalance_impl_->setSubscriptionData(retryTopic, subscriptionData);
+      rebalance_impl_->setSubscriptionData(retryTopic, FilterAPI::buildSubscriptionData(retryTopic, SUB_ALL));
       break;
     }
     default:
@@ -572,8 +570,8 @@ void DefaultMQPushConsumerImpl::updateConsumeOffset(const MQMessageQueue& mq, in
   }
 }
 
-ConsumerRunningInfo* DefaultMQPushConsumerImpl::consumerRunningInfo() {
-  auto* info = new ConsumerRunningInfo();
+std::unique_ptr<ConsumerRunningInfo> DefaultMQPushConsumerImpl::consumerRunningInfo() {
+  std::unique_ptr<ConsumerRunningInfo> info(new ConsumerRunningInfo());
 
   info->setProperty(ConsumerRunningInfo::PROP_CONSUME_ORDERLY, UtilAll::to_string(consume_orderly_));
   info->setProperty(ConsumerRunningInfo::PROP_THREADPOOL_CORE_SIZE,

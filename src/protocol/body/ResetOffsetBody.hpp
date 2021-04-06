@@ -26,7 +26,7 @@ namespace rocketmq {
 
 class ResetOffsetBody {
  public:
-  static ResetOffsetBody* Decode(const ByteArray& bodyData) {
+  static std::unique_ptr<ResetOffsetBody> Decode(const ByteArray& bodyData) {
     // FIXME: object as key
     Json::Value root = RemotingSerializable::fromJson(bodyData);
     auto& qds = root["offsetTable"];
@@ -38,7 +38,7 @@ class ResetOffsetBody {
       int64_t offset = qds[member].asInt64();
       body->offset_table_.emplace(std::move(mq), offset);
     }
-    return body.release();
+    return body;
   }
 
  public:

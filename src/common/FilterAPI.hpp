@@ -20,14 +20,15 @@
 #include <string>  // std::string
 
 #include "MQException.h"
-#include "protocol/heartbeat/SubscriptionData.hpp"
 #include "UtilAll.h"
+#include "protocol/heartbeat/SubscriptionData.hpp"
 
 namespace rocketmq {
 
 class FilterAPI {
  public:
-  static SubscriptionData* buildSubscriptionData(const std::string& topic, const std::string& sub_string) {
+  static std::unique_ptr<SubscriptionData> buildSubscriptionData(const std::string& topic,
+                                                                 const std::string& sub_string) {
     // delete in Rebalance
     std::unique_ptr<SubscriptionData> subscription_data(new SubscriptionData(topic, sub_string));
 
@@ -52,7 +53,7 @@ class FilterAPI {
       }
     }
 
-    return subscription_data.release();
+    return subscription_data;
   }
 };
 

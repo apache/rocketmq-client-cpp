@@ -151,7 +151,7 @@ void RemoteBrokerOffsetStore::updateConsumeOffsetToBroker(const MQMessageQueue& 
 
   if (findBrokerResult == nullptr) {
     client_instance_->updateTopicRouteInfoFromNameServer(mq.topic());
-    findBrokerResult.reset(client_instance_->findBrokerAddressInAdmin(mq.broker_name()));
+    findBrokerResult = client_instance_->findBrokerAddressInAdmin(mq.broker_name());
   }
 
   if (findBrokerResult != nullptr) {
@@ -177,7 +177,7 @@ int64_t RemoteBrokerOffsetStore::fetchConsumeOffsetFromBroker(const MQMessageQue
 
   if (findBrokerResult == nullptr) {
     client_instance_->updateTopicRouteInfoFromNameServer(mq.topic());
-    findBrokerResult.reset(client_instance_->findBrokerAddressInAdmin(mq.broker_name()));
+    findBrokerResult = client_instance_->findBrokerAddressInAdmin(mq.broker_name());
   }
 
   if (findBrokerResult != nullptr) {

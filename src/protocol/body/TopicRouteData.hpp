@@ -106,7 +106,7 @@ typedef std::shared_ptr<TopicRouteData> TopicRouteDataPtr;
 
 class TopicRouteData {
  public:
-  static TopicRouteData* Decode(const ByteArray& bodyData) {
+  static std::unique_ptr<TopicRouteData> Decode(const ByteArray& bodyData) {
     Json::Value root = RemotingSerializable::fromJson(bodyData);
 
     std::unique_ptr<TopicRouteData> trd(new TopicRouteData());
@@ -136,7 +136,7 @@ class TopicRouteData {
     }
     sort(trd->broker_datas().begin(), trd->broker_datas().end());
 
-    return trd.release();
+    return trd;
   }
 
   /**

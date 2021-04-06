@@ -30,11 +30,7 @@ RebalanceImpl::RebalanceImpl(const std::string& consumerGroup,
       allocate_mq_strategy_(allocateMqStrategy),
       client_instance_(instance) {}
 
-RebalanceImpl::~RebalanceImpl() {
-  for (auto& it : subscription_inner_) {
-    deleteAndZero(it.second);
-  }
-}
+RebalanceImpl::~RebalanceImpl() = default;
 
 void RebalanceImpl::unlock(const MQMessageQueue& mq, const bool oneway) {
   std::unique_ptr<FindBrokerResult> findBrokerResult(
@@ -474,18 +470,15 @@ TOPIC2SD& RebalanceImpl::getSubscriptionInner() {
 SubscriptionData* RebalanceImpl::getSubscriptionData(const std::string& topic) {
   const auto& it = subscription_inner_.find(topic);
   if (it != subscription_inner_.end()) {
-    return it->second;
+    return it->second.get();
   }
   return nullptr;
 }
 
-void RebalanceImpl::setSubscriptionData(const std::string& topic, SubscriptionData* subscriptionData) noexcept {
-  if (subscriptionData != nullptr) {
-    const auto& it = subscription_inner_.find(topic);
-    if (it != subscription_inner_.end()) {
-      deleteAndZero(it->second);
-    }
-    subscription_inner_[topic] = subscriptionData;
+void RebalanceImpl::setSubscriptionData(const std::string& topic,
+                                        std::unique_ptr<SubscriptionData> subscription_data) noexcept {
+  if (subscription_data != nullptr) {
+    subscription_inner_[topic] = std::move(subscription_data);
   }
 }
 

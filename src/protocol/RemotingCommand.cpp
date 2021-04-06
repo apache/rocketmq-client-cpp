@@ -22,8 +22,8 @@
 #include <atomic>     // std::atomic
 #include <limits>     // std::numeric_limits
 
-#include "ByteOrder.h"
 #include "ByteBuffer.hpp"
+#include "ByteOrder.h"
 #include "Logging.h"
 #include "MQVersion.h"
 #include "RemotingSerializable.h"
@@ -133,7 +133,7 @@ static inline int32_t getHeaderLength(int32_t length) {
   return length & 0x00FFFFFF;
 }
 
-static RemotingCommand* Decode(ByteBuffer& byteBuffer, bool hasPackageLength) {
+static std::unique_ptr<RemotingCommand> Decode(ByteBuffer& byteBuffer, bool hasPackageLength) {
   // decode package: [4 bytes(packageLength) +] 4 bytes(headerLength) + header + body
 
   int32_t length = byteBuffer.limit();
@@ -196,10 +196,10 @@ static RemotingCommand* Decode(ByteBuffer& byteBuffer, bool hasPackageLength) {
   LOG_DEBUG_NEW("code:{}, language:{}, version:{}, opaque:{}, flag:{}, remark:{}, headLen:{}, bodyLen:{}", code,
                 language, version, opaque, flag, remark, headerLength, bodyLength);
 
-  return cmd.release();
+  return cmd;
 }
 
-RemotingCommand* RemotingCommand::Decode(ByteArrayRef array, bool hasPackageLength) {
+std::unique_ptr<RemotingCommand> RemotingCommand::Decode(ByteArrayRef array, bool hasPackageLength) {
   std::unique_ptr<ByteBuffer> byteBuffer(ByteBuffer::wrap(std::move(array)));
   return rocketmq::Decode(*byteBuffer, hasPackageLength);
 }

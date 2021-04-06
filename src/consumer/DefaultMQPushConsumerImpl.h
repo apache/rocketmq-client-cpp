@@ -100,7 +100,7 @@ class DefaultMQPushConsumerImpl : public std::enable_shared_from_this<DefaultMQP
   // offset persistence
   void persistConsumerOffset() override;
 
-  ConsumerRunningInfo* consumerRunningInfo() override;
+  std::unique_ptr<ConsumerRunningInfo> consumerRunningInfo() override;
 
  public:
   void executePullRequestLater(PullRequestPtr pullRequest, long timeDelay);
