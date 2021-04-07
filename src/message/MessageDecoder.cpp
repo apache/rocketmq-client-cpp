@@ -136,9 +136,9 @@ MessageExtPtr MessageDecoder::decode(ByteBuffer& byteBuffer, bool readBody, bool
   msgExt->set_store_timestamp(storeTimestamp);
 
   // 12 STOREHOST
-  int storehostIPLength = (sysFlag & MessageSysFlag::STOREHOST_V6_FLAG) == 0 ? kIPv4AddrSize : kIPv6AddrSize;
-  ByteArray storeHost(bornHostLength);
-  byteBuffer.get(storeHost, 0, storehostIPLength);
+  int storeHostLength = (sysFlag & MessageSysFlag::STOREHOST_V6_FLAG) == 0 ? kIPv4AddrSize : kIPv6AddrSize;
+  ByteArray storeHost(storeHostLength);
+  byteBuffer.get(storeHost, 0, storeHostLength);
   int32_t storePort = byteBuffer.getInt();
   msgExt->set_store_host(IPPortToSockaddr(storeHost, storePort));
 
