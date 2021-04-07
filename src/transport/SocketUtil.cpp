@@ -56,7 +56,7 @@ sockaddr* IPPortToSockaddr(const ByteArray& ip, uint16_t port) {
     sin->sin_port = htons(port);
     std::memcpy(&sin->sin_addr, ip.array(), kIPv4AddrSize);
   } else if (ip.size() == kIPv6AddrSize) {
-    auto* sin6 = reinterpret_cast<sockaddr_in6*>(&ss);
+    auto* sin6 = reinterpret_cast<sockaddr_in6*>(ss);
     sin6->sin6_family = AF_INET6;
     sin6->sin6_port = htons(port);
     std::memcpy(&sin6->sin6_addr, ip.array(), kIPv6AddrSize);
