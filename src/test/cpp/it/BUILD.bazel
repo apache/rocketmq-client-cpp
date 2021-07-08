@@ -34,6 +34,7 @@ cc_test(
     ],
     deps = [
         "//src/main/cpp/client:rpc_client_mock",
+        "//src/main/cpp/rocketmq:rocketmq_library",
         "@com_google_googletest//:gtest_main",
     ],
     linkstatic = True,
