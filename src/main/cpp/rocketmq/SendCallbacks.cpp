@@ -48,8 +48,8 @@ void RetrySendCallback::onSuccess(const SendResult& send_result) {
 }
 
 void RetrySendCallback::onException(const MQException& e) {
-  if (++retry_ >= max_retry_) {
-    SPDLOG_WARN("Retried {} times, which exceeds the limit: {}", retry_, max_retry_);
+  if (++attempt_times_ >= max_attempt_times_) {
+    SPDLOG_WARN("Retried {} times, which exceeds the limit: {}", attempt_times_, max_attempt_times_);
     callback_->onException(e);
     delete this;
     return;
@@ -70,8 +70,13 @@ void RetrySendCallback::onException(const MQException& e) {
     return;
   }
 
-  const std::string& host = candidates_[retry_ % candidates_.size()].serviceAddress();
-  SPDLOG_DEBUG("Retry-send message to {} for {} times", host, retry_);
+  const std::string& host = candidates_[attempt_times_ % candidates_.size()].serviceAddress();
+  SPDLOG_DEBUG("Retry-send message to {} for {} times", host, attempt_times_);
+
+  // TODO: Sync target broker-name and partition-id with current partition.
+  request_.mutable_message()->mutable_system_attribute()->set_partition_id(
+      candidates_[attempt_times_ % candidates_.size()].getQueueId());
+
   client->send(host, metadata_, request_, this);
 }
 

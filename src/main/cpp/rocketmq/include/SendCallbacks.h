@@ -46,10 +46,10 @@ private:
 class RetrySendCallback : public SendCallback {
 public:
   RetrySendCallback(std::weak_ptr<ClientInstance> client_instance,
-                    absl::flat_hash_map<std::string, std::string> metadata, SendMessageRequest request, int max_retry,
-                    SendCallback* callback, std::vector<MQMessageQueue> candidates)
+                    absl::flat_hash_map<std::string, std::string> metadata, SendMessageRequest request,
+                    int max_attempt_times, SendCallback* callback, std::vector<MQMessageQueue> candidates)
       : client_instance_(std::move(client_instance)), metadata_(std::move(metadata)), request_(std::move(request)),
-        max_retry_(max_retry), callback_(callback), candidates_(std::move(candidates)) {}
+        max_attempt_times_(max_attempt_times), callback_(callback), candidates_(std::move(candidates)) {}
 
   void onSuccess(const SendResult& send_result) override;
 
@@ -59,8 +59,8 @@ private:
   std::weak_ptr<ClientInstance> client_instance_;
   absl::flat_hash_map<std::string, std::string> metadata_;
   SendMessageRequest request_;
-  int retry_{0};
-  int max_retry_;
+  int attempt_times_{0};
+  int max_attempt_times_;
   SendCallback* callback_;
   std::vector<MQMessageQueue> candidates_;
 };
