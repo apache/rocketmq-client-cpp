@@ -1,0 +1,62 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+cc_test(
+    name = "histogram_test",
+    srcs = [
+        "HistogramTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/base:base_library",
+        "@com_google_googletest//:gtest_main",
+    ],
+    linkstatic = True,
+)
+
+cc_test(
+    name = "mix_all_test",
+    srcs = [
+        "MixAllTest.cpp",
+    ],
+    deps = [
+        "//api:rocketmq_interface",
+        "//src/main/cpp/base:base_library",
+        "@com_google_googletest//:gtest_main",
+    ],
+    linkstatic = True,
+)
+
+cc_test(
+    name = "rate_limiter_test",
+    srcs = [
+        "RateLimiterTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/base:base_library",
+        "@com_google_googletest//:gtest_main",
+    ],
+    linkstatic = True,
+)
+
+cc_test(
+    name = "util_all_test",
+    srcs = [
+        "UtilAllTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/base:base_library",
+        "@com_google_googletest//:gtest_main",
+        "@zlib//:zlib",
+    ],
+    linkstatic = True,
+)
+
+cc_test(
+    name = "ut_request_id_generator",
+    srcs = [
+        "RequestIdGeneratorTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/base:base_library",
+        "@com_google_googletest//:gtest_main",
+    ],
+    linkstatic = True,
+)

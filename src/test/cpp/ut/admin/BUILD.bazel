@@ -1,0 +1,13 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+
+cc_test(
+    name = "admin_server_test",
+    srcs = [
+        "AdminServerTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/admin:admin_server_library",
+        "@com_google_googletest//:gtest_main",
+    ],
+    linkstatic = True,
+)

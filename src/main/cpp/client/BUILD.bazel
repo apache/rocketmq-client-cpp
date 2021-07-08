@@ -1,0 +1,42 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+cc_library(
+    name = "client_library",
+    hdrs = glob(["include/*.h"]),
+    srcs = glob(["*.cpp"]),
+    strip_include_prefix = "//src/main/cpp/client/include",
+    deps = [
+        "//api:rocketmq_interface",
+        "//proto:rocketmq_grpc_library",
+        "//src/main/cpp/base:base_library",
+        "//src/main/cpp/scheduler:scheduler_library",
+        "//src/main/cpp/concurrent:countdown_latch_library",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_github_grpc_grpc//:grpc_secure",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_github_opentelemetry//api",
+        "@boringssl//:ssl",
+        "//external:gtest",
+        "//third_party/crc:crc_interface",
+    ],
+    visibility = ["//visibility:public"],
+    defines = [
+    ],
+)
+
+cc_library(
+    name = "rpc_client_mock",
+    hdrs = [
+        "mocks/include/RpcClientMock.h",
+        "mocks/include/IdentifiableMock.h",
+    ],
+    srcs = [
+        "mocks/RpcClientMock.cpp",
+    ],
+    strip_include_prefix = "//src/main/cpp/client/mocks/include",
+    deps = [
+        ":client_library",
+        "//external:gtest",
+    ],
+    visibility = ["//visibility:public"],
+)

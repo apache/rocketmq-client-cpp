@@ -1,0 +1,21 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+cc_library(
+    name = "scheduler_library",
+    hdrs = [
+        "include/Scheduler.h",
+    ],
+    srcs = [
+        "Scheduler.cpp",
+    ],
+    strip_include_prefix = "//src/main/cpp/scheduler/include",
+    deps = [
+        "//api:rocketmq_interface",
+        "//src/main/cpp/base:base_library",
+        "//src/main/cpp/concurrent:countdown_latch_library",
+        "//external:libuv",
+        "@com_google_absl//absl/base",        
+        "@com_google_absl//absl/strings",
+        "@com_github_progschj_ThreadPool//:ThreadPool",
+    ],
+    visibility = ["//visibility:public"],
+)

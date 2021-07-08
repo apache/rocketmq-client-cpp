@@ -1,0 +1,8 @@
+#pragma once
+
+#ifndef ROCKETMQ_NAMESPACE
+#define ROCKETMQ_NAMESPACE rocketmq
+#endif
+
+#define ROCKETMQ_NAMESPACE_BEGIN namespace ROCKETMQ_NAMESPACE {
+#define ROCKETMQ_NAMESPACE_END }

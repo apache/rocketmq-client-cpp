@@ -1,0 +1,57 @@
+add_library(base_obj OBJECT)
+target_sources(base_obj
+        PRIVATE
+            HttpClient.cpp
+            HostInfo.cpp
+            MixAll.cpp
+            MQMessage.cpp
+            PermissionHelper.cpp
+            Protocol.cpp
+            RateLimiter.cpp
+            RequestIdGenerator.cpp
+            TopAddressing.cpp
+            MessageSystemFlag.cpp
+            UtilAll.cpp)
+target_include_directories(base_obj
+        PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(base_obj
+        PUBLIC
+            absl::flat_hash_set
+            absl::flat_hash_map
+            absl::random_random
+            absl::synchronization
+            absl::strings
+            absl::time
+            CURL::libcurl
+            fmt
+            grpc++
+            crypto
+            ssl
+            re2::re2
+            rocketmq_interface
+            spdlog::spdlog_header_only
+            uv_a
+            zlib)
+
+add_library(base_library
+        STATIC
+            $<TARGET_OBJECTS:base_obj> include/MessageAccessor.h)
+target_include_directories(base_library
+        PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(base_library
+        PUBLIC
+            absl::flat_hash_set
+            absl::flat_hash_map
+            absl::random_random
+            absl::synchronization
+            absl::strings
+            CURL::libcurl
+            fmt
+            grpc++
+            re2::re2
+            rocketmq_interface
+            spdlog::spdlog_header_only
+            uv_a
+            zlib)

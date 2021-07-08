@@ -1,0 +1,40 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+cc_test(
+    name = "it_top_addressing",
+    srcs = [
+        "TopAddressingTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/base:top_addressing",
+        "@com_google_googletest//:gtest_main",
+    ],
+    linkstatic = True,
+)
+
+cc_test(
+    name = "it_rpc_client",
+    srcs = [
+        "RpcClientTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/client:rpc_client_mock",
+        "//src/main/cpp/rocketmq:rocketmq_library",
+        "@com_google_googletest//:gtest_main",
+    ],
+    copts = [
+        "-Isrc/main/client/mocks/include",
+    ],
+    linkstatic = True,
+)
+
+cc_test(
+    name = "it_topic_publish_info",
+    srcs = [
+        "TopicPublishInfoTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/client:rpc_client_mock",
+        "@com_google_googletest//:gtest_main",
+    ],
+    linkstatic = True,
+)

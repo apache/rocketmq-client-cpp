@@ -1,0 +1,13 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+cc_library(
+    name = "log_library",
+    srcs = [
+        "Logger.cpp",
+    ],
+    deps = [
+        "//api:rocketmq_interface",
+        "@com_github_gabime_spdlog//:spdlog",
+        "@com_github_gulrak_filesystem//:filesystem",
+    ],
+    visibility = ["//visibility:public"],
+)

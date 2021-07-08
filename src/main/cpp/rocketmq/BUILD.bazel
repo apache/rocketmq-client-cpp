@@ -1,0 +1,13 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+cc_library(
+    name = "rocketmq_library",
+    hdrs = glob(["include/*.h"]),
+    srcs = glob(["*.cpp"]),
+    strip_include_prefix = "//src/main/cpp/rocketmq/include",
+    deps = [
+        "//src/main/cpp/client:client_library",
+        "//src/main/cpp/log:log_library",
+        "//src/main/cpp/admin:admin_server_library",
+    ],
+    visibility = ["//visibility:public"],
+)

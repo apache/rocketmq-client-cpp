@@ -1,0 +1,31 @@
+add_executable(mix_all_test MixAllTest.cpp)
+target_link_libraries(mix_all_test
+        PRIVATE
+            base_library
+            gtest_main)
+
+add_executable(util_all_test UtilAllTest.cpp)
+target_link_libraries(util_all_test
+        PRIVATE
+            base_library
+            spdlog::spdlog
+            absl::base
+            gtest_main)
+
+add_executable(rate_limiter_test RateLimiterTest.cpp)
+target_link_libraries(rate_limiter_test PRIVATE
+            gtest_main
+            base_library)
+
+add_executable(histogram_test HistogramTest.cpp)
+target_link_libraries(histogram_test
+        PRIVATE
+            gtest_main
+            base_library)
+add_test(test_histogram histogram_test)
+
+add_executable(ut_request_id_generator RequestIdGeneratorTest.cpp)
+target_link_libraries(ut_request_id_generator
+        PRIVATE
+            gtest_main
+            base_library)

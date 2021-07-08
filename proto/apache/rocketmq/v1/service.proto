@@ -1,0 +1,266 @@
+syntax = "proto3";
+
+import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "google/rpc/error_details.proto";
+import "google/rpc/code.proto";
+import "google/rpc/status.proto";
+
+import "apache/rocketmq/v1/definition.proto";
+
+package apache.rocketmq.v1;
+
+option java_multiple_files = true;
+option java_package = "apache.rocketmq.v1";
+option java_generate_equals_and_hash = true;
+option java_string_check_utf8 = true;
+
+// Ali Cloud Service
+option java_outer_classname = "MQService";
+
+message ResponseCommon {
+  google.rpc.Status status = 1;
+  google.rpc.RequestInfo request_info = 2;
+  google.rpc.Help help = 3;
+  google.rpc.RetryInfo retry_info = 4;
+  google.rpc.DebugInfo debug_info = 5;
+  google.rpc.ErrorInfo error_info = 6;
+}
+
+message QueryRouteRequest {
+  Resource topic = 1;
+}
+
+message QueryRouteResponse {
+  ResponseCommon common = 1;
+  repeated Partition partitions = 2;
+}
+
+message SendMessageRequest {
+  Message message = 1;
+}
+
+message SendMessageResponse {
+  ResponseCommon common = 1;
+  string message_id = 2;
+  string transaction_id = 3;
+}
+
+message QueryAssignmentRequest {
+  Resource topic = 1;
+  Resource group = 2;
+  string client_id = 3;
+}
+
+message QueryAssignmentResponse {
+  ResponseCommon common = 1;
+  repeated Assignment assignments = 2;
+}
+
+message ReceiveMessageRequest {
+  Resource group = 1;
+  string client_id = 2;
+  Partition partition = 3;
+  FilterExpression filter_expression = 4;
+  ConsumePolicy consume_policy = 5;
+  google.protobuf.Timestamp initialization_timestamp = 6;
+  int32 batch_size = 7;
+  google.protobuf.Duration invisible_duration = 8;
+  google.protobuf.Duration await_time = 9;
+}
+
+message ReceiveMessageResponse {
+  ResponseCommon common = 1;
+  repeated Message messages = 2;
+  google.protobuf.Timestamp delivery_timestamp = 3;
+  google.protobuf.Duration invisible_duration = 4;
+}
+
+message AckMessageRequest {
+  Resource group = 1;
+  Resource topic = 2;
+  string client_id = 3;
+  oneof handle {
+    string receipt_handle = 4;
+    int64 offset = 5;
+  }
+  string message_id = 6;
+}
+
+message AckMessageResponse {
+  ResponseCommon common = 1;
+}
+
+message NackMessageRequest {
+  Resource group = 1;
+  Resource topic = 2;
+  string client_id = 3;
+  string receipt_handle = 4;
+  string message_id = 5;
+  int32 reconsume_times = 6;
+  int32 max_reconsume_times = 7;
+  ConsumeModel consume_model = 8;
+}
+
+message NackMessageResponse {
+  ResponseCommon common = 1;
+}
+
+message HeartbeatRequest {
+  repeated HeartbeatEntry heartbeats = 1;
+}
+
+message HeartbeatResponse {
+  ResponseCommon common = 1;
+}
+
+message HealthCheckRequest {
+  string client_host = 1;
+}
+
+message HealthCheckResponse {
+  ResponseCommon common = 1;
+}
+
+message EndTransactionRequest {
+  Resource producer_group = 1;
+  string message_id = 2;
+  string transaction_id = 3;
+  enum TransactionResolution {
+    COMMIT = 0;
+    ROLLBACK = 1;
+  }
+  TransactionResolution resolution = 4;
+  enum Source {
+    CLIENT = 0;
+    SERVER_CHECK = 1;
+  }
+  Source source = 5;
+  string trace_context = 6;
+}
+
+message EndTransactionResponse {
+  ResponseCommon common = 1;
+}
+
+message QueryOffsetRequest {
+  Partition partition = 1;
+  QueryOffsetPolicy policy = 2;
+  google.protobuf.Timestamp time_point = 3;
+}
+
+message QueryOffsetResponse {
+  ResponseCommon common = 1;
+  int64 offset = 2;
+}
+
+message PullMessageRequest {
+  Resource group = 1;
+  Partition partition = 2;
+  int64 offset = 3;
+  int32 batch_size = 4;
+  google.protobuf.Duration await_time = 5;
+  FilterExpression filter_expression = 6;
+  string client_id = 7;
+}
+
+message PullMessageResponse {
+  ResponseCommon common = 1;
+  int64 min_offset = 2;
+  int64 next_offset = 3;
+  int64 max_offset = 4;
+  repeated Message messages = 5;
+}
+
+message ClientResourceBundle {
+  string client_id = 1;
+  repeated Resource topics = 2;
+  oneof group {
+    Resource producer_group = 3;
+    Resource consumer_group = 4;
+  }
+}
+
+message GenericPollingRequest {
+  repeated ClientResourceBundle bundles = 1;
+}
+
+message GenericPollingResponse {
+  ResponseCommon common = 1;
+}
+
+message PrintThreadStackRequest {
+}
+
+message PrintThreadStackResponse {
+  ResponseCommon common = 1;
+  string stack_trace = 2;
+}
+
+message VerifyMessageConsumptionRequest {
+  Message message = 1;
+}
+
+message VerifyMessageConsumptionResponse {
+  ResponseCommon common = 1;
+}
+
+message ResolveOrphanedTransactionRequest {
+  repeated Message orphaned_transactional_messages = 1;
+}
+
+message MultiplexingRequest {
+  oneof type {
+    GenericPollingRequest polling_request = 1;
+    PrintThreadStackResponse print_thread_stack_response = 2;
+    VerifyMessageConsumptionResponse verify_message_consumption_response = 3;
+  }
+}
+
+message MultiplexingResponse {
+  oneof type {
+    GenericPollingResponse polling_response = 1;
+    PrintThreadStackRequest print_thread_stack_request = 2;
+    VerifyMessageConsumptionRequest verify_message_consumption_request = 3;
+    ResolveOrphanedTransactionRequest resolve_orphaned_transaction_request = 4;
+  }
+}
+
+service MessagingService {
+  rpc QueryRoute(QueryRouteRequest) returns (QueryRouteResponse) {
+  }
+
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse) {
+  }
+
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse) {
+  }
+
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse) {
+  }
+
+  rpc QueryAssignment(QueryAssignmentRequest) returns (QueryAssignmentResponse) {
+  }
+
+  rpc ReceiveMessage(ReceiveMessageRequest) returns (ReceiveMessageResponse) {
+  }
+
+  rpc AckMessage(AckMessageRequest) returns (AckMessageResponse) {
+  }
+
+  rpc NackMessage(NackMessageRequest) returns (NackMessageResponse) {
+  }
+
+  rpc EndTransaction(EndTransactionRequest) returns (EndTransactionResponse) {
+  }
+
+  rpc QueryOffset(QueryOffsetRequest) returns (QueryOffsetResponse) {
+  }
+
+  rpc PullMessage(PullMessageRequest) returns (PullMessageResponse) {
+  }
+
+  rpc MultiplexingCall(MultiplexingRequest) returns (MultiplexingResponse) {
+  }
+}

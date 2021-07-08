@@ -1,0 +1,39 @@
+add_library(rocketmq_obj OBJECT)
+target_sources(rocketmq_obj
+        PRIVATE
+            SendCallbacks.cpp
+            AwaitPullCallback.cpp
+            BaseImpl.cpp
+            ConsumeMessageService.cpp
+            ConsumeMessageConcurrentlyService.cpp
+            ConsumeMessageOrderlyService.cpp
+            CredentialsProvider.cpp
+            DefaultMQProducer.cpp
+            DefaultMQProducerImpl.cpp
+            DefaultMQPushConsumer.cpp
+            DefaultMQPushConsumerImpl.cpp
+            DefaultMQPullConsumer.cpp
+            DefaultMQPullConsumerImpl.cpp
+            MessageClientIDSetter.cpp
+            ProcessQueue.cpp
+            TransactionImpl.cpp)
+target_include_directories(rocketmq_obj
+        PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(rocketmq_obj
+        PUBLIC
+            client_library
+            logger_library
+            thread_pool)
+
+add_library(rocketmq_library
+        STATIC
+            $<TARGET_OBJECTS:rocketmq_obj>)
+target_include_directories(rocketmq_library
+        PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(rocketmq_library
+        PUBLIC
+            client_library
+            CURL::libcurl
+            logger_library)

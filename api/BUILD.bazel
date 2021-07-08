@@ -1,0 +1,8 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+cc_library(
+    name = "rocketmq_interface",
+    hdrs = glob(["rocketmq/*.h"]),
+    strip_include_prefix = "//api",
+    visibility = ["//visibility:public"],
+)

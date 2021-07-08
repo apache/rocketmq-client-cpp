@@ -1,0 +1,89 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+cc_binary(
+    name = "example_producer",
+    srcs = [
+        "ExampleProducer.cpp",
+    ],
+    deps = [
+        "//api:rocketmq_interface",
+        "//src/main/cpp/rocketmq:rocketmq_library",
+    ],
+)
+
+cc_binary(
+    name = "example_async_producer",
+    srcs = [
+        "ExampleAsyncProducer.cpp",
+    ],
+    deps = [
+        "//api:rocketmq_interface",
+        "//src/main/cpp/rocketmq:rocketmq_library",
+    ],
+)
+
+cc_binary(
+    name = "sql_producer",
+    srcs = [
+        "SqlProducer.cpp",
+    ],
+    deps = [
+        "//api:rocketmq_interface",
+        "//src/main/cpp/rocketmq:rocketmq_library",
+    ],
+)
+
+cc_binary(
+    name = "example_push_consumer",
+    srcs = [
+        "ExamplePushConsumer.cpp",
+    ],
+    deps = [
+        "//api:rocketmq_interface",
+        "//src/main/cpp/rocketmq:rocketmq_library",
+    ],
+)
+
+cc_binary(
+    name = "push_consumer_with_custom_executor",
+    srcs = [
+        "PushConsumerWithCustomExecutor.cpp",
+    ],
+    deps = [
+        "//api:rocketmq_interface",
+        "//src/main/cpp/rocketmq:rocketmq_library",
+    ],
+)
+
+cc_binary(
+    name = "push_consumer_with_throttle",
+    srcs = [
+        "PushConsumerWithThrottle.cpp",
+    ],
+    deps = [
+        "//api:rocketmq_interface",
+        "//src/main/cpp/rocketmq:rocketmq_library",
+    ],
+)
+
+cc_binary(
+    name = "sql_consumer",
+    srcs = [
+        "SqlConsumer.cpp",
+    ],
+    deps = [
+        "//api:rocketmq_interface",
+        "//src/main/cpp/rocketmq:rocketmq_library",
+    ],
+)
+
+cc_binary(
+    name = "example_pull_consumer",
+    srcs = [
+        "ExamplePullConsumer.cpp",
+    ],
+    deps = [
+        "//api:rocketmq_interface",
+        "//src/main/cpp/rocketmq:rocketmq_library",
+    ],
+)
