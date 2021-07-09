@@ -1,0 +1,12 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+cc_test(
+    name = "countdown_latch_test",
+    srcs = [
+        "CountdownLatchTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/concurrent:countdown_latch_library",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

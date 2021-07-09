@@ -1,18 +1,19 @@
 #include "BaseImpl.h"
 #include "ClientManager.h"
+#include "InvocationContext.h"
+#include "LoggerImpl.h"
+#include "MessageAccessor.h"
 #include "Signature.h"
 #include "absl/strings/str_join.h"
+#include "apache/rocketmq/v1/definition.pb.h"
+#include "rocketmq/MQMessageExt.h"
+#include <chrono>
+#include <memory>
+#include <string>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-BaseImpl::BaseImpl(std::string group_name)
-    : ClientConfig(std::move(group_name)), state_(State::CREATED), top_addressing_(absl::make_unique<TopAddressing>()) {
-  topic_route_info_updater_ = std::bind(&BaseImpl::updateRouteInfo, this);
-  topic_route_info_updater_function_ = std::make_shared<Functional>(&topic_route_info_updater_);
-
-  name_server_list_updater_ = std::bind(&BaseImpl::renewNameServerList, this);
-  name_server_list_updater_function_ = std::make_shared<Functional>(&name_server_list_updater_);
-}
+BaseImpl::BaseImpl(std::string group_name) : ClientConfig(std::move(group_name)), state_(State::CREATED) {}
 
 void BaseImpl::start() {
   State expected = CREATED;
@@ -23,7 +24,6 @@ void BaseImpl::start() {
 
   client_instance_ = ClientManager::getInstance().getClientInstance(*this);
   client_instance_->start();
-  top_addressing_->setUnitName(unit_name_);
   bool update_name_server_list = false;
   {
     absl::MutexLock lock(&name_server_list_mtx_);
@@ -32,38 +32,60 @@ void BaseImpl::start() {
     }
   }
 
+  std::weak_ptr<BaseImpl> ptr(self());
+
   if (update_name_server_list) {
     // Acquire name server list immediately
     renewNameServerList();
 
     // Schedule to renew name server list periodically
     SPDLOG_INFO("Name server list was empty. Schedule a task to fetch and renew periodically");
-    bool scheduled = client_instance_->getScheduler().schedule(name_server_list_updater_function_,
-                                                               std::chrono::milliseconds(0), std::chrono::seconds(30));
-    if (scheduled) {
-      SPDLOG_INFO("Name server list updater scheduled");
-    } else {
-      SPDLOG_ERROR("Failed to schedule name server list updater");
-    }
+    auto name_server_update_functor = [ptr]() {
+      std::shared_ptr<BaseImpl> base = ptr.lock();
+      if (base) {
+        base->renewNameServerList();
+      }
+    };
+    name_server_update_handle_ =
+        client_instance_->getScheduler().schedule(name_server_update_functor, UPDATE_NAME_SERVER_LIST_TASK_NAME,
+                                                  std::chrono::milliseconds(0), std::chrono::seconds(30));
   }
 
-  bool scheduled = client_instance_->getScheduler().schedule(topic_route_info_updater_function_,
-                                                             std::chrono::seconds(10), std::chrono::seconds(30));
-  if (scheduled) {
-    SPDLOG_INFO("Topic route info updater scheduled");
-  } else {
-    SPDLOG_ERROR("Failed to schedule topic route info updater");
-  }
+  auto route_update_functor = [ptr]() {
+    std::shared_ptr<BaseImpl> base = ptr.lock();
+    if (base) {
+      base->updateRouteInfo();
+    }
+  };
+
+  route_update_handle_ = client_instance_->getScheduler().schedule(route_update_functor, UPDATE_ROUTE_TASK_NAME,
+                                                                   std::chrono::seconds(10), std::chrono::seconds(30));
   state_.store(State::STARTED);
 }
 
-void BaseImpl::activeHosts(absl::flat_hash_set<std::string>& hosts) {
+void BaseImpl::shutdown() {
+  state_.store(State::STOPPING, std::memory_order_relaxed);
+  if (name_server_update_handle_) {
+    client_instance_->getScheduler().cancel(name_server_update_handle_);
+  }
+
+  if (route_update_handle_) {
+    client_instance_->getScheduler().cancel(route_update_handle_);
+  }
+
+  client_instance_.reset();
+}
+
+const char* BaseImpl::UPDATE_ROUTE_TASK_NAME = "route_updater";
+const char* BaseImpl::UPDATE_NAME_SERVER_LIST_TASK_NAME = "name_server_list_updater";
+
+void BaseImpl::endpointsInUse(absl::flat_hash_set<std::string>& endpoints) {
   absl::MutexLock lk(&topic_route_table_mtx_);
   for (const auto& item : topic_route_table_) {
     for (const auto& partition : item.second->partitions()) {
       std::string endpoint = partition.asMessageQueue().serviceAddress();
-      if (!hosts.contains(endpoint)) {
-        hosts.emplace(std::move(endpoint));
+      if (!endpoints.contains(endpoint)) {
+        endpoints.emplace(std::move(endpoint));
       }
     }
   }
@@ -145,29 +167,27 @@ void BaseImpl::renewNameServerList() {
 
   std::vector<std::string> list;
   SPDLOG_DEBUG("Begin to renew name server list");
-  if (!top_addressing_->fetchNameServerAddresses(list)) {
-    SPDLOG_WARN("Failed to fetch name server list");
-  } else {
-    if (list.empty()) {
+  auto callback = [this](int code, const std::vector<std::string>& name_server_list) {
+    if (GHttpClient::STATUS_OK != code) {
+      SPDLOG_WARN("Failed to fetch name server list");
+      return;
+    }
+
+    if (name_server_list.empty()) {
       SPDLOG_WARN("Yuck, got an empty name server list");
-    } else {
-      debugNameServerChanges(list);
-      {
-        absl::MutexLock lock(&name_server_list_mtx_);
-        if (name_server_list_ != list) {
-          name_server_list_.clear();
-          name_server_list_.insert(name_server_list_.begin(), list.begin(), list.end());
-        }
-        {
-          absl::MutexLock promise_lock(&name_server_promise_list_mtx_);
-          for (auto& promise : name_server_promise_list_) {
-            promise.set_value(name_server_list_);
-          }
-          name_server_promise_list_.clear();
-        }
+      return;
+    }
+
+    debugNameServerChanges(name_server_list);
+    {
+      absl::MutexLock lock(&name_server_list_mtx_);
+      if (name_server_list_ != name_server_list) {
+        name_server_list_.clear();
+        name_server_list_.insert(name_server_list_.begin(), name_server_list.begin(), name_server_list.end());
       }
     }
-  }
+  };
+  client_instance_->topAddressing().fetchNameServerAddresses(callback);
 }
 
 bool BaseImpl::selectNameServer(std::string& selected, bool change) {
@@ -247,7 +267,7 @@ void BaseImpl::updateRouteInfo() {
 
 void BaseImpl::heartbeat() {
   absl::flat_hash_set<std::string> hosts;
-  activeHosts(hosts);
+  endpointsInUse(hosts);
   if (hosts.empty()) {
     SPDLOG_WARN("No hosts to send heartbeat to at present");
     return;
@@ -314,6 +334,175 @@ void BaseImpl::updateRouteCache(const std::string& topic, const TopicRouteDataPt
                     route->debugString());
       }
     }
+  }
+}
+
+void BaseImpl::multiplexing(const std::string& target, const MultiplexingRequest& request) {
+  absl::flat_hash_map<std::string, std::string> metadata;
+  Signature::sign(this, metadata);
+  client_instance_->multiplexingCall(target, metadata, request, absl::ToChronoMilliseconds(long_polling_timeout_),
+                                     std::bind(&BaseImpl::onMultiplexingResponse, this, std::placeholders::_1));
+}
+
+void BaseImpl::onMultiplexingResponse(const InvocationContext<MultiplexingResponse>* ctx) {
+  if (!ctx->status.ok()) {
+    std::string remote_address = ctx->remote_address;
+    auto multiplexingLater = [this, remote_address]() {
+      MultiplexingRequest request;
+      fillGenericPollingRequest(request);
+      multiplexing(remote_address, request);
+    };
+    static std::string task_name = "Initiate multiplex request later";
+    client_instance_->getScheduler().schedule(multiplexingLater, task_name, std::chrono::seconds(3),
+                                              std::chrono::seconds(0));
+    return;
+  }
+
+  switch (ctx->response.type_case()) {
+  case MultiplexingResponse::TypeCase::kPrintThreadStackRequest: {
+    MultiplexingRequest request;
+    request.mutable_print_thread_stack_response()->mutable_common()->mutable_status()->set_code(
+        google::rpc::Code::UNIMPLEMENTED);
+    request.mutable_print_thread_stack_response()->set_stack_trace(
+        "Print thread stack trace is not supported by C++ SDK");
+    absl::flat_hash_map<std::string, std::string> metadata;
+    Signature::sign(this, metadata);
+    client_instance_->multiplexingCall(ctx->remote_address, metadata, request, absl::ToChronoMilliseconds(io_timeout_),
+                                       std::bind(&BaseImpl::onMultiplexingResponse, this, std::placeholders::_1));
+    break;
+  }
+
+  case MultiplexingResponse::TypeCase::kVerifyMessageConsumptionRequest: {
+    auto data = ctx->response.verify_message_consumption_request().message();
+    MQMessageExt message;
+    MultiplexingRequest request;
+    if (!client_instance_->wrapMessage(data, message)) {
+      SPDLOG_WARN("Message to verify consumption is corrupted");
+      request.mutable_verify_message_consumption_response()->mutable_common()->mutable_status()->set_code(
+          google::rpc::Code::INVALID_ARGUMENT);
+      request.mutable_verify_message_consumption_response()->mutable_common()->mutable_status()->set_message(
+          "Message to verify is corrupted");
+      multiplexing(ctx->remote_address, request);
+      return;
+    }
+    std::string&& result = verifyMessageConsumption(message);
+    request.mutable_verify_message_consumption_response()->mutable_common()->mutable_status()->set_code(
+        google::rpc::Code::OK);
+    request.mutable_verify_message_consumption_response()->mutable_common()->mutable_status()->set_message(result);
+    multiplexing(ctx->remote_address, request);
+    break;
+  }
+
+  case MultiplexingResponse::TypeCase::kResolveOrphanedTransactionRequest: {
+    auto orphan = ctx->response.resolve_orphaned_transaction_request().orphaned_transactional_message();
+    MQMessageExt message;
+    if (client_instance_->wrapMessage(orphan, message)) {
+      MessageAccessor::setTargetEndpoint(message, ctx->remote_address);
+      const std::string& transaction_id = ctx->response.resolve_orphaned_transaction_request().transaction_id();
+      resolveOrphanedTransactionalMessage(transaction_id, message);
+    } else {
+      SPDLOG_WARN("Failed to resolve orphaned transactional message, potentially caused by message-body checksum "
+                  "verification failure.");
+    }
+    MultiplexingRequest request;
+    fillGenericPollingRequest(request);
+    multiplexing(ctx->remote_address, request);
+    break;
+  }
+
+  case MultiplexingResponse::TypeCase::kPollingResponse: {
+    MultiplexingRequest request;
+    fillGenericPollingRequest(request);
+    multiplexing(ctx->remote_address, request);
+    break;
+  }
+
+  default: {
+    SPDLOG_WARN("Unsupported multiplex type");
+    MultiplexingRequest request;
+    fillGenericPollingRequest(request);
+    multiplexing(ctx->remote_address, request);
+    break;
+  }
+  }
+}
+
+void BaseImpl::healthCheck() {
+  std::vector<std::string> endpoints;
+  {
+    absl::MutexLock lk(&isolated_endpoints_mtx_);
+    for (const auto& item : isolated_endpoints_) {
+      endpoints.push_back(item);
+    }
+  }
+
+  std::weak_ptr<BaseImpl> base(self());
+  auto callback = [base](const std::string& endpoint,
+                         const InvocationContext<HealthCheckResponse>* invocation_context) {
+    std::shared_ptr<BaseImpl> ptr = base.lock();
+    if (ptr) {
+      ptr->onHealthCheckResponse(endpoint, invocation_context);
+    } else {
+      SPDLOG_INFO("BaseImpl has been destructed");
+    }
+  };
+
+  for (const auto& endpoint : endpoints) {
+    HealthCheckRequest request;
+    absl::flat_hash_map<std::string, std::string> metadata;
+    Signature::sign(this, metadata);
+    client_instance_->healthCheck(endpoint, metadata, request, absl::ToChronoMilliseconds(io_timeout_), callback);
+  }
+}
+
+void BaseImpl::onHealthCheckResponse(const std::string& endpoint, const InvocationContext<HealthCheckResponse>* ctx) {
+  if (!ctx) {
+    SPDLOG_WARN("ClientInstance does not have RPC client for {}. It might have been offline and thus cleaned",
+                endpoint);
+    {
+      absl::MutexLock lk(&isolated_endpoints_mtx_);
+      isolated_endpoints_.erase(endpoint);
+    }
+    return;
+  }
+
+  assert(endpoint == ctx->remote_address);
+
+  if (ctx->status.ok()) {
+    if (google::rpc::Code::OK == ctx->response.common().status().code()) {
+      SPDLOG_INFO("Health check to server[host={}] passed. Move it back to active node pool", endpoint);
+      absl::MutexLock lk(&isolated_endpoints_mtx_);
+      isolated_endpoints_.erase(endpoint);
+    } else {
+      SPDLOG_INFO("Health check to server[host={}] failed due to application layer reason: {}",
+                  ctx->response.common().DebugString());
+    }
+  } else {
+    SPDLOG_INFO("Health check to server[host={}] failed due to transport layer reason: {}", endpoint,
+                ctx->status.error_message());
+  }
+}
+
+void BaseImpl::fillGenericPollingRequest(MultiplexingRequest& request) {
+  auto&& resource_bundle = resourceBundle();
+  auto protocol_bundle = request.mutable_polling_request()->mutable_client_resource_bundle();
+  protocol_bundle->set_client_id(resource_bundle.client_id);
+  for (auto& item : resource_bundle.topics) {
+    auto topic = new rmq::Resource;
+    topic->set_arn(resource_bundle.arn);
+    topic->set_name(item);
+    protocol_bundle->mutable_topics()->AddAllocated(topic);
+  }
+
+  switch (resource_bundle.group_type) {
+  case GroupType::PUBLISHER:
+    protocol_bundle->mutable_producer_group()->set_arn(resource_bundle.arn);
+    protocol_bundle->mutable_producer_group()->set_name(resource_bundle.group);
+    break;
+  case GroupType::SUBSCRIBER:
+    protocol_bundle->mutable_consumer_group()->set_arn(resource_bundle.arn);
+    protocol_bundle->mutable_consumer_group()->set_name(resource_bundle.group);
+    break;
   }
 }
 

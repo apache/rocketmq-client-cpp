@@ -5,8 +5,10 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "rocketmq/RocketMQ.h"
 
-namespace rocketmq {
+ROCKETMQ_NAMESPACE_BEGIN
+
 class Histogram {
 public:
   Histogram(std::string title, int32_t capacity) : title_(std::move(title)), capacity_(capacity) {
@@ -36,7 +38,7 @@ public:
   std::vector<std::string>& labels() { return labels_; }
 
   void reportAndReset(std::string& result) {
-    assert(labels_.size() == capacity_);
+    assert(labels_.size() == static_cast<std::vector<std::string>::size_type>(capacity_));
     std::vector<int32_t> values;
     values.reserve(capacity_);
     for (auto& item : data_) {
@@ -46,7 +48,7 @@ public:
     }
     result.clear();
     result.append(title_).append(":");
-    for (int i = 0; i < labels_.size(); ++i) {
+    for (std::vector<std::string>::size_type i = 0; i < labels_.size(); ++i) {
       if (i) {
         result.append(", ");
       }
@@ -60,4 +62,5 @@ private:
   int32_t capacity_;
   std::vector<std::string> labels_;
 };
-} // namespace rocketmq
+
+ROCKETMQ_NAMESPACE_END

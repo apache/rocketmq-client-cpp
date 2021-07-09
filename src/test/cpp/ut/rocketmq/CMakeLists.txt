@@ -22,13 +22,6 @@ target_link_libraries(semaphore_test
         spdlog::spdlog)
 add_test(ut_semaphore_test semaphore_test)
 
-add_executable(message_client_id_setter_test MessageClientIDSetterTest.cpp)
-target_link_libraries(message_client_id_setter_test
-        PRIVATE
-            gtest_main
-            rocketmq_library)
-add_test(ut_message_client_id_setter_test message_client_id_setter_test)
-
 add_executable(default_mq_producer_test DefaultMQProducerTest.cpp)
 target_link_libraries(default_mq_producer_test
         PRIVATE

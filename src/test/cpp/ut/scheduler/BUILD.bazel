@@ -1,0 +1,15 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+cc_test(
+    name = "scheduler_test",
+    srcs = [
+        "SchedulerTest.cpp",
+    ],
+    deps = [
+        "//api:rocketmq_interface",
+        "//src/main/cpp/base:base_library",
+        "//src/main/cpp/concurrent:countdown_latch_library",
+        "//src/main/cpp/scheduler:scheduler_library",
+        "@com_google_googletest//:gtest_main",
+    ],
+    linkstatic = True,
+)

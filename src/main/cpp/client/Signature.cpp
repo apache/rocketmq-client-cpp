@@ -1,7 +1,6 @@
 #include "Signature.h"
 #include "Metadata.h"
 #include "Protocol.h"
-#include "RequestIdGenerator.h"
 #include "TlsHelper.h"
 #include "spdlog/spdlog.h"
 
@@ -9,11 +8,6 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 void Signature::sign(ClientConfig* client, absl::flat_hash_map<std::string, std::string>& metadata) {
   assert(client);
-
-  auto search = metadata.find(Metadata::REQUEST_ID_KEY);
-  if (search == metadata.end()) {
-    metadata.insert({Metadata::REQUEST_ID_KEY, RequestIdGenerator::nextRequestId()});
-  }
 
   metadata.insert({Metadata::LANGUAGE_KEY, "CPP"});
   // Add common headers

@@ -12,17 +12,13 @@
 #include "TopicPublishInfo.h"
 #include "TransactionImpl.h"
 #include "rocketmq/AsyncCallback.h"
+#include "rocketmq/LocalTransactionStateChecker.h"
 #include "rocketmq/MQMessage.h"
 #include "rocketmq/MQSelector.h"
 #include "rocketmq/SendResult.h"
 #include "rocketmq/State.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
-
-enum class TransactionResolution : int8_t {
-  COMMIT = 0,
-  ROLLBACK = 1,
-};
 
 class DefaultMQProducerImpl : public BaseImpl, public std::enable_shared_from_this<DefaultMQProducerImpl> {
 public:
@@ -34,7 +30,7 @@ public:
 
   void start() override;
 
-  void shutdown();
+  void shutdown() override;
 
   SendResult send(const MQMessage& message);
   SendResult send(const MQMessage& message, const MQMessageQueue& message_queue);
@@ -50,6 +46,8 @@ public:
   void sendOneway(const MQMessage& message, const MQMessageQueue& message_queue);
   void sendOneway(const MQMessage& message, MessageQueueSelector* selector, void* arg);
 
+  void setLocalTransactionStateChecker(LocalTransactionStateCheckerPtr checker);
+
   std::unique_ptr<TransactionImpl> prepare(const MQMessage& message);
 
   bool commit(const std::string& message_id, const std::string& transaction_id, const std::string& target);
@@ -57,11 +55,17 @@ public:
   bool rollback(const std::string& message_id, const std::string& transaction_id, const std::string& target);
 
   /**
-   * Check if the RPC client for the target host is active or note.
-   * @param target Address of target host.
+   * Check if the RPC client for the target host is isolated or not
+   * @param endpoint Address of target host.
    * @return true if client is active; false otherwise.
    */
-  bool isClientActive(const std::string& target);
+  bool isEndpointIsolated(const std::string& endpoint) LOCKS_EXCLUDED(isolated_endpoints_mtx_);
+
+  /**
+   * Note: This function is purpose-made public such that the whole isolate/add-back mechanism can be properly tested.
+   * @param target Endpoint of the target host
+   */
+  void isolateEndpoint(const std::string& target) LOCKS_EXCLUDED(isolated_endpoints_mtx_);
 
   int maxAttemptTimes() const { return max_attempt_times_; }
 
@@ -77,6 +81,11 @@ public:
 
   void compressBodyThreshold(uint32_t threshold) { compress_body_threshold_ = threshold; }
 
+protected:
+  std::shared_ptr<BaseImpl> self() override { return shared_from_this(); }
+
+  void resolveOrphanedTransactionalMessage(const std::string& transaction_id, const MQMessageExt& message) override;
+
 private:
   absl::flat_hash_map<std::string, TopicPublishInfoPtr> topic_publish_info_table_ GUARDED_BY(topic_publish_info_mtx_);
   absl::Mutex topic_publish_info_mtx_; // protects topic_publish_info_
@@ -84,6 +93,8 @@ private:
   int32_t max_attempt_times_{MixAll::MAX_SEND_MESSAGE_ATTEMPT_TIMES_};
   int32_t failed_times_{0}; // only for test
   uint32_t compress_body_threshold_;
+
+  LocalTransactionStateCheckerPtr transaction_state_checker_;
 
   void asyncPublishInfo(const std::string& topic, const std::function<void(const TopicPublishInfoPtr&)>& cb)
       LOCKS_EXCLUDED(topic_publish_info_mtx_);
@@ -108,7 +119,9 @@ private:
   void send0(const MQMessage& message, SendCallback* callback, std::vector<MQMessageQueue> list, int max_attempt_times);
 
   bool endTransaction0(const std::string& target, const std::string& message_id, const std::string& transaction_id,
-                       TransactionResolution resolution);
+                       TransactionState resolution);
+
+  void isolatedEndpoints(absl::flat_hash_set<std::string>& endpoints) LOCKS_EXCLUDED(isolated_endpoints_mtx_);
 };
 
 ROCKETMQ_NAMESPACE_END

@@ -34,7 +34,7 @@ bool TopicPublishInfo::selectOneActiveMessageQueue(absl::flat_hash_set<std::stri
   {
     absl::MutexLock lock(&partition_list_mtx_);
     if (partition_list_.empty()) {
-      SPDLOG_DEBUG("message queue list empty");
+      SPDLOG_DEBUG("message queue list is empty");
       return false;
     }
 
@@ -50,7 +50,7 @@ bool TopicPublishInfo::selectOneActiveMessageQueue(absl::flat_hash_set<std::stri
 }
 
 bool TopicPublishInfo::takeMessageQueues(absl::flat_hash_set<std::string>& isolated,
-                                         std::vector<MQMessageQueue>& candidates, int count) {
+                                         std::vector<MQMessageQueue>& candidates, uint32_t count) {
 
   unsigned int index = ++send_which_queue_;
   {

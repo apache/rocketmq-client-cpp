@@ -6,9 +6,9 @@ cc_test(
     ],
     deps = [
         "//src/main/cpp/base:top_addressing",
+        "//src/main/cpp/base:base_library",
         "@com_google_googletest//:gtest_main",
     ],
-    linkstatic = True,
 )
 
 cc_test(
@@ -24,7 +24,6 @@ cc_test(
     copts = [
         "-Isrc/main/client/mocks/include",
     ],
-    linkstatic = True,
 )
 
 cc_test(
@@ -37,5 +36,4 @@ cc_test(
         "//src/main/cpp/rocketmq:rocketmq_library",
         "@com_google_googletest//:gtest_main",
     ],
-    linkstatic = True,
 )

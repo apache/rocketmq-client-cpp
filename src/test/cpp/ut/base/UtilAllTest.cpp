@@ -14,25 +14,6 @@ public:
   void TearDown() override {}
 };
 
-TEST_F(UtilAllTest, testGetIPv4Addresses) {
-  spdlog::set_level(spdlog::level::debug);
-  std::vector<std::string> addresses = UtilAll::getIPv4Addresses();
-  EXPECT_FALSE(addresses.empty());
-  for (const auto& ip : addresses) {
-    spdlog::debug("IP: {}", ip);
-  }
-  std::string chosen;
-  if (UtilAll::pickIPv4Address(addresses, chosen)) {
-    spdlog::debug("The chosen one is: {}", chosen);
-  }
-}
-
-TEST_F(UtilAllTest, testGetHostIPv4) {
-  std::string ip = UtilAll::getHostIPv4();
-  EXPECT_TRUE(UtilAll::LOOP_BACK_IP != ip);
-  spdlog::debug("Host IP: {}", ip);
-}
-
 TEST_F(UtilAllTest, testCompress) {
   std::string src("How are you doing?");
   std::string dst;

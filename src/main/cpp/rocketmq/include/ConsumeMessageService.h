@@ -6,9 +6,9 @@
 
 #include "ProcessQueue.h"
 #include "RateLimiter.h"
-#include "ThreadPool.h"
 #include "rocketmq/MQMessageListener.h"
 #include "rocketmq/State.h"
+#include "src/cpp/server/dynamic_thread_pool.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -17,6 +17,7 @@ class DefaultMQPushConsumerImpl;
 class ConsumeMessageService {
 public:
   ConsumeMessageService() = default;
+
   virtual ~ConsumeMessageService() = default;
 
   /**
@@ -80,14 +81,13 @@ private:
 
   int thread_count_;
   MQMessageListener* message_listener_ptr_;
-  std::shared_ptr<ThreadPool> pool_;
+  std::atomic<State> state_;
+  std::unique_ptr<grpc::ThreadPoolInterface> pool_;
   std::weak_ptr<DefaultMQPushConsumerImpl> consumer_weak_ptr_;
 
   absl::Mutex dispatch_mtx_;
   std::thread dispatch_thread_;
   absl::CondVar dispatch_cv_;
-
-  std::atomic<State> state_;
 };
 
 class ConsumeMessageOrderlyService : public ConsumeMessageService {
@@ -108,7 +108,7 @@ private:
   std::weak_ptr<DefaultMQPushConsumerImpl> consumer_weak_ptr_;
   MQMessageListener* message_listener_ptr_;
   int thread_count_;
-  std::shared_ptr<ThreadPool> pool_;
+  std::unique_ptr<grpc::ThreadPoolInterface> pool_;
 };
 
 ROCKETMQ_NAMESPACE_END

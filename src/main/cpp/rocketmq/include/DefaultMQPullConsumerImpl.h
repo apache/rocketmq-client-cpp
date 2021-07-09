@@ -17,7 +17,7 @@ public:
 
   void start() override;
 
-  void shutdown();
+  void shutdown() override;
 
   std::future<std::vector<MQMessageQueue>> queuesFor(const std::string& topic);
 
@@ -26,6 +26,11 @@ public:
   void pull(const PullMessageQuery& query, PullCallback* callback);
 
   void prepareHeartbeatData(HeartbeatRequest& request) override;
+
+protected:
+  std::shared_ptr<BaseImpl> self() override {
+    return shared_from_this();
+  }
 };
 
 ROCKETMQ_NAMESPACE_END

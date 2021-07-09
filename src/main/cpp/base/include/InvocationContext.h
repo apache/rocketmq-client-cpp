@@ -1,7 +1,10 @@
 #pragma once
 
 #include "LoggerImpl.h"
+#include "Metadata.h"
+#include "UniqueIdGenerator.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/time/time.h"
 #include "rocketmq/RocketMQ.h"
 #include <atomic>
 #include <ctime>
@@ -19,17 +22,21 @@ ROCKETMQ_NAMESPACE_BEGIN
  *   async_stream.h
  */
 struct BaseInvocationContext {
+  BaseInvocationContext() : request_id_(UniqueIdGenerator::instance().next()) {
+    context.AddMetadata(Metadata::REQUEST_ID_KEY, request_id_);
+  }
+
   virtual ~BaseInvocationContext() = default;
   virtual void onCompletion(bool ok) = 0;
-
-  grpc::ClientContext context_;
-  grpc::Status status_;
-  std::chrono::system_clock::time_point created_time_{std::chrono::system_clock::now()};
-  std::chrono::steady_clock::time_point start_time_{std::chrono::steady_clock::now()};
+  std::string request_id_;
+  std::string remote_address;
+  grpc::ClientContext context;
+  grpc::Status status;
+  absl::Time created_time{absl::Now()};
+  std::chrono::steady_clock::time_point start_time{std::chrono::steady_clock::now()};
 };
 
-template <typename T>
-struct InvocationContext : public BaseInvocationContext {
+template <typename T> struct InvocationContext : public BaseInvocationContext {
 
   void onCompletion(bool ok) override {
     /// Client-side Read, Server-side Read, Client-side
@@ -42,38 +49,25 @@ struct InvocationContext : public BaseInvocationContext {
     /// has done a WritesDone already.
     if (!ok) {
       SPDLOG_WARN("One async call is already dead");
-
-      if (callback_) {
-        callback_(grpc::Status::CANCELLED, context_, response_);
+      if (callback) {
+        callback(this);
       }
-
       delete this;
       return;
     }
 
-    if (!status_.ok() && grpc::StatusCode::DEADLINE_EXCEEDED == status_.error_code()) {
-      std::time_t creation_time_t = std::chrono::system_clock::to_time_t(created_time_);
-      auto fraction =
-          std::chrono::duration_cast<std::chrono::milliseconds>(created_time_.time_since_epoch()).count() % 1000;
-      char fmt_date_time[128];
-
-      /**
-       * TODO: std::localtime is not thread-safe, output, as a result, may be less reliable in highly contending
-       * scenario
-       */
-      std::strftime(fmt_date_time, sizeof(fmt_date_time), "%Y-%m-%d %H:%M:%S", std::localtime(&creation_time_t));
-
+    if (!status.ok() && grpc::StatusCode::DEADLINE_EXCEEDED == status.error_code()) {
       auto elapsed =
-          std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_).count();
+          std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count();
       auto diff =
-          std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - context_.deadline())
+          std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - context.deadline())
               .count();
-      SPDLOG_WARN("Asynchronous RPC[{}.{}] timed out, elapsing {}ms, deadline-over-due: {}ms", fmt_date_time, fraction,
-                  elapsed, diff);
+      SPDLOG_WARN("Asynchronous RPC[{}.{}] timed out, elapsing {}ms, deadline-over-due: {}ms",
+                  absl::FormatTime(created_time, absl::UTCTimeZone()), elapsed, diff);
     }
     try {
-      if (callback_) {
-        callback_(status_, context_, response_);
+      if (callback) {
+        callback(this);
       }
     } catch (const std::exception& e) {
       SPDLOG_WARN("Unexpected error while invoking user-defined callback. Reason: {}", e.what());
@@ -83,8 +77,8 @@ struct InvocationContext : public BaseInvocationContext {
     delete this;
   }
 
-  T response_;
-  std::function<void(const grpc::Status&, const grpc::ClientContext&, const T&)> callback_;
-  std::unique_ptr<grpc::ClientAsyncResponseReader<T>> response_reader_;
+  T response;
+  std::function<void(const InvocationContext<T>*)> callback;
+  std::unique_ptr<grpc::ClientAsyncResponseReader<T>> response_reader;
 };
 ROCKETMQ_NAMESPACE_END

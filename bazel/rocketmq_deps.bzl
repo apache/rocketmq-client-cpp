@@ -31,14 +31,6 @@ def rocketmq_deps():
             build_file = "@org_apache_rocketmq//third_party:filesystem.BUILD",
         )
 
-    if "com_github_progschj_ThreadPool" not in native.existing_rules():
-        new_git_repository(
-            name = "com_github_progschj_ThreadPool",
-            remote = "https://github.com/progschj/ThreadPool.git",
-            branch = "master",
-            build_file = "@org_apache_rocketmq//third_party:ThreadPool.BUILD"
-        )
-
     if "com_github_gabime_spdlog" not in native.existing_rules():
         http_archive(
             name = "com_github_gabime_spdlog",
@@ -77,27 +69,6 @@ def rocketmq_deps():
             sha256 = "7954abbb6898830cd10ac9714fbcacf092299fda00ed2baf781172f545120419",
             strip_prefix = "rules_proto_grpc-3.1.1",
             urls = ["https://github.com/rules-proto-grpc/rules_proto_grpc/archive/3.1.1.tar.gz"],
-        )
-
-    if "curl" not in native.existing_rules():
-        http_archive(
-            name = "curl",
-            strip_prefix = "curl-7.73.0",
-            sha256 = "ba98332752257b47b9dea6d8c0ad25ec1745c20424f1dd3ff2c99ab59e97cf91",
-            urls = ["https://curl.haxx.se/download/curl-7.73.0.tar.gz"],
-            build_file = "@org_apache_rocketmq//third_party:curl.BUILD",
-        )
-
-    if "libuv" not in native.existing_rules():
-        http_archive(
-            name = "libuv",
-            sha256 = "dfb4fe1ff0b47340978490a14bf253475159ecfcbad46ab2a350c78f9ce3360f",
-            strip_prefix = "libuv-15ae750151ac9341e5945eb38f8982d59fb99201",
-            urls = [
-                "https://storage.googleapis.com/grpc-bazel-mirror/github.com/libuv/libuv/archive/15ae750151ac9341e5945eb38f8982d59fb99201.tar.gz",
-                "https://github.com/libuv/libuv/archive/15ae750151ac9341e5945eb38f8982d59fb99201.tar.gz",
-            ],
-            build_file = "@org_apache_rocketmq//third_party:libuv.BUILD",
         )
 
     if "com_google_absl" not in native.existing_rules():

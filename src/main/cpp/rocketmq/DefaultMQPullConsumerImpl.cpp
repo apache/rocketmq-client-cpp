@@ -13,7 +13,16 @@ void DefaultMQPullConsumerImpl::start() {
   client_instance_->addClientObserver(shared_from_this());
 }
 
-void DefaultMQPullConsumerImpl::shutdown() {}
+void DefaultMQPullConsumerImpl::shutdown() {
+  // Shutdown services started by current tier
+
+  // Shutdown services that are started by the parent
+  BaseImpl::shutdown();
+  State expected = State::STOPPING;
+  if (state_.compare_exchange_strong(expected, State::STOPPED)) {
+    SPDLOG_INFO("DefaultMQPullConsumerImpl stopped");
+  }
+}
 
 std::future<std::vector<MQMessageQueue>> DefaultMQPullConsumerImpl::queuesFor(const std::string& topic) {
   auto promise = std::make_shared<std::promise<std::vector<MQMessageQueue>>>();

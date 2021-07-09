@@ -3,9 +3,11 @@
 #include "absl/base/thread_annotations.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "rocketmq/RocketMQ.h"
 #include <string>
 
-namespace rocketmq {
+ROCKETMQ_NAMESPACE_BEGIN
+
 class CountdownLatch {
 public:
   explicit CountdownLatch(int32_t count) : CountdownLatch(count, "anonymous") {}
@@ -25,4 +27,5 @@ private:
 
   std::string name_;
 };
-} // namespace rocketmq
+
+ROCKETMQ_NAMESPACE_END

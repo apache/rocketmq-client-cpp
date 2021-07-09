@@ -24,8 +24,10 @@ target_link_libraries(histogram_test
             base_library)
 add_test(test_histogram histogram_test)
 
-add_executable(ut_request_id_generator RequestIdGeneratorTest.cpp)
-target_link_libraries(ut_request_id_generator
+
+add_executable(unique_id_generator_test UniqueIdGeneratorTest.cpp)
+target_link_libraries(unique_id_generator_test
         PRIVATE
             gtest_main
             base_library)
+add_test(ut_unique_id_generator unique_id_generator_test)

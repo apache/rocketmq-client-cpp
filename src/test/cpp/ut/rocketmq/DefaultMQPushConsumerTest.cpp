@@ -2,6 +2,7 @@
 #include "ClientManager.h"
 #include "DefaultMQPushConsumerImpl.h"
 #include "MQClientTest.h"
+#include "absl/time/time.h"
 #include "rocketmq/MQMessageExt.h"
 #include "rocketmq/MQMessageListener.h"
 #include "spdlog/spdlog.h"
@@ -19,10 +20,15 @@ std::atomic_int message_index(0);
 
 class DefaultMQPushConsumerUnitTest : public MQClientTest {
 public:
-  DefaultMQPushConsumerUnitTest() {
+  DefaultMQPushConsumerUnitTest() : MQClientTest() {}
+
+  void SetUp() override {
+    MQClientTest::SetUp();
     rpc_client_for_broker_ = std::make_shared<NiceMock<RpcClientMock>>();
 
-    ON_CALL(*rpc_client_for_broker_, needHeartbeat).WillByDefault(testing::Return(true));
+    testing::Mock::AllowLeak(&rpc_client_for_broker_);
+
+    ON_CALL(*rpc_client_for_broker_, needHeartbeat()).WillByDefault(testing::Return(true));
 
     ON_CALL(*rpc_client_for_broker_, ok()).WillByDefault(Invoke([this]() {
       std::cout << "Check ok()" << std::endl;
@@ -45,6 +51,10 @@ public:
         .WillByDefault(Invoke(std::bind(&DefaultMQPushConsumerUnitTest::mockQueryAssignment, this,
                                         std::placeholders::_1, std::placeholders::_2)));
 
+    ON_CALL(*rpc_client_for_broker_, asyncReceive)
+        .WillByDefault(testing::Invoke(std::bind(&DefaultMQPushConsumerUnitTest::mockReceiveMessage, this,
+                                                 std::placeholders::_1, std::placeholders::_2)));
+
     const char* address_format = "ipv4:10.0.0.{}:10911";
     for (int i = 0; i < partition_num_ / avg_partition_per_host_; ++i) {
       std::string&& address = fmt::format(address_format, i);
@@ -52,23 +62,28 @@ public:
     }
   }
 
+  void TearDown() override {
+    rpc_client_for_broker_.reset();
+    MQClientTest::TearDown();
+  }
+
   void mockHeartbeat(const HeartbeatRequest& request, InvocationContext<HeartbeatResponse>* invocation_context) const {
-    invocation_context->response_.mutable_common()->mutable_status()->set_code(ok_);
+    invocation_context->response.mutable_common()->mutable_status()->set_code(ok_);
     invocation_context->onCompletion(true);
   }
 
   void mockQueryOffset(const QueryOffsetRequest& request,
                        InvocationContext<QueryOffsetResponse>* invocation_context) const {
-    invocation_context->response_.mutable_common()->mutable_status()->set_code(ok_);
-    invocation_context->response_.set_offset(max_offset_);
+    invocation_context->response.mutable_common()->mutable_status()->set_code(ok_);
+    invocation_context->response.set_offset(max_offset_);
 
     invocation_context->onCompletion(true);
   }
 
   void mockAsyncPull(const PullMessageRequest& request,
                      InvocationContext<PullMessageResponse>* invocation_context) const {
-    invocation_context->response_.mutable_common()->mutable_status()->set_code(ok_);
-    invocation_context->response_.set_next_offset(max_offset_);
+    invocation_context->response.mutable_common()->mutable_status()->set_code(ok_);
+    invocation_context->response.set_next_offset(max_offset_);
     for (int i = 0; i < pull_batch_size_; i++) {
       auto message = new rmq::Message;
       message->mutable_topic()->set_arn(arn_);
@@ -80,7 +95,7 @@ public:
       std::string checksum;
       MixAll::md5(body_, checksum);
       message->mutable_system_attribute()->mutable_body_digest()->set_checksum(checksum);
-      invocation_context->response_.mutable_messages()->AddAllocated(message);
+      invocation_context->response.mutable_messages()->AddAllocated(message);
     }
     invocation_context->onCompletion(true);
   }
@@ -105,8 +120,31 @@ public:
       address->set_host(fmt::format("10.0.0.{}", i / 8));
       address->set_port(10911);
       addresses->AddAllocated(address);
-      invocation_context->response_.mutable_assignments()->AddAllocated(load_assignment);
+      invocation_context->response.mutable_assignments()->AddAllocated(load_assignment);
     }
+    invocation_context->onCompletion(true);
+  }
+
+  void mockReceiveMessage(const ReceiveMessageRequest& request,
+                          InvocationContext<ReceiveMessageResponse>* invocation_context) {
+    invocation_context->response.mutable_common()->mutable_status()->set_code(google::rpc::Code::OK);
+
+    // Set delivery timestamp
+    auto since_unix_epoch = absl::Now() - absl::UnixEpoch();
+    auto seconds = absl::ToInt64Seconds(since_unix_epoch);
+    invocation_context->response.mutable_delivery_timestamp()->set_seconds(seconds);
+    invocation_context->response.mutable_delivery_timestamp()->set_nanos(
+        absl::ToInt64Nanoseconds(since_unix_epoch - absl::Seconds(seconds)));
+
+    // Set invisible duration
+    invocation_context->response.mutable_invisible_duration()->set_seconds(300);
+    invocation_context->response.mutable_invisible_duration()->set_nanos(0);
+
+    for (int32_t i = 0; i < request.batch_size(); i++) {
+      auto message = new rmq::Message;
+      message->set_body("Sample body");
+    }
+
     invocation_context->onCompletion(true);
   }
 
@@ -152,6 +190,27 @@ TEST_F(DefaultMQPushConsumerUnitTest, testBroadcasting) {
   auto listener = new MessageListenerUnitTests;
   push_consumer->registerMessageListener(listener);
   push_consumer->start();
+  {
+    std::unique_lock<std::mutex> lk(completion_mtx_);
+    completion_cv_.wait(lk, [&]() { return completed_.load(); });
+  }
+  push_consumer->shutdown();
+  absl::SleepFor(absl::Seconds(10));
+  delete listener;
+}
+
+TEST_F(DefaultMQPushConsumerUnitTest, DISABLED_testClustering) {
+  spdlog::set_level(spdlog::level::debug);
+  auto push_consumer = std::make_shared<DefaultMQPushConsumerImpl>(group_name_);
+  push_consumer->setMessageModel(MessageModel::CLUSTERING);
+  push_consumer->arn(arn_);
+  push_consumer->setNameServerList(name_server_list_);
+  push_consumer->subscribe(topic_, "*");
+
+  auto listener = new MessageListenerUnitTests();
+  push_consumer->registerMessageListener(listener);
+  push_consumer->start();
+
   {
     std::unique_lock<std::mutex> lk(completion_mtx_);
     completion_cv_.wait(lk, [&]() { return completed_.load(); });

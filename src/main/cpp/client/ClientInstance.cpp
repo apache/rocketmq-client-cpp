@@ -1,7 +1,9 @@
 #include "ClientInstance.h"
 
 #include <chrono>
+#include <memory>
 #include <utility>
+#include <vector>
 
 #include "CRC.h"
 #include "InvocationContext.h"
@@ -9,7 +11,6 @@
 #include "LogInterceptorFactory.h"
 #include "LoggerImpl.h"
 #include "MessageAccessor.h"
-#include "MessageSystemFlag.h"
 #include "Metadata.h"
 #include "MixAll.h"
 #include "Partition.h"
@@ -29,21 +30,9 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 ClientInstance::ClientInstance(std::string arn)
     : arn_(std::move(arn)), state_(State::CREATED), completion_queue_(std::make_shared<CompletionQueue>()),
-      callback_thread_pool_(std::make_shared<ThreadPool>(std::thread::hardware_concurrency())),
-      latency_histogram_("Message-Latency", 11) {
+      callback_thread_pool_(grpc::CreateDefaultThreadPool()), latency_histogram_("Message-Latency", 11) {
   spdlog::set_level(spdlog::level::trace);
-
-  inactive_rpc_client_detector_ = std::bind(&ClientInstance::doHealthCheck, this);
-  inactive_rpc_client_detector_function_ = std::make_shared<Functional>(&inactive_rpc_client_detector_);
-
-  heartbeat_loop_ = std::bind(&ClientInstance::doHeartbeat, this);
-  heartbeat_loop_function_ = std::make_shared<Functional>(&heartbeat_loop_);
-
   assignLabels(latency_histogram_);
-
-  stats_functor_ = std::bind(&ClientInstance::logStats, this);
-  stats_function_ = std::make_shared<Functional>(&stats_functor_);
-
   server_authorization_check_config_ = std::make_shared<grpc::experimental::TlsServerAuthorizationCheckConfig>(
       std::make_shared<TlsServerAuthorizationChecker>());
 
@@ -75,32 +64,35 @@ void ClientInstance::start() {
   }
   state_.store(State::STARTING, std::memory_order_relaxed);
 
-  scheduler_.start();
+  std::weak_ptr<ClientInstance> client_instance_weak_ptr = shared_from_this();
 
-  bool scheduled =
-      scheduler_.schedule(inactive_rpc_client_detector_function_, std::chrono::seconds(5), std::chrono::seconds(15));
-  if (scheduled) {
-    SPDLOG_INFO("inactive client detector scheduled");
-  } else {
-    SPDLOG_ERROR("Failed to schedule inactive client detector");
-  }
-
-  scheduled = scheduler_.schedule(heartbeat_loop_function_, std::chrono::seconds(1), std::chrono::seconds(10));
-  if (scheduled) {
-    SPDLOG_INFO("Heartbeat loop scheduled");
-  } else {
-    SPDLOG_ERROR("Failed to schedule consumer heartbeat loop");
-  }
+  auto health_check_functor = [client_instance_weak_ptr]() {
+    auto client_instance = client_instance_weak_ptr.lock();
+    if (client_instance) {
+      client_instance->doHealthCheck();
+    }
+  };
+  health_check_handle_ = scheduler_.schedule(health_check_functor, HEALTH_CHECK_TASK_NAME, std::chrono::seconds(5),
+                                             std::chrono::seconds(5));
+  auto heartbeat_functor = [client_instance_weak_ptr]() {
+    auto client_instance = client_instance_weak_ptr.lock();
+    if (client_instance) {
+      client_instance->doHeartbeat();
+    }
+  };
+  heartbeat_handle_ =
+      scheduler_.schedule(heartbeat_functor, HEARTBEAT_TASK_NAME, std::chrono::seconds(1), std::chrono::seconds(10));
 
   completion_queue_thread_ = std::thread(std::bind(&ClientInstance::pollCompletionQueue, this));
 
-  scheduled = scheduler_.schedule(stats_function_, std::chrono::seconds(0), std::chrono::seconds(10));
-  if (scheduled) {
-    SPDLOG_INFO("logStats loop scheduled");
-  } else {
-    SPDLOG_ERROR("Failed to schedule logStats loop");
-  }
-
+  auto stats_functor_ = [client_instance_weak_ptr]() {
+    auto client_instance = client_instance_weak_ptr.lock();
+    if (client_instance) {
+      client_instance->logStats();
+    }
+  };
+  stats_handle_ =
+      scheduler_.schedule(stats_functor_, STATS_TASK_NAME, std::chrono::seconds(0), std::chrono::seconds(10));
   state_.store(State::STARTED, std::memory_order_relaxed);
 }
 
@@ -112,10 +104,16 @@ void ClientInstance::shutdown() {
   }
 
   state_.store(STOPPING, std::memory_order_relaxed);
-  {
-    absl::MutexLock lk(&inactive_rpc_clients_mtx_);
-    inactive_rpc_clients_.clear();
-    SPDLOG_DEBUG("CompletionQueue of inactive clients stopped");
+  if (health_check_handle_) {
+    scheduler_.cancel(health_check_handle_);
+  }
+
+  if (heartbeat_handle_) {
+    scheduler_.cancel(heartbeat_handle_);
+  }
+
+  if (stats_handle_) {
+    scheduler_.cancel(stats_handle_);
   }
 
   {
@@ -123,8 +121,6 @@ void ClientInstance::shutdown() {
     rpc_clients_.clear();
     SPDLOG_DEBUG("CompletionQueue of active clients stopped");
   }
-
-  scheduler_.shutdown();
 
   completion_queue_->Shutdown();
   if (completion_queue_thread_.joinable()) {
@@ -150,60 +146,34 @@ void ClientInstance::assignLabels(Histogram& histogram) {
   histogram.labels().emplace_back("[200ms~inf): ");
 }
 
-bool ClientInstance::addInactiveRpcClient(const std::string& target_host) {
-  std::shared_ptr<RpcClient> client;
-  // get the inactive rpc client and remove from rpc_clients_(active client)
+void ClientInstance::healthCheck(
+    const std::string& target_host, const absl::flat_hash_map<std::string, std::string>& metadata,
+    const HealthCheckRequest& request, std::chrono::milliseconds timeout,
+    const std::function<void(const std::string&, const InvocationContext<HealthCheckResponse>*)>& cb) {
   {
-    absl::MutexLock lock(&rpc_clients_mtx_);
+    absl::MutexLock lk(&rpc_clients_mtx_);
     if (!rpc_clients_.contains(target_host)) {
-      SPDLOG_ERROR("RpcClient {} can not be found in rpc_clients_, remove error", target_host);
-      return false;
-    } else {
-      client = rpc_clients_[target_host];
-      rpc_clients_.erase(target_host);
-    }
-  }
-  // add to inactive_rpc_clients_
-  {
-    absl::MutexLock lock(&inactive_rpc_clients_mtx_);
-    inactive_rpc_clients_.insert(std::make_pair(target_host, client));
-  }
-  return true;
-}
-
-bool ClientInstance::removeInactiveRpcClient(const std::string& target_host) {
-  std::shared_ptr<RpcClient> client;
-  {
-    absl::MutexLock lock(&inactive_rpc_clients_mtx_);
-    if (!inactive_rpc_clients_.contains(target_host)) {
-      SPDLOG_ERROR("RpcClient {} can not be found in inactive_rpc_clients_, remove error", target_host);
-      return false;
-    } else {
-      client = inactive_rpc_clients_[target_host];
-      inactive_rpc_clients_.erase(target_host);
+      SPDLOG_WARN("Try to perform health check for {}, which is unknown to ClientInstance", target_host);
+      cb(target_host, nullptr);
+      return;
     }
   }
 
-  {
-    absl::MutexLock lock(&rpc_clients_mtx_);
-    rpc_clients_.insert(std::make_pair(target_host, client));
-  }
-  SPDLOG_DEBUG("Migrated {} from inactive to active list", target_host);
-  return true;
-}
+  auto client = getRpcClient(target_host);
+  assert(client);
 
-bool ClientInstance::getInactiveRpcClient(absl::string_view target_host, RpcClientSharedPtr& client) {
-  std::string target(target_host.data(), target_host.length());
-  {
-    absl::MutexLock lock(&inactive_rpc_clients_mtx_);
-    if (!inactive_rpc_clients_.contains(target)) {
-      SPDLOG_DEBUG("RpcClient {} can not be found in inactive_rpc_clients_. Host:{}", target);
-      return false;
-    } else {
-      client = inactive_rpc_clients_[target];
-    }
+  auto invocation_context = new InvocationContext<HealthCheckResponse>();
+  invocation_context->remote_address = target_host;
+  invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
+
+  for (const auto& entry : metadata) {
+    invocation_context->context.AddMetadata(entry.first, entry.second);
   }
-  return true;
+
+  auto callback = [cb](const InvocationContext<HealthCheckResponse>* ctx) { cb(ctx->remote_address, ctx); };
+
+  invocation_context->callback = callback;
+  client->asyncHealthCheck(request, invocation_context);
 }
 
 void ClientInstance::doHealthCheck() {
@@ -213,8 +183,23 @@ void ClientInstance::doHealthCheck() {
     SPDLOG_WARN("Unexpected client instance state={}.", state_.load(std::memory_order_relaxed));
     return;
   }
+
   cleanOfflineRpcClients();
-  clientHealthCheck();
+
+  std::vector<std::shared_ptr<ClientCallback>> clients;
+  {
+    absl::MutexLock lk(&clients_mtx_);
+    for (auto& item : clients_) {
+      auto client = item.lock();
+      if (client && client->active()) {
+        clients.emplace_back(std::move(client));
+      }
+    }
+  }
+
+  for (auto& client : clients) {
+    client->healthCheck();
+  }
   SPDLOG_DEBUG("Health check completed");
 }
 
@@ -300,7 +285,7 @@ void ClientInstance::cleanOfflineRpcClients() {
       if (!client) {
         continue;
       }
-      client->activeHosts(hosts);
+      client->endpointsInUse(hosts);
     }
   }
 
@@ -316,76 +301,6 @@ void ClientInstance::cleanOfflineRpcClients() {
       }
     }
   }
-
-  {
-    absl::MutexLock lock(&inactive_rpc_clients_mtx_);
-    for (auto it = inactive_rpc_clients_.begin(); it != inactive_rpc_clients_.end();) {
-      std::string host = it->first;
-      if (it->second->needHeartbeat() && !hosts.contains(host)) {
-        inactive_rpc_clients_.erase(it++);
-        SPDLOG_INFO("Removed RPC client whose peer is offline. RemoteHost={}", host);
-      } else {
-        it++;
-      }
-    }
-  }
-}
-
-bool ClientInstance::isRpcClientActive(absl::string_view target_host) {
-  absl::MutexLock lock(&inactive_rpc_clients_mtx_);
-  return !inactive_rpc_clients_.contains(target_host);
-}
-
-void ClientInstance::getAllInactiveRpcClientHost(absl::flat_hash_set<std::string>& client_hosts) {
-  client_hosts.clear();
-  {
-    absl::MutexLock lock(&inactive_rpc_clients_mtx_);
-    for (const auto& entry : inactive_rpc_clients_) {
-      client_hosts.insert(entry.first);
-    }
-  }
-}
-
-void ClientInstance::clientHealthCheck() {
-  absl::flat_hash_set<std::string> clientsHosts;
-  getAllInactiveRpcClientHost(clientsHosts);
-  for (const auto& clientHost : clientsHosts) {
-    RpcClientSharedPtr client;
-    if (!getInactiveRpcClient(clientHost, client)) {
-      SPDLOG_ERROR("get inactive client error, client Host :{}", clientHost);
-    }
-    SPDLOG_DEBUG("check client(host: {}) health status", clientHost);
-    // detect if the rpc client is healthy
-    HealthCheckRequest request;
-    HealthCheckResponse response;
-    request.set_client_host(clientHost);
-    auto invocation_context = new InvocationContext<HealthCheckResponse>();
-
-    // TODO: Acquire metadata from ProducerImpl/ConsumerImpl.
-    absl::flat_hash_map<std::string, std::string> metadata;
-
-    // TODO: Sign metadata
-
-    for (const auto& item : metadata) {
-      invocation_context->context_.AddMetadata(item.first, item.second);
-    }
-
-    auto callback = [this, clientHost](const grpc::Status& status, const grpc::ClientContext& context,
-                                       const HealthCheckResponse& response) {
-      if (status.ok() && response.common().status().code() == google::rpc::Code::OK) {
-        SPDLOG_INFO("Inactive client {} passes health check, thus, is considered active", clientHost);
-        if (!removeInactiveRpcClient(clientHost)) {
-          SPDLOG_ERROR("Failed to move the previous inactive client to active list", clientHost);
-        }
-      } else {
-        SPDLOG_INFO("client for host={} failed to pass health check again. Reason: {}", clientHost,
-                    response.common().DebugString());
-      }
-    };
-    invocation_context->callback_ = callback;
-
-    client->asyncHealthCheck(request, invocation_context);
-  } // end for
 }
 
 void ClientInstance::heartbeat(const std::string& target_host,
@@ -398,29 +313,36 @@ void ClientInstance::heartbeat(const std::string& target_host,
   }
 
   auto invocation_context = new InvocationContext<HeartbeatResponse>();
+  invocation_context->remote_address = target_host;
   for (const auto& item : metadata) {
-    invocation_context->context_.AddMetadata(item.first, item.second);
+    invocation_context->context.AddMetadata(item.first, item.second);
   }
 
-  auto callback = [target_host, cb](const grpc::Status& status, const grpc::ClientContext& context,
-                                    const HeartbeatResponse& response) {
-    if (status.ok()) {
-      if (google::rpc::Code::OK == response.common().status().code()) {
-        SPDLOG_DEBUG("Send heartbeat to target_host={}, gRPC status OK", target_host);
-        cb(true, response);
+  auto callback = [cb](const InvocationContext<HeartbeatResponse>* invocation_context) {
+    if (invocation_context->status.ok()) {
+      if (google::rpc::Code::OK == invocation_context->response.common().status().code()) {
+        SPDLOG_DEBUG("Send heartbeat to target_host={}, gRPC status OK", invocation_context->remote_address);
+        cb(true, invocation_context->response);
       } else {
-        SPDLOG_WARN("Server[{}] failed to process heartbeat. Reason: {}", target_host, response.common().DebugString());
-        cb(false, response);
+        SPDLOG_WARN("Server[{}] failed to process heartbeat. Reason: {}", invocation_context->remote_address,
+                    invocation_context->response.common().DebugString());
+        cb(false, invocation_context->response);
       }
     } else {
-      SPDLOG_WARN("Failed to send heartbeat to target_host={}. GRPC code: {}, message : {}", target_host,
-                  status.error_code(), status.error_message());
-      cb(false, response);
+      SPDLOG_WARN("Failed to send heartbeat to target_host={}. GRPC code: {}, message : {}",
+                  invocation_context->remote_address, invocation_context->status.error_code(),
+                  invocation_context->status.error_message());
+      cb(false, invocation_context->response);
     }
   };
-  invocation_context->callback_ = callback;
-  invocation_context->context_.set_deadline(std::chrono::system_clock::now() + timeout);
+  invocation_context->callback = callback;
+  invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
   client->asyncHeartbeat(request, invocation_context);
+}
+
+bool ClientInstance::active() {
+  State state = state_.load(std::memory_order_relaxed);
+  return State::STARTED == state || State::STARTING == state;
 }
 
 void ClientInstance::doHeartbeat() {
@@ -430,14 +352,19 @@ void ClientInstance::doHeartbeat() {
     return;
   }
 
+  std::vector<std::shared_ptr<ClientCallback>> clients;
   {
     absl::MutexLock lk(&clients_mtx_);
     for (const auto& item : clients_) {
       auto client = item.lock();
-      if (client) {
-        client->heartbeat();
+      if (client && client->active()) {
+        clients.emplace_back(std::move(client));
       }
     }
+  }
+
+  for (auto& client : clients) {
+    client->heartbeat();
   }
 }
 
@@ -454,17 +381,16 @@ void ClientInstance::pollCompletionQueue() {
         SPDLOG_WARN("CompletionQueue#Next assigned ok false, indicating the call is dead");
       }
       auto callback = [invocation_context, ok]() { invocation_context->onCompletion(ok); };
-      callback_thread_pool_->enqueue(callback);
+      callback_thread_pool_->Add(callback);
     }
     SPDLOG_INFO("CompletionQueue is fully drained and shut down");
   }
   SPDLOG_INFO("pollCompletionQueue completed and quit");
 }
 
-bool ClientInstance::send(const std::string& target, const absl::flat_hash_map<std::string, std::string>& metadata,
-                          SendMessageRequest& request, SendCallback* callback) {
-  assert(callback);
-  std::string target_host(target.data(), target.length());
+bool ClientInstance::send(const std::string& target_host, const absl::flat_hash_map<std::string, std::string>& metadata,
+                          SendMessageRequest& request, SendCallback* cb) {
+  assert(cb);
   SPDLOG_DEBUG("Prepare to send message to {} asynchronously", target_host);
   RpcClientSharedPtr client = getRpcClient(target_host);
 
@@ -487,30 +413,33 @@ bool ClientInstance::send(const std::string& target, const absl::flat_hash_map<s
 
   // Invocation context will be deleted in its onComplete() method.
   auto invocation_context = new InvocationContext<SendMessageResponse>();
+  invocation_context->remote_address = target_host;
   for (const auto& entry : metadata) {
-    invocation_context->context_.AddMetadata(entry.first, entry.second);
+    invocation_context->context.AddMetadata(entry.first, entry.second);
   }
 
   const std::string& topic = request.message().topic().name();
-  auto completion_callback = [topic, callback, target_host, span, this](const grpc::Status& status,
-                                                                        const grpc::ClientContext&,
-                                                                        const SendMessageResponse& response) {
-    if (status.ok() && google::rpc::Code::OK == response.common().status().code()) {
+  auto completion_callback = [topic, cb, span, this](const InvocationContext<SendMessageResponse>* invocation_context) {
+    if (invocation_context->status.ok() &&
+        google::rpc::Code::OK == invocation_context->response.common().status().code()) {
+
 #ifdef ENABLE_TRACING
       if (span) {
         span->SetAttribute(TracingUtility::get().success_, true);
         span->End();
       }
+#else
+      (void)span;
 #endif
       SendResult send_result;
-      send_result.setMsgId(response.message_id());
+      send_result.setMsgId(invocation_context->response.message_id());
       send_result.setQueueOffset(-1);
       MQMessageQueue message_queue;
       message_queue.setQueueId(-1);
       message_queue.setTopic(topic);
       send_result.setMessageQueue(message_queue);
       if (State::STARTED == state_.load(std::memory_order_relaxed)) {
-        callback->onSuccess(send_result);
+        cb->onSuccess(send_result);
       } else {
         SPDLOG_INFO("Client instance has stopped, state={}. Ignore send result {}",
                     state_.load(std::memory_order_relaxed), send_result.getMsgId());
@@ -524,22 +453,23 @@ bool ClientInstance::send(const std::string& target, const absl::flat_hash_map<s
       }
 #endif
 
-      if (!status.ok()) {
+      if (!invocation_context->status.ok()) {
         SPDLOG_WARN("Failed to send message to {} due to gRPC error. gRPC code: {}, gRPC error message: {}",
-                    target_host, status.error_code(), status.error_message());
+                    invocation_context->remote_address, invocation_context->status.error_code(),
+                    invocation_context->status.error_message());
       }
       std::string msg;
       msg.append("gRPC code: ")
-          .append(std::to_string(status.error_code()))
+          .append(std::to_string(invocation_context->status.error_code()))
           .append(", gRPC message: ")
-          .append(status.error_message())
+          .append(invocation_context->status.error_message())
           .append(", code: ")
-          .append(std::to_string(response.common().status().code()))
+          .append(std::to_string(invocation_context->response.common().status().code()))
           .append(", remark: ")
-          .append(response.common().DebugString());
+          .append(invocation_context->response.common().DebugString());
       MQException e(msg, FAILED_TO_SEND_MESSAGE, __FILE__, __LINE__);
       if (State::STARTED == state_.load(std::memory_order_relaxed)) {
-        callback->onException(e);
+        cb->onException(e);
       } else {
         SPDLOG_WARN("Client instance has stopped, state={}. Ignore exception raised while sending message: {}",
                     state_.load(std::memory_order_relaxed), e.what());
@@ -547,7 +477,7 @@ bool ClientInstance::send(const std::string& target, const absl::flat_hash_map<s
     }
   };
 
-  invocation_context->callback_ = completion_callback;
+  invocation_context->callback = completion_callback;
   client->asyncSend(request, invocation_context);
   return true;
 }
@@ -574,6 +504,10 @@ RpcClientSharedPtr ClientInstance::getRpcClient(const std::string& target_host, 
     }
   }
 
+  if (need_heartbeat && !client->needHeartbeat()) {
+    client->needHeartbeat(need_heartbeat);
+  }
+
   return client;
 }
 
@@ -582,6 +516,11 @@ void ClientInstance::addRpcClient(const std::string& target_host, const RpcClien
     absl::MutexLock lock(&rpc_clients_mtx_);
     rpc_clients_.insert_or_assign(target_host, client);
   }
+}
+
+void ClientInstance::cleanRpcClients() {
+  absl::MutexLock lk(&rpc_clients_mtx_);
+  rpc_clients_.clear();
 }
 
 SendResult ClientInstance::processSendResponse(const MQMessageQueue& message_queue,
@@ -616,28 +555,28 @@ void ClientInstance::resolveRoute(const std::string& target_host,
   }
 
   auto invocation_context = new InvocationContext<QueryRouteResponse>();
-  invocation_context->context_.set_deadline(std::chrono::system_clock::now() + timeout);
+  invocation_context->remote_address = target_host;
+  invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
   for (const auto& item : metadata) {
-    invocation_context->context_.AddMetadata(item.first, item.second);
+    invocation_context->context.AddMetadata(item.first, item.second);
   }
 
-  auto callback = [target_host, cb](const grpc::Status& status, const grpc::ClientContext& client_context,
-                                    const QueryRouteResponse& response) {
-    if (!status.ok()) {
-      SPDLOG_WARN("Failed to send query route request to server[host={}]. Reason: {}", target_host,
-                  status.error_message());
+  auto callback = [cb](const InvocationContext<QueryRouteResponse>* invocation_context) {
+    if (!invocation_context->status.ok()) {
+      SPDLOG_WARN("Failed to send query route request to server[host={}]. Reason: {}",
+                  invocation_context->remote_address, invocation_context->status.error_message());
       cb(false, nullptr);
       return;
     }
 
-    if (google::rpc::Code::OK != response.common().status().code()) {
-      SPDLOG_WARN("Server[host={}] failed to process query route request. Reason: {}", target_host,
-                  response.common().DebugString());
+    if (google::rpc::Code::OK != invocation_context->response.common().status().code()) {
+      SPDLOG_WARN("Server[host={}] failed to process query route request. Reason: {}",
+                  invocation_context->remote_address, invocation_context->response.common().DebugString());
       cb(false, nullptr);
       return;
     }
 
-    auto& partitions = response.partitions();
+    auto& partitions = invocation_context->response.partitions();
 
     std::vector<Partition> topic_partitions;
     for (const auto& partition : partitions) {
@@ -685,10 +624,11 @@ void ClientInstance::resolveRoute(const std::string& target_host,
       topic_partitions.emplace_back(std::move(topic_partition));
     }
 
-    auto ptr = std::make_shared<TopicRouteData>(std::move(topic_partitions), response.DebugString());
+    auto ptr =
+        std::make_shared<TopicRouteData>(std::move(topic_partitions), invocation_context->response.DebugString());
     cb(true, ptr);
   };
-  invocation_context->callback_ = callback;
+  invocation_context->callback = callback;
   client->asyncQueryRoute(request, invocation_context);
 }
 
@@ -699,105 +639,106 @@ void ClientInstance::queryAssignment(const std::string& target,
   SPDLOG_DEBUG("Prepare to send query assignment request to broker[address={}]", target);
   std::shared_ptr<RpcClient> client = getRpcClient(target);
 
-  auto callback = [&, target, cb](const grpc::Status& status, const grpc::ClientContext& context,
-                                  const QueryAssignmentResponse& response) {
-    if (!status.ok()) {
-      SPDLOG_WARN("Failed to query assignment. Reason: {}", status.error_message());
-      cb(false, response);
+  auto callback = [&, cb](const InvocationContext<QueryAssignmentResponse>* invocation_context) {
+    if (!invocation_context->status.ok()) {
+      SPDLOG_WARN("Failed to query assignment. Reason: {}", invocation_context->status.error_message());
+      cb(false, invocation_context->response);
       return;
     }
 
-    if (google::rpc::Code::OK != response.common().status().code()) {
-      SPDLOG_WARN("Server[host={}] failed to process query assignment request. Reason: {}", target,
-                  response.common().DebugString());
-      cb(false, response);
+    if (google::rpc::Code::OK != invocation_context->response.common().status().code()) {
+      SPDLOG_WARN("Server[host={}] failed to process query assignment request. Reason: {}",
+                  invocation_context->remote_address, invocation_context->response.common().DebugString());
+      cb(false, invocation_context->response);
       return;
     }
 
-    cb(true, response);
+    cb(true, invocation_context->response);
   };
 
   auto invocation_context = new InvocationContext<QueryAssignmentResponse>();
+  invocation_context->remote_address = target;
   for (const auto& item : metadata) {
-    invocation_context->context_.AddMetadata(item.first, item.second);
+    invocation_context->context.AddMetadata(item.first, item.second);
   }
-  invocation_context->context_.set_deadline(std::chrono::system_clock::now() + timeout);
-  invocation_context->callback_ = callback;
+  invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
+  invocation_context->callback = callback;
   client->asyncQueryAssignment(request, invocation_context);
 }
 
-void ClientInstance::receiveMessage(absl::string_view target,
+void ClientInstance::receiveMessage(const std::string& target_host,
                                     const absl::flat_hash_map<std::string, std::string>& metadata,
                                     const ReceiveMessageRequest& request, std::chrono::milliseconds timeout,
                                     std::shared_ptr<ReceiveMessageCallback>& cb) {
-  std::string target_host(target.data(), target.length());
   SPDLOG_DEBUG("Prepare to pop message from {} asynchronously. Request: {}", target_host, request.DebugString());
   RpcClientSharedPtr client = getRpcClient(target_host);
 
   auto invocation_context = new InvocationContext<ReceiveMessageResponse>();
-
+  invocation_context->remote_address = target_host;
   if (!metadata.empty()) {
     for (const auto& item : metadata) {
-      invocation_context->context_.AddMetadata(item.first, item.second);
+      invocation_context->context.AddMetadata(item.first, item.second);
     }
   }
-  invocation_context->context_.set_deadline(std::chrono::system_clock::now() + timeout);
+  invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
 
-  auto callback = [this, cb, target_host](const grpc::Status& status, const grpc::ClientContext& client_context,
-                                          const ReceiveMessageResponse& response) {
-    if (status.ok()) {
-      SPDLOG_DEBUG("Received pop response through gRPC from brokerAddress={}", target_host);
+  auto callback = [this, cb](const InvocationContext<ReceiveMessageResponse>* invocation_context) {
+    if (invocation_context->status.ok()) {
+      SPDLOG_DEBUG("Received pop response through gRPC from brokerAddress={}", invocation_context->remote_address);
       ReceiveMessageResult receive_result;
-      this->processPopResult(client_context, response, receive_result, target_host);
+      this->processPopResult(invocation_context->context, invocation_context->response, receive_result,
+                             invocation_context->remote_address);
       cb->onSuccess(receive_result);
     } else {
-      SPDLOG_WARN("Failed to pop messages through GRPC from {}, gRPC code: {}, gRPC error message: {}", target_host,
-                  status.error_code(), status.error_message());
-      MQException e(status.error_message(), FAILED_TO_POP_MESSAGE_ASYNCHRONOUSLY, __FILE__, __LINE__);
+      SPDLOG_WARN("Failed to pop messages through GRPC from {}, gRPC code: {}, gRPC error message: {}",
+                  invocation_context->remote_address, invocation_context->status.error_code(),
+                  invocation_context->status.error_message());
+      MQException e(invocation_context->status.error_message(), FAILED_TO_POP_MESSAGE_ASYNCHRONOUSLY, __FILE__,
+                    __LINE__);
       cb->onException(e);
     }
   };
-  invocation_context->callback_ = callback;
+  invocation_context->callback = callback;
   client->asyncReceive(request, invocation_context);
 }
 
-void ClientInstance::pullMessage(absl::string_view target, absl::flat_hash_map<std::string, std::string>& metadata,
-                                 const PullMessageRequest& request,
-                                 std::shared_ptr<ReceiveMessageCallback>& receive_callback) {
-  std::string target_host(target.data(), target.length());
+void ClientInstance::pullMessage(const std::string& target_host,
+                                 absl::flat_hash_map<std::string, std::string>& metadata,
+                                 const PullMessageRequest& request, std::shared_ptr<ReceiveMessageCallback>& cb) {
   SPDLOG_DEBUG("Prepare to pull message from {} asynchronously", target_host);
   RpcClientSharedPtr client = getRpcClient(target_host);
   auto invocation_context = new InvocationContext<PullMessageResponse>();
+  invocation_context->remote_address = target_host;
   if (!metadata.empty()) {
     for (const auto& entry : metadata) {
-      invocation_context->context_.AddMetadata(entry.first, entry.second);
+      invocation_context->context.AddMetadata(entry.first, entry.second);
     }
   }
 
-  auto callback = [this, receive_callback, target_host](const grpc::Status& status,
-                                                        const grpc::ClientContext& client_context,
-                                                        const PullMessageResponse& response) {
-    if (status.ok()) {
-      SPDLOG_DEBUG("Received message response through gRPC from brokerAddress={}", target_host);
+  auto callback = [this, cb](const InvocationContext<PullMessageResponse>* invocation_context) {
+    if (invocation_context->status.ok()) {
+      SPDLOG_DEBUG("Received message response through gRPC from brokerAddress={}", invocation_context->remote_address);
       ReceiveMessageResult receive_result;
-      this->processPullResult(client_context, response, receive_result, target_host);
-      receive_callback->onSuccess(receive_result);
+      this->processPullResult(invocation_context->context, invocation_context->response, receive_result,
+                              invocation_context->remote_address);
+      cb->onSuccess(receive_result);
     } else {
-      SPDLOG_WARN("Failed to pull messages through GRPC from {}, gRPC code: {}, gRPC error message: {}", target_host,
-                  status.error_code(), status.error_message());
-      MQException e(status.error_message(), FAILED_TO_POP_MESSAGE_ASYNCHRONOUSLY, __FILE__, __LINE__);
-      receive_callback->onException(e);
+      SPDLOG_WARN("Failed to pull messages through GRPC from {}, gRPC code: {}, gRPC error message: {}",
+                  invocation_context->remote_address, invocation_context->status.error_code(),
+                  invocation_context->status.error_message());
+      MQException e(invocation_context->status.error_message(), FAILED_TO_POP_MESSAGE_ASYNCHRONOUSLY, __FILE__,
+                    __LINE__);
+      cb->onException(e);
     }
   };
-  invocation_context->callback_ = callback;
+  invocation_context->callback = callback;
   client->asyncPull(request, invocation_context);
 }
 
 void ClientInstance::processPopResult(const grpc::ClientContext& client_context, const ReceiveMessageResponse& response,
-                                      ReceiveMessageResult& result, absl::string_view target_host) {
+                                      ReceiveMessageResult& result, const std::string& target_host) {
   // process response to result
   ReceiveMessageStatus status;
-  std::string broker_address = std::string(target_host.data(), target_host.length());
   switch (response.common().status().code()) {
   case google::rpc::Code::OK:
     status = ReceiveMessageStatus::OK;
@@ -805,7 +746,7 @@ void ClientInstance::processPopResult(const grpc::ClientContext& client_context,
   case google::rpc::Code::RESOURCE_EXHAUSTED:
     status = ReceiveMessageStatus::RESOURCE_EXHAUSTED;
     SPDLOG_WARN("Too many pop requests in broker. Long polling is full in the broker side. BrokerAddress={}",
-                broker_address);
+                target_host);
     break;
   case google::rpc::Code::DEADLINE_EXCEEDED:
     status = ReceiveMessageStatus::DEADLINE_EXCEEDED;
@@ -814,28 +755,20 @@ void ClientInstance::processPopResult(const grpc::ClientContext& client_context,
     status = ReceiveMessageStatus::NOT_FOUND;
     break;
   default:
-    SPDLOG_WARN("Pop response indicates server-side error. BrokerAddress={}, Reason={}", broker_address,
+    SPDLOG_WARN("Pop response indicates server-side error. BrokerAddress={}, Reason={}", target_host,
                 response.common().DebugString());
     status = ReceiveMessageStatus::INTERNAL;
     break;
   }
 
-  const auto& metadata = client_context.GetServerInitialMetadata();
-  auto search = metadata.find(Metadata::REQUEST_ID_KEY);
-  if (metadata.end() == search) {
-    SPDLOG_WARN("Expected header {} is missing", Metadata::AUTHORIZATION);
-  } else {
-    result.requestId(std::string(search->second.data(), search->second.length()));
-  }
-
-  result.sourceHost(broker_address);
+  result.sourceHost(target_host);
 
   std::vector<MQMessageExt> msg_found_list;
   if (ReceiveMessageStatus::OK == status) {
     for (auto& item : response.messages()) {
       MQMessageExt message_ext;
       if (wrapMessage(item, message_ext)) {
-        MessageAccessor::setTargetEndpoint(message_ext, broker_address);
+        MessageAccessor::setTargetEndpoint(message_ext, target_host);
         msg_found_list.emplace_back(message_ext);
       }
     }
@@ -856,12 +789,12 @@ void ClientInstance::processPopResult(const grpc::ClientContext& client_context,
 }
 
 void ClientInstance::processPullResult(const grpc::ClientContext& client_context, const PullMessageResponse& response,
-                                       ReceiveMessageResult& result, absl::string_view target_host) {
+                                       ReceiveMessageResult& result, const std::string& target_host) {
   if (google::rpc::Code::OK != response.common().status().code()) {
     result.status_ = ReceiveMessageStatus::INTERNAL;
     return;
   }
-  result.sourceHost(std::string(target_host.data(), target_host.length()));
+  result.sourceHost(target_host);
   switch (response.common().status().code()) {
   case google::rpc::Code::OK: {
     assert(!response.messages().empty());
@@ -1101,32 +1034,34 @@ bool ClientInstance::wrapMessage(const rmq::Message& item, MQMessageExt& message
 
 Scheduler& ClientInstance::getScheduler() { return scheduler_; }
 
+TopAddressing& ClientInstance::topAddressing() { return top_addressing_; }
+
 void ClientInstance::ack(const std::string& target, const absl::flat_hash_map<std::string, std::string>& metadata,
                          const AckMessageRequest& request, std::chrono::milliseconds timeout,
-                         const std::function<void(bool)>& completion_callback) {
+                         const std::function<void(bool)>& cb) {
   std::string target_host(target.data(), target.length());
   SPDLOG_DEBUG("Prepare to ack message against {} asynchronously. AckMessageRequest: {}", target_host,
                request.DebugString());
   RpcClientSharedPtr client = getRpcClient(target_host);
 
   auto invocation_context = new InvocationContext<AckMessageResponse>();
-  invocation_context->context_.set_deadline(std::chrono::system_clock::now() + timeout);
+  invocation_context->remote_address = target_host;
+  invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
 
   for (const auto& item : metadata) {
-    invocation_context->context_.AddMetadata(item.first, item.second);
+    invocation_context->context.AddMetadata(item.first, item.second);
   }
 
   // TODO: Use capture by move and pass-by-value paradigm when C++ 14 is available.
-  auto callback = [target_host, request, completion_callback](const grpc::Status& status,
-                                                              const grpc::ClientContext& client_context,
-                                                              const AckMessageResponse& response) {
-    if (status.ok() && google::rpc::Code::OK == response.common().status().code()) {
-      completion_callback(true);
+  auto callback = [request, cb](const InvocationContext<AckMessageResponse>* invocation_context) {
+    if (invocation_context->status.ok() &&
+        google::rpc::Code::OK == invocation_context->response.common().status().code()) {
+      cb(true);
     } else {
-      completion_callback(false);
+      cb(false);
     }
   };
-  invocation_context->callback_ = callback;
+  invocation_context->callback = callback;
   client->asyncAck(request, invocation_context);
 }
 
@@ -1136,22 +1071,22 @@ void ClientInstance::nack(const std::string& target_host, const absl::flat_hash_
   RpcClientSharedPtr client = getRpcClient(target_host);
   assert(client);
   auto invocation_context = new InvocationContext<NackMessageResponse>();
-
-  invocation_context->context_.set_deadline(std::chrono::system_clock::now() + timeout);
+  invocation_context->remote_address = target_host;
+  invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
 
   for (const auto& item : metadata) {
-    invocation_context->context_.AddMetadata(item.first, item.second);
+    invocation_context->context.AddMetadata(item.first, item.second);
   }
 
-  auto callback = [completion_callback](const grpc::Status& status, const grpc::ClientContext& context,
-                                        const NackMessageResponse& response) {
-    if (status.ok() && google::rpc::Code::OK == response.common().status().code()) {
+  auto callback = [completion_callback](const InvocationContext<NackMessageResponse>* invocation_context) {
+    if (invocation_context->status.ok() &&
+        google::rpc::Code::OK == invocation_context->response.common().status().code()) {
       completion_callback(true);
     } else {
       completion_callback(false);
     }
   };
-  invocation_context->callback_ = callback;
+  invocation_context->callback = callback;
   client->asyncNack(request, invocation_context);
 }
 
@@ -1170,66 +1105,67 @@ void ClientInstance::endTransaction(const std::string& target_host,
   SPDLOG_DEBUG("Prepare to endTransaction. TargetHost={}, Request: {}", target_host.data(), request.DebugString());
 
   auto invocation_context = new InvocationContext<EndTransactionResponse>();
+  invocation_context->remote_address = target_host;
   for (const auto& item : metadata) {
-    invocation_context->context_.AddMetadata(item.first, item.second);
+    invocation_context->context.AddMetadata(item.first, item.second);
   }
 
   // Set RPC deadline.
   auto deadline = std::chrono::system_clock::now() + timeout;
-  invocation_context->context_.set_deadline(deadline);
+  invocation_context->context.set_deadline(deadline);
 
-  auto callback = [target_host, cb](const grpc::Status& status, const grpc::ClientContext& context,
-                                    const EndTransactionResponse& response) {
-    if (!status.ok() || google::rpc::Code::OK != response.common().status().code()) {
+  auto callback = [target_host, cb](const InvocationContext<EndTransactionResponse>* invocation_context) {
+    if (!invocation_context->status.ok() ||
+        google::rpc::Code::OK != invocation_context->response.common().status().code()) {
       SPDLOG_WARN("Failed to endTransaction. TargetHost={}, gRPC statusCode={}, errorMessage={}", target_host.data(),
-                  status.error_message(), status.error_message());
-      cb(false, response);
+                  invocation_context->status.error_message(), invocation_context->status.error_message());
+      cb(false, invocation_context->response);
       return;
     }
 
-    SPDLOG_DEBUG("endTransaction completed OK. Response: {}", response.DebugString());
-    cb(true, response);
+    SPDLOG_DEBUG("endTransaction completed OK. Response: {}", invocation_context->response.DebugString());
+    cb(true, invocation_context->response);
   };
-  invocation_context->callback_ = callback;
+  invocation_context->callback = callback;
   client->asyncEndTransaction(request, invocation_context);
 }
 
 void ClientInstance::multiplexingCall(const std::string& target_host,
                                       const absl::flat_hash_map<std::string, std::string>& metadata,
                                       const MultiplexingRequest& request, std::chrono::milliseconds timeout,
-                                      const std::function<void(bool, const MultiplexingResponse&)>& cb) {
+                                      const std::function<void(const InvocationContext<MultiplexingResponse>*)>& cb) {
   RpcClientSharedPtr client = getRpcClient(target_host);
   if (!client) {
     SPDLOG_WARN("No RPC client for {}", target_host);
-    MultiplexingResponse response;
-    cb(false, response);
+    cb(nullptr);
     return;
   }
 
   SPDLOG_DEBUG("Prepare to endTransaction. TargetHost={}, Request: {}", target_host.data(), request.DebugString());
 
   auto invocation_context = new InvocationContext<MultiplexingResponse>();
+  invocation_context->remote_address = target_host;
   for (const auto& item : metadata) {
-    invocation_context->context_.AddMetadata(item.first, item.second);
+    invocation_context->context.AddMetadata(item.first, item.second);
   }
 
   // Set RPC deadline.
   auto deadline = std::chrono::system_clock::now() + timeout;
-  invocation_context->context_.set_deadline(deadline);
+  invocation_context->context.set_deadline(deadline);
 
-  auto callback = [target_host, cb](const grpc::Status& status, const grpc::ClientContext& context,
-                                    const MultiplexingResponse& response) {
-    if (!status.ok()) {
+  auto callback = [cb](const InvocationContext<MultiplexingResponse>* invocation_context) {
+    if (!invocation_context->status.ok()) {
       SPDLOG_WARN("Failed to apply multiplexing-call. TargetHost={}, gRPC statusCode={}, errorMessage={}",
-                  target_host.data(), status.error_message(), status.error_message());
-      cb(false, response);
+                  invocation_context->remote_address, invocation_context->status.error_message(),
+                  invocation_context->status.error_message());
+      cb(invocation_context);
       return;
     }
 
-    SPDLOG_DEBUG("endTransaction completed OK. Response: {}", response.DebugString());
-    cb(true, response);
+    SPDLOG_DEBUG("endTransaction completed OK. Response: {}", invocation_context->response.DebugString());
+    cb(invocation_context);
   };
-  invocation_context->callback_ = callback;
+  invocation_context->callback = callback;
   client->asyncMultiplexingCall(request, invocation_context);
 }
 
@@ -1245,23 +1181,23 @@ void ClientInstance::pullMessage(const std::string& target_host,
   }
 
   auto invocation_context = new InvocationContext<PullMessageResponse>();
-  invocation_context->context_.set_deadline(std::chrono::system_clock::now() + timeout);
+  invocation_context->remote_address = target_host;
+  invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
   for (const auto& item : metadata) {
-    invocation_context->context_.AddMetadata(item.first, item.second);
+    invocation_context->context.AddMetadata(item.first, item.second);
   }
 
-  auto callback = [target_host, cb](const grpc::Status& status, const grpc::ClientContext& client_context,
-                                    const PullMessageResponse& response) {
-    if (!status.ok()) {
-      SPDLOG_WARN("Failed to send pullMessage request to {}", target_host);
-      cb(false, response);
+  auto callback = [cb](const InvocationContext<PullMessageResponse>* invocation_context) {
+    if (!invocation_context->status.ok()) {
+      SPDLOG_WARN("Failed to send pullMessage request to {}", invocation_context->remote_address);
+      cb(false, invocation_context->response);
       return;
     }
 
-    SPDLOG_DEBUG("Received pullMessage response from server[host={}]", target_host);
-    cb(true, response);
+    SPDLOG_DEBUG("Received pullMessage response from server[host={}]", invocation_context->remote_address);
+    cb(true, invocation_context->response);
   };
-  invocation_context->callback_ = callback;
+  invocation_context->callback = callback;
 
   client->asyncPull(request, invocation_context);
 }
@@ -1271,5 +1207,9 @@ void ClientInstance::logStats() {
   latency_histogram_.reportAndReset(stats);
   SPDLOG_INFO("{}", stats);
 }
+
+const char* ClientInstance::HEARTBEAT_TASK_NAME = "heartbeat-task";
+const char* ClientInstance::STATS_TASK_NAME = "stats-task";
+const char* ClientInstance::HEALTH_CHECK_TASK_NAME = "health-check-task";
 
 ROCKETMQ_NAMESPACE_END

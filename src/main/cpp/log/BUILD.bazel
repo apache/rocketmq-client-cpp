@@ -1,9 +1,13 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 cc_library(
     name = "log_library",
+    hdrs = [
+        "include/LoggerImpl.h",
+    ],
     srcs = [
         "Logger.cpp",
     ],
+    strip_include_prefix = "//src/main/cpp/log/include",
     deps = [
         "//api:rocketmq_interface",
         "@com_github_gabime_spdlog//:spdlog",

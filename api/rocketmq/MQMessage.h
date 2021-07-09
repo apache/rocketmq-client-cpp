@@ -47,7 +47,7 @@ public:
   void setBody(const char* data, int len);
   void setBody(const std::string& body);
 
-  int32_t bodyLength() const;
+  uint32_t bodyLength() const;
 
   const std::map<std::string, std::string>& getProperties() const;
   void setProperties(const std::map<std::string, std::string>& properties);

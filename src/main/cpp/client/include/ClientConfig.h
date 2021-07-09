@@ -39,6 +39,10 @@ public:
   absl::Duration getIoTimeout() const;
   void setIoTimeout(absl::Duration timeout);
 
+  absl::Duration getLongPollingTimeout() const { return long_polling_timeout_; }
+
+  void setLongPollingTimeout(absl::Duration timeout) { long_polling_timeout_ = timeout; }
+
   bool isTracingEnabled() { return enable_tracing_.load(); }
   void enableTracing(bool enabled) { enable_tracing_.store(enabled); }
 
@@ -86,6 +90,9 @@ protected:
   CredentialsProviderPtr credentials_provider_;
 
   absl::Duration io_timeout_;
+
+  absl::Duration long_polling_timeout_;
+
   std::atomic<bool> enable_tracing_{false};
 };
 

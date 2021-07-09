@@ -252,9 +252,6 @@ message SystemAttribute {
 
     // Trace context.
     string trace_context = 20;
-
-    // Correlated transaction
-    string transaction_id = 21;
 }
 
 message Message {

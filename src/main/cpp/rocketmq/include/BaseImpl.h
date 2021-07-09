@@ -1,4 +1,7 @@
 #include "ClientInstance.h"
+#include "ClientResourceBundle.h"
+#include "InvocationContext.h"
+#include "rocketmq/MQMessageExt.h"
 #include "rocketmq/State.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -11,19 +14,31 @@ public:
 
   virtual void start();
 
+  virtual void shutdown();
+
   void getRouteFor(const std::string& topic, const std::function<void(TopicRouteDataPtr)>& cb)
       LOCKS_EXCLUDED(inflight_route_requests_mtx_, topic_route_table_mtx_);
 
-  void activeHosts(absl::flat_hash_set<std::string>& hosts) override LOCKS_EXCLUDED(topic_route_table_mtx_);
+  /**
+   * Gather collection of endpoints that are reachable from latest topic route table.
+   *
+   * @param endpoints
+   */
+  void endpointsInUse(absl::flat_hash_set<std::string>& endpoints) override LOCKS_EXCLUDED(topic_route_table_mtx_);
 
   void setNameServerList(std::vector<std::string> name_server_list) {
     absl::MutexLock lk(&name_server_list_mtx_);
     name_server_list_ = std::move(name_server_list);
   }
 
-  virtual void prepareHeartbeatData(HeartbeatRequest& request) = 0;
-
   void heartbeat() override;
+
+  bool active() override {
+    State state = state_.load(std::memory_order_relaxed);
+    return State::STARTING == state || State::STARTED == state;
+  }
+
+  void healthCheck() LOCKS_EXCLUDED(isolated_endpoints_mtx_) override;
 
 protected:
   ClientInstancePtr client_instance_;
@@ -35,22 +50,21 @@ protected:
   absl::flat_hash_map<std::string, std::vector<std::function<void(const TopicRouteDataPtr&)>>>
       inflight_route_requests_ GUARDED_BY(inflight_route_requests_mtx_);
   absl::Mutex inflight_route_requests_mtx_ ACQUIRED_BEFORE(topic_route_table_mtx_); // Protects inflight_route_requests_
-
-  std::function<void(void)> topic_route_info_updater_;
-  FunctionalSharePtr topic_route_info_updater_function_;
+  static const char* UPDATE_ROUTE_TASK_NAME;
+  std::uintptr_t route_update_handle_{0};
 
   // Name server list management
   std::vector<std::string> name_server_list_ GUARDED_BY(name_server_list_mtx_);
   absl::Mutex name_server_list_mtx_; // protects name_server_list_
 
-  std::function<void(void)> name_server_list_updater_;
-  FunctionalSharePtr name_server_list_updater_function_;
+  static const char* UPDATE_NAME_SERVER_LIST_TASK_NAME;
+  std::uintptr_t name_server_update_handle_{0};
 
-  std::string unit_name_;
-  TopAddressingPtr top_addressing_;
+  absl::flat_hash_map<std::string, absl::Time> multiplexing_requests_;
+  absl::Mutex multiplexing_requests_mtx_;
 
-  std::vector<std::promise<std::vector<std::string>>> name_server_promise_list_;
-  absl::Mutex name_server_promise_list_mtx_ ACQUIRED_AFTER(name_server_list_mtx_);
+  absl::flat_hash_set<std::string> isolated_endpoints_ GUARDED_BY(isolated_endpoints_mtx_);
+  absl::Mutex isolated_endpoints_mtx_;
 
   void debugNameServerChanges(const std::vector<std::string>& list) LOCKS_EXCLUDED(name_server_list_mtx_);
 
@@ -59,6 +73,27 @@ protected:
   bool selectNameServer(std::string& selected, bool change = false) LOCKS_EXCLUDED(name_server_list_mtx_);
 
   void updateRouteInfo() LOCKS_EXCLUDED(topic_route_table_mtx_);
+
+  /**
+   * Sub-class is supposed to inherit from std::enable_shared_from_this.
+   */
+  virtual std::shared_ptr<BaseImpl> self() = 0;
+
+  virtual void prepareHeartbeatData(HeartbeatRequest& request) = 0;
+
+  virtual std::string verifyMessageConsumption(const MQMessageExt& message) { return "Unsupported"; }
+
+  virtual void resolveOrphanedTransactionalMessage(const std::string& transaction_id, const MQMessageExt& message) {}
+
+  /**
+   * Concrete publisher/subscriber client is expected to fill other type-specific resources.
+   */
+  virtual ClientResourceBundle resourceBundle() {
+    ClientResourceBundle resource_bundle;
+    resource_bundle.client_id = clientId();
+    resource_bundle.arn = arn_;
+    return resource_bundle;
+  }
 
 private:
   /**
@@ -86,6 +121,15 @@ private:
    */
   void updateRouteCache(const std::string& topic, const TopicRouteDataPtr& route)
       LOCKS_EXCLUDED(topic_route_table_mtx_);
+
+  void multiplexing(const std::string& target, const MultiplexingRequest& request);
+
+  void onMultiplexingResponse(const InvocationContext<MultiplexingResponse>* ctx);
+
+  void onHealthCheckResponse(const std::string& endpoint, const InvocationContext<HealthCheckResponse>* ctx)
+      LOCKS_EXCLUDED(isolated_endpoints_mtx_);
+
+  void fillGenericPollingRequest(MultiplexingRequest& request);
 };
 
 ROCKETMQ_NAMESPACE_END

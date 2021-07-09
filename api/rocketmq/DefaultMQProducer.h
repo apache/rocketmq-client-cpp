@@ -4,11 +4,12 @@
 #include <vector>
 
 #include "AsyncCallback.h"
+#include "CredentialsProvider.h"
+#include "LocalTransactionStateChecker.h"
 #include "Logger.h"
 #include "MQMessage.h"
 #include "MQSelector.h"
 #include "SendResult.h"
-#include "CredentialsProvider.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -70,6 +71,8 @@ public:
   void sendOneway(const MQMessage& message, bool select_active_broker = false);
   void sendOneway(const MQMessage& message, const MQMessageQueue& message_queue);
   void sendOneway(const MQMessage& message, MessageQueueSelector* selector, void* arg);
+
+  void setLocalTransactionStateChecker(LocalTransactionStateCheckerPtr checker);
 
   void setNamesrvAddr(const std::string& name_server_address_list);
 

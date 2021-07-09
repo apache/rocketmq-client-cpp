@@ -7,7 +7,6 @@ target_sources(client_obj
             ClientManager.cpp
             LogInterceptorFactory.cpp
             LogInterceptor.cpp
-            Metadata.cpp
             TopicAssignmentInfo.cpp
             RpcClientImpl.cpp
             Signature.cpp

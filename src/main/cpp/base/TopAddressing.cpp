@@ -1,26 +1,26 @@
 #include "TopAddressing.h"
 
+#include "absl/memory/memory.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
 #include <spdlog/spdlog.h>
 #include <utility>
 
-#include "HttpClient.h"
-
 ROCKETMQ_NAMESPACE_BEGIN
+TopAddressing::TopAddressing() : TopAddressing("jmenv.tbsite.net", 8080, "/rocketmq/nsaddr") {}
 
 TopAddressing::TopAddressing(std::string host, int port, std::string path)
-    : host_(std::move(host)), port_(port), path_(std::move(path)) {}
+    : host_(std::move(host)), port_(port), path_(std::move(path)), http_client_(absl::make_unique<GHttpClient>()) {
+  http_client_->start();
+}
 
-bool TopAddressing::fetchNameServerAddresses(std::vector<std::string>& list) {
+TopAddressing::~TopAddressing() { http_client_->shutdown(); }
+
+void TopAddressing::fetchNameServerAddresses(const std::function<void(bool, const std::vector<std::string>&)>& cb) {
   SPDLOG_DEBUG("Prepare to send HTTP request, timeout=3s");
   std::string base(fmt::format("http://{}:{}", host_, port_));
   // Append host info if necessary.
   std::string query_string(path_);
-
-  if (!unit_name_.empty()) {
-    query_string.append("-").append(unit_name_);
-  }
 
   if (absl::StrContains(query_string, "?")) {
     query_string.append("&");
@@ -34,25 +34,18 @@ bool TopAddressing::fetchNameServerAddresses(std::vector<std::string>& list) {
     query_string.append("nofix=1");
   }
 
-  std::string request(fmt::format("{}{}", base, query_string));
-  std::string response;
-
-  HttpClient http_client;
-  if (!http_client) {
-    SPDLOG_WARN("Failed to create CURL session. OS probably runs out of resources. Check out memory and FD usage");
-    return false;
-  }
-
-  if (http_client.get(request, response, absl::Seconds(3))) {
-    SPDLOG_INFO("Received name server list: {}", response);
-    std::vector<std::string> splits = absl::StrSplit(response, ";");
-    for (const auto& item : splits) {
-      list.push_back(item);
+  auto callback = [cb](int code, const absl::flat_hash_map<std::string, std::string>& metadata,
+                       const std::string& body) {
+    SPDLOG_DEBUG("Receive HTTP response. Code: {}, body: {}", code, body);
+    if (GHttpClient::STATUS_OK == code) {
+      cb(true, absl::StrSplit(body, ';'));
+    } else {
+      std::vector<std::string> name_server_list;
+      cb(false, name_server_list);
     }
-    return true;
-  }
+  };
 
-  return false;
+  http_client_->get(HttpProtocol::HTTP, host_, port_, query_string, callback);
 }
 
 ROCKETMQ_NAMESPACE_END

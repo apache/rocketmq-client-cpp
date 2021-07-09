@@ -1,32 +1,37 @@
 #pragma once
 
-#include "RpcClientMock.h"
 #include "ClientManager.h"
+#include "RpcClientMock.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include <functional>
 #include <grpcpp/impl/grpc_library.h>
 #include <memory>
+#include "grpc/grpc.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 class MQClientTest : public testing::Test {
 public:
+  MQClientTest()  = default;
 
-  MQClientTest() {
+  void SetUp() override {
     name_server_list_.emplace_back(name_server_address_);
     client_instance_ = std::make_shared<ClientInstance>(arn_);
     rpc_client_ns_ = std::make_shared<testing::NiceMock<RpcClientMock>>();
-
-    ON_CALL(*rpc_client_ns_, needHeartbeat).WillByDefault(testing::Return(false));
-
+    ON_CALL(*rpc_client_ns_, needHeartbeat()).WillByDefault(testing::Return(false));
     ON_CALL(*rpc_client_ns_, ok()).WillByDefault(testing::Invoke([this]() { return client_ok_; }));
-
     ON_CALL(*rpc_client_ns_, asyncQueryRoute(testing::_, testing::_))
         .WillByDefault(testing::Invoke(
             std::bind(&MQClientTest::mockQueryRoute, this, std::placeholders::_1, std::placeholders::_2)));
     client_instance_->addRpcClient(name_server_address_, rpc_client_ns_);
     ClientManager::getInstance().addClientInstance(arn_, client_instance_);
+  }
+
+  void TearDown() override {
+    rpc_client_ns_.reset();
+    client_instance_->cleanRpcClients();
+    client_instance_.reset();
   }
 
 protected:
@@ -47,8 +52,8 @@ protected:
 private:
   void mockQueryRoute(const QueryRouteRequest& request,
                       InvocationContext<QueryRouteResponse>* invocation_context) const {
-    invocation_context->response_.mutable_common()->mutable_status()->set_code(google::rpc::Code::OK);
-    auto partitions = invocation_context->response_.mutable_partitions();
+    invocation_context->response.mutable_common()->mutable_status()->set_code(google::rpc::Code::OK);
+    auto partitions = invocation_context->response.mutable_partitions();
     for (int i = 0; i < partition_num_; i++) {
       auto partition = new rmq::Partition();
       partition->set_id(i % avg_partition_per_host_);

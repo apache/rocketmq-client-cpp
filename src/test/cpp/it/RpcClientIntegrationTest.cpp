@@ -151,9 +151,9 @@ TEST_F(RpcClientIntegrationTest, testPop) {
     }
   };
 
-  invocation_context->callback_ = callback;
+  invocation_context->callback = callback;
   auto deadline = std::chrono::system_clock::now() + std::chrono::seconds(10);
-  invocation_context->context_.set_deadline(deadline);
+  invocation_context->context.set_deadline(deadline);
 
   rpcClient.asyncReceive(receive_message_request, invocation_context);
   void* tag;
@@ -207,7 +207,7 @@ TEST_F(RpcClientIntegrationTest, testPopAndAck) {
       google::rpc::Status ack_status;
       std::atomic_bool ack_done(false);
 
-      invocation_context.callback_ = [&](const grpc::Status& status, const grpc::ClientContext& client_context,
+      invocation_context.callback = [&](const grpc::Status& status, const grpc::ClientContext& client_context,
                                          const AckMessageResponse& response) {
         ack_rpc_status = status;
         ack_status = response.common().status();
@@ -231,9 +231,9 @@ TEST_F(RpcClientIntegrationTest, testPopAndAck) {
     }
   };
 
-  invocation_context->callback_ = callback;
+  invocation_context->callback = callback;
   auto deadline = std::chrono::system_clock::now() + std::chrono::seconds(10);
-  invocation_context->context_.set_deadline(deadline);
+  invocation_context->context.set_deadline(deadline);
 
   rpcClient.asyncReceive(receive_message_request, invocation_context);
   void* tag;

@@ -183,7 +183,7 @@ message ClientResourceBundle {
 }
 
 message GenericPollingRequest {
-  repeated ClientResourceBundle bundles = 1;
+ ClientResourceBundle client_resource_bundle = 1;
 }
 
 message GenericPollingResponse {
@@ -207,7 +207,8 @@ message VerifyMessageConsumptionResponse {
 }
 
 message ResolveOrphanedTransactionRequest {
-  repeated Message orphaned_transactional_messages = 1;
+  Message orphaned_transactional_message = 1;
+  string transaction_id = 2;
 }
 
 message MultiplexingRequest {

@@ -2,9 +2,9 @@
 #include "DefaultMQPushConsumerImpl.h"
 #include "LoggerImpl.h"
 #include "Protocol.h"
-#include "ThreadPool.h"
 #include "TracingUtility.h"
 #include "absl/strings/str_join.h"
+#include "absl/memory/memory.h"
 #include <limits>
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -12,10 +12,8 @@ ROCKETMQ_NAMESPACE_BEGIN
 ConsumeMessageConcurrentlyService::ConsumeMessageConcurrentlyService(std::weak_ptr<DefaultMQPushConsumerImpl> consumer,
                                                                      int thread_count,
                                                                      MQMessageListener* message_listener_ptr)
-    : thread_count_(thread_count), message_listener_ptr_(message_listener_ptr), consumer_weak_ptr_(std::move(consumer)),
-      state_(State::CREATED) {
-  pool_ = std::make_shared<ThreadPool>(thread_count_);
-}
+    : thread_count_(thread_count), message_listener_ptr_(message_listener_ptr), state_(State::CREATED),
+      pool_(absl::make_unique<grpc::DynamicThreadPool>(thread_count_)), consumer_weak_ptr_(std::move(consumer)) {}
 
 void ConsumeMessageConcurrentlyService::start() {
   // Loop each process queue
@@ -110,10 +108,10 @@ void ConsumeMessageConcurrentlyService::submitConsumeTask(const ProcessQueueWeak
     }
 
     // submit batch message
-    std::function<void(const ProcessQueueWeakPtr, const std::vector<MQMessageExt>&)> consumer_task =
-        std::bind(&ConsumeMessageConcurrentlyService::consumeTask, this, std::placeholders::_1, std::placeholders::_2);
+    std::function<void(void)> consume_task =
+        std::bind(&ConsumeMessageConcurrentlyService::consumeTask, this, process_queue_ptr, messages);
     SPDLOG_DEBUG("Submit consumer task to thread pool with message-batch-size={}", messages.size());
-    pool_->enqueue(consumer_task, process_queue, messages);
+    pool_->Add(consume_task);
   }
 }
 

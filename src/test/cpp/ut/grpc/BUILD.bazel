@@ -1,0 +1,24 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+cc_test(
+    name = "grpc_thread_pool_test",
+    srcs = [
+        "GrpcThreadPoolTest.cpp",
+    ],
+    deps = [
+        "//api:rocketmq_interface",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "grpc_timer_test",
+    srcs = [
+        "GrpcTimer.cpp",
+    ],
+    deps = [
+        "//api:rocketmq_interface",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

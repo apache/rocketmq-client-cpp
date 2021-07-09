@@ -12,7 +12,6 @@ ROCKETMQ_NAMESPACE_BEGIN
 AsyncReceiveMessageCallback::AsyncReceiveMessageCallback(ProcessQueueWeakPtr process_queue)
     : process_queue_(std::move(process_queue)) {
   receive_message_later_ = std::bind(&AsyncReceiveMessageCallback::checkThrottleThenReceive, this);
-  receive_message_later_functional_ = std::make_shared<Functional>(&receive_message_later_);
 }
 
 void AsyncReceiveMessageCallback::onSuccess(ReceiveMessageResult& result) {
@@ -20,11 +19,6 @@ void AsyncReceiveMessageCallback::onSuccess(ReceiveMessageResult& result) {
   if (!process_queue_shared_ptr) {
     SPDLOG_WARN("Process queue has been released. Drop PopResult: {}", result.toString());
     return;
-  }
-
-  int64_t term_id = 0;
-  if (!result.termId(term_id)) {
-    SPDLOG_WARN("Failed to decode Term-Id from Request-Id: {}", result.requestId());
   }
 
   std::shared_ptr<DefaultMQPushConsumerImpl> impl = process_queue_shared_ptr->getCallbackOwner().lock();
@@ -42,55 +36,40 @@ void AsyncReceiveMessageCallback::onSuccess(ReceiveMessageResult& result) {
     if (process_queue_shared_ptr->consumeType() == ConsumeMessageType::PULL) {
       process_queue_shared_ptr->nextOffset(result.next_offset_);
     }
-
-    if (process_queue_shared_ptr->leaseNextTerm(term_id, result.sourceHost())) {
-      checkThrottleThenReceive();
-    }
+    checkThrottleThenReceive();
     break;
   case ReceiveMessageStatus::DATA_CORRUPTED:
     if (process_queue_shared_ptr->consumeType() == POP) {
       process_queue_shared_ptr->cacheMessages(result.messages_);
       impl->getConsumeMessageService()->dispatch();
     }
-    if (process_queue_shared_ptr->leaseNextTerm(term_id, result.sourceHost())) {
-      checkThrottleThenReceive();
-    }
+    checkThrottleThenReceive();
     break;
 
   case ReceiveMessageStatus::OUT_OF_RANGE:
     assert(ConsumeMessageType::PULL == process_queue_shared_ptr->consumeType());
     process_queue_shared_ptr->nextOffset(result.next_offset_);
-    if (process_queue_shared_ptr->leaseNextTerm(term_id, result.sourceHost())) {
-      checkThrottleThenReceive();
-    }
+    checkThrottleThenReceive();
     break;
   case ReceiveMessageStatus::DEADLINE_EXCEEDED:
     SPDLOG_DEBUG("Receive messages from broker[host={}] returns with status=DEADLINE_EXCEEDED, queue={}",
                  result.sourceHost(), process_queue_shared_ptr->simpleName());
-    if (process_queue_shared_ptr->leaseNextTerm(term_id, result.sourceHost())) {
-      checkThrottleThenReceive();
-    }
+    checkThrottleThenReceive();
     break;
   case ReceiveMessageStatus::INTERNAL:
     SPDLOG_DEBUG("Receive messages from broker[host={}] returns with status=UNKNOWN, queue={}", result.sourceHost(),
                  process_queue_shared_ptr->simpleName());
-    if (process_queue_shared_ptr->leaseNextTerm(term_id, result.sourceHost())) {
-      receiveMessageLater();
-    }
+    receiveMessageLater();
     break;
   case ReceiveMessageStatus::RESOURCE_EXHAUSTED:
     SPDLOG_DEBUG("Receive messages from broker[host={}] returns with status=RESOURCE_EXHAUSTED, queue={}",
                  result.sourceHost(), process_queue_shared_ptr->simpleName());
-    if (process_queue_shared_ptr->leaseNextTerm(term_id, result.sourceHost())) {
-      receiveMessageLater();
-    }
+    receiveMessageLater();
     break;
   case ReceiveMessageStatus::NOT_FOUND:
     SPDLOG_DEBUG("Receive messages from broker[host={}] returns with status=NOT_FOUND, queue={}", result.sourceHost(),
                  process_queue_shared_ptr->simpleName());
-    if (process_queue_shared_ptr->leaseNextTerm(term_id, result.sourceHost())) {
-      receiveMessageLater();
-    }
+    receiveMessageLater();
     break;
   default:
     SPDLOG_WARN("Unknown receive message status: {} from broker[host={}], queue={}", result.status(),
@@ -99,6 +78,8 @@ void AsyncReceiveMessageCallback::onSuccess(ReceiveMessageResult& result) {
     break;
   }
 }
+
+const char* AsyncReceiveMessageCallback::RECEIVE_LATER_TASK_NAME = "receive-later-task";
 
 void AsyncReceiveMessageCallback::checkThrottleThenReceive() {
   auto process_queue = process_queue_.lock();
@@ -134,13 +115,17 @@ void AsyncReceiveMessageCallback::receiveMessageLater() {
   }
 
   auto client_instance = process_queue->getClientInstance();
-  bool scheduled = client_instance->getScheduler().schedule(receive_message_later_functional_, std::chrono::seconds(1),
-                                                            std::chrono::seconds(0));
-  if (scheduled) {
-    SPDLOG_INFO("Receive message later scheduled");
-  } else {
-    SPDLOG_ERROR("Failed to schedule receive message later");
-  }
+  std::weak_ptr<AsyncReceiveMessageCallback> receive_callback_weak_ptr(shared_from_this());
+
+  auto task = [receive_callback_weak_ptr]() {
+    auto async_receive_ptr = receive_callback_weak_ptr.lock();
+    if (async_receive_ptr) {
+      async_receive_ptr->checkThrottleThenReceive();
+    }
+  };
+
+  client_instance->getScheduler().schedule(task, RECEIVE_LATER_TASK_NAME, std::chrono::seconds(1),
+                                           std::chrono::seconds(0));
 }
 
 void AsyncReceiveMessageCallback::receiveMessageImmediately() {
@@ -168,10 +153,7 @@ const int32_t DefaultMQPushConsumerImpl::DEFAULT_CONSUME_THREAD_POOL_SIZE = 20;
 DefaultMQPushConsumerImpl::DefaultMQPushConsumerImpl(std::string group_name)
     : BaseImpl(std::move(group_name)), consume_thread_pool_size_(DEFAULT_CONSUME_THREAD_POOL_SIZE),
       message_listener_ptr_(nullptr), consume_batch_size_(DEFAULT_CONSUME_MESSAGE_BATCH_SIZE),
-      max_cached_message_number_per_queue_(DEFAULT_CACHED_MESSAGE_COUNT) {
-  scan_assignment_executor_ = std::bind(&DefaultMQPushConsumerImpl::scanAssignments, this);
-  scan_assignment_functional_ = std::make_shared<Functional>(&scan_assignment_executor_);
-}
+      max_cached_message_number_per_queue_(DEFAULT_CACHED_MESSAGE_COUNT) {}
 
 DefaultMQPushConsumerImpl::~DefaultMQPushConsumerImpl() { SPDLOG_DEBUG("DefaultMQPushConsumerImpl is destructed"); }
 
@@ -209,27 +191,28 @@ void DefaultMQPushConsumerImpl::start() {
       }
     }
   }
+  std::weak_ptr<DefaultMQPushConsumerImpl> consumer_weak_ptr(shared_from_this());
+  auto scan_assignment_functor = [consumer_weak_ptr]() {
+    std::shared_ptr<DefaultMQPushConsumerImpl> consumer = consumer_weak_ptr.lock();
+    if (consumer) {
+      consumer->scanAssignments();
+    }
+  };
 
-  bool scheduled;
-  scheduled = client_instance_->getScheduler().schedule(scan_assignment_functional_, std::chrono::seconds(0),
-                                                        std::chrono::seconds(5));
-  if (scheduled) {
-    SPDLOG_INFO("pop message executor scheduled");
-  } else {
-    SPDLOG_ERROR("Failed to schedule pop message executor");
-  }
+  scan_assignment_handle_ = client_instance_->getScheduler().schedule(
+      scan_assignment_functor, SCAN_ASSIGNMENT_TASK_NAME, std::chrono::milliseconds(100), std::chrono::seconds(5));
+
   state_.store(State::STARTED, std::memory_order_relaxed);
   SPDLOG_INFO("DefaultMQPushConsumer started, groupName={}", group_name_);
 }
 
+const char* DefaultMQPushConsumerImpl::SCAN_ASSIGNMENT_TASK_NAME = "scan-assignment-task";
+
 void DefaultMQPushConsumerImpl::shutdown() {
-  state_.store(State::STOPPING, std::memory_order_relaxed);
-  bool cancelled;
-  cancelled = client_instance_->getScheduler().cancel(&scan_assignment_executor_);
-  if (cancelled) {
-    SPDLOG_INFO("pop message executor cancelled OK");
-  } else {
-    SPDLOG_ERROR("Failed to cancel pop message executor");
+
+  if (scan_assignment_handle_) {
+    client_instance_->getScheduler().cancel(scan_assignment_handle_);
+    SPDLOG_DEBUG("Scan assignment periodic task cancelled");
   }
 
   {
@@ -241,8 +224,12 @@ void DefaultMQPushConsumerImpl::shutdown() {
     consume_message_service_->shutdown();
   }
 
-  // Destruct client instance as soon as possible.
-  client_instance_.reset();
+  // Shutdown services started by parent
+  BaseImpl::shutdown();
+  State expected = State::STOPPING;
+  if (state_.compare_exchange_strong(expected, State::STOPPED)) {
+    SPDLOG_INFO("DefaultMQPushConsumerImpl stopped");
+  }
 }
 
 bool DefaultMQPushConsumerImpl::isStopped() const {
@@ -697,6 +684,18 @@ void DefaultMQPushConsumerImpl::prepareHeartbeatData(HeartbeatRequest& request) 
     // Add heartbeat
     request.mutable_heartbeats()->AddAllocated(heartbeat);
   }
+}
+
+ClientResourceBundle DefaultMQPushConsumerImpl::resourceBundle() {
+  ClientResourceBundle resource_bundle = BaseImpl::resourceBundle();
+  {
+    absl::MutexLock lk(&topic_filter_expression_table_mtx_);
+    for (auto& item : topic_filter_expression_table_) {
+      resource_bundle.topics.emplace_back(item.first);
+    }
+  }
+
+  return resource_bundle;
 }
 
 ROCKETMQ_NAMESPACE_END

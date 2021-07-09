@@ -1,13 +1,14 @@
 #include "DefaultMQProducerImpl.h"
-#include "MessageClientIDSetter.h"
-#include "MessageSystemFlag.h"
+#include "MessageAccessor.h"
 #include "Metadata.h"
 #include "MixAll.h"
+#include "UtilAll.h"
 #include "Protocol.h"
-#include "RequestIdGenerator.h"
 #include "SendCallbacks.h"
 #include "SendMessageContext.h"
 #include "Signature.h"
+#include "TransactionImpl.h"
+#include "UniqueIdGenerator.h"
 #include "rocketmq/ErrorCode.h"
 #include "rocketmq/MQClientException.h"
 
@@ -30,7 +31,14 @@ void DefaultMQProducerImpl::start() {
   client_instance_->addClientObserver(shared_from_this());
 }
 
-void DefaultMQProducerImpl::shutdown() { client_instance_.reset(); }
+void DefaultMQProducerImpl::shutdown() {
+  BaseImpl::shutdown();
+
+  State expected = State::STOPPING;
+  if (state_.compare_exchange_strong(expected, State::STOPPED)) {
+    SPDLOG_INFO("DefaultMQProducerImpl stopped");
+  }
+}
 
 bool DefaultMQProducerImpl::isRunning() const { return State::STARTED == state_.load(std::memory_order_relaxed); }
 
@@ -55,7 +63,7 @@ std::string DefaultMQProducerImpl::wrapSendMessageRequest(const MQMessage& messa
   system_attribute->mutable_born_timestamp()->set_seconds(seconds);
   system_attribute->mutable_born_timestamp()->set_nanos(absl::ToInt64Nanoseconds(duration - absl::Seconds(seconds)));
 
-  system_attribute->set_born_host(UtilAll::getHostIPv4());
+  system_attribute->set_born_host(UtilAll::hostname());
 
   system_attribute->mutable_producer_group()->set_arn(arn_);
   system_attribute->mutable_producer_group()->set_name(group_name_);
@@ -86,7 +94,7 @@ std::string DefaultMQProducerImpl::wrapSendMessageRequest(const MQMessage& messa
   }
 
   // Create unique message-id
-  std::string message_id = MessageClientIDSetter::createUniqId();
+  std::string message_id = UniqueIdGenerator::instance().next();
   system_attribute->set_message_id(message_id);
   system_attribute->set_partition_id(message_queue.getQueueId());
 
@@ -214,9 +222,9 @@ void DefaultMQProducerImpl::sendOneway(const MQMessage& message) {
       return;
     }
     MQMessageQueue message_queue;
-    absl::flat_hash_set<std::string> clientsHosts;
-    client_instance_->getAllInactiveRpcClientHost(clientsHosts);
-    ptr->selectOneActiveMessageQueue(clientsHosts, message_queue);
+    absl::flat_hash_set<std::string> isolated;
+    isolatedEndpoints(isolated);
+    ptr->selectOneActiveMessageQueue(isolated, message_queue);
     std::vector<MQMessageQueue> list{message_queue};
     send0(message, onewaySendCallback(), list, 1);
   };
@@ -243,6 +251,10 @@ void DefaultMQProducerImpl::sendOneway(const MQMessage& message, MessageQueueSel
   };
 
   asyncPublishInfo(message.getTopic(), callback);
+}
+
+void DefaultMQProducerImpl::setLocalTransactionStateChecker(LocalTransactionStateCheckerPtr checker) {
+  transaction_state_checker_ = std::move(checker);
 }
 
 void DefaultMQProducerImpl::send0(const MQMessage& message, SendCallback* callback, std::vector<MQMessageQueue> list,
@@ -287,18 +299,18 @@ void DefaultMQProducerImpl::send0(const MQMessage& message, SendCallback* callba
 }
 
 bool DefaultMQProducerImpl::endTransaction0(const std::string& target, const std::string& message_id,
-                                            const std::string& transaction_id, TransactionResolution resolution) {
+                                            const std::string& transaction_id, TransactionState resolution) {
 
   EndTransactionRequest request;
   request.set_message_id(message_id);
   request.set_transaction_id(transaction_id);
   std::string action;
   switch (resolution) {
-  case TransactionResolution::COMMIT:
+  case TransactionState::COMMIT:
     request.set_resolution(rmq::EndTransactionRequest_TransactionResolution_COMMIT);
     action = "commit";
     break;
-  case TransactionResolution::ROLLBACK:
+  case TransactionState::ROLLBACK:
     request.set_resolution(rmq::EndTransactionRequest_TransactionResolution_ROLLBACK);
     action = "rollback";
     break;
@@ -334,8 +346,19 @@ bool DefaultMQProducerImpl::endTransaction0(const std::string& target, const std
   return success;
 }
 
-bool DefaultMQProducerImpl::isClientActive(const std::string& target) {
-  return client_instance_->isRpcClientActive(target);
+void DefaultMQProducerImpl::isolatedEndpoints(absl::flat_hash_set<std::string>& endpoints) {
+  absl::MutexLock lk(&isolated_endpoints_mtx_);
+  endpoints.insert(isolated_endpoints_.begin(), isolated_endpoints_.end());
+}
+
+bool DefaultMQProducerImpl::isEndpointIsolated(const std::string& target) {
+  absl::MutexLock lk(&isolated_endpoints_mtx_);
+  return isolated_endpoints_.contains(target);
+}
+
+void DefaultMQProducerImpl::isolateEndpoint(const std::string& target) {
+  absl::MutexLock lk(&isolated_endpoints_mtx_);
+  isolated_endpoints_.insert(target);
 }
 
 std::unique_ptr<TransactionImpl> DefaultMQProducerImpl::prepare(const MQMessage& message) {
@@ -352,12 +375,12 @@ std::unique_ptr<TransactionImpl> DefaultMQProducerImpl::prepare(const MQMessage&
 
 bool DefaultMQProducerImpl::commit(const std::string& message_id, const std::string& transaction_id,
                                    const std::string& target) {
-  return endTransaction0(target, message_id, transaction_id, TransactionResolution::COMMIT);
+  return endTransaction0(target, message_id, transaction_id, TransactionState::COMMIT);
 }
 
 bool DefaultMQProducerImpl::rollback(const std::string& message_id, const std::string& transaction_id,
                                      const std::string& target) {
-  return endTransaction0(target, message_id, transaction_id, TransactionResolution::ROLLBACK);
+  return endTransaction0(target, message_id, transaction_id, TransactionState::ROLLBACK);
 }
 
 void DefaultMQProducerImpl::asyncPublishInfo(const std::string& topic,
@@ -442,7 +465,7 @@ void DefaultMQProducerImpl::takeMessageQueuesRoundRobin(const TopicPublishInfoPt
                                                         std::vector<MQMessageQueue>& message_queues, int number) {
   assert(publish_info);
   absl::flat_hash_set<std::string> isolated;
-  client_instance_->getAllInactiveRpcClientHost(isolated);
+  isolatedEndpoints(isolated);
   publish_info->takeMessageQueues(isolated, message_queues, number);
 }
 
@@ -476,6 +499,17 @@ void DefaultMQProducerImpl::prepareHeartbeatData(HeartbeatRequest& request) {
   entry.mutable_producer_group()->mutable_group()->set_arn(arn_);
   entry.mutable_producer_group()->mutable_group()->set_name(group_name_);
   request.mutable_heartbeats()->Add(std::move(entry));
+}
+
+void DefaultMQProducerImpl::resolveOrphanedTransactionalMessage(const std::string& transaction_id,
+                                                                const MQMessageExt& message) {
+  if (transaction_state_checker_) {
+    TransactionState state = transaction_state_checker_->checkLocalTransactionState(message);
+    const std::string& target_host = MessageAccessor::targetEndpoint(message);
+    endTransaction0(target_host, message.getMsgId(), transaction_id, state);
+  } else {
+    SPDLOG_WARN("LocalTransactionStateChecker is unexpectedly nullptr");
+  }
 }
 
 ROCKETMQ_NAMESPACE_END

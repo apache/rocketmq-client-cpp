@@ -8,7 +8,6 @@ cc_test(
         "//src/main/cpp/base:base_library",
         "@com_google_googletest//:gtest_main",
     ],
-    linkstatic = True,
 )
 
 cc_test(
@@ -21,7 +20,6 @@ cc_test(
         "//src/main/cpp/base:base_library",
         "@com_google_googletest//:gtest_main",
     ],
-    linkstatic = True,
 )
 
 cc_test(
@@ -33,7 +31,6 @@ cc_test(
         "//src/main/cpp/base:base_library",
         "@com_google_googletest//:gtest_main",
     ],
-    linkstatic = True,
 )
 
 cc_test(
@@ -46,17 +43,27 @@ cc_test(
         "@com_google_googletest//:gtest_main",
         "@zlib//:zlib",
     ],
-    linkstatic = True,
 )
 
 cc_test(
-    name = "ut_request_id_generator",
+    name = "ghttp_client_test",
     srcs = [
-        "RequestIdGeneratorTest.cpp",
+        "GHttpClientTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/base:ghttp_client",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "unique_id_generator_test",
+    srcs = [
+        "UniqueIdGeneratorTest.cpp",
     ],
     deps = [
         "//src/main/cpp/base:base_library",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_googletest//:gtest_main",
     ],
-    linkstatic = True,
 )

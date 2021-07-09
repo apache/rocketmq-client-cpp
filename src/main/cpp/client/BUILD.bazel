@@ -7,6 +7,7 @@ cc_library(
     deps = [
         "//api:rocketmq_interface",
         "//proto:rocketmq_grpc_library",
+        "//src/main/cpp/admin:admin_server_library",
         "//src/main/cpp/base:base_library",
         "//src/main/cpp/scheduler:scheduler_library",
         "//src/main/cpp/concurrent:countdown_latch_library",

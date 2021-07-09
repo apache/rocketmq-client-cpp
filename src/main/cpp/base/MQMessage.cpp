@@ -90,7 +90,7 @@ void MQMessage::setBody(const char* body, int len) {
 
 void MQMessage::setBody(const std::string& body) { impl_->body_ = body; }
 
-int32_t MQMessage::bodyLength() const { return static_cast<int32_t>(impl_->body_.length()); }
+uint32_t MQMessage::bodyLength() const { return impl_->body_.length(); }
 
 const std::map<std::string, std::string>& MQMessage::getProperties() const { return impl_->user_attribute_map_; }
 

@@ -4,6 +4,7 @@
 #include "Metadata.h"
 #include "Protocol.h"
 #include "Signature.h"
+#include <arpa/inet.h>
 #include <chrono>
 #include <memory>
 #include <utility>
@@ -19,7 +20,7 @@ ProcessQueue::ProcessQueue(MQMessageQueue message_queue, FilterExpression filter
     : message_queue_(std::move(message_queue)), filter_expression_(std::move(filter_expression)),
       consume_type_(consume_type), max_message_number_(MixAll::MAX_MESSAGE_NUMBER_PER_BATCH),
       invisible_time_(MixAll::millisecondsOf(MixAll::DEFAULT_INVISIBLE_TIME_)), message_cached_number_(0),
-      max_cache_size_(max_cache_size), simple_name_(message_queue_.simpleName()), term_id_(1L),
+      max_cache_size_(max_cache_size), simple_name_(message_queue_.simpleName()),
       call_back_owner_(std::move(call_back_owner)), client_instance_(std::move(client_instance)) {
   SPDLOG_DEBUG("Created ProcessQueue={}", simpleName());
 }
@@ -113,44 +114,8 @@ bool ProcessQueue::consume(int batch_size, std::vector<MQMessageExt>& messages) 
   return !cached_messages_.empty();
 }
 
-int64_t ProcessQueue::termId() const { return term_id_.load(std::memory_order_relaxed); }
-
-bool ProcessQueue::leaseNextTerm(int64_t current_term_id, absl::string_view source_host) {
-  if (current_term_id) {
-    if (current_term_id < termId()) {
-      return false;
-    }
-    int64_t term_id = current_term_id;
-    bool acquired = term_id_.compare_exchange_strong(term_id, current_term_id + 1, std::memory_order_relaxed);
-    if (acquired) {
-      SPDLOG_DEBUG("{}: Lease acquired. New termId={}", message_queue_.simpleName(), termId());
-    }
-    return acquired;
-  }
-  SPDLOG_WARN("Version of server[host={}] is too old.", source_host.data());
-  return true;
-}
-
-std::string ProcessQueue::requestId() const {
-  int32_t numeric[4];
-  std::string request_id;
-  const std::string& ip = UtilAll::getHostIPv4();
-  struct in_addr addr = {};
-  int ret = inet_aton(ip.data(), &addr);
-
-  // ip is supposed to be legal and parsable.
-  assert(ret == 1);
-  numeric[0] = htonl(addr.s_addr);
-  numeric[1] = getpid();
-  int64_t term_id = term_id_.load(std::memory_order_relaxed);
-  *(reinterpret_cast<int64_t*>(numeric) + 1) = term_id;
-  return MixAll::hex(numeric, sizeof(numeric));
-}
-
 void ProcessQueue::wrapPopMessageRequest(absl::flat_hash_map<std::string, std::string>& metadata,
                                          rmq::ReceiveMessageRequest& request) {
-  metadata.insert({Metadata::REQUEST_ID_KEY, requestId()});
-
   std::shared_ptr<DefaultMQPushConsumerImpl> consumer = call_back_owner_.lock();
   assert(consumer);
   request.set_client_id(consumer->clientId());
@@ -194,7 +159,6 @@ void ProcessQueue::wrapPopMessageRequest(absl::flat_hash_map<std::string, std::s
 
 void ProcessQueue::wrapPullMessageRequest(absl::flat_hash_map<std::string, std::string>& metadata,
                                           rmq::PullMessageRequest& request) {
-  metadata.insert({Metadata::REQUEST_ID_KEY, requestId()});
   std::shared_ptr<DefaultMQPushConsumerImpl> consumer = call_back_owner_.lock();
   assert(consumer);
   request.set_client_id(consumer->clientId());
@@ -205,9 +169,9 @@ void ProcessQueue::wrapPullMessageRequest(absl::flat_hash_map<std::string, std::
   request.mutable_partition()->mutable_topic()->set_arn(consumer->arn());
   request.set_offset(next_offset_);
   request.set_batch_size(consumer->receiveBatchSize());
-
-  auto search = consumer->getTopicFilterExpressionTable().find(message_queue_.getTopic());
-  if (consumer->getTopicFilterExpressionTable().end() != search) {
+  auto filter_expression_table = consumer->getTopicFilterExpressionTable();
+  auto search = filter_expression_table.find(message_queue_.getTopic());
+  if (filter_expression_table.end() != search) {
     FilterExpression expression = search->second;
     switch (expression.type_) {
     case TAG:

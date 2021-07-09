@@ -73,6 +73,10 @@ void DefaultMQProducer::sendOneway(const MQMessage& message, MessageQueueSelecto
   impl_->sendOneway(message, selector, arg);
 }
 
+void DefaultMQProducer::setLocalTransactionStateChecker(LocalTransactionStateCheckerPtr checker) {
+  impl_->setLocalTransactionStateChecker(std::move(checker));
+}
+
 void DefaultMQProducer::setRetryTimes(int retry_times) { impl_->maxAttemptTimes(retry_times); }
 
 int DefaultMQProducer::getRetryTimes() const { return impl_->maxAttemptTimes(); }

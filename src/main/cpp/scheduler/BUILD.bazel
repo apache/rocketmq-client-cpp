@@ -10,12 +10,11 @@ cc_library(
     strip_include_prefix = "//src/main/cpp/scheduler/include",
     deps = [
         "//api:rocketmq_interface",
-        "//src/main/cpp/base:base_library",
-        "//src/main/cpp/concurrent:countdown_latch_library",
-        "//external:libuv",
+        "//src/main/cpp/log:log_library",
         "@com_google_absl//absl/base",        
-        "@com_google_absl//absl/strings",
-        "@com_github_progschj_ThreadPool//:ThreadPool",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_github_grpc_grpc//:grpc++",
     ],
     visibility = ["//visibility:public"],
 )

@@ -1,21 +1,19 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 cc_library(
-    name = "http_client",
+    name = "ghttp_client",
     hdrs = [
-        "include/HttpClient.h",
+        "include/GHttpClient.h",
     ],
     srcs = [
-        "HttpClient.cpp",
+        "GHttpClient.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/log:log_library",
+        "@com_github_fmtlib_fmt//:fmtlib",
+        "@com_github_grpc_grpc//:grpc",
     ],
     strip_include_prefix = "//src/main/cpp/base/include",
-    deps = [
-        "//api:rocketmq_interface",
-        "@com_google_absl//absl/time",
-        "@com_google_absl//absl/synchronization",
-        "@curl//:curl",
-        "@com_github_gabime_spdlog//:spdlog",
-    ],
     visibility = [
         "//visibility:public",
     ],
@@ -33,7 +31,7 @@ cc_library(
     ],
     strip_include_prefix = "//src/main/cpp/base/include",
     deps = [
-        ":http_client",
+        ":ghttp_client",
     ],
     visibility = [
         "//visibility:public",
@@ -46,18 +44,16 @@ cc_library(
     srcs = glob(["*.cpp"]),
     strip_include_prefix = "//src/main/cpp/base/include",
     deps = [
-        "//api:rocketmq_interface",
+        "//src/main/cpp/log:log_library",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
         "@com_github_gabime_spdlog//:spdlog",
-        "@com_github_grpc_grpc//:grpc_secure",
-        "//external:libuv",
+        "@com_github_grpc_grpc//:grpc",
         "@com_googlesource_code_re2//:re2",
         "@zlib//:zlib",
         "@boringssl//:crypto",
         "@boringssl//:ssl",
-        "@curl//:curl",
     ],
     visibility = [
         "//visibility:public",

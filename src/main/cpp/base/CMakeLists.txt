@@ -1,16 +1,16 @@
 add_library(base_obj OBJECT)
 target_sources(base_obj
         PRIVATE
-            HttpClient.cpp
+            GHttpClient.cpp
             HostInfo.cpp
+            Metadata.cpp
             MixAll.cpp
             MQMessage.cpp
             PermissionHelper.cpp
             Protocol.cpp
             RateLimiter.cpp
-            RequestIdGenerator.cpp
             TopAddressing.cpp
-            MessageSystemFlag.cpp
+            UniqueIdGenerator.cpp
             UtilAll.cpp)
 target_include_directories(base_obj
         PUBLIC
@@ -24,13 +24,12 @@ target_link_libraries(base_obj
             absl::strings
             absl::time
             CURL::libcurl
+            crypto
             fmt
             grpc++
-            crypto
+            logger_library
             ssl
             re2::re2
-            rocketmq_interface
-            spdlog::spdlog_header_only
             uv_a
             zlib)
 
@@ -50,6 +49,7 @@ target_link_libraries(base_library
             CURL::libcurl
             fmt
             grpc++
+            logger_library
             re2::re2
             rocketmq_interface
             spdlog::spdlog_header_only

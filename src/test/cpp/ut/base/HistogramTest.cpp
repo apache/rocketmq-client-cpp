@@ -1,7 +1,8 @@
 #include "Histogram.h"
 #include <gtest/gtest.h>
 
-namespace rocketmq {
+ROCKETMQ_NAMESPACE_BEGIN
+
 class HistogramTest : public testing::Test {
 public:
   HistogramTest() : histogram_("Test", 3) {}
@@ -38,4 +39,4 @@ TEST_F(HistogramTest, testHistogram) {
   EXPECT_STREQ(result.c_str(), expect.c_str());
 }
 
-} // namespace rocketmq
+ROCKETMQ_NAMESPACE_END

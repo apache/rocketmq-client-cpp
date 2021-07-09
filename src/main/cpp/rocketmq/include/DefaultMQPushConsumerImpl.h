@@ -9,7 +9,6 @@
 #include "ClientInstance.h"
 #include "ConsumeMessageService.h"
 #include "FilterExpression.h"
-#include "Functional.h"
 #include "ProcessQueue.h"
 #include "Scheduler.h"
 #include "TopicAssignmentInfo.h"
@@ -26,8 +25,7 @@ class ConsumeMessageService;
 class ConsumeMessageOrderlyService;
 class ConsumeMessageConcurrentlyService;
 
-class DefaultMQPushConsumerImpl : public BaseImpl,
-                                  public std::enable_shared_from_this<DefaultMQPushConsumerImpl> {
+class DefaultMQPushConsumerImpl : public BaseImpl, public std::enable_shared_from_this<DefaultMQPushConsumerImpl> {
 public:
   explicit DefaultMQPushConsumerImpl(std::string group_name);
 
@@ -37,7 +35,7 @@ public:
 
   void start() override;
 
-  void shutdown();
+  void shutdown() override;
 
   void subscribe(const std::string& topic, const std::string& expression,
                  ExpressionType expression_type = ExpressionType::TAG)
@@ -54,7 +52,7 @@ public:
 
   void scanAssignments() LOCKS_EXCLUDED(process_queue_table_mtx_);
 
-  static bool selectBroker(const TopicRouteDataPtr &route, std::string& broker_host);
+  static bool selectBroker(const TopicRouteDataPtr& route, std::string& broker_host);
 
   void wrapQueryAssignmentRequest(const std::string& topic, const std::string& consumer_group,
                                   const std::string& client_id, const std::string& strategy_name,
@@ -130,6 +128,11 @@ public:
 
   void offsetStore(std::unique_ptr<OffsetStore> offset_store) { offset_store_ = std::move(offset_store); }
 
+protected:
+  std::shared_ptr<BaseImpl> self() override { return shared_from_this(); }
+
+  ClientResourceBundle resourceBundle() LOCKS_EXCLUDED(topic_filter_expression_table_mtx_) override;
+
 private:
   absl::flat_hash_map<std::string, FilterExpression>
       topic_filter_expression_table_ GUARDED_BY(topic_filter_expression_table_mtx_);
@@ -151,8 +154,8 @@ private:
 
   int max_cached_message_number_per_queue_;
 
-  std::function<void(void)> scan_assignment_executor_;
-  FunctionalSharePtr scan_assignment_functional_;
+  std::uintptr_t scan_assignment_handle_{0};
+  static const char* SCAN_ASSIGNMENT_TASK_NAME;
 
   absl::flat_hash_map<MQMessageQueue, ProcessQueueSharedPtr> process_queue_table_ GUARDED_BY(process_queue_table_mtx_);
   absl::Mutex process_queue_table_mtx_;
@@ -184,7 +187,8 @@ private:
   static const int32_t DEFAULT_CONSUME_THREAD_POOL_SIZE;
 };
 
-class AsyncReceiveMessageCallback : public ReceiveMessageCallback {
+class AsyncReceiveMessageCallback : public ReceiveMessageCallback,
+                                    public std::enable_shared_from_this<AsyncReceiveMessageCallback> {
 public:
   explicit AsyncReceiveMessageCallback(ProcessQueueWeakPtr process_queue);
 
@@ -205,9 +209,10 @@ private:
   ProcessQueueWeakPtr process_queue_;
 
   std::function<void(void)> receive_message_later_;
-  FunctionalSharePtr receive_message_later_functional_;
 
   void checkThrottleThenReceive();
+
+  static const char* RECEIVE_LATER_TASK_NAME;
 };
 
 ROCKETMQ_NAMESPACE_END

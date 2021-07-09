@@ -10,17 +10,6 @@ cc_test(
 )
 
 cc_test(
-    name = "event_test",
-    srcs = [
-        "EventTest.cpp",
-    ],
-    deps = [
-        "//external:libuv",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
-
-cc_test(
     name = "log_test",
     srcs = [
         "LogTest.cpp",
@@ -39,17 +28,6 @@ cc_test(
     deps = [
         "@com_google_googletest//:gtest_main",
     ]
-)
-
-cc_test(
-    name = "curl_test",
-    srcs = [
-        "CurlTest.cpp",
-    ],
-    deps = [
-        "@curl//:curl",
-        "@com_google_googletest//:gtest_main",
-    ],
 )
 
 cc_test(
@@ -85,14 +63,9 @@ cc_test(
     ],
 )
 
-cc_test(
-    name = "thread_pool_test",
+cc_binary(
+    name = "mac_test",
     srcs = [
-        "ThreadPoolTest.cpp",
+        "MacTest.cpp",
     ],
-    deps = [
-        "@com_github_progschj_ThreadPool//:ThreadPool",
-        "@com_github_gabime_spdlog//:spdlog",
-        "@com_google_googletest//:gtest_main",
-    ]
 )

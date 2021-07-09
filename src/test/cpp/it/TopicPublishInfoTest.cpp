@@ -81,23 +81,23 @@ TEST_F(TopicPublishInfoTest, testTopicPublishInfo) {
   request.mutable_topic()->set_arn(arn_);
   request.mutable_topic()->set_name(topic_);
   auto invocation_context = new InvocationContext<QueryRouteResponse>();
-  invocation_context->context_.set_deadline(std::chrono::system_clock::now() +
+  invocation_context->context.set_deadline(std::chrono::system_clock::now() +
                                             absl::ToChronoMilliseconds(client_config_.getIoTimeout()));
   for (const auto& item : metadata_) {
-    invocation_context->context_.AddMetadata(item.first, item.second);
+    invocation_context->context.AddMetadata(item.first, item.second);
   }
 
-  auto callback = [this](const grpc::Status& status, const grpc::ClientContext& context,
-                         const QueryRouteResponse& response) {
-    if (!status.ok()) {
-      std::cout << "code: " << status.error_code() << ", message: " << status.error_message() << std::endl;
+  auto callback = [this](const InvocationContext<QueryRouteResponse>* invocation_context) {
+    if (!invocation_context->status.ok()) {
+      std::cout << "code: " << invocation_context->status.error_code()
+                << ", message: " << invocation_context->status.error_message() << std::endl;
     } else {
-      std::cout << "Response debug string:" << response.DebugString() << std::endl;
+      std::cout << "Response debug string:" << invocation_context->response.DebugString() << std::endl;
     }
-    ASSERT_TRUE(status.ok());
+    ASSERT_TRUE(invocation_context->status.ok());
 
     std::vector<Partition> partitions;
-    for (const auto& item : response.partitions()) {
+    for (const auto& item : invocation_context->response.partitions()) {
       Topic topic(arn_, topic_);
       Permission permission;
       switch (item.permission()) {
@@ -141,7 +141,8 @@ TEST_F(TopicPublishInfoTest, testTopicPublishInfo) {
       Partition partition(topic, item.id(), permission, broker);
       partitions.emplace_back(partition);
     }
-    auto topic_route_data = std::make_shared<TopicRouteData>(partitions, response.common().DebugString());
+    auto topic_route_data =
+        std::make_shared<TopicRouteData>(partitions, invocation_context->response.common().DebugString());
     rocketmq::TopicPublishInfo topic_publish_info(topic_, topic_route_data);
     rocketmq::MQMessageQueue message_queue;
     EXPECT_TRUE(topic_publish_info.selectOneMessageQueue(message_queue));
@@ -149,7 +150,7 @@ TEST_F(TopicPublishInfoTest, testTopicPublishInfo) {
     EXPECT_STREQ(topic_.c_str(), message_queue.getTopic().c_str());
   };
 
-  invocation_context->callback_ = callback;
+  invocation_context->callback = callback;
 
   client_->asyncQueryRoute(request, invocation_context);
 }

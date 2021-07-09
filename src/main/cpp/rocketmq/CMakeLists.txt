@@ -14,7 +14,6 @@ target_sources(rocketmq_obj
             DefaultMQPushConsumerImpl.cpp
             DefaultMQPullConsumer.cpp
             DefaultMQPullConsumerImpl.cpp
-            MessageClientIDSetter.cpp
             ProcessQueue.cpp
             TransactionImpl.cpp)
 target_include_directories(rocketmq_obj

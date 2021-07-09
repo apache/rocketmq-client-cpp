@@ -1,7 +1,7 @@
 #include "CountdownLatch.h"
 #include "LoggerImpl.h"
 
-using namespace rocketmq;
+ROCKETMQ_NAMESPACE_BEGIN
 
 void CountdownLatch::await() {
   absl::MutexLock lock(&mtx_);
@@ -32,3 +32,5 @@ void CountdownLatch::increaseCount() {
     SPDLOG_TRACE("After increaseCount(), latch[{}]={}", name_, count_);
   }
 }
+
+ROCKETMQ_NAMESPACE_END

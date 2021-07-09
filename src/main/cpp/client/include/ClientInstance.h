@@ -5,20 +5,20 @@
 #include <functional>
 #include <future>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "ClientCallback.h"
 #include "ClientConfig.h"
-#include "Functional.h"
 #include "HeartbeatDataCallback.h"
 #include "Histogram.h"
 #include "Identifiable.h"
+#include "InvocationContext.h"
 #include "OrphanTransactionCallback.h"
 #include "ReceiveMessageCallback.h"
 #include "RpcClientImpl.h"
 #include "Scheduler.h"
 #include "SendMessageContext.h"
-#include "ThreadPool.h"
 #include "TopAddressing.h"
 #include "TopicRouteChangeCallback.h"
 #include "TopicRouteData.h"
@@ -27,6 +27,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "src/cpp/server/thread_pool_interface.h"
 
 #ifdef ENABLE_TRACING
 #include "opentelemetry/exporters/otlp/otlp_exporter.h"
@@ -49,7 +50,7 @@ public:
 
   void start();
 
-  void shutdown() LOCKS_EXCLUDED(inactive_rpc_clients_mtx_, rpc_clients_mtx_);
+  void shutdown() LOCKS_EXCLUDED(rpc_clients_mtx_);
 
   static void assignLabels(Histogram& histogram);
 
@@ -66,36 +67,24 @@ public:
                     const QueryRouteRequest& request, std::chrono::milliseconds timeout,
                     const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) LOCKS_EXCLUDED(rpc_clients_mtx_);
 
-  bool addInactiveRpcClient(const std::string& target_host) LOCKS_EXCLUDED(inactive_rpc_clients_mtx_, rpc_clients_mtx_);
-
-  bool removeInactiveRpcClient(const std::string& target_host)
-      LOCKS_EXCLUDED(inactive_rpc_clients_mtx_, rpc_clients_mtx_);
-
-  void doHealthCheck();
+  void doHealthCheck() LOCKS_EXCLUDED(clients_mtx_);
 
   /**
    * If inactive RPC clients refer to remote hosts that are absent from topic_route_table_, we need to purge them
    * immediately.
    */
-  void cleanOfflineRpcClients() LOCKS_EXCLUDED(clients_mtx_, rpc_clients_mtx_, inactive_rpc_clients_mtx_);
+  void cleanOfflineRpcClients() LOCKS_EXCLUDED(clients_mtx_, rpc_clients_mtx_);
 
   /**
-   * Check if the RPC client is active or not.
-   * @param target_host Target host address in form of IP:port.
-   * @return true if the client for the target host is not temporarily blocked, aka, in inactive_rpc_clients_ map.
+   * Execute health-check on behalf of the client.
    */
-  bool isRpcClientActive(absl::string_view target_host) LOCKS_EXCLUDED(inactive_rpc_clients_mtx_);
+  void healthCheck(const std::string& target_host, const absl::flat_hash_map<std::string, std::string>& metadata,
+                   const HealthCheckRequest& request, std::chrono::milliseconds timeout,
+                   const std::function<void(const std::string&, const InvocationContext<HealthCheckResponse>*)>& cb)
+      LOCKS_EXCLUDED(rpc_clients_mtx_);
 
-  void getAllInactiveRpcClientHost(absl::flat_hash_set<std::string>& client_hosts)
-      LOCKS_EXCLUDED(inactive_rpc_clients_mtx_);
-
-  bool getInactiveRpcClient(absl::string_view target_host, RpcClientSharedPtr& client)
-      LOCKS_EXCLUDED(inactive_rpc_clients_mtx_);
-
-  void clientHealthCheck() LOCKS_EXCLUDED(inactive_rpc_clients_mtx_, rpc_clients_mtx_);
-
-  bool send(const std::string& target, const absl::flat_hash_map<std::string, std::string>& metadata,
-            SendMessageRequest& request, SendCallback* callback) LOCKS_EXCLUDED(rpc_clients_mtx_);
+  bool send(const std::string& target_host, const absl::flat_hash_map<std::string, std::string>& metadata,
+            SendMessageRequest& request, SendCallback* cb) LOCKS_EXCLUDED(rpc_clients_mtx_);
 
   /**
    * Get a RpcClient according to the given target hosts, which follows scheme specified
@@ -116,23 +105,35 @@ public:
   // only for test
   void addRpcClient(const std::string& target_host, const RpcClientSharedPtr& client) LOCKS_EXCLUDED(rpc_clients_mtx_);
 
+  // Test purpose only
+  void cleanRpcClients() LOCKS_EXCLUDED(rpc_clients_mtx_);
+
   void addClientObserver(std::weak_ptr<ClientCallback> client);
 
   void queryAssignment(const std::string& target, const absl::flat_hash_map<std::string, std::string>& metadata,
                        const QueryAssignmentRequest& request, std::chrono::milliseconds timeout,
                        const std::function<void(bool, const QueryAssignmentResponse&)>& cb);
 
-  void receiveMessage(absl::string_view target, const absl::flat_hash_map<std::string, std::string>& metadata,
+  void receiveMessage(const std::string& target, const absl::flat_hash_map<std::string, std::string>& metadata,
                       const ReceiveMessageRequest& request, std::chrono::milliseconds timeout,
                       std::shared_ptr<ReceiveMessageCallback>& cb) LOCKS_EXCLUDED(rpc_clients_mtx_);
 
-  void pullMessage(absl::string_view target, absl::flat_hash_map<std::string, std::string>& metadata,
-                   const PullMessageRequest& request, std::shared_ptr<ReceiveMessageCallback>& callback)
+  void pullMessage(const std::string& target, absl::flat_hash_map<std::string, std::string>& metadata,
+                   const PullMessageRequest& request, std::shared_ptr<ReceiveMessageCallback>& cb)
       LOCKS_EXCLUDED(rpc_clients_mtx_);
 
+  /**
+   * Translate protobuf message struct to domain model.
+   *
+   * @param item
+   * @param message_ext
+   * @return true if the translation succeeded; false if something wrong happens, including checksum verification, etc.
+   */
   bool wrapMessage(const rmq::Message& item, MQMessageExt& message_ext);
 
   Scheduler& getScheduler();
+
+  TopAddressing& topAddressing();
 
   /**
    * Ack message asynchronously.
@@ -140,8 +141,7 @@ public:
    * @param request Ack message request.
    */
   void ack(const std::string& target_host, const absl::flat_hash_map<std::string, std::string>& metadata,
-           const AckMessageRequest& request, std::chrono::milliseconds timeout,
-           const std::function<void(bool)>& callback);
+           const AckMessageRequest& request, std::chrono::milliseconds timeout, const std::function<void(bool)>& cb);
 
   void nack(const std::string& target_host, const absl::flat_hash_map<std::string, std::string>& metadata,
             const NackMessageRequest& request, std::chrono::milliseconds timeout,
@@ -167,12 +167,11 @@ public:
 
   void multiplexingCall(const std::string& target, const absl::flat_hash_map<std::string, std::string>& metadata,
                         const MultiplexingRequest& request, std::chrono::milliseconds timeout,
-                        const std::function<void(bool, const MultiplexingResponse&)>& cb);
+                        const std::function<void(const InvocationContext<MultiplexingResponse>*)>& cb);
 
   template <typename Callable>
   void queryOffset(const std::string& target_host, const absl::flat_hash_map<std::string, std::string>& metadata,
                    const QueryOffsetRequest& request, std::chrono::milliseconds timeout, const Callable& cb) {
-
     auto client = getRpcClient(target_host);
     if (!client) {
       SPDLOG_WARN("Failed to get/create RPC client for {}", target_host);
@@ -180,25 +179,26 @@ public:
     }
 
     auto invocation_context = new InvocationContext<QueryOffsetResponse>();
-    invocation_context->context_.set_deadline(std::chrono::system_clock::now() + timeout);
-    auto callback = [cb, target_host](const grpc::Status& status, const grpc::ClientContext& client_context,
-                                      const QueryOffsetResponse& response) {
-      if (!status.ok()) {
-        SPDLOG_WARN("Failed to send query offset request to {}. Reason: {}", target_host, status.error_message());
-        cb(false, response);
+    invocation_context->remote_address = target_host;
+    invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
+    auto callback = [cb](const InvocationContext<QueryOffsetResponse>* invocation_context) {
+      if (!invocation_context->status.ok()) {
+        SPDLOG_WARN("Failed to send query offset request to {}. Reason: {}", invocation_context->remote_address,
+                    invocation_context->status.error_message());
+        cb(false, invocation_context->response);
         return;
       }
 
-      if (google::rpc::Code::OK != response.common().status().code()) {
-        SPDLOG_WARN("Server[host={}] failed to process query offset request. Reason: {}", target_host,
-                    response.common().DebugString());
-        cb(false, response);
+      if (google::rpc::Code::OK != invocation_context->response.common().status().code()) {
+        SPDLOG_WARN("Server[host={}] failed to process query offset request. Reason: {}",
+                    invocation_context->remote_address, invocation_context->response.common().DebugString());
+        cb(false, invocation_context->response);
       }
 
-      SPDLOG_DEBUG("Query offset from server[host={}] OK", target_host);
-      cb(true, response);
+      SPDLOG_DEBUG("Query offset from server[host={}] OK", invocation_context->remote_address);
+      cb(true, invocation_context->response);
     };
-    invocation_context->callback_ = callback;
+    invocation_context->callback = callback;
     client->asyncQueryOffset(request, invocation_context);
   }
 
@@ -219,10 +219,12 @@ public:
 
 private:
   void processPopResult(const grpc::ClientContext& client_context, const ReceiveMessageResponse& response,
-                        ReceiveMessageResult& result, absl::string_view target_host);
+                        ReceiveMessageResult& result, const std::string& target_host);
 
   void processPullResult(const grpc::ClientContext& client_context, const PullMessageResponse& response,
-                         ReceiveMessageResult& result, absl::string_view target_host);
+                         ReceiveMessageResult& result, const std::string& target_host);
+
+  bool active();
 
   void doHeartbeat();
 
@@ -231,6 +233,10 @@ private:
   void logStats();
 
   Scheduler scheduler_;
+
+  static const char* HEARTBEAT_TASK_NAME;
+  static const char* STATS_TASK_NAME;
+  static const char* HEALTH_CHECK_TASK_NAME;
 
   /**
    * Abstract resource namespace. Each user may have one or more instances and each each instance has an independent
@@ -246,23 +252,16 @@ private:
   absl::flat_hash_map<std::string, std::shared_ptr<RpcClient>> rpc_clients_ GUARDED_BY(rpc_clients_mtx_);
   absl::Mutex rpc_clients_mtx_; // protects rpc_clients_
 
-  absl::flat_hash_map<std::string, std::shared_ptr<RpcClient>>
-      inactive_rpc_clients_ GUARDED_BY(inactive_rpc_clients_mtx_);
-  absl::Mutex inactive_rpc_clients_mtx_;
-  std::function<void(void)> inactive_rpc_client_detector_;
-  FunctionalSharePtr inactive_rpc_client_detector_function_;
-
-  std::function<void(void)> heartbeat_loop_;
-  FunctionalSharePtr heartbeat_loop_function_;
+  std::uintptr_t heartbeat_handle_{0};
+  std::uintptr_t health_check_handle_{0};
+  std::uintptr_t stats_handle_{0};
 
   std::shared_ptr<CompletionQueue> completion_queue_;
-  std::shared_ptr<ThreadPool> callback_thread_pool_;
+  std::unique_ptr<grpc::ThreadPoolInterface> callback_thread_pool_;
 
   std::thread completion_queue_thread_;
 
   Histogram latency_histogram_;
-  std::function<void(void)> stats_functor_;
-  FunctionalSharePtr stats_function_;
 
   absl::flat_hash_set<std::string> exporter_endpoint_set_ GUARDED_BY(exporter_endpoint_set_mtx_);
   absl::Mutex exporter_endpoint_set_mtx_;
@@ -284,6 +283,8 @@ private:
   grpc::ChannelArguments channel_arguments_;
 
   bool trace_{false};
+
+  TopAddressing top_addressing_;
 };
 
 using ClientInstancePtr = std::shared_ptr<ClientInstance>;

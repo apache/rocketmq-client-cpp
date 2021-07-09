@@ -9,19 +9,6 @@ cc_test(
         "//api:rocketmq_interface",
         "@com_google_googletest//:gtest_main",
     ],
-    linkstatic = True,
-)
-
-cc_test(
-    name = "message_client_id_setter_test",
-    srcs = [
-        "MessageClientIDSetterTest.cpp",
-    ],
-    deps = [
-        "//src/main/cpp/rocketmq:rocketmq_library",
-        "@com_google_googletest//:gtest_main",
-    ],
-    linkstatic = True,
 )
 
 cc_test(
@@ -33,7 +20,6 @@ cc_test(
         "//src/main/cpp/rocketmq:rocketmq_library",
         "@com_google_googletest//:gtest_main",
     ],
-    linkstatic = True,
 )
 
 cc_library(
@@ -61,7 +47,6 @@ cc_test(
         "@com_github_gabime_spdlog//:spdlog",
         "@com_google_googletest//:gtest_main",
     ],
-    linkstatic = True,
 )
 
 cc_test(
@@ -73,7 +58,6 @@ cc_test(
         "//src/main/cpp/rocketmq:rocketmq_library",
         "@com_google_googletest//:gtest_main",
     ],
-    linkstatic = True,
 )
 
 cc_library(
@@ -99,7 +83,6 @@ cc_test(
         "//src/main/cpp/admin:admin_server_library",
         "//src/main/cpp/rocketmq:rocketmq_library",
     ],
-    linkstatic = True,
 )
 
 cc_test(
@@ -112,7 +95,6 @@ cc_test(
         "//src/main/cpp/admin:admin_server_library",
         "//src/main/cpp/rocketmq:rocketmq_library",
     ],
-    linkstatic = True,
 )
 
 cc_test(
@@ -124,7 +106,6 @@ cc_test(
          "//src/main/cpp/rocketmq:rocketmq_library",
          "@com_google_googletest//:gtest_main",
     ],
-    linkstatic = True,
 )
 
 cc_test(
@@ -136,5 +117,4 @@ cc_test(
         "//src/main/cpp/rocketmq:rocketmq_library",
          "@com_google_googletest//:gtest_main",
     ],
-    linkstatic = True,
 )

@@ -1,144 +1,87 @@
 #include "UtilAll.h"
 
-#include "absl/strings/str_split.h"
 #include "LoggerImpl.h"
-#include "uv.h"
+#include "absl/strings/str_split.h"
+#include "src/core/lib/iomgr/gethostname.h"
 #include "zlib.h"
+#include <arpa/inet.h>
+#include <cstring>
+#include <ifaddrs.h>
 
-namespace rocketmq {
+#if defined(__APPLE__)
+#include <net/if_dl.h>
+#define AF_FAMILY AF_LINK
+#elif defined(__linux__)
+#include <arpa/inet.h>
+#include <net/ethernet.h>
+#include <netpacket/packet.h>
+#define AF_FAMILY AF_PACKET
+#elif defined(_WIN32)
 
-std::string UtilAll::getHostIPv4() {
-  static std::string host_ip;
-  if (host_ip.empty()) {
-    std::vector<std::string> addresses = getIPv4Addresses();
-    if (!pickIPv4Address(addresses, host_ip)) {
-      return LOOP_BACK_IP;
-    }
-  }
-  return host_ip;
+#endif
+
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+
+ROCKETMQ_NAMESPACE_BEGIN
+
+#if defined(__APPLE__)
+#define AF_FAMILY AF_LINK
+#elif defined(__linux__)
+#define AF_FAMILY AF_PACKET
+#elif defined(_WIN32)
+#endif
+
+std::string UtilAll::hostname() {
+  std::string host_name(grpc_gethostname());
+  return host_name;
 }
 
-std::vector<std::string> UtilAll::getIPv4Addresses() {
-  std::vector<std::string> addresses;
-  char buf[512];
-  uv_interface_address_t* info;
-  int count, i;
+bool UtilAll::macAddress(std::vector<unsigned char>& mac) {
+  static std::vector<unsigned char> cache;
+  static bool mac_cached = false;
 
-  uv_interface_addresses(&info, &count);
-  i = count;
-  while (i--) {
-    uv_interface_address_t interface = info[i];
-    if (interface.address.address4.sin_family == AF_INET) {
-      uv_ip4_name(&interface.address.address4, buf, sizeof(buf));
-      if (interface.is_internal) {
-        continue;
-      }
-      addresses.emplace_back(std::string(buf));
-    } else if (interface.address.address4.sin_family == AF_INET6) {
-      uv_ip6_name(&interface.address.address6, buf, sizeof(buf));
-    }
+  if (mac_cached) {
+    mac = cache;
+    return true;
   }
-  uv_free_interface_addresses(info, count);
-  return addresses;
-}
 
-/**
- * Select IP from provided lists. The selecting criteria is first WAN then LAN.
- * For case of LAN, the following order is followed:
- * 1, 10.0.0.0/8 (255.0.0.0),          10.0.0.0 – 10.255.255.255
- * 2, 100.64.0.0/10(255.192.0.0),    100.64.0.0 - 100.127.255.255
- * 3, 172.16.0.0/12 (255.240.0.0)    172.16.0.0 – 172.31.255.255
- * 4, 192.168.0.0/16 (255.255.0.0), 192.168.0.0 – 192.168.255.255
- */
-std::vector<std::pair<std::string, std::string>> UtilAll::Ranges = {{"10.0.0.0", "10.255.255.255"},
-                                                                    {"100.64.0.0", "100.127.255.255"},
-                                                                    {"172.16.0.0", "172.31.255.255"},
-                                                                    {"192.168.0.0", "192.168.255.255"}};
-
-int UtilAll::findCategory(const std::string& ip, const std::vector<std::pair<std::string, std::string>>& categories) {
-  struct in_addr addr = {};
-  int status = inet_aton(ip.data(), &addr);
-  if (!status) {
-    SPDLOG_WARN("inet_aton failed. IPv4: {}", ip);
-    return -1;
-  }
-  uint32_t current = ntohl(addr.s_addr);
-
-  int index = 1;
-  for (const auto& item : categories) {
-    const std::string& left = item.first;
-    const std::string& right = item.second;
-    struct in_addr low = {};
-    struct in_addr high = {};
-    status = inet_aton(left.data(), &low);
-    if (!status) {
-      SPDLOG_WARN("inet_aton failed. IPv4: {}", left);
-      return -1;
-    }
-
-    status = inet_aton(right.data(), &high);
-    if (!status) {
-      SPDLOG_WARN("inet_aton failed. IPv4: {}", right);
-      return -1;
-    }
-
-    uint32_t start = ntohl(low.s_addr);
-    uint32_t end = ntohl(high.s_addr);
-    if (current >= start && current <= end) {
-      return index;
-    }
-    index++;
-  }
-  return 0;
-}
-
-bool UtilAll::pickIPv4Address(const std::vector<std::string>& addresses, std::string& result) {
-  if (addresses.empty()) {
+  struct ifaddrs *head = nullptr, *node;
+  if (getifaddrs(&head)) {
     return false;
   }
 
-  if (addresses.size() == 1) {
-    result = addresses[0];
-  }
-
-  std::vector<std::vector<std::string>> categories;
-  categories.reserve(5);
-  categories.resize(5);
-  for (const auto& ip : addresses) {
-    int index = findCategory(ip, Ranges);
-    if (index >= 0) {
-      std::vector<std::vector<std::string>>::size_type category_index = index;
-      if (category_index < categories.size()) {
-        categories[category_index].push_back(ip);
+  for (node = head; node; node = node->ifa_next) {
+    if (node->ifa_addr->sa_family == AF_FAMILY) {
+#if defined(__APPLE__)
+      auto* ptr = reinterpret_cast<unsigned char*>(LLADDR(reinterpret_cast<struct sockaddr_dl*>(node->ifa_addr)));
+#elif defined(__linux__)
+      auto* ptr = reinterpret_cast<unsigned char*>(reinterpret_cast<struct sockaddr_ll*>(node->ifa_addr)->sll_addr);
+#endif
+      bool all_zero = true;
+      for (int i = 0; i < 6; i++) {
+        if (*(ptr + i) != 0) {
+          all_zero = false;
+          break;
+        }
       }
+      if (all_zero) {
+        SPDLOG_TRACE("Skip MAC address of network interface {}", node->ifa_name);
+        continue;
+      }
+      SPDLOG_DEBUG("Use MAC address of network interface {}", node->ifa_name);
+      // MAC address has 48 bits
+      cache.resize(6);
+      memcpy(cache.data(), ptr, 6);
+      mac_cached = true;
+      mac = cache;
+      break;
     }
   }
-  for (const auto& category : categories) {
-    if (!category.empty()) {
-      result = category[0];
-      return true;
-    }
-  }
-  result = addresses[0];
+  freeifaddrs(head);
   return true;
-}
-
-void UtilAll::int16tobyte(char* out_array, int16_t data) {
-  if (!out_array) {
-    return;
-  }
-  out_array[0] = static_cast<char>(data & 0xff);
-  out_array[1] = static_cast<char>((data >> 8) & 0xff);
-}
-
-void UtilAll::int32tobyte(char* out_array, int32_t data) {
-  if (!out_array) {
-    return;
-  }
-  out_array[0] = static_cast<char>(data & 0xff);
-  out_array[1] = static_cast<char>((data >> 8) & 0xff);
-  out_array[2] = static_cast<char>((data >> 16) & 0xff);
-  out_array[3] = static_cast<char>((data >> 24) & 0xff);
 }
 
 bool UtilAll::compress(const std::string& src, std::string& dst) {
@@ -214,6 +157,4 @@ bool UtilAll::uncompress(const std::string& src, std::string& dst) {
   }
 }
 
-std::string UtilAll::LOOP_BACK_IP("127.0.0.1");
-
-} // namespace rocketmq
+ROCKETMQ_NAMESPACE_END

@@ -19,7 +19,7 @@ const int32_t MixAll::MASTER_BROKER_ID = 0;
 
 const int32_t MixAll::MAX_MESSAGE_NUMBER_PER_BATCH = 32;
 
-const int32_t MixAll::MAX_MESSAGE_BODY_SIZE = 1024 * 1024 * 4;
+const uint32_t MixAll::MAX_MESSAGE_BODY_SIZE = 1024 * 1024 * 4;
 
 const char* MixAll::RETRY_GROUP_TOPIC_PREFIX = "%RETRY%";
 
@@ -54,7 +54,7 @@ bool MixAll::validate(const MQMessage& message) {
     return false;
   }
 
-  int32_t body_length = message.bodyLength();
+  uint32_t body_length = message.bodyLength();
   if (!body_length || body_length > MAX_MESSAGE_BODY_SIZE) {
     return false;
   }

@@ -6,7 +6,7 @@ ROCKETMQ_NAMESPACE_BEGIN
 namespace admin {
 
 Status AdminClient::changeLogLevel(const rmq::ChangeLogLevelRequest& request, rmq::ChangeLogLevelResponse& response) {
-  ClientContext context;
+  grpc::ClientContext context;
   auto deadline = std::chrono::system_clock::now() + std::chrono::seconds(3);
   context.set_deadline(deadline);
   Status status = stub_->ChangeLogLevel(&context, request, &response);

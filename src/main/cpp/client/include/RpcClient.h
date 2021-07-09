@@ -103,6 +103,8 @@ public:
    */
   virtual bool needHeartbeat() = 0;
 
+  virtual void needHeartbeat(bool need_heartbeat) = 0;
+
   /**
    * Indicate if current client connection state is OK or recoverable.
    *

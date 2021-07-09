@@ -9,7 +9,6 @@ namespace rmq = apache::rocketmq::v1;
 ROCKETMQ_NAMESPACE_BEGIN
 
 using grpc::Channel;
-using grpc::ClientContext;
 using grpc::Status;
 
 namespace admin {

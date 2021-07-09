@@ -1,5 +1,6 @@
 #include "ClientConfig.h"
 #include "IdentifiableMock.h"
+#include "InvocationContext.h"
 #include "LogInterceptorFactory.h"
 #include "MixAll.h"
 #include "RpcClientImpl.h"
@@ -72,22 +73,21 @@ protected:
     absl::CondVar cv;
     bool completed = false;
 
-    auto callback = [&](const grpc::Status& status, const grpc::ClientContext& context,
-                        const QueryRouteResponse& response) {
-      ASSERT_TRUE(status.ok());
+    auto callback = [&](const InvocationContext<QueryRouteResponse>* invocation_context) {
+      ASSERT_TRUE(invocation_context->status.ok());
       std::cout << "Route Response:" << route_response.DebugString() << std::endl;
       absl::MutexLock lk(&mtx);
-      route_response = response;
+      route_response = invocation_context->response;
       completed = true;
       cv.SignalAll();
     };
 
     auto invocation_context = new InvocationContext<QueryRouteResponse>();
-    invocation_context->callback_ = callback;
-    invocation_context->context_.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(3));
+    invocation_context->callback = callback;
+    invocation_context->context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(3));
 
     for (const auto& item : metadata_) {
-      invocation_context->context_.AddMetadata(item.first, item.second);
+      invocation_context->context.AddMetadata(item.first, item.second);
     }
 
     name_server_client.asyncQueryRoute(route_request, invocation_context);
@@ -128,7 +128,7 @@ protected:
     system_attribute->set_message_id(msgId);
     system_attribute->set_message_type(rmq::MessageType::NORMAL);
     system_attribute->set_body_encoding(rmq::Encoding::IDENTITY);
-    system_attribute->set_born_host(UtilAll::getHostIPv4());
+    system_attribute->set_born_host(UtilAll::hostname());
     system_attribute->set_tag("TagA");
     send_message_request.mutable_message()->set_body("Example data");
   }
@@ -192,22 +192,22 @@ TEST_F(RpcClientTest, testRouteInfo) {
   bool completed = false;
   absl::Mutex mtx;
   absl::CondVar cv;
-  auto callback = [&](const grpc::Status& status, const grpc::ClientContext& client_context,
-                      const QueryRouteResponse& response) {
-    if (!status.ok()) {
-      std::cout << "code: " << status.error_code() << ", message: " << status.error_message() << std::endl;
+  auto callback = [&](const InvocationContext<QueryRouteResponse>* invocation_context) {
+    if (!invocation_context->status.ok()) {
+      std::cout << "code: " << invocation_context->status.error_code()
+                << ", message: " << invocation_context->status.error_message() << std::endl;
     }
-    ASSERT_TRUE(status.ok());
-    EXPECT_TRUE(google::rpc::Code::OK == response.common().status().code());
-    EXPECT_FALSE(response.partitions().empty());
+    ASSERT_TRUE(invocation_context->status.ok());
+    EXPECT_TRUE(google::rpc::Code::OK == invocation_context->response.common().status().code());
+    EXPECT_FALSE(invocation_context->response.partitions().empty());
     absl::MutexLock lk(&mtx);
     cv.SignalAll();
   };
 
-  invocation_context->callback_ = callback;
-  invocation_context->context_.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(3));
+  invocation_context->callback = callback;
+  invocation_context->context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(3));
   for (const auto& item : metadata_) {
-    invocation_context->context_.AddMetadata(item.first, item.second);
+    invocation_context->context.AddMetadata(item.first, item.second);
   }
   client.asyncQueryRoute(request, invocation_context);
 
@@ -224,15 +224,15 @@ TEST_F(RpcClientTest, testSendMessageAsync) {
   auto context = new InvocationContext<SendMessageResponse>();
 
   for (const auto& entry : metadata_) {
-    context->context_.AddMetadata(entry.first, entry.second);
+    context->context.AddMetadata(entry.first, entry.second);
   }
 
-  context->callback_ = [](const grpc::Status& status, const grpc::ClientContext& client_context,
-                          const SendMessageResponse& response) {
-    if ((!status.ok())) {
-      std::cout << "error code: " << status.error_code() << ", error message: " << status.error_message() << std::endl;
+  context->callback = [](const InvocationContext<SendMessageResponse>* invocation_context) {
+    if ((!invocation_context->status.ok())) {
+      std::cout << "error code: " << invocation_context->status.error_code()
+                << ", error message: " << invocation_context->status.error_message() << std::endl;
     }
-    ASSERT_TRUE(status.ok());
+    ASSERT_TRUE(invocation_context->status.ok());
   };
   client->asyncSend(request, context);
   std::thread th([&]() {
@@ -260,13 +260,12 @@ TEST_F(RpcClientTest, testHeartbeat) {
   auto invocation_context = new InvocationContext<HeartbeatResponse>();
 
   for (const auto& entry : metadata_) {
-    invocation_context->context_.AddMetadata(entry.first, entry.second);
+    invocation_context->context.AddMetadata(entry.first, entry.second);
   }
 
-  invocation_context->callback_ = [&](const grpc::Status& status, const grpc::ClientContext& context,
-                                      const HeartbeatResponse& response) {
-    ASSERT_TRUE(status.ok());
-    EXPECT_TRUE(google::rpc::Code::OK == response.common().status().code());
+  invocation_context->callback = [&](const InvocationContext<HeartbeatResponse>* invocation_context) {
+    ASSERT_TRUE(invocation_context->status.ok());
+    EXPECT_TRUE(google::rpc::Code::OK == invocation_context->response.common().status().code());
     {
       completed = true;
       absl::MutexLock lk(&mtx);
@@ -294,23 +293,22 @@ TEST_F(RpcClientTest, testQueryAssignment) {
   auto invocation_context = new InvocationContext<QueryAssignmentResponse>();
 
   for (const auto& entry : metadata_) {
-    invocation_context->context_.AddMetadata(entry.first, entry.second);
+    invocation_context->context.AddMetadata(entry.first, entry.second);
   }
 
   bool completed = false;
   absl::Mutex mtx;
   absl::CondVar cv;
-  auto callback = [&](const grpc::Status& status, const grpc::ClientContext& client_context,
-                      const QueryAssignmentResponse& response) {
-    ASSERT_TRUE(status.ok());
-    ASSERT_FALSE(response.assignments().empty());
+  auto callback = [&](const InvocationContext<QueryAssignmentResponse>* invocation_context) {
+    ASSERT_TRUE(invocation_context->status.ok());
+    ASSERT_FALSE(invocation_context->response.assignments().empty());
     completed = true;
     {
       absl::MutexLock lk(&mtx);
       cv.SignalAll();
     }
   };
-  invocation_context->callback_ = callback;
+  invocation_context->callback = callback;
   client->asyncQueryAssignment(request, invocation_context);
   while (!completed) {
     absl::MutexLock lk(&mtx);
@@ -321,27 +319,26 @@ TEST_F(RpcClientTest, testQueryAssignment) {
 TEST_F(RpcClientTest, testHealthCheck) {
   auto client = brokerRpcClient();
   HealthCheckRequest request;
-  const std::string& client_host = UtilAll::getHostIPv4();
+  const std::string& client_host = UtilAll::hostname();
   request.set_client_host(client_host);
   HealthCheckResponse response;
   auto invocation_context = new InvocationContext<HealthCheckResponse>();
 
   for (const auto& entry : metadata_) {
-    invocation_context->context_.AddMetadata(entry.first, entry.second);
+    invocation_context->context.AddMetadata(entry.first, entry.second);
   }
 
   absl::Mutex mtx;
   absl::CondVar cv;
   bool completed = false;
-  invocation_context->callback_ = [&](const grpc::Status& status, const grpc::ClientContext& context,
-                                      const HealthCheckResponse& response) {
+  invocation_context->callback = [&](const InvocationContext<HealthCheckResponse>* invocation_context) {
     {
       absl::MutexLock lk(&mtx);
       completed = true;
       cv.SignalAll();
     }
-    EXPECT_TRUE(status.ok());
-    EXPECT_EQ(google::rpc::Code::OK, response.common().status().code());
+    EXPECT_TRUE(invocation_context->status.ok());
+    EXPECT_EQ(google::rpc::Code::OK, invocation_context->response.common().status().code());
   };
   client->asyncHealthCheck(request, invocation_context);
   while (!completed) {

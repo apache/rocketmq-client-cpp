@@ -8,9 +8,6 @@ target_link_libraries(log_test
         gtest_main)
 add_test(ut_log_test log_test)
 
-add_executable(thread_pool_test ThreadPoolTest.cpp)
-target_link_libraries(thread_pool_test gtest_main spdlog thread_pool)
-
 add_executable(event_test EventTest.cpp)
 target_link_libraries(event_test
         gtest_main
@@ -35,7 +32,10 @@ target_link_libraries(hex_test
             gtest_main)
 
 add_subdirectory(base)
+add_subdirectory(concurrent)
+add_subdirectory(scheduler)
 add_subdirectory(client)
+add_subdirectory(grpc)
 add_subdirectory(rocketmq)
 add_subdirectory(logger)
 add_subdirectory(admin)

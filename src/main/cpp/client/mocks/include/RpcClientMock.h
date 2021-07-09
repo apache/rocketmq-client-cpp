@@ -2,6 +2,7 @@
 
 #include "RpcClient.h"
 #include "gmock/gmock.h"
+#include <iostream>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -9,7 +10,9 @@ class RpcClientMock : public RpcClient {
 public:
   RpcClientMock();
 
-  ~RpcClientMock() override = default;
+  ~RpcClientMock() override {
+    std::cout << "~RpcClientMock()" << std::endl;
+  }
 
   MOCK_METHOD(void, asyncQueryRoute, (const QueryRouteRequest&, InvocationContext<QueryRouteResponse>*), (override));
 
@@ -42,6 +45,8 @@ public:
   MOCK_METHOD(void, asyncPull, (const PullMessageRequest&, InvocationContext<PullMessageResponse>*), (override));
 
   MOCK_METHOD(bool, needHeartbeat, (), (override));
+
+  MOCK_METHOD(void, needHeartbeat, (bool), (override));
 
   MOCK_METHOD(bool, ok, (), (const override));
 

@@ -65,7 +65,6 @@ struct ReceiveMessageResult {
     pop_time_ = other.pop_time_;
     invisible_time_ = other.invisible_time_;
     messages_ = other.messages_;
-    request_id_ = other.request_id_;
     source_host_ = other.source_host_;
     next_offset_ = other.next_offset_;
   }
@@ -78,7 +77,6 @@ struct ReceiveMessageResult {
     pop_time_ = other.pop_time_;
     invisible_time_ = other.invisible_time_;
     messages_ = other.messages_;
-    request_id_ = other.request_id_;
     source_host_ = other.source_host_;
     next_offset_ = other.next_offset_;
     return *this;
@@ -111,31 +109,9 @@ struct ReceiveMessageResult {
 
   const std::vector<MQMessageExt>& getMsgFoundList() const { return messages_; }
 
-  const std::string& requestId() const { return request_id_; }
-
-  void requestId(std::string request_id) { request_id_ = std::move(request_id); }
-
   const std::string& sourceHost() const { return source_host_; }
 
   void sourceHost(std::string source_host) { source_host_ = std::move(source_host); }
-
-  bool termId(int64_t& term_id) const {
-    if (request_id_.empty()) {
-      return false;
-    }
-    std::vector<uint8_t> bin;
-    bin.reserve(16);
-    if (!MixAll::hexToBinary(request_id_, bin)) {
-      SPDLOG_WARN("Invalid request_id: {}", request_id_);
-      return false;
-    }
-    // IP(int32_t) + PID(int32_t) + term_id(int64_t)
-    assert(bin.size() == 4 + 4 + 8);
-
-    auto ptr = reinterpret_cast<int64_t*>(bin.data());
-    term_id = *(ptr + 1);
-    return true;
-  }
 
   ReceiveMessageStatus status_{ReceiveMessageStatus::DEADLINE_EXCEEDED};
 
@@ -143,11 +119,6 @@ struct ReceiveMessageResult {
   absl::Duration invisible_time_;
 
   std::vector<MQMessageExt> messages_;
-
-  /**
-   * Follow format of hex{int32(IPv4) + int32(pid) + int64(sequence)}
-   */
-  std::string request_id_;
 
   std::string source_host_;
 

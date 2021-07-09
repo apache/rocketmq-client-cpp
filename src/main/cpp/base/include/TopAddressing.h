@@ -2,25 +2,25 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "GHttpClient.h"
 #include "HostInfo.h"
-#include "HttpClient.h"
-#include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 class TopAddressing {
 public:
-  explicit TopAddressing() : host_("jmenv.tbsite.net"), path_("/rocketmq/nsaddr") {}
+  TopAddressing();
 
   TopAddressing(std::string host, int port, std::string path);
 
-  bool fetchNameServerAddresses(std::vector<std::string>& list);
+  virtual ~TopAddressing();
 
-  void setUnitName(std::string unit_name) { unit_name_ = std::move(unit_name); }
+  void fetchNameServerAddresses(const std::function<void(bool, const std::vector<std::string>&)>& cb);
 
 private:
   std::string host_;
@@ -28,12 +28,7 @@ private:
   std::string path_;
   HostInfo host_info_;
 
-  /**
-   * Allow use to override unit name.
-   */
-  std::string unit_name_;
+  std::unique_ptr<GHttpClient> http_client_;
 };
-
-using TopAddressingPtr = std::unique_ptr<TopAddressing>;
 
 ROCKETMQ_NAMESPACE_END

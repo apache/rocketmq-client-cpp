@@ -23,8 +23,8 @@ public:
   bool selectOneActiveMessageQueue(absl::flat_hash_set<std::string>& isolated, MQMessageQueue& message_queue)
       LOCKS_EXCLUDED(partition_list_mtx_);
 
-  bool takeMessageQueues(absl::flat_hash_set<std::string>& isolated, std::vector<MQMessageQueue>& candidates, int count)
-      LOCKS_EXCLUDED(partition_list_mtx_);
+  bool takeMessageQueues(absl::flat_hash_set<std::string>& isolated, std::vector<MQMessageQueue>& candidates,
+                         uint32_t count) LOCKS_EXCLUDED(partition_list_mtx_);
 
   void topicRouteData(TopicRouteDataPtr topic_route_data);
 

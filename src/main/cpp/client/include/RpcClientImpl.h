@@ -59,6 +59,8 @@ public:
 
   bool needHeartbeat() override;
 
+  void needHeartbeat(bool need_heartbeat) override;
+
   bool ok() const override;
 
 private:

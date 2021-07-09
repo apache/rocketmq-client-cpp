@@ -34,7 +34,7 @@ TEST_F(MixAllTest, testValidate_body_too_large) {
   std::string body;
 
   body.reserve(MixAll::MAX_MESSAGE_BODY_SIZE + 1);
-  for (int i = 0; i <= MixAll::MAX_MESSAGE_BODY_SIZE; ++i) {
+  for (uint32_t i = 0; i <= MixAll::MAX_MESSAGE_BODY_SIZE; ++i) {
     body.append("a");
   }
   ASSERT_FALSE(MixAll::validate(MQMessage(topic, body)));

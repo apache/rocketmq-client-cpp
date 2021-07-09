@@ -20,7 +20,7 @@ namespace fs = std::filesystem;
 namespace fs = ghc::filesystem;
 #endif
 
-namespace rocketmq {
+ROCKETMQ_NAMESPACE_BEGIN
 
 Logger::Logger() : level_(Level::Info), file_size_(1048576 * 256), file_count_(16) {}
 
@@ -96,4 +96,5 @@ Logger& getLogger() {
 
 const char* Logger::USER_HOME_ENV = "HOME";
 const char* Logger::DEFAULT_PATTERN = "[%Y/%m/%d-%H:%M:%S.%e %z] [%n] [%^---%L---%$] [thread %t] %v %@";
-} // namespace rocketmq
+
+ROCKETMQ_NAMESPACE_END

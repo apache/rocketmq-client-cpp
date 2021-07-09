@@ -70,22 +70,9 @@ public:
    */
   bool consume(int batch_size, std::vector<MQMessageExt>& messages) LOCKS_EXCLUDED(cached_messages_mtx_);
 
-  int64_t termId() const;
-
-  /**
-   * Try to lease current process queue for another term with term_id from current pop response, which is forwarded
-   * by broker and is of previous request.
-   *
-   * @param current_term_id Term Id of previous request
-   * @return true if new lease is granted; false otherwise.
-   */
-  bool leaseNextTerm(int64_t current_term_id, absl::string_view source_host);
-
   void updateThrottleTimestamp() { last_throttle_timestamp_ = std::chrono::steady_clock::now(); }
 
   std::atomic_int& messageCachedNumber() { return message_cached_number_; }
-
-  std::string requestId() const;
 
   ConsumeMessageType consumeType() const { return consume_type_; }
 
@@ -128,11 +115,6 @@ private:
   int max_cache_size_;
 
   std::string simple_name_;
-
-  /**
-   * This field indicate term-id of the in-flight pop-request.
-   */
-  std::atomic<int64_t> term_id_;
 
   // callback
   std::weak_ptr<DefaultMQPushConsumerImpl> call_back_owner_;

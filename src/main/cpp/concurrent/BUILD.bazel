@@ -10,6 +10,7 @@ cc_library(
     strip_include_prefix = "//src/main/cpp/concurrent/include",
     deps = [
         "//src/main/cpp/base:base_library",
+        "//src/main/cpp/log:log_library",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
