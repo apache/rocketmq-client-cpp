@@ -1,3 +1,4 @@
+[![CI](https://github.com/lizhanhui/rocketmq-client-cpp/actions/workflows/main.yml/badge.svg)](https://github.com/lizhanhui/rocketmq-client-cpp/actions/workflows/main.yml)
 ### Introduction
 MQ products in the market supports two styles of API to acknowledge success of message consumption.
 
