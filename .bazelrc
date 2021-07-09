@@ -53,3 +53,11 @@ build:ubsan --copt -O1
 build:ubsan --copt -fno-omit-frame-pointer
 build:ubsan --linkopt -fsanitize=undefined
 build:ubsan --linkopt -lubsan
+
+# Use remote cache, --config=remote_cache See https://docs.bazel.build/versions/main/guide.html#--config
+build:remote_cache --remote_cache=http://11.122.50.85:9090
+test:remote_cache  --remote_cache=http://11.122.50.85:9090
+
+# Remote cache for CI. --config=ci_remote_cache
+build:ci_remote_cache --remote_cache=http://47.253.54.230:9090
+test:ci_remote_cache  --remote_cache=http://47.253.54.230:9090
