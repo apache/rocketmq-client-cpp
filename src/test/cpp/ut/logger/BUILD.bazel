@@ -13,5 +13,4 @@ cc_test(
     defines = [
         "BAZEL",
     ],
-    linkstatic = True,
 )

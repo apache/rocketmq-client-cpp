@@ -1,5 +1,33 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "http_client_interface",
+    hdrs = [
+        "include/HttpClient.h",
+    ],
+    strip_include_prefix = "//src/main/cpp/base/include",
+    deps = [
+        "//api:rocketmq_interface",
+        "@com_google_absl//absl/container:flat_hash_map",
+    ],
+)
+
+
+cc_library(
+    name = "http_client_mocks",
+    hdrs = [
+        "mocks/include/HttpClientMock.h",
+    ],
+    strip_include_prefix = "//src/main/cpp/base/mocks/include",
+    deps = [
+        ":http_client_interface",
+        "//external:gtest",
+    ],
+)
+
+
 cc_library(
     name = "ghttp_client",
     hdrs = [
@@ -9,14 +37,12 @@ cc_library(
         "GHttpClient.cpp",
     ],
     deps = [
+        ":http_client_interface",
         "//src/main/cpp/log:log_library",
         "@com_github_fmtlib_fmt//:fmtlib",
         "@com_github_grpc_grpc//:grpc",
     ],
     strip_include_prefix = "//src/main/cpp/base/include",
-    visibility = [
-        "//visibility:public",
-    ],
 )
 
 cc_library(
@@ -32,9 +58,6 @@ cc_library(
     strip_include_prefix = "//src/main/cpp/base/include",
     deps = [
         ":ghttp_client",
-    ],
-    visibility = [
-        "//visibility:public",
     ],
 )
 
@@ -54,8 +77,5 @@ cc_library(
         "@zlib//:zlib",
         "@boringssl//:crypto",
         "@boringssl//:ssl",
-    ],
-    visibility = [
-        "//visibility:public",
     ],
 )

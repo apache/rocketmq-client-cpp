@@ -1,14 +1,18 @@
-#include "rocketmq/CredentialsProvider.h"
 #include "MixAll.h"
+#include "StsCredentialsProviderImpl.h"
+#include "absl/memory/memory.h"
 #include "absl/strings/match.h"
 #include "ghc/filesystem.hpp"
 #include "google/protobuf/struct.pb.h"
 #include "google/protobuf/util/json_util.h"
 #include "rocketmq/Logger.h"
 #include "spdlog/spdlog.h"
+#include "GHttpClient.h"
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <string>
+#include "fmt/format.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -16,10 +20,6 @@ StaticCredentialsProvider::StaticCredentialsProvider(std::string access_key, std
     : access_key_(std::move(access_key)), access_secret_(std::move(access_secret)) {}
 
 Credentials StaticCredentialsProvider::getCredentials() { return Credentials(access_key_, access_secret_); }
-
-std::chrono::system_clock::duration StaticCredentialsProvider::refreshInterval() {
-  return std::chrono::system_clock::duration::zero();
-}
 
 const char* EnvironmentVariablesCredentialsProvider::ENVIRONMENT_ACCESS_KEY = "ROCKETMQ_ACCESS_KEY";
 const char* EnvironmentVariablesCredentialsProvider::ENVIRONMENT_ACCESS_SECRET = "ROCKETMQ_ACCESS_SECRET";
@@ -88,10 +88,99 @@ ConfigFileCredentialsProvider::ConfigFileCredentialsProvider() {
   }
 }
 
+ConfigFileCredentialsProvider::ConfigFileCredentialsProvider(std::string config_file,
+                                                             std::chrono::milliseconds refresh_interval) {}
+
 Credentials ConfigFileCredentialsProvider::getCredentials() { return Credentials(access_key_, access_secret_); }
 
-std::chrono::system_clock::duration ConfigFileCredentialsProvider::refreshInterval() {
-  return std::chrono::seconds(10);
+StsCredentialsProvider::StsCredentialsProvider(std::string ram_role_name)
+    : impl_(absl::make_unique<StsCredentialsProviderImpl>(std::move(ram_role_name))) {}
+
+Credentials StsCredentialsProvider::getCredentials() { return impl_->getCredentials(); }
+
+StsCredentialsProviderImpl::StsCredentialsProviderImpl(std::string ram_role_name)
+    : ram_role_name_(std::move(ram_role_name)), http_client_(absl::make_unique<GHttpClient>()) {
+  http_client_->start();
 }
+
+StsCredentialsProviderImpl::~StsCredentialsProviderImpl() {
+  http_client_->shutdown();
+}
+
+Credentials StsCredentialsProviderImpl::getCredentials() {
+  if (std::chrono::system_clock::now() >= expiration_) {
+    refresh();
+  }
+
+  {
+    absl::MutexLock lk(&mtx_);
+    return Credentials(access_key_, access_secret_, security_token_, expiration_);
+  }
+}
+
+void StsCredentialsProviderImpl::refresh() {
+  std::string path = fmt::format("{}{}", RAM_ROLE_URL_PREFIX, ram_role_name_);
+  absl::Mutex sync_mtx;
+  absl::CondVar sync_cv;
+  bool completed = false;
+  auto callback = [&, this](int code, const absl::flat_hash_map<std::string, std::string>& headers,
+                            const std::string body) {
+    SPDLOG_DEBUG("Received STS reponse. Code: {}", code);
+    if (GHttpClient::STATUS_OK == code) {
+      google::protobuf::Struct doc;
+      google::protobuf::util::Status status = google::protobuf::util::JsonStringToMessage(body, &doc);
+      if (status.ok()) {
+        const auto& fields = doc.fields();
+        assert(fields.contains(FIELD_ACCESS_KEY));
+        std::string access_key = fields.at(FIELD_ACCESS_KEY).string_value();
+        assert(fields.contains(FIELD_ACCESS_SECRET));
+        std::string access_secret = fields.at(FIELD_ACCESS_SECRET).string_value();
+        assert(fields.contains(FIELD_SECURITY_TOKEN));
+        std::string security_token = fields.at(FIELD_SECURITY_TOKEN).string_value();
+        assert(fields.contains(FIELD_EXPIRATION));
+        std::string expiration_string = fields.at(FIELD_EXPIRATION).string_value();
+        absl::Time expiration_instant;
+        std::string parse_error;
+        if (absl::ParseTime(EXPIRATION_DATE_TIME_FORMAT, expiration_string, absl::UTCTimeZone(), &expiration_instant,
+                            &parse_error)) {
+          absl::MutexLock lk(&mtx_);
+          access_key_ = std::move(access_key);
+          access_secret_ = std::move(access_secret);
+          security_token_ = std::move(security_token);
+          expiration_ = absl::ToChronoTime(expiration_instant);
+        } else {
+          SPDLOG_WARN("Failed to parse expiration time. Message: {}", parse_error);
+        }
+
+      } else {
+        SPDLOG_WARN("Failed to parse STS response. Message: {}", status.message().as_string());
+      }
+    } else {
+      SPDLOG_WARN("STS response code is not OK. Code: {}", code);
+    }
+
+    {
+      absl::MutexLock lk(&sync_mtx);
+      completed = true;
+      sync_cv.Signal();
+    }
+  };
+
+  http_client_->get(HttpProtocol::HTTP, RAM_ROLE_HOST, 80, path, callback);
+
+  while (!completed) {
+    absl::MutexLock lk(&sync_mtx);
+    sync_cv.Wait(&sync_mtx);
+  }
+}
+
+const char* StsCredentialsProviderImpl::RAM_ROLE_HOST = "100.100.100.200";
+const char* StsCredentialsProviderImpl::RAM_ROLE_URL_PREFIX = "/latest/meta-data/Ram/security-credentials/";
+const char* StsCredentialsProviderImpl::FIELD_ACCESS_KEY = "AccessKeyId";
+const char* StsCredentialsProviderImpl::FIELD_ACCESS_SECRET = "AccessKeySecret";
+const char* StsCredentialsProviderImpl::FIELD_SECURITY_TOKEN = "SecurityToken";
+const char* StsCredentialsProviderImpl::FIELD_EXPIRATION = "Expiration";
+const char* StsCredentialsProviderImpl::EXPIRATION_DATE_TIME_FORMAT = "%Y-%m-%d%ET%H:%H:%S%Ez";
+
 
 ROCKETMQ_NAMESPACE_END

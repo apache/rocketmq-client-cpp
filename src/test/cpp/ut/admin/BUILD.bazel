@@ -9,5 +9,4 @@ cc_test(
         "//src/main/cpp/admin:admin_server_library",
         "@com_google_googletest//:gtest_main",
     ],
-    linkstatic = True,
 )

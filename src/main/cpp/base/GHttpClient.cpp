@@ -24,6 +24,7 @@ GHttpClient::GHttpClient() : shutdown_(false) {
 
 GHttpClient::~GHttpClient() {
   SPDLOG_INFO("GHttpClient::~GHttpClient() starts");
+  shutdown();
   grpc_core::ExecCtx exec_ctx;
   grpc_httpcli_context_destroy(&http_context_);
   grpc_pollset_shutdown(grpc_polling_entity_pollset(&http_polling_entity_), &destroy_);
@@ -60,11 +61,13 @@ void GHttpClient::start() {
 }
 
 void GHttpClient::shutdown() {
-  SPDLOG_INFO("GHttpClient::shutdown()");
-  shutdown_.store(true, std::memory_order_relaxed);
-  if (loop_.joinable()) {
-    loop_.join();
-    SPDLOG_INFO("GHttpClient#loop thread quit OK");
+  bool expected = false;
+  if (shutdown_.compare_exchange_strong(expected, true, std::memory_order_relaxed)) {
+    SPDLOG_INFO("GHttpClient::shutdown()");
+    if (loop_.joinable()) {
+      loop_.join();
+      SPDLOG_INFO("GHttpClient#loop thread quit OK");
+    }
   }
 }
 

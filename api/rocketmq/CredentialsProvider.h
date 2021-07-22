@@ -1,9 +1,11 @@
 #pragma once
 
+#include "Credentials.h"
+
+#include <mutex>
+#include <chrono>
 #include <utility>
 #include <memory>
-
-#include "Credentials.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -12,8 +14,6 @@ public:
   virtual ~CredentialsProvider() = default;
 
   virtual Credentials getCredentials() = 0;
-
-  virtual std::chrono::system_clock::duration refreshInterval() = 0;
 };
 
 using CredentialsProviderPtr = std::shared_ptr<CredentialsProvider>;
@@ -25,8 +25,6 @@ public:
   ~StaticCredentialsProvider() override = default;
 
   Credentials getCredentials() override;
-
-  std::chrono::system_clock::duration refreshInterval() override;
 
 private:
   std::string access_key_;
@@ -44,8 +42,6 @@ public:
 
   Credentials getCredentials() override;
 
-  std::chrono::system_clock::duration refreshInterval() override { return std::chrono::system_clock::duration::zero(); }
-
 private:
   std::string access_key_;
   std::string access_secret_;
@@ -62,9 +58,9 @@ class ConfigFileCredentialsProvider : public CredentialsProvider {
 public:
   ConfigFileCredentialsProvider();
 
-  Credentials getCredentials() override;
+  ConfigFileCredentialsProvider(std::string config_file, std::chrono::milliseconds refresh_interval);
 
-  std::chrono::system_clock::duration refreshInterval() override;
+  Credentials getCredentials() override;
 
   /**
    * For test purpose only.
@@ -80,6 +76,18 @@ private:
   static const char* CREDENTIAL_FILE_;
   static const char* ACCESS_KEY_FIELD_NAME;
   static const char* ACCESS_SECRET_FIELD_NAME;
+};
+
+class StsCredentialsProviderImpl;
+
+class StsCredentialsProvider : public CredentialsProvider {
+public:
+  explicit StsCredentialsProvider(std::string ram_role_name);
+
+  Credentials getCredentials() override;
+
+private:
+  std::unique_ptr<StsCredentialsProviderImpl> impl_;
 };
 
 ROCKETMQ_NAMESPACE_END

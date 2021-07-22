@@ -1,6 +1,7 @@
 #include "MessageGroupQueueSelector.h"
 
 #include <utility>
+#include <cassert>
 
 ROCKETMQ_NAMESPACE_BEGIN
 

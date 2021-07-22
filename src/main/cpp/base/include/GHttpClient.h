@@ -1,7 +1,7 @@
 #include "rocketmq/RocketMQ.h"
 
+#include "HttpClient.h"
 #include "absl/base/thread_annotations.h"
-#include "absl/container/flat_hash_map.h"
 #include "absl/synchronization/mutex.h"
 #include "src/core/lib/http/httpcli.h"
 #include "src/core/lib/iomgr/iomgr.h"
@@ -15,11 +15,6 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-enum class HttpProtocol : int8_t {
-  HTTP = 1,
-  HTTPS = 2,
-};
-
 struct HttpInvocationContext {
   HttpInvocationContext() { memset(&request, 0, sizeof(request)); }
   std::string host;
@@ -29,19 +24,19 @@ struct HttpInvocationContext {
   std::function<void(int, const absl::flat_hash_map<std::string, std::string>&, const std::string&)> callback;
 };
 
-class GHttpClient {
+class GHttpClient : public HttpClient {
 public:
   GHttpClient();
 
-  ~GHttpClient();
+  ~GHttpClient() override;
 
-  void start();
+  void start() override;
 
-  void shutdown();
+  void shutdown() override;
 
-  void
-  get(HttpProtocol protocol, const std::string& host, std::uint16_t port, const std::string& path,
-      const std::function<void(int, const absl::flat_hash_map<std::string, std::string>&, const std::string&)>& cb);
+  void get(HttpProtocol protocol, const std::string& host, std::uint16_t port, const std::string& path,
+           const std::function<void(int, const absl::flat_hash_map<std::string, std::string>&, const std::string&)>& cb)
+      override;
 
   static const int STATUS_OK;
 

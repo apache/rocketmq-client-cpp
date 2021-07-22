@@ -48,4 +48,28 @@ TEST_F(GHttpClientTest, testCtor) {
   http_client.shutdown();
 }
 
+TEST_F(GHttpClientTest, testDestructWithoutShutdown) {
+  spdlog::set_level(spdlog::level::debug);
+  GHttpClient http_client;
+  absl::Mutex mtx;
+  absl::CondVar cv;
+  bool completed = false;
+  auto callback = [&](int status, const absl::flat_hash_map<std::string, std::string>& metadata,
+                      const std::string& body) {
+    absl::MutexLock lk(&mtx);
+    completed = true;
+    SPDLOG_DEBUG("HTTP status-code: {}, response body: {}", status, body);
+    cv.SignalAll();
+  };
+
+  std::string host("www.aliyun.com");
+  http_client.start();
+  http_client.get(HttpProtocol::HTTP, host, 8080, "/", callback);
+  if (!completed) {
+    absl::MutexLock lk(&mtx);
+    cv.WaitWithTimeout(&mtx, absl::Seconds(5));
+  }
+  ASSERT_TRUE(completed);
+}
+
 ROCKETMQ_NAMESPACE_END

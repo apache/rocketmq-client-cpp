@@ -11,5 +11,4 @@ cc_test(
         "//src/main/cpp/scheduler:scheduler_library",
         "@com_google_googletest//:gtest_main",
     ],
-    linkstatic = True,
 )

@@ -81,7 +81,7 @@ void DefaultMQProducer::setLocalTransactionStateChecker(LocalTransactionStateChe
   impl_->setLocalTransactionStateChecker(std::move(checker));
 }
 
-void DefaultMQProducer::setMaxAttemptTimes(int max_attempt_times) { impl_->maxAttemptTimes(times); }
+void DefaultMQProducer::setMaxAttemptTimes(int max_attempt_times) { impl_->maxAttemptTimes(max_attempt_times); }
 
 int DefaultMQProducer::getMaxAttemptTimes() const { return impl_->maxAttemptTimes(); }
 

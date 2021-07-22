@@ -1,6 +1,17 @@
 load("@rules_cc//cc:defs.bzl", "cc_test", "cc_library")
 
 cc_test(
+    name = "message_group_queue_selector_test",
+    srcs = [
+        "MessageGroupQueueSelectorTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/rocketmq:rocketmq_library",
+        "@com_google_googletest//:gtest_main",
+    ]
+)
+
+cc_test(
     name = "executor_test",
     srcs = [
         "ExecutorTest.cpp",
@@ -116,5 +127,17 @@ cc_test(
     deps = [
         "//src/main/cpp/rocketmq:rocketmq_library",
          "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "sts_credentials_provider_test",
+    srcs = [
+        "StsCredentialsProviderImplTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/base:http_client_mocks",
+        "//src/main/cpp/rocketmq:rocketmq_library",
+        "@com_google_googletest//:gtest_main",
     ],
 )
