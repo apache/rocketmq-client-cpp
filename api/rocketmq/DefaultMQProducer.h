@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <memory>
 #include <vector>
 
@@ -33,13 +34,15 @@ public:
    * Acquire previous send timeout in milliseconds.
    * @return Send timeout in milliseconds
    */
-  int getSendMsgTimeout() const;
+  std::chrono::milliseconds getSendMsgTimeout() const;
 
   /**
    * Set default send message timeout in milliseconds.
    * @param timeout_millis Timeout used when sending messages.
    */
-  void setSendMsgTimeout(int timeout_millis);
+  void setSendMsgTimeout(std::chrono::milliseconds timeout);
+
+  SendResult send(const MQMessage& message, const std::string& message_group);
 
   /**
    * Send message in synchronous manner.
@@ -64,7 +67,7 @@ public:
   void send(const MQMessage& message, MessageQueueSelector* selector, void* arg, SendCallback* send_callback);
 
   /**
-   * send message in Oneway(The implementation is simply ignore the result of send message in synchronous)
+   * send message in Oneway(The implementation is simply ignore the result of send message in synchronous).
    * @param message  Message to send.
    * @param select_active_broker Do NOT rely on this parameter. it has been deprecated.
    */
@@ -84,9 +87,15 @@ public:
 
   bool isTracingEnabled();
 
-  int getRetryTimes() const;
+  /**
+   * Number of attempts before claiming a send action as failure. By default, 3 attempts will be performed for sync and
+   * async send methods.
+   *
+   * @return
+   */
+  int getMaxAttemptTimes() const;
 
-  void setRetryTimes(int times);
+  void setMaxAttemptTimes(int max_attempt_times);
 
   std::vector<MQMessageQueue> getTopicMessageQueueInfo(const std::string& topic);
 

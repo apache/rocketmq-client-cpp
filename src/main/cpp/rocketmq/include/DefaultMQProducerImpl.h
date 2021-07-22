@@ -33,6 +33,7 @@ public:
   void shutdown() override;
 
   SendResult send(const MQMessage& message);
+  SendResult send(const MQMessage& message, const std::string& message_group);
   SendResult send(const MQMessage& message, const MQMessageQueue& message_queue);
   SendResult send(const MQMessage& message, MessageQueueSelector* selector, void* arg);
 

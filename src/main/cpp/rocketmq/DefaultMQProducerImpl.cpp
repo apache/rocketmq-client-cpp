@@ -1,14 +1,15 @@
 #include "DefaultMQProducerImpl.h"
 #include "MessageAccessor.h"
+#include "MessageGroupQueueSelector.h"
 #include "Metadata.h"
 #include "MixAll.h"
-#include "UtilAll.h"
 #include "Protocol.h"
 #include "SendCallbacks.h"
 #include "SendMessageContext.h"
 #include "Signature.h"
 #include "TransactionImpl.h"
 #include "UniqueIdGenerator.h"
+#include "UtilAll.h"
 #include "rocketmq/ErrorCode.h"
 #include "rocketmq/MQClientException.h"
 
@@ -123,6 +124,11 @@ SendResult DefaultMQProducerImpl::send(const MQMessage& message) {
     return callback.sendResult();
   }
   THROW_MQ_EXCEPTION(MQClientException, callback.errorMessage(), FAILED_TO_SEND_MESSAGE);
+}
+
+SendResult DefaultMQProducerImpl::send(const MQMessage& message, const std::string& message_group) {
+  MessageGroupQueueSelector selector(message_group);
+  return send(message, &selector, nullptr);
 }
 
 SendResult DefaultMQProducerImpl::send(const MQMessage& message, const MQMessageQueue& message_queue) {

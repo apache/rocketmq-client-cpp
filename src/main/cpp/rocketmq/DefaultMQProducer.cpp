@@ -13,12 +13,16 @@ void DefaultMQProducer::start() { impl_->start(); }
 
 void DefaultMQProducer::shutdown() { impl_->shutdown(); }
 
-int DefaultMQProducer::getSendMsgTimeout() const {
-  return static_cast<int>(absl::ToInt64Milliseconds(impl_->getIoTimeout()));
+std::chrono::milliseconds DefaultMQProducer::getSendMsgTimeout() const {
+  return absl::ToChronoMilliseconds(impl_->getIoTimeout());
 }
 
-void DefaultMQProducer::setSendMsgTimeout(int timeout_millis) {
-  impl_->setIoTimeout(absl::Milliseconds(timeout_millis));
+SendResult DefaultMQProducer::send(const MQMessage& message, const std::string& message_group) {
+  return impl_->send(message, message_group);
+}
+
+void DefaultMQProducer::setSendMsgTimeout(std::chrono::milliseconds timeout) {
+  impl_->setIoTimeout(absl::FromChrono(timeout));
 }
 
 void DefaultMQProducer::setNamesrvAddr(const std::string& name_server_address_list) {
@@ -77,9 +81,9 @@ void DefaultMQProducer::setLocalTransactionStateChecker(LocalTransactionStateChe
   impl_->setLocalTransactionStateChecker(std::move(checker));
 }
 
-void DefaultMQProducer::setRetryTimes(int retry_times) { impl_->maxAttemptTimes(retry_times); }
+void DefaultMQProducer::setMaxAttemptTimes(int max_attempt_times) { impl_->maxAttemptTimes(times); }
 
-int DefaultMQProducer::getRetryTimes() const { return impl_->maxAttemptTimes(); }
+int DefaultMQProducer::getMaxAttemptTimes() const { return impl_->maxAttemptTimes(); }
 
 std::vector<MQMessageQueue> DefaultMQProducer::getTopicMessageQueueInfo(const std::string& topic) {
   return impl_->getTopicMessageQueueInfo(topic);
