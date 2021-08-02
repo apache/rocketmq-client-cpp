@@ -33,39 +33,14 @@ cc_test(
     ],
 )
 
-cc_library(
-    name = "semaphore_library",
-    hdrs = [
-        "include/Semaphore.h",
-    ],
-    srcs = [
-        "Semaphore.cpp",
-    ],
-    strip_include_prefix = "//src/test/cpp/ut/rocketmq/include",
-    deps = [
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/synchronization",
-    ],
-)
-
-cc_test(
-    name = "semaphore_test",
-    srcs = [
-        "SemaphoreTest.cpp",
-    ],
-    deps = [
-        ":semaphore_library",
-        "@com_github_gabime_spdlog//:spdlog",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
-
 cc_test(
     name = "process_queue_test",
     srcs = [
         "ProcessQueueTest.cpp",
     ],
     deps = [
+        "//src/main/cpp/client:client_mocks",
+        "//src/main/cpp/rocketmq:rocketmq_mocks",
         "//src/main/cpp/rocketmq:rocketmq_library",
         "@com_google_googletest//:gtest_main",
     ],
@@ -79,7 +54,7 @@ cc_library(
     srcs = [],
     strip_include_prefix = "//src/test/cpp/ut/rocketmq/include",
     deps = [
-        "//src/main/cpp/client:rpc_client_mock",
+        "//src/main/cpp/client:client_mocks",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -138,6 +113,41 @@ cc_test(
     deps = [
         "//src/main/cpp/base:http_client_mocks",
         "//src/main/cpp/rocketmq:rocketmq_library",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "filter_expression_test",
+    srcs = [
+        "FilterExpressionTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/rocketmq:rocketmq_library",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "consume_message_service_test",
+    srcs = [
+        "ConsumeStandardMessageServiceTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/rocketmq:rocketmq_library",
+        "//src/main/cpp/rocketmq:rocketmq_mocks",
+        "//src/main/cpp/base:message_listener_mocks",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "consumer_test",
+    srcs = [
+        "ConsumerTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/rocketmq:rocketmq_mocks",
         "@com_google_googletest//:gtest_main",
     ],
 )

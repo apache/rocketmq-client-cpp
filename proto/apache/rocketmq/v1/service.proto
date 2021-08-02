@@ -39,6 +39,7 @@ message QueryRouteResponse {
 
 message SendMessageRequest {
   Message message = 1;
+  Partition partition = 2;
 }
 
 message SendMessageResponse {
@@ -68,6 +69,7 @@ message ReceiveMessageRequest {
   int32 batch_size = 7;
   google.protobuf.Duration invisible_duration = 8;
   google.protobuf.Duration await_time = 9;
+  bool fifo_flag = 10;
 }
 
 message ReceiveMessageResponse {
@@ -98,12 +100,27 @@ message NackMessageRequest {
   string client_id = 3;
   string receipt_handle = 4;
   string message_id = 5;
-  int32 reconsume_times = 6;
-  int32 max_reconsume_times = 7;
+  int32 delivery_attempt = 6;
+  int32 max_delivery_attempts = 7;
+  // to delete.
   ConsumeModel consume_model = 8;
 }
 
 message NackMessageResponse {
+  ResponseCommon common = 1;
+}
+
+message ForwardMessageToDeadLetterQueueRequest {
+  Resource group = 1;
+  Resource topic = 2;
+  string client_id = 3;
+  string receipt_handle = 4;
+  string message_id = 5;
+  int32 delivery_attempt = 6;
+  int32 max_delivery_attempts = 7;
+}
+
+message ForwardMessageToDeadLetterQueueResponse {
   ResponseCommon common = 1;
 }
 
@@ -199,7 +216,8 @@ message PrintThreadStackResponse {
 }
 
 message VerifyMessageConsumptionRequest {
-  Message message = 1;
+  Partition Partition = 1;
+  Message message = 2;
 }
 
 message VerifyMessageConsumptionResponse {
@@ -251,6 +269,9 @@ service MessagingService {
   }
 
   rpc NackMessage(NackMessageRequest) returns (NackMessageResponse) {
+  }
+
+  rpc ForwardMessageToDeadLetterQueue(ForwardMessageToDeadLetterQueueRequest) returns (ForwardMessageToDeadLetterQueueResponse) {
   }
 
   rpc EndTransaction(EndTransactionRequest) returns (EndTransactionResponse) {

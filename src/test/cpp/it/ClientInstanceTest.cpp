@@ -1,5 +1,5 @@
-#include "ClientInstance.h"
-#include "ClientManager.h"
+#include "ClientManagerFactory.h"
+#include "ClientManagerImpl.h"
 #include "gtest/gtest.h"
 
 ROCKETMQ_NAMESPACE_BEGIN

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "LoggerImpl.h"
-#include "Metadata.h"
+#include "MetadataConstants.h"
 #include "UniqueIdGenerator.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
@@ -23,7 +23,7 @@ ROCKETMQ_NAMESPACE_BEGIN
  */
 struct BaseInvocationContext {
   BaseInvocationContext() : request_id_(UniqueIdGenerator::instance().next()) {
-    context.AddMetadata(Metadata::REQUEST_ID_KEY, request_id_);
+    context.AddMetadata(MetadataConstants::REQUEST_ID_KEY, request_id_);
   }
 
   virtual ~BaseInvocationContext() = default;

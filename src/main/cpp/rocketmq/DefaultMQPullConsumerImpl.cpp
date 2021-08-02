@@ -1,11 +1,12 @@
 #include "DefaultMQPullConsumerImpl.h"
-#include "ClientManager.h"
+#include "ClientManagerFactory.h"
+#include "InvocationContext.h"
 #include "Signature.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 void DefaultMQPullConsumerImpl::start() {
-  BaseImpl::start();
+  ClientImpl::start();
   if (State::STARTED != state_.load(std::memory_order_relaxed)) {
     SPDLOG_WARN("Unexpected state: {}", state_.load(std::memory_order_relaxed));
     return;
@@ -17,7 +18,7 @@ void DefaultMQPullConsumerImpl::shutdown() {
   // Shutdown services started by current tier
 
   // Shutdown services that are started by the parent
-  BaseImpl::shutdown();
+  ClientImpl::shutdown();
   State expected = State::STOPPING;
   if (state_.compare_exchange_strong(expected, State::STOPPED)) {
     SPDLOG_INFO("DefaultMQPullConsumerImpl stopped");
@@ -115,13 +116,14 @@ void DefaultMQPullConsumerImpl::pull(const PullMessageQuery& query, PullCallback
   std::string target_host = query.message_queue.serviceAddress();
   assert(!target_host.empty());
 
-  auto callback = [this, target_host, cb](bool ok, const PullMessageResponse& response) {
-    if (!ok) {
+  auto callback = [this, target_host, cb](const InvocationContext<PullMessageResponse>* invocation_context) {
+    if (!invocation_context || !invocation_context->status.ok()) {
       MQClientException exception(fmt::format("Server[{}] is not reachable", target_host), -1, __FILE__, __LINE__);
       cb->onException(exception);
       return;
     }
 
+    auto response = invocation_context->response;
     auto biz_status = response.common().status();
     if (google::rpc::Code::OK != biz_status.code()) {
       MQClientException exception(response.common().status().message(), biz_status.code(), __FILE__, __LINE__);
@@ -143,7 +145,7 @@ void DefaultMQPullConsumerImpl::pull(const PullMessageQuery& query, PullCallback
   absl::flat_hash_map<std::string, std::string> metadata;
   Signature::sign(this, metadata);
 
-  client_instance_->pullMessage(target_host, metadata, request, absl::ToChronoMilliseconds(io_timeout_), callback);
+  client_instance_->pullMessage(target_host, metadata, request, absl::ToChronoMilliseconds(long_polling_timeout_), callback);
 }
 
 void DefaultMQPullConsumerImpl::prepareHeartbeatData(HeartbeatRequest& request) {

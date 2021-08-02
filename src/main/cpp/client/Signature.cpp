@@ -1,5 +1,6 @@
 #include "Signature.h"
-#include "Metadata.h"
+#include "ClientConfigImpl.h"
+#include "MetadataConstants.h"
 #include "Protocol.h"
 #include "TlsHelper.h"
 #include "spdlog/spdlog.h"
@@ -9,23 +10,23 @@ ROCKETMQ_NAMESPACE_BEGIN
 void Signature::sign(ClientConfig* client, absl::flat_hash_map<std::string, std::string>& metadata) {
   assert(client);
 
-  metadata.insert({Metadata::LANGUAGE_KEY, "CPP"});
+  metadata.insert({MetadataConstants::LANGUAGE_KEY, "CPP"});
   // Add common headers
-  metadata.insert({Metadata::CLIENT_VERSION_KEY, ClientConfig::CLIENT_VERSION});
-  metadata.insert({Metadata::PROTOCOL_VERSION_KEY, Protocol::PROTOCOL_VERSION});
+  metadata.insert({MetadataConstants::CLIENT_VERSION_KEY, ClientConfigImpl::CLIENT_VERSION});
+  metadata.insert({MetadataConstants::PROTOCOL_VERSION_KEY, Protocol::PROTOCOL_VERSION});
 
   if (!client->tenantId().empty()) {
-    metadata.insert({Metadata::TENANT_ID_KEY, client->tenantId()});
+    metadata.insert({MetadataConstants::TENANT_ID_KEY, client->tenantId()});
   }
 
   if (!client->arn().empty()) {
-    metadata.insert({Metadata::ARN_KEY, client->arn()});
+    metadata.insert({MetadataConstants::ARN_KEY, client->arn()});
   }
 
   absl::Time now = absl::Now();
   absl::TimeZone utc_time_zone = absl::UTCTimeZone();
-  const std::string request_date_time = absl::FormatTime(Metadata::DATE_TIME_FORMAT, now, utc_time_zone);
-  metadata.insert({Metadata::DATE_TIME_KEY, request_date_time});
+  const std::string request_date_time = absl::FormatTime(MetadataConstants::DATE_TIME_FORMAT, now, utc_time_zone);
+  metadata.insert({MetadataConstants::DATE_TIME_KEY, request_date_time});
 
   if (client->credentialsProvider()) {
     Credentials&& credentials = client->credentialsProvider()->getCredentials();
@@ -35,9 +36,9 @@ void Signature::sign(ClientConfig* client, absl::flat_hash_map<std::string, std:
     }
 
     std::string authorization;
-    authorization.append(Metadata::ALGORITHM_KEY)
+    authorization.append(MetadataConstants::ALGORITHM_KEY)
         .append(" ")
-        .append(Metadata::CREDENTIAL_KEY)
+        .append(MetadataConstants::CREDENTIAL_KEY)
         .append("=")
         .append(credentials.accessKey())
         .append("/")
@@ -45,15 +46,15 @@ void Signature::sign(ClientConfig* client, absl::flat_hash_map<std::string, std:
         .append("/")
         .append(client->serviceName())
         .append(", ")
-        .append(Metadata::SIGNED_HEADERS_KEY)
+        .append(MetadataConstants::SIGNED_HEADERS_KEY)
         .append("=")
-        .append(Metadata::DATE_TIME_KEY)
+        .append(MetadataConstants::DATE_TIME_KEY)
         .append(", ")
-        .append(Metadata::SIGNATURE_KEY)
+        .append(MetadataConstants::SIGNATURE_KEY)
         .append("=")
         .append(TlsHelper::sign(credentials.accessSecret(), request_date_time));
     SPDLOG_DEBUG("Add authorization header: {}", authorization);
-    metadata.insert({Metadata::AUTHORIZATION, authorization});
+    metadata.insert({MetadataConstants::AUTHORIZATION, authorization});
   }
 }
 

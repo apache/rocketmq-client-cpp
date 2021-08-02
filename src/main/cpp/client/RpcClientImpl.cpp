@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-#include "ClientConfig.h"
+#include "ClientConfigImpl.h"
 #include "TlsHelper.h"
 #include "absl/time/time.h"
 
@@ -137,6 +137,16 @@ void RpcClientImpl::asyncPull(const PullMessageRequest& request,
                               InvocationContext<PullMessageResponse>* invocation_context) {
   invocation_context->response_reader =
       stub_->PrepareAsyncPullMessage(&invocation_context->context, request, completion_queue_.get());
+  invocation_context->response_reader->StartCall();
+  invocation_context->response_reader->Finish(&invocation_context->response, &invocation_context->status,
+                                              invocation_context);
+}
+
+void RpcClientImpl::asyncForwardMessageToDeadLetterQueue(
+    const ForwardMessageToDeadLetterQueueRequest& request,
+    InvocationContext<ForwardMessageToDeadLetterQueueResponse>* invocation_context) {
+  invocation_context->response_reader = stub_->PrepareAsyncForwardMessageToDeadLetterQueue(
+      &invocation_context->context, request, completion_queue_.get());
   invocation_context->response_reader->StartCall();
   invocation_context->response_reader->Finish(&invocation_context->response, &invocation_context->status,
                                               invocation_context);

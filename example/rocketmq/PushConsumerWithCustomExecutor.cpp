@@ -3,12 +3,11 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <iostream>
 #include <mutex>
 #include <thread>
 
-using namespace rocketmq;
-
-namespace rocketmq {
+ROCKETMQ_NAMESPACE_BEGIN
 
 class ExecutorImpl {
 public:
@@ -86,31 +85,31 @@ private:
   std::thread worker_;
 };
 
-} // namespace rocketmq
-
-class SampleMQMessageListener : public MessageListenerConcurrently {
+class SampleMQMessageListener : public StandardMessageListener {
 public:
-  ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) override {
+  ConsumeMessageResult consumeMessage(const std::vector<MQMessageExt>& msgs) override {
     std::lock_guard<std::mutex> lk(console_mtx_);
     for (const MQMessageExt& msg : msgs) {
       std::cout << "Topic=" << msg.getTopic() << ", MsgId=" << msg.getMsgId() << ", Body=" << msg.getBody()
                 << std::endl;
     }
-    return ConsumeStatus::CONSUME_SUCCESS;
+    return ConsumeMessageResult::SUCCESS;
   }
 
 private:
   std::mutex console_mtx_;
 };
 
-int main(int argc, char* argv[]) {
+ROCKETMQ_NAMESPACE_END
 
+int main(int argc, char* argv[]) {
+  using namespace ROCKETMQ_NAMESPACE;
   Logger& logger = getLogger();
   logger.setLevel(Level::Debug);
   logger.init();
 
   DefaultMQPushConsumer push_consumer("TestGroup");
-  MQMessageListener* listener = new SampleMQMessageListener;
+  MessageListener* listener = new SampleMQMessageListener;
 
   auto pool = new ExecutorImpl;
   pool->start();
@@ -118,7 +117,7 @@ int main(int argc, char* argv[]) {
   push_consumer.setGroupName("TestGroup");
   push_consumer.setInstanceName("CID_sample_member_0");
   push_consumer.subscribe("TestTopic", "*");
-   push_consumer.setNamesrvAddr("11.167.164.105:9876");
+  push_consumer.setNamesrvAddr("11.167.164.105:9876");
   push_consumer.registerMessageListener(listener);
   push_consumer.start();
 

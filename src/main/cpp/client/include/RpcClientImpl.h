@@ -57,6 +57,10 @@ public:
   void asyncPull(const PullMessageRequest& request,
                  InvocationContext<PullMessageResponse>* invocation_context) override;
 
+  void asyncForwardMessageToDeadLetterQueue(
+      const ForwardMessageToDeadLetterQueueRequest& request,
+      InvocationContext<ForwardMessageToDeadLetterQueueResponse>* invocation_context) override;
+
   bool needHeartbeat() override;
 
   void needHeartbeat(bool need_heartbeat) override;

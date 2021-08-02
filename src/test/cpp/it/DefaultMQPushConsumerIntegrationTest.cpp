@@ -6,7 +6,7 @@
 
 using namespace rocketmq;
 
-class SampleMQMessageListener : public MessageListenerConcurrently {
+class SampleMQMessageListener : public StandardMessageListener {
 public:
   ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) override {
     for (const MQMessageExt& msg : msgs) {
@@ -35,7 +35,7 @@ public:
 
 protected:
   DefaultMQPushConsumer push_consumer_;
-  MQMessageListener* listener_;
+  MessageListener* listener_;
 };
 
 TEST_F(DefaultMQPushConsumerTest, testStartupAndShutdown) {

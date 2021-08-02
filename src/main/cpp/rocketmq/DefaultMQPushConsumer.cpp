@@ -32,7 +32,7 @@ void DefaultMQPushConsumer::subscribe(const std::string& topic, const std::strin
 
 void DefaultMQPushConsumer::setConsumeFromWhere(ConsumeFromWhere policy) { impl_->setConsumeFromWhere(policy); }
 
-void DefaultMQPushConsumer::registerMessageListener(MQMessageListener* listener) {
+void DefaultMQPushConsumer::registerMessageListener(MessageListener* listener) {
   impl_->registerMessageListener(listener);
 }
 
@@ -58,10 +58,6 @@ void DefaultMQPushConsumer::enableTracing(bool enabled) { impl_->enableTracing(e
 bool DefaultMQPushConsumer::isTracingEnabled() { return impl_->isTracingEnabled(); }
 
 void DefaultMQPushConsumer::setAsyncPull(bool) {}
-
-void DefaultMQPushConsumer::setMaxCacheMsgSizePerQueue(int max_cache_size) {
-  impl_->maxCachedMessageNumberPerQueue(max_cache_size);
-}
 
 void DefaultMQPushConsumer::setConsumeMessageBatchMaxSize(int batch_size) { impl_->consumeBatchSize(batch_size); }
 

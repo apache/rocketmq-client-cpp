@@ -17,17 +17,21 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 const int32_t MixAll::MASTER_BROKER_ID = 0;
 
-const int32_t MixAll::MAX_MESSAGE_NUMBER_PER_BATCH = 32;
+const int32_t MixAll::DEFAULT_RECEIVE_MESSAGE_BATCH_SIZE = 32;
 
 const uint32_t MixAll::MAX_MESSAGE_BODY_SIZE = 1024 * 1024 * 4;
-
-const char* MixAll::RETRY_GROUP_TOPIC_PREFIX = "%RETRY%";
+const uint32_t MixAll::MAX_CACHED_MESSAGE_COUNT = 65535;
+const uint32_t MixAll::DEFAULT_CACHED_MESSAGE_COUNT = 1024;
+const uint64_t MixAll::DEFAULT_CACHED_MESSAGE_MEMORY = 128L * 1024 * 1024;
+const uint32_t MixAll::DEFAULT_CONSUME_THREAD_POOL_SIZE = 20;
+const uint32_t MixAll::DEFAULT_CONSUME_MESSAGE_BATCH_SIZE = 1;
+const int32_t MixAll::DEFAULT_MAX_DELIVERY_ATTEMPTS = 16;
 
 const RE2 MixAll::TOPIC_REGEX("[a-zA-Z0-9\\-_]{3,64}");
 
 const std::chrono::duration<long long> MixAll::DEFAULT_INVISIBLE_TIME_ = std::chrono::seconds(30);
 
-const std::chrono::duration<long long> MixAll::PROCESS_QUEUE_EXPIRATION_THRESHOLD_ = std::chrono::seconds(20);
+const std::chrono::duration<long long> MixAll::PROCESS_QUEUE_EXPIRATION_THRESHOLD_ = std::chrono::seconds(120);
 
 const int32_t MixAll::MAX_SEND_MESSAGE_ATTEMPT_TIMES_ = 3;
 
@@ -87,7 +91,7 @@ bool MixAll::sha1(const std::string& data, std::string& digest) {
   SHA1_Update(&ctx, data.data(), data.length());
   SHA1_Final(out, &ctx);
   digest.clear();
-  digest.append(reinterpret_cast<const char*>(out), SHA_DIGEST_LENGTH);
+  digest.append(hex(reinterpret_cast<const char*>(out), SHA_DIGEST_LENGTH));
   return true;
 }
 

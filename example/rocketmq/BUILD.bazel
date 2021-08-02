@@ -87,3 +87,25 @@ cc_binary(
         "//src/main/cpp/rocketmq:rocketmq_library",
     ],
 )
+
+cc_binary(
+    name = "benchmark_push_consumer",
+    srcs = [
+        "BenchmarkPushConsumer.cpp",
+    ],
+    deps = [
+        "//api:rocketmq_interface",
+        "//src/main/cpp/rocketmq:rocketmq_library",
+    ],
+)
+
+cc_binary(
+    name = "example_broadcast_push_consumer",
+    srcs = [
+        "ExampleBroadcastPushConsumer.cpp",
+    ],
+    deps = [
+        "//api:rocketmq_interface",
+        "//src/main/cpp/rocketmq:rocketmq_library",
+    ],
+)

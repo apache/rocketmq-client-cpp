@@ -31,3 +31,9 @@ target_link_libraries(unique_id_generator_test
             gtest_main
             base_library)
 add_test(ut_unique_id_generator unique_id_generator_test)
+
+add_executable(ghttp_client_test GHttpClientTest.cpp)
+target_link_libraries(ghttp_client_test
+        PRIVATE
+            base_library
+            gtest_main)

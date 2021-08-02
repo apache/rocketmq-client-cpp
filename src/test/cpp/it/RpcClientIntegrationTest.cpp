@@ -2,7 +2,7 @@
 #include <thread>
 #include <unordered_map>
 
-#include "ClientConfig.h"
+#include "ClientConfigImpl.h"
 #include "MixAll.h"
 #include "Protocol.h"
 #include "RpcClientImpl.h"

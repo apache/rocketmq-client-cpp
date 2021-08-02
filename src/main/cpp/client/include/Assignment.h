@@ -1,15 +1,11 @@
 #pragma once
 
 #include "rocketmq/MQMessageQueue.h"
+#include "ConsumeMessageType.h"
 #include <map>
 #include <string>
 
-namespace rocketmq {
-
-enum ConsumeMessageType {
-  PULL = 0,
-  POP = 1,
-};
+ROCKETMQ_NAMESPACE_BEGIN
 
 class Assignment {
 public:
@@ -44,5 +40,4 @@ private:
   MQMessageQueue message_queue_;
   ConsumeMessageType consume_type_;
 };
-
-} // namespace rocketmq
+ROCKETMQ_NAMESPACE_END

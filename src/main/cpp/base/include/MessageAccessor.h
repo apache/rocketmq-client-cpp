@@ -26,7 +26,7 @@ public:
 
   static void setDeliveryTimestamp(MQMessageExt& message, absl::Time delivery_timestamp);
 
-  static void setDeliveryCount(MQMessageExt& message, int32_t delivery_count);
+  static void setDeliveryAttempt(MQMessageExt& message, int32_t attempt_times);
 
   static void setDecodedTimestamp(MQMessageExt& message, absl::Time decode_timestamp);
   static void setInvisiblePeriod(MQMessageExt& message, absl::Duration invisible_period);

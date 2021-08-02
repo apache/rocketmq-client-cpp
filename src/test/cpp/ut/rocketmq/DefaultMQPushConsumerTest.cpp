@@ -1,10 +1,10 @@
 #include "rocketmq/DefaultMQPushConsumer.h"
-#include "ClientManager.h"
+#include "ClientManagerFactory.h"
 #include "DefaultMQPushConsumerImpl.h"
+#include "InvocationContext.h"
 #include "MQClientTest.h"
 #include "absl/time/time.h"
 #include "rocketmq/MQMessageExt.h"
-#include "rocketmq/MQMessageListener.h"
 #include "spdlog/spdlog.h"
 #include <atomic>
 
@@ -148,6 +148,13 @@ public:
     invocation_context->onCompletion(true);
   }
 
+  void
+  mockForwardMessageToDeadLetterQueue(const ForwardMessageToDeadLetterQueueRequest& request,
+                                      InvocationContext<ForwardMessageToDeadLetterQueueResponse>* invocation_context) {
+    invocation_context->response.mutable_common()->mutable_status()->set_code(google::rpc::Code::OK);
+    invocation_context->onCompletion(true);
+  }
+
 protected:
   std::shared_ptr<NiceMock<RpcClientMock>> rpc_client_for_broker_;
   const int64_t max_offset_{100};
@@ -161,9 +168,9 @@ std::atomic_bool completed_{false};
 std::mutex completion_mtx_;
 std::condition_variable completion_cv_;
 
-class MessageListenerUnitTests : public ROCKETMQ_NAMESPACE::MessageListenerConcurrently {
+class MessageListenerUnitTests : public StandardMessageListener {
 public:
-  ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) override {
+  ConsumeMessageResult consumeMessage(const std::vector<MQMessageExt>& msgs) override {
     if (!msgs.empty()) {
       std::unique_lock<std::mutex> lk(completion_mtx_);
       bool expected = false;
@@ -176,7 +183,7 @@ public:
       SPDLOG_INFO("Received a message[Topic={}, MessageId={}]", msg.getTopic(), msg.getMsgId());
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    return ConsumeStatus::CONSUME_SUCCESS;
+    return ConsumeMessageResult::SUCCESS;
   }
 };
 

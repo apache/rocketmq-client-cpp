@@ -3,10 +3,11 @@ target_sources(base_obj
         PRIVATE
             GHttpClient.cpp
             HostInfo.cpp
-            Metadata.cpp
+            MessageAccessor.cpp
+            MetadataConstants.cpp
             MixAll.cpp
             MQMessage.cpp
-            PermissionHelper.cpp
+            MQMessageExt.cpp
             Protocol.cpp
             RateLimiter.cpp
             TopAddressing.cpp
@@ -55,3 +56,4 @@ target_link_libraries(base_library
             spdlog::spdlog_header_only
             uv_a
             zlib)
+add_subdirectory(mocks)

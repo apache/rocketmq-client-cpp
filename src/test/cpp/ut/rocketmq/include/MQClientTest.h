@@ -1,13 +1,13 @@
 #pragma once
 
-#include "ClientManager.h"
+#include "ClientManagerFactory.h"
 #include "RpcClientMock.h"
+#include "grpc/grpc.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include <functional>
 #include <grpcpp/impl/grpc_library.h>
 #include <memory>
-#include "grpc/grpc.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -17,7 +17,7 @@ public:
 
   void SetUp() override {
     name_server_list_.emplace_back(name_server_address_);
-    client_instance_ = std::make_shared<ClientInstance>(arn_);
+    client_instance_ = std::make_shared<ClientManagerImpl>(arn_);
     rpc_client_ns_ = std::make_shared<testing::NiceMock<RpcClientMock>>();
     ON_CALL(*rpc_client_ns_, needHeartbeat()).WillByDefault(testing::Return(false));
     ON_CALL(*rpc_client_ns_, ok()).WillByDefault(testing::Invoke([this]() { return client_ok_; }));
@@ -25,7 +25,7 @@ public:
         .WillByDefault(testing::Invoke(
             std::bind(&MQClientTest::mockQueryRoute, this, std::placeholders::_1, std::placeholders::_2)));
     client_instance_->addRpcClient(name_server_address_, rpc_client_ns_);
-    ClientManager::getInstance().addClientInstance(arn_, client_instance_);
+    ClientManagerFactory::getInstance().addClientInstance(arn_, client_instance_);
   }
 
   void TearDown() override {
@@ -36,7 +36,7 @@ public:
 
 protected:
   grpc::internal::GrpcLibraryInitializer initializer_;
-  std::shared_ptr<ClientInstance> client_instance_;
+  std::shared_ptr<ClientManagerImpl> client_instance_;
   std::shared_ptr<testing::NiceMock<RpcClientMock>> rpc_client_ns_;
   const int16_t port_{10911};
   const int32_t partition_num_{24};

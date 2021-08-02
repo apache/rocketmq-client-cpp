@@ -94,6 +94,7 @@ message HeartbeatEntry {
         ProducerGroup producer_group = 2;
         ConsumerGroup consumer_group = 3;
     }
+    bool need_rebalance = 4;
 }
 
 enum AddressScheme {
@@ -242,16 +243,22 @@ message SystemAttribute {
     google.protobuf.Duration invisible_period = 16;
 
     // Business code may failed to process messages for the moment. Hence, clients may request servers to deliver them
-    // again using certain back-off strategy.
-    int32 delivery_count = 17;
+    // again using certain back-off strategy, the attempt is 1 not 0 if message is delivered first time.
+    int32 delivery_attempt = 17;
+
+    // Message's max delivery attempts count, if message's delivery count exceed this value, it will be sent to dlq topic.
+    int32 max_delivery_attempts = 18;
 
     // Message producer load-balance group if applicable.
-    Resource producer_group = 18;
+    Resource producer_group = 19;
 
-    string message_group = 19;
+    string message_group = 20;
 
     // Trace context.
-    string trace_context = 20;
+    string trace_context = 21;
+
+    // Correlated transaction
+    string transaction_id = 22;
 }
 
 message Message {
@@ -274,6 +281,7 @@ enum ConsumeMessageType {
 
 message Assignment {
     Partition Partition = 1;
+    // to delete.
     ConsumeMessageType mode = 2;
 }
 

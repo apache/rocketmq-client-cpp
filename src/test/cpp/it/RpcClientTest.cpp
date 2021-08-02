@@ -1,5 +1,4 @@
-#include "ClientConfig.h"
-#include "IdentifiableMock.h"
+#include "ClientConfigImpl.h"
 #include "InvocationContext.h"
 #include "LogInterceptorFactory.h"
 #include "MixAll.h"
@@ -38,10 +37,9 @@ protected:
     tls_channel_credential_options_.watch_root_certs();
     tls_channel_credential_options_.watch_identity_key_cert_pairs();
     channel_credential_ = grpc::experimental::TlsCredentials(tls_channel_credential_options_);
-    credentials_observable_ = std::make_shared<IdentifiableMock>();
     credentials_provider_ = std::make_shared<ConfigFileCredentialsProvider>();
-    ON_CALL(*credentials_observable_, tenantId).WillByDefault(testing::ReturnRef(tenant_id_));
-    ON_CALL(*credentials_observable_, credentialsProvider).WillByDefault(testing::Return(credentials_provider_));
+    client_config_.tenantId(tenant_id_);
+    client_config_.setCredentialsProvider(credentials_provider_);
   }
 
   void SetUp() override {
@@ -172,9 +170,8 @@ protected:
   std::string tenant_id_{"sample-tenant"};
   std::string region_id_{"cn-hangzhou"};
   std::string service_name_{"MQ"};
-  ClientConfig client_config_;
   absl::flat_hash_map<std::string, std::string> metadata_;
-  std::shared_ptr<IdentifiableMock> credentials_observable_;
+  ClientConfigImpl client_config_;
   CredentialsProviderPtr credentials_provider_;
   std::shared_ptr<grpc::experimental::StaticDataCertificateProvider> certificate_provider_;
   grpc::experimental::TlsChannelCredentialsOptions tls_channel_credential_options_;

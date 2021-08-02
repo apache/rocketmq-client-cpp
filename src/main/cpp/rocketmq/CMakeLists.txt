@@ -1,12 +1,13 @@
 add_library(rocketmq_obj OBJECT)
 target_sources(rocketmq_obj
         PRIVATE
+            AsyncReceiveMessageCallback.cpp
             SendCallbacks.cpp
             AwaitPullCallback.cpp
-            BaseImpl.cpp
+            ClientImpl.cpp
             ConsumeMessageService.cpp
-            ConsumeMessageConcurrentlyService.cpp
-            ConsumeMessageOrderlyService.cpp
+            ConsumeStandardMessageService.cpp
+            ConsumeFifoMessageService.cpp
             CredentialsProvider.cpp
             DefaultMQProducer.cpp
             DefaultMQProducerImpl.cpp
@@ -14,8 +15,9 @@ target_sources(rocketmq_obj
             DefaultMQPushConsumerImpl.cpp
             DefaultMQPullConsumer.cpp
             DefaultMQPullConsumerImpl.cpp
+            FilterExpression.cpp
             MessageGroupQueueSelector.cpp
-            ProcessQueue.cpp
+        ProcessQueueImpl.cpp
             TransactionImpl.cpp)
 target_include_directories(rocketmq_obj
         PUBLIC
@@ -37,3 +39,5 @@ target_link_libraries(rocketmq_library
             client_library
             CURL::libcurl
             logger_library)
+
+add_subdirectory(mocks)

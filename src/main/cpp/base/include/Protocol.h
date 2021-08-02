@@ -69,7 +69,7 @@ struct SystemAttribute {
   int32_t partition_id{0};
   int64_t partition_offset{0};
   absl::Duration invisible_period;
-  int32_t delivery_count{0};
+  int32_t attempt_times{0};
   Resource publisher_group;
   std::string trace_context;
   std::string target_endpoint;

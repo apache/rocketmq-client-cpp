@@ -1,7 +1,7 @@
 #include "DefaultMQProducerImpl.h"
 #include "MessageAccessor.h"
 #include "MessageGroupQueueSelector.h"
-#include "Metadata.h"
+#include "MetadataConstants.h"
 #include "MixAll.h"
 #include "Protocol.h"
 #include "SendCallbacks.h"
@@ -12,18 +12,19 @@
 #include "UtilAll.h"
 #include "rocketmq/ErrorCode.h"
 #include "rocketmq/MQClientException.h"
+#include <atomic>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 DefaultMQProducerImpl::DefaultMQProducerImpl(std::string group_name)
-    : BaseImpl(std::move(group_name)), compress_body_threshold_(MixAll::DEFAULT_COMPRESS_BODY_THRESHOLD_) {
+    : ClientImpl(std::move(group_name)), compress_body_threshold_(MixAll::DEFAULT_COMPRESS_BODY_THRESHOLD_) {
   // TODO: initialize client_config_ and fault_strategy_
 }
 
 DefaultMQProducerImpl::~DefaultMQProducerImpl() { SPDLOG_INFO("Producer instance is destructed"); }
 
 void DefaultMQProducerImpl::start() {
-  BaseImpl::start();
+  ClientImpl::start();
   if (State::STARTED != state_.load(std::memory_order_relaxed)) {
     SPDLOG_WARN("Unexpected producer state: {}", state_.load(std::memory_order_relaxed));
     return;
@@ -33,7 +34,7 @@ void DefaultMQProducerImpl::start() {
 }
 
 void DefaultMQProducerImpl::shutdown() {
-  BaseImpl::shutdown();
+  ClientImpl::shutdown();
 
   State expected = State::STOPPING;
   if (state_.compare_exchange_strong(expected, State::STOPPED)) {

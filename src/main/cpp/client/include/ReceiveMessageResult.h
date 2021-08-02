@@ -8,7 +8,7 @@
 #include <sstream>
 #include <utility>
 
-namespace rocketmq {
+ROCKETMQ_NAMESPACE_BEGIN
 
 enum class ReceiveMessageStatus : int32_t {
   /**
@@ -124,4 +124,5 @@ struct ReceiveMessageResult {
 
   int64_t next_offset_{0};
 };
-} // namespace rocketmq
+
+ROCKETMQ_NAMESPACE_END

@@ -4,12 +4,13 @@
 #include <mutex>
 #include <string>
 
-#include "BaseImpl.h"
-#include "ClientConfig.h"
-#include "ClientInstance.h"
+#include "ClientConfigImpl.h"
+#include "ClientImpl.h"
+#include "ClientManagerImpl.h"
 #include "ConsumeMessageService.h"
 #include "FilterExpression.h"
 #include "ProcessQueue.h"
+#include "PushConsumer.h"
 #include "Scheduler.h"
 #include "TopicAssignmentInfo.h"
 #include "TopicPublishInfo.h"
@@ -22,10 +23,12 @@
 ROCKETMQ_NAMESPACE_BEGIN
 
 class ConsumeMessageService;
-class ConsumeMessageOrderlyService;
-class ConsumeMessageConcurrentlyService;
+class ConsumeFifoMessageService;
+class ConsumeStandardMessageService;
 
-class DefaultMQPushConsumerImpl : public BaseImpl, public std::enable_shared_from_this<DefaultMQPushConsumerImpl> {
+class DefaultMQPushConsumerImpl : virtual public ClientImpl,
+                                  virtual public PushConsumer,
+                                  public std::enable_shared_from_this<DefaultMQPushConsumerImpl> {
 public:
   explicit DefaultMQPushConsumerImpl(std::string group_name);
 
@@ -43,12 +46,12 @@ public:
 
   void unsubscribe(const std::string& topic) LOCKS_EXCLUDED(topic_filter_expression_table_mtx_);
 
-  absl::flat_hash_map<std::string, FilterExpression> getTopicFilterExpressionTable()
+  absl::flat_hash_map<std::string, FilterExpression> getTopicFilterExpressionTable() const override
       LOCKS_EXCLUDED(topic_filter_expression_table_mtx_);
 
   void setConsumeFromWhere(ConsumeFromWhere consume_from_where);
 
-  void registerMessageListener(MQMessageListener* message_listener);
+  void registerMessageListener(MessageListener* message_listener);
 
   void scanAssignments() LOCKS_EXCLUDED(process_queue_table_mtx_);
 
@@ -59,9 +62,10 @@ public:
                                   QueryAssignmentRequest& request);
 
   /**
-   * Query assignment of the specified topic from load balancer directly if message consuming mode is clustering. In
-   * case current client is operating in the broadcasting mode, assignments are constructed locally from topic route
-   * entries.
+   * Query assignment of the specified topic from load balancer directly if
+   * message consuming mode is clustering. In case current client is operating
+   * in the broadcasting mode, assignments are constructed locally from topic
+   * route entries.
    *
    * @param topic Topic to query
    * @return shared pointer to topic assignment info
@@ -77,44 +81,45 @@ public:
       LOCKS_EXCLUDED(process_queue_table_mtx_);
 
   bool receiveMessage(const MQMessageQueue& message_queue, const FilterExpression& filter_expression,
-                      ConsumeMessageType consume_type) LOCKS_EXCLUDED(process_queue_table_mtx_);
+                      ConsumeMessageType consume_type) override LOCKS_EXCLUDED(process_queue_table_mtx_);
 
-  int consumeThreadPoolSize() const;
+  uint32_t consumeThreadPoolSize() const;
 
   void consumeThreadPoolSize(int thread_pool_size);
 
-  uint32_t consumeBatchSize() const;
+  int32_t maxDeliveryAttempts() const override { return max_delivery_attempts_; }
 
-  int32_t receiveBatchSize() const { return receive_message_batch_size_; }
+  uint32_t consumeBatchSize() const override;
 
   void consumeBatchSize(uint32_t consume_batch_size);
 
-  void maxCachedMessageNumberPerQueue(int max_cached_message_number_per_queue);
+  int32_t receiveBatchSize() const override { return receive_batch_size_; }
 
-  std::shared_ptr<ConsumeMessageService> getConsumeMessageService();
+  std::shared_ptr<ConsumeMessageService> getConsumeMessageService() override;
 
-  void ack(const MQMessageExt& msg, const std::function<void(bool)>& callback);
+  void ack(const MQMessageExt& msg, const std::function<void(bool)>& callback) override;
 
   /**
-   * Negative acknowledge the given message; Refer to https://en.wikipedia.org/wiki/Acknowledgement_(data_networks) for
+   * Negative acknowledge the given message; Refer to
+   * https://en.wikipedia.org/wiki/Acknowledgement_(data_networks) for
    * background info.
    *
    * Current implementation is to change invisible time of the given message.
    *
    * @param message Message to negate on the broker side.
    */
-  void nack(const MQMessageExt& message, const std::function<void(bool)>& callback);
+  void nack(const MQMessageExt& message, const std::function<void(bool)>& callback) override;
+
+  void forwardToDeadLetterQueue(const MQMessageExt& message, const std::function<void(bool)>& cb) override;
 
   void wrapAckMessageRequest(const MQMessageExt& msg, AckMessageRequest& request);
 
-  bool isStopped() const;
-
   // only for test
-  int getProcessQueueTableSize() LOCKS_EXCLUDED(process_queue_table_mtx_);
+  std::size_t getProcessQueueTableSize() LOCKS_EXCLUDED(process_queue_table_mtx_);
 
   void setCustomExecutor(const Executor& executor) { custom_executor_ = executor; }
 
-  const Executor& customExecutor() const { return custom_executor_; }
+  const Executor& customExecutor() const override { return custom_executor_; }
 
   void setThrottle(const std::string& topic, uint32_t threshold);
 
@@ -122,37 +127,55 @@ public:
   nostd::shared_ptr<trace::Tracer> getTracer();
 #endif
 
-  MessageModel messageModel() const { return message_model_; }
+  MessageModel messageModel() const override { return message_model_; }
 
   void setMessageModel(MessageModel message_model) { message_model_ = message_model; }
 
   void offsetStore(std::unique_ptr<OffsetStore> offset_store) { offset_store_ = std::move(offset_store); }
 
+  void updateOffset(const MQMessageQueue& message_queue, int64_t offset) override {
+    if (offset_store_) {
+      offset_store_->updateOffset(message_queue, offset);
+    }
+  }
+
+  /**
+   * Max number of messages that may be cached per queue before applying
+   * back-pressure.
+   * @return
+   */
+  uint32_t maxCachedMessageQuantity() const override { return MixAll::DEFAULT_CACHED_MESSAGE_COUNT; }
+
+  /**
+   * Threshold of total cached message body size by queue before applying
+   * back-pressure.
+   * @return
+   */
+  uint64_t maxCachedMessageMemory() const override { return MixAll::DEFAULT_CACHED_MESSAGE_MEMORY; }
+
+  void iterateProcessQueue(const std::function<void(ProcessQueueSharedPtr)>& callback) override;
+
 protected:
-  std::shared_ptr<BaseImpl> self() override { return shared_from_this(); }
+  std::shared_ptr<ClientImpl> self() override { return shared_from_this(); }
 
   ClientResourceBundle resourceBundle() LOCKS_EXCLUDED(topic_filter_expression_table_mtx_) override;
 
 private:
   absl::flat_hash_map<std::string, FilterExpression>
       topic_filter_expression_table_ GUARDED_BY(topic_filter_expression_table_mtx_);
-  absl::Mutex topic_filter_expression_table_mtx_;
+  mutable absl::Mutex topic_filter_expression_table_mtx_;
 
   /**
    * Consume message thread pool size.
    */
-  int consume_thread_pool_size_;
+  uint32_t consume_thread_pool_size_{MixAll::DEFAULT_CONSUME_THREAD_POOL_SIZE};
 
-  MQMessageListener* message_listener_ptr_;
+  MessageListener* message_listener_{nullptr};
 
   std::shared_ptr<ConsumeMessageService> consume_message_service_;
+  uint32_t consume_batch_size_{MixAll::DEFAULT_CONSUME_MESSAGE_BATCH_SIZE};
 
-  uint32_t consume_batch_size_;
-
-  // TODO: make it configurable
-  int32_t receive_message_batch_size_{32};
-
-  int max_cached_message_number_per_queue_;
+  int32_t receive_batch_size_{MixAll::DEFAULT_RECEIVE_MESSAGE_BATCH_SIZE};
 
   std::uintptr_t scan_assignment_handle_{0};
   static const char* SCAN_ASSIGNMENT_TASK_NAME;
@@ -167,52 +190,17 @@ private:
       throttle_table_ GUARDED_BY(throttle_table_mtx_);
   absl::Mutex throttle_table_mtx_;
 
-  // TODO: Make default value configurable
-  int32_t max_delivery_attempts_{16};
+  int32_t max_delivery_attempts_{MixAll::DEFAULT_MAX_DELIVERY_ATTEMPTS};
 
   MessageModel message_model_{MessageModel::CLUSTERING};
 
-  std::unique_ptr<OffsetStore> offset_store_;
+  mutable std::unique_ptr<OffsetStore> offset_store_;
 
   void fetchRoutes() LOCKS_EXCLUDED(topic_filter_expression_table_mtx_);
 
-  void iterateProcessQueue(const std::function<void(ProcessQueueSharedPtr)>& functor);
-
-  friend class ConsumeMessageConcurrentlyService;
-  friend class ConsumeMessageOrderlyService;
-
-  static const int32_t MAX_CACHED_MESSAGE_COUNT;
-  static const int32_t DEFAULT_CACHED_MESSAGE_COUNT;
-  static const int32_t DEFAULT_CONSUME_MESSAGE_BATCH_SIZE;
-  static const int32_t DEFAULT_CONSUME_THREAD_POOL_SIZE;
-};
-
-class AsyncReceiveMessageCallback : public ReceiveMessageCallback,
-                                    public std::enable_shared_from_this<AsyncReceiveMessageCallback> {
-public:
-  explicit AsyncReceiveMessageCallback(ProcessQueueWeakPtr process_queue);
-
-  ~AsyncReceiveMessageCallback() override = default;
-
-  void onSuccess(ReceiveMessageResult& result) override;
-
-  void onException(MQException& e) override;
-
-  void receiveMessageLater();
-
-  void receiveMessageImmediately();
-
-private:
-  /**
-   * Hold a weak_ptr to ProcessQueue. Once ProcessQueue was released, stop the pop-cycle immediately.
-   */
-  ProcessQueueWeakPtr process_queue_;
-
-  std::function<void(void)> receive_message_later_;
-
-  void checkThrottleThenReceive();
-
-  static const char* RECEIVE_LATER_TASK_NAME;
+  friend class ConsumeMessageService;
+  friend class ConsumeFifoMessageService;
+  friend class ConsumeStandardMessageService;
 };
 
 ROCKETMQ_NAMESPACE_END

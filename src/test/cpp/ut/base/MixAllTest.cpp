@@ -4,7 +4,20 @@
 
 using namespace rocketmq;
 
-class MixAllTest : public testing::Test {};
+class MixAllTest : public testing::Test {
+public:
+  static std::string toUpperCase(const std::string& s) {
+    std::string result;
+    for (const char & c : s) {
+      if ('a' <= c && 'z' >= c) {
+        result.push_back(static_cast<char>('A' + (c - 'a')));
+      } else {
+        result.push_back(c);
+      }
+    }
+    return result;
+  }
+};
 
 TEST_F(MixAllTest, testValidate_empty_topic) {
   MQMessage message;
@@ -53,4 +66,22 @@ TEST_F(MixAllTest, testHex) {
   std::vector<uint8_t> bin;
   EXPECT_TRUE(MixAll::hexToBinary(hex, bin));
   EXPECT_EQ(hex, MixAll::hex(bin.data(), bin.size()));
+}
+
+TEST_F(MixAllTest, testMD5) {
+  std::string data("abc");
+  std::string digest;
+  bool success = MixAll::md5(data, digest);
+  std::string expect("900150983CD24FB0D6963F7D28E17F72");
+  EXPECT_TRUE(success);
+  EXPECT_EQ(digest, expect);
+}
+
+TEST_F(MixAllTest, testSHA1) {
+  std::string data("abc");
+  std::string digest;
+  bool ok = MixAll::sha1(data, digest);
+  EXPECT_TRUE(ok);
+  std::string expect("a9993e364706816aba3e25717850c26c9cd0d89d");
+  EXPECT_EQ(digest, toUpperCase(expect));
 }

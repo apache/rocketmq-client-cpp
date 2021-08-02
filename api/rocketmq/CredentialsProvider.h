@@ -42,12 +42,11 @@ public:
 
   Credentials getCredentials() override;
 
+  static const char* ENVIRONMENT_ACCESS_KEY;
+  static const char* ENVIRONMENT_ACCESS_SECRET;
 private:
   std::string access_key_;
   std::string access_secret_;
-
-  static const char* ENVIRONMENT_ACCESS_KEY;
-  static const char* ENVIRONMENT_ACCESS_SECRET;
 };
 
 /**

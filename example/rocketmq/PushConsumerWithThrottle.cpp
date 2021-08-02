@@ -2,25 +2,30 @@
 
 #include <atomic>
 #include <chrono>
+#include <iostream>
 #include <mutex>
 #include <thread>
 
-using namespace rocketmq;
+ROCKETMQ_NAMESPACE_BEGIN
 
-class CounterMessageListener : public MessageListenerConcurrently {
+class CounterMessageListener : public StandardMessageListener {
 public:
   explicit CounterMessageListener(std::atomic_long& counter) : counter_(counter) {}
 
-  ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) override {
+  ConsumeMessageResult consumeMessage(const std::vector<MQMessageExt>& msgs) override {
     counter_.fetch_add(msgs.size());
-    return ConsumeStatus::CONSUME_SUCCESS;
+    return ConsumeMessageResult::SUCCESS;
   }
 
 private:
   std::atomic_long& counter_;
 };
 
+ROCKETMQ_NAMESPACE_END
+
 int main(int argc, char* argv[]) {
+
+  using namespace ROCKETMQ_NAMESPACE;
 
   Logger& logger = getLogger();
   logger.setLevel(Level::Debug);
@@ -29,7 +34,7 @@ int main(int argc, char* argv[]) {
   std::atomic_long counter(0);
 
   DefaultMQPushConsumer push_consumer("TestGroup");
-  MQMessageListener* listener = new CounterMessageListener(counter);
+  MessageListener* listener = new CounterMessageListener(counter);
 
   push_consumer.setGroupName("TestGroup");
   push_consumer.setInstanceName("CID_sample_member_0");

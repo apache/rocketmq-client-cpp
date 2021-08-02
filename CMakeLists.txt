@@ -60,7 +60,7 @@ if (BUILD_TESTS)
     FetchContent_MakeAvailable(googletest)
 endif ()
 
-FetchContent_MakeAvailable(fmt gRPC spdlog uv ghc)
+FetchContent_MakeAvailable(fmt gRPC spdlog ghc)
 
 option(ENABLE_TRACING OFF)
 if (ENABLE_TRACING)

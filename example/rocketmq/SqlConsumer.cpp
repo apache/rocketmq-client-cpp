@@ -3,18 +3,19 @@
 #include <chrono>
 #include <mutex>
 #include <thread>
+#include <iostream>
 
 using namespace rocketmq;
 
-class SampleMQMessageListener : public MessageListenerConcurrently {
+class SampleMQMessageListener : public StandardMessageListener {
 public:
-  ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) override {
+  ConsumeMessageResult consumeMessage(const std::vector<MQMessageExt>& msgs) override {
     std::lock_guard<std::mutex> lk(console_mtx_);
     for (const MQMessageExt& msg : msgs) {
       std::cout << "Topic=" << msg.getTopic() << ", MsgId=" << msg.getMsgId() << ", Tag=" << msg.getTags()
                 << ", a=" << msg.getProperty("a") << ", Body=" << msg.getBody() << std::endl;
     }
-    return ConsumeStatus::CONSUME_SUCCESS;
+    return ConsumeMessageResult::SUCCESS;
   }
 
 private:
@@ -27,7 +28,7 @@ int main(int argc, char* argv[]) {
   logger.init();
 
   DefaultMQPushConsumer push_consumer("TestGroup");
-  MQMessageListener* listener = new SampleMQMessageListener;
+  MessageListener* listener = new SampleMQMessageListener;
 
   push_consumer.setGroupName("TestGroup");
   push_consumer.setInstanceName("CID_sample_member_0");

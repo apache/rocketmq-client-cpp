@@ -1,99 +1,33 @@
 #pragma once
 
-#include "Identifiable.h"
-#include "absl/strings/string_view.h"
+#include "rocketmq/CredentialsProvider.h"
 #include "absl/time/time.h"
 #include "rocketmq/RocketMQ.h"
-#include <atomic>
-#include <chrono>
-#include <memory>
 #include <string>
-#include <vector>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class ClientConfig : public Identifiable {
+class ClientConfig {
 public:
-  ClientConfig();
+  virtual ~ClientConfig() = default;
 
-  explicit ClientConfig(std::string group_name);
+  virtual const std::string& region() const = 0;
 
-  ~ClientConfig() override = default;
+  virtual const std::string& serviceName() const = 0;
 
-  const std::string& arn() const { return arn_; }
+  virtual const std::string& arn() const = 0;
 
-  void arn(absl::string_view arn) { arn_ = std::string(arn.data(), arn.length()); }
+  virtual CredentialsProviderPtr credentialsProvider() = 0;
 
-  std::string clientId() const;
+  virtual const std::string& tenantId() const = 0;
 
-  const std::string& getInstanceName() const;
+  virtual absl::Duration getIoTimeout() const = 0;
 
-  void setInstanceName(std::string instance_name);
+  virtual absl::Duration getLongPollingTimeout() const = 0;
 
-  const std::string& getGroupName() const;
-  void setGroupName(std::string group_name);
+  virtual const std::string& getGroupName() const = 0;
 
-  const std::string& getUnitName() const { return unit_name_; }
-  void setUnitName(std::string unit_name) { unit_name_ = std::move(unit_name); }
-
-  absl::Duration getIoTimeout() const;
-  void setIoTimeout(absl::Duration timeout);
-
-  absl::Duration getLongPollingTimeout() const { return long_polling_timeout_; }
-
-  void setLongPollingTimeout(absl::Duration timeout) { long_polling_timeout_ = timeout; }
-
-  bool isTracingEnabled() { return enable_tracing_.load(); }
-  void enableTracing(bool enabled) { enable_tracing_.store(enabled); }
-
-  CredentialsProviderPtr credentialsProvider() override;
-  void setCredentialsProvider(CredentialsProviderPtr credentials_provider);
-
-  void serviceName(std::string service_name) { service_name_ = std::move(service_name); }
-  const std::string& serviceName() const { return service_name_; }
-
-  void region(std::string region) { region_ = std::move(region); }
-  const std::string& region() const { return region_; }
-
-  void tenantId(std::string tenant_id) { tenant_id_ = std::move(tenant_id); }
-  const std::string& tenantId() const override { return tenant_id_; }
-
-  static const char* CLIENT_VERSION;
-
-protected:
-  /**
-   * Name of the service.
-   */
-  std::string service_name_{"ONS"};
-
-  /**
-   * Region of the service to connect to.
-   */
-  std::string region_;
-
-  /**
-   * Abstract Resource Namespace, in which topic/group_name remain unique.
-   */
-  std::string arn_;
-
-  /**
-   * Tenant identifier.
-   */
-  std::string tenant_id_;
-
-  std::string instance_name_;
-
-  std::string group_name_;
-
-  std::string unit_name_;
-
-  CredentialsProviderPtr credentials_provider_;
-
-  absl::Duration io_timeout_;
-
-  absl::Duration long_polling_timeout_;
-
-  std::atomic<bool> enable_tracing_{false};
+  virtual std::string clientId() const = 0;
 };
 
 ROCKETMQ_NAMESPACE_END

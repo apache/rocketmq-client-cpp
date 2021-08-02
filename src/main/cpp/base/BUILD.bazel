@@ -79,3 +79,15 @@ cc_library(
         "@boringssl//:ssl",
     ],
 )
+
+cc_library(
+    name = "message_listener_mocks",
+    hdrs = [
+        "mocks/include/MessageListenerMock.h",
+    ],
+    strip_include_prefix = "//src/main/cpp/base/mocks/include",
+    deps = [
+        "//api:rocketmq_interface",
+        "//external:gtest",
+    ],
+)

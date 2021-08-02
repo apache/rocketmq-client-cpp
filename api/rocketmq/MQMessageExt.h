@@ -35,7 +35,7 @@ public:
 
   int64_t getQueueOffset() const;
 
-  int32_t getReconsumeTimes() const;
+  int32_t getDeliveryAttempt() const;
 
   const std::string& receiptHandle() const;
 

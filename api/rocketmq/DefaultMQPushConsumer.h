@@ -4,12 +4,14 @@
 #include <string>
 
 #include "AsyncCallback.h"
-#include "ConsumerType.h"
+#include "ConsumeType.h"
+#include "CredentialsProvider.h"
 #include "ExpressionType.h"
 #include "Logger.h"
-#include "MQMessageListener.h"
 #include "MQMessageQueue.h"
-#include "CredentialsProvider.h"
+#include "MessageListener.h"
+#include "rocketmq/MessageModel.h"
+#include "rocketmq/Executor.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -30,7 +32,7 @@ public:
 
   void setConsumeFromWhere(ConsumeFromWhere policy);
 
-  void registerMessageListener(MQMessageListener* listener);
+  void registerMessageListener(MessageListener* listener);
 
   void setNamesrvAddr(const std::string& name_srv);
 
@@ -55,12 +57,6 @@ public:
    * to keep backward compatibility.
    */
   void setAsyncPull(bool);
-
-  /**
-   * By default maxCacheMsgSize is 1024. Valid range is: 1~65535. Should not change this value unless you know what
-   * you are doing.
-   */
-  void setMaxCacheMsgSizePerQueue(int max_cache_size);
 
   /**
    * Maximum number of messages passed to each callback.

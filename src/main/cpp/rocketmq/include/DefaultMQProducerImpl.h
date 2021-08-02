@@ -5,9 +5,8 @@
 #include <mutex>
 #include <string>
 
-#include "BaseImpl.h"
-#include "ClientConfig.h"
-#include "ClientInstance.h"
+#include "ClientImpl.h"
+#include "ClientManagerImpl.h"
 #include "MixAll.h"
 #include "TopicPublishInfo.h"
 #include "TransactionImpl.h"
@@ -20,7 +19,8 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class DefaultMQProducerImpl : public BaseImpl, public std::enable_shared_from_this<DefaultMQProducerImpl> {
+class DefaultMQProducerImpl : virtual public ClientImpl,
+                              public std::enable_shared_from_this<DefaultMQProducerImpl> {
 public:
   explicit DefaultMQProducerImpl(std::string group_name);
 
@@ -83,7 +83,7 @@ public:
   void compressBodyThreshold(uint32_t threshold) { compress_body_threshold_ = threshold; }
 
 protected:
-  std::shared_ptr<BaseImpl> self() override { return shared_from_this(); }
+  std::shared_ptr<ClientImpl> self() override { return shared_from_this(); }
 
   void resolveOrphanedTransactionalMessage(const std::string& transaction_id, const MQMessageExt& message) override;
 

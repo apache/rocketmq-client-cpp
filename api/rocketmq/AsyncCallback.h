@@ -8,7 +8,7 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 struct AsyncCallback {};
 
-enum SendCallbackType { noAutoDeleteSendCallback = 0, autoDeleteSendCallback = 1 };
+enum class SendCallbackType : int8_t { noAutoDeleteSendCallback = 0, autoDeleteSendCallback = 1 };
 
 using sendCallbackType = SendCallbackType;
 
@@ -17,7 +17,7 @@ public:
   virtual ~SendCallback() = default;
   virtual void onSuccess(const SendResult& send_result) = 0;
   virtual void onException(const MQException& e) = 0;
-  virtual SendCallbackType getSendCallbackType() { return noAutoDeleteSendCallback; }
+  virtual SendCallbackType getSendCallbackType() { return SendCallbackType::noAutoDeleteSendCallback; }
 };
 
 class PullCallback : public AsyncCallback {

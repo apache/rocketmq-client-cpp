@@ -1,4 +1,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
 cc_library(
     name = "rocketmq_library",
     hdrs = glob(["include/*.h"]),
@@ -9,5 +12,14 @@ cc_library(
         "//src/main/cpp/log:log_library",
         "//src/main/cpp/admin:admin_server_library",
     ],
-    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "rocketmq_mocks",
+    hdrs = glob(["mocks/include/*.h"]),
+    strip_include_prefix = "//src/main/cpp/rocketmq/mocks/include",
+    deps = [
+        ":rocketmq_library",
+        "//src/main/cpp/client:client_mocks",
+    ],
 )

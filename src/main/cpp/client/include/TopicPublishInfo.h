@@ -2,13 +2,14 @@
 
 #include <vector>
 
-#include "ClientInstance.h"
+#include "TopicRouteData.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "rocketmq/MQMessageQueue.h"
 
-namespace rocketmq {
+ROCKETMQ_NAMESPACE_BEGIN
 
 class TopicPublishInfo {
 public:
@@ -48,4 +49,5 @@ private:
 };
 
 using TopicPublishInfoPtr = std::shared_ptr<TopicPublishInfo>;
-} // namespace rocketmq
+
+ROCKETMQ_NAMESPACE_END

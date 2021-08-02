@@ -1,40 +1,87 @@
 #pragma once
 
-#include <string>
-#include <thread>
-
-#include "ClientConfig.h"
-#include "ClientInstance.h"
-#include "absl/base/thread_annotations.h"
-#include "absl/container/flat_hash_map.h"
-#include "absl/synchronization/mutex.h"
-#include "rocketmq/AdminServer.h"
+#include "Client.h"
+#include "ReceiveMessageCallback.h"
+#include "Scheduler.h"
+#include "TopAddressing.h"
+#include "TopicRouteData.h"
+#include "rocketmq/MQMessageExt.h"
+#include <memory>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
+using Metadata = absl::flat_hash_map<std::string, std::string>;
+
 class ClientManager {
 public:
-  static ClientManager& getInstance();
+  virtual ~ClientManager() = default;
 
-  ClientInstancePtr getClientInstance(const ClientConfig& client_config) LOCKS_EXCLUDED(client_instance_table_mtx_);
+  virtual void start() = 0;
 
-  // For test purpose only
-  void addClientInstance(const std::string& arn, const ClientInstancePtr& client_instance)
-      LOCKS_EXCLUDED(client_instance_table_mtx_);
+  virtual void shutdown() = 0;
 
-private:
-  ClientManager();
+  virtual Scheduler& getScheduler() = 0;
 
-  virtual ~ClientManager();
+  virtual TopAddressing& topAddressing() = 0;
 
-  /**
-   * Client Id --> Client Instance
-   */
-  absl::flat_hash_map<std::string, std::weak_ptr<ClientInstance>>
-      client_instance_table_ GUARDED_BY(client_instance_table_mtx_);
-  absl::Mutex client_instance_table_mtx_; // protects client_instance_table_
+  virtual void resolveRoute(const std::string& target_host, const Metadata& metadata, const QueryRouteRequest& request,
+                            std::chrono::milliseconds timeout,
+                            const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) = 0;
 
-  rocketmq::admin::AdminServer& admin_server_;
+  virtual void heartbeat(const std::string& target_host, const Metadata& metadata, const HeartbeatRequest& request,
+                         std::chrono::milliseconds timeout,
+                         const std::function<void(bool, const HeartbeatResponse&)>& cb) = 0;
+
+  virtual void multiplexingCall(const std::string& target, const Metadata& metadata, const MultiplexingRequest& request,
+                                std::chrono::milliseconds timeout,
+                                const std::function<void(const InvocationContext<MultiplexingResponse>*)>& cb) = 0;
+
+  virtual bool wrapMessage(const rmq::Message& item, MQMessageExt& message_ext) = 0;
+
+  virtual void ack(const std::string& target_host, const Metadata& metadata, const AckMessageRequest& request,
+                   std::chrono::milliseconds timeout, const std::function<void(bool)>& cb) = 0;
+
+  virtual void nack(const std::string& target_host, const Metadata& metadata, const NackMessageRequest& request,
+                    std::chrono::milliseconds timeout, const std::function<void(bool)>& callback) = 0;
+
+  virtual void forwardMessageToDeadLetterQueue(
+      const std::string& target_host, const Metadata& metadata, const ForwardMessageToDeadLetterQueueRequest& request,
+      std::chrono::milliseconds timeout,
+      const std::function<void(const InvocationContext<ForwardMessageToDeadLetterQueueResponse>*)>& cb) = 0;
+
+  virtual void endTransaction(const std::string& target_host, const Metadata& metadata,
+                              const EndTransactionRequest& request, std::chrono::milliseconds timeout,
+                              const std::function<void(bool, const EndTransactionResponse&)>& cb) = 0;
+
+  virtual void queryOffset(const std::string& target_host, const Metadata& metadata, const QueryOffsetRequest& request,
+                           std::chrono::milliseconds timeout,
+                           const std::function<void(bool, const QueryOffsetResponse&)>& cb) = 0;
+
+  virtual void
+  healthCheck(const std::string& target_host, const Metadata& metadata, const HealthCheckRequest& request,
+              std::chrono::milliseconds timeout,
+              const std::function<void(const std::string&, const InvocationContext<HealthCheckResponse>*)>& cb) = 0;
+
+  virtual void addClientObserver(std::weak_ptr<Client> client) = 0;
+
+  virtual void queryAssignment(const std::string& target, const Metadata& metadata,
+                               const QueryAssignmentRequest& request, std::chrono::milliseconds timeout,
+                               const std::function<void(bool, const QueryAssignmentResponse&)>& cb) = 0;
+
+  virtual void receiveMessage(const std::string& target, const Metadata& metadata, const ReceiveMessageRequest& request,
+                              std::chrono::milliseconds timeout, std::shared_ptr<ReceiveMessageCallback>& cb) = 0;
+
+  virtual bool send(const std::string& target_host, const Metadata& metadata, SendMessageRequest& request,
+                    SendCallback* cb) = 0;
+
+  virtual void processPullResult(const grpc::ClientContext& client_context, const PullMessageResponse& response,
+                                 ReceiveMessageResult& result, const std::string& target_host) = 0;
+
+  virtual void pullMessage(const std::string& target_host, const Metadata& metadata, const PullMessageRequest& request,
+                           std::chrono::milliseconds timeout,
+                           const std::function<void(const InvocationContext<PullMessageResponse>*)>& cb) = 0;
 };
+
+using ClientManagerPtr = std::shared_ptr<ClientManager>;
 
 ROCKETMQ_NAMESPACE_END

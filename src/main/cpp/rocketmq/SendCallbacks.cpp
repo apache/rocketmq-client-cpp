@@ -55,7 +55,7 @@ void RetrySendCallback::onException(const MQException& e) {
     return;
   }
 
-  std::shared_ptr<ClientInstance> client = client_instance_.lock();
+  std::shared_ptr<ClientManager> client = client_manager_.lock();
   if (!client) {
     SPDLOG_WARN("Client instance has destructed");
     callback_->onException(e);

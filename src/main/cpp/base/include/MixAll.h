@@ -5,18 +5,21 @@
 #include <cstdint>
 #include <string>
 #include <unistd.h>
-
 #include "rocketmq/MQMessage.h"
-#include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 class MixAll {
 public:
   static const int32_t MASTER_BROKER_ID;
-  static const int32_t MAX_MESSAGE_NUMBER_PER_BATCH;
+  static const int32_t DEFAULT_RECEIVE_MESSAGE_BATCH_SIZE;
   static const uint32_t MAX_MESSAGE_BODY_SIZE;
-  static const char* RETRY_GROUP_TOPIC_PREFIX;
+  static const uint32_t MAX_CACHED_MESSAGE_COUNT;
+  static const uint32_t DEFAULT_CACHED_MESSAGE_COUNT;
+  static const uint64_t DEFAULT_CACHED_MESSAGE_MEMORY;
+  static const uint32_t DEFAULT_CONSUME_THREAD_POOL_SIZE;
+  static const uint32_t DEFAULT_CONSUME_MESSAGE_BATCH_SIZE;
+  static const int32_t DEFAULT_MAX_DELIVERY_ATTEMPTS;
 
   static const RE2 TOPIC_REGEX;
 

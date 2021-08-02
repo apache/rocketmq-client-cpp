@@ -5,11 +5,11 @@
 #include <vector>
 #include <future>
 
-#include "ConsumerType.h"
-#include "MQMessageQueue.h"
-#include "MQMessageExt.h"
 #include "AsyncCallback.h"
+#include "ConsumeType.h"
 #include "CredentialsProvider.h"
+#include "MQMessageExt.h"
+#include "MQMessageQueue.h"
 #include <chrono>
 
 ROCKETMQ_NAMESPACE_BEGIN

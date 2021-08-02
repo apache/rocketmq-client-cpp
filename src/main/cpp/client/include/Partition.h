@@ -3,6 +3,7 @@
 #include "Broker.h"
 #include "Topic.h"
 #include "rocketmq/MQMessage.h"
+#include "rocketmq/MQMessageQueue.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

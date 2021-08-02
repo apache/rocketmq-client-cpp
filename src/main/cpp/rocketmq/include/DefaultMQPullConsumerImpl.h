@@ -3,17 +3,18 @@
 #include <future>
 #include <memory>
 
-#include "BaseImpl.h"
-#include "ClientInstance.h"
-#include "Identifiable.h"
-#include "rocketmq/ConsumerType.h"
+#include "ClientConfig.h"
+#include "ClientImpl.h"
+#include "ClientManagerImpl.h"
+#include "rocketmq/ConsumeType.h"
 #include "rocketmq/MQMessageQueue.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class DefaultMQPullConsumerImpl : public BaseImpl, public std::enable_shared_from_this<DefaultMQPullConsumerImpl> {
+class DefaultMQPullConsumerImpl : public ClientImpl,
+                                  public std::enable_shared_from_this<DefaultMQPullConsumerImpl> {
 public:
-  explicit DefaultMQPullConsumerImpl(std::string group_name) : BaseImpl(std::move(group_name)) {}
+  explicit DefaultMQPullConsumerImpl(std::string group_name) : ClientImpl(std::move(group_name)) {}
 
   void start() override;
 
@@ -28,7 +29,7 @@ public:
   void prepareHeartbeatData(HeartbeatRequest& request) override;
 
 protected:
-  std::shared_ptr<BaseImpl> self() override {
+  std::shared_ptr<ClientImpl> self() override {
     return shared_from_this();
   }
 };
