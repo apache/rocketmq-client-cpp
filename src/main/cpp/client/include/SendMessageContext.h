@@ -1,9 +1,10 @@
 #pragma once
 #include "rocketmq/MQMessage.h"
 #include "rocketmq/MQMessageQueue.h"
+#include "rocketmq/RocketMQ.h"
 #include <string>
 
-namespace rocketmq {
+ROCKETMQ_NAMESPACE_BEGIN
 class SendMessageContext {
 public:
   const std::string& getProducerGroup() const { return producer_group_; };
@@ -27,4 +28,5 @@ private:
   std::string message_id_;
   long long queue_offset_{-1};
 };
-} // namespace rocketmq
+
+ROCKETMQ_NAMESPACE_END

@@ -1,9 +1,10 @@
 #include "HostInfo.h"
 #include "absl/strings/match.h"
+#include "rocketmq/RocketMQ.h"
 #include <cstdlib>
 #include <cstring>
 
-namespace rocketmq {
+ROCKETMQ_NAMESPACE_BEGIN
 
 const char* HostInfo::ENV_LABEL_SITE = "SIGMA_APP_SITE";
 const char* HostInfo::ENV_LABEL_UNIT = "SIGMA_APP_UNIT";
@@ -55,5 +56,4 @@ void HostInfo::appendLabel(std::string& query_string, const char* key, const std
     query_string.append(",").append(key).append(":").append(value);
   }
 }
-
-} // namespace rocketmq
+ROCKETMQ_NAMESPACE_END

@@ -1,9 +1,10 @@
 #include "RateLimiter.h"
+#include "rocketmq/RocketMQ.h"
 #include "gtest/gtest.h"
 #include <iostream>
 #include <memory>
 
-namespace rocketmq {
+ROCKETMQ_NAMESPACE_BEGIN
 class RateLimiterTest : public ::testing::Test {
 public:
   void TearDown() override { observer.stop(); }
@@ -46,4 +47,5 @@ TEST_F(RateLimiterTest, basicTest) {
   t.join();
   report.join();
 }
-} // namespace rocketmq
+
+ROCKETMQ_NAMESPACE_END

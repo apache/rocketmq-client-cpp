@@ -1,8 +1,8 @@
 #include "rocketmq/Logger.h"
+#include "rocketmq/RocketMQ.h"
 #include "spdlog/spdlog.h"
 #include "gtest/gtest.h"
-
-using namespace rocketmq;
+ROCKETMQ_NAMESPACE_BEGIN
 
 class LoggerTest : public testing::Test {};
 
@@ -23,3 +23,5 @@ TEST_F(LoggerTest, testDefaultLogger) {
     SPDLOG_ERROR("This is an error message");
   }
 }
+
+ROCKETMQ_NAMESPACE_END

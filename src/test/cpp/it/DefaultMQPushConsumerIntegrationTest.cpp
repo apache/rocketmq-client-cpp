@@ -1,11 +1,11 @@
 #include "rocketmq/DefaultMQPushConsumer.h"
+#include "rocketmq/RocketMQ.h"
 #include "gtest/gtest.h"
 
 #include <chrono>
 #include <thread>
 
-using namespace rocketmq;
-
+ROCKETMQ_NAMESPACE_BEGIN
 class SampleMQMessageListener : public StandardMessageListener {
 public:
   ConsumeStatus consumeMessage(const std::vector<MQMessageExt>& msgs) override {
@@ -43,3 +43,4 @@ TEST_F(DefaultMQPushConsumerTest, testStartupAndShutdown) {
   push_consumer_.start();
   std::this_thread::sleep_for(std::chrono::minutes(10));
 }
+ROCKETMQ_NAMESPACE_END

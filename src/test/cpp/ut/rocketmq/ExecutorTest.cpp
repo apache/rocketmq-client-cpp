@@ -1,3 +1,4 @@
+#include "rocketmq/RocketMQ.h"
 #include "rocketmq/State.h"
 #include "gtest/gtest.h"
 #include <atomic>
@@ -8,7 +9,7 @@
 #include <thread>
 #include <vector>
 
-namespace rocketmq {
+ROCKETMQ_NAMESPACE_BEGIN
 class ExecutorImpl {
 public:
   explicit ExecutorImpl(unsigned int core) : state_(State::CREATED), core_(core) {
@@ -132,4 +133,4 @@ TEST_F(ExecutorTest, testSubmit) {
   EXPECT_EQ(true, submit_status.load());
 }
 
-} // namespace rocketmq
+ROCKETMQ_NAMESPACE_END

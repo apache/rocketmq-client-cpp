@@ -1,9 +1,9 @@
 #pragma once
 
+#include "rocketmq/RocketMQ.h"
 #include <string>
 
-namespace rocketmq {
-
+ROCKETMQ_NAMESPACE_BEGIN
 struct HostInfo {
   std::string site_;
   std::string unit_;
@@ -26,4 +26,5 @@ private:
 
   static void appendLabel(std::string& query_string, const char* key, const std::string& value);
 };
-} // namespace rocketmq
+
+ROCKETMQ_NAMESPACE_END

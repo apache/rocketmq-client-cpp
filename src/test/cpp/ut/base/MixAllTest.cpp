@@ -1,9 +1,9 @@
 #include "MixAll.h"
 #include "rocketmq/MQMessage.h"
+#include "rocketmq/RocketMQ.h"
 #include "gtest/gtest.h"
 
-using namespace rocketmq;
-
+ROCKETMQ_NAMESPACE_BEGIN
 class MixAllTest : public testing::Test {
 public:
   static std::string toUpperCase(const std::string& s) {
@@ -85,3 +85,5 @@ TEST_F(MixAllTest, testSHA1) {
   std::string expect("a9993e364706816aba3e25717850c26c9cd0d89d");
   EXPECT_EQ(digest, toUpperCase(expect));
 }
+
+ROCKETMQ_NAMESPACE_END

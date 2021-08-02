@@ -50,7 +50,7 @@ if "com_google_googletest" not in native.existing_rules():
 1. Build
    From the repository root, 
    ```
-   bazel build :all
+   bazel build //...
    ```
 2. Run Unit Tests
    From the repository root,

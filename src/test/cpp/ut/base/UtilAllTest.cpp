@@ -1,11 +1,12 @@
 #include "UtilAll.h"
 #include "absl/strings/str_split.h"
+#include "rocketmq/RocketMQ.h"
 #include "spdlog/spdlog.h"
 #include "gtest/gtest.h"
 #include <chrono>
 #include <cstdint>
 
-namespace rocketmq {
+ROCKETMQ_NAMESPACE_BEGIN
 
 class UtilAllTest : public testing::Test {
 public:
@@ -55,4 +56,4 @@ TEST_F(UtilAllTest, split) {
   EXPECT_EQ(expected, segments);
 }
 
-} // namespace rocketmq
+ROCKETMQ_NAMESPACE_END

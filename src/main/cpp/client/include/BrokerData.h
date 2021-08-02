@@ -2,12 +2,13 @@
 
 #include "RpcClient.h"
 #include "apache/rocketmq/v1/definition.pb.h"
+#include "rocketmq/RocketMQ.h"
 
 #include <map>
 #include <string>
 #include <utility>
 
-namespace rocketmq {
+ROCKETMQ_NAMESPACE_BEGIN
 
 namespace rmq = apache::rocketmq::v1;
 
@@ -49,4 +50,4 @@ private:
   std::string debug_string_;
 };
 
-} // namespace rocketmq
+ROCKETMQ_NAMESPACE_END

@@ -3,13 +3,16 @@
 #include "AdminServerImpl.h"
 #include "apache/rocketmq/v1/admin.grpc.pb.h"
 
+#include "rocketmq/RocketMQ.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/spdlog.h"
 
 #include <thread>
 
 namespace rmq = apache::rocketmq::v1;
-using namespace rocketmq::admin;
+
+ROCKETMQ_NAMESPACE_BEGIN
+namespace admin {
 
 TEST(AdminServerTest, testSetUp) {
 
@@ -41,3 +44,6 @@ TEST(AdminServerTest, testSetUp) {
 
   admin_server->stop();
 }
+
+} // namespace admin
+ROCKETMQ_NAMESPACE_END

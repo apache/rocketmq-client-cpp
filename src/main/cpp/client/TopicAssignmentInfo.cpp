@@ -1,7 +1,9 @@
 #include "TopicAssignmentInfo.h"
+#include "rocketmq/RocketMQ.h"
 #include "spdlog/spdlog.h"
 
-namespace rocketmq {
+ROCKETMQ_NAMESPACE_BEGIN
+
 thread_local uint32_t TopicAssignment::query_which_broker_ = 0;
 
 TopicAssignment::TopicAssignment(const QueryAssignmentResponse& response)
@@ -75,4 +77,4 @@ TopicAssignment::TopicAssignment(const QueryAssignmentResponse& response)
   std::sort(assignment_list_.begin(), assignment_list_.end());
 }
 
-} // namespace rocketmq
+ROCKETMQ_NAMESPACE_END
