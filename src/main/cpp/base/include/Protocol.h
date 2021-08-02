@@ -14,14 +14,14 @@ public:
   static const char* PROTOCOL_VERSION;
 };
 
-enum MessageType : int8_t {
+enum class MessageType : int8_t {
   NORMAL = 0,
   FIFO = 1,
   DELAY = 2,
   TRANSACTION = 3,
 };
 
-enum DigestType : int8_t {
+enum class DigestType : int8_t {
   CRC32 = 0,
   MD5 = 1,
   SHA1 = 2,
@@ -33,7 +33,7 @@ struct Digest {
   Digest() = default;
 };
 
-enum Encoding : int8_t {
+enum class Encoding : int8_t {
   IDENTITY = 0,
   GZIP = 1,
   SNAPPY = 2,

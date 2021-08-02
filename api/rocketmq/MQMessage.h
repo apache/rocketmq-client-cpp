@@ -37,6 +37,12 @@ public:
   void setTags(const std::string& tags);
 
   const std::vector<std::string>& getKeys() const;
+
+  /**
+   * @brief Add a unique key for the message
+   * TODO: a message may be associated with multiple keys. setKey, actually mean attach the given key to the message. Better rename it.
+   * @param key Unique key in perspective of bussiness logic.
+   */
   void setKey(const std::string& key);
   void setKeys(const std::vector<std::string>& keys);
 
