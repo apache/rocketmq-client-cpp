@@ -25,9 +25,6 @@ protected:
 
 TEST_F(MQMessageTest, testAssignment) {
   MQMessage msg;
-  for (auto& key : msg.getKeys()) {
-    std::cout << "Key = " << key << std::endl;
-  }
   msg = message;
   EXPECT_EQ(msg.getTopic(), topic_);
   EXPECT_EQ(msg.getDelayTimeLevel(), delay_level_);

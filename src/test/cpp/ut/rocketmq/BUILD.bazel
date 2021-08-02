@@ -111,7 +111,7 @@ cc_test(
         "StsCredentialsProviderImplTest.cpp",
     ],
     deps = [
-        "//src/main/cpp/base:http_client_mocks",
+        "//src/main/cpp/base:base_mocks",
         "//src/main/cpp/rocketmq:rocketmq_library",
         "@com_google_googletest//:gtest_main",
     ],
@@ -136,7 +136,7 @@ cc_test(
     deps = [
         "//src/main/cpp/rocketmq:rocketmq_library",
         "//src/main/cpp/rocketmq:rocketmq_mocks",
-        "//src/main/cpp/base:message_listener_mocks",
+        "//src/main/cpp/base:base_mocks",
         "@com_google_googletest//:gtest_main",
     ],
 )

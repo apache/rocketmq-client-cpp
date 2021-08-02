@@ -58,12 +58,12 @@ struct SystemAttribute {
   Digest digest;
   Encoding body_encoding;
   MessageType message_type;
-  absl::Time born_timestamp{absl::UnixEpoch()};
+  absl::Time born_timestamp{absl::Now()};
   std::string born_host;
   absl::Time store_timestamp{absl::UnixEpoch()};
   std::string store_host;
   absl::Time delivery_timestamp{absl::UnixEpoch()};
-  absl::Time decode_timestamp{absl::UnixEpoch()};
+  absl::Time decode_timestamp{absl::Now()};
   int32_t delay_level{0};
   std::string receipt_handle;
   int32_t partition_id{0};

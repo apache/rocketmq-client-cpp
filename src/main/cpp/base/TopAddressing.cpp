@@ -1,12 +1,14 @@
 #include "TopAddressing.h"
 
+#include "GHttpClient.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
-#include <spdlog/spdlog.h>
+#include "spdlog/spdlog.h"
 #include <utility>
 
 ROCKETMQ_NAMESPACE_BEGIN
+
 TopAddressing::TopAddressing() : TopAddressing("jmenv.tbsite.net", 8080, "/rocketmq/nsaddr") {}
 
 TopAddressing::TopAddressing(std::string host, int port, std::string path)
@@ -46,6 +48,11 @@ void TopAddressing::fetchNameServerAddresses(const std::function<void(bool, cons
   };
 
   http_client_->get(HttpProtocol::HTTP, host_, port_, query_string, callback);
+}
+
+void TopAddressing::injectHttpClient(std::unique_ptr<HttpClient> http_client) {
+  http_client_->shutdown();
+  http_client_.swap(http_client);
 }
 
 ROCKETMQ_NAMESPACE_END

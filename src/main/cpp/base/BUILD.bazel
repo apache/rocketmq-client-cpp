@@ -14,20 +14,6 @@ cc_library(
     ],
 )
 
-
-cc_library(
-    name = "http_client_mocks",
-    hdrs = [
-        "mocks/include/HttpClientMock.h",
-    ],
-    strip_include_prefix = "//src/main/cpp/base/mocks/include",
-    deps = [
-        ":http_client_interface",
-        "//external:gtest",
-    ],
-)
-
-
 cc_library(
     name = "ghttp_client",
     hdrs = [
@@ -81,10 +67,8 @@ cc_library(
 )
 
 cc_library(
-    name = "message_listener_mocks",
-    hdrs = [
-        "mocks/include/MessageListenerMock.h",
-    ],
+    name = "base_mocks",
+    hdrs = glob(["mocks/include/*h"]),
     strip_include_prefix = "//src/main/cpp/base/mocks/include",
     deps = [
         "//api:rocketmq_interface",

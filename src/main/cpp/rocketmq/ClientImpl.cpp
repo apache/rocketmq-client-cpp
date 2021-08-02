@@ -1,5 +1,6 @@
 #include "ClientImpl.h"
 #include "ClientManagerFactory.h"
+#include "GHttpClient.h"
 #include "InvocationContext.h"
 #include "LoggerImpl.h"
 #include "MessageAccessor.h"

@@ -89,3 +89,26 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "message_ext_test",
+    srcs = [
+        "MQMessageExtTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/base:base_library",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "top_addressing_test",
+    srcs = [
+        "TopAddressingTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/base:base_library",
+        "//src/main/cpp/base:base_mocks",
+        "@com_google_googletest//:gtest_main",
+    ]
+)
