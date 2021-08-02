@@ -9,6 +9,7 @@ public:
   static const char* TENANT_ID_KEY;
   static const char* ARN_KEY;
   static const char* AUTHORIZATION;
+  static const char* STS_SESSION_TOKEN;
   static const char* DATE_TIME_KEY;
   static const char* ALGORITHM_KEY;
   static const char* CREDENTIAL_KEY;

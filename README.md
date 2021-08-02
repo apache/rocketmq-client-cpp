@@ -61,6 +61,7 @@ if "com_google_googletest" not in native.existing_rules():
 ### IDE
 [Visual Studio Code](https://code.visualstudio.com/) + [Clangd](https://clangd.llvm.org/) is the recommended development toolset. 
 1. VSCode + Clangd
+   
    [Clangd](https://clangd.llvm.org/) is a really nice code completion tool. Clangd requires compile_commands.json to work properly. 
    To generate the file, we need clone another repository along with the current one.
 
@@ -85,5 +86,7 @@ if "com_google_googletest" not in native.existing_rules():
       "clangd.arguments": ["-log=verbose", "-pretty", "--background-index"],
       "clangd.onConfigChanged": "restart",
    ```
+
 2. CLion + Bazel Plugin
+   
    Bazel also has a plugin for CLion.

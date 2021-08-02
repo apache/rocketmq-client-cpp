@@ -29,7 +29,7 @@ private:
   static const char* RAM_ROLE_URL_PREFIX;
   static const char* FIELD_ACCESS_KEY;
   static const char* FIELD_ACCESS_SECRET;
-  static const char* FIELD_SECURITY_TOKEN;
+  static const char* FIELD_SESSION_TOKEN;
   static const char* FIELD_EXPIRATION;
   static const char* EXPIRATION_DATE_TIME_FORMAT;
   
@@ -37,7 +37,7 @@ private:
 
   std::string access_key_ GUARDED_BY(mtx_);
   std::string access_secret_ GUARDED_BY(mtx_);
-  std::string security_token_ GUARDED_BY(mtx_);
+  std::string session_token_ GUARDED_BY(mtx_);
   std::chrono::system_clock::time_point expiration_;
 
   absl::Mutex mtx_;

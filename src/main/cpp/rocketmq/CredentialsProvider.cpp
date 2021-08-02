@@ -114,7 +114,7 @@ Credentials StsCredentialsProviderImpl::getCredentials() {
 
   {
     absl::MutexLock lk(&mtx_);
-    return Credentials(access_key_, access_secret_, security_token_, expiration_);
+    return Credentials(access_key_, access_secret_, session_token_, expiration_);
   }
 }
 
@@ -124,8 +124,8 @@ void StsCredentialsProviderImpl::refresh() {
   absl::CondVar sync_cv;
   bool completed = false;
   auto callback = [&, this](int code, const absl::flat_hash_map<std::string, std::string>& headers,
-                            const std::string body) {
-    SPDLOG_DEBUG("Received STS reponse. Code: {}", code);
+                            const std::string& body) {
+    SPDLOG_DEBUG("Received STS response. Code: {}", code);
     if (GHttpClient::STATUS_OK == code) {
       google::protobuf::Struct doc;
       google::protobuf::util::Status status = google::protobuf::util::JsonStringToMessage(body, &doc);
@@ -135,8 +135,8 @@ void StsCredentialsProviderImpl::refresh() {
         std::string access_key = fields.at(FIELD_ACCESS_KEY).string_value();
         assert(fields.contains(FIELD_ACCESS_SECRET));
         std::string access_secret = fields.at(FIELD_ACCESS_SECRET).string_value();
-        assert(fields.contains(FIELD_SECURITY_TOKEN));
-        std::string security_token = fields.at(FIELD_SECURITY_TOKEN).string_value();
+        assert(fields.contains(FIELD_SESSION_TOKEN));
+        std::string session_token = fields.at(FIELD_SESSION_TOKEN).string_value();
         assert(fields.contains(FIELD_EXPIRATION));
         std::string expiration_string = fields.at(FIELD_EXPIRATION).string_value();
         absl::Time expiration_instant;
@@ -146,7 +146,7 @@ void StsCredentialsProviderImpl::refresh() {
           absl::MutexLock lk(&mtx_);
           access_key_ = std::move(access_key);
           access_secret_ = std::move(access_secret);
-          security_token_ = std::move(security_token);
+          session_token_ = std::move(session_token);
           expiration_ = absl::ToChronoTime(expiration_instant);
         } else {
           SPDLOG_WARN("Failed to parse expiration time. Message: {}", parse_error);
@@ -178,7 +178,7 @@ const char* StsCredentialsProviderImpl::RAM_ROLE_HOST = "100.100.100.200";
 const char* StsCredentialsProviderImpl::RAM_ROLE_URL_PREFIX = "/latest/meta-data/Ram/security-credentials/";
 const char* StsCredentialsProviderImpl::FIELD_ACCESS_KEY = "AccessKeyId";
 const char* StsCredentialsProviderImpl::FIELD_ACCESS_SECRET = "AccessKeySecret";
-const char* StsCredentialsProviderImpl::FIELD_SECURITY_TOKEN = "SecurityToken";
+const char* StsCredentialsProviderImpl::FIELD_SESSION_TOKEN = "SecurityToken";
 const char* StsCredentialsProviderImpl::FIELD_EXPIRATION = "Expiration";
 const char* StsCredentialsProviderImpl::EXPIRATION_DATE_TIME_FORMAT = "%Y-%m-%d%ET%H:%H:%S%Ez";
 

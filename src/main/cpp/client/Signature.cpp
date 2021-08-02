@@ -55,6 +55,10 @@ void Signature::sign(ClientConfig* client, absl::flat_hash_map<std::string, std:
         .append(TlsHelper::sign(credentials.accessSecret(), request_date_time));
     SPDLOG_DEBUG("Add authorization header: {}", authorization);
     metadata.insert({MetadataConstants::AUTHORIZATION, authorization});
+
+    if (!credentials.sessionToken().empty()) {
+      metadata.insert({MetadataConstants::STS_SESSION_TOKEN, credentials.sessionToken()});
+    }
   }
 }
 
