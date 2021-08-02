@@ -17,7 +17,9 @@ MQMessage::MQMessage(const std::string& topic, const std::string& tags, const st
     : impl_(new MessageImpl) {
   impl_->topic_.name = topic;
   impl_->system_attribute_.tag = tags;
-  impl_->system_attribute_.keys.emplace_back(keys);
+  if (!keys.empty()) {
+    impl_->system_attribute_.keys.emplace_back(keys);
+  }
   impl_->body_.clear();
   impl_->body_.reserve(body.length());
   impl_->body_.append(body.data(), body.length());
