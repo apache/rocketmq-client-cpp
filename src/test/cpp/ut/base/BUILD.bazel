@@ -67,3 +67,14 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "host_info_test",
+    srcs = [
+        "HostInfoTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/base:base_library",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
