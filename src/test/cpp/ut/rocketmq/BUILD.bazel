@@ -39,8 +39,8 @@ cc_test(
         "ProcessQueueTest.cpp",
     ],
     deps = [
-        "//src/main/cpp/client:client_mocks",
-        "//src/main/cpp/rocketmq:rocketmq_mocks",
+        "//src/main/cpp/client/mocks:client_mocks",
+        "//src/main/cpp/rocketmq/mocks:rocketmq_mocks",
         "//src/main/cpp/rocketmq:rocketmq_library",
         "@com_google_googletest//:gtest_main",
     ],
@@ -54,7 +54,7 @@ cc_library(
     srcs = [],
     strip_include_prefix = "//src/test/cpp/ut/rocketmq/include",
     deps = [
-        "//src/main/cpp/client:client_mocks",
+        "//src/main/cpp/client/mocks:client_mocks",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -111,7 +111,7 @@ cc_test(
         "StsCredentialsProviderImplTest.cpp",
     ],
     deps = [
-        "//src/main/cpp/base:base_mocks",
+        "//src/main/cpp/base/mocks:base_mocks",
         "//src/main/cpp/rocketmq:rocketmq_library",
         "@com_google_googletest//:gtest_main",
     ],
@@ -135,8 +135,8 @@ cc_test(
     ],
     deps = [
         "//src/main/cpp/rocketmq:rocketmq_library",
-        "//src/main/cpp/rocketmq:rocketmq_mocks",
-        "//src/main/cpp/base:base_mocks",
+        "//src/main/cpp/rocketmq/mocks:rocketmq_mocks",
+        "//src/main/cpp/base/mocks:base_mocks",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -147,7 +147,7 @@ cc_test(
         "ConsumerTest.cpp",
     ],
     deps = [
-        "//src/main/cpp/rocketmq:rocketmq_mocks",
+        "//src/main/cpp/rocketmq/mocks:rocketmq_mocks",
         "@com_google_googletest//:gtest_main",
     ],
 )

@@ -69,7 +69,7 @@ public:
                                const std::function<void(bool, const QueryAssignmentResponse&)>& cb) = 0;
 
   virtual void receiveMessage(const std::string& target, const Metadata& metadata, const ReceiveMessageRequest& request,
-                              std::chrono::milliseconds timeout, std::shared_ptr<ReceiveMessageCallback>& cb) = 0;
+                              std::chrono::milliseconds timeout, const std::shared_ptr<ReceiveMessageCallback>& cb) = 0;
 
   virtual bool send(const std::string& target_host, const Metadata& metadata, SendMessageRequest& request,
                     SendCallback* cb) = 0;

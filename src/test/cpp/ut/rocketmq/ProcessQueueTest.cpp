@@ -15,6 +15,7 @@
 #include "rocketmq/MQMessageExt.h"
 #include "gtest/gtest.h"
 #include <chrono>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -284,7 +285,7 @@ TEST_F(ProcessQueueTest, testReceiveMessage_POP) {
 
   auto receive_message_mock = [this](const std::string& target, const Metadata& metadata,
                                      const ReceiveMessageRequest& request, std::chrono::milliseconds timeout,
-                                     std::shared_ptr<ReceiveMessageCallback>& cb) {
+                                     const std::shared_ptr<ReceiveMessageCallback>& cb) {
     ReceiveMessageResult receive_message_result;
     receive_message_result.status_ = ReceiveMessageStatus::OK;
 

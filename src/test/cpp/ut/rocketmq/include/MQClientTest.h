@@ -25,7 +25,7 @@ public:
         .WillByDefault(testing::Invoke(
             std::bind(&MQClientTest::mockQueryRoute, this, std::placeholders::_1, std::placeholders::_2)));
     client_instance_->addRpcClient(name_server_address_, rpc_client_ns_);
-    ClientManagerFactory::getInstance().addClientInstance(arn_, client_instance_);
+    ClientManagerFactory::getInstance().addClientManager(arn_, client_instance_);
   }
 
   void TearDown() override {

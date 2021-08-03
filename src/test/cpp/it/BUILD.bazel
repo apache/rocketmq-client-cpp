@@ -17,12 +17,9 @@ cc_test(
         "RpcClientTest.cpp",
     ],
     deps = [
-        "//src/main/cpp/client:client_mocks",
+        "//src/main/cpp/client/mocks:client_mocks",
         "//src/main/cpp/rocketmq:rocketmq_library",
         "@com_google_googletest//:gtest_main",
-    ],
-    copts = [
-        "-Isrc/main/client/mocks/include",
     ],
 )
 
@@ -32,7 +29,7 @@ cc_test(
         "TopicPublishInfoTest.cpp",
     ],
     deps = [
-        "//src/main/cpp/client:client_mocks",
+        "//src/main/cpp/client/mocks:client_mocks",
         "//src/main/cpp/rocketmq:rocketmq_library",
         "@com_google_googletest//:gtest_main",
     ],

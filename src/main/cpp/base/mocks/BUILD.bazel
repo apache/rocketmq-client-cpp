@@ -1,0 +1,12 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "base_mocks",
+    hdrs = glob(["include/*h"]),
+    strip_include_prefix = "//src/main/cpp/base/mocks/include",
+    deps = [
+        "//api:rocketmq_interface",
+        "//external:gtest",
+    ],
+)

@@ -65,13 +65,3 @@ cc_library(
         "@boringssl//:ssl",
     ],
 )
-
-cc_library(
-    name = "base_mocks",
-    hdrs = glob(["mocks/include/*h"]),
-    strip_include_prefix = "//src/main/cpp/base/mocks/include",
-    deps = [
-        "//api:rocketmq_interface",
-        "//external:gtest",
-    ],
-)

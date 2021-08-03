@@ -1,5 +1,4 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
-
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -24,16 +23,5 @@ cc_library(
         "//third_party/crc:crc_interface",
     ],
     defines = [
-    ],
-)
-
-cc_library(
-    name = "client_mocks",
-    hdrs = glob(["mocks/include/*.h"]),
-    srcs = glob(["mocks/*.cpp"]),
-    strip_include_prefix = "//src/main/cpp/client/mocks/include",
-    deps = [
-        ":client_library",
-        "//external:gtest",
     ],
 )

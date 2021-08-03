@@ -49,12 +49,12 @@ ClientManagerImpl::ClientManagerImpl(std::string arn)
   tls_channel_credential_options_.watch_root_certs();
   tls_channel_credential_options_.watch_identity_key_cert_pairs();
   channel_credential_ = grpc::experimental::TlsCredentials(tls_channel_credential_options_);
-  SPDLOG_INFO("ClientInstance[ARN={}] created", arn_);
+  SPDLOG_INFO("ClientManager[ARN={}] created", arn_);
 }
 
 ClientManagerImpl::~ClientManagerImpl() {
   shutdown();
-  SPDLOG_INFO("ClientInstance[ARN={}] destructed", arn_);
+  SPDLOG_INFO("ClientManager[ARN={}] destructed", arn_);
 }
 
 void ClientManagerImpl::start() {
@@ -153,7 +153,7 @@ void ClientManagerImpl::healthCheck(
   {
     absl::MutexLock lk(&rpc_clients_mtx_);
     if (!rpc_clients_.contains(target_host)) {
-      SPDLOG_WARN("Try to perform health check for {}, which is unknown to ClientInstance", target_host);
+      SPDLOG_WARN("Try to perform health check for {}, which is unknown to client manager", target_host);
       cb(target_host, nullptr);
       return;
     }
@@ -337,11 +337,6 @@ void ClientManagerImpl::heartbeat(const std::string& target_host, const Metadata
   invocation_context->callback = callback;
   invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
   client->asyncHeartbeat(request, invocation_context);
-}
-
-bool ClientManagerImpl::active() {
-  State state = state_.load(std::memory_order_relaxed);
-  return State::STARTED == state || State::STARTING == state;
 }
 
 void ClientManagerImpl::doHeartbeat() {
@@ -665,7 +660,7 @@ void ClientManagerImpl::queryAssignment(const std::string& target, const Metadat
 
 void ClientManagerImpl::receiveMessage(const std::string& target_host, const Metadata& metadata,
                                        const ReceiveMessageRequest& request, std::chrono::milliseconds timeout,
-                                       std::shared_ptr<ReceiveMessageCallback>& cb) {
+                                       const std::shared_ptr<ReceiveMessageCallback>& cb) {
   SPDLOG_DEBUG("Prepare to pop message from {} asynchronously. Request: {}", target_host, request.DebugString());
   RpcClientSharedPtr client = getRpcClient(target_host);
 

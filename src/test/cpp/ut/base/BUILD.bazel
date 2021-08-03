@@ -108,7 +108,7 @@ cc_test(
     ],
     deps = [
         "//src/main/cpp/base:base_library",
-        "//src/main/cpp/base:base_mocks",
+        "//src/main/cpp/base/mocks:base_mocks",
         "@com_google_googletest//:gtest_main",
     ]
 )

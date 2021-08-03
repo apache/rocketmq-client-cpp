@@ -44,7 +44,8 @@ class ClientManagerImpl : virtual public ClientManager, public std::enable_share
 public:
   /**
    * @brief Construct a new Client Manager Impl object
-   * TODO: Make it protected such that instantiating it through ClientManagerFactory only, achieving Singleton effectively.
+   * TODO: Make it protected such that instantiating it through ClientManagerFactory only, achieving Singleton
+   * effectively.
    * @param arn Abstract resource namespace, in which this client manager lives.
    */
   explicit ClientManagerImpl(std::string arn);
@@ -120,7 +121,7 @@ public:
                        const std::function<void(bool, const QueryAssignmentResponse&)>& cb) override;
 
   void receiveMessage(const std::string& target, const Metadata& metadata, const ReceiveMessageRequest& request,
-                      std::chrono::milliseconds timeout, std::shared_ptr<ReceiveMessageCallback>& cb) override
+                      std::chrono::milliseconds timeout, const std::shared_ptr<ReceiveMessageCallback>& cb) override
       LOCKS_EXCLUDED(rpc_clients_mtx_);
 
   /**
@@ -199,8 +200,6 @@ public:
 private:
   void processPopResult(const grpc::ClientContext& client_context, const ReceiveMessageResponse& response,
                         ReceiveMessageResult& result, const std::string& target_host);
-
-  bool active();
 
   void doHeartbeat();
 

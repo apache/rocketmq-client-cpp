@@ -19,7 +19,7 @@ public:
   ClientManagerPtr getClientManager(const ClientConfig& client_config) LOCKS_EXCLUDED(client_manager_table_mtx_);
 
   // For test purpose only
-  void addClientInstance(const std::string& arn, const ClientManagerPtr& client_manager)
+  void addClientManager(const std::string& arn, const ClientManagerPtr& client_manager)
       LOCKS_EXCLUDED(client_manager_table_mtx_);
 
 private:

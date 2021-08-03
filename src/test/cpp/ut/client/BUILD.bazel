@@ -19,7 +19,7 @@ cc_test(
     ],
     deps = [
         "//src/main/cpp/client:client_library",
-        "//src/main/cpp/client:client_mocks",
+        "//src/main/cpp/client/mocks:client_mocks",
         "@com_google_googletest//:gtest_main",
         "@boringssl//:ssl",
     ],
@@ -31,7 +31,7 @@ cc_test(
         "ClientTest.cpp",
     ],
     deps = [
-        "//src/main/cpp/client:client_mocks",
+        "//src/main/cpp/client/mocks:client_mocks",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -42,7 +42,29 @@ cc_test(
         "ClientManagerTest.cpp",
     ],
     deps = [
-        "//src/main/cpp/client:client_mocks",
+        "//src/main/cpp/client/mocks:client_mocks",
         "@com_google_googletest//:gtest_main",
     ]
+)
+
+cc_test(
+    name = "client_manager_factory_test",
+    srcs = [
+        "ClientManagerFactoryTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/client/mocks:client_mocks",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "topic_assignment_info_test",
+    srcs = [
+        "TopicAssignmentInfoTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/client:client_library",
+        "@com_google_googletest//:gtest_main",
+    ],
 )

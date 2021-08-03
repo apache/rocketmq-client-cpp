@@ -72,7 +72,7 @@ public:
 
   MOCK_METHOD(void, receiveMessage,
               (const std::string&, const Metadata&, const ReceiveMessageRequest&, std::chrono::milliseconds,
-               (std::shared_ptr<ReceiveMessageCallback>&)),
+               (const std::shared_ptr<ReceiveMessageCallback>&)),
               (override));
 
   MOCK_METHOD(bool, send, (const std::string&, const Metadata&, SendMessageRequest&, SendCallback*), (override));
