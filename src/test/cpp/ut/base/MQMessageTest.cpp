@@ -32,4 +32,12 @@ TEST_F(MQMessageTest, testAssignment) {
   EXPECT_EQ(msg.getBody(), body_data_);
 }
 
+TEST_F(MQMessageTest, testProperty) {
+  std::string key{"k"};
+  std::string value{"value"};
+  message.setProperty(key, value);
+  auto prop_value = message.getProperty(key);
+  EXPECT_EQ(value, prop_value);
+}
+
 ROCKETMQ_NAMESPACE_END
