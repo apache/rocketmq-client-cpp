@@ -20,4 +20,6 @@ constexpr int MESSAGE_ILLEGAL = -7;
 
 constexpr int BAD_CONFIGURATION = -8;
 
+constexpr int MESSAGE_QUEUE_ILLEGAL = -9;
+
 ROCKETMQ_NAMESPACE_END

@@ -11,10 +11,9 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class DefaultMQPullConsumerImpl : public ClientImpl,
-                                  public std::enable_shared_from_this<DefaultMQPullConsumerImpl> {
+class PullConsumerImpl : public ClientImpl, public std::enable_shared_from_this<PullConsumerImpl> {
 public:
-  explicit DefaultMQPullConsumerImpl(std::string group_name) : ClientImpl(std::move(group_name)) {}
+  explicit PullConsumerImpl(std::string group_name) : ClientImpl(std::move(group_name)) {}
 
   void start() override;
 
@@ -29,9 +28,7 @@ public:
   void prepareHeartbeatData(HeartbeatRequest& request) override;
 
 protected:
-  std::shared_ptr<ClientImpl> self() override {
-    return shared_from_this();
-  }
+  std::shared_ptr<ClientImpl> self() override { return shared_from_this(); }
 };
 
 ROCKETMQ_NAMESPACE_END

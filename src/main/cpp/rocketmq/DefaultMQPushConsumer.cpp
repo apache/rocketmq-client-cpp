@@ -1,5 +1,5 @@
 #include "rocketmq/DefaultMQPushConsumer.h"
-#include "DefaultMQPushConsumerImpl.h"
+#include "PushConsumerImpl.h"
 #include "absl/strings/str_split.h"
 #include <set>
 
@@ -12,7 +12,7 @@ DefaultMQPushConsumer::DefaultMQPushConsumer(const std::string& group_name) : gr
     std::string err_msg = "create consumer with same group name in a process, group name :" + group_name;
     THROW_MQ_EXCEPTION(MQClientException, err_msg, -1);
   } else {
-    impl_ = std::make_shared<DefaultMQPushConsumerImpl>(group_name);
+    impl_ = std::make_shared<PushConsumerImpl>(group_name);
     consumerTable.insert(group_name);
   }
 }

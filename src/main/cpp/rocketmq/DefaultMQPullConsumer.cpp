@@ -1,12 +1,12 @@
 #include "rocketmq/DefaultMQPullConsumer.h"
 #include "AwaitPullCallback.h"
-#include "DefaultMQPullConsumerImpl.h"
+#include "PullConsumerImpl.h"
 #include "absl/strings/str_split.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 DefaultMQPullConsumer::DefaultMQPullConsumer(const std::string& group_name)
-    : impl_(std::make_shared<DefaultMQPullConsumerImpl>(group_name)) {}
+    : impl_(std::make_shared<PullConsumerImpl>(group_name)) {}
 
 void DefaultMQPullConsumer::start() { impl_->start(); }
 

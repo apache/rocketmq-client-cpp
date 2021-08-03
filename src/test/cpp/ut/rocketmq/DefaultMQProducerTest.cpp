@@ -1,7 +1,7 @@
 #include "rocketmq/DefaultMQProducer.h"
 
-#include "DefaultMQProducerImpl.h"
 #include "MQClientTest.h"
+#include "ProducerImpl.h"
 #include "rocketmq/MQSelector.h"
 #include <mutex>
 #include <utility>
@@ -123,7 +123,7 @@ private:
 };
 
 TEST_F(DefaultMQProducerUnitTest, testAsyncSendMessage) {
-  auto producer = std::make_shared<DefaultMQProducerImpl>(group_name_);
+  auto producer = std::make_shared<ProducerImpl>(group_name_);
   producer->arn(arn_);
   producer->setNameServerList(name_server_list_);
   producer->start();
@@ -145,7 +145,7 @@ TEST_F(DefaultMQProducerUnitTest, testAsyncSendMessage) {
 }
 
 TEST_F(DefaultMQProducerUnitTest, testSendMessage) {
-  auto producer = std::make_shared<DefaultMQProducerImpl>(group_name_);
+  auto producer = std::make_shared<ProducerImpl>(group_name_);
   producer->arn(arn_);
   producer->setNameServerList(name_server_list_);
   producer->start();
@@ -156,7 +156,7 @@ TEST_F(DefaultMQProducerUnitTest, testSendMessage) {
 }
 
 TEST_F(DefaultMQProducerUnitTest, testEndpointIsolation) {
-  auto producer = std::make_shared<DefaultMQProducerImpl>(group_name_);
+  auto producer = std::make_shared<ProducerImpl>(group_name_);
   producer->arn(arn_);
   producer->setNameServerList(name_server_list_);
   producer->start();

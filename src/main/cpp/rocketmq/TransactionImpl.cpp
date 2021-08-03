@@ -1,10 +1,10 @@
 #include "TransactionImpl.h"
-#include "DefaultMQProducerImpl.h"
+#include "ProducerImpl.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 bool TransactionImpl::commit() {
-  std::shared_ptr<DefaultMQProducerImpl> producer = producer_.lock();
+  std::shared_ptr<ProducerImpl> producer = producer_.lock();
   if (!producer) {
     return false;
   }
@@ -13,7 +13,7 @@ bool TransactionImpl::commit() {
 }
 
 bool TransactionImpl::rollback() {
-  std::shared_ptr<DefaultMQProducerImpl> producer = producer_.lock();
+  std::shared_ptr<ProducerImpl> producer = producer_.lock();
   if (!producer) {
     return false;
   }

@@ -48,7 +48,7 @@ public:
                 std::chrono::milliseconds delay) override;
 
 protected:
-  ClientManagerPtr client_instance_;
+  ClientManagerPtr client_manager_;
   std::atomic<State> state_;
 
   absl::flat_hash_map<std::string, TopicRouteDataPtr> topic_route_table_ GUARDED_BY(topic_route_table_mtx_);

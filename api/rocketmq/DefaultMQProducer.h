@@ -18,7 +18,7 @@ ROCKETMQ_NAMESPACE_BEGIN
  * This class employs pointer-to-implementation paradigm to achieve the goal of stable ABI.
  * Refer https://en.cppreference.com/w/cpp/language/pimpl for an explanation.
  */
-class DefaultMQProducerImpl;
+class ProducerImpl;
 
 class DefaultMQProducer {
 public:
@@ -113,7 +113,7 @@ public:
   void setRegion(const std::string& region);
 
 private:
-  std::shared_ptr<DefaultMQProducerImpl> impl_;
+  std::shared_ptr<ProducerImpl> impl_;
 };
 
 ROCKETMQ_NAMESPACE_END

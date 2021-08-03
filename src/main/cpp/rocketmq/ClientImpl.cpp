@@ -23,8 +23,8 @@ void ClientImpl::start() {
     return;
   }
 
-  client_instance_ = ClientManagerFactory::getInstance().getClientManager(*this);
-  client_instance_->start();
+  client_manager_ = ClientManagerFactory::getInstance().getClientManager(*this);
+  client_manager_->start();
   bool update_name_server_list = false;
   {
     absl::MutexLock lock(&name_server_list_mtx_);
@@ -48,7 +48,7 @@ void ClientImpl::start() {
       }
     };
     name_server_update_handle_ =
-        client_instance_->getScheduler().schedule(name_server_update_functor, UPDATE_NAME_SERVER_LIST_TASK_NAME,
+        client_manager_->getScheduler().schedule(name_server_update_functor, UPDATE_NAME_SERVER_LIST_TASK_NAME,
                                                   std::chrono::milliseconds(0), std::chrono::seconds(30));
   }
 
@@ -59,7 +59,7 @@ void ClientImpl::start() {
     }
   };
 
-  route_update_handle_ = client_instance_->getScheduler().schedule(route_update_functor, UPDATE_ROUTE_TASK_NAME,
+  route_update_handle_ = client_manager_->getScheduler().schedule(route_update_functor, UPDATE_ROUTE_TASK_NAME,
                                                                    std::chrono::seconds(10), std::chrono::seconds(30));
   state_.store(State::STARTED);
 }
@@ -67,14 +67,14 @@ void ClientImpl::start() {
 void ClientImpl::shutdown() {
   state_.store(State::STOPPING, std::memory_order_relaxed);
   if (name_server_update_handle_) {
-    client_instance_->getScheduler().cancel(name_server_update_handle_);
+    client_manager_->getScheduler().cancel(name_server_update_handle_);
   }
 
   if (route_update_handle_) {
-    client_instance_->getScheduler().cancel(route_update_handle_);
+    client_manager_->getScheduler().cancel(route_update_handle_);
   }
 
-  client_instance_.reset();
+  client_manager_.reset();
 }
 
 const char* ClientImpl::UPDATE_ROUTE_TASK_NAME = "route_updater";
@@ -188,7 +188,7 @@ void ClientImpl::renewNameServerList() {
       }
     }
   };
-  client_instance_->topAddressing().fetchNameServerAddresses(callback);
+  client_manager_->topAddressing().fetchNameServerAddresses(callback);
 }
 
 bool ClientImpl::selectNameServer(std::string& selected, bool change) {
@@ -235,7 +235,7 @@ void ClientImpl::fetchRouteFor(const std::string& topic, const std::function<voi
 
   absl::flat_hash_map<std::string, std::string> metadata;
   Signature::sign(this, metadata);
-  client_instance_->resolveRoute(name_server, metadata, request, absl::ToChronoMilliseconds(io_timeout_), callback);
+  client_manager_->resolveRoute(name_server, metadata, request, absl::ToChronoMilliseconds(io_timeout_), callback);
 }
 
 void ClientImpl::updateRouteInfo() {
@@ -292,7 +292,7 @@ void ClientImpl::heartbeat() {
       }
       SPDLOG_DEBUG("Heartbeat to {} OK", target);
     };
-    client_instance_->heartbeat(target, metadata, request, absl::ToChronoMilliseconds(io_timeout_), callback);
+    client_manager_->heartbeat(target, metadata, request, absl::ToChronoMilliseconds(io_timeout_), callback);
   }
 }
 
@@ -341,7 +341,7 @@ void ClientImpl::updateRouteCache(const std::string& topic, const TopicRouteData
 void ClientImpl::multiplexing(const std::string& target, const MultiplexingRequest& request) {
   absl::flat_hash_map<std::string, std::string> metadata;
   Signature::sign(this, metadata);
-  client_instance_->multiplexingCall(target, metadata, request, absl::ToChronoMilliseconds(long_polling_timeout_),
+  client_manager_->multiplexingCall(target, metadata, request, absl::ToChronoMilliseconds(long_polling_timeout_),
                                      std::bind(&ClientImpl::onMultiplexingResponse, this, std::placeholders::_1));
 }
 
@@ -354,7 +354,7 @@ void ClientImpl::onMultiplexingResponse(const InvocationContext<MultiplexingResp
       multiplexing(remote_address, request);
     };
     static std::string task_name = "Initiate multiplex request later";
-    client_instance_->getScheduler().schedule(multiplexingLater, task_name, std::chrono::seconds(3),
+    client_manager_->getScheduler().schedule(multiplexingLater, task_name, std::chrono::seconds(3),
                                               std::chrono::seconds(0));
     return;
   }
@@ -368,7 +368,7 @@ void ClientImpl::onMultiplexingResponse(const InvocationContext<MultiplexingResp
         "Print thread stack trace is not supported by C++ SDK");
     absl::flat_hash_map<std::string, std::string> metadata;
     Signature::sign(this, metadata);
-    client_instance_->multiplexingCall(ctx->remote_address, metadata, request, absl::ToChronoMilliseconds(io_timeout_),
+    client_manager_->multiplexingCall(ctx->remote_address, metadata, request, absl::ToChronoMilliseconds(io_timeout_),
                                        std::bind(&ClientImpl::onMultiplexingResponse, this, std::placeholders::_1));
     break;
   }
@@ -377,7 +377,7 @@ void ClientImpl::onMultiplexingResponse(const InvocationContext<MultiplexingResp
     auto data = ctx->response.verify_message_consumption_request().message();
     MQMessageExt message;
     MultiplexingRequest request;
-    if (!client_instance_->wrapMessage(data, message)) {
+    if (!client_manager_->wrapMessage(data, message)) {
       SPDLOG_WARN("Message to verify consumption is corrupted");
       request.mutable_verify_message_consumption_response()->mutable_common()->mutable_status()->set_code(
           google::rpc::Code::INVALID_ARGUMENT);
@@ -397,7 +397,7 @@ void ClientImpl::onMultiplexingResponse(const InvocationContext<MultiplexingResp
   case MultiplexingResponse::TypeCase::kResolveOrphanedTransactionRequest: {
     auto orphan = ctx->response.resolve_orphaned_transaction_request().orphaned_transactional_message();
     MQMessageExt message;
-    if (client_instance_->wrapMessage(orphan, message)) {
+    if (client_manager_->wrapMessage(orphan, message)) {
       MessageAccessor::setTargetEndpoint(message, ctx->remote_address);
       const std::string& transaction_id = ctx->response.resolve_orphaned_transaction_request().transaction_id();
       resolveOrphanedTransactionalMessage(transaction_id, message);
@@ -452,13 +452,13 @@ void ClientImpl::healthCheck() {
     HealthCheckRequest request;
     absl::flat_hash_map<std::string, std::string> metadata;
     Signature::sign(this, metadata);
-    client_instance_->healthCheck(endpoint, metadata, request, absl::ToChronoMilliseconds(io_timeout_), callback);
+    client_manager_->healthCheck(endpoint, metadata, request, absl::ToChronoMilliseconds(io_timeout_), callback);
   }
 }
 
 void ClientImpl::schedule(const std::string& task_name, const std::function<void()>& task,
                           std::chrono::milliseconds delay) {
-  client_instance_->getScheduler().schedule(task, task_name, delay, std::chrono::milliseconds(0));
+  client_manager_->getScheduler().schedule(task, task_name, delay, std::chrono::milliseconds(0));
 }
 
 void ClientImpl::onHealthCheckResponse(const std::string& endpoint, const InvocationContext<HealthCheckResponse>* ctx) {

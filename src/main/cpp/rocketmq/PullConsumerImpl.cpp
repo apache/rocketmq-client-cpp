@@ -1,20 +1,20 @@
-#include "DefaultMQPullConsumerImpl.h"
+#include "PullConsumerImpl.h"
 #include "ClientManagerFactory.h"
 #include "InvocationContext.h"
 #include "Signature.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-void DefaultMQPullConsumerImpl::start() {
+void PullConsumerImpl::start() {
   ClientImpl::start();
   if (State::STARTED != state_.load(std::memory_order_relaxed)) {
     SPDLOG_WARN("Unexpected state: {}", state_.load(std::memory_order_relaxed));
     return;
   }
-  client_instance_->addClientObserver(shared_from_this());
+  client_manager_->addClientObserver(shared_from_this());
 }
 
-void DefaultMQPullConsumerImpl::shutdown() {
+void PullConsumerImpl::shutdown() {
   // Shutdown services started by current tier
 
   // Shutdown services that are started by the parent
@@ -25,7 +25,7 @@ void DefaultMQPullConsumerImpl::shutdown() {
   }
 }
 
-std::future<std::vector<MQMessageQueue>> DefaultMQPullConsumerImpl::queuesFor(const std::string& topic) {
+std::future<std::vector<MQMessageQueue>> PullConsumerImpl::queuesFor(const std::string& topic) {
   auto promise = std::make_shared<std::promise<std::vector<MQMessageQueue>>>();
   {
     absl::MutexLock lk(&topic_route_table_mtx_);
@@ -54,7 +54,7 @@ std::future<std::vector<MQMessageQueue>> DefaultMQPullConsumerImpl::queuesFor(co
   return promise->get_future();
 }
 
-std::future<int64_t> DefaultMQPullConsumerImpl::queryOffset(const OffsetQuery& query) {
+std::future<int64_t> PullConsumerImpl::queryOffset(const OffsetQuery& query) {
   QueryOffsetRequest request;
   switch (query.policy) {
   case QueryOffsetPolicy::BEGINNING:
@@ -93,12 +93,12 @@ std::future<int64_t> DefaultMQPullConsumerImpl::queryOffset(const OffsetQuery& q
     promise_ptr->set_exception(std::make_exception_ptr(e));
   };
 
-  client_instance_->queryOffset(query.message_queue.serviceAddress(), metadata, request,
+  client_manager_->queryOffset(query.message_queue.serviceAddress(), metadata, request,
                                 absl::ToChronoMilliseconds(io_timeout_), callback);
   return promise_ptr->get_future();
 }
 
-void DefaultMQPullConsumerImpl::pull(const PullMessageQuery& query, PullCallback* cb) {
+void PullConsumerImpl::pull(const PullMessageQuery& query, PullCallback* cb) {
   PullMessageRequest request;
   request.set_offset(query.offset);
   auto duration = absl::FromChrono(query.await_time);
@@ -134,7 +134,7 @@ void DefaultMQPullConsumerImpl::pull(const PullMessageQuery& query, PullCallback
     std::vector<MQMessageExt> messages;
     for (const auto& item : response.messages()) {
       MQMessageExt message_ext;
-      if (client_instance_->wrapMessage(item, message_ext)) {
+      if (client_manager_->wrapMessage(item, message_ext)) {
         messages.emplace_back(message_ext);
       }
     }
@@ -145,10 +145,10 @@ void DefaultMQPullConsumerImpl::pull(const PullMessageQuery& query, PullCallback
   absl::flat_hash_map<std::string, std::string> metadata;
   Signature::sign(this, metadata);
 
-  client_instance_->pullMessage(target_host, metadata, request, absl::ToChronoMilliseconds(long_polling_timeout_), callback);
+  client_manager_->pullMessage(target_host, metadata, request, absl::ToChronoMilliseconds(long_polling_timeout_), callback);
 }
 
-void DefaultMQPullConsumerImpl::prepareHeartbeatData(HeartbeatRequest& request) {
+void PullConsumerImpl::prepareHeartbeatData(HeartbeatRequest& request) {
   rmq::HeartbeatEntry entry;
   entry.mutable_producer_group()->mutable_group()->set_arn(arn_);
   entry.mutable_producer_group()->mutable_group()->set_name(group_name_);

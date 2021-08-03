@@ -14,7 +14,7 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class DefaultMQPullConsumerImpl;
+class PullConsumerImpl;
 
 class DefaultMQPullConsumer {
 public:
@@ -39,7 +39,7 @@ public:
   void setCredentialsProvider(std::shared_ptr<CredentialsProvider> credentials_provider);
 
 private:
-  std::shared_ptr<DefaultMQPullConsumerImpl> impl_;
+  std::shared_ptr<PullConsumerImpl> impl_;
 };
 
 

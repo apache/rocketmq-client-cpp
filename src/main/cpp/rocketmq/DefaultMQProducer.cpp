@@ -1,13 +1,13 @@
 #include "rocketmq/DefaultMQProducer.h"
-#include "DefaultMQProducerImpl.h"
 #include "MixAll.h"
+#include "ProducerImpl.h"
 
 #include "absl/strings/str_split.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 DefaultMQProducer::DefaultMQProducer(const std::string& group_name)
-    : impl_(std::make_shared<DefaultMQProducerImpl>(group_name)) {}
+    : impl_(std::make_shared<ProducerImpl>(group_name)) {}
 
 void DefaultMQProducer::start() { impl_->start(); }
 
@@ -103,8 +103,6 @@ void DefaultMQProducer::setCredentialsProvider(CredentialsProviderPtr credential
   impl_->setCredentialsProvider(std::move(credentials_provider));
 }
 
-void DefaultMQProducer::setRegion(const std::string& region) {
-  impl_->region(region);
-}
+void DefaultMQProducer::setRegion(const std::string& region) { impl_->region(region); }
 
 ROCKETMQ_NAMESPACE_END

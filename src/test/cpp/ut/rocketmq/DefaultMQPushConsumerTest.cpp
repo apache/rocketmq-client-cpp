@@ -1,8 +1,8 @@
 #include "rocketmq/DefaultMQPushConsumer.h"
 #include "ClientManagerFactory.h"
-#include "DefaultMQPushConsumerImpl.h"
 #include "InvocationContext.h"
 #include "MQClientTest.h"
+#include "PushConsumerImpl.h"
 #include "absl/time/time.h"
 #include "rocketmq/MQMessageExt.h"
 #include "spdlog/spdlog.h"
@@ -189,7 +189,7 @@ public:
 
 TEST_F(DefaultMQPushConsumerUnitTest, testBroadcasting) {
   spdlog::set_level(spdlog::level::debug);
-  auto push_consumer = std::make_shared<DefaultMQPushConsumerImpl>(group_name_);
+  auto push_consumer = std::make_shared<PushConsumerImpl>(group_name_);
   push_consumer->setMessageModel(MessageModel::BROADCASTING);
   push_consumer->arn(arn_);
   push_consumer->setNameServerList(name_server_list_);
@@ -208,7 +208,7 @@ TEST_F(DefaultMQPushConsumerUnitTest, testBroadcasting) {
 
 TEST_F(DefaultMQPushConsumerUnitTest, DISABLED_testClustering) {
   spdlog::set_level(spdlog::level::debug);
-  auto push_consumer = std::make_shared<DefaultMQPushConsumerImpl>(group_name_);
+  auto push_consumer = std::make_shared<PushConsumerImpl>(group_name_);
   push_consumer->setMessageModel(MessageModel::CLUSTERING);
   push_consumer->arn(arn_);
   push_consumer->setNameServerList(name_server_list_);

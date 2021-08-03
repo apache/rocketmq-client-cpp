@@ -26,13 +26,13 @@ class ConsumeMessageService;
 class ConsumeFifoMessageService;
 class ConsumeStandardMessageService;
 
-class DefaultMQPushConsumerImpl : virtual public ClientImpl,
-                                  virtual public PushConsumer,
-                                  public std::enable_shared_from_this<DefaultMQPushConsumerImpl> {
+class PushConsumerImpl : virtual public ClientImpl,
+                         virtual public PushConsumer,
+                         public std::enable_shared_from_this<PushConsumerImpl> {
 public:
-  explicit DefaultMQPushConsumerImpl(std::string group_name);
+  explicit PushConsumerImpl(std::string group_name);
 
-  ~DefaultMQPushConsumerImpl() override;
+  ~PushConsumerImpl() override;
 
   void prepareHeartbeatData(HeartbeatRequest& request) override;
 

@@ -10,11 +10,11 @@ target_sources(rocketmq_obj
             ConsumeFifoMessageService.cpp
             CredentialsProvider.cpp
             DefaultMQProducer.cpp
-            DefaultMQProducerImpl.cpp
+        ProducerImpl.cpp
             DefaultMQPushConsumer.cpp
-            DefaultMQPushConsumerImpl.cpp
+        PushConsumerImpl.cpp
             DefaultMQPullConsumer.cpp
-            DefaultMQPullConsumerImpl.cpp
+        PullConsumerImpl.cpp
             FilterExpression.cpp
             MessageGroupQueueSelector.cpp
         ProcessQueueImpl.cpp

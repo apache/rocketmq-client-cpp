@@ -19,12 +19,11 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class DefaultMQProducerImpl : virtual public ClientImpl,
-                              public std::enable_shared_from_this<DefaultMQProducerImpl> {
+class ProducerImpl : virtual public ClientImpl, public std::enable_shared_from_this<ProducerImpl> {
 public:
-  explicit DefaultMQProducerImpl(std::string group_name);
+  explicit ProducerImpl(std::string group_name);
 
-  ~DefaultMQProducerImpl() override;
+  ~ProducerImpl() override;
 
   void prepareHeartbeatData(HeartbeatRequest& request) override;
 
@@ -37,7 +36,7 @@ public:
   SendResult send(const MQMessage& message, const MQMessageQueue& message_queue);
   SendResult send(const MQMessage& message, MessageQueueSelector* selector, void* arg);
 
-  SendResult send(const MQMessage& message, MessageQueueSelector* selector, void* arg, int auto_retry_times);
+  SendResult send(const MQMessage& message, MessageQueueSelector* selector, void* arg, int max_attempts);
 
   void send(const MQMessage& message, SendCallback* callback);
   void send(const MQMessage& message, const MQMessageQueue& message_queue, SendCallback* callback);
@@ -123,6 +122,8 @@ private:
                        TransactionState resolution);
 
   void isolatedEndpoints(absl::flat_hash_set<std::string>& endpoints) LOCKS_EXCLUDED(isolated_endpoints_mtx_);
+
+  MQMessageQueue withServiceAddress(const MQMessageQueue& message_queue);
 };
 
 ROCKETMQ_NAMESPACE_END

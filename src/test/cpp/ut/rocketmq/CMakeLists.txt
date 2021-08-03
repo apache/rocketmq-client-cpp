@@ -83,3 +83,9 @@ target_link_libraries(consumer_test
         PRIVATE
             rocketmq_mocks
             gtest_main)
+
+add_executable(await_pull_callback_test AwaitPullCallbackTest.cpp)
+target_link_libraries(await_pull_callback_test
+        PRIVATE
+            rocketmq_library
+            gtest_main)

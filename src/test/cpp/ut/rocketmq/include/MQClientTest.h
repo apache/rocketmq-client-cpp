@@ -2,11 +2,11 @@
 
 #include "ClientManagerFactory.h"
 #include "RpcClientMock.h"
+#include "ClientManagerImpl.h"
 #include "grpc/grpc.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include <functional>
-#include <grpcpp/impl/grpc_library.h>
 #include <memory>
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -16,6 +16,7 @@ public:
   MQClientTest()  = default;
 
   void SetUp() override {
+    grpc_init();
     name_server_list_.emplace_back(name_server_address_);
     client_instance_ = std::make_shared<ClientManagerImpl>(arn_);
     rpc_client_ns_ = std::make_shared<testing::NiceMock<RpcClientMock>>();
@@ -32,10 +33,10 @@ public:
     rpc_client_ns_.reset();
     client_instance_->cleanRpcClients();
     client_instance_.reset();
+    grpc_shutdown();
   }
 
 protected:
-  grpc::internal::GrpcLibraryInitializer initializer_;
   std::shared_ptr<ClientManagerImpl> client_instance_;
   std::shared_ptr<testing::NiceMock<RpcClientMock>> rpc_client_ns_;
   const int16_t port_{10911};

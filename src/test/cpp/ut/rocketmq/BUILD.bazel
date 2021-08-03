@@ -151,3 +151,38 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "await_pull_callback_test",
+    srcs = [
+        "AwaitPullCallbackTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/rocketmq:rocketmq_library",
+        "@com_google_googletest//:gtest_main",
+    ]
+)
+
+cc_test(
+    name = "push_consumer_impl_test",
+    srcs = [
+        "PushConsumerImplTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/client/mocks:client_mocks",
+        "//src/main/cpp/rocketmq:rocketmq_library",
+        "@com_google_googletest//:gtest_main",
+    ]
+)
+
+cc_test(
+    name = "producer_impl_test",
+    srcs = [
+        "ProducerImplTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/client/mocks:client_mocks",
+        "//src/main/cpp/rocketmq:rocketmq_library",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

@@ -15,7 +15,7 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class DefaultMQPushConsumerImpl;
+class PushConsumerImpl;
 
 class DefaultMQPushConsumer {
 public:
@@ -89,7 +89,7 @@ public:
   void setMessageModel(MessageModel message_model);
 
 private:
-  std::shared_ptr<DefaultMQPushConsumerImpl> impl_;
+  std::shared_ptr<PushConsumerImpl> impl_;
   std::string group_name_;
 };
 
