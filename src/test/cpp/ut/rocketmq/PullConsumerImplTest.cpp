@@ -1,9 +1,14 @@
 #include "PullConsumerImpl.h"
 #include "ClientManagerFactory.h"
 #include "ClientManagerMock.h"
+#include "InvocationContext.h"
 #include "Scheduler.h"
+#include "rocketmq/AsyncCallback.h"
+#include "rocketmq/ConsumeType.h"
 #include "rocketmq/RocketMQ.h"
 #include "gtest/gtest.h"
+#include <apache/rocketmq/v1/definition.pb.h>
+#include <chrono>
 #include <memory>
 #include <string>
 
@@ -41,6 +46,7 @@ protected:
   std::vector<std::string> name_server_list_{"10.0.0.1:9876"};
   std::string group_{"Group-0"};
   std::string topic_{"Test"};
+  std::string tag_{"TagB"};
   std::shared_ptr<testing::NiceMock<ClientManagerMock>> client_manager_;
   std::shared_ptr<PullConsumerImpl> pull_consumer_;
   Scheduler scheduler_;
@@ -51,6 +57,7 @@ protected:
   int broker_port_{10911};
   int queue_id_{1};
   TopicRouteDataPtr topic_route_data_;
+  int batch_size_{32};
 };
 
 TEST_F(PullConsumerImplTest, testStartShutdown) {
@@ -73,6 +80,179 @@ TEST_F(PullConsumerImplTest, testQueuesFor) {
   std::future<std::vector<MQMessageQueue>> future = pull_consumer_->queuesFor(topic_);
   auto queues = future.get();
   EXPECT_FALSE(queues.empty());
+
+  pull_consumer_->queuesFor(topic_);
+
+  pull_consumer_->shutdown();
+}
+
+class TestPullCallback : public PullCallback {
+public:
+  TestPullCallback(bool& success, bool& failure) : success_(success), failure_(failure) {}
+  void onSuccess(const PullResult& pull_result) override {
+    success_ = true;
+    failure_ = false;
+  }
+
+  void onException(const MQException& e) override {
+    failure_ = true;
+    success_ = false;
+  }
+
+private:
+  bool& success_;
+  bool& failure_;
+};
+
+TEST_F(PullConsumerImplTest, testPull) {
+  pull_consumer_->start();
+  auto mock_resolve_route = [this](const std::string& target_host, const Metadata& metadata,
+                                   const QueryRouteRequest& request, std::chrono::milliseconds timeout,
+                                   const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) {
+    cb(true, topic_route_data_);
+  };
+
+  EXPECT_CALL(*client_manager_, resolveRoute)
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(testing::Invoke(mock_resolve_route));
+
+  auto invocation_context = new InvocationContext<PullMessageResponse>();
+
+  auto messages = invocation_context->response.mutable_messages();
+
+  for (int i = 0; i < batch_size_; i++) {
+    auto message = new rmq::Message();
+    message->set_body(message_body_);
+    std::string md5;
+    EXPECT_TRUE(MixAll::md5(message_body_, md5));
+    message->mutable_system_attribute()->mutable_body_digest()->set_type(rmq::DigestType::MD5);
+    message->mutable_system_attribute()->mutable_body_digest()->set_checksum(md5);
+
+    message->mutable_topic()->set_arn(arn_);
+    message->mutable_topic()->set_name(topic_);
+
+    message->mutable_system_attribute()->set_tag(tag_);
+
+    messages->AddAllocated(message);
+  }
+
+  auto mock_pull_message = [&](const std::string& target_host, const Metadata& metadata,
+                               const PullMessageRequest& request, std::chrono::milliseconds timeout,
+                               const std::function<void(const InvocationContext<PullMessageResponse>*)>& cb) {
+    cb(invocation_context);
+  };
+
+  EXPECT_CALL(*client_manager_, pullMessage)
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(testing::Invoke(mock_pull_message));
+
+  std::future<std::vector<MQMessageQueue>> future = pull_consumer_->queuesFor(topic_);
+  auto queues = future.get();
+  EXPECT_FALSE(queues.empty());
+
+  PullMessageQuery query;
+  query.message_queue = *queues.begin();
+  query.offset = 0;
+  query.await_time = std::chrono::seconds(3);
+
+  bool success = false;
+  bool failure = false;
+  auto pull_callback = new TestPullCallback(success, failure);
+  pull_consumer_->pull(query, pull_callback);
+
+  EXPECT_TRUE(success);
+  EXPECT_FALSE(failure);
+
+  pull_consumer_->shutdown();
+}
+
+TEST_F(PullConsumerImplTest, testPull_gRPC_error) {
+  pull_consumer_->start();
+  auto mock_resolve_route = [this](const std::string& target_host, const Metadata& metadata,
+                                   const QueryRouteRequest& request, std::chrono::milliseconds timeout,
+                                   const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) {
+    cb(true, topic_route_data_);
+  };
+
+  EXPECT_CALL(*client_manager_, resolveRoute)
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(testing::Invoke(mock_resolve_route));
+
+  auto invocation_context = new InvocationContext<PullMessageResponse>();
+  invocation_context->status = grpc::Status::CANCELLED;
+
+  auto mock_pull_message = [&](const std::string& target_host, const Metadata& metadata,
+                               const PullMessageRequest& request, std::chrono::milliseconds timeout,
+                               const std::function<void(const InvocationContext<PullMessageResponse>*)>& cb) {
+    cb(invocation_context);
+  };
+
+  EXPECT_CALL(*client_manager_, pullMessage)
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(testing::Invoke(mock_pull_message));
+
+  std::future<std::vector<MQMessageQueue>> future = pull_consumer_->queuesFor(topic_);
+  auto queues = future.get();
+  EXPECT_FALSE(queues.empty());
+
+  PullMessageQuery query;
+  query.message_queue = *queues.begin();
+  query.offset = 0;
+  query.await_time = std::chrono::seconds(3);
+
+  bool success = false;
+  bool failure = false;
+  auto pull_callback = new TestPullCallback(success, failure);
+  pull_consumer_->pull(query, pull_callback);
+
+  EXPECT_TRUE(failure);
+  EXPECT_FALSE(success);
+
+  pull_consumer_->shutdown();
+}
+
+TEST_F(PullConsumerImplTest, testPull_biz_error) {
+  pull_consumer_->start();
+  auto mock_resolve_route = [this](const std::string& target_host, const Metadata& metadata,
+                                   const QueryRouteRequest& request, std::chrono::milliseconds timeout,
+                                   const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) {
+    cb(true, topic_route_data_);
+  };
+
+  EXPECT_CALL(*client_manager_, resolveRoute)
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(testing::Invoke(mock_resolve_route));
+
+  auto invocation_context = new InvocationContext<PullMessageResponse>();
+  invocation_context->response.mutable_common()->mutable_status()->set_code(google::rpc::Code::NOT_FOUND);
+
+  auto mock_pull_message = [&](const std::string& target_host, const Metadata& metadata,
+                               const PullMessageRequest& request, std::chrono::milliseconds timeout,
+                               const std::function<void(const InvocationContext<PullMessageResponse>*)>& cb) {
+    cb(invocation_context);
+  };
+
+  EXPECT_CALL(*client_manager_, pullMessage)
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(testing::Invoke(mock_pull_message));
+
+  std::future<std::vector<MQMessageQueue>> future = pull_consumer_->queuesFor(topic_);
+  auto queues = future.get();
+  EXPECT_FALSE(queues.empty());
+
+  PullMessageQuery query;
+  query.message_queue = *queues.begin();
+  query.offset = 0;
+  query.await_time = std::chrono::seconds(3);
+
+  bool success = false;
+  bool failure = false;
+  auto pull_callback = new TestPullCallback(success, failure);
+  pull_consumer_->pull(query, pull_callback);
+
+  EXPECT_FALSE(success);
+  EXPECT_TRUE(failure);
+
   pull_consumer_->shutdown();
 }
 
