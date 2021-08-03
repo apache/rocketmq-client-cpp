@@ -1,7 +1,7 @@
 #pragma once
 
-#include <apache/rocketmq/v1/service.pb.h>
-#include <grpcpp/grpcpp.h>
+#include "apache/rocketmq/v1/service.pb.h"
+#include "grpcpp/grpcpp.h"
 
 #include "InvocationContext.h"
 #include "OrphanTransactionCallback.h"
@@ -100,9 +100,9 @@ public:
   virtual void asyncPull(const PullMessageRequest& request,
                          InvocationContext<PullMessageResponse>* invocation_context) = 0;
 
-  virtual void
-  asyncForwardMessageToDeadLetterQueue(const ForwardMessageToDeadLetterQueueRequest& request,
-                                       InvocationContext<ForwardMessageToDeadLetterQueueResponse>* invocation_context) = 0;
+  virtual void asyncForwardMessageToDeadLetterQueue(
+      const ForwardMessageToDeadLetterQueueRequest& request,
+      InvocationContext<ForwardMessageToDeadLetterQueueResponse>* invocation_context) = 0;
 
   /**
    * Indicate if heartbeat is required.
