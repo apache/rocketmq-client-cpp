@@ -256,4 +256,119 @@ TEST_F(PullConsumerImplTest, testPull_biz_error) {
   pull_consumer_->shutdown();
 }
 
+TEST_F(PullConsumerImplTest, testQueryOffset) {
+  pull_consumer_->start();
+  auto mock_resolve_route = [this](const std::string& target_host, const Metadata& metadata,
+                                   const QueryRouteRequest& request, std::chrono::milliseconds timeout,
+                                   const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) {
+    cb(true, topic_route_data_);
+  };
+
+  EXPECT_CALL(*client_manager_, resolveRoute)
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(testing::Invoke(mock_resolve_route));
+
+  std::future<std::vector<MQMessageQueue>> future = pull_consumer_->queuesFor(topic_);
+  auto queues = future.get();
+  EXPECT_FALSE(queues.empty());
+
+  QueryOffsetResponse response;
+  int64_t offset = 1;
+  response.set_offset(offset);
+
+  auto mock_query_offset = [&](const std::string& target_host, const Metadata& metadata,
+                               const QueryOffsetRequest& request, std::chrono::milliseconds timeout,
+                               const std::function<void(bool, const QueryOffsetResponse&)>& cb) { cb(true, response); };
+
+  EXPECT_CALL(*client_manager_, queryOffset)
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(testing::Invoke(mock_query_offset));
+
+  OffsetQuery query;
+  query.policy = QueryOffsetPolicy::BEGINNING;
+  query.message_queue = *queues.begin();
+
+  std::future<int64_t> offset_future = pull_consumer_->queryOffset(query);
+  EXPECT_EQ(offset, offset_future.get());
+
+  pull_consumer_->shutdown();
+}
+
+TEST_F(PullConsumerImplTest, testQueryOffset_End) {
+  pull_consumer_->start();
+  auto mock_resolve_route = [this](const std::string& target_host, const Metadata& metadata,
+                                   const QueryRouteRequest& request, std::chrono::milliseconds timeout,
+                                   const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) {
+    cb(true, topic_route_data_);
+  };
+
+  EXPECT_CALL(*client_manager_, resolveRoute)
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(testing::Invoke(mock_resolve_route));
+
+  std::future<std::vector<MQMessageQueue>> future = pull_consumer_->queuesFor(topic_);
+  auto queues = future.get();
+  EXPECT_FALSE(queues.empty());
+
+  QueryOffsetResponse response;
+  int64_t offset = 1;
+  response.set_offset(offset);
+
+  auto mock_query_offset = [&](const std::string& target_host, const Metadata& metadata,
+                               const QueryOffsetRequest& request, std::chrono::milliseconds timeout,
+                               const std::function<void(bool, const QueryOffsetResponse&)>& cb) { cb(true, response); };
+
+  EXPECT_CALL(*client_manager_, queryOffset)
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(testing::Invoke(mock_query_offset));
+
+  OffsetQuery query;
+  query.policy = QueryOffsetPolicy::END;
+  query.message_queue = *queues.begin();
+
+  std::future<int64_t> offset_future = pull_consumer_->queryOffset(query);
+  EXPECT_EQ(offset, offset_future.get());
+
+  pull_consumer_->shutdown();
+}
+
+TEST_F(PullConsumerImplTest, testQueryOffset_Timepoint) {
+  pull_consumer_->start();
+  auto mock_resolve_route = [this](const std::string& target_host, const Metadata& metadata,
+                                   const QueryRouteRequest& request, std::chrono::milliseconds timeout,
+                                   const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) {
+    cb(true, topic_route_data_);
+  };
+
+  EXPECT_CALL(*client_manager_, resolveRoute)
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(testing::Invoke(mock_resolve_route));
+
+  std::future<std::vector<MQMessageQueue>> future = pull_consumer_->queuesFor(topic_);
+  auto queues = future.get();
+  EXPECT_FALSE(queues.empty());
+
+  QueryOffsetResponse response;
+  int64_t offset = 1;
+  response.set_offset(offset);
+
+  auto mock_query_offset = [&](const std::string& target_host, const Metadata& metadata,
+                               const QueryOffsetRequest& request, std::chrono::milliseconds timeout,
+                               const std::function<void(bool, const QueryOffsetResponse&)>& cb) { cb(true, response); };
+
+  EXPECT_CALL(*client_manager_, queryOffset)
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(testing::Invoke(mock_query_offset));
+
+  OffsetQuery query;
+  query.policy = QueryOffsetPolicy::TIME_POINT;
+  query.time_point = std::chrono::system_clock::now();
+  query.message_queue = *queues.begin();
+
+  std::future<int64_t> offset_future = pull_consumer_->queryOffset(query);
+  EXPECT_EQ(offset, offset_future.get());
+
+  pull_consumer_->shutdown();
+}
+
 ROCKETMQ_NAMESPACE_END

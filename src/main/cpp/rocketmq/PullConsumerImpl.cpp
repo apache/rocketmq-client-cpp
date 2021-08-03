@@ -76,7 +76,6 @@ std::future<int64_t> PullConsumerImpl::queryOffset(const OffsetQuery& query) {
   request.mutable_partition()->mutable_topic()->set_arn(arn_);
 
   request.mutable_partition()->set_id(query.message_queue.getQueueId());
-  QueryOffsetResponse response;
 
   absl::flat_hash_map<std::string, std::string> metadata;
 
