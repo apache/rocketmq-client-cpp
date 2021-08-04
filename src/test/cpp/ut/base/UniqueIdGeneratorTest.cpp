@@ -4,7 +4,12 @@
 #include "spdlog/spdlog.h"
 #include "gtest/gtest.h"
 
+#include <iostream>
 ROCKETMQ_NAMESPACE_BEGIN
+
+TEST(UniqueIdGeneratorTest, testOutputSampleId) {
+std::cout << "A sample unique ID: " << UniqueIdGenerator::instance().next() << std::endl;
+}
 
 TEST(UniqueIdGeneratorTest, testNext) {
   absl::flat_hash_set<std::string> id_set;

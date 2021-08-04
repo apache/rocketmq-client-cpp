@@ -8,6 +8,8 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
+const uint8_t UniqueIdGenerator::VERSION = 0;
+
 UniqueIdGenerator::UniqueIdGenerator()
     : prefix_(), since_custom_epoch_(std::chrono::system_clock::now() - customEpoch()),
       start_time_point_(std::chrono::steady_clock::now()), seconds_(deltaSeconds()), sequence_(0) {
@@ -44,9 +46,10 @@ std::string UniqueIdGenerator::next() {
     slot.seconds = seconds_;
     slot.sequence = sequence_;
   }
-  std::array<uint8_t, 16> raw{};
-  memcpy(raw.data(), prefix_.data(), prefix_.size());
-  memcpy(raw.data() + prefix_.size(), &slot, sizeof(slot));
+  std::array<uint8_t, 17> raw{};
+  raw[0] = VERSION;
+  memcpy(raw.data() + sizeof(VERSION), prefix_.data(), prefix_.size());
+  memcpy(raw.data() + sizeof(VERSION) + prefix_.size(), &slot, sizeof(slot));
   return MixAll::hex(raw.data(), raw.size());
 }
 

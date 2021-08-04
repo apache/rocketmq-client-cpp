@@ -59,6 +59,7 @@ private:
 
   uint32_t seconds_;
   uint32_t sequence_;
+  static const uint8_t VERSION;
 };
 
 ROCKETMQ_NAMESPACE_END
