@@ -237,9 +237,9 @@ void ProcessQueueImpl::wrapFilterExpression(rmq::FilterExpression* filter_expres
   if (!consumer) {
     return;
   }
-  auto&& filter_expression_table = consumer->getTopicFilterExpressionTable();
-  if (filter_expression_table.contains(message_queue_.getTopic())) {
-    FilterExpression expression = filter_expression_table.at(message_queue_.getTopic());
+  auto&& optional = consumer->getFilterExpression(message_queue_.getTopic());
+  if (optional.has_value()) {
+    auto expression = optional.value();
     switch (expression.type_) {
     case TAG:
       filter_expression->set_type(rmq::FilterType::TAG);

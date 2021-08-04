@@ -7,7 +7,7 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class ConsumerMock : virtual public Consumer, virtual public ClientMock {
 public:
-  MOCK_METHOD((absl::flat_hash_map<std::string, FilterExpression>), getTopicFilterExpressionTable, (), (const override));
+  MOCK_METHOD((absl::optional<FilterExpression>), getFilterExpression, (const std::string&), (const override));
 
   MOCK_METHOD(uint32_t, maxCachedMessageQuantity, (), (const override));
 

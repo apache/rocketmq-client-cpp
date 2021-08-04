@@ -106,16 +106,15 @@ void PushConsumerImpl::unsubscribe(const std::string& topic) {
   topic_filter_expression_table_.erase(topic);
 }
 
-absl::flat_hash_map<std::string, FilterExpression> PushConsumerImpl::getTopicFilterExpressionTable() const {
-  absl::flat_hash_map<std::string, FilterExpression> topic_filter_expression_table;
+absl::optional<FilterExpression> PushConsumerImpl::getFilterExpression(const std::string& topic) const {
   {
     absl::MutexLock lock(&topic_filter_expression_table_mtx_);
-    for (auto item : topic_filter_expression_table_) {
-      topic_filter_expression_table.emplace(item.first, item.second);
+    if (topic_filter_expression_table_.contains(topic)) {
+      return absl::make_optional(topic_filter_expression_table_.at(topic));
+    } else {
+      return absl::optional<FilterExpression>();
     }
   }
-
-  return topic_filter_expression_table;
 }
 
 void PushConsumerImpl::setConsumeFromWhere(ConsumeFromWhere consume_from_where) {
@@ -128,11 +127,12 @@ void PushConsumerImpl::scanAssignments() {
     SPDLOG_INFO("Client has stopped. Abort scanning immediately.");
     return;
   }
-  absl::flat_hash_map<std::string, FilterExpression> topic_filter_expression_table = getTopicFilterExpressionTable();
+
   {
-    for (auto& filter_entry : topic_filter_expression_table) {
-      std::string topic = filter_entry.first;
-      FilterExpression filter_expression = filter_entry.second;
+    absl::MutexLock lk(&topic_filter_expression_table_mtx_);
+    for (auto& entry : topic_filter_expression_table_) {
+      std::string topic = entry.first;
+      const auto& filter_expression = entry.second;
       SPDLOG_DEBUG("Scan assignments for {}", topic);
       auto callback = [this, topic, filter_expression](const TopicAssignmentPtr& assignments) {
         if (assignments && !assignments->assignmentList().empty()) {
@@ -538,14 +538,15 @@ void PushConsumerImpl::prepareHeartbeatData(HeartbeatRequest& request) {
   consumer_group->mutable_group()->set_arn(arn());
   consumer_group->mutable_group()->set_name(group_name_);
   consumer_group->set_consume_model(rmq::ConsumeModel::CLUSTERING);
+
   {
-    absl::flat_hash_map<std::string, FilterExpression> topic_filter_expression_table = getTopicFilterExpressionTable();
-    for (auto& filter_entry : topic_filter_expression_table) {
+    absl::MutexLock lk(&topic_filter_expression_table_mtx_);
+    for (const auto& entry : topic_filter_expression_table_) {
       auto subscription = new rmq::SubscriptionEntry;
       subscription->mutable_topic()->set_arn(arn_);
-      subscription->mutable_topic()->set_name(filter_entry.first);
-      subscription->mutable_expression()->set_expression(filter_entry.second.content_);
-      switch (filter_entry.second.type_) {
+      subscription->mutable_topic()->set_name(entry.first);
+      subscription->mutable_expression()->set_expression(entry.second.content_);
+      switch (entry.second.type_) {
       case ExpressionType::TAG:
         subscription->mutable_expression()->set_type(rmq::FilterType::TAG);
         break;
@@ -555,10 +556,10 @@ void PushConsumerImpl::prepareHeartbeatData(HeartbeatRequest& request) {
       }
       consumer_group->mutable_subscriptions()->AddAllocated(subscription);
     }
-
-    // Add heartbeat
-    request.mutable_heartbeats()->AddAllocated(heartbeat);
   }
+
+  // Add heartbeat
+  request.mutable_heartbeats()->AddAllocated(heartbeat);
 }
 
 ClientResourceBundle PushConsumerImpl::resourceBundle() {

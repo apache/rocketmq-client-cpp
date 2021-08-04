@@ -34,7 +34,7 @@ public:
 
   ~PushConsumerImpl() override;
 
-  void prepareHeartbeatData(HeartbeatRequest& request) override;
+  void prepareHeartbeatData(HeartbeatRequest& request) override LOCKS_EXCLUDED(topic_filter_expression_table_mtx_);
 
   void start() override;
 
@@ -46,14 +46,14 @@ public:
 
   void unsubscribe(const std::string& topic) LOCKS_EXCLUDED(topic_filter_expression_table_mtx_);
 
-  absl::flat_hash_map<std::string, FilterExpression> getTopicFilterExpressionTable() const override
+  absl::optional<FilterExpression> getFilterExpression(const std::string& topic) const override
       LOCKS_EXCLUDED(topic_filter_expression_table_mtx_);
 
   void setConsumeFromWhere(ConsumeFromWhere consume_from_where);
 
   void registerMessageListener(MessageListener* message_listener);
 
-  void scanAssignments() LOCKS_EXCLUDED(process_queue_table_mtx_);
+  void scanAssignments() LOCKS_EXCLUDED(topic_filter_expression_table_mtx_);
 
   static bool selectBroker(const TopicRouteDataPtr& route, std::string& broker_host);
 

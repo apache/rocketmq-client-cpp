@@ -277,10 +277,9 @@ TEST_F(ProcessQueueTest, testReceiveMessage_POP) {
   EXPECT_CALL(*consumer_, getGroupName).WillRepeatedly(testing::ReturnRef(group_name_));
   EXPECT_CALL(*consumer_, getLongPollingTimeout).WillRepeatedly(testing::Return(absl::Seconds(3)));
 
-  absl::flat_hash_map<std::string, FilterExpression> filter_table;
-  filter_table.insert({topic_, filter_expression_});
+  auto optional = absl::make_optional(filter_expression_);
 
-  EXPECT_CALL(*consumer_, getTopicFilterExpressionTable).WillRepeatedly(testing::Return(filter_table));
+  EXPECT_CALL(*consumer_, getFilterExpression).WillRepeatedly(testing::Return(optional));
   EXPECT_CALL(*consumer_, receiveBatchSize).WillRepeatedly(testing::Return(threshold_quantity_));
 
   auto receive_message_mock = [this](const std::string& target, const Metadata& metadata,
@@ -318,10 +317,9 @@ TEST_F(ProcessQueueTest, testReceiveMessage_Pull) {
   EXPECT_CALL(*consumer_, getGroupName).WillRepeatedly(testing::ReturnRef(group_name_));
   EXPECT_CALL(*consumer_, getLongPollingTimeout).WillRepeatedly(testing::Return(absl::Seconds(3)));
 
-  absl::flat_hash_map<std::string, FilterExpression> filter_table;
-  filter_table.insert({topic_, filter_expression_});
+  auto optional = absl::make_optional(filter_expression_);
 
-  EXPECT_CALL(*consumer_, getTopicFilterExpressionTable).WillRepeatedly(testing::Return(filter_table));
+  EXPECT_CALL(*consumer_, getFilterExpression).WillRepeatedly(testing::Return(optional));
   EXPECT_CALL(*consumer_, receiveBatchSize).WillRepeatedly(testing::Return(threshold_quantity_));
 
   auto invocation_context = new InvocationContext<PullMessageResponse>();

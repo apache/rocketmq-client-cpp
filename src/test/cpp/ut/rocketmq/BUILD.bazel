@@ -72,18 +72,6 @@ cc_test(
 )
 
 cc_test(
-    name = "default_mq_push_consumer_test",
-    srcs = [
-        "DefaultMQPushConsumerTest.cpp",
-    ],
-    deps = [
-        ":client_interface",
-        "//src/main/cpp/admin:admin_server_library",
-        "//src/main/cpp/rocketmq:rocketmq_library",
-    ],
-)
-
-cc_test(
     name = "ut_credentials_provider",
     srcs = [
         "CredentialsProviderTest.cpp",
