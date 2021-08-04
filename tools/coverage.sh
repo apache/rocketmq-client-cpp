@@ -14,4 +14,4 @@ else
   bazel coverage --config=remote_cache //src/test/cpp/ut/...
 fi
 
-genhtml bazel-out/_coverage/_coverage_report.dat
+genhtml bazel-out/_coverage/_coverage_report.dat --output-directory coverage
