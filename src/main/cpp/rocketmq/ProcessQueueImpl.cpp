@@ -231,6 +231,31 @@ void ProcessQueueImpl::release(uint64_t body_size, int64_t offset) {
   }
 }
 
+void ProcessQueueImpl::wrapFilterExpression(rmq::FilterExpression* filter_expression) {
+  assert(filter_expression);
+  auto consumer = consumer_.lock();
+  if (!consumer) {
+    return;
+  }
+  auto&& filter_expression_table = consumer->getTopicFilterExpressionTable();
+  if (filter_expression_table.contains(message_queue_.getTopic())) {
+    FilterExpression expression = filter_expression_table.at(message_queue_.getTopic());
+    switch (expression.type_) {
+    case TAG:
+      filter_expression->set_type(rmq::FilterType::TAG);
+      filter_expression->set_expression(expression.content_);
+      break;
+    case SQL92:
+      filter_expression->set_type(rmq::FilterType::SQL);
+      filter_expression->set_expression(expression.content_);
+      break;
+    }
+  } else {
+    filter_expression->set_type(rmq::FilterType::TAG);
+    filter_expression->set_expression("*");
+  }
+}
+
 void ProcessQueueImpl::wrapPopMessageRequest(absl::flat_hash_map<std::string, std::string>& metadata,
                                              rmq::ReceiveMessageRequest& request) {
   std::shared_ptr<PushConsumer> consumer = consumer_.lock();
@@ -242,23 +267,7 @@ void ProcessQueueImpl::wrapPopMessageRequest(absl::flat_hash_map<std::string, st
   request.mutable_partition()->mutable_topic()->set_name(message_queue_.getTopic());
   request.mutable_partition()->mutable_topic()->set_arn(consumer->arn());
 
-  auto search = consumer->getTopicFilterExpressionTable().find(message_queue_.getTopic());
-  if (consumer->getTopicFilterExpressionTable().end() != search) {
-    FilterExpression expression = search->second;
-    switch (expression.type_) {
-    case TAG:
-      request.mutable_filter_expression()->set_type(rmq::FilterType::TAG);
-      request.mutable_filter_expression()->set_expression(expression.content_);
-      break;
-    case SQL92:
-      request.mutable_filter_expression()->set_type(rmq::FilterType::SQL);
-      request.mutable_filter_expression()->set_expression(expression.content_);
-      break;
-    }
-  } else {
-    request.mutable_filter_expression()->set_type(rmq::FilterType::TAG);
-    request.mutable_filter_expression()->set_expression("*");
-  }
+  wrapFilterExpression(request.mutable_filter_expression());
 
   // Batch size
   request.set_batch_size(consumer->receiveBatchSize());
@@ -286,24 +295,8 @@ void ProcessQueueImpl::wrapPullMessageRequest(absl::flat_hash_map<std::string, s
   request.mutable_partition()->mutable_topic()->set_arn(consumer->arn());
   request.set_offset(next_offset_);
   request.set_batch_size(consumer->receiveBatchSize());
-  auto filter_expression_table = consumer->getTopicFilterExpressionTable();
-  auto search = filter_expression_table.find(message_queue_.getTopic());
-  if (filter_expression_table.end() != search) {
-    FilterExpression expression = search->second;
-    switch (expression.type_) {
-    case TAG:
-      request.mutable_filter_expression()->set_type(rmq::FilterType::TAG);
-      request.mutable_filter_expression()->set_expression(expression.content_);
-      break;
-    case SQL92:
-      request.mutable_filter_expression()->set_type(rmq::FilterType::SQL);
-      request.mutable_filter_expression()->set_expression(expression.content_);
-      break;
-    }
-  } else {
-    request.mutable_filter_expression()->set_type(rmq::FilterType::TAG);
-    request.mutable_filter_expression()->set_expression("*");
-  }
+
+  wrapFilterExpression(request.mutable_filter_expression());
 }
 
 std::weak_ptr<PushConsumer> ProcessQueueImpl::getConsumer() { return consumer_; }

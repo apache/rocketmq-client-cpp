@@ -1,5 +1,6 @@
 #pragma once
 
+#include <apache/rocketmq/v1/definition.pb.h>
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
@@ -195,6 +196,8 @@ private:
   void pullMessage();
   void wrapPullMessageRequest(absl::flat_hash_map<std::string, std::string>& metadata,
                               rmq::PullMessageRequest& request);
+
+  void wrapFilterExpression(rmq::FilterExpression* filter_expression);
 
   FRIEND_TEST(ProcessQueueTest, testExpired);
 };
