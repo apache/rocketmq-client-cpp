@@ -6,6 +6,8 @@
 #include "Signature.h"
 #include "TlsHelper.h"
 #include "UtilAll.h"
+#include "UniqueIdGenerator.h"
+#include "rocketmq/Logger.h"
 #include "absl/container/flat_hash_set.h"
 #include "apache/rocketmq/v1/service.pb.h"
 #include "rocketmq/CredentialsProvider.h"
@@ -43,7 +45,7 @@ protected:
   }
 
   void SetUp() override {
-
+    getLogger().setLevel(Level::Debug);
     client_config_.setCredentialsProvider(std::make_shared<ConfigFileCredentialsProvider>());
     client_config_.arn(arn_);
     client_config_.region(region_id_);
@@ -121,9 +123,8 @@ protected:
     props["key"] = "value";
     props["Jack"] = "Bauer";
     send_message_request.mutable_message()->mutable_user_attribute()->insert(props.begin(), props.end());
-    const char* msgId = "1EE10C841BF3D007000011480C6ACF07";
     auto system_attribute = send_message_request.mutable_message()->mutable_system_attribute();
-    system_attribute->set_message_id(msgId);
+    system_attribute->set_message_id(message_id_);
     system_attribute->set_message_type(rmq::MessageType::NORMAL);
     system_attribute->set_body_encoding(rmq::Encoding::IDENTITY);
     system_attribute->set_born_host(UtilAll::hostname());
@@ -178,6 +179,7 @@ protected:
   std::shared_ptr<grpc::experimental::TlsServerAuthorizationCheckConfig> server_authorization_check_config_;
   std::shared_ptr<grpc::ChannelCredentials> channel_credential_;
   grpc::ChannelArguments channel_arguments_;
+  std::string message_id_{UniqueIdGenerator::instance().next()};
 };
 
 TEST_F(RpcClientTest, testRouteInfo) {

@@ -1,54 +1,46 @@
 #pragma once
 
+#include <cstddef>
+#include <memory>
 #include <thread>
 #include <mutex>
 #include <string>
-
+#include <cstdint>
 #include "RocketMQ.h"
 
 #ifndef SPDLOG_ACTIVE_LEVEL
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 #endif
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-enum Level { Trace = 0, Debug = 1, Info = 2, Warn = 3, Error = 4 };
+enum class Level : uint8_t { Trace = 0, Debug = 1, Info = 2, Warn = 3, Error = 4 };
 
 class Logger {
 public:
-  Logger();
+  virtual ~Logger() = default;
 
-  ~Logger();
+  /**
+   * @brief Set log level for file sink. Its default log level is: Info.
+   * 
+   * @param level 
+   */
+  virtual void setLevel(Level level) = 0;
 
-  void setLevel(Level level);
+  /**
+   * @brief Set log level for stdout, aka, console. Its default log level is: Warn.
+   * 
+   * @param level 
+   */
+  virtual void setConsoleLevel(Level level) = 0;
 
-  void setFileSize(int32_t file_size) {
-    file_size_ = file_size;
-  }
+  virtual void setFileSize(std::size_t file_size) = 0;
 
-  void setFileCount(int32_t file_count) {
-    file_count_ = file_count;
-  }
+  virtual void setFileCount(std::size_t file_count) = 0;
 
-  void setPattern(std::string pattern) {
-    pattern_ = std::move(pattern);
-  }
+  virtual void setPattern(std::string pattern) = 0;
 
-  void init();
-
-private:
-  Level level_;
-  std::string log_home_;
-  int32_t file_size_;
-  int32_t file_count_;
-  std::string pattern_;
-
-  std::once_flag init_once_;
-
-  void init0();
-
-  static const char* DEFAULT_PATTERN;
-  static const char* USER_HOME_ENV;
+  virtual void init() = 0;
 };
 
 Logger& getLogger();

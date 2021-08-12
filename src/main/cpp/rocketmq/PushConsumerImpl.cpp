@@ -211,7 +211,7 @@ void PushConsumerImpl::queryAssignment(const std::string& topic,
       if (ok) {
         SPDLOG_DEBUG("Query topic assignment OK. Topic={}, group={}, assignment-size={}", topic, group_name_,
                      response.assignments().size());
-        SPDLOG_TRACE("Query assignment response for {} is: {}", topic, ptr->debugString());
+        SPDLOG_TRACE("Query assignment response for {} is: {}", topic, response.DebugString());
         cb(std::make_shared<TopicAssignment>(response));
       } else {
         SPDLOG_WARN("Failed to acquire queue assignment of topic={} from brokerAddress={}", topic, broker_host);

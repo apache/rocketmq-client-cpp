@@ -31,6 +31,7 @@ build:linux --strip=never
 
 # We already have absl in the build, define absl=1 to tell googletest to use absl for backtrace.
 build --define absl=1
+build --define SPDLOG_FMT_EXTERNAL=1
 
 # Pass PATH, CC, CXX and LLVM_CONFIG variables from the environment.
 build --action_env=CC

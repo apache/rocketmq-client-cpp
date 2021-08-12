@@ -727,8 +727,11 @@ void ClientManagerImpl::processPopResult(const grpc::ClientContext& client_conte
     for (auto& item : response.messages()) {
       MQMessageExt message_ext;
       if (wrapMessage(item, message_ext)) {
-        MessageAccessor::setTargetEndpoint(message_ext, target_host);
         msg_found_list.emplace_back(message_ext);
+        MessageAccessor::setTargetEndpoint(message_ext, target_host);
+      } else {
+        
+        // TODO: NACK
       }
     }
   }
@@ -791,6 +794,9 @@ bool ClientManagerImpl::wrapMessage(const rmq::Message& item, MQMessageExt& mess
   message_ext.setTopic(item.topic().name());
 
   const auto& system_attributes = item.system_attribute();
+
+  // Receipt-handle
+  MessageAccessor::setReceiptHandle(message_ext, system_attributes.receipt_handle());
 
   // Tag
   message_ext.setTags(system_attributes.tag());
@@ -949,9 +955,6 @@ bool ClientManagerImpl::wrapMessage(const rmq::Message& item, MQMessageExt& mess
   default:
     break;
   }
-
-  // Receipt-handle
-  MessageAccessor::setReceiptHandle(message_ext, system_attributes.receipt_handle());
 
   // Partition-id
   MessageAccessor::setQueueId(message_ext, system_attributes.partition_id());
