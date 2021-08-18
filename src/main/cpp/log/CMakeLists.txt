@@ -7,6 +7,9 @@ target_link_libraries(logger_obj
             rocketmq_interface
             ghc_filesystem
             spdlog::spdlog_header_only)
+target_include_directories(logger_obj
+        PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_library(logger_library
         STATIC

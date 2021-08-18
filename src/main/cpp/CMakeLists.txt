@@ -22,7 +22,6 @@ target_link_libraries(rocketmq_static
             absl::random_random
             absl::synchronization
             absl::strings
-            CURL::libcurl
             fmt
             mq_proto_library
             re2::re2
@@ -52,7 +51,6 @@ target_link_libraries(rocketmq_shared
             absl::random_random
             absl::synchronization
             absl::strings
-            CURL::libcurl
             fmt
             mq_proto_library
             re2::re2

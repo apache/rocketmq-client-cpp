@@ -21,7 +21,6 @@ target_link_libraries(client_obj
             admin_library
             crc_library
             crypto
-            date::date
             scheduler_library
             ssl
         PRIVATE
@@ -47,8 +46,6 @@ target_link_libraries(client_library
             admin_library
             crc_library
             crypto
-            CURL::libcurl
-            date::date
             mq_proto_library
             scheduler_library
             ssl)

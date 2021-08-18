@@ -86,4 +86,12 @@ TEST_F(MixAllTest, testSHA1) {
   EXPECT_EQ(digest, toUpperCase(expect));
 }
 
+TEST_F(MixAllTest, testCrc32) {
+  std::string data("abc");
+  std::string digest;
+  bool success = MixAll::crc32(data, digest);
+  EXPECT_TRUE(success);
+  std::cout << digest << std::endl;
+}
+
 ROCKETMQ_NAMESPACE_END

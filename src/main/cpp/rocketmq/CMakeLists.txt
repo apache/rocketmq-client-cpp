@@ -10,14 +10,14 @@ target_sources(rocketmq_obj
             ConsumeFifoMessageService.cpp
             CredentialsProvider.cpp
             DefaultMQProducer.cpp
-        ProducerImpl.cpp
+            ProducerImpl.cpp
             DefaultMQPushConsumer.cpp
-        PushConsumerImpl.cpp
+            PushConsumerImpl.cpp
             DefaultMQPullConsumer.cpp
-        PullConsumerImpl.cpp
+            PullConsumerImpl.cpp
             FilterExpression.cpp
             MessageGroupQueueSelector.cpp
-        ProcessQueueImpl.cpp
+            ProcessQueueImpl.cpp
             TransactionImpl.cpp)
 target_include_directories(rocketmq_obj
         PUBLIC
@@ -37,7 +37,6 @@ target_include_directories(rocketmq_library
 target_link_libraries(rocketmq_library
         PUBLIC
             client_library
-            CURL::libcurl
             logger_library)
 
 add_subdirectory(mocks)

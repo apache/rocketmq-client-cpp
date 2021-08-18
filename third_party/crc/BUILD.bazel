@@ -1,9 +1,0 @@
-load("@rules_cc//cc:defs.bzl", "cc_library")
-cc_library(
-    name = "crc_interface",
-    hdrs = [
-        "include/CRC.h"
-    ],
-    strip_include_prefix = "//third_party/crc/include",
-    visibility = ["//visibility:public"],
-)

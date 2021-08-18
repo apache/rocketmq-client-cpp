@@ -1,11 +1,5 @@
 #include "ClientManagerImpl.h"
 
-#include <chrono>
-#include <memory>
-#include <utility>
-#include <vector>
-
-#include "CRC.h"
 #include "InvocationContext.h"
 #include "LogInterceptor.h"
 #include "LogInterceptorFactory.h"
@@ -21,6 +15,10 @@
 #include "grpcpp/create_channel.h"
 #include "rocketmq/ErrorCode.h"
 #include "rocketmq/MQMessageExt.h"
+#include <chrono>
+#include <memory>
+#include <utility>
+#include <vector>
 
 #ifdef ENABLE_TRACING
 #include "TracingUtility.h"
@@ -730,7 +728,7 @@ void ClientManagerImpl::processPopResult(const grpc::ClientContext& client_conte
         msg_found_list.emplace_back(message_ext);
         MessageAccessor::setTargetEndpoint(message_ext, target_host);
       } else {
-        
+
         // TODO: NACK
       }
     }
@@ -821,9 +819,18 @@ bool ClientManagerImpl::wrapMessage(const rmq::Message& item, MQMessageExt& mess
   } else {
     switch (digest.type()) {
     case rmq::DigestType::CRC32: {
-      std::uint32_t crc = CRC::Calculate(item.body().data(), item.body().length(), CRC::CRC_32());
-      SPDLOG_DEBUG("Compute and compare CRC32 checksum. Actual: {}, expect: {}", crc, digest.checksum());
-      body_digest_match = (std::stoul(digest.checksum()) == crc);
+      std::string checksum;
+      bool success = MixAll::crc32(item.body(), checksum);
+      if (success) {
+        body_digest_match = (digest.checksum() == checksum);
+        if (body_digest_match) {
+          SPDLOG_DEBUG("Message body CRC32 checksum validation passed.");
+        } else {
+          SPDLOG_WARN("Body CRC32 checksum validation failed. Actual: {}, expect: {}", checksum, digest.checksum());
+        }
+      } else {
+        SPDLOG_WARN("Failed to calculate CRC32 checksum. Skip.");
+      }
       break;
     }
     case rmq::DigestType::MD5: {

@@ -20,7 +20,6 @@ cc_library(
         "@com_github_opentelemetry//api",
         "@boringssl//:ssl",
         "//external:gtest",
-        "//third_party/crc:crc_interface",
     ],
     defines = [
     ],

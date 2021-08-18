@@ -63,5 +63,6 @@ cc_library(
         "@zlib//:zlib",
         "@boringssl//:crypto",
         "@boringssl//:ssl",
+        "//external:madler_zlib",
     ],
 )

@@ -57,6 +57,8 @@ public:
 
   static uint32_t random(uint32_t left, uint32_t right);
 
+  static bool crc32(const std::string& data, std::string& digest);
+
   static bool md5(const std::string& data, std::string& digest);
 
   static bool sha1(const std::string& data, std::string& digest);

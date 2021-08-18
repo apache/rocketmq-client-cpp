@@ -24,7 +24,6 @@ target_link_libraries(base_obj
             absl::synchronization
             absl::strings
             absl::time
-            CURL::libcurl
             crypto
             fmt
             grpc++
@@ -36,7 +35,7 @@ target_link_libraries(base_obj
 
 add_library(base_library
         STATIC
-            $<TARGET_OBJECTS:base_obj> include/MessageAccessor.h)
+            $<TARGET_OBJECTS:base_obj>)
 target_include_directories(base_library
         PUBLIC
             ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -47,7 +46,6 @@ target_link_libraries(base_library
             absl::random_random
             absl::synchronization
             absl::strings
-            CURL::libcurl
             fmt
             grpc++
             logger_library

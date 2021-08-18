@@ -47,8 +47,8 @@ FetchContent_Declare(
 
 FetchContent_Declare(
         opentelemetry
-        GIT_REPOSITORY https://github.com/aaron-ai/opentelemetry-cpp.git
-        GIT_TAG v0.3.0-lingchu-fix-01
+        GIT_REPOSITORY https://github.com/open-telemetry/opentelemetry-cpp.git
+        GIT_TAG v1.0.0-rc4
 )
 
 set(FETCHCONTENT_QUIET OFF)
@@ -60,15 +60,12 @@ if (BUILD_TESTS)
     FetchContent_MakeAvailable(googletest)
 endif ()
 
-FetchContent_MakeAvailable(fmt gRPC spdlog ghc)
+FetchContent_MakeAvailable(fmt gRPC spdlog ghc opentelemetry)
 
 option(ENABLE_TRACING OFF)
 if (ENABLE_TRACING)
     FetchContent_MakeAvailable(opentelemetry)
 endif ()
-
-find_package(CURL REQUIRED)
-message("CURL ${CURL_LIBRARIES}")
 
 # Since FetchContent uses add_subdirectory under the hood, we can use
 # the grpc targets directly from this build.
@@ -126,8 +123,6 @@ target_link_libraries(mq_proto_library
             ${_PROTOBUF_LIBPROTOBUF})
 
 enable_testing()
-
-add_subdirectory(third_party)
 
 option(ENABLE_TLS ON)
 if (ENABLE_TLS)
