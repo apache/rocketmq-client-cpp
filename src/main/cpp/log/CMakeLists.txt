@@ -1,5 +1,7 @@
 add_library(logger_obj OBJECT)
-target_sources(logger_obj PRIVATE Logger.cpp)
+target_sources(logger_obj
+        PRIVATE
+            LoggerImpl.cpp)
 target_link_libraries(logger_obj
         PUBLIC
             rocketmq_interface

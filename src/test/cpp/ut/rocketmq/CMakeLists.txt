@@ -14,11 +14,6 @@ target_link_libraries(default_mq_producer_test
             rocketmq_library)
 add_test(ut_default_mq_producer_test default_mq_producer_test)
 
-add_executable(default_mq_push_consumer_test DefaultMQPushConsumerTest.cpp)
-target_link_libraries(default_mq_push_consumer_test
-        rocketmq_library
-        client_test_interface)
-
 add_executable(executor_test ExecutorTest.cpp)
 target_link_libraries(executor_test
         PRIVATE
