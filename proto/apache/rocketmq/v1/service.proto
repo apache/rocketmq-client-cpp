@@ -30,6 +30,9 @@ message ResponseCommon {
 
 message QueryRouteRequest {
   Resource topic = 1;
+
+  // Service access point
+  Endpoints endpoints = 2;
 }
 
 message QueryRouteResponse {
@@ -52,6 +55,9 @@ message QueryAssignmentRequest {
   Resource topic = 1;
   Resource group = 2;
   string client_id = 3;
+  
+  // Service access point
+  Endpoints endpoints = 4;
 }
 
 message QueryAssignmentResponse {
@@ -190,6 +196,16 @@ message PullMessageResponse {
   repeated Message messages = 5;
 }
 
+message UpdateOffsetRequest {
+  Resource group = 1;
+  Partition partition = 2;
+  int64 partition_offset = 3;
+}
+
+message UpdateOffsetResponse {
+  ResponseCommon common = 1;
+}
+
 message ClientResourceBundle {
   string client_id = 1;
   repeated Resource topics = 2;
@@ -208,20 +224,24 @@ message GenericPollingResponse {
 }
 
 message PrintThreadStackRequest {
+  string mid = 1;
 }
 
 message PrintThreadStackResponse {
   ResponseCommon common = 1;
-  string stack_trace = 2;
+  string mid = 2;
+  string stack_trace = 3;
 }
 
 message VerifyMessageConsumptionRequest {
-  Partition Partition = 1;
-  Message message = 2;
+  string mid = 1;
+  Partition Partition = 2;
+  Message message = 3;
 }
 
 message VerifyMessageConsumptionResponse {
-  ResponseCommon common = 1;
+  string mid = 1;
+  ResponseCommon common = 2;
 }
 
 message ResolveOrphanedTransactionRequest {
@@ -281,6 +301,9 @@ service MessagingService {
   }
 
   rpc PullMessage(PullMessageRequest) returns (PullMessageResponse) {
+  }
+
+  rpc UpdateOffset(UpdateOffsetRequest) returns (UpdateOffsetResponse) {
   }
 
   rpc MultiplexingCall(MultiplexingRequest) returns (MultiplexingResponse) {

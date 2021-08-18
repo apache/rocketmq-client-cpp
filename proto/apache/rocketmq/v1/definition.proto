@@ -257,8 +257,8 @@ message SystemAttribute {
     // Trace context.
     string trace_context = 21;
 
-    // Correlated transaction
-    string transaction_id = 22;
+    // Delay time of first resolve orphaned transaction request from server.
+    google.protobuf.Duration orphaned_transaction_recovery_period = 22;
 }
 
 message Message {
