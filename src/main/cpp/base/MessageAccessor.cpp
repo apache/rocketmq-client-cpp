@@ -1,5 +1,6 @@
 #include "MessageAccessor.h"
 #include "MessageImpl.h"
+#include "rocketmq/MQMessage.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -41,6 +42,10 @@ void MessageAccessor::setDeliveryAttempt(MQMessageExt& message, int32_t attempt_
 
 void MessageAccessor::setDecodedTimestamp(MQMessageExt& message, absl::Time decode_timestamp) {
   message.impl_->system_attribute_.decode_timestamp = decode_timestamp;
+}
+
+absl::Time MessageAccessor::decodedTimestamp(const MQMessageExt& message) {
+  return message.impl_->system_attribute_.decode_timestamp;
 }
 
 void MessageAccessor::setInvisiblePeriod(MQMessageExt& message, absl::Duration invisible_period) {

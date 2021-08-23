@@ -137,7 +137,7 @@ class SampleSendCallback : public rocketmq::SendCallback {
 public:
   SampleSendCallback(std::atomic_int& counter, std::atomic_int& error) : counter_(counter), error_(error) {}
 
-  void onSuccess(const SendResult& send_result) override { counter_.fetch_add(1, std::memory_order_relaxed); }
+  void onSuccess(SendResult& send_result) override { counter_.fetch_add(1, std::memory_order_relaxed); }
 
   void onException(const MQException& e) override { error_.fetch_add(1, std::memory_order_relaxed); }
 

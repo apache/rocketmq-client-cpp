@@ -28,7 +28,9 @@ public:
 
   static void setDeliveryAttempt(MQMessageExt& message, int32_t attempt_times);
 
-  static void setDecodedTimestamp(MQMessageExt& message, absl::Time decode_timestamp);
+  static void setDecodedTimestamp(MQMessageExt &message, absl::Time decode_timestamp);
+  static absl::Time decodedTimestamp(const MQMessageExt &message);
+  
   static void setInvisiblePeriod(MQMessageExt& message, absl::Duration invisible_period);
 
   static void setReceiptHandle(MQMessageExt& message, std::string receipt_handle);

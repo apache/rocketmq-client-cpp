@@ -14,3 +14,4 @@ cmake-build-debug-coverage
 .DS_Store
 external
 bazel-apache_rocketmq_client_cpp
+bazel-rocketmq-client-cpp

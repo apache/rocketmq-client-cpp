@@ -1,17 +1,26 @@
 #include "ProducerImpl.h"
+
 #include "MessageAccessor.h"
 #include "MessageGroupQueueSelector.h"
 #include "MetadataConstants.h"
 #include "MixAll.h"
+#include "OtlpExporter.h"
 #include "Protocol.h"
+#include "RpcClient.h"
 #include "SendCallbacks.h"
 #include "SendMessageContext.h"
 #include "Signature.h"
 #include "TransactionImpl.h"
 #include "UniqueIdGenerator.h"
 #include "UtilAll.h"
+#include "absl/strings/str_join.h"
+#include "opencensus/trace/propagation/trace_context.h"
+#include "opencensus/trace/span.h"
 #include "rocketmq/ErrorCode.h"
 #include "rocketmq/MQClientException.h"
+#include "rocketmq/MQMessage.h"
+#include "rocketmq/MQMessageQueue.h"
+#include "rocketmq/Transaction.h"
 #include <atomic>
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -261,49 +270,82 @@ void ProducerImpl::setLocalTransactionStateChecker(LocalTransactionStateCheckerP
   transaction_state_checker_ = std::move(checker);
 }
 
+void ProducerImpl::sendImpl(RetrySendCallback* callback) {
+  const std::string& target = callback->messageQueue().serviceAddress();
+  if (target.empty()) {
+    SPDLOG_WARN("Failed to resolve broker address from MessageQueue");
+    MQClientException e("Failed to resolve broker address", FAILED_TO_RESOLVE_BROKER_ADDRESS_FROM_TOPIC_ROUTE, __FILE__,
+                        __LINE__);
+    callback->onException(e);
+    return;
+  }
+
+  SendMessageRequest request;
+  wrapSendMessageRequest(callback->message(), request, callback->messageQueue());
+  Metadata metadata;
+  Signature::sign(this, metadata);
+
+  {
+    // Trace Send RPC
+    auto& message = callback->message();
+    auto span_context = opencensus::trace::propagation::FromTraceParentHeader(message.traceContext());
+
+    auto span = opencensus::trace::Span::BlankSpan();
+    if (span_context.IsValid()) {
+      span = opencensus::trace::Span::StartSpanWithRemoteParent(MixAll::SPAN_NAME_SEND_MESSAGE, span_context,
+                                                                {&Samplers::always()});
+    } else {
+      span = opencensus::trace::Span::StartSpan(MixAll::SPAN_NAME_SEND_MESSAGE, nullptr, {&Samplers::always()});
+    }
+
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ACCESS_KEY, credentialsProvider()->getCredentials().accessKey());
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ARN, arn());
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TOPIC, message.getTopic());
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_MESSAGE_ID, message.getMsgId());
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_GROUP, getGroupName());
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TAG, message.getTags());
+    const auto& keys = callback->message().getKeys();
+    if (!keys.empty()) {
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEYS,
+                        absl::StrJoin(keys.begin(), keys.end(), MixAll::MESSAGE_KEY_SEPARATOR));
+    }
+    // Note: attempt-time is 0-based
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ATTEMPT_TIME, 1 + callback->attemptTime());
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_HOST, UtilAll::hostname());
+
+    if (message.deliveryTimestamp() != absl::ToChronoTime(absl::UnixEpoch())) {
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_DELIVERY_TIMESTAMP,
+                        absl::FormatTime(absl::FromChrono(message.deliveryTimestamp())));
+    }
+    callback->message().traceContext(opencensus::trace::propagation::ToTraceParentHeader(span.context()));
+    callback->span() = span;
+  }
+  client_manager_->send(target, metadata, request, callback);
+}
+
 void ProducerImpl::send0(const MQMessage& message, SendCallback* callback, std::vector<MQMessageQueue> list,
                          int max_attempt_times) {
   assert(callback);
   if (list.empty()) {
-    MQClientException e("Topic route not found", -1, __FILE__, __LINE__);
+    MQClientException e("Topic route not found", NO_TOPIC_ROUTE_INFO, __FILE__, __LINE__);
     callback->onException(e);
     return;
   }
 
   if (max_attempt_times <= 0) {
-    MQClientException e("Retry times illegal", BAD_CONFIGURATION, __FILE__, __LINE__);
+    MQClientException e("Retry times illegal", ERR_INVALID_MAX_ATTEMPT_TIME, __FILE__, __LINE__);
     callback->onException(e);
     return;
   }
-
-  const std::string& target = list[0].serviceAddress();
-  if (target.empty()) {
-    SPDLOG_DEBUG("Unable to resolve broker address");
-    THROW_MQ_EXCEPTION(MQClientException, "Failed to resolve broker address from topic route",
-                       FAILED_TO_RESOLVE_BROKER_ADDRESS_FROM_TOPIC_ROUTE);
-  }
-
-  SendMessageRequest request;
-  // Unique message-id is generated using IP, timestamp, hash-code and sequence during the transformation
-  wrapSendMessageRequest(message, request, list[0]);
-
-  absl::flat_hash_map<std::string, std::string> metadata;
-
-  // Sign the request. Metadata entries will be part of HTT2 headers frame
-  Signature::sign(this, metadata);
-
-  if (max_attempt_times == 1) {
-    client_manager_->send(target, metadata, request, callback);
-    return;
-  }
-
+  MQMessageQueue message_queue = list[0];
   auto retry_callback =
-      new RetrySendCallback(client_manager_, metadata, request, max_attempt_times, callback, std::move(list));
-  client_manager_->send(target, metadata, request, retry_callback);
+      new RetrySendCallback(shared_from_this(), message, max_attempt_times, callback, std::move(list));
+  sendImpl(retry_callback);
 }
 
 bool ProducerImpl::endTransaction0(const std::string& target, const std::string& message_id,
-                                   const std::string& transaction_id, TransactionState resolution) {
+                                   const std::string& transaction_id, TransactionState resolution,
+                                   std::string trace_context) {
 
   EndTransactionRequest request;
   request.set_message_id(message_id);
@@ -323,25 +365,66 @@ bool ProducerImpl::endTransaction0(const std::string& target, const std::string&
   Signature::sign(this, metadata);
   bool completed = false;
   bool success = false;
+  // Trace transactional message
+  opencensus::trace::SpanContext span_context = opencensus::trace::propagation::FromTraceParentHeader(trace_context);
+  auto span = opencensus::trace::Span::BlankSpan();
+  if (span_context.IsValid()) {
+    span = opencensus::trace::Span::StartSpanWithRemoteParent(MixAll::SPAN_NAME_END_TRANSACTION, span_context,
+                                                              {&Samplers::always()});
+  } else {
+    span = opencensus::trace::Span::StartSpan(MixAll::SPAN_NAME_END_TRANSACTION, nullptr, {&Samplers::always()});
+  }
+
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ACCESS_KEY, credentialsProvider()->getCredentials().accessKey());
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ARN, arn());
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_GROUP, getGroupName());
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_MESSAGE_ID, message_id);
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_HOST, UtilAll::hostname());
+  switch (resolution) {
+  case TransactionState::COMMIT:
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TRANSACTION_RESOLUTION, "commit");
+    break;
+  case TransactionState::ROLLBACK:
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TRANSACTION_RESOLUTION, "rollback");
+    break;
+  }
+
   absl::Mutex mtx;
   absl::CondVar cv;
-  auto cb = [&](bool rpc_ok, const EndTransactionResponse& response) {
+  auto cb = [&, span](bool rpc_ok, const EndTransactionResponse& response) {
     completed = true;
     if (!rpc_ok) {
+      {
+        span.SetStatus(opencensus::trace::StatusCode::ABORTED);
+        span.AddAnnotation("gRPC tier failure");
+        span.End();
+      }
+
       SPDLOG_WARN("Failed to send {} transaction request to {}", action, target);
       success = false;
     } else if (response.common().status().code() != google::rpc::Code::OK) {
+      {
+        span.SetStatus(opencensus::trace::ABORTED);
+        span.AddAnnotation(response.common().status().DebugString());
+        span.End();
+      }
       success = false;
       SPDLOG_WARN("Server[host={}] failed to {} transaction. Reason: {}", target, action,
                   response.common().DebugString());
     } else {
+      {
+        span.SetStatus(opencensus::trace::StatusCode::OK);
+        span.End();
+      }
       success = true;
     }
+
     {
       absl::MutexLock lk(&mtx);
       cv.SignalAll();
     }
   };
+
   client_manager_->endTransaction(target, metadata, request, absl::ToChronoMilliseconds(io_timeout_), cb);
   {
     absl::MutexLock lk(&mtx);
@@ -393,22 +476,23 @@ void ProducerImpl::isolateEndpoint(const std::string& target) {
 std::unique_ptr<TransactionImpl> ProducerImpl::prepare(const MQMessage& message) {
   try {
     SendResult send_result = send(message);
-    return std::unique_ptr<TransactionImpl>(new TransactionImpl(send_result.getMsgId(), send_result.getTransactionId(),
-                                                                send_result.getMessageQueue().serviceAddress(),
-                                                                ProducerImpl::shared_from_this()));
+    return std::unique_ptr<TransactionImpl>(new TransactionImpl(
+        send_result.getMsgId(), send_result.getTransactionId(), send_result.getMessageQueue().serviceAddress(),
+        send_result.traceContext(), ProducerImpl::shared_from_this()));
   } catch (const MQClientException& e) {
     SPDLOG_ERROR("Failed to send transaction message. Cause: {}", e.what());
     return nullptr;
   }
 }
 
-bool ProducerImpl::commit(const std::string& message_id, const std::string& transaction_id, const std::string& target) {
-  return endTransaction0(target, message_id, transaction_id, TransactionState::COMMIT);
+bool ProducerImpl::commit(const std::string& message_id, const std::string& transaction_id,
+                          const std::string& trace_context, const std::string& target) {
+  return endTransaction0(target, message_id, transaction_id, TransactionState::COMMIT, trace_context);
 }
 
 bool ProducerImpl::rollback(const std::string& message_id, const std::string& transaction_id,
-                            const std::string& target) {
-  return endTransaction0(target, message_id, transaction_id, TransactionState::ROLLBACK);
+                            const std::string& trace_context, const std::string& target) {
+  return endTransaction0(target, message_id, transaction_id, TransactionState::ROLLBACK, trace_context);
 }
 
 void ProducerImpl::asyncPublishInfo(const std::string& topic,
@@ -533,7 +617,7 @@ void ProducerImpl::resolveOrphanedTransactionalMessage(const std::string& transa
   if (transaction_state_checker_) {
     TransactionState state = transaction_state_checker_->checkLocalTransactionState(message);
     const std::string& target_host = MessageAccessor::targetEndpoint(message);
-    endTransaction0(target_host, message.getMsgId(), transaction_id, state);
+    endTransaction0(target_host, message.getMsgId(), transaction_id, state, message.traceContext());
   } else {
     SPDLOG_WARN("LocalTransactionStateChecker is unexpectedly nullptr");
   }

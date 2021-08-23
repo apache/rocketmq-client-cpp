@@ -3,6 +3,7 @@
 #include "ProcessQueueMock.h"
 #include "PushConsumerMock.h"
 #include "grpc/grpc.h"
+#include "rocketmq/CredentialsProvider.h"
 #include "rocketmq/MQMessageExt.h"
 #include "gtest/gtest.h"
 #include <memory>
@@ -11,6 +12,9 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class ConsumeStandardMessageServiceTest : public testing::Test {
 public:
+  ConsumeStandardMessageServiceTest()
+      : credentials_provider_(std::make_shared<StaticCredentialsProvider>("access_key", "access_secret")) {}
+
   void SetUp() override {
     grpc_init();
     consumer_ = std::make_shared<testing::NiceMock<PushConsumerMock>>();
@@ -32,6 +36,9 @@ public:
     ON_CALL(*process_queue_, take).WillByDefault(testing::Invoke(mock_take));
     ON_CALL(*process_queue_, getConsumer).WillByDefault(testing::Return(consumer));
     ON_CALL(*consumer_, customExecutor).WillByDefault(testing::ReturnRef(executor_));
+    ON_CALL(*consumer_, credentialsProvider).WillByDefault(testing::Return(credentials_provider_));
+    ON_CALL(*consumer_, arn).WillByDefault(testing::ReturnRef(arn_));
+    ON_CALL(*consumer_, getGroupName).WillByDefault(testing::ReturnRef(group_name_));
   }
 
   void TearDown() override { grpc_shutdown(); }
@@ -41,11 +48,14 @@ protected:
   std::string topic_{"TestTopic"};
   std::string tag_{"TagA"};
   std::string body_{"Body Content"};
+  std::string arn_{"arn:mq://test"};
+  std::string group_name_{"CID_Test"};
   uint32_t consume_batch_size_;
   std::shared_ptr<testing::NiceMock<PushConsumerMock>> consumer_;
   std::shared_ptr<ConsumeStandardMessageService> consume_standard_message_service_;
   testing::NiceMock<StandardMessageListenerMock> message_listener_;
   std::shared_ptr<testing::NiceMock<ProcessQueueMock>> process_queue_;
+  std::shared_ptr<CredentialsProvider> credentials_provider_;
   Executor executor_;
 };
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <chrono>
 #include "MQMessage.h"
+#include <chrono>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -24,22 +24,16 @@ public:
 
   std::chrono::system_clock::time_point bornTimestamp() const;
 
-  std::string getBornHost() const;
-
   std::chrono::system_clock::time_point storeTimestamp() const;
   int64_t getStoreTimestamp() const;
 
   std::string getStoreHost() const;
-
-  const std::string& getMsgId() const;
 
   int64_t getQueueOffset() const;
 
   int32_t getDeliveryAttempt() const;
 
   const std::string& receiptHandle() const;
-
-  const std::string& traceContext() const;
 
   bool operator==(const MQMessageExt& other);
 

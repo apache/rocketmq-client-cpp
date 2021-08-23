@@ -20,10 +20,6 @@
 #include <utility>
 #include <vector>
 
-#ifdef ENABLE_TRACING
-#include "TracingUtility.h"
-#endif
-
 ROCKETMQ_NAMESPACE_BEGIN
 
 ClientManagerImpl::ClientManagerImpl(std::string arn)
@@ -200,79 +196,6 @@ void ClientManagerImpl::doHealthCheck() {
   }
   SPDLOG_DEBUG("Health check completed");
 }
-
-/**
- * TODO:(lingchu) optimize implementation. Client may just select one broker by random.
- */
-#ifdef ENABLE_TRACING
-void ClientInstance::updateTraceProvider() {
-  SPDLOG_DEBUG("Start to update global trace provider");
-  if (State::STARTED != state_.load(std::memory_order_relaxed)) {
-    SPDLOG_WARN("Unexpected client instance state={}.", state_.load(std::memory_order_relaxed));
-    return;
-  }
-  absl::flat_hash_set<std::string> exporter_endpoint_set;
-  {
-    absl::MutexLock lock(&topic_route_table_mtx_);
-    for (const auto& route_entry : topic_route_table_) {
-      for (const auto& partition : route_entry.second->partitions()) {
-        const std::string& broker_name = partition.broker().name();
-        if (MixAll::MASTER_BROKER_ID != partition.broker().id()) {
-          continue;
-        }
-        exporter_endpoint_set.insert(partition.broker().serviceAddress());
-      }
-    }
-  }
-  {
-    absl::MutexLock lock(&exporter_endpoint_set_mtx_);
-    // Available endpoint was not changed, no need to change global trace provider.
-    if (exporter_endpoint_set == exporter_endpoint_set_) {
-      return;
-    }
-
-    // TODO: support ipv6.
-    std::string exporter_endpoint;
-    if (!exporter_endpoint_set.empty()) {
-      exporter_endpoint = absl::StrJoin(exporter_endpoint_set.begin(), exporter_endpoint_set.end(), ",");
-    }
-
-    opentelemetry::exporter::otlp::OtlpExporterOptions exporter_options;
-    // If no available export, use default export here.
-    if (!exporter_endpoint_set.empty()) {
-      exporter_options.endpoint = exporter_endpoint;
-    }
-
-    auto exporter = std::unique_ptr<sdktrace::SpanExporter>(new otlp::OtlpExporter(exporter_options));
-
-    sdktrace::BatchSpanProcessorOptions options{};
-    options.max_queue_size = 32768;
-    options.max_export_batch_size = 16384;
-    options.schedule_delay_millis = std::chrono::milliseconds(1000);
-
-    auto processor =
-        std::shared_ptr<sdktrace::SpanProcessor>(new sdktrace::BatchSpanProcessor(std::move(exporter), options));
-    auto provider = nostd::shared_ptr<trace::TracerProvider>(new sdktrace::TracerProvider(processor));
-    // Set the global trace provider
-    trace::Provider::SetTracerProvider(provider);
-
-    exporter_endpoint_set_.clear();
-    exporter_endpoint_set_.merge(exporter_endpoint_set);
-  }
-}
-
-nostd::shared_ptr<trace::Tracer> ClientInstance::getTracer() {
-  {
-    absl::MutexLock lock(&exporter_endpoint_set_mtx_);
-    if (exporter_endpoint_set_.empty()) {
-      return nostd::shared_ptr<trace::Tracer>(nullptr);
-    }
-    auto provider = trace::Provider::GetTracerProvider();
-    return provider->GetTracer("RocketmqClient");
-  }
-}
-
-#endif
 
 void ClientManagerImpl::cleanOfflineRpcClients() {
   absl::flat_hash_set<std::string> hosts;
@@ -473,6 +396,22 @@ bool ClientManagerImpl::send(const std::string& target_host, const Metadata& met
   client->asyncSend(request, invocation_context);
   return true;
 }
+
+
+/**
+ * @brief Create a gRPC channel to target host.
+ * 
+ * @param target_host 
+ * @return std::shared_ptr<grpc::Channel> 
+ */
+std::shared_ptr<grpc::Channel> ClientManagerImpl::createChannel(const std::string& target_host) {
+  std::vector<std::unique_ptr<grpc::experimental::ClientInterceptorFactoryInterface>> interceptor_factories;
+  interceptor_factories.emplace_back(absl::make_unique<LogInterceptorFactory>());
+  auto channel = grpc::experimental::CreateCustomChannelWithInterceptors(
+      target_host, channel_credential_, channel_arguments_, std::move(interceptor_factories));
+  return channel;
+}
+
 
 RpcClientSharedPtr ClientManagerImpl::getRpcClient(const std::string& target_host, bool need_heartbeat) {
   std::shared_ptr<RpcClient> client;

@@ -1,6 +1,11 @@
 #include "SendCallbacks.h"
 
+#include "ProducerImpl.h"
+#include "TransactionImpl.h"
+#include "opencensus/trace/span.h"
+#include "opencensus/trace/propagation/trace_context.h"
 #include "rocketmq/Logger.h"
+#include "rocketmq/MQMessageQueue.h"
 #include "spdlog/spdlog.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -9,7 +14,7 @@ void OnewaySendCallback::onException(const MQException& e) {
   SPDLOG_WARN("Failed to one-way send message. Message: {}", e.what());
 }
 
-void OnewaySendCallback::onSuccess(const SendResult& send_result) {
+void OnewaySendCallback::onSuccess(SendResult& send_result) {
   SPDLOG_DEBUG("Send message in one-way OK. MessageId: {}", send_result.getMsgId());
 }
 
@@ -25,7 +30,7 @@ void AwaitSendCallback::await() {
   }
 }
 
-void AwaitSendCallback::onSuccess(const SendResult& send_result) {
+void AwaitSendCallback::onSuccess(SendResult& send_result) {
   send_result_ = send_result;
   success_ = true;
   completed_ = true;
@@ -41,13 +46,24 @@ void AwaitSendCallback::onException(const MQException& e) {
   cv_.SignalAll();
 }
 
-void RetrySendCallback::onSuccess(const SendResult& send_result) {
+void RetrySendCallback::onSuccess(SendResult& send_result) {
+  {
+    // Mark end of send-message span.
+    span_.SetStatus(opencensus::trace::StatusCode::OK);
+    span_.End();
+  }
+  send_result.traceContext(opencensus::trace::propagation::ToTraceParentHeader(span_.context()));
   callback_->onSuccess(send_result);
-  SPDLOG_DEBUG("");
   delete this;
 }
 
 void RetrySendCallback::onException(const MQException& e) {
+  {
+    // Mark end of the send-message span.
+    span_.SetStatus(opencensus::trace::StatusCode::INTERNAL);
+    span_.End();
+  }
+
   if (++attempt_times_ >= max_attempt_times_) {
     SPDLOG_WARN("Retried {} times, which exceeds the limit: {}", attempt_times_, max_attempt_times_);
     callback_->onException(e);
@@ -55,9 +71,9 @@ void RetrySendCallback::onException(const MQException& e) {
     return;
   }
 
-  std::shared_ptr<ClientManager> client = client_manager_.lock();
-  if (!client) {
-    SPDLOG_WARN("Client instance has destructed");
+  std::shared_ptr<ProducerImpl> producer = producer_.lock();
+  if (!producer) {
+    SPDLOG_WARN("Producer has been destructed");
     callback_->onException(e);
     delete this;
     return;
@@ -70,14 +86,8 @@ void RetrySendCallback::onException(const MQException& e) {
     return;
   }
 
-  const std::string& host = candidates_[attempt_times_ % candidates_.size()].serviceAddress();
-  SPDLOG_DEBUG("Retry-send message to {} for {} times", host, attempt_times_);
-
-  // TODO: Sync target broker-name and partition-id with current partition.
-  request_.mutable_message()->mutable_system_attribute()->set_partition_id(
-      candidates_[attempt_times_ % candidates_.size()].getQueueId());
-
-  client->send(host, metadata_, request_, this);
+  MQMessageQueue message_queue = candidates_[attempt_times_ % candidates_.size()];
+  producer->sendImpl(this);
 }
 
 ROCKETMQ_NAMESPACE_END

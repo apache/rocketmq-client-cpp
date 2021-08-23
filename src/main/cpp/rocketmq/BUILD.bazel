@@ -9,6 +9,7 @@ cc_library(
     strip_include_prefix = "//src/main/cpp/rocketmq/include",
     deps = [
         "//src/main/cpp/client:client_library",
+        "//src/main/cpp/tracing/exporters:otlp_exporter",
         "//src/main/cpp/log:log_library",
         "//src/main/cpp/admin:admin_server_library",
         "@com_google_absl//absl/types:optional",

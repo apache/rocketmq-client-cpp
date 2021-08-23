@@ -8,11 +8,13 @@
 #include "ClientImpl.h"
 #include "ClientManagerImpl.h"
 #include "MixAll.h"
+#include "SendCallbacks.h"
 #include "TopicPublishInfo.h"
 #include "TransactionImpl.h"
 #include "rocketmq/AsyncCallback.h"
 #include "rocketmq/LocalTransactionStateChecker.h"
 #include "rocketmq/MQMessage.h"
+#include "rocketmq/MQMessageQueue.h"
 #include "rocketmq/MQSelector.h"
 #include "rocketmq/SendResult.h"
 #include "rocketmq/State.h"
@@ -50,9 +52,9 @@ public:
 
   std::unique_ptr<TransactionImpl> prepare(const MQMessage& message);
 
-  bool commit(const std::string& message_id, const std::string& transaction_id, const std::string& target);
+  bool commit(const std::string& message_id, const std::string& transaction_id, const std::string& trace_context, const std::string& target);
 
-  bool rollback(const std::string& message_id, const std::string& transaction_id, const std::string& target);
+  bool rollback(const std::string& message_id, const std::string& transaction_id, const std::string& trace_context, const std::string& target);
 
   /**
    * Check if the RPC client for the target host is isolated or not
@@ -80,6 +82,16 @@ public:
   uint32_t compressBodyThreshold() const { return compress_body_threshold_; }
 
   void compressBodyThreshold(uint32_t threshold) { compress_body_threshold_ = threshold; }
+
+  /**
+   * @brief Send message with tracing.
+   *
+   * @param message
+   * @param callback
+   * @param message_queue
+   * @param attempt_time current attempt times, which starts from 0.
+   */
+  void sendImpl(RetrySendCallback* callback);
 
 protected:
   std::shared_ptr<ClientImpl> self() override { return shared_from_this(); }
@@ -119,7 +131,7 @@ private:
   void send0(const MQMessage& message, SendCallback* callback, std::vector<MQMessageQueue> list, int max_attempt_times);
 
   bool endTransaction0(const std::string& target, const std::string& message_id, const std::string& transaction_id,
-                       TransactionState resolution);
+                       TransactionState resolution, std::string trace_context);
 
   void isolatedEndpoints(absl::flat_hash_set<std::string>& endpoints) LOCKS_EXCLUDED(isolated_endpoints_mtx_);
 

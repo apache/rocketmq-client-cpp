@@ -1,17 +1,29 @@
 #include "ConsumeMessageService.h"
 #include "LoggerImpl.h"
+#include "MessageAccessor.h"
+#include "MixAll.h"
+#include "OtlpExporter.h"
 #include "Protocol.h"
 #include "PushConsumer.h"
 #include "TracingUtility.h"
+#include "UtilAll.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_join.h"
+#include "absl/time/time.h"
+#include "absl/types/span.h"
+#include "opencensus/trace/propagation/trace_context.h"
+#include "opencensus/trace/span.h"
 #include "rocketmq/ConsumeType.h"
+#include "rocketmq/MQMessage.h"
+#include "rocketmq/MessageListener.h"
 #include <limits>
+#include <string>
+#include <utility>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-ConsumeStandardMessageService::ConsumeStandardMessageService(std::weak_ptr<PushConsumer> consumer,
-                                                             int thread_count, MessageListener* message_listener_ptr)
+ConsumeStandardMessageService::ConsumeStandardMessageService(std::weak_ptr<PushConsumer> consumer, int thread_count,
+                                                             MessageListener* message_listener_ptr)
     : ConsumeMessageService(std::move(consumer), thread_count, message_listener_ptr) {}
 
 void ConsumeStandardMessageService::start() {
@@ -90,14 +102,6 @@ void ConsumeStandardMessageService::consumeTask(const ProcessQueueWeakPtr& proce
   if (!consumer) {
     return;
   }
-  // consumer does not start yet.
-#ifdef ENABLE_TRACING
-  nostd::shared_ptr<trace::Tracer> tracer = consumer_shared_ptr->getTracer();
-  if (!tracer) {
-    return;
-  }
-  auto system_start = std::chrono::system_clock::now();
-#endif
 
   std::shared_ptr<RateLimiter<10>> rate_limiter = rateLimiter(topic);
   if (rate_limiter) {
@@ -106,6 +110,72 @@ void ConsumeStandardMessageService::consumeTask(const ProcessQueueWeakPtr& proce
       rate_limiter->acquire();
     }
     SPDLOG_DEBUG("{} rate-limit permits acquired", msgs.size());
+  }
+
+  // Record await-consumption-span
+  {
+    for (const auto& msg : msgs) {
+      auto span_context = opencensus::trace::propagation::FromTraceParentHeader(msg.traceContext());
+
+      auto span = opencensus::trace::Span::BlankSpan();
+      if (span_context.IsValid()) {
+        span = opencensus::trace::Span::StartSpanWithRemoteParent(MixAll::SPAN_NAME_AWAIT_CONSUMPTION, span_context,
+                                                                  &Samplers::always());
+      } else {
+        span = opencensus::trace::Span::StartSpan(MixAll::SPAN_NAME_AWAIT_CONSUMPTION, nullptr, {&Samplers::always()});
+      }
+
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ACCESS_KEY,
+                        consumer->credentialsProvider()->getCredentials().accessKey());
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ARN, consumer->arn());
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TOPIC, msg.getTopic());
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_MESSAGE_ID, msg.getMsgId());
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_GROUP, consumer->getGroupName());
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TAG, msg.getTags());
+      const auto& keys = msg.getKeys();
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEYS,
+                        absl::StrJoin(keys.begin(), keys.end(), MixAll::MESSAGE_KEY_SEPARATOR));
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ATTEMPT_TIME, msg.getDeliveryAttempt());
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_AVAILABLE_TIMESTAMP,
+                        absl::FormatTime(absl::FromUnixMillis(msg.getStoreTimestamp())));
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_HOST, UtilAll::hostname());
+      absl::Time decoded_timestamp = MessageAccessor::decodedTimestamp(msg);
+      span.AddAnnotation(
+          MixAll::SPAN_ANNOTATION_AWAIT_CONSUMPTION,
+          {{MixAll::SPAN_ANNOTATION_ATTR_START_TIME,
+            opencensus::trace::AttributeValueRef(absl::ToInt64Milliseconds(decoded_timestamp - absl::UnixEpoch()))}});
+      span.End();
+    }
+  }
+
+  // Trace start of consume message
+  std::vector<opencensus::trace::Span> spans;
+  {
+    for (const auto& msg : msgs) {
+      auto span_context = opencensus::trace::propagation::FromTraceParentHeader(msg.traceContext());
+      auto span = opencensus::trace::Span::BlankSpan();
+      if (span_context.IsValid()) {
+        span = opencensus::trace::Span::StartSpanWithRemoteParent(MixAll::SPAN_NAME_CONSUME_MESSAGE, span_context);
+      } else {
+        span = opencensus::trace::Span::StartSpan(MixAll::SPAN_NAME_CONSUME_MESSAGE);
+      }
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ACCESS_KEY,
+                        consumer->credentialsProvider()->getCredentials().accessKey());
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ARN, consumer->arn());
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TOPIC, msg.getTopic());
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_MESSAGE_ID, msg.getMsgId());
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_GROUP, consumer->getGroupName());
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TAG, msg.getTags());
+      const auto& keys = msg.getKeys();
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEYS,
+                        absl::StrJoin(keys.begin(), keys.end(), MixAll::MESSAGE_KEY_SEPARATOR));
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ATTEMPT_TIME, msg.getDeliveryAttempt());
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_AVAILABLE_TIMESTAMP,
+                        absl::FormatTime(absl::FromUnixMillis(msg.getStoreTimestamp())));
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_HOST, UtilAll::hostname());
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_BATCH_SIZE, msgs.size());
+      spans.emplace_back(std::move(span));
+    }
   }
 
   auto steady_start = std::chrono::steady_clock::now();
@@ -122,13 +192,23 @@ void ConsumeStandardMessageService::consumeTask(const ProcessQueueWeakPtr& proce
 
   auto duration = std::chrono::steady_clock::now() - steady_start;
 
+  // Trace end of consumption
+  {
+    for (auto& span : spans) {
+      switch (status) {
+      case ConsumeMessageResult::SUCCESS:
+        span.SetStatus(opencensus::trace::StatusCode::OK);
+        break;
+      case ConsumeMessageResult::FAILURE:
+        span.SetStatus(opencensus::trace::StatusCode::UNKNOWN);
+        break;
+      }
+      span.End();
+    }
+  }
+
   // Log client consume-time costs
   SPDLOG_DEBUG("Business callback spent {}ms processing {} messages.", MixAll::millisecondsOf(duration), msgs.size());
-
-#ifdef ENABLE_TRACING
-  std::chrono::microseconds average_duration =
-      std::chrono::microseconds(MixAll::microsecondsOf(duration) / msgs.size());
-#endif
 
   if (MessageModel::CLUSTERING == consumer->messageModel()) {
     for (const auto& msg : msgs) {
@@ -137,29 +217,6 @@ void ConsumeStandardMessageService::consumeTask(const ProcessQueueWeakPtr& proce
       // Release message number and memory quota
       process_queue_ptr->release(msg.getBody().size(), msg.getQueueOffset());
 
-#ifdef ENABLE_TRACING
-      nostd::shared_ptr<trace::Span> span = nostd::shared_ptr<trace::Span>(nullptr);
-      trace::EndSpanOptions end_options;
-      if (consumer_shared_ptr->isTracingEnabled()) {
-        const std::string& serialized_span_context = msg.traceContext();
-        trace::SpanContext span_context = TracingUtility::extractContextFromTraceParent(serialized_span_context);
-        trace::StartSpanOptions start_options;
-        start_options.start_system_time =
-            opentelemetry::core::SystemTimestamp(system_start + i * std::chrono::microseconds(average_duration));
-        start_options.start_steady_time =
-            opentelemetry::core::SteadyTimestamp(steady_start + i * std::chrono::microseconds(average_duration));
-        start_options.parent = span_context;
-        end_options.end_steady_time =
-            opentelemetry::core::SteadyTimestamp(steady_start + (i + 1) * std::chrono::microseconds(average_duration));
-        span = tracer->StartSpan("ConsumeMessage", start_options);
-      }
-
-      if (span) {
-        span->SetAttribute(TracingUtility::get().expired_, false);
-        span->SetAttribute(TracingUtility::get().success_, CONSUME_SUCCESS == status);
-        span->End(end_options);
-      }
-#endif
       if (status == ConsumeMessageResult::SUCCESS) {
         auto callback = [process_queue_ptr, message_id](bool ok) {
           if (ok) {

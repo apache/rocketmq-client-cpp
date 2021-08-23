@@ -24,6 +24,8 @@ public:
 
   virtual TopAddressing& topAddressing() = 0;
 
+  virtual std::shared_ptr<grpc::Channel> createChannel(const std::string& target_host) = 0;
+
   virtual void resolveRoute(const std::string& target_host, const Metadata& metadata, const QueryRouteRequest& request,
                             std::chrono::milliseconds timeout,
                             const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) = 0;

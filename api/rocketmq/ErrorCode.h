@@ -22,4 +22,6 @@ constexpr int BAD_CONFIGURATION = -8;
 
 constexpr int MESSAGE_QUEUE_ILLEGAL = -9;
 
+constexpr int ERR_INVALID_MAX_ATTEMPT_TIME = -10;
+
 ROCKETMQ_NAMESPACE_END

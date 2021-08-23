@@ -1,0 +1,18 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+cc_library(
+    name = "otlp_exporter",
+    hdrs = glob(["include/*.h"]),
+    srcs = glob(["*.cpp"]),
+    strip_include_prefix = "//src/main/cpp/tracing/exporters/include",
+    deps = [
+        "//api:rocketmq_interface",
+        "//src/main/cpp/client:client_library",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/memory",
+        "@io_opencensus_cpp//opencensus/trace",
+        "@com_github_opentelemetry_proto//:trace_service_grpc_cc",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_github_fmtlib_fmt//:fmtlib"
+    ],
+    visibility = ["//visibility:public"],
+)

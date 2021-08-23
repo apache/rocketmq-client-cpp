@@ -3,6 +3,7 @@
 #include "ClientManager.h"
 #include "ClientResourceBundle.h"
 #include "InvocationContext.h"
+#include "OtlpExporter.h"
 #include "rocketmq/MQMessageExt.h"
 #include "rocketmq/State.h"
 #include <chrono>
@@ -49,6 +50,7 @@ public:
 
 protected:
   ClientManagerPtr client_manager_;
+  std::shared_ptr<OtlpExporter> exporter_;
   std::atomic<State> state_;
 
   absl::flat_hash_map<std::string, TopicRouteDataPtr> topic_route_table_ GUARDED_BY(topic_route_table_mtx_);

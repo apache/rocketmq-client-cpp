@@ -2,7 +2,9 @@
 
 #include "MQClientTest.h"
 #include "ProducerImpl.h"
+#include "rocketmq/CredentialsProvider.h"
 #include "rocketmq/MQSelector.h"
+#include <memory>
 #include <mutex>
 #include <utility>
 
@@ -10,7 +12,9 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class DefaultMQProducerUnitTest : public MQClientTest {
 public:
-  DefaultMQProducerUnitTest() : MQClientTest() {}
+  DefaultMQProducerUnitTest() : MQClientTest() {
+    credentials_provider_ = std::make_shared<StaticCredentialsProvider>(access_key_, access_secret_);
+  }
 
   void SetUp() override {
     MQClientTest::SetUp();
@@ -59,6 +63,9 @@ protected:
   absl::flat_hash_map<std::string, std::string> metadata_;
   std::shared_ptr<testing::NiceMock<RpcClientMock>> rpc_client_broker_;
   std::string message_id_{"msg_id_0"};
+  std::string access_key_{"access_key"};
+  std::string access_secret_{"access_secret"};
+  std::shared_ptr<CredentialsProvider> credentials_provider_;
 };
 
 TEST_F(DefaultMQProducerUnitTest, testBasicSetUp) {
@@ -103,7 +110,7 @@ class UnitTestSendCallback : public SendCallback {
 public:
   UnitTestSendCallback(absl::Mutex& mtx, absl::CondVar& cv, std::string& msg_id, bool& completed)
       : mtx_(mtx), cv_(cv), msg_id_(msg_id), completed_(completed) {}
-  void onSuccess(const SendResult& send_result) override {
+  void onSuccess(SendResult& send_result) override {
     absl::MutexLock lk(&mtx_);
     msg_id_ = send_result.getMsgId();
     completed_ = true;
@@ -126,6 +133,7 @@ TEST_F(DefaultMQProducerUnitTest, testAsyncSendMessage) {
   auto producer = std::make_shared<ProducerImpl>(group_name_);
   producer->arn(arn_);
   producer->setNameServerList(name_server_list_);
+  producer->setCredentialsProvider(credentials_provider_);
   producer->start();
   MQMessage message;
   message.setTopic(topic_);
@@ -148,6 +156,7 @@ TEST_F(DefaultMQProducerUnitTest, testSendMessage) {
   auto producer = std::make_shared<ProducerImpl>(group_name_);
   producer->arn(arn_);
   producer->setNameServerList(name_server_list_);
+  producer->setCredentialsProvider(credentials_provider_);
   producer->start();
   MQMessage message;
   SendResult send_result = producer->send(message);
@@ -159,6 +168,7 @@ TEST_F(DefaultMQProducerUnitTest, testEndpointIsolation) {
   auto producer = std::make_shared<ProducerImpl>(group_name_);
   producer->arn(arn_);
   producer->setNameServerList(name_server_list_);
+  producer->setCredentialsProvider(credentials_provider_);
   producer->start();
 
   const char* isolated_endpoint = "ipv4:10.0.0.0:10911";

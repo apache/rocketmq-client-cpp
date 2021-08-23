@@ -1,7 +1,11 @@
 #include "rocketmq/MQMessage.h"
-#include "MessageImpl.h"
 #include "MessageAccessor.h"
+#include "MessageImpl.h"
+#include "MixAll.h"
+#include "UniqueIdGenerator.h"
+#include "UtilAll.h"
 #include "rocketmq/MQMessageExt.h"
+#include <chrono>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -20,6 +24,11 @@ MQMessage::MQMessage(const std::string& topic, const std::string& tags, const st
   if (!keys.empty()) {
     impl_->system_attribute_.keys.emplace_back(keys);
   }
+
+  impl_->system_attribute_.born_host = UtilAll::hostname();
+  impl_->system_attribute_.born_timestamp = absl::Now();
+  impl_->system_attribute_.message_id = UniqueIdGenerator::instance().next();
+
   impl_->body_.clear();
   impl_->body_.reserve(body.length());
   impl_->body_.append(body.data(), body.length());
@@ -35,6 +44,14 @@ MQMessage& MQMessage::operator=(const MQMessage& other) {
   }
   *impl_ = *(other.impl_);
   return *this;
+}
+
+const std::string& MQMessage::getMsgId() const { return impl_->system_attribute_.message_id; }
+
+std::string MQMessage::getBornHost() const { return impl_->system_attribute_.born_host; }
+
+std::chrono::system_clock::time_point MQMessage::deliveryTimestamp() const {
+  absl::ToChronoTime(impl_->system_attribute_.delivery_timestamp);
 }
 
 void MQMessage::setProperty(const std::string& name, const std::string& value) {
@@ -68,6 +85,12 @@ void MQMessage::setKeys(const std::vector<std::string>& keys) { impl_->system_at
 int MQMessage::getDelayTimeLevel() const { return impl_->system_attribute_.delay_level; }
 
 void MQMessage::setDelayTimeLevel(int level) { impl_->system_attribute_.delay_level = level; }
+
+const std::string& MQMessage::traceContext() const { return impl_->system_attribute_.trace_context; }
+
+void MQMessage::traceContext(const std::string& trace_context) {
+  impl_->system_attribute_.trace_context = trace_context;
+}
 
 const std::string& MQMessage::getBody() const { return impl_->body_; }
 

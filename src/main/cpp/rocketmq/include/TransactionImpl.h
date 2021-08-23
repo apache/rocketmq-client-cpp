@@ -11,10 +11,10 @@ class ProducerImpl;
 
 class TransactionImpl : public Transaction {
 public:
-  TransactionImpl(std::string message_id, std::string transaction_id, std::string endpoint,
+  TransactionImpl(std::string message_id, std::string transaction_id, std::string endpoint, std::string trace_context,
                   const std::shared_ptr<ProducerImpl>& producer)
       : message_id_(std::move(message_id)), transaction_id_(std::move(transaction_id)), endpoint_(std::move(endpoint)),
-        producer_(producer) {}
+        trace_context_(std::move(trace_context)), producer_(producer) {}
 
   ~TransactionImpl() override = default;
 
@@ -26,6 +26,7 @@ private:
   std::string message_id_;
   std::string transaction_id_;
   std::string endpoint_;
+  std::string trace_context_;
   std::weak_ptr<ProducerImpl> producer_;
 };
 

@@ -25,6 +25,10 @@ void ClientImpl::start() {
 
   client_manager_ = ClientManagerFactory::getInstance().getClientManager(*this);
   client_manager_->start();
+
+  exporter_ = std::make_shared<OtlpExporter>(client_manager_, this);
+  exporter_->start();
+
   bool update_name_server_list = false;
   {
     absl::MutexLock lock(&name_server_list_mtx_);

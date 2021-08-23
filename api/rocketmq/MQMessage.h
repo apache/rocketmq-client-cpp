@@ -1,10 +1,11 @@
 #pragma once
 
+#include <chrono>
 #include <map>
 #include <sstream>
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include "RocketMQ.h"
 
@@ -26,6 +27,8 @@ public:
   MQMessage(const MQMessage& other);
   MQMessage& operator=(const MQMessage& other);
 
+  const std::string& getMsgId() const;
+
   void setProperty(const std::string& name, const std::string& value);
   std::string getProperty(const std::string& name) const;
 
@@ -40,7 +43,8 @@ public:
 
   /**
    * @brief Add a unique key for the message
-   * TODO: a message may be associated with multiple keys. setKey, actually mean attach the given key to the message. Better rename it.
+   * TODO: a message may be associated with multiple keys. setKey, actually mean attach the given key to the message.
+   * Better rename it.
    * @param key Unique key in perspective of bussiness logic.
    */
   void setKey(const std::string& key);
@@ -48,6 +52,13 @@ public:
 
   int getDelayTimeLevel() const;
   void setDelayTimeLevel(int level);
+
+  const std::string& traceContext() const;
+  void traceContext(const std::string& trace_context);
+
+  std::string getBornHost() const;
+
+  std::chrono::system_clock::time_point deliveryTimestamp() const;
 
   const std::string& getBody() const;
   void setBody(const char* data, int len);

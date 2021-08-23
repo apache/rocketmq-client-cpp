@@ -1,11 +1,11 @@
 #pragma once
 
 #include "re2/re2.h"
+#include "rocketmq/MQMessage.h"
 #include <chrono>
 #include <cstdint>
 #include <string>
 #include <unistd.h>
-#include "rocketmq/MQMessage.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -39,6 +39,35 @@ public:
   static const uint32_t DEFAULT_COMPRESS_BODY_THRESHOLD_;
 
   static const char* HOME_PROFILE_ENV_;
+
+  static const char* MESSAGE_KEY_SEPARATOR;
+
+  // Tracing span name list
+  static const char* SPAN_NAME_SEND_MESSAGE;
+  static const char* SPAN_NAME_END_TRANSACTION;
+  static const char* SPAN_NAME_AWAIT_CONSUMPTION;
+  static const char* SPAN_NAME_CONSUME_MESSAGE;
+  static const char* SPAN_NAME_PULL_MESSAGE;
+
+  // Tracing attribute name list
+  static const char* SPAN_ATTRIBUTE_ACCESS_KEY;
+  static const char* SPAN_ATTRIBUTE_ARN;
+  static const char* SPAN_ATTRIBUTE_TOPIC;
+  static const char* SPAN_ATTRIBUTE_GROUP;
+  static const char* SPAN_ATTRIBUTE_MESSAGE_ID;
+  static const char* SPAN_ATTRIBUTE_TAG;
+  static const char* SPAN_ATTRIBUTE_KEYS;
+  static const char* SPAN_ATTRIBUTE_HOST;
+  static const char* SPAN_ATTRIBUTE_MESSAGE_TYPE;
+  static const char* SPAN_ATTRIBUTE_ATTEMPT_TIME;
+  static const char* SPAN_ATTRIBUTE_DELIVERY_TIMESTAMP;
+  static const char* SPAN_ATTRIBUTE_TRANSACTION_RESOLUTION;
+  static const char* SPAN_ATTRIBUTE_AVAILABLE_TIMESTAMP;
+  static const char* SPAN_ATTRIBUTE_BATCH_SIZE;
+
+  // Tracing annotation
+  static const char* SPAN_ANNOTATION_AWAIT_CONSUMPTION;
+  static const char* SPAN_ANNOTATION_ATTR_START_TIME;
 
   template <typename Rep, typename Period> static int64_t millisecondsOf(std::chrono::duration<Rep, Period> duration) {
     return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();

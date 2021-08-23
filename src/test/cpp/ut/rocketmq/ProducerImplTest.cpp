@@ -13,6 +13,9 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class ProducerImplTest : public testing::Test {
 public:
+  ProducerImplTest()
+      : credentials_provider_(std::make_shared<StaticCredentialsProvider>(access_key_, access_secret_)) {}
+
   void SetUp() override {
     grpc_init();
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
@@ -20,6 +23,7 @@ public:
     producer_ = std::make_shared<ProducerImpl>(group_);
     producer_->arn(arn_);
     producer_->setNameServerList(name_server_list_);
+    producer_->setCredentialsProvider(credentials_provider_);
 
     {
       std::vector<Partition> partitions;
@@ -53,6 +57,9 @@ protected:
   std::string broker_host_{"10.0.0.1"};
   int broker_port_{10911};
   TopicRouteDataPtr topic_route_data_;
+  std::string access_key_{"access_key"};
+  std::string access_secret_{"access_secret"};
+  std::shared_ptr<CredentialsProvider> credentials_provider_;
 };
 
 TEST_F(ProducerImplTest, testStartShutdown) {
@@ -167,7 +174,7 @@ TEST_F(ProducerImplTest, testSend_WithMessageQueueSelector) {
 class TestSendCallback : public SendCallback {
 public:
   TestSendCallback(bool& completed, absl::Mutex& mtx, absl::CondVar& cv) : completed_(completed), mtx_(mtx), cv_(cv) {}
-  void onSuccess(const SendResult& send_result) override {
+  void onSuccess(SendResult& send_result) override {
     absl::MutexLock lk(&mtx_);
     completed_ = true;
     cv_.SignalAll();

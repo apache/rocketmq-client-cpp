@@ -10,10 +10,10 @@
 #include <openssl/md5.h>
 #include <openssl/sha.h>
 
-#include <pwd.h>
-#include <unistd.h>
 #include "zlib.h"
 #include <arpa/inet.h>
+#include <pwd.h>
+#include <unistd.h>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -44,6 +44,34 @@ const std::string MixAll::DEFAULT_LOAD_BALANCER_STRATEGY_NAME_ = "AVG";
 const uint32_t MixAll::DEFAULT_COMPRESS_BODY_THRESHOLD_ = 1024 * 1024 * 4;
 
 const char* MixAll::HOME_PROFILE_ENV_ = "HOME";
+const char* MixAll::MESSAGE_KEY_SEPARATOR = " ";
+
+// Span name list
+const char* MixAll::SPAN_NAME_SEND_MESSAGE = "SendMessage";
+const char* MixAll::SPAN_NAME_END_TRANSACTION = "EndTransaction";
+const char* MixAll::SPAN_NAME_AWAIT_CONSUMPTION = "AwaitingConsumption";
+const char* MixAll::SPAN_NAME_CONSUME_MESSAGE = "ConsumeMessage";
+const char* MixAll::SPAN_NAME_PULL_MESSAGE = "PullMessage";
+
+// Span attribute name list
+const char* MixAll::SPAN_ATTRIBUTE_ACCESS_KEY = "ak";
+const char* MixAll::SPAN_ATTRIBUTE_ARN = "arn";
+const char* MixAll::SPAN_ATTRIBUTE_KEYS = "keys";
+const char* MixAll::SPAN_ATTRIBUTE_MESSAGE_TYPE = "msgType";
+const char* MixAll::SPAN_ATTRIBUTE_DELIVERY_TIMESTAMP = "deliveryTimestamp";
+const char* MixAll::SPAN_ATTRIBUTE_TOPIC = "topic";
+const char* MixAll::SPAN_ATTRIBUTE_GROUP = "group";
+const char* MixAll::SPAN_ATTRIBUTE_MESSAGE_ID = "msgId";
+const char* MixAll::SPAN_ATTRIBUTE_TAG = "tags";
+const char* MixAll::SPAN_ATTRIBUTE_HOST = "host";
+const char* MixAll::SPAN_ATTRIBUTE_ATTEMPT_TIME = "attempt";
+const char* MixAll::SPAN_ATTRIBUTE_TRANSACTION_RESOLUTION = "commitAction";
+const char* MixAll::SPAN_ATTRIBUTE_AVAILABLE_TIMESTAMP = "availableTimestamp";
+const char* MixAll::SPAN_ATTRIBUTE_BATCH_SIZE = "batchSize";
+
+// Span annotation
+const char* MixAll::SPAN_ANNOTATION_AWAIT_CONSUMPTION = "__await_consumption";
+const char* MixAll::SPAN_ANNOTATION_ATTR_START_TIME = "__start_time";
 
 bool MixAll::validate(const MQMessage& message) {
   if (message.getTopic().empty()) {

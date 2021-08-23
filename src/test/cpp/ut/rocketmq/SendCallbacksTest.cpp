@@ -1,10 +1,10 @@
-#include "gtest/gtest.h"
 #include "SendCallbacks.h"
+#include "gtest/gtest.h"
+#include <thread>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class SendCallbacksTest : public testing::Test {
-};
+class SendCallbacksTest : public testing::Test {};
 
 TEST_F(SendCallbacksTest, testAwait) {
   std::string msg_id("Msg-0");
@@ -23,6 +23,5 @@ TEST_F(SendCallbacksTest, testAwait) {
     waker.join();
   }
 }
-
 
 ROCKETMQ_NAMESPACE_END

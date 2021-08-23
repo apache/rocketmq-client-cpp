@@ -28,7 +28,7 @@
 #include "src/cpp/server/thread_pool_interface.h"
 
 #ifdef ENABLE_TRACING
-#include "opentelemetry/exporters/otlp/otlp_exporter.h"
+#include "opentelemetry/exporters/otlp/otlp_grpc_exporter.h"
 #include "opentelemetry/sdk/trace/batch_span_processor.h"
 #include "opentelemetry/sdk/trace/tracer_provider.h"
 #include "opentelemetry/trace/provider.h"
@@ -57,6 +57,8 @@ public:
   void shutdown() override LOCKS_EXCLUDED(rpc_clients_mtx_);
 
   static void assignLabels(Histogram& histogram);
+
+  std::shared_ptr<grpc::Channel> createChannel(const std::string& target_host) override;
 
   /**
    * Resolve route data from name server for the given topic.

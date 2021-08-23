@@ -1,0 +1,24 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+
+cc_test(
+    name = "otlp_exporter_test",
+    srcs = [
+        "OtlpExportersTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/client/mocks:client_mocks",
+        "//src/main/cpp/tracing/exporters:otlp_exporter",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "span_context_test",
+    srcs = [
+        "SpanContextTest.cpp",
+    ],
+    deps = [
+        "@io_opencensus_cpp//opencensus/trace",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

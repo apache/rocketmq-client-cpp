@@ -76,6 +76,12 @@ public:
     transaction_id_ = transaction_id;
   }
 
+  const std::string &traceContext() const { return trace_context_; }
+
+  void traceContext(std::string trace_context) {
+    trace_context_ = std::move(trace_context);
+  }
+
 private:
   SendStatus send_status_;
   std::string message_id_;
@@ -83,6 +89,7 @@ private:
   long long queue_offset_;
   std::string transaction_id_;
   std::string region_id_;
+  std::string trace_context_;
 };
 
 ROCKETMQ_NAMESPACE_END
