@@ -6,11 +6,16 @@
 #include "MessageAccessor.h"
 #include "Signature.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
 #include "apache/rocketmq/v1/definition.pb.h"
 #include "rocketmq/MQMessageExt.h"
+#include <algorithm>
 #include <chrono>
+#include <cstdint>
+#include <iterator>
 #include <memory>
 #include <string>
+#include <utility>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -53,7 +58,7 @@ void ClientImpl::start() {
     };
     name_server_update_handle_ =
         client_manager_->getScheduler().schedule(name_server_update_functor, UPDATE_NAME_SERVER_LIST_TASK_NAME,
-                                                  std::chrono::milliseconds(0), std::chrono::seconds(30));
+                                                 std::chrono::milliseconds(0), std::chrono::seconds(30));
   }
 
   auto route_update_functor = [ptr]() {
@@ -64,7 +69,7 @@ void ClientImpl::start() {
   };
 
   route_update_handle_ = client_manager_->getScheduler().schedule(route_update_functor, UPDATE_ROUTE_TASK_NAME,
-                                                                   std::chrono::seconds(10), std::chrono::seconds(30));
+                                                                  std::chrono::seconds(10), std::chrono::seconds(30));
   state_.store(State::STARTED);
 }
 
@@ -236,6 +241,37 @@ void ClientImpl::fetchRouteFor(const std::string& topic, const std::function<voi
   QueryRouteRequest request;
   request.mutable_topic()->set_arn(arn_);
   request.mutable_topic()->set_name(topic);
+  auto endpoints = request.mutable_endpoints()->mutable_addresses();
+  std::vector<std::pair<std::string, std::uint16_t>> pairs;
+  {
+    absl::MutexLock lk(&name_server_list_mtx_);
+    for (const auto& name_server_item : name_server_list_) {
+      std::string::size_type pos = name_server_item.rfind(":");
+      if (std::string::npos == pos) {
+        continue;
+      }
+      std::string host(name_server_item.substr(0, pos));
+      std::string port(name_server_item.substr(pos + 1));
+      pairs.emplace_back(std::make_pair(host, std::stoi(port)));
+    }
+  }
+
+  if (!pairs.empty()) {
+    for (const auto& host_port : pairs) {
+      auto address = new rmq::Address();
+      address->set_port(host_port.second);
+      address->set_host(host_port.first);
+      endpoints->AddAllocated(address);
+    }
+
+    if (MixAll::isIPv4(pairs.begin()->first)) {
+      request.mutable_endpoints()->set_scheme(rmq::AddressScheme::IPv4);
+    } else if (absl::StrContains(pairs.begin()->first, ':')) {
+      request.mutable_endpoints()->set_scheme(rmq::AddressScheme::IPv6);
+    } else {
+      request.mutable_endpoints()->set_scheme(rmq::AddressScheme::DOMAIN_NAME);
+    }
+  }
 
   absl::flat_hash_map<std::string, std::string> metadata;
   Signature::sign(this, metadata);
@@ -346,7 +382,7 @@ void ClientImpl::multiplexing(const std::string& target, const MultiplexingReque
   absl::flat_hash_map<std::string, std::string> metadata;
   Signature::sign(this, metadata);
   client_manager_->multiplexingCall(target, metadata, request, absl::ToChronoMilliseconds(long_polling_timeout_),
-                                     std::bind(&ClientImpl::onMultiplexingResponse, this, std::placeholders::_1));
+                                    std::bind(&ClientImpl::onMultiplexingResponse, this, std::placeholders::_1));
 }
 
 void ClientImpl::onMultiplexingResponse(const InvocationContext<MultiplexingResponse>* ctx) {
@@ -359,7 +395,7 @@ void ClientImpl::onMultiplexingResponse(const InvocationContext<MultiplexingResp
     };
     static std::string task_name = "Initiate multiplex request later";
     client_manager_->getScheduler().schedule(multiplexingLater, task_name, std::chrono::seconds(3),
-                                              std::chrono::seconds(0));
+                                             std::chrono::seconds(0));
     return;
   }
 
@@ -373,7 +409,7 @@ void ClientImpl::onMultiplexingResponse(const InvocationContext<MultiplexingResp
     absl::flat_hash_map<std::string, std::string> metadata;
     Signature::sign(this, metadata);
     client_manager_->multiplexingCall(ctx->remote_address, metadata, request, absl::ToChronoMilliseconds(io_timeout_),
-                                       std::bind(&ClientImpl::onMultiplexingResponse, this, std::placeholders::_1));
+                                      std::bind(&ClientImpl::onMultiplexingResponse, this, std::placeholders::_1));
     break;
   }
 

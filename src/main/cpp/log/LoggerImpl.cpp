@@ -68,7 +68,8 @@ void LoggerImpl::init0() {
   setLevel(console_sink_, console_level_);
   console_sink_->set_pattern(pattern_);
 
-  file_sink_ = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(log_home_, file_size_, file_count_, true);
+  file_sink_ = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(log_home_, file_size_, file_count_,
+                                                                      /*rotate_on_open=*/false);
   file_sink_->set_pattern(pattern_);
   setLevel(file_sink_, level_);
 

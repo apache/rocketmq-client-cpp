@@ -8,7 +8,7 @@ class MixAllTest : public testing::Test {
 public:
   static std::string toUpperCase(const std::string& s) {
     std::string result;
-    for (const char & c : s) {
+    for (const char& c : s) {
       if ('a' <= c && 'z' >= c) {
         result.push_back(static_cast<char>('A' + (c - 'a')));
       } else {
@@ -92,6 +92,13 @@ TEST_F(MixAllTest, testCrc32) {
   bool success = MixAll::crc32(data, digest);
   EXPECT_TRUE(success);
   std::cout << digest << std::endl;
+}
+
+TEST_F(MixAllTest, testIsIpv4) {
+  const char* ip = "8.8.8.8";
+  const char* host = "www.taobao.com";
+  EXPECT_TRUE(MixAll::isIPv4(ip));
+  EXPECT_FALSE(MixAll::isIPv4(host));
 }
 
 ROCKETMQ_NAMESPACE_END

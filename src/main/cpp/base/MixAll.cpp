@@ -30,6 +30,7 @@ const uint32_t MixAll::DEFAULT_CONSUME_MESSAGE_BATCH_SIZE = 1;
 const int32_t MixAll::DEFAULT_MAX_DELIVERY_ATTEMPTS = 16;
 
 const RE2 MixAll::TOPIC_REGEX("[a-zA-Z0-9\\-_]{3,64}");
+const RE2 MixAll::IP_REGEX("\\d+\\.\\d+\\.\\d+\\.\\d+");
 
 const std::chrono::duration<long long> MixAll::DEFAULT_INVISIBLE_TIME_ = std::chrono::seconds(30);
 
@@ -219,6 +220,10 @@ bool MixAll::homeDirectory(std::string& home_dir) {
   }
   return false;
 #endif
+}
+
+bool MixAll::isIPv4(absl::string_view host) {
+  return RE2::FullMatch(re2::StringPiece(host.data(), host.length()), IP_REGEX);
 }
 
 ROCKETMQ_NAMESPACE_END

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "absl/strings/string_view.h"
 #include "re2/re2.h"
 #include "rocketmq/MQMessage.h"
 #include <chrono>
@@ -22,6 +23,7 @@ public:
   static const int32_t DEFAULT_MAX_DELIVERY_ATTEMPTS;
 
   static const RE2 TOPIC_REGEX;
+  static const RE2 IP_REGEX;
 
   /**
    * The amount of time required before a popped message is eligible to be consumed again. By default, 30s.
@@ -99,6 +101,8 @@ public:
   static bool hexToBinary(const std::string& hex, std::vector<uint8_t>& bin);
 
   static bool homeDirectory(std::string& home);
+
+  static bool isIPv4(absl::string_view host);
 
 private:
   static bool hexCharValue(char c, uint8_t& value);

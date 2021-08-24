@@ -33,15 +33,19 @@ int main(int argc, char* argv[]) {
   logger.init();
 
   DefaultMQProducer producer("TestGroup");
-  producer.setNamesrvAddr("11.165.223.199:9876");
+
+  const char* topic = "cpp_sdk_standard";
+  const char* name_server = "47.98.116.189:80";
+
+  producer.setNamesrvAddr(name_server);
   producer.compressBodyThreshold(256);
-  const char* arn = "MQ_INST_1973281269661160_BXmPlOA6";
-  producer.setRegion("cn-hangzhou");
+  const char* arn = "MQ_INST_1080056302921134_BXuIbML7";
+  producer.setRegion("cn-hangzhou-pre");
   producer.arn(arn);
   producer.setCredentialsProvider(std::make_shared<ConfigFileCredentialsProvider>());
 
   MQMessage message;
-  message.setTopic("yc001");
+  message.setTopic(topic);
   message.setTags("TagA");
   message.setKey("Yuck! Why-plural?");
 

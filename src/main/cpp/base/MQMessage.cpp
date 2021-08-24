@@ -51,7 +51,7 @@ const std::string& MQMessage::getMsgId() const { return impl_->system_attribute_
 std::string MQMessage::getBornHost() const { return impl_->system_attribute_.born_host; }
 
 std::chrono::system_clock::time_point MQMessage::deliveryTimestamp() const {
-  absl::ToChronoTime(impl_->system_attribute_.delivery_timestamp);
+  return absl::ToChronoTime(impl_->system_attribute_.delivery_timestamp);
 }
 
 void MQMessage::setProperty(const std::string& name, const std::string& value) {
