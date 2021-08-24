@@ -8,7 +8,7 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-const uint8_t UniqueIdGenerator::VERSION = 0;
+const uint8_t UniqueIdGenerator::VERSION = 1;
 
 UniqueIdGenerator::UniqueIdGenerator()
     : prefix_(), since_custom_epoch_(std::chrono::system_clock::now() - customEpoch()),

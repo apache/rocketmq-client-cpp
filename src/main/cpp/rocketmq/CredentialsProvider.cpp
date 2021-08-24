@@ -1,18 +1,18 @@
+#include "GHttpClient.h"
 #include "MixAll.h"
 #include "StsCredentialsProviderImpl.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/match.h"
+#include "fmt/format.h"
 #include "ghc/filesystem.hpp"
 #include "google/protobuf/struct.pb.h"
 #include "google/protobuf/util/json_util.h"
 #include "rocketmq/Logger.h"
 #include "spdlog/spdlog.h"
-#include "GHttpClient.h"
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <string>
-#include "fmt/format.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -78,6 +78,7 @@ ConfigFileCredentialsProvider::ConfigFileCredentialsProvider() {
         if (fields.contains(ACCESS_SECRET_FIELD_NAME)) {
           access_secret_ = fields.at(ACCESS_SECRET_FIELD_NAME).string_value();
         }
+        SPDLOG_DEBUG("Credentials for access_key={} loaded", access_key_);
       } else {
         SPDLOG_WARN("Failed to parse credential JSON config file. Message: {}", status.message().data());
       }
@@ -103,9 +104,7 @@ StsCredentialsProviderImpl::StsCredentialsProviderImpl(std::string ram_role_name
   http_client_->start();
 }
 
-StsCredentialsProviderImpl::~StsCredentialsProviderImpl() {
-  http_client_->shutdown();
-}
+StsCredentialsProviderImpl::~StsCredentialsProviderImpl() { http_client_->shutdown(); }
 
 Credentials StsCredentialsProviderImpl::getCredentials() {
   if (std::chrono::system_clock::now() >= expiration_) {
@@ -181,6 +180,5 @@ const char* StsCredentialsProviderImpl::FIELD_ACCESS_SECRET = "AccessKeySecret";
 const char* StsCredentialsProviderImpl::FIELD_SESSION_TOKEN = "SecurityToken";
 const char* StsCredentialsProviderImpl::FIELD_EXPIRATION = "Expiration";
 const char* StsCredentialsProviderImpl::EXPIRATION_DATE_TIME_FORMAT = "%Y-%m-%d%ET%H:%H:%S%Ez";
-
 
 ROCKETMQ_NAMESPACE_END
