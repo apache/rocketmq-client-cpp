@@ -108,8 +108,7 @@ std::string ProducerImpl::wrapSendMessageRequest(const MQMessage& message, SendM
   std::string message_id = UniqueIdGenerator::instance().next();
   system_attribute->set_message_id(message_id);
   system_attribute->set_partition_id(message_queue.getQueueId());
-
-  SPDLOG_DEBUG("SendMessageRequest: {}", request.DebugString());
+  SPDLOG_TRACE("SendMessageRequest: {}", request.DebugString());
   return message_id;
 }
 
