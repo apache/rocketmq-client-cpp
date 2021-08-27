@@ -167,16 +167,18 @@ int main(int argc, char* argv[]) {
   logger.setLevel(Level::Debug);
   logger.init();
 
+  const char* topic = "cpp_sdk_standard";
+  const char* tag = "TagA";
   DefaultMQProducer producer("TestGroup");
-  producer.setNamesrvAddr("11.165.223.199:9876");
+  producer.setNamesrvAddr("47.98.116.189:80");
   producer.compressBodyThreshold(256);
-  const char* arn = "MQ_INST_1973281269661160_BXmPlOA6";
+  const char* arn = "MQ_INST_1080056302921134_BXuIbML7";
   producer.setCredentialsProvider(std::make_shared<ConfigFileCredentialsProvider>());
   producer.arn(arn);
-  producer.setRegion("cn-hangzhou");
+  producer.setRegion("cn-hangzhou-pre");
   MQMessage message;
-  message.setTopic("yc001");
-  message.setTags("TagA");
+  message.setTopic(topic);
+  message.setTags(tag);
   message.setKey("Yuck! Why-plural?");
   message.setBody(randomString(body_size));
 
