@@ -17,6 +17,7 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_github_grpc_grpc//:grpc_secure",
         "@com_github_grpc_grpc//:grpc++",
+        "@com_github_progschj_ThreadPool//:ThreadPool",
         "@boringssl//:ssl",
         "//external:gtest",
     ],

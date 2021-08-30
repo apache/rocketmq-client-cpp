@@ -123,3 +123,15 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "thread_pool_test",
+    srcs = [
+        "ThreadPoolTest.cpp",
+    ],
+    deps = [
+        "//api:rocketmq_interface",
+        "@com_github_progschj_ThreadPool//:ThreadPool",
+        "@com_google_googletest//:gtest_main",        
+    ],
+)

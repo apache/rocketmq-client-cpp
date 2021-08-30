@@ -1,12 +1,5 @@
 #pragma once
 
-#include <atomic>
-#include <chrono>
-#include <functional>
-#include <future>
-#include <string>
-#include <vector>
-
 #include "Client.h"
 #include "ClientManager.h"
 #include "HeartbeatDataCallback.h"
@@ -17,6 +10,7 @@
 #include "RpcClientImpl.h"
 #include "Scheduler.h"
 #include "SendMessageContext.h"
+#include "ThreadPool.h"
 #include "TopAddressing.h"
 #include "TopicRouteChangeCallback.h"
 #include "TopicRouteData.h"
@@ -25,18 +19,15 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
-#include "src/cpp/server/thread_pool_interface.h"
-
-#ifdef ENABLE_TRACING
-#include "opentelemetry/exporters/otlp/otlp_grpc_exporter.h"
-#include "opentelemetry/sdk/trace/batch_span_processor.h"
-#include "opentelemetry/sdk/trace/tracer_provider.h"
-#include "opentelemetry/trace/provider.h"
-#endif
-
 #include "rocketmq/AsyncCallback.h"
 #include "rocketmq/CommunicationMode.h"
 #include "rocketmq/State.h"
+#include <atomic>
+#include <chrono>
+#include <functional>
+#include <future>
+#include <string>
+#include <vector>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -234,7 +225,7 @@ private:
   std::uintptr_t stats_handle_{0};
 
   std::shared_ptr<CompletionQueue> completion_queue_;
-  std::unique_ptr<grpc::ThreadPoolInterface> callback_thread_pool_;
+  std::unique_ptr<ThreadPool> callback_thread_pool_;
 
   std::thread completion_queue_thread_;
 

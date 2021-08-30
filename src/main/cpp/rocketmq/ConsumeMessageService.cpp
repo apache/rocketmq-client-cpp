@@ -1,13 +1,13 @@
 #include "ConsumeMessageService.h"
-#include "PushConsumer.h"
 #include "LoggerImpl.h"
+#include "PushConsumer.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 ConsumeMessageService::ConsumeMessageService(std::weak_ptr<PushConsumer> consumer, int thread_count,
                                              MessageListener* message_listener)
     : state_(State::CREATED), thread_count_(thread_count),
-      pool_(absl::make_unique<grpc::DynamicThreadPool>(thread_count_)), consumer_(std::move(consumer)),
+      pool_(absl::make_unique<ThreadPool>(thread_count_)), consumer_(std::move(consumer)),
       message_listener_(message_listener) {}
 
 void ConsumeMessageService::start() {

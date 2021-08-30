@@ -6,12 +6,12 @@
 #include "OtlpExporter.h"
 #include "rocketmq/MQMessageExt.h"
 #include "rocketmq/State.h"
+#include <apache/rocketmq/v1/definition.pb.h>
 #include <chrono>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class ClientImpl : virtual public Client,
-                   virtual public ClientConfigImpl {
+class ClientImpl : virtual public Client, virtual public ClientConfigImpl {
 public:
   explicit ClientImpl(std::string group_name);
 
@@ -103,6 +103,9 @@ protected:
     resource_bundle.arn = arn_;
     return resource_bundle;
   }
+
+protected:
+  void setAccessPoint(rmq::Endpoints* endpoints) LOCKS_EXCLUDED(name_server_list_mtx_);
 
 private:
   /**

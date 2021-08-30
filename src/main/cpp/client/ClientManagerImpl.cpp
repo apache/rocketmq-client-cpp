@@ -24,7 +24,8 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 ClientManagerImpl::ClientManagerImpl(std::string arn)
     : arn_(std::move(arn)), state_(State::CREATED), completion_queue_(std::make_shared<CompletionQueue>()),
-      callback_thread_pool_(grpc::CreateDefaultThreadPool()), latency_histogram_("Message-Latency", 11) {
+      callback_thread_pool_(absl::make_unique<ThreadPool>(std::thread::hardware_concurrency())),
+      latency_histogram_("Message-Latency", 11) {
   spdlog::set_level(spdlog::level::trace);
   assignLabels(latency_histogram_);
   server_authorization_check_config_ = std::make_shared<grpc::experimental::TlsServerAuthorizationCheckConfig>(
@@ -296,7 +297,7 @@ void ClientManagerImpl::pollCompletionQueue() {
         SPDLOG_WARN("CompletionQueue#Next assigned ok false, indicating the call is dead");
       }
       auto callback = [invocation_context, ok]() { invocation_context->onCompletion(ok); };
-      callback_thread_pool_->Add(callback);
+      callback_thread_pool_->enqueue(callback);
     }
     SPDLOG_INFO("CompletionQueue is fully drained and shut down");
   }
@@ -397,12 +398,11 @@ bool ClientManagerImpl::send(const std::string& target_host, const Metadata& met
   return true;
 }
 
-
 /**
  * @brief Create a gRPC channel to target host.
- * 
- * @param target_host 
- * @return std::shared_ptr<grpc::Channel> 
+ *
+ * @param target_host
+ * @return std::shared_ptr<grpc::Channel>
  */
 std::shared_ptr<grpc::Channel> ClientManagerImpl::createChannel(const std::string& target_host) {
   std::vector<std::unique_ptr<grpc::experimental::ClientInterceptorFactoryInterface>> interceptor_factories;
@@ -411,7 +411,6 @@ std::shared_ptr<grpc::Channel> ClientManagerImpl::createChannel(const std::strin
       target_host, channel_credential_, channel_arguments_, std::move(interceptor_factories));
   return channel;
 }
-
 
 RpcClientSharedPtr ClientManagerImpl::getRpcClient(const std::string& target_host, bool need_heartbeat) {
   std::shared_ptr<RpcClient> client;
@@ -663,11 +662,10 @@ void ClientManagerImpl::processPopResult(const grpc::ClientContext& client_conte
   if (ReceiveMessageStatus::OK == status) {
     for (auto& item : response.messages()) {
       MQMessageExt message_ext;
+      MessageAccessor::setTargetEndpoint(message_ext, target_host);
       if (wrapMessage(item, message_ext)) {
         msg_found_list.emplace_back(message_ext);
-        MessageAccessor::setTargetEndpoint(message_ext, target_host);
       } else {
-
         // TODO: NACK
       }
     }

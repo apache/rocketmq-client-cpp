@@ -2,6 +2,7 @@
 #include "ClientManagerFactory.h"
 #include "ClientManagerMock.h"
 #include "InvocationContext.h"
+#include "MessageAccessor.h"
 #include "grpc/grpc.h"
 #include "rocketmq/MQMessageExt.h"
 #include "rocketmq/RocketMQ.h"
@@ -33,6 +34,7 @@ protected:
   int delay_level_{1};
   std::shared_ptr<testing::NiceMock<ClientManagerMock>> client_manager_;
   std::shared_ptr<PushConsumerImpl> push_consumer_;
+  const std::string target_endpoint_{"localhost:10911"};
 };
 
 TEST_F(PushConsumerImplTest, testAck) {
@@ -61,6 +63,7 @@ TEST_F(PushConsumerImplTest, testAck) {
   message.setTags(tag_);
   message.setKey(key_);
   message.setDelayTimeLevel(delay_level_);
+  MessageAccessor::setTargetEndpoint(message, target_endpoint_);
 
   push_consumer_->ack(message, callback);
 
@@ -100,9 +103,8 @@ TEST_F(PushConsumerImplTest, testNack) {
   message.setTags(tag_);
   message.setKey(key_);
   message.setDelayTimeLevel(delay_level_);
-
+  MessageAccessor::setTargetEndpoint(message, target_endpoint_);
   push_consumer_->nack(message, callback);
-
   {
     absl::MutexLock lk(&mtx);
     if (!completed) {

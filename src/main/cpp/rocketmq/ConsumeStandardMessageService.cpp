@@ -83,7 +83,7 @@ void ConsumeStandardMessageService::submitConsumeTask(const ProcessQueueWeakPtr&
     std::function<void(void)> consume_task =
         std::bind(&ConsumeStandardMessageService::consumeTask, this, process_queue_ptr, messages);
     SPDLOG_DEBUG("Submit consumer task to thread pool with message-batch-size={}", messages.size());
-    pool_->Add(consume_task);
+    pool_->enqueue(consume_task);
   }
 }
 

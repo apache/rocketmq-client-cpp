@@ -5,8 +5,10 @@
 #include "MessageAccessor.h"
 #include "MixAll.h"
 #include "ProcessQueueImpl.h"
+#include "RpcClient.h"
 #include "Signature.h"
 #include "rocketmq/MQClientException.h"
+#include <cassert>
 #include <chrono>
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -202,7 +204,9 @@ void PushConsumerImpl::queryAssignment(const std::string& topic,
     }
 
     QueryAssignmentRequest request;
+    setAccessPoint(request.mutable_endpoints());
     wrapQueryAssignmentRequest(topic, group_name_, clientId(), MixAll::DEFAULT_LOAD_BALANCER_STRATEGY_NAME_, request);
+    SPDLOG_DEBUG("QueryAssignmentRequest: {}", request.DebugString());
 
     absl::flat_hash_map<std::string, std::string> metadata;
     Signature::sign(this, metadata);
@@ -370,6 +374,7 @@ std::shared_ptr<ConsumeMessageService> PushConsumerImpl::getConsumeMessageServic
 
 void PushConsumerImpl::ack(const MQMessageExt& msg, const std::function<void(bool)>& callback) {
   const std::string& target_host = MessageAccessor::targetEndpoint(msg);
+  assert(!target_host.empty());
   SPDLOG_DEBUG("Prepare to send ack to broker. BrokerAddress={}, topic={}, queueId={}, msgId={}", target_host,
                msg.getTopic(), msg.getQueueId(), msg.getMsgId());
   AckMessageRequest request;

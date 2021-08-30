@@ -6,10 +6,10 @@
 
 #include "ProcessQueue.h"
 #include "RateLimiter.h"
+#include "ThreadPool.h"
 #include "absl/container/flat_hash_map.h"
 #include "rocketmq/MessageListener.h"
 #include "rocketmq/State.h"
-#include "src/cpp/server/dynamic_thread_pool.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -69,7 +69,7 @@ protected:
   std::atomic<State> state_;
 
   int thread_count_;
-  std::unique_ptr<grpc::ThreadPoolInterface> pool_;
+  std::unique_ptr<ThreadPool> pool_;
   std::weak_ptr<PushConsumer> consumer_;
 
   absl::Mutex dispatch_mtx_;

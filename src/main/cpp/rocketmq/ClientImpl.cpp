@@ -216,6 +216,39 @@ bool ClientImpl::selectNameServer(std::string& selected, bool change) {
   return true;
 }
 
+void ClientImpl::setAccessPoint(rmq::Endpoints* endpoints) {
+  std::vector<std::pair<std::string, std::uint16_t>> pairs;
+  {
+    absl::MutexLock lk(&name_server_list_mtx_);
+    for (const auto& name_server_item : name_server_list_) {
+      std::string::size_type pos = name_server_item.rfind(':');
+      if (std::string::npos == pos) {
+        continue;
+      }
+      std::string host(name_server_item.substr(0, pos));
+      std::string port(name_server_item.substr(pos + 1));
+      pairs.emplace_back(std::make_pair(host, std::stoi(port)));
+    }
+  }
+
+  if (!pairs.empty()) {
+    for (const auto& host_port : pairs) {
+      auto address = new rmq::Address();
+      address->set_port(host_port.second);
+      address->set_host(host_port.first);
+      endpoints->mutable_addresses()->AddAllocated(address);
+    }
+
+    if (MixAll::isIPv4(pairs.begin()->first)) {
+      endpoints->set_scheme(rmq::AddressScheme::IPv4);
+    } else if (absl::StrContains(pairs.begin()->first, ':')) {
+      endpoints->set_scheme(rmq::AddressScheme::IPv6);
+    } else {
+      endpoints->set_scheme(rmq::AddressScheme::DOMAIN_NAME);
+    }
+  }
+}
+
 void ClientImpl::fetchRouteFor(const std::string& topic, const std::function<void(const TopicRouteDataPtr&)>& cb) {
   std::string name_server;
   if (!selectNameServer(name_server)) {
@@ -241,38 +274,8 @@ void ClientImpl::fetchRouteFor(const std::string& topic, const std::function<voi
   QueryRouteRequest request;
   request.mutable_topic()->set_arn(arn_);
   request.mutable_topic()->set_name(topic);
-  auto endpoints = request.mutable_endpoints()->mutable_addresses();
-  std::vector<std::pair<std::string, std::uint16_t>> pairs;
-  {
-    absl::MutexLock lk(&name_server_list_mtx_);
-    for (const auto& name_server_item : name_server_list_) {
-      std::string::size_type pos = name_server_item.rfind(":");
-      if (std::string::npos == pos) {
-        continue;
-      }
-      std::string host(name_server_item.substr(0, pos));
-      std::string port(name_server_item.substr(pos + 1));
-      pairs.emplace_back(std::make_pair(host, std::stoi(port)));
-    }
-  }
-
-  if (!pairs.empty()) {
-    for (const auto& host_port : pairs) {
-      auto address = new rmq::Address();
-      address->set_port(host_port.second);
-      address->set_host(host_port.first);
-      endpoints->AddAllocated(address);
-    }
-
-    if (MixAll::isIPv4(pairs.begin()->first)) {
-      request.mutable_endpoints()->set_scheme(rmq::AddressScheme::IPv4);
-    } else if (absl::StrContains(pairs.begin()->first, ':')) {
-      request.mutable_endpoints()->set_scheme(rmq::AddressScheme::IPv6);
-    } else {
-      request.mutable_endpoints()->set_scheme(rmq::AddressScheme::DOMAIN_NAME);
-    }
-  }
-
+  auto endpoints = request.mutable_endpoints();
+  setAccessPoint(endpoints);
   absl::flat_hash_map<std::string, std::string> metadata;
   Signature::sign(this, metadata);
   client_manager_->resolveRoute(name_server, metadata, request, absl::ToChronoMilliseconds(io_timeout_), callback);
