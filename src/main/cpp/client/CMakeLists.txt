@@ -23,6 +23,7 @@ target_link_libraries(client_obj
             crypto
             scheduler_library
             ssl
+            ThreadPool
         PRIVATE
             gtest)
 if (ENABLE_TRACING)
@@ -48,7 +49,8 @@ target_link_libraries(client_library
             crypto
             mq_proto_library
             scheduler_library
-            ssl)
+            ssl
+            ThreadPool)
 if (ENABLE_TRACING)
     target_link_libraries(client_library
         PUBLIC

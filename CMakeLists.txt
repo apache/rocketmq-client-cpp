@@ -28,12 +28,6 @@ FetchContent_Declare(
 )
 
 FetchContent_Declare(
-        uv
-        GIT_REPOSITORY https://github.com/libuv/libuv.git
-        GIT_TAG        v1.34.0
-)
-
-FetchContent_Declare(
         fmt
         GIT_REPOSITORY https://github.com/fmtlib/fmt.git
         GIT_TAG        7.0.2
@@ -51,6 +45,12 @@ FetchContent_Declare(
         GIT_TAG v1.0.0-rc4
 )
 
+FetchContent_Declare(
+        ThreadPool
+        GIT_REPOSITORY https://github.com/lizhanhui/ThreadPool.git
+        GIT_TAG v1.1
+)
+
 set(FETCHCONTENT_QUIET OFF)
 option(INSTALL_GTEST OFF)
 set(BUILD_TESTING OFF)
@@ -60,7 +60,7 @@ if (BUILD_TESTS)
     FetchContent_MakeAvailable(googletest)
 endif ()
 
-FetchContent_MakeAvailable(fmt gRPC spdlog ghc opentelemetry)
+FetchContent_MakeAvailable(fmt gRPC spdlog ghc ThreadPool opentelemetry)
 
 option(ENABLE_TRACING OFF)
 if (ENABLE_TRACING)
