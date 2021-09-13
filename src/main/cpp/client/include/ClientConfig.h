@@ -15,7 +15,7 @@ public:
 
   virtual const std::string& serviceName() const = 0;
 
-  virtual const std::string& arn() const = 0;
+  virtual const std::string& resourceNamespace() const = 0;
 
   virtual CredentialsProviderPtr credentialsProvider() = 0;
 

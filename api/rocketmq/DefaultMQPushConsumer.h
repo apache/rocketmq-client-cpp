@@ -10,8 +10,8 @@
 #include "Logger.h"
 #include "MQMessageQueue.h"
 #include "MessageListener.h"
-#include "rocketmq/MessageModel.h"
 #include "rocketmq/Executor.h"
+#include "rocketmq/MessageModel.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -80,9 +80,9 @@ public:
 
   /**
    * Set abstract-resource-namespace, in which canonical name of topic, group remains unique.
-   * @param arn Abstract resource namespace.
+   * @param resource_namespace Abstract resource namespace.
    */
-  void setArn(const char *arn);
+  void setResourceNamespace(const char* resource_namespace);
 
   void setCredentialsProvider(CredentialsProviderPtr credentials_provider);
 

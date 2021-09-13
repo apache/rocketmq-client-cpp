@@ -10,7 +10,4 @@ cc_test(
         "//src/main/cpp/log:log_library",
         "@com_google_googletest//:gtest_main",
     ],
-    defines = [
-        "BAZEL",
-    ],
 )

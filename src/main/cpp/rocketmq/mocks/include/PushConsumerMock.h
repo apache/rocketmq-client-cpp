@@ -27,7 +27,9 @@ public:
 
   MOCK_METHOD(std::shared_ptr<ConsumeMessageService>, getConsumeMessageService, (), (override));
 
-  MOCK_METHOD(bool, receiveMessage, (const MQMessageQueue&, const FilterExpression&, ConsumeMessageType), (override));
+  MOCK_METHOD(bool, receiveMessage, (const MQMessageQueue&, const FilterExpression&), (override));
+
+  MOCK_METHOD(MessageListener*, messageListener, (), (override));
 };
 
 ROCKETMQ_NAMESPACE_END

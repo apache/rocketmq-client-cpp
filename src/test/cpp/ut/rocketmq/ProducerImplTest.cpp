@@ -19,15 +19,15 @@ public:
   void SetUp() override {
     grpc_init();
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
-    ClientManagerFactory::getInstance().addClientManager(arn_, client_manager_);
+    ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
     producer_ = std::make_shared<ProducerImpl>(group_);
-    producer_->arn(arn_);
+    producer_->resourceNamespace(resource_namespace_);
     producer_->setNameServerList(name_server_list_);
     producer_->setCredentialsProvider(credentials_provider_);
 
     {
       std::vector<Partition> partitions;
-      Topic topic(arn_, topic_);
+      Topic topic(resource_namespace_, topic_);
       std::vector<Address> broker_addresses{Address(broker_host_, broker_port_)};
       ServiceAddress service_address(AddressScheme::IPv4, broker_addresses);
       Broker broker(broker_name_, broker_id_, service_address);
@@ -44,7 +44,7 @@ protected:
   std::shared_ptr<testing::NiceMock<ClientManagerMock>> client_manager_;
   std::shared_ptr<ProducerImpl> producer_;
   std::vector<std::string> name_server_list_{"10.0.0.1:9876"};
-  std::string arn_{"arn:mq://test"};
+  std::string resource_namespace_{"mq://test"};
   std::string group_{"CID_test"};
   std::string topic_{"Topic0"};
   int queue_id_{1};

@@ -37,7 +37,7 @@ public:
     ON_CALL(*process_queue_, getConsumer).WillByDefault(testing::Return(consumer));
     ON_CALL(*consumer_, customExecutor).WillByDefault(testing::ReturnRef(executor_));
     ON_CALL(*consumer_, credentialsProvider).WillByDefault(testing::Return(credentials_provider_));
-    ON_CALL(*consumer_, arn).WillByDefault(testing::ReturnRef(arn_));
+    ON_CALL(*consumer_, resourceNamespace).WillByDefault(testing::ReturnRef(resource_namespace_));
     ON_CALL(*consumer_, getGroupName).WillByDefault(testing::ReturnRef(group_name_));
   }
 
@@ -48,7 +48,7 @@ protected:
   std::string topic_{"TestTopic"};
   std::string tag_{"TagA"};
   std::string body_{"Body Content"};
-  std::string arn_{"arn:mq://test"};
+  std::string resource_namespace_{"mq://test"};
   std::string group_name_{"CID_Test"};
   uint32_t consume_batch_size_;
   std::shared_ptr<testing::NiceMock<PushConsumerMock>> consumer_;

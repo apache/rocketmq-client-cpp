@@ -2,10 +2,12 @@
 
 #include "Client.h"
 #include "ReceiveMessageCallback.h"
+#include "RpcClient.h"
 #include "Scheduler.h"
 #include "TopAddressing.h"
 #include "TopicRouteData.h"
 #include "rocketmq/MQMessageExt.h"
+#include <chrono>
 #include <memory>
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -82,6 +84,10 @@ public:
   virtual void pullMessage(const std::string& target_host, const Metadata& metadata, const PullMessageRequest& request,
                            std::chrono::milliseconds timeout,
                            const std::function<void(const InvocationContext<PullMessageResponse>*)>& cb) = 0;
+
+  virtual bool notifyClientTermination(const std::string& target_host, const Metadata& metadata,
+                                       const NotifyClientTerminationRequest& request,
+                                       std::chrono::milliseconds timeout) = 0;
 };
 
 using ClientManagerPtr = std::shared_ptr<ClientManager>;

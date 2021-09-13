@@ -23,6 +23,8 @@ void AsyncReceiveMessageCallback::onSuccess(ReceiveMessageResult& result) {
     return;
   }
 
+  auto receive_message_action = process_queue_shared_ptr->getConsumer().lock()->receiveMessageAction();
+
   switch (result.status()) {
   case ReceiveMessageStatus::OK:
     SPDLOG_DEBUG("Receive messages from broker[host={}] returns with status=FOUND, msgListSize={}, queue={}",
@@ -30,13 +32,13 @@ void AsyncReceiveMessageCallback::onSuccess(ReceiveMessageResult& result) {
     process_queue_shared_ptr->cacheMessages(result.getMsgFoundList());
     impl->getConsumeMessageService()->signalDispatcher();
 
-    if (process_queue_shared_ptr->consumeType() == ConsumeMessageType::PULL) {
+    if (ReceiveMessageAction::PULL == receive_message_action) {
       process_queue_shared_ptr->nextOffset(result.next_offset_);
     }
     checkThrottleThenReceive();
     break;
   case ReceiveMessageStatus::DATA_CORRUPTED:
-    if (process_queue_shared_ptr->consumeType() == ConsumeMessageType::POP) {
+    if (ReceiveMessageAction::POLLING == receive_message_action) {
       process_queue_shared_ptr->cacheMessages(result.messages_);
       impl->getConsumeMessageService()->signalDispatcher();
     }
@@ -44,7 +46,7 @@ void AsyncReceiveMessageCallback::onSuccess(ReceiveMessageResult& result) {
     break;
 
   case ReceiveMessageStatus::OUT_OF_RANGE:
-    assert(ConsumeMessageType::PULL == process_queue_shared_ptr->consumeType());
+    assert(ReceiveMessageAction::PULL == receive_message_action);
     process_queue_shared_ptr->nextOffset(result.next_offset_);
     checkThrottleThenReceive();
     break;
@@ -138,8 +140,7 @@ void AsyncReceiveMessageCallback::receiveMessageImmediately() {
                 process_queue_shared_ptr->simpleName());
     return;
   }
-  impl->receiveMessage(process_queue_shared_ptr->getMQMessageQueue(), process_queue_shared_ptr->getFilterExpression(),
-                       process_queue_shared_ptr->consumeType());
+  impl->receiveMessage(process_queue_shared_ptr->getMQMessageQueue(), process_queue_shared_ptr->getFilterExpression());
 }
 
 ROCKETMQ_NAMESPACE_END

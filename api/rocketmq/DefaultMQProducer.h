@@ -106,7 +106,7 @@ public:
   uint32_t compressBodyThreshold() const;
   void compressBodyThreshold(uint32_t threshold);
 
-  void arn(const std::string& arn);
+  void setResourceNamespace(const std::string& resource_namespace);
 
   void setCredentialsProvider(CredentialsProviderPtr credentials_provider);
 

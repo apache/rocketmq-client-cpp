@@ -18,7 +18,7 @@ public:
   void SetUp() override {
     grpc_init();
     name_server_list_.emplace_back(name_server_address_);
-    client_instance_ = std::make_shared<ClientManagerImpl>(arn_);
+    client_instance_ = std::make_shared<ClientManagerImpl>(resource_namespace_);
     rpc_client_ns_ = std::make_shared<testing::NiceMock<RpcClientMock>>();
     ON_CALL(*rpc_client_ns_, needHeartbeat()).WillByDefault(testing::Return(false));
     ON_CALL(*rpc_client_ns_, ok()).WillByDefault(testing::Invoke([this]() { return client_ok_; }));
@@ -26,7 +26,7 @@ public:
         .WillByDefault(testing::Invoke(
             std::bind(&MQClientTest::mockQueryRoute, this, std::placeholders::_1, std::placeholders::_2)));
     client_instance_->addRpcClient(name_server_address_, rpc_client_ns_);
-    ClientManagerFactory::getInstance().addClientManager(arn_, client_instance_);
+    ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_instance_);
   }
 
   void TearDown() override {
@@ -45,7 +45,7 @@ protected:
   std::string name_server_address_{"ipv4:127.0.0.1:9876"};
   std::string group_name_{"CID_Test"};
   std::string topic_{"Topic_Test"};
-  std::string arn_{"arn:mq::test"};
+  std::string resource_namespace_{"mq://test"};
   google::rpc::Code ok_{google::rpc::Code::OK};
   bool client_ok_{true};
   std::vector<std::string> name_server_list_;
@@ -60,7 +60,7 @@ private:
       partition->set_id(i % avg_partition_per_host_);
       partition->set_permission(rmq::Permission::READ_WRITE);
       partition->mutable_topic()->set_name(request.topic().name());
-      partition->mutable_topic()->set_arn(request.topic().arn());
+      partition->mutable_topic()->set_resource_namespace(request.topic().resource_namespace());
       std::string broker_name{"broker-"};
       broker_name.push_back('a' + i / avg_partition_per_host_);
       partition->mutable_broker()->set_name(broker_name);

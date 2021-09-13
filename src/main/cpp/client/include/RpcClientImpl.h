@@ -61,6 +61,9 @@ public:
       const ForwardMessageToDeadLetterQueueRequest& request,
       InvocationContext<ForwardMessageToDeadLetterQueueResponse>* invocation_context) override;
 
+  grpc::Status notifyClientTermination(grpc::ClientContext* context, const NotifyClientTerminationRequest& request,
+                                       NotifyClientTerminationResponse* response) override;
+
   bool needHeartbeat() override;
 
   void needHeartbeat(bool need_heartbeat) override;

@@ -25,7 +25,7 @@ public:
   void SetUp() override {
     grpc_init();
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
-    ClientManagerFactory::getInstance().addClientManager(arn_, client_manager_);
+    ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
     ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler_));
     client_ = std::make_shared<TestClientImpl>(group_);
   }
@@ -33,7 +33,7 @@ public:
   void TearDown() override { grpc_shutdown(); }
 
 protected:
-  std::string arn_{"arn:mq://test"};
+  std::string resource_namespace_{"mq://test"};
   std::string group_{"Group-0"};
   std::shared_ptr<testing::NiceMock<ClientManagerMock>> client_manager_;
   Scheduler scheduler_;
@@ -73,7 +73,7 @@ TEST_F(ClientImplTest, testBasic) {
   top_addressing_.injectHttpClient(std::move(http_client));
 
   ON_CALL(*client_manager_, topAddressing).WillByDefault(testing::ReturnRef(top_addressing_));
-  client_->arn(arn_);
+  client_->resourceNamespace(resource_namespace_);
   client_->start();
   {
     absl::MutexLock lk(&mtx);

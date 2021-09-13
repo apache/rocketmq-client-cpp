@@ -10,7 +10,7 @@ public:
   ~ClientConfigMock() override = default;
   MOCK_METHOD(const std::string&, region, (), (const override));
   MOCK_METHOD(const std::string&, serviceName, (), (const override));
-  MOCK_METHOD(const std::string&, arn, (), (const overide));
+  MOCK_METHOD(const std::string&, resourceNamespace, (), (const overide));
   MOCK_METHOD(CredentialsProviderPtr, credentialsProvider, (), (override));
   MOCK_METHOD(const std::string&, tenantId, (), (const override));
   MOCK_METHOD(absl::Duration, getIoTimeout, (), (const override));

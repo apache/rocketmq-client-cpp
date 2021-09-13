@@ -5,14 +5,6 @@ target_link_libraries(client_instance_test
             gtest_main)
 add_test(it_client_instance client_instance_test)
 
-add_executable(rpc_client_integration_test RpcClientIntegrationTest.cpp)
-target_link_libraries(rpc_client_integration_test
-        PRIVATE
-            client_library
-            rpc_client_mock
-            gtest_main)
-add_test(it_rpc_client rpc_client_integration_test)
-
 add_executable(rpc_client_test RpcClientTest.cpp)
 target_link_libraries(rpc_client_test
         PRIVATE

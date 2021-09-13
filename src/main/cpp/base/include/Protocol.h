@@ -43,7 +43,7 @@ struct Resource {
   /**
    * Abstract resource namespace
    */
-  std::string arn;
+  std::string resource_namespace;
 
   /**
    * Resource name, which remains unique within given abstract resource namespace.

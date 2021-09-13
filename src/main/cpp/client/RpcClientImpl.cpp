@@ -123,6 +123,12 @@ void RpcClientImpl::asyncMultiplexingCall(const MultiplexingRequest& request,
                                               invocation_context);
 }
 
+grpc::Status RpcClientImpl::notifyClientTermination(grpc::ClientContext* context,
+                                                    const NotifyClientTerminationRequest& request,
+                                                    NotifyClientTerminationResponse* response) {
+  return stub_->NotifyClientTermination(context, request, response);
+}
+
 void RpcClientImpl::asyncQueryOffset(const QueryOffsetRequest& request,
                                      InvocationContext<QueryOffsetResponse>* invocation_context) {
   assert(invocation_context);

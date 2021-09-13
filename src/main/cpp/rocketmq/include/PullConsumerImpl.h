@@ -8,6 +8,7 @@
 #include "ClientManagerImpl.h"
 #include "rocketmq/ConsumeType.h"
 #include "rocketmq/MQMessageQueue.h"
+#include "rocketmq/MessageModel.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -29,6 +30,8 @@ public:
 
 protected:
   std::shared_ptr<ClientImpl> self() override { return shared_from_this(); }
+
+  MessageModel message_model_{MessageModel::CLUSTERING};
 };
 
 ROCKETMQ_NAMESPACE_END

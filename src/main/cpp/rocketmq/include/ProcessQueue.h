@@ -40,8 +40,6 @@ public:
 
   virtual void release(uint64_t body_size, int64_t offset) = 0;
 
-  virtual ConsumeMessageType consumeType() const = 0;
-
   virtual void cacheMessages(const std::vector<MQMessageExt>& messages) = 0;
 
   virtual bool shouldThrottle() const = 0;

@@ -3,7 +3,7 @@
 ROCKETMQ_NAMESPACE_BEGIN
 
 const char* MetadataConstants::TENANT_ID_KEY = "x-mq-tenant-id";
-const char* MetadataConstants::ARN_KEY = "x-mq-arn";
+const char* MetadataConstants::NAMESPACE_KEY = "x-mq-namespace";
 const char* MetadataConstants::AUTHORIZATION = "authorization";
 const char* MetadataConstants::STS_SESSION_TOKEN = "x-mq-session-token";
 const char* MetadataConstants::DATE_TIME_KEY = "x-mq-date-time";

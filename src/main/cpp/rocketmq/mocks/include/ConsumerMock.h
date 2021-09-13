@@ -14,6 +14,8 @@ public:
   MOCK_METHOD(uint64_t, maxCachedMessageMemory, (), (const override));
 
   MOCK_METHOD(int32_t, receiveBatchSize, (), (const override));
+
+  MOCK_METHOD(ReceiveMessageAction, receiveMessageAction, (), (const override));
 };
 
 ROCKETMQ_NAMESPACE_END

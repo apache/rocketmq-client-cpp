@@ -63,7 +63,7 @@ void ProducerImpl::validate(const MQMessage& message) {}
 
 std::string ProducerImpl::wrapSendMessageRequest(const MQMessage& message, SendMessageRequest& request,
                                                  const MQMessageQueue& message_queue) {
-  request.mutable_message()->mutable_topic()->set_arn(arn_);
+  request.mutable_message()->mutable_topic()->set_resource_namespace(resource_namespace_);
   request.mutable_message()->mutable_topic()->set_name(message.getTopic());
 
   auto system_attribute = request.mutable_message()->mutable_system_attribute();
@@ -76,7 +76,7 @@ std::string ProducerImpl::wrapSendMessageRequest(const MQMessage& message, SendM
 
   system_attribute->set_born_host(UtilAll::hostname());
 
-  system_attribute->mutable_producer_group()->set_arn(arn_);
+  system_attribute->mutable_producer_group()->set_resource_namespace(resource_namespace_);
   system_attribute->mutable_producer_group()->set_name(group_name_);
 
   // Set system flag if the message is transactional
@@ -298,7 +298,7 @@ void ProducerImpl::sendImpl(RetrySendCallback* callback) {
     }
 
     span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ACCESS_KEY, credentialsProvider()->getCredentials().accessKey());
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ARN, arn());
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ARN, resourceNamespace());
     span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TOPIC, message.getTopic());
     span.AddAttribute(MixAll::SPAN_ATTRIBUTE_MESSAGE_ID, message.getMsgId());
     span.AddAttribute(MixAll::SPAN_ATTRIBUTE_GROUP, getGroupName());
@@ -375,7 +375,7 @@ bool ProducerImpl::endTransaction0(const std::string& target, const std::string&
   }
 
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ACCESS_KEY, credentialsProvider()->getCredentials().accessKey());
-  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ARN, arn());
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ARN, resourceNamespace());
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_GROUP, getGroupName());
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_MESSAGE_ID, message_id);
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_HOST, UtilAll::hostname());
@@ -606,10 +606,9 @@ std::vector<MQMessageQueue> ProducerImpl::getTopicMessageQueueInfo(const std::st
 }
 
 void ProducerImpl::prepareHeartbeatData(HeartbeatRequest& request) {
-  rmq::HeartbeatEntry entry;
-  entry.mutable_producer_group()->mutable_group()->set_arn(arn_);
-  entry.mutable_producer_group()->mutable_group()->set_name(group_name_);
-  request.mutable_heartbeats()->Add(std::move(entry));
+  request.set_client_id(clientId());
+  request.mutable_producer_data()->mutable_group()->set_resource_namespace(resource_namespace_);
+  request.mutable_producer_data()->mutable_group()->set_name(group_name_);
 }
 
 void ProducerImpl::resolveOrphanedTransactionalMessage(const std::string& transaction_id, const MQMessageExt& message) {

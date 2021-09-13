@@ -20,9 +20,11 @@ public:
 
   ~ClientConfigImpl() override = default;
 
-  const std::string& arn() const override { return arn_; }
+  const std::string& resourceNamespace() const override { return resource_namespace_; }
 
-  void arn(absl::string_view arn) { arn_ = std::string(arn.data(), arn.length()); }
+  void resourceNamespace(absl::string_view resource_namespace) {
+    resource_namespace_ = std::string(resource_namespace.data(), resource_namespace.length());
+  }
 
   std::string clientId() const override;
 
@@ -72,9 +74,9 @@ protected:
   std::string region_;
 
   /**
-   * Abstract Resource Namespace, in which topic/group_name remain unique.
+   * RocketMQ instance namespace, in which topic, consumer group and any other abstract resources remain unique.
    */
-  std::string arn_;
+  std::string resource_namespace_;
 
   /**
    * Tenant identifier.

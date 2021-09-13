@@ -5,17 +5,17 @@
 #include "RpcClientImpl.h"
 #include "Signature.h"
 #include "TlsHelper.h"
-#include "UtilAll.h"
 #include "UniqueIdGenerator.h"
-#include "rocketmq/Logger.h"
+#include "UtilAll.h"
 #include "absl/container/flat_hash_set.h"
 #include "apache/rocketmq/v1/service.pb.h"
 #include "rocketmq/CredentialsProvider.h"
+#include "rocketmq/Logger.h"
 #include "spdlog/spdlog.h"
 #include "gtest/gtest.h"
-#include <iostream>
 #include <thread>
 #include <unordered_map>
+#include <iostream>
 
 using namespace testing;
 
@@ -47,7 +47,7 @@ protected:
   void SetUp() override {
     getLogger().setLevel(Level::Debug);
     client_config_.setCredentialsProvider(std::make_shared<ConfigFileCredentialsProvider>());
-    client_config_.arn(arn_);
+    client_config_.resourceNamespace(resource_namespace_);
     client_config_.region(region_id_);
     client_config_.tenantId(tenant_id_);
 
@@ -117,7 +117,7 @@ protected:
   }
 
   void fillSendMessageRequest(SendMessageRequest& send_message_request) {
-    send_message_request.mutable_message()->mutable_topic()->set_arn(arn_);
+    send_message_request.mutable_message()->mutable_topic()->set_resource_namespace(resource_namespace_);
     send_message_request.mutable_message()->mutable_topic()->set_name(topic_);
     std::unordered_map<std::string, std::string> props;
     props["key"] = "value";
@@ -149,25 +149,26 @@ protected:
   }
 
   void fillHeartbeatRequest(HeartbeatRequest& heartbeat_request) {
-    auto heartbeat_entry = new rmq::HeartbeatEntry;
-    heartbeat_entry->set_client_id("client_id_0");
-    heartbeat_entry->mutable_consumer_group()->mutable_group()->set_name(group_);
-    heartbeat_entry->mutable_consumer_group()->mutable_group()->set_arn(arn_);
+    heartbeat_request.set_client_id("client_id_0");
+    auto consumer_data = heartbeat_request.mutable_consumer_data();
+    consumer_data->mutable_group()->set_resource_namespace(resource_namespace_);
+    consumer_data->mutable_group()->set_name(topic_);
+
     auto subscription_entry = new rmq::SubscriptionEntry;
     subscription_entry->mutable_topic()->set_name(topic_);
-    subscription_entry->mutable_topic()->set_arn(arn_);
+    subscription_entry->mutable_topic()->set_resource_namespace(resource_namespace_);
     subscription_entry->mutable_expression()->set_type(rmq::FilterType::TAG);
     subscription_entry->mutable_expression()->set_expression("*");
-    heartbeat_entry->mutable_consumer_group()->mutable_subscriptions()->AddAllocated(subscription_entry);
-    heartbeat_request.mutable_heartbeats()->AddAllocated(heartbeat_entry);
+    consumer_data->mutable_subscriptions()->AddAllocated(subscription_entry);
+    heartbeat_request.set_fifo_flag(false);
   }
 
-  std::string name_server_target_{"11.165.223.199:9876"};
+  std::string name_server_target_{"47.98.116.189:80"};
   std::shared_ptr<grpc::CompletionQueue> completion_queue_;
   std::shared_ptr<grpc::Channel> name_server_channel_;
-  std::string topic_{"yc001"};
-  std::string group_{"GID_group003"};
-  std::string arn_{"MQ_INST_1973281269661160_BXmPlOA6"};
+  std::string topic_{"cpp_sdk_standard"};
+  std::string group_{"GID_cpp_sdk_standard"};
+  std::string resource_namespace_{"MQ_INST_1080056302921134_BXuIbML7"};
   std::string tenant_id_{"sample-tenant"};
   std::string region_id_{"cn-hangzhou"};
   std::string service_name_{"MQ"};
@@ -186,21 +187,22 @@ TEST_F(RpcClientTest, testRouteInfo) {
   RpcClientImpl client(completion_queue_, name_server_channel_);
   QueryRouteRequest request;
   request.mutable_topic()->set_name(topic_);
-  request.mutable_topic()->set_arn(arn_);
+  request.mutable_topic()->set_resource_namespace(resource_namespace_);
   auto invocation_context = new InvocationContext<QueryRouteResponse>();
   bool completed = false;
   absl::Mutex mtx;
   absl::CondVar cv;
   auto callback = [&](const InvocationContext<QueryRouteResponse>* invocation_context) {
     if (!invocation_context->status.ok()) {
-      std::cout << "code: " << invocation_context->status.error_code()
-                << ", message: " << invocation_context->status.error_message() << std::endl;
+      SPDLOG_ERROR("Status not OK");
     }
     ASSERT_TRUE(invocation_context->status.ok());
     EXPECT_TRUE(google::rpc::Code::OK == invocation_context->response.common().status().code());
     EXPECT_FALSE(invocation_context->response.partitions().empty());
-    absl::MutexLock lk(&mtx);
-    cv.SignalAll();
+    {
+      absl::MutexLock lk(&mtx);
+      cv.SignalAll();
+    }
   };
 
   invocation_context->callback = callback;
@@ -216,7 +218,7 @@ TEST_F(RpcClientTest, testRouteInfo) {
   }
 }
 
-TEST_F(RpcClientTest, testSendMessageAsync) {
+TEST_F(RpcClientTest, DISABLED_testSendMessageAsync) {
   SendMessageRequest request;
   fillSendMessageRequest(request);
   auto client = brokerRpcClient();
@@ -248,7 +250,7 @@ TEST_F(RpcClientTest, testSendMessageAsync) {
   }
 }
 
-TEST_F(RpcClientTest, testHeartbeat) {
+TEST_F(RpcClientTest, DISABLED_testHeartbeat) {
   auto client = brokerRpcClient();
   HeartbeatRequest heartbeat_request;
   HeartbeatResponse response;
@@ -280,12 +282,12 @@ TEST_F(RpcClientTest, testHeartbeat) {
   }
 }
 
-TEST_F(RpcClientTest, testQueryAssignment) {
+TEST_F(RpcClientTest, DISABLED_testQueryAssignment) {
   auto client = brokerRpcClient();
   QueryAssignmentRequest request;
   request.mutable_topic()->set_name(topic_);
-  request.mutable_topic()->set_arn(arn_);
-  request.mutable_group()->set_arn(arn_);
+  request.mutable_topic()->set_resource_namespace(resource_namespace_);
+  request.mutable_group()->set_resource_namespace(resource_namespace_);
   request.mutable_group()->set_name(group_);
   QueryAssignmentResponse response;
 
@@ -315,7 +317,7 @@ TEST_F(RpcClientTest, testQueryAssignment) {
   }
 }
 
-TEST_F(RpcClientTest, testHealthCheck) {
+TEST_F(RpcClientTest, DISABLED_testHealthCheck) {
   auto client = brokerRpcClient();
   HealthCheckRequest request;
   const std::string& client_host = UtilAll::hostname();

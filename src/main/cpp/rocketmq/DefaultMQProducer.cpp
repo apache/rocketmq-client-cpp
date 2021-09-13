@@ -97,7 +97,9 @@ uint32_t DefaultMQProducer::compressBodyThreshold() const { return impl_->compre
 
 void DefaultMQProducer::compressBodyThreshold(uint32_t threshold) { impl_->compressBodyThreshold(threshold); }
 
-void DefaultMQProducer::arn(const std::string& arn) { impl_->arn(arn); }
+void DefaultMQProducer::setResourceNamespace(const std::string& resource_namespace) {
+  impl_->resourceNamespace(resource_namespace);
+}
 
 void DefaultMQProducer::setCredentialsProvider(CredentialsProviderPtr credentials_provider) {
   impl_->setCredentialsProvider(std::move(credentials_provider));

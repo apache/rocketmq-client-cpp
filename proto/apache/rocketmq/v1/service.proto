@@ -55,7 +55,7 @@ message QueryAssignmentRequest {
   Resource topic = 1;
   Resource group = 2;
   string client_id = 3;
-  
+
   // Service access point
   Endpoints endpoints = 4;
 }
@@ -96,9 +96,7 @@ message AckMessageRequest {
   string message_id = 6;
 }
 
-message AckMessageResponse {
-  ResponseCommon common = 1;
-}
+message AckMessageResponse { ResponseCommon common = 1; }
 
 message NackMessageRequest {
   Resource group = 1;
@@ -108,13 +106,9 @@ message NackMessageRequest {
   string message_id = 5;
   int32 delivery_attempt = 6;
   int32 max_delivery_attempts = 7;
-  // to delete.
-  ConsumeModel consume_model = 8;
 }
 
-message NackMessageResponse {
-  ResponseCommon common = 1;
-}
+message NackMessageResponse { ResponseCommon common = 1; }
 
 message ForwardMessageToDeadLetterQueueRequest {
   Resource group = 1;
@@ -126,28 +120,28 @@ message ForwardMessageToDeadLetterQueueRequest {
   int32 max_delivery_attempts = 7;
 }
 
-message ForwardMessageToDeadLetterQueueResponse {
-  ResponseCommon common = 1;
-}
+message ForwardMessageToDeadLetterQueueResponse { ResponseCommon common = 1; }
 
 message HeartbeatRequest {
-  repeated HeartbeatEntry heartbeats = 1;
+  string client_id = 1;
+  oneof client_data {
+    ProducerData producer_data = 2;
+    ConsumerData consumer_data = 3;
+  }
+  bool fifo_flag = 4;
 }
 
-message HeartbeatResponse {
-  ResponseCommon common = 1;
-}
+message HeartbeatResponse { ResponseCommon common = 1; }
 
 message HealthCheckRequest {
-  string client_host = 1;
+  Resource group = 1;
+  string client_host = 2;
 }
 
-message HealthCheckResponse {
-  ResponseCommon common = 1;
-}
+message HealthCheckResponse { ResponseCommon common = 1; }
 
 message EndTransactionRequest {
-  Resource producer_group = 1;
+  Resource group = 1;
   string message_id = 2;
   string transaction_id = 3;
   enum TransactionResolution {
@@ -163,9 +157,7 @@ message EndTransactionRequest {
   string trace_context = 6;
 }
 
-message EndTransactionResponse {
-  ResponseCommon common = 1;
-}
+message EndTransactionResponse { ResponseCommon common = 1; }
 
 message QueryOffsetRequest {
   Partition partition = 1;
@@ -202,11 +194,9 @@ message UpdateOffsetRequest {
   int64 partition_offset = 3;
 }
 
-message UpdateOffsetResponse {
-  ResponseCommon common = 1;
-}
+message UpdateOffsetResponse { ResponseCommon common = 1; }
 
-message ClientResourceBundle {
+message GenericPollingRequest {
   string client_id = 1;
   repeated Resource topics = 2;
   oneof group {
@@ -215,17 +205,9 @@ message ClientResourceBundle {
   }
 }
 
-message GenericPollingRequest {
- ClientResourceBundle client_resource_bundle = 1;
-}
+message GenericPollingResponse { ResponseCommon common = 1; }
 
-message GenericPollingResponse {
-  ResponseCommon common = 1;
-}
-
-message PrintThreadStackRequest {
-  string mid = 1;
-}
+message PrintThreadStackRequest { string mid = 1; }
 
 message PrintThreadStackResponse {
   ResponseCommon common = 1;
@@ -235,8 +217,7 @@ message PrintThreadStackResponse {
 
 message VerifyMessageConsumptionRequest {
   string mid = 1;
-  Partition Partition = 2;
-  Message message = 3;
+  Message message = 2;
 }
 
 message VerifyMessageConsumptionResponse {
@@ -266,46 +247,44 @@ message MultiplexingResponse {
   }
 }
 
+message NotifyClientTerminationRequest {
+  Resource group = 1;
+  string client_id = 2;
+}
+
+message NotifyClientTerminationResponse { ResponseCommon common = 1; }
+
 service MessagingService {
-  rpc QueryRoute(QueryRouteRequest) returns (QueryRouteResponse) {
-  }
+  rpc QueryRoute(QueryRouteRequest) returns (QueryRouteResponse) {}
 
-  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse) {
-  }
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse) {}
 
-  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse) {
-  }
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse) {}
 
-  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse) {
-  }
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse) {}
 
-  rpc QueryAssignment(QueryAssignmentRequest) returns (QueryAssignmentResponse) {
-  }
+  rpc QueryAssignment(QueryAssignmentRequest)
+      returns (QueryAssignmentResponse) {}
 
-  rpc ReceiveMessage(ReceiveMessageRequest) returns (ReceiveMessageResponse) {
-  }
+  rpc ReceiveMessage(ReceiveMessageRequest) returns (ReceiveMessageResponse) {}
 
-  rpc AckMessage(AckMessageRequest) returns (AckMessageResponse) {
-  }
+  rpc AckMessage(AckMessageRequest) returns (AckMessageResponse) {}
 
-  rpc NackMessage(NackMessageRequest) returns (NackMessageResponse) {
-  }
+  rpc NackMessage(NackMessageRequest) returns (NackMessageResponse) {}
 
-  rpc ForwardMessageToDeadLetterQueue(ForwardMessageToDeadLetterQueueRequest) returns (ForwardMessageToDeadLetterQueueResponse) {
-  }
+  rpc ForwardMessageToDeadLetterQueue(ForwardMessageToDeadLetterQueueRequest)
+      returns (ForwardMessageToDeadLetterQueueResponse) {}
 
-  rpc EndTransaction(EndTransactionRequest) returns (EndTransactionResponse) {
-  }
+  rpc EndTransaction(EndTransactionRequest) returns (EndTransactionResponse) {}
 
-  rpc QueryOffset(QueryOffsetRequest) returns (QueryOffsetResponse) {
-  }
+  rpc QueryOffset(QueryOffsetRequest) returns (QueryOffsetResponse) {}
 
-  rpc PullMessage(PullMessageRequest) returns (PullMessageResponse) {
-  }
+  rpc PullMessage(PullMessageRequest) returns (PullMessageResponse) {}
 
-  rpc UpdateOffset(UpdateOffsetRequest) returns (UpdateOffsetResponse) {
-  }
+  rpc UpdateOffset(UpdateOffsetRequest) returns (UpdateOffsetResponse) {}
 
-  rpc MultiplexingCall(MultiplexingRequest) returns (MultiplexingResponse) {
-  }
+  rpc MultiplexingCall(MultiplexingRequest) returns (MultiplexingResponse) {}
+
+  rpc NotifyClientTermination(NotifyClientTerminationRequest)
+      returns (NotifyClientTerminationResponse) {}
 }

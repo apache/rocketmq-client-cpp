@@ -9,6 +9,7 @@
 #include "MixAll.h"
 #include "Partition.h"
 #include "Protocol.h"
+#include "RpcClient.h"
 #include "RpcClientImpl.h"
 #include "TlsHelper.h"
 #include "UtilAll.h"
@@ -16,14 +17,16 @@
 #include "rocketmq/ErrorCode.h"
 #include "rocketmq/MQMessageExt.h"
 #include <chrono>
+#include <google/rpc/code.pb.h>
 #include <memory>
 #include <utility>
 #include <vector>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-ClientManagerImpl::ClientManagerImpl(std::string arn)
-    : arn_(std::move(arn)), state_(State::CREATED), completion_queue_(std::make_shared<CompletionQueue>()),
+ClientManagerImpl::ClientManagerImpl(std::string resource_namespace)
+    : resource_namespace_(std::move(resource_namespace)), state_(State::CREATED),
+      completion_queue_(std::make_shared<CompletionQueue>()),
       callback_thread_pool_(absl::make_unique<ThreadPool>(std::thread::hardware_concurrency())),
       latency_histogram_("Message-Latency", 11) {
   spdlog::set_level(spdlog::level::trace);
@@ -44,12 +47,12 @@ ClientManagerImpl::ClientManagerImpl(std::string arn)
   tls_channel_credential_options_.watch_root_certs();
   tls_channel_credential_options_.watch_identity_key_cert_pairs();
   channel_credential_ = grpc::experimental::TlsCredentials(tls_channel_credential_options_);
-  SPDLOG_INFO("ClientManager[ARN={}] created", arn_);
+  SPDLOG_INFO("ClientManager[ARN={}] created", resource_namespace_);
 }
 
 ClientManagerImpl::~ClientManagerImpl() {
   shutdown();
-  SPDLOG_INFO("ClientManager[ARN={}] destructed", arn_);
+  SPDLOG_INFO("ClientManager[ARN={}] destructed", resource_namespace_);
 }
 
 void ClientManagerImpl::start() {
@@ -509,7 +512,7 @@ void ClientManagerImpl::resolveRoute(const std::string& target_host, const Metad
 
     std::vector<Partition> topic_partitions;
     for (const auto& partition : partitions) {
-      Topic t(partition.topic().arn(), partition.topic().name());
+      Topic t(partition.topic().resource_namespace(), partition.topic().name());
 
       auto& broker = partition.broker();
       AddressScheme scheme = AddressScheme::IPv4;
@@ -723,7 +726,7 @@ void ClientManagerImpl::processPullResult(const grpc::ClientContext& client_cont
 }
 
 bool ClientManagerImpl::wrapMessage(const rmq::Message& item, MQMessageExt& message_ext) {
-  assert(item.topic().arn() == arn_);
+  assert(item.topic().resource_namespace() == resource_namespace_);
 
   // base
   message_ext.setTopic(item.topic().name());
@@ -821,10 +824,6 @@ bool ClientManagerImpl::wrapMessage(const rmq::Message& item, MQMessageExt& mess
     std::string uncompressed;
     UtilAll::uncompress(item.body(), uncompressed);
     message_ext.setBody(uncompressed);
-    break;
-  }
-  case rmq::Encoding::SNAPPY: {
-    SPDLOG_WARN("Snappy encoding is not supported yet");
     break;
   }
   case rmq::Encoding::IDENTITY: {
@@ -1155,6 +1154,35 @@ void ClientManagerImpl::forwardMessageToDeadLetterQueue(
   };
   invocation_context->callback = callback;
   client->asyncForwardMessageToDeadLetterQueue(request, invocation_context);
+}
+
+bool ClientManagerImpl::notifyClientTermination(const std::string& target_host, const Metadata& metadata,
+                                                const NotifyClientTerminationRequest& request,
+                                                std::chrono::milliseconds timeout) {
+  auto client = getRpcClient(target_host);
+  if (!client) {
+    return false;
+  }
+
+  grpc::ClientContext context;
+  context.set_deadline(std::chrono::system_clock::now() + timeout);
+  for (const auto& item : metadata) {
+    context.AddMetadata(item.first, item.second);
+  }
+
+  NotifyClientTerminationResponse response;
+  grpc::Status status = client->notifyClientTermination(&context, request, &response);
+  if (!status.ok()) {
+    return false;
+  }
+
+  if (google::rpc::Code::OK == response.common().status().code()) {
+    SPDLOG_INFO("Notify client termination to {}", target_host);
+    return true;
+  }
+
+  SPDLOG_WARN("Failed to notify client termination to {}", target_host);
+  return false;
 }
 
 void ClientManagerImpl::logStats() {

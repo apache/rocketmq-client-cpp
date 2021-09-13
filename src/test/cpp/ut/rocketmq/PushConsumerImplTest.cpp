@@ -5,27 +5,39 @@
 #include "MessageAccessor.h"
 #include "grpc/grpc.h"
 #include "rocketmq/MQMessageExt.h"
+#include "rocketmq/MessageListener.h"
 #include "rocketmq/RocketMQ.h"
 #include "gtest/gtest.h"
 #include <memory>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
+class TestStandardMessageListener : public StandardMessageListener {
+public:
+  ConsumeMessageResult consumeMessage(const std::vector<MQMessageExt>& msgs) override {
+    return ConsumeMessageResult::SUCCESS;
+  }
+};
+
 class PushConsumerImplTest : public testing::Test {
+public:
+  PushConsumerImplTest() : message_listener_(absl::make_unique<TestStandardMessageListener>()) {}
+
   void SetUp() override {
     grpc_init();
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
-    ClientManagerFactory::getInstance().addClientManager(arn_, client_manager_);
+    ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
     push_consumer_ = std::make_shared<PushConsumerImpl>(group_);
-    push_consumer_->arn(arn_);
+    push_consumer_->resourceNamespace(resource_namespace_);
     push_consumer_->setNameServerList(name_server_list_);
+    push_consumer_->registerMessageListener(message_listener_.get());
   }
 
   void TearDown() override { grpc_shutdown(); }
 
 protected:
   std::vector<std::string> name_server_list_{"10.0.0.1:9876"};
-  std::string arn_{"arn:mq://test"};
+  std::string resource_namespace_{"mq://test"};
   std::string group_{"CID_test"};
   std::string topic_{"Topic0"};
   std::string tag_{"TagA"};
@@ -33,6 +45,7 @@ protected:
   std::string message_body_{"Message Body Content"};
   int delay_level_{1};
   std::shared_ptr<testing::NiceMock<ClientManagerMock>> client_manager_;
+  std::unique_ptr<MessageListener> message_listener_;
   std::shared_ptr<PushConsumerImpl> push_consumer_;
   const std::string target_endpoint_{"localhost:10911"};
 };

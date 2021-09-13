@@ -45,7 +45,7 @@ protected:
         target_, channel_credential_, channel_arguments_, std::move(interceptor_factories));
     client_ = std::make_shared<rocketmq::RpcClientImpl>(completion_queue_, channel);
 
-    client_config_.arn(arn_);
+    client_config_.resourceNamespace(resource_namespace_);
     client_config_.setCredentialsProvider(std::make_shared<ConfigFileCredentialsProvider>());
     client_config_.setIoTimeout(absl::Seconds(3));
 
@@ -56,7 +56,7 @@ protected:
 
   std::string topic_{"yc001"};
   std::string group_{"yc001"};
-  std::string arn_{"MQ_INST_1973281269661160_BXmPlOA6"};
+  std::string resource_namespace_{"MQ_INST_1973281269661160_BXmPlOA6"};
   std::string tenant_id_{"sample-tenant"};
   std::string region_id_{"cn-hangzhou"};
   std::string service_name_{"MQ"};
@@ -76,7 +76,7 @@ protected:
 TEST_F(TopicPublishInfoTest, testTopicPublishInfo) {
   rmq::QueryRouteResponse response;
   rmq::QueryRouteRequest request;
-  request.mutable_topic()->set_arn(arn_);
+  request.mutable_topic()->set_resource_namespace(resource_namespace_);
   request.mutable_topic()->set_name(topic_);
   auto invocation_context = new InvocationContext<QueryRouteResponse>();
   invocation_context->context.set_deadline(std::chrono::system_clock::now() +
@@ -96,7 +96,7 @@ TEST_F(TopicPublishInfoTest, testTopicPublishInfo) {
 
     std::vector<Partition> partitions;
     for (const auto& item : invocation_context->response.partitions()) {
-      Topic topic(arn_, topic_);
+      Topic topic(resource_namespace_, topic_);
       Permission permission;
       switch (item.permission()) {
       case rmq::Permission::READ:

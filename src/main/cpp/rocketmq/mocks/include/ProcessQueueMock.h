@@ -27,8 +27,6 @@ public:
 
   MOCK_METHOD(void, release, (uint64_t, int64_t), (override));
 
-  MOCK_METHOD(ConsumeMessageType, consumeType, (), (const override));
-
   MOCK_METHOD(void, cacheMessages, (const std::vector<MQMessageExt>&), (override));
 
   MOCK_METHOD(bool, shouldThrottle, (), (const override));

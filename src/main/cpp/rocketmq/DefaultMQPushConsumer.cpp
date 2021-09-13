@@ -67,7 +67,7 @@ void DefaultMQPushConsumer::setThrottle(const std::string& topic, uint32_t thres
   impl_->setThrottle(topic, threshold);
 }
 
-void DefaultMQPushConsumer::setArn(const char* arn) { impl_->arn(arn); }
+void DefaultMQPushConsumer::setResourceNamespace(const char* resource_namespace) { impl_->resourceNamespace(resource_namespace); }
 
 void DefaultMQPushConsumer::setCredentialsProvider(CredentialsProviderPtr credentials_provider) {
   impl_->setCredentialsProvider(std::move(credentials_provider));

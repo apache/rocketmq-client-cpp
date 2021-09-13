@@ -19,8 +19,8 @@ void Signature::sign(ClientConfig* client, absl::flat_hash_map<std::string, std:
     metadata.insert({MetadataConstants::TENANT_ID_KEY, client->tenantId()});
   }
 
-  if (!client->arn().empty()) {
-    metadata.insert({MetadataConstants::ARN_KEY, client->arn()});
+  if (!client->resourceNamespace().empty()) {
+    metadata.insert({MetadataConstants::NAMESPACE_KEY, client->resourceNamespace()});
   }
 
   absl::Time now = absl::Now();

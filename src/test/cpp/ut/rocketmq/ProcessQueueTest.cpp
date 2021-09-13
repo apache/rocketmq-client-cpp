@@ -8,15 +8,11 @@
 #include "ReceiveMessageCallbackMock.h"
 #include "ReceiveMessageResult.h"
 #include "RpcClientMock.h"
-#include "absl/memory/memory.h"
-#include "absl/synchronization/mutex.h"
-#include "apache/rocketmq/v1/definition.pb.h"
 #include "rocketmq/CredentialsProvider.h"
 #include "rocketmq/MQMessageExt.h"
 #include "gtest/gtest.h"
 #include <chrono>
 #include <functional>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -35,8 +31,7 @@ public:
     credentials_provider_ = std::make_shared<StaticCredentialsProvider>(access_key_, access_secret_);
     consumer_ = std::make_shared<testing::NiceMock<PushConsumerMock>>();
     auto consumer = std::dynamic_pointer_cast<PushConsumer>(consumer_);
-    process_queue_ = std::make_shared<ProcessQueueImpl>(message_queue_, filter_expression_, ConsumeMessageType::POP,
-                                                        consumer, client_manager_);
+    process_queue_ = std::make_shared<ProcessQueueImpl>(message_queue_, filter_expression_, consumer, client_manager_);
     receive_message_callback_ = std::make_shared<testing::NiceMock<ReceiveMessageCallbackMock>>();
     process_queue_->callback(receive_message_callback_);
   }
@@ -64,7 +59,7 @@ protected:
   std::shared_ptr<testing::NiceMock<PushConsumerMock>> consumer_;
   std::shared_ptr<ProcessQueueImpl> process_queue_;
   std::shared_ptr<testing::NiceMock<ReceiveMessageCallbackMock>> receive_message_callback_;
-  std::string arn_{"arn:test"};
+  std::string resource_namespace_{"mq://test"};
   std::string message_body_{"Sample body"};
 
   uint32_t threshold_quantity_{32};
@@ -269,13 +264,14 @@ TEST_F(ProcessQueueTest, testOffset) {
 
 TEST_F(ProcessQueueTest, testReceiveMessage_POP) {
   EXPECT_CALL(*consumer_, tenantId).WillRepeatedly(testing::ReturnRef(tenant_id_));
-  EXPECT_CALL(*consumer_, arn).WillRepeatedly(testing::ReturnRef(arn_));
+  EXPECT_CALL(*consumer_, resourceNamespace).WillRepeatedly(testing::ReturnRef(resource_namespace_));
   EXPECT_CALL(*consumer_, credentialsProvider).WillRepeatedly(testing::Return(credentials_provider_));
   EXPECT_CALL(*consumer_, region).WillRepeatedly(testing::ReturnRef(region_));
   EXPECT_CALL(*consumer_, serviceName).WillRepeatedly(testing::ReturnRef(service_name_));
   EXPECT_CALL(*consumer_, clientId).WillRepeatedly(testing::Return(client_id_));
   EXPECT_CALL(*consumer_, getGroupName).WillRepeatedly(testing::ReturnRef(group_name_));
   EXPECT_CALL(*consumer_, getLongPollingTimeout).WillRepeatedly(testing::Return(absl::Seconds(3)));
+  EXPECT_CALL(*consumer_, receiveMessageAction).WillRepeatedly(testing::Return(ReceiveMessageAction::POLLING));
 
   auto optional = absl::make_optional(filter_expression_);
 
@@ -307,15 +303,15 @@ TEST_F(ProcessQueueTest, testReceiveMessage_POP) {
 }
 
 TEST_F(ProcessQueueTest, testReceiveMessage_Pull) {
-  process_queue_->consumeType(ConsumeMessageType::PULL);
   EXPECT_CALL(*consumer_, tenantId).WillRepeatedly(testing::ReturnRef(tenant_id_));
-  EXPECT_CALL(*consumer_, arn).WillRepeatedly(testing::ReturnRef(arn_));
+  EXPECT_CALL(*consumer_, resourceNamespace).WillRepeatedly(testing::ReturnRef(resource_namespace_));
   EXPECT_CALL(*consumer_, credentialsProvider).WillRepeatedly(testing::Return(credentials_provider_));
   EXPECT_CALL(*consumer_, region).WillRepeatedly(testing::ReturnRef(region_));
   EXPECT_CALL(*consumer_, serviceName).WillRepeatedly(testing::ReturnRef(service_name_));
   EXPECT_CALL(*consumer_, clientId).WillRepeatedly(testing::Return(client_id_));
   EXPECT_CALL(*consumer_, getGroupName).WillRepeatedly(testing::ReturnRef(group_name_));
   EXPECT_CALL(*consumer_, getLongPollingTimeout).WillRepeatedly(testing::Return(absl::Seconds(3)));
+  EXPECT_CALL(*consumer_, receiveMessageAction).WillRepeatedly(testing::Return(ReceiveMessageAction::PULL));
 
   auto optional = absl::make_optional(filter_expression_);
 

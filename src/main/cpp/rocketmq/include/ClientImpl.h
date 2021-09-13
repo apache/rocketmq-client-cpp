@@ -4,9 +4,9 @@
 #include "ClientResourceBundle.h"
 #include "InvocationContext.h"
 #include "OtlpExporter.h"
+#include "apache/rocketmq/v1/definition.pb.h"
 #include "rocketmq/MQMessageExt.h"
 #include "rocketmq/State.h"
-#include <apache/rocketmq/v1/definition.pb.h>
 #include <chrono>
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -100,12 +100,13 @@ protected:
   virtual ClientResourceBundle resourceBundle() {
     ClientResourceBundle resource_bundle;
     resource_bundle.client_id = clientId();
-    resource_bundle.arn = arn_;
+    resource_bundle.resource_namespace = resource_namespace_;
     return resource_bundle;
   }
 
-protected:
   void setAccessPoint(rmq::Endpoints* endpoints) LOCKS_EXCLUDED(name_server_list_mtx_);
+
+  virtual void notifyClientTermination();
 
 private:
   /**

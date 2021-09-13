@@ -1,16 +1,16 @@
 #pragma once
 
-#include <string>
-#include <memory>
-#include <vector>
+#include <chrono>
 #include <future>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "AsyncCallback.h"
 #include "ConsumeType.h"
 #include "CredentialsProvider.h"
 #include "MQMessageExt.h"
 #include "MQMessageQueue.h"
-#include <chrono>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -32,7 +32,7 @@ public:
 
   void pull(const PullMessageQuery& request, PullCallback* callback);
 
-  void setArn(const std::string& arn);
+  void setResourceNamespace(const std::string& resource_namespace);
 
   void setNamesrvAddr(const std::string& name_srv);
 
@@ -42,6 +42,4 @@ private:
   std::shared_ptr<PullConsumerImpl> impl_;
 };
 
-
 ROCKETMQ_NAMESPACE_END
-

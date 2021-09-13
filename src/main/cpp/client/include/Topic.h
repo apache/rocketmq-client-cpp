@@ -8,18 +8,21 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class Topic {
 public:
-  Topic(std::string arn, std::string name) : arn_(std::move(arn)), name_(std::move(name)) {}
+  Topic(std::string resource_namespace, std::string name)
+      : resource_namespace_(std::move(resource_namespace)), name_(std::move(name)) {}
 
-  const std::string& arn() const { return arn_; }
+  const std::string& resourceNamespace() const { return resource_namespace_; }
 
   const std::string& name() const { return name_; }
 
-  bool operator==(const Topic& other) const { return arn_ == other.arn_ && name_ == other.name_; }
+  bool operator==(const Topic& other) const {
+    return resource_namespace_ == other.resource_namespace_ && name_ == other.name_;
+  }
 
   bool operator<(const Topic& other) const {
-    if (arn_ < other.arn_) {
+    if (resource_namespace_ < other.resource_namespace_) {
       return true;
-    } else if (arn_ > other.arn_) {
+    } else if (resource_namespace_ > other.resource_namespace_) {
       return false;
     }
 
@@ -32,7 +35,7 @@ public:
   }
 
 private:
-  std::string arn_;
+  std::string resource_namespace_;
   std::string name_;
 };
 

@@ -8,8 +8,11 @@
 #include "RpcClient.h"
 #include "Signature.h"
 #include "rocketmq/MQClientException.h"
+#include "rocketmq/MessageModel.h"
+#include <apache/rocketmq/v1/definition.pb.h>
 #include <cassert>
 #include <chrono>
+#include <cstdlib>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -23,6 +26,19 @@ void PushConsumerImpl::start() {
   if (State::STARTED != state_.load(std::memory_order_relaxed)) {
     SPDLOG_WARN("Unexpected consumer state: {}", state_.load(std::memory_order_relaxed));
     return;
+  }
+
+  if (!message_listener_) {
+    SPDLOG_ERROR("Message listener is nullptr");
+    abort();
+    return;
+  }
+
+  if (MessageListenerType::STANDARD == message_listener_->listenerType() &&
+      MessageModel::CLUSTERING == message_model_) {
+    receive_message_policy_ = ReceiveMessageAction::POLLING;
+  } else {
+    receive_message_policy_ = ReceiveMessageAction::PULL;
   }
 
   client_manager_->addClientObserver(shared_from_this());
@@ -171,9 +187,9 @@ void PushConsumerImpl::wrapQueryAssignmentRequest(const std::string& topic, cons
                                                   const std::string& client_id, const std::string& strategy_name,
                                                   QueryAssignmentRequest& request) {
   request.mutable_topic()->set_name(topic);
-  request.mutable_topic()->set_arn(arn());
+  request.mutable_topic()->set_resource_namespace(resourceNamespace());
   request.mutable_group()->set_name(consumer_group);
-  request.mutable_group()->set_arn(arn());
+  request.mutable_group()->set_resource_namespace(resourceNamespace());
   request.set_client_id(client_id);
 }
 
@@ -191,7 +207,7 @@ void PushConsumerImpl::queryAssignment(const std::string& topic,
       std::vector<Assignment> assignments;
       assignments.reserve(topic_route->partitions().size());
       for (const auto& partition : topic_route->partitions()) {
-        assignments.emplace_back(Assignment(partition.asMessageQueue(), ConsumeMessageType::PULL));
+        assignments.emplace_back(Assignment(partition.asMessageQueue()));
       }
       topic_assignment = std::make_shared<TopicAssignment>(std::move(assignments));
       cb(topic_assignment);
@@ -277,10 +293,7 @@ void PushConsumerImpl::syncProcessQueue(const std::string& topic,
                      [&](const MQMessageQueue& item) { return item == message_queue; })) {
       SPDLOG_INFO("Start to receive message from {} according to latest assignment info from load balancer",
                   message_queue.simpleName());
-      // Clustering message model is implemented through POP while broadcasting is implemented through classic PULL.
-      ConsumeMessageType consume_type =
-          MessageModel::CLUSTERING == message_model_ ? ConsumeMessageType::POP : ConsumeMessageType::PULL;
-      if (!receiveMessage(message_queue, filter_expression, consume_type)) {
+      if (!receiveMessage(message_queue, filter_expression)) {
         if (!active()) {
           SPDLOG_WARN("Failed to initiate receive message request-response-cycle for {}", message_queue.simpleName());
           // TODO: remove it from current assignment such that a second attempt will be made again in the next round.
@@ -291,8 +304,7 @@ void PushConsumerImpl::syncProcessQueue(const std::string& topic,
 }
 
 ProcessQueueSharedPtr PushConsumerImpl::getOrCreateProcessQueue(const MQMessageQueue& message_queue,
-                                                                const FilterExpression& filter_expression,
-                                                                ConsumeMessageType consume_type) {
+                                                                const FilterExpression& filter_expression) {
   ProcessQueueSharedPtr process_queue;
   {
     absl::MutexLock lock(&process_queue_table_mtx_);
@@ -306,8 +318,8 @@ ProcessQueueSharedPtr PushConsumerImpl::getOrCreateProcessQueue(const MQMessageQ
     } else {
       SPDLOG_INFO("Create ProcessQueue for message queue[{}]", message_queue.simpleName());
       // create ProcessQueue
-      process_queue = std::make_shared<ProcessQueueImpl>(message_queue, filter_expression, consume_type,
-                                                         shared_from_this(), client_manager_);
+      process_queue =
+          std::make_shared<ProcessQueueImpl>(message_queue, filter_expression, shared_from_this(), client_manager_);
       std::shared_ptr<AsyncReceiveMessageCallback> receive_callback =
           std::make_shared<AsyncReceiveMessageCallback>(process_queue);
       process_queue->callback(receive_callback);
@@ -317,14 +329,13 @@ ProcessQueueSharedPtr PushConsumerImpl::getOrCreateProcessQueue(const MQMessageQ
   return process_queue;
 }
 
-bool PushConsumerImpl::receiveMessage(const MQMessageQueue& message_queue, const FilterExpression& filter_expression,
-                                      ConsumeMessageType consume_type) {
+bool PushConsumerImpl::receiveMessage(const MQMessageQueue& message_queue, const FilterExpression& filter_expression) {
   if (!active()) {
     SPDLOG_INFO("PushConsumer has stopped. Drop further receive message request");
     return false;
   }
 
-  ProcessQueueSharedPtr process_queue_ptr = getOrCreateProcessQueue(message_queue, filter_expression, consume_type);
+  ProcessQueueSharedPtr process_queue_ptr = getOrCreateProcessQueue(message_queue, filter_expression);
   if (!process_queue_ptr) {
     SPDLOG_INFO("Consumer has stopped. Stop creating processQueue");
     return false;
@@ -336,13 +347,13 @@ bool PushConsumerImpl::receiveMessage(const MQMessageQueue& message_queue, const
     return false;
   }
 
-  switch (consume_type) {
-  case ConsumeMessageType::PULL: {
+  switch (receive_message_policy_) {
+  case ReceiveMessageAction::PULL: {
     int64_t offset = -1;
     if (!offset_store_ || !offset_store_->readOffset(message_queue, offset)) {
       // Query latest offset from server.
       QueryOffsetRequest request;
-      request.mutable_partition()->mutable_topic()->set_arn(arn_);
+      request.mutable_partition()->mutable_topic()->set_resource_namespace(resource_namespace_);
       request.mutable_partition()->mutable_topic()->set_name(message_queue.getTopic());
       request.mutable_partition()->set_id(message_queue.getQueueId());
       request.mutable_partition()->mutable_broker()->set_name(message_queue.getBrokerName());
@@ -363,7 +374,7 @@ bool PushConsumerImpl::receiveMessage(const MQMessageQueue& message_queue, const
     }
     break;
   }
-  case ConsumeMessageType::POP:
+  case ReceiveMessageAction::POLLING:
     process_queue_ptr->receiveMessage();
     break;
   }
@@ -393,10 +404,10 @@ void PushConsumerImpl::nack(const MQMessageExt& msg, const std::function<void(bo
   rmq::NackMessageRequest request;
 
   // Group
-  request.mutable_group()->set_arn(arn_);
+  request.mutable_group()->set_resource_namespace(resource_namespace_);
   request.mutable_group()->set_name(group_name_);
   // Topic
-  request.mutable_topic()->set_arn(arn_);
+  request.mutable_topic()->set_resource_namespace(resource_namespace_);
   request.mutable_topic()->set_name(msg.getTopic());
   request.set_client_id(clientId());
   request.set_receipt_handle(msg.receiptHandle());
@@ -415,10 +426,10 @@ void PushConsumerImpl::forwardToDeadLetterQueue(const MQMessageExt& message, con
   Signature::sign(this, metadata);
 
   ForwardMessageToDeadLetterQueueRequest request;
-  request.mutable_group()->set_arn(arn_);
+  request.mutable_group()->set_resource_namespace(resource_namespace_);
   request.mutable_group()->set_name(group_name_);
 
-  request.mutable_topic()->set_arn(arn_);
+  request.mutable_topic()->set_resource_namespace(resource_namespace_);
   request.mutable_topic()->set_name(message.getTopic());
 
   request.set_client_id(clientId());
@@ -432,9 +443,9 @@ void PushConsumerImpl::forwardToDeadLetterQueue(const MQMessageExt& message, con
 }
 
 void PushConsumerImpl::wrapAckMessageRequest(const MQMessageExt& msg, AckMessageRequest& request) {
-  request.mutable_group()->set_arn(arn_);
+  request.mutable_group()->set_resource_namespace(resource_namespace_);
   request.mutable_group()->set_name(group_name_);
-  request.mutable_topic()->set_arn(arn_);
+  request.mutable_topic()->set_resource_namespace(resource_namespace_);
   request.mutable_topic()->set_name(msg.getTopic());
   request.set_client_id(clientId());
   request.set_message_id(msg.getMsgId());
@@ -537,18 +548,41 @@ void PushConsumerImpl::fetchRoutes() {
 }
 
 void PushConsumerImpl::prepareHeartbeatData(HeartbeatRequest& request) {
-  auto heartbeat = new rmq::HeartbeatEntry();
-  heartbeat->set_client_id(clientId());
-  auto consumer_group = heartbeat->mutable_consumer_group();
-  consumer_group->mutable_group()->set_arn(arn());
-  consumer_group->mutable_group()->set_name(group_name_);
-  consumer_group->set_consume_model(rmq::ConsumeModel::CLUSTERING);
+  request.set_client_id(clientId());
+
+  if (message_listener_) {
+    switch (message_listener_->listenerType()) {
+    case MessageListenerType::FIFO:
+      request.set_fifo_flag(true);
+      break;
+    case MessageListenerType::STANDARD:
+      request.set_fifo_flag(false);
+      break;
+    }
+  }
+
+  auto consumer_data = request.mutable_consumer_data();
+  consumer_data->mutable_group()->set_name(group_name_);
+  consumer_data->mutable_group()->set_resource_namespace(resource_namespace_);
+
+  switch (message_model_) {
+  case MessageModel::BROADCASTING:
+    consumer_data->set_consume_model(rmq::ConsumeModel::BROADCASTING);
+    break;
+  case MessageModel::CLUSTERING:
+    consumer_data->set_consume_model(rmq::ConsumeModel::CLUSTERING);
+    break;
+  default:
+    break;
+  }
+
+  auto subscriptions = consumer_data->mutable_subscriptions();
 
   {
     absl::MutexLock lk(&topic_filter_expression_table_mtx_);
     for (const auto& entry : topic_filter_expression_table_) {
       auto subscription = new rmq::SubscriptionEntry;
-      subscription->mutable_topic()->set_arn(arn_);
+      subscription->mutable_topic()->set_resource_namespace(resource_namespace_);
       subscription->mutable_topic()->set_name(entry.first);
       subscription->mutable_expression()->set_expression(entry.second.content_);
       switch (entry.second.type_) {
@@ -559,24 +593,21 @@ void PushConsumerImpl::prepareHeartbeatData(HeartbeatRequest& request) {
         subscription->mutable_expression()->set_type(rmq::FilterType::SQL);
         break;
       }
-      consumer_group->mutable_subscriptions()->AddAllocated(subscription);
+      subscriptions->AddAllocated(subscription);
     }
   }
-
-  // Add heartbeat
-  request.mutable_heartbeats()->AddAllocated(heartbeat);
 }
 
 ClientResourceBundle PushConsumerImpl::resourceBundle() {
-  ClientResourceBundle resource_bundle = ClientImpl::resourceBundle();
+  auto&& resource_bundle = ClientImpl::resourceBundle();
+  resource_bundle.group_type = GroupType::SUBSCRIBER;
   {
     absl::MutexLock lk(&topic_filter_expression_table_mtx_);
     for (auto& item : topic_filter_expression_table_) {
       resource_bundle.topics.emplace_back(item.first);
     }
   }
-
-  return resource_bundle;
+  return std::move(resource_bundle);
 }
 
 ROCKETMQ_NAMESPACE_END

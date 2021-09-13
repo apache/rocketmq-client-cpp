@@ -10,7 +10,7 @@ ROCKETMQ_NAMESPACE_BEGIN
 class ClientManagerTest : public testing::Test {
 public:
   void SetUp() override {
-    client_manager_ = std::make_shared<ClientManagerImpl>(arn_);
+    client_manager_ = std::make_shared<ClientManagerImpl>(resource_namespace_);
     client_manager_->start();
     rpc_client_ = std::make_shared<testing::NiceMock<RpcClientMock>>();
     ON_CALL(*rpc_client_, ok).WillByDefault(testing::Return(true));
@@ -23,7 +23,7 @@ public:
   void TearDown() override { client_manager_->shutdown(); }
 
 protected:
-  std::string arn_{"arn:mq://test"};
+  std::string resource_namespace_{"mq://test"};
   std::string topic_{"TestTopic"};
   std::string target_host_{"ipv4:10.0.0.0:10911"};
   std::shared_ptr<ClientManagerImpl> client_manager_;
@@ -43,7 +43,7 @@ TEST_F(ClientManagerTest, testBasic) {
 TEST_F(ClientManagerTest, testResolveRoute) {
   auto rpc_cb = [](const QueryRouteRequest& request, InvocationContext<QueryRouteResponse>* invocation_context) {
     auto partition = new rmq::Partition();
-    partition->mutable_topic()->set_arn(request.topic().arn());
+    partition->mutable_topic()->set_resource_namespace(request.topic().resource_namespace());
     partition->mutable_topic()->set_name(request.topic().name());
     partition->mutable_broker()->set_name("broker-0");
     partition->mutable_broker()->set_id(0);
@@ -63,7 +63,7 @@ TEST_F(ClientManagerTest, testResolveRoute) {
   absl::CondVar cv;
 
   QueryRouteRequest request;
-  request.mutable_topic()->set_arn(arn_);
+  request.mutable_topic()->set_resource_namespace(resource_namespace_);
   request.mutable_topic()->set_name(topic_);
   auto callback = [&](bool, const TopicRouteDataPtr&) {
     absl::MutexLock lk(&mtx);
@@ -305,7 +305,7 @@ TEST_F(ClientManagerTest, processPullResult) {
   grpc::ClientContext client_context;
   PullMessageResponse response;
   auto message = new rmq::Message;
-  message->mutable_topic()->set_arn(arn_);
+  message->mutable_topic()->set_resource_namespace(resource_namespace_);
   message->mutable_topic()->set_name(topic_);
   message->set_body(message_body_);
   message->mutable_system_attribute()->mutable_body_digest()->set_type(rmq::DigestType::MD5);

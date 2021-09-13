@@ -7,7 +7,7 @@ class MetadataConstants {
 public:
   static const char* REQUEST_ID_KEY;
   static const char* TENANT_ID_KEY;
-  static const char* ARN_KEY;
+  static const char* NAMESPACE_KEY;
   static const char* AUTHORIZATION;
   static const char* STS_SESSION_TOKEN;
   static const char* DATE_TIME_KEY;

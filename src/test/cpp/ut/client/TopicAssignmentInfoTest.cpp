@@ -7,25 +7,24 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class QueryAssignmentInfoTest : public testing::Test {
 protected:
-  std::string arn{"arn:mq://test"};
-  std::string topic{"TopicTest"};
-  std::string broker_name{"broker-a"};
-  int broker_id = 0;
-  int total = 16;
+  std::string resource_namespace_{"mq://test"};
+  std::string topic_{"TopicTest"};
+  std::string broker_name_{"broker-a"};
+  int broker_id_ = 0;
+  int total_ = 16;
 };
 
 TEST_F(QueryAssignmentInfoTest, testCtor) {
   QueryAssignmentResponse response;
-  for (int i = 0; i < total; i++) {
+  for (int i = 0; i < total_; i++) {
     auto assignment = new rmq::Assignment;
-    assignment->set_mode(rmq::ConsumeMessageType::POP);
-    assignment->mutable_partition()->mutable_topic()->set_arn(arn);
-    assignment->mutable_partition()->mutable_topic()->set_name(topic);
+    assignment->mutable_partition()->mutable_topic()->set_resource_namespace(resource_namespace_);
+    assignment->mutable_partition()->mutable_topic()->set_name(topic_);
     assignment->mutable_partition()->set_id(i);
     assignment->mutable_partition()->set_permission(rmq::Permission::READ);
     auto broker = assignment->mutable_partition()->mutable_broker();
-    broker->set_name(broker_name);
-    broker->set_id(broker_id);
+    broker->set_name(broker_name_);
+    broker->set_id(broker_id_);
     broker->mutable_endpoints()->set_scheme(rmq::AddressScheme::IPv4);
 
     auto address = new rmq::Address;
@@ -35,26 +34,24 @@ TEST_F(QueryAssignmentInfoTest, testCtor) {
     response.mutable_assignments()->AddAllocated(assignment);
   }
   TopicAssignment assignment(response);
-  EXPECT_EQ(total, assignment.assignmentList().size());
+  EXPECT_EQ(total_, assignment.assignmentList().size());
   const auto& item = *assignment.assignmentList().begin();
-  EXPECT_EQ(item.messageQueue().getBrokerName(), broker_name);
-  EXPECT_EQ(item.messageQueue().getTopic(), topic);
-  EXPECT_EQ(item.consumeType(), ConsumeMessageType::POP);
+  EXPECT_EQ(item.messageQueue().getBrokerName(), broker_name_);
+  EXPECT_EQ(item.messageQueue().getTopic(), topic_);
   EXPECT_TRUE(item.messageQueue().getQueueId() < 16);
 }
 
 TEST_F(QueryAssignmentInfoTest, testCtor2) {
   QueryAssignmentResponse response;
-  for (int i = 0; i < total; i++) {
+  for (int i = 0; i < total_; i++) {
     auto assignment = new rmq::Assignment;
-    assignment->set_mode(rmq::ConsumeMessageType::POP);
-    assignment->mutable_partition()->mutable_topic()->set_arn(arn);
-    assignment->mutable_partition()->mutable_topic()->set_name(topic);
+    assignment->mutable_partition()->mutable_topic()->set_resource_namespace(resource_namespace_);
+    assignment->mutable_partition()->mutable_topic()->set_name(topic_);
     assignment->mutable_partition()->set_id(i);
     assignment->mutable_partition()->set_permission(rmq::Permission::READ_WRITE);
     auto broker = assignment->mutable_partition()->mutable_broker();
-    broker->set_name(broker_name);
-    broker->set_id(broker_id);
+    broker->set_name(broker_name_);
+    broker->set_id(broker_id_);
     broker->mutable_endpoints()->set_scheme(rmq::AddressScheme::IPv4);
 
     auto address = new rmq::Address;
@@ -64,26 +61,24 @@ TEST_F(QueryAssignmentInfoTest, testCtor2) {
     response.mutable_assignments()->AddAllocated(assignment);
   }
   TopicAssignment assignment(response);
-  EXPECT_EQ(total, assignment.assignmentList().size());
+  EXPECT_EQ(total_, assignment.assignmentList().size());
   const auto& item = *assignment.assignmentList().begin();
-  EXPECT_EQ(item.messageQueue().getBrokerName(), broker_name);
-  EXPECT_EQ(item.messageQueue().getTopic(), topic);
-  EXPECT_EQ(item.consumeType(), ConsumeMessageType::POP);
+  EXPECT_EQ(item.messageQueue().getBrokerName(), broker_name_);
+  EXPECT_EQ(item.messageQueue().getTopic(), topic_);
   EXPECT_TRUE(item.messageQueue().getQueueId() < 16);
 }
 
 TEST_F(QueryAssignmentInfoTest, testCtor3) {
   QueryAssignmentResponse response;
-  for (int i = 0; i < total; i++) {
+  for (int i = 0; i < total_; i++) {
     auto assignment = new rmq::Assignment;
-    assignment->set_mode(rmq::ConsumeMessageType::POP);
-    assignment->mutable_partition()->mutable_topic()->set_arn(arn);
-    assignment->mutable_partition()->mutable_topic()->set_name(topic);
+    assignment->mutable_partition()->mutable_topic()->set_resource_namespace(resource_namespace_);
+    assignment->mutable_partition()->mutable_topic()->set_name(topic_);
     assignment->mutable_partition()->set_id(i);
     assignment->mutable_partition()->set_permission(rmq::Permission::NONE);
     auto broker = assignment->mutable_partition()->mutable_broker();
-    broker->set_name(broker_name);
-    broker->set_id(broker_id);
+    broker->set_name(broker_name_);
+    broker->set_id(broker_id_);
     broker->mutable_endpoints()->set_scheme(rmq::AddressScheme::IPv4);
 
     auto address = new rmq::Address;

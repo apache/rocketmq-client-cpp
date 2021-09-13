@@ -28,7 +28,7 @@ void DefaultMQPullConsumer::pull(const PullMessageQuery& query, PullCallback* ca
   impl_->pull(query, callback);
 }
 
-void DefaultMQPullConsumer::setArn(const std::string& arn) { impl_->arn(arn); }
+void DefaultMQPullConsumer::setResourceNamespace(const std::string& resource_namespace) { impl_->resourceNamespace(resource_namespace); }
 
 void DefaultMQPullConsumer::setCredentialsProvider(std::shared_ptr<CredentialsProvider> credentials_provider) {
   impl_->setCredentialsProvider(std::move(credentials_provider));

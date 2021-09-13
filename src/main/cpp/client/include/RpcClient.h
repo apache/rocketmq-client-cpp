@@ -55,6 +55,8 @@ using PullMessageRequest = rmq::PullMessageRequest;
 using PullMessageResponse = rmq::PullMessageResponse;
 using ForwardMessageToDeadLetterQueueRequest = rmq::ForwardMessageToDeadLetterQueueRequest;
 using ForwardMessageToDeadLetterQueueResponse = rmq::ForwardMessageToDeadLetterQueueResponse;
+using NotifyClientTerminationRequest = rmq::NotifyClientTerminationRequest;
+using NotifyClientTerminationResponse = rmq::NotifyClientTerminationResponse;
 
 class RpcClient {
 public:
@@ -103,6 +105,10 @@ public:
   virtual void asyncForwardMessageToDeadLetterQueue(
       const ForwardMessageToDeadLetterQueueRequest& request,
       InvocationContext<ForwardMessageToDeadLetterQueueResponse>* invocation_context) = 0;
+
+  virtual grpc::Status notifyClientTermination(grpc::ClientContext* context,
+                                               const NotifyClientTerminationRequest& request,
+                                               NotifyClientTerminationResponse* response) = 0;
 
   /**
    * Indicate if heartbeat is required.

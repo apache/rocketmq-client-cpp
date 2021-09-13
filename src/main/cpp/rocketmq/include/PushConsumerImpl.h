@@ -76,12 +76,11 @@ public:
                         const FilterExpression& filter_expression) LOCKS_EXCLUDED(process_queue_table_mtx_);
 
   ProcessQueueSharedPtr getOrCreateProcessQueue(const MQMessageQueue& message_queue,
-                                                const FilterExpression& filter_expression,
-                                                ConsumeMessageType consume_type)
+                                                const FilterExpression& filter_expression)
       LOCKS_EXCLUDED(process_queue_table_mtx_);
 
-  bool receiveMessage(const MQMessageQueue& message_queue, const FilterExpression& filter_expression,
-                      ConsumeMessageType consume_type) override LOCKS_EXCLUDED(process_queue_table_mtx_);
+  bool receiveMessage(const MQMessageQueue& message_queue, const FilterExpression& filter_expression) override
+      LOCKS_EXCLUDED(process_queue_table_mtx_);
 
   uint32_t consumeThreadPoolSize() const;
 
@@ -155,6 +154,10 @@ public:
 
   void iterateProcessQueue(const std::function<void(ProcessQueueSharedPtr)>& callback) override;
 
+  MessageListener* messageListener() override { return message_listener_; }
+
+  ReceiveMessageAction receiveMessageAction() const override { return receive_message_policy_; }
+
 protected:
   std::shared_ptr<ClientImpl> self() override { return shared_from_this(); }
 
@@ -193,6 +196,8 @@ private:
   int32_t max_delivery_attempts_{MixAll::DEFAULT_MAX_DELIVERY_ATTEMPTS};
 
   MessageModel message_model_{MessageModel::CLUSTERING};
+
+  ReceiveMessageAction receive_message_policy_{ReceiveMessageAction::POLLING};
 
   mutable std::unique_ptr<OffsetStore> offset_store_;
 

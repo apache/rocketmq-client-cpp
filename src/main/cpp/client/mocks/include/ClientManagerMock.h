@@ -2,6 +2,7 @@
 
 #include "ClientManager.h"
 #include "gmock/gmock.h"
+#include <chrono>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -86,6 +87,10 @@ public:
   MOCK_METHOD(void, pullMessage,
               (const std::string&, const Metadata&, const PullMessageRequest&, std::chrono::milliseconds,
                (const std::function<void(const InvocationContext<PullMessageResponse>*)>&)),
+              (override));
+
+  MOCK_METHOD(bool, notifyClientTermination,
+              (const std::string&, const Metadata&, const NotifyClientTerminationRequest&, std::chrono::milliseconds),
               (override));
 };
 

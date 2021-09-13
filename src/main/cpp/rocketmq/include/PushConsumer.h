@@ -4,6 +4,7 @@
 #include "Consumer.h"
 #include "ProcessQueue.h"
 #include "rocketmq/Executor.h"
+#include "rocketmq/MessageListener.h"
 #include "rocketmq/MessageModel.h"
 #include <functional>
 #include <memory>
@@ -34,8 +35,9 @@ public:
 
   virtual std::shared_ptr<ConsumeMessageService> getConsumeMessageService() = 0;
 
-  virtual bool receiveMessage(const MQMessageQueue& message_queue, const FilterExpression& filter_expression,
-                              ConsumeMessageType consume_type) = 0;
+  virtual bool receiveMessage(const MQMessageQueue& message_queue, const FilterExpression& filter_expression) = 0;
+
+  virtual MessageListener* messageListener() = 0;
 };
 
 using PushConsumerSharedPtr = std::shared_ptr<PushConsumer>;

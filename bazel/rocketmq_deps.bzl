@@ -33,10 +33,10 @@ def rocketmq_deps():
     if "com_github_gabime_spdlog" not in native.existing_rules():
         http_archive(
             name = "com_github_gabime_spdlog",
-            strip_prefix = "spdlog-1.8.2",
-            sha256 = "e20e6bd8f57e866eaf25a5417f0a38a116e537f1a77ac7b5409ca2b180cec0d5",
+            strip_prefix = "spdlog-1.9.2",
+            sha256 = "6fff9215f5cb81760be4cc16d033526d1080427d236e86d70bb02994f85e3d38",
             urls = [
-                "https://github.com/gabime/spdlog/archive/v1.8.2.tar.gz",
+                "https://github.com/gabime/spdlog/archive/refs/tags/v1.9.2.tar.gz",
             ],
             build_file = "@org_apache_rocketmq//third_party:spdlog.BUILD",
         )
@@ -44,10 +44,10 @@ def rocketmq_deps():
     if "com_github_fmtlib_fmt" not in native.existing_rules():
         http_archive(
             name = "com_github_fmtlib_fmt",
-            sha256 = "5cae7072042b3043e12d53d50ef404bbb76949dad1de368d7f993a15c8c05ecc",
-            strip_prefix = "fmt-7.1.3",
+            strip_prefix = "fmt-8.0.1",
+            sha256 = "b06ca3130158c625848f3fb7418f235155a4d389b2abc3a6245fb01cb0eb1e01",
             urls = [
-                "https://github.com/fmtlib/fmt/archive/7.1.3.tar.gz",
+                "https://github.com/fmtlib/fmt/archive/refs/tags/8.0.1.tar.gz",
             ],
             build_file = "@org_apache_rocketmq//third_party:fmtlib.BUILD",
         )
@@ -83,9 +83,9 @@ def rocketmq_deps():
     if "com_github_grpc_grpc" not in native.existing_rules():
         http_archive(
             name = "com_github_grpc_grpc",
-            strip_prefix = "grpc-1.38.0",
-            sha256 = "abd9e52c69000f2c051761cfa1f12d52d8b7647b6c66828a91d462e796f2aede",
-            urls = ["https://github.com/grpc/grpc/archive/v1.38.0.tar.gz"],
+            strip_prefix = "grpc-1.40.0",
+            sha256 = "13e7c6460cd979726e5b3b129bb01c34532f115883ac696a75eb7f1d6a9765ed",
+            urls = ["https://github.com/grpc/grpc/archive/v1.40.0.tar.gz"],
         )
 
     if "io_opentelemetry_cpp" not in native.existing_rules():

@@ -55,7 +55,7 @@ class PushConsumer;
  */
 class ProcessQueueImpl : virtual public ProcessQueue {
 public:
-  ProcessQueueImpl(MQMessageQueue message_queue, FilterExpression filter_expression, ConsumeMessageType consume_type,
+  ProcessQueueImpl(MQMessageQueue message_queue, FilterExpression filter_expression,
                    std::weak_ptr<PushConsumer> consumer, std::shared_ptr<ClientManager> client_instance);
 
   ~ProcessQueueImpl() override;
@@ -107,15 +107,6 @@ public:
 
   void syncIdleState() override { idle_since_ = std::chrono::steady_clock::now(); }
 
-  ConsumeMessageType consumeType() const override { return consume_type_; }
-
-  /**
-   * @brief Expose for test purpose only.
-   *
-   * @param consume_type
-   */
-  void consumeType(ConsumeMessageType consume_type) { consume_type_ = consume_type; }
-
   void nextOffset(int64_t next_offset) override {
     assert(next_offset >= 0);
     next_offset_ = next_offset;
@@ -144,8 +135,6 @@ private:
    * Expression used to filter message in the server side.
    */
   const FilterExpression filter_expression_;
-
-  ConsumeMessageType consume_type_{ConsumeMessageType::POP};
 
   std::chrono::milliseconds invisible_time_;
 

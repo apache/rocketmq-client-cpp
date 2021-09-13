@@ -44,7 +44,12 @@ public:
   MOCK_METHOD(void, asyncPull, (const PullMessageRequest&, InvocationContext<PullMessageResponse>*), (override));
 
   MOCK_METHOD(void, asyncForwardMessageToDeadLetterQueue,
-              (const ForwardMessageToDeadLetterQueueRequest&, InvocationContext<ForwardMessageToDeadLetterQueueResponse>*),
+              (const ForwardMessageToDeadLetterQueueRequest&,
+               InvocationContext<ForwardMessageToDeadLetterQueueResponse>*),
+              (override));
+
+  MOCK_METHOD(grpc::Status, notifyClientTermination,
+              (grpc::ClientContext*, const NotifyClientTerminationRequest&, NotifyClientTerminationResponse* response),
               (override));
 
   MOCK_METHOD(bool, needHeartbeat, (), (override));

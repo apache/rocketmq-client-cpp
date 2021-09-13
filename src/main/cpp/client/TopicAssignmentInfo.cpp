@@ -6,8 +6,7 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 thread_local uint32_t TopicAssignment::query_which_broker_ = 0;
 
-TopicAssignment::TopicAssignment(const QueryAssignmentResponse& response)
-    : debug_string_(response.DebugString()) {
+TopicAssignment::TopicAssignment(const QueryAssignmentResponse& response) : debug_string_(response.DebugString()) {
   if (response.common().status().code() != google::rpc::Code::OK) {
     SPDLOG_WARN("QueryAssignmentResponse#code is not SUCCESS. Keep assignment info intact. QueryAssignmentResponse: {}",
                 response.DebugString());
@@ -56,23 +55,7 @@ TopicAssignment::TopicAssignment(const QueryAssignmentResponse& response)
       }
     }
     message_queue.serviceAddress(service_address);
-
-    ConsumeMessageType mode;
-    switch (item.mode()) {
-    case rmq::ConsumeMessageType::PULL: {
-      mode = ConsumeMessageType::PULL;
-      break;
-    }
-    case rmq::ConsumeMessageType::POP: {
-      mode = ConsumeMessageType::POP;
-      break;
-    }
-    default: {
-      SPDLOG_WARN("Unknown message request mode: {}, default to pop", item.mode());
-      mode = ConsumeMessageType::POP;
-    }
-    }
-    assignment_list_.emplace_back(Assignment(message_queue, mode));
+    assignment_list_.emplace_back(Assignment(message_queue));
   }
   std::sort(assignment_list_.begin(), assignment_list_.end());
 }

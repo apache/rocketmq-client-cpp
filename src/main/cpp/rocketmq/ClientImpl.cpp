@@ -83,6 +83,8 @@ void ClientImpl::shutdown() {
     client_manager_->getScheduler().cancel(route_update_handle_);
   }
 
+  notifyClientTermination();
+
   client_manager_.reset();
 }
 
@@ -272,7 +274,7 @@ void ClientImpl::fetchRouteFor(const std::string& topic, const std::function<voi
   };
 
   QueryRouteRequest request;
-  request.mutable_topic()->set_arn(arn_);
+  request.mutable_topic()->set_resource_namespace(resource_namespace_);
   request.mutable_topic()->set_name(topic);
   auto endpoints = request.mutable_endpoints();
   setAccessPoint(endpoints);
@@ -319,10 +321,6 @@ void ClientImpl::heartbeat() {
 
   HeartbeatRequest request;
   prepareHeartbeatData(request);
-  if (request.heartbeats().empty()) {
-    SPDLOG_INFO("No heartbeat entries to send. Skip.");
-    return;
-  }
 
   absl::flat_hash_map<std::string, std::string> metadata;
   Signature::sign(this, metadata);
@@ -534,24 +532,41 @@ void ClientImpl::onHealthCheckResponse(const std::string& endpoint, const Invoca
 
 void ClientImpl::fillGenericPollingRequest(MultiplexingRequest& request) {
   auto&& resource_bundle = resourceBundle();
-  auto protocol_bundle = request.mutable_polling_request()->mutable_client_resource_bundle();
-  protocol_bundle->set_client_id(resource_bundle.client_id);
-  for (auto& item : resource_bundle.topics) {
-    auto topic = new rmq::Resource;
-    topic->set_arn(resource_bundle.arn);
-    topic->set_name(item);
-    protocol_bundle->mutable_topics()->AddAllocated(topic);
-  }
-
+  auto polling_request = request.mutable_polling_request();
+  polling_request->set_client_id(clientId());
   switch (resource_bundle.group_type) {
   case GroupType::PUBLISHER:
-    protocol_bundle->mutable_producer_group()->set_arn(resource_bundle.arn);
-    protocol_bundle->mutable_producer_group()->set_name(resource_bundle.group);
+    polling_request->mutable_producer_group()->set_resource_namespace(resource_namespace_);
+    polling_request->mutable_producer_group()->set_name(group_name_);
     break;
+
   case GroupType::SUBSCRIBER:
-    protocol_bundle->mutable_consumer_group()->set_arn(resource_bundle.arn);
-    protocol_bundle->mutable_consumer_group()->set_name(resource_bundle.group);
+    polling_request->mutable_consumer_group()->set_resource_namespace(resource_namespace_);
+    polling_request->mutable_consumer_group()->set_name(group_name_);
     break;
+  }
+  auto topics = polling_request->mutable_topics();
+  for (const auto& item : resource_bundle.topics) {
+    auto topic = new rmq::Resource();
+    topic->set_resource_namespace(resource_namespace_);
+    topic->set_name(item);
+    topics->AddAllocated(topic);
+  }
+}
+
+void ClientImpl::notifyClientTermination() {
+  absl::flat_hash_set<std::string> endpoints;
+  endpointsInUse(endpoints);
+
+  Metadata metadata;
+  Signature::sign(this, metadata);
+  NotifyClientTerminationRequest request;
+  request.mutable_group()->set_resource_namespace(resource_namespace_);
+  request.mutable_group()->set_name(group_name_);
+  request.set_client_id(clientId());
+
+  for (const auto& endpoint : endpoints) {
+    client_manager_->notifyClientTermination(endpoint, metadata, request, absl::ToChronoMilliseconds(io_timeout_));
   }
 }
 

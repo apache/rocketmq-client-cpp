@@ -13,7 +13,7 @@ enum class GroupType : int8_t {
 struct ClientResourceBundle {
   std::string client_id;
   std::vector<std::string> topics;
-  std::string arn;
+  std::string resource_namespace;
   std::string group;
   GroupType group_type{GroupType::PUBLISHER};
 };

@@ -7,6 +7,7 @@
 #include "InvocationContext.h"
 #include "OrphanTransactionCallback.h"
 #include "ReceiveMessageCallback.h"
+#include "RpcClient.h"
 #include "RpcClientImpl.h"
 #include "Scheduler.h"
 #include "SendMessageContext.h"
@@ -37,9 +38,9 @@ public:
    * @brief Construct a new Client Manager Impl object
    * TODO: Make it protected such that instantiating it through ClientManagerFactory only, achieving Singleton
    * effectively.
-   * @param arn Abstract resource namespace, in which this client manager lives.
+   * @param resource_namespace Abstract resource namespace, in which this client manager lives.
    */
-  explicit ClientManagerImpl(std::string arn);
+  explicit ClientManagerImpl(std::string resource_namespace);
 
   ~ClientManagerImpl() override;
 
@@ -176,10 +177,9 @@ public:
                    std::chrono::milliseconds timeout,
                    const std::function<void(const InvocationContext<PullMessageResponse>*)>& cb) override;
 
-#ifdef ENABLE_TRACING
-  nostd::shared_ptr<trace::Tracer> getTracer();
-  void updateTraceProvider();
-#endif
+  bool notifyClientTermination(const std::string& target_host, const Metadata& metadata,
+                               const NotifyClientTerminationRequest& request,
+                               std::chrono::milliseconds timeout) override;
 
   void trace(bool trace) { trace_ = trace; }
 
@@ -206,11 +206,7 @@ private:
   static const char* STATS_TASK_NAME;
   static const char* HEALTH_CHECK_TASK_NAME;
 
-  /**
-   * Abstract resource namespace. Each user may have one or more instances and each each instance has an independent
-   * abstract resource namespace.
-   */
-  std::string arn_;
+  std::string resource_namespace_;
 
   std::atomic<State> state_;
 

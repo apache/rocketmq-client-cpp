@@ -127,7 +127,7 @@ void ConsumeStandardMessageService::consumeTask(const ProcessQueueWeakPtr& proce
 
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ACCESS_KEY,
                         consumer->credentialsProvider()->getCredentials().accessKey());
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ARN, consumer->arn());
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ARN, consumer->resourceNamespace());
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TOPIC, msg.getTopic());
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_MESSAGE_ID, msg.getMsgId());
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_GROUP, consumer->getGroupName());
@@ -161,7 +161,7 @@ void ConsumeStandardMessageService::consumeTask(const ProcessQueueWeakPtr& proce
       }
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ACCESS_KEY,
                         consumer->credentialsProvider()->getCredentials().accessKey());
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ARN, consumer->arn());
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ARN, consumer->resourceNamespace());
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TOPIC, msg.getTopic());
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_MESSAGE_ID, msg.getMsgId());
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_GROUP, consumer->getGroupName());

@@ -90,7 +90,7 @@ message DeleteConsumerGroupRequest {
 }
 
 message UpdateConsumerGroupRequest {
-  ConsumerGroup consumer_group = 1;
+  ConsumerData consumer_data = 1;
   google.protobuf.FieldMask update_mask = 2;
 }
 

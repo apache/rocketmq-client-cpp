@@ -14,10 +14,9 @@ using namespace std::chrono;
 ROCKETMQ_NAMESPACE_BEGIN
 
 ProcessQueueImpl::ProcessQueueImpl(MQMessageQueue message_queue, FilterExpression filter_expression,
-                                   ConsumeMessageType consume_type, std::weak_ptr<PushConsumer> consumer,
-                                   std::shared_ptr<ClientManager> client_instance)
+                                   std::weak_ptr<PushConsumer> consumer, std::shared_ptr<ClientManager> client_instance)
     : message_queue_(std::move(message_queue)), filter_expression_(std::move(filter_expression)),
-      consume_type_(consume_type), invisible_time_(MixAll::millisecondsOf(MixAll::DEFAULT_INVISIBLE_TIME_)),
+      invisible_time_(MixAll::millisecondsOf(MixAll::DEFAULT_INVISIBLE_TIME_)),
       simple_name_(message_queue_.simpleName()), consumer_(std::move(consumer)),
       client_manager_(std::move(client_instance)), cached_message_quantity_(0), cached_message_memory_(0) {
   SPDLOG_DEBUG("Created ProcessQueue={}", simpleName());
@@ -69,11 +68,17 @@ bool ProcessQueueImpl::shouldThrottle() const {
 }
 
 void ProcessQueueImpl::receiveMessage() {
-  switch (consume_type_) {
-  case ConsumeMessageType::POP:
+  auto consumer = consumer_.lock();
+  if (!consumer) {
+    return;
+  }
+
+  auto policy = consumer->receiveMessageAction();
+  switch (policy) {
+  case ReceiveMessageAction::POLLING:
     popMessage();
     break;
-  case ConsumeMessageType::PULL:
+  case ReceiveMessageAction::PULL:
     pullMessage();
     break;
   }
@@ -262,10 +267,10 @@ void ProcessQueueImpl::wrapPopMessageRequest(absl::flat_hash_map<std::string, st
   assert(consumer);
   request.set_client_id(consumer->clientId());
   request.mutable_group()->set_name(consumer->getGroupName());
-  request.mutable_group()->set_arn(consumer->arn());
+  request.mutable_group()->set_resource_namespace(consumer->resourceNamespace());
   request.mutable_partition()->set_id(message_queue_.getQueueId());
   request.mutable_partition()->mutable_topic()->set_name(message_queue_.getTopic());
-  request.mutable_partition()->mutable_topic()->set_arn(consumer->arn());
+  request.mutable_partition()->mutable_topic()->set_resource_namespace(consumer->resourceNamespace());
 
   wrapFilterExpression(request.mutable_filter_expression());
 
@@ -289,10 +294,10 @@ void ProcessQueueImpl::wrapPullMessageRequest(absl::flat_hash_map<std::string, s
   assert(consumer);
   request.set_client_id(consumer->clientId());
   request.mutable_group()->set_name(consumer->getGroupName());
-  request.mutable_group()->set_arn(consumer->arn());
+  request.mutable_group()->set_resource_namespace(consumer->resourceNamespace());
   request.mutable_partition()->set_id(message_queue_.getQueueId());
   request.mutable_partition()->mutable_topic()->set_name(message_queue_.getTopic());
-  request.mutable_partition()->mutable_topic()->set_arn(consumer->arn());
+  request.mutable_partition()->mutable_topic()->set_resource_namespace(consumer->resourceNamespace());
   request.set_offset(next_offset_);
   request.set_batch_size(consumer->receiveBatchSize());
 

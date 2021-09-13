@@ -2,6 +2,8 @@
 #include "ClientManagerFactory.h"
 #include "InvocationContext.h"
 #include "Signature.h"
+#include "rocketmq/MessageModel.h"
+#include "apache/rocketmq/v1/definition.pb.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -73,7 +75,7 @@ std::future<int64_t> PullConsumerImpl::queryOffset(const OffsetQuery& query) {
   }
 
   request.mutable_partition()->mutable_topic()->set_name(query.message_queue.getTopic());
-  request.mutable_partition()->mutable_topic()->set_arn(arn_);
+  request.mutable_partition()->mutable_topic()->set_resource_namespace(resource_namespace_);
 
   request.mutable_partition()->set_id(query.message_queue.getQueueId());
 
@@ -93,7 +95,7 @@ std::future<int64_t> PullConsumerImpl::queryOffset(const OffsetQuery& query) {
   };
 
   client_manager_->queryOffset(query.message_queue.serviceAddress(), metadata, request,
-                                absl::ToChronoMilliseconds(io_timeout_), callback);
+                               absl::ToChronoMilliseconds(io_timeout_), callback);
   return promise_ptr->get_future();
 }
 
@@ -105,10 +107,10 @@ void PullConsumerImpl::pull(const PullMessageQuery& query, PullCallback* cb) {
   request.mutable_await_time()->set_seconds(seconds);
   request.mutable_await_time()->set_nanos(absl::ToInt64Nanoseconds(duration - absl::Seconds(seconds)));
   request.mutable_group()->set_name(group_name_);
-  request.mutable_group()->set_arn(arn_);
+  request.mutable_group()->set_resource_namespace(resource_namespace_);
 
   request.mutable_partition()->mutable_topic()->set_name(query.message_queue.getTopic());
-  request.mutable_partition()->mutable_topic()->set_arn(arn_);
+  request.mutable_partition()->mutable_topic()->set_resource_namespace(resource_namespace_);
   request.mutable_partition()->set_id(query.message_queue.getQueueId());
   request.set_client_id(clientId());
 
@@ -144,14 +146,23 @@ void PullConsumerImpl::pull(const PullMessageQuery& query, PullCallback* cb) {
   absl::flat_hash_map<std::string, std::string> metadata;
   Signature::sign(this, metadata);
 
-  client_manager_->pullMessage(target_host, metadata, request, absl::ToChronoMilliseconds(long_polling_timeout_), callback);
+  client_manager_->pullMessage(target_host, metadata, request, absl::ToChronoMilliseconds(long_polling_timeout_),
+                               callback);
 }
 
 void PullConsumerImpl::prepareHeartbeatData(HeartbeatRequest& request) {
-  rmq::HeartbeatEntry entry;
-  entry.mutable_producer_group()->mutable_group()->set_arn(arn_);
-  entry.mutable_producer_group()->mutable_group()->set_name(group_name_);
-  request.mutable_heartbeats()->Add(std::move(entry));
+  request.set_client_id(clientId());
+  auto consumer_data = request.mutable_consumer_data();
+  consumer_data->mutable_group()->set_resource_namespace(resource_namespace_);
+  consumer_data->mutable_group()->set_name(group_name_);
+  switch (message_model_) {
+  case MessageModel::BROADCASTING:
+    consumer_data->set_consume_model(rmq::ConsumeModel::BROADCASTING);
+    break;
+  case MessageModel::CLUSTERING:
+    consumer_data->set_consume_model(rmq::ConsumeModel::CLUSTERING);
+    break;
+  }
 }
 
 ROCKETMQ_NAMESPACE_END

@@ -20,15 +20,15 @@ public:
     grpc_init();
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
     ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler_));
-    ClientManagerFactory::getInstance().addClientManager(arn_, client_manager_);
+    ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
 
     pull_consumer_ = std::make_shared<PullConsumerImpl>(group_);
     pull_consumer_->setNameServerList(name_server_list_);
-    pull_consumer_->arn(arn_);
+    pull_consumer_->resourceNamespace(resource_namespace_);
 
     {
       std::vector<Partition> partitions;
-      Topic topic(arn_, topic_);
+      Topic topic(resource_namespace_, topic_);
       std::vector<Address> broker_addresses{Address(broker_host_, broker_port_)};
       ServiceAddress service_address(AddressScheme::IPv4, broker_addresses);
       Broker broker(broker_name_, broker_id_, service_address);
@@ -42,7 +42,7 @@ public:
   void TearDown() override { grpc_shutdown(); }
 
 protected:
-  std::string arn_{"arn:mq://test"};
+  std::string resource_namespace_{"mq://test"};
   std::vector<std::string> name_server_list_{"10.0.0.1:9876"};
   std::string group_{"Group-0"};
   std::string topic_{"Test"};
@@ -128,7 +128,7 @@ TEST_F(PullConsumerImplTest, testPull) {
     message->mutable_system_attribute()->mutable_body_digest()->set_type(rmq::DigestType::MD5);
     message->mutable_system_attribute()->mutable_body_digest()->set_checksum(md5);
 
-    message->mutable_topic()->set_arn(arn_);
+    message->mutable_topic()->set_resource_namespace(resource_namespace_);
     message->mutable_topic()->set_name(topic_);
 
     message->mutable_system_attribute()->set_tag(tag_);

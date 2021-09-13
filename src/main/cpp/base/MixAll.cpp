@@ -56,7 +56,7 @@ const char* MixAll::SPAN_NAME_PULL_MESSAGE = "PullMessage";
 
 // Span attribute name list
 const char* MixAll::SPAN_ATTRIBUTE_ACCESS_KEY = "ak";
-const char* MixAll::SPAN_ATTRIBUTE_ARN = "arn";
+const char* MixAll::SPAN_ATTRIBUTE_ARN = "setResourceNamespace";
 const char* MixAll::SPAN_ATTRIBUTE_KEYS = "keys";
 const char* MixAll::SPAN_ATTRIBUTE_MESSAGE_TYPE = "msgType";
 const char* MixAll::SPAN_ATTRIBUTE_DELIVERY_TIMESTAMP = "deliveryTimestamp";
