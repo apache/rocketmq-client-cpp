@@ -2,7 +2,7 @@
 #include "ClientManagerFactory.h"
 #include "ClientManagerMock.h"
 #include "HttpClientMock.h"
-#include "Scheduler.h"
+#include "SchedulerImpl.h"
 #include "TopAddressing.h"
 #include "rocketmq/RocketMQ.h"
 #include "gtest/gtest.h"
@@ -24,19 +24,23 @@ class ClientImplTest : public testing::Test {
 public:
   void SetUp() override {
     grpc_init();
+    scheduler_.start();
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
     ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
     ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler_));
     client_ = std::make_shared<TestClientImpl>(group_);
   }
 
-  void TearDown() override { grpc_shutdown(); }
+  void TearDown() override {
+    grpc_shutdown();
+    scheduler_.shutdown();
+  }
 
 protected:
   std::string resource_namespace_{"mq://test"};
   std::string group_{"Group-0"};
   std::shared_ptr<testing::NiceMock<ClientManagerMock>> client_manager_;
-  Scheduler scheduler_;
+  SchedulerImpl scheduler_;
   std::shared_ptr<TestClientImpl> client_;
 };
 

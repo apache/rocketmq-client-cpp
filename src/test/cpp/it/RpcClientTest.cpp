@@ -28,8 +28,9 @@ protected:
     server_authorization_check_config_ = std::make_shared<grpc::experimental::TlsServerAuthorizationCheckConfig>(
         std::make_shared<TlsServerAuthorizationChecker>());
     std::vector<grpc::experimental::IdentityKeyCertPair> pem_list;
-    grpc::experimental::IdentityKeyCertPair pair{.private_key = TlsHelper::client_private_key,
-                                                 .certificate_chain = TlsHelper::client_certificate_chain};
+    grpc::experimental::IdentityKeyCertPair pair{};
+    pair.private_key = TlsHelper::client_private_key;
+    pair.certificate_chain = TlsHelper::client_certificate_chain;
     pem_list.emplace_back(pair);
     certificate_provider_ =
         std::make_shared<grpc::experimental::StaticDataCertificateProvider>(TlsHelper::CA, pem_list);

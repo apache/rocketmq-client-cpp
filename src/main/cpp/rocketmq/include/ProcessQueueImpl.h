@@ -36,7 +36,7 @@ ROCKETMQ_NAMESPACE_END
 namespace std {
 
 template <> struct less<ROCKETMQ_NAMESPACE::OffsetRecord> {
-  bool operator()(const ROCKETMQ_NAMESPACE::OffsetRecord& lhs, const ROCKETMQ_NAMESPACE::OffsetRecord& rhs) {
+  bool operator()(const ROCKETMQ_NAMESPACE::OffsetRecord& lhs, const ROCKETMQ_NAMESPACE::OffsetRecord& rhs) const {
     return lhs.offset_ < rhs.offset_;
   }
 };

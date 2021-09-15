@@ -83,9 +83,9 @@ def rocketmq_deps():
     if "com_github_grpc_grpc" not in native.existing_rules():
         http_archive(
             name = "com_github_grpc_grpc",
-            strip_prefix = "grpc-1.40.0",
-            sha256 = "13e7c6460cd979726e5b3b129bb01c34532f115883ac696a75eb7f1d6a9765ed",
-            urls = ["https://github.com/grpc/grpc/archive/v1.40.0.tar.gz"],
+            strip_prefix = "grpc-1.39.0",
+            sha256 = "b16992aa1c949c10d5d5ce2a62f9d99fa7de77da2943e643fb66dcaf075826d6",
+            urls = ["https://github.com/grpc/grpc/archive/v1.39.0.tar.gz"],
         )
 
     if "io_opentelemetry_cpp" not in native.existing_rules():
@@ -111,10 +111,19 @@ def rocketmq_deps():
 
     maybe(
         http_archive,
-        name = "com_github_progschj_ThreadPool",
-        build_file = "@org_apache_rocketmq//third_party:ThreadPool.BUILD",
-        strip_prefix = "ThreadPool-1.0",
+        name = "asio",
+        build_file = "@org_apache_rocketmq//third_party:asio.BUILD",
+        strip_prefix = "asio-1.18.2",
         urls = [
-            "https://github.com/lizhanhui/ThreadPool/archive/refs/tags/v1.0.tar.gz",
+            "https://github.com/lizhanhui/asio/archive/refs/tags/v1.18.2.tar.gz",
         ],
+    )
+
+    # Curl library
+    maybe(
+        http_archive,
+        name = "com_github_curl",
+        build_file = "@org_apache_rocketmq//third_party:curl.BUILD",
+        strip_prefix = "curl-master",
+        urls = ["https://github.com/curl/curl/archive/master.zip"],
     )

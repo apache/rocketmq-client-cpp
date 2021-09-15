@@ -1,18 +1,19 @@
 #include "ConsumeMessageService.h"
 #include "LoggerImpl.h"
 #include "PushConsumer.h"
+#include "ThreadPoolImpl.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 ConsumeMessageService::ConsumeMessageService(std::weak_ptr<PushConsumer> consumer, int thread_count,
                                              MessageListener* message_listener)
-    : state_(State::CREATED), thread_count_(thread_count),
-      pool_(absl::make_unique<ThreadPool>(thread_count_)), consumer_(std::move(consumer)),
-      message_listener_(message_listener) {}
+    : state_(State::CREATED), thread_count_(thread_count), pool_(absl::make_unique<ThreadPoolImpl>(thread_count_)),
+      consumer_(std::move(consumer)), message_listener_(message_listener) {}
 
 void ConsumeMessageService::start() {
   State expected = State::CREATED;
   if (state_.compare_exchange_strong(expected, State::STARTING, std::memory_order_relaxed)) {
+    pool_->start();
     dispatch_thread_ = std::thread([this] {
       State current_state = state_.load(std::memory_order_relaxed);
       while (State::STOPPED != current_state && State::STOPPING != current_state) {
@@ -45,6 +46,7 @@ void ConsumeMessageService::throttle(const std::string& topic, uint32_t threshol
 void ConsumeMessageService::shutdown() {
   State expected = State::STOPPING;
   if (state_.compare_exchange_strong(expected, State::STOPPED, std::memory_order_relaxed)) {
+    pool_->shutdown();
     {
       absl::MutexLock lk(&dispatch_mtx_);
       dispatch_cv_.SignalAll();

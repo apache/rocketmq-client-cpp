@@ -26,8 +26,23 @@ TEST_F(CredentialsProviderTest, testEnvironmentVariable) {
   const char* access_key = "abc";
   const char* access_secret = "def";
 
+#ifdef _WIN32
+  std::string env_access_key;
+  env_access_key.append(EnvironmentVariablesCredentialsProvider::ENVIRONMENT_ACCESS_KEY);
+  env_access_key.push_back('=');
+  env_access_key.append(access_key);
+
+  _putenv(env_access_key.c_str());
+
+  std::string env_access_secret;
+  env_access_secret.append(EnvironmentVariablesCredentialsProvider::ENVIRONMENT_ACCESS_SECRET);
+  env_access_secret.push_back('=');
+  env_access_secret.append(access_secret);
+  _putenv(env_access_secret.c_str());
+#else
   setenv(EnvironmentVariablesCredentialsProvider::ENVIRONMENT_ACCESS_KEY, access_key, 1);
   setenv(EnvironmentVariablesCredentialsProvider::ENVIRONMENT_ACCESS_SECRET, access_secret, 1);
+#endif
 
   EnvironmentVariablesCredentialsProvider provider;
   const Credentials& credentials = provider.getCredentials();

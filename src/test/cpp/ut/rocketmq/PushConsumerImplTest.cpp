@@ -51,7 +51,8 @@ protected:
 };
 
 TEST_F(PushConsumerImplTest, testAck) {
-  Scheduler scheduler;
+  SchedulerImpl scheduler;
+  scheduler.start();
   ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler));
 
   auto ack_cb = [](const std::string& target_host, const Metadata& metadata, const AckMessageRequest& request,
@@ -88,10 +89,12 @@ TEST_F(PushConsumerImplTest, testAck) {
   }
   EXPECT_TRUE(completed);
   push_consumer_->shutdown();
+  scheduler.shutdown();
 }
 
 TEST_F(PushConsumerImplTest, testNack) {
-  Scheduler scheduler;
+  SchedulerImpl scheduler;
+  scheduler.start();
   ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler));
 
   auto nack_cb = [](const std::string& target_host, const Metadata& metadata, const NackMessageRequest& request,
@@ -126,10 +129,12 @@ TEST_F(PushConsumerImplTest, testNack) {
   }
   EXPECT_TRUE(completed);
   push_consumer_->shutdown();
+  scheduler.shutdown();
 }
 
 TEST_F(PushConsumerImplTest, testForward) {
-  Scheduler scheduler;
+  SchedulerImpl scheduler;
+  scheduler.start();
   ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler));
 
   InvocationContext<ForwardMessageToDeadLetterQueueResponse> invocation_context;
@@ -173,6 +178,7 @@ TEST_F(PushConsumerImplTest, testForward) {
   }
   EXPECT_TRUE(completed);
   push_consumer_->shutdown();
+  scheduler.shutdown();
 }
 
 ROCKETMQ_NAMESPACE_END

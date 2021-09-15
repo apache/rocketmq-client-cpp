@@ -1,6 +1,7 @@
 #include "ProducerImpl.h"
 #include "ClientManagerFactory.h"
 #include "ClientManagerMock.h"
+#include "SchedulerImpl.h"
 #include "TopicRouteData.h"
 #include "rocketmq/AsyncCallback.h"
 #include "rocketmq/MQMessage.h"
@@ -63,14 +64,17 @@ protected:
 };
 
 TEST_F(ProducerImplTest, testStartShutdown) {
-  Scheduler scheduler;
+  SchedulerImpl scheduler;
+  scheduler.start();
   ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler));
   producer_->start();
   producer_->shutdown();
+  scheduler.shutdown();
 }
 
 TEST_F(ProducerImplTest, testSend) {
-  Scheduler scheduler;
+  SchedulerImpl scheduler;
+  scheduler.start();
   ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler));
   auto mock_resolve_route = [this](const std::string& target_host, const Metadata& metadata,
                                    const QueryRouteRequest& request, std::chrono::milliseconds timeout,
@@ -98,10 +102,12 @@ TEST_F(ProducerImplTest, testSend) {
   producer_->send(message);
   EXPECT_TRUE(cb_invoked);
   producer_->shutdown();
+  scheduler.shutdown();
 }
 
 TEST_F(ProducerImplTest, testSend_WithMessageGroup) {
-  Scheduler scheduler;
+  SchedulerImpl scheduler;
+  scheduler.start();
   ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler));
   auto mock_resolve_route = [this](const std::string& target_host, const Metadata& metadata,
                                    const QueryRouteRequest& request, std::chrono::milliseconds timeout,
@@ -129,6 +135,7 @@ TEST_F(ProducerImplTest, testSend_WithMessageGroup) {
   producer_->send(message, message_group_);
   EXPECT_TRUE(cb_invoked);
   producer_->shutdown();
+  scheduler.shutdown();
 }
 
 class TestMessageQueueSelector : public MessageQueueSelector {
@@ -139,7 +146,8 @@ public:
 };
 
 TEST_F(ProducerImplTest, testSend_WithMessageQueueSelector) {
-  Scheduler scheduler;
+  SchedulerImpl scheduler;
+  scheduler.start();
   ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler));
   auto mock_resolve_route = [this](const std::string& target_host, const Metadata& metadata,
                                    const QueryRouteRequest& request, std::chrono::milliseconds timeout,
@@ -169,6 +177,7 @@ TEST_F(ProducerImplTest, testSend_WithMessageQueueSelector) {
   producer_->send(message, selector.get(), nullptr);
   EXPECT_TRUE(cb_invoked);
   producer_->shutdown();
+  scheduler.shutdown();
 }
 
 class TestSendCallback : public SendCallback {
@@ -192,7 +201,8 @@ protected:
 };
 
 TEST_F(ProducerImplTest, testAsyncSend) {
-  Scheduler scheduler;
+  SchedulerImpl scheduler;
+  scheduler.start();
   ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler));
   auto mock_resolve_route = [this](const std::string& target_host, const Metadata& metadata,
                                    const QueryRouteRequest& request, std::chrono::milliseconds timeout,
@@ -232,6 +242,7 @@ TEST_F(ProducerImplTest, testAsyncSend) {
   }
 
   EXPECT_TRUE(cb_invoked);
+  scheduler.shutdown();
   producer_->shutdown();
 }
 

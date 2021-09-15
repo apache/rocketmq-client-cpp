@@ -18,6 +18,19 @@ public:
   }
 
   void TearDown() override { grpc_shutdown(); }
+
+  void SetEnv(const char* key, const char* value) {
+    int overwrite = 1;
+    #ifdef _WIN32
+    std::string env;
+    env.append(key);
+    env.push_back('=');
+    env.append(value);
+    _putenv(env.c_str());
+    #else
+    setenv(key, value, overwrite);
+    #endif
+  }
 };
 
 TEST_F(TopAddressingTest, testFetchNameServerAddresses) {
@@ -51,9 +64,8 @@ TEST_F(TopAddressingTest, testFetchNameServerAddresses) {
 }
 
 TEST_F(TopAddressingTest, testFetchNameServerAddresses_env) {
-  int override = 1;
-  setenv(HostInfo::ENV_LABEL_UNIT, "CENTER_UNIT.center", override);
-  setenv(HostInfo::ENV_LABEL_STAGE, "DAILY", override);
+  SetEnv(HostInfo::ENV_LABEL_UNIT, "CENTER_UNIT.center");
+  SetEnv(HostInfo::ENV_LABEL_STAGE, "DAILY");
   std::vector<std::string> list;
 
   absl::Mutex mtx;

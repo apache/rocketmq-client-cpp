@@ -17,14 +17,26 @@ protected:
   std::string unit_{"unit"};
   std::string app_{"app"};
   std::string stage_{"stage"};
+
+  void SetEnv(const char* key, const char* value) {
+    int overwrite = 1;
+    #ifdef _WIN32
+    std::string env;
+    env.append(key);
+    env.push_back('=');
+    env.append(value);
+    _putenv(env.c_str());
+    #else
+    setenv(key, value, overwrite);
+    #endif
+  }
 };
 
 TEST_F(HostInfoTest, testQueryString) {
-  int overwrite = 1;
-  setenv(HostInfo::ENV_LABEL_SITE, site_.c_str(), overwrite);
-  setenv(HostInfo::ENV_LABEL_UNIT, unit_.c_str(), overwrite);
-  setenv(HostInfo::ENV_LABEL_APP, app_.c_str(), overwrite);
-  setenv(HostInfo::ENV_LABEL_STAGE, stage_.c_str(), overwrite);
+  SetEnv(HostInfo::ENV_LABEL_SITE, site_.c_str());
+  SetEnv(HostInfo::ENV_LABEL_UNIT, unit_.c_str());
+  SetEnv(HostInfo::ENV_LABEL_APP, app_.c_str());
+  SetEnv(HostInfo::ENV_LABEL_STAGE, stage_.c_str());
 
   HostInfo host_info;
   std::string query_string = host_info.queryString();

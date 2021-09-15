@@ -1,12 +1,9 @@
 #include "UtilAll.h"
 
 #include "LoggerImpl.h"
-#include "absl/strings/str_split.h"
 #include "src/core/lib/iomgr/gethostname.h"
 #include "zlib.h"
-#include <arpa/inet.h>
 #include <cstring>
-#include <ifaddrs.h>
 
 #if defined(__APPLE__)
 #include <net/if_dl.h>
@@ -17,26 +14,25 @@
 #include <netpacket/packet.h>
 #define AF_FAMILY AF_PACKET
 #elif defined(_WIN32)
-
+#include <Windows.h>
+#include <iphlpapi.h>
+#pragma comment(lib, "iphlpapi.lib")
 #endif
 
+#ifndef _WIN32
+#include <ifaddrs.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#endif
+
+#include "asio.hpp"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-#if defined(__APPLE__)
-#define AF_FAMILY AF_LINK
-#elif defined(__linux__)
-#define AF_FAMILY AF_PACKET
-#elif defined(_WIN32)
-#endif
-
 std::string UtilAll::hostname() {
-  std::string host_name(grpc_gethostname());
-  return host_name;
+  return asio::ip::host_name();
 }
 
 bool UtilAll::macAddress(std::vector<unsigned char>& mac) {
@@ -48,6 +44,7 @@ bool UtilAll::macAddress(std::vector<unsigned char>& mac) {
     return true;
   }
 
+#ifndef _WIN32
   struct ifaddrs *head = nullptr, *node;
   if (getifaddrs(&head)) {
     return false;
@@ -82,6 +79,38 @@ bool UtilAll::macAddress(std::vector<unsigned char>& mac) {
   }
   freeifaddrs(head);
   return true;
+#else
+  PIP_ADAPTER_INFO adaptor_info;
+  DWORD buf_len = sizeof(IP_ADAPTER_INFO);
+  char mac_address[18];
+  adaptor_info = (IP_ADAPTER_INFO*) malloc(buf_len);
+  if (!adaptor_info) {
+    // TODO: running out of memroy
+  }
+
+  if(GetAdaptersInfo(adaptor_info, &buf_len) == NO_ERROR) {
+    PIP_ADAPTER_INFO item = adaptor_info;
+    do {
+      bool all_zero = true;
+      for (auto& b : item->Address) {
+        if (b != 0) {
+          all_zero = false;
+          break;
+        }
+      }
+      if (!all_zero) {
+        cache.resize(6);
+        memcpy(cache.data(), item->Address, 6);
+        mac_cached = true;
+        mac = cache;
+        break;
+      }
+      item = item->Next;
+    } while (item);    
+  } else {
+    free(adaptor_info);
+  }
+#endif
 }
 
 bool UtilAll::compress(const std::string& src, std::string& dst) {

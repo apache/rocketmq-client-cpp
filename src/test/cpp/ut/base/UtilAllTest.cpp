@@ -1,5 +1,7 @@
 #include "UtilAll.h"
+#include "MixAll.h"
 #include "absl/strings/str_split.h"
+#include "asio.hpp"
 #include "rocketmq/RocketMQ.h"
 #include "spdlog/spdlog.h"
 #include "gtest/gtest.h"
@@ -54,6 +56,18 @@ TEST_F(UtilAllTest, split) {
   std::vector<std::string> segments = absl::StrSplit(ip, '.');
   std::vector<std::string> expected = {"8", "8", "8", "8"};
   EXPECT_EQ(expected, segments);
+}
+
+TEST_F(UtilAllTest, macAddrss) {
+  std::vector<unsigned char> mac;
+  bool success = UtilAll::macAddress(mac);
+  ASSERT_TRUE(success);
+  std::cout << MixAll::hex(mac.data(), mac.size()) << std::endl;
+}
+
+TEST_F(UtilAllTest, testAsioGetHostName) {
+  auto&& host_name = asio::ip::host_name();
+  std::cout << host_name << std::endl;
 }
 
 ROCKETMQ_NAMESPACE_END

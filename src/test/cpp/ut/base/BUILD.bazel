@@ -42,6 +42,7 @@ cc_test(
         "//src/main/cpp/base:base_library",
         "@com_google_googletest//:gtest_main",
         "@zlib//:zlib",
+        "@asio//:asio",
     ],
 )
 
@@ -131,7 +132,7 @@ cc_test(
     ],
     deps = [
         "//api:rocketmq_interface",
-        "@com_github_progschj_ThreadPool//:ThreadPool",
+        "//src/main/cpp/base:base_library",
         "@com_google_googletest//:gtest_main",        
     ],
 )

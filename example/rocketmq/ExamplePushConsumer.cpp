@@ -12,7 +12,7 @@ class SampleMQMessageListener : public StandardMessageListener {
 public:
   ConsumeMessageResult consumeMessage(const std::vector<MQMessageExt>& msgs) override {
     for (const MQMessageExt& msg : msgs) {
-      SPDLOG_WARN("Consume message[Topic={}, MessageId={}] OK", msg.getTopic(), msg.getMsgId());
+      SPDLOG_INFO("Consume message[Topic={}, MessageId={}] OK", msg.getTopic(), msg.getMsgId());
       std::this_thread::sleep_for(std::chrono::seconds(1));
     }
     return ConsumeMessageResult::SUCCESS;

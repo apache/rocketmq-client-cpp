@@ -51,7 +51,7 @@ void ConsumeFifoMessageService::submitConsumeTask0(const std::shared_ptr<PushCon
   std::function<void(void)> consume_task =
       std::bind(&ConsumeFifoMessageService::consumeTask, this, process_queue, message);
   SPDLOG_DEBUG("Submit FIFO consume task to thread pool");
-  pool_->enqueue(consume_task);
+  pool_->submit(consume_task);
 }
 
 void ConsumeFifoMessageService::submitConsumeTask(const ProcessQueueWeakPtr& process_queue) {

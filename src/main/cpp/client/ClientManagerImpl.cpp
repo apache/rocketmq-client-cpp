@@ -27,7 +27,7 @@ ROCKETMQ_NAMESPACE_BEGIN
 ClientManagerImpl::ClientManagerImpl(std::string resource_namespace)
     : resource_namespace_(std::move(resource_namespace)), state_(State::CREATED),
       completion_queue_(std::make_shared<CompletionQueue>()),
-      callback_thread_pool_(absl::make_unique<ThreadPool>(std::thread::hardware_concurrency())),
+      callback_thread_pool_(absl::make_unique<ThreadPoolImpl>(std::thread::hardware_concurrency())),
       latency_histogram_("Message-Latency", 11) {
   spdlog::set_level(spdlog::level::trace);
   assignLabels(latency_histogram_);
@@ -36,8 +36,10 @@ ClientManagerImpl::ClientManagerImpl(std::string resource_namespace)
 
   // Make use of encryption only at the moment.
   std::vector<grpc::experimental::IdentityKeyCertPair> identity_key_cert_list;
-  grpc::experimental::IdentityKeyCertPair pair{.private_key = TlsHelper::client_private_key,
-                                               .certificate_chain = TlsHelper::client_certificate_chain};
+  grpc::experimental::IdentityKeyCertPair pair{};
+  pair.private_key = TlsHelper::client_private_key;
+  pair.certificate_chain = TlsHelper::client_certificate_chain;
+
   identity_key_cert_list.emplace_back(pair);
   certificate_provider_ =
       std::make_shared<grpc::experimental::StaticDataCertificateProvider>(TlsHelper::CA, identity_key_cert_list);
@@ -62,6 +64,9 @@ void ClientManagerImpl::start() {
   }
   state_.store(State::STARTING, std::memory_order_relaxed);
 
+  callback_thread_pool_->start();
+  scheduler_.start();
+
   std::weak_ptr<ClientManagerImpl> client_instance_weak_ptr = shared_from_this();
 
   auto health_check_functor = [client_instance_weak_ptr]() {
@@ -70,15 +75,15 @@ void ClientManagerImpl::start() {
       client_instance->doHealthCheck();
     }
   };
-  health_check_handle_ = scheduler_.schedule(health_check_functor, HEALTH_CHECK_TASK_NAME, std::chrono::seconds(5),
-                                             std::chrono::seconds(5));
+  health_check_task_id_ = scheduler_.schedule(health_check_functor, HEALTH_CHECK_TASK_NAME, std::chrono::seconds(5),
+                                              std::chrono::seconds(5));
   auto heartbeat_functor = [client_instance_weak_ptr]() {
     auto client_instance = client_instance_weak_ptr.lock();
     if (client_instance) {
       client_instance->doHeartbeat();
     }
   };
-  heartbeat_handle_ =
+  heartbeat_task_id_ =
       scheduler_.schedule(heartbeat_functor, HEARTBEAT_TASK_NAME, std::chrono::seconds(1), std::chrono::seconds(10));
 
   completion_queue_thread_ = std::thread(std::bind(&ClientManagerImpl::pollCompletionQueue, this));
@@ -89,7 +94,7 @@ void ClientManagerImpl::start() {
       client_instance->logStats();
     }
   };
-  stats_handle_ =
+  stats_task_id_ =
       scheduler_.schedule(stats_functor_, STATS_TASK_NAME, std::chrono::seconds(0), std::chrono::seconds(10));
   state_.store(State::STARTED, std::memory_order_relaxed);
 }
@@ -100,19 +105,22 @@ void ClientManagerImpl::shutdown() {
     SPDLOG_WARN("Unexpected client instance state: {}", state_.load(std::memory_order_relaxed));
     return;
   }
-
   state_.store(STOPPING, std::memory_order_relaxed);
-  if (health_check_handle_) {
-    scheduler_.cancel(health_check_handle_);
+
+  callback_thread_pool_->shutdown();
+
+  if (health_check_task_id_) {
+    scheduler_.cancel(health_check_task_id_);
   }
 
-  if (heartbeat_handle_) {
-    scheduler_.cancel(heartbeat_handle_);
+  if (heartbeat_task_id_) {
+    scheduler_.cancel(heartbeat_task_id_);
   }
 
-  if (stats_handle_) {
-    scheduler_.cancel(stats_handle_);
+  if (stats_task_id_) {
+    scheduler_.cancel(stats_task_id_);
   }
+  scheduler_.shutdown();
 
   {
     absl::MutexLock lk(&rpc_clients_mtx_);
@@ -300,7 +308,7 @@ void ClientManagerImpl::pollCompletionQueue() {
         SPDLOG_WARN("CompletionQueue#Next assigned ok false, indicating the call is dead");
       }
       auto callback = [invocation_context, ok]() { invocation_context->onCompletion(ok); };
-      callback_thread_pool_->enqueue(callback);
+      callback_thread_pool_->submit(callback);
     }
     SPDLOG_INFO("CompletionQueue is fully drained and shut down");
   }
@@ -836,7 +844,7 @@ bool ClientManagerImpl::wrapMessage(const rmq::Message& item, MQMessageExt& mess
   }
   }
 
-  timeval tv{.tv_sec = 0, .tv_usec = 0};
+  timeval tv{};
 
   // Message-type
   MessageType message_type;

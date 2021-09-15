@@ -9,9 +9,9 @@
 #include "ReceiveMessageCallback.h"
 #include "RpcClient.h"
 #include "RpcClientImpl.h"
-#include "Scheduler.h"
+#include "SchedulerImpl.h"
 #include "SendMessageContext.h"
-#include "ThreadPool.h"
+#include "ThreadPoolImpl.h"
 #include "TopAddressing.h"
 #include "TopicRouteChangeCallback.h"
 #include "TopicRouteData.h"
@@ -25,6 +25,7 @@
 #include "rocketmq/State.h"
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <functional>
 #include <future>
 #include <string>
@@ -200,7 +201,7 @@ private:
 
   void logStats();
 
-  Scheduler scheduler_;
+  SchedulerImpl scheduler_;
 
   static const char* HEARTBEAT_TASK_NAME;
   static const char* STATS_TASK_NAME;
@@ -216,12 +217,12 @@ private:
   absl::flat_hash_map<std::string, std::shared_ptr<RpcClient>> rpc_clients_ GUARDED_BY(rpc_clients_mtx_);
   absl::Mutex rpc_clients_mtx_; // protects rpc_clients_
 
-  std::uintptr_t heartbeat_handle_{0};
-  std::uintptr_t health_check_handle_{0};
-  std::uintptr_t stats_handle_{0};
+  std::uint32_t heartbeat_task_id_{0};
+  std::uint32_t health_check_task_id_{0};
+  std::uint32_t stats_task_id_{0};
 
   std::shared_ptr<CompletionQueue> completion_queue_;
-  std::unique_ptr<ThreadPool> callback_thread_pool_;
+  std::unique_ptr<ThreadPoolImpl> callback_thread_pool_;
 
   std::thread completion_queue_thread_;
 

@@ -18,6 +18,7 @@ class PullConsumerImplTest : public testing::Test {
 public:
   void SetUp() override {
     grpc_init();
+    scheduler_.start();
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
     ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler_));
     ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
@@ -39,7 +40,10 @@ public:
     }
   }
 
-  void TearDown() override { grpc_shutdown(); }
+  void TearDown() override {
+    grpc_shutdown();
+    scheduler_.shutdown();
+  }
 
 protected:
   std::string resource_namespace_{"mq://test"};
@@ -49,7 +53,7 @@ protected:
   std::string tag_{"TagB"};
   std::shared_ptr<testing::NiceMock<ClientManagerMock>> client_manager_;
   std::shared_ptr<PullConsumerImpl> pull_consumer_;
-  Scheduler scheduler_;
+  SchedulerImpl scheduler_;
   std::string broker_name_{"broker-a"};
   int broker_id_{0};
   std::string message_body_{"Message Body Content"};
