@@ -1,14 +1,22 @@
 #pragma once
-#include "absl/container/flat_hash_map.h"
-#include "rocketmq/RocketMQ.h"
+
 #include <cstdint>
 #include <functional>
+#include <map>
+#include <string>
+
+#include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 enum class HttpProtocol : int8_t {
   HTTP = 1,
   HTTPS = 2,
+};
+
+enum class HttpStatus : int {
+  OK = 200,
+  INTERNAL = 500,
 };
 
 class HttpClient {
@@ -21,7 +29,7 @@ public:
 
   virtual void
   get(HttpProtocol protocol, const std::string& host, std::uint16_t port, const std::string& path,
-      const std::function<void(int, const absl::flat_hash_map<std::string, std::string>&, const std::string&)>& cb) = 0;
+      const std::function<void(int, const std::multimap<std::string, std::string>&, const std::string&)>& cb) = 0;
 };
 
 ROCKETMQ_NAMESPACE_END

@@ -1,12 +1,12 @@
 #include "StsCredentialsProviderImpl.h"
 #include "HttpClientMock.h"
 #include "absl/memory/memory.h"
+#include "grpc/grpc.h"
 #include "rocketmq/RocketMQ.h"
 #include "gtest/gtest.h"
 #include <algorithm>
 #include <memory>
 #include <string>
-#include "grpc/grpc.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -18,9 +18,8 @@ public:
     auto http_client_ = absl::make_unique<testing::NiceMock<HttpClientMock>>();
     auto http_get_action =
         [](HttpProtocol protocol, const std::string& host, std::uint16_t port, const std::string& path,
-           const std::function<void(int, const absl::flat_hash_map<std::string, std::string>&, const std::string&)>&
-               cb) {
-          absl::flat_hash_map<std::string, std::string> header;
+           const std::function<void(int, const std::multimap<std::string, std::string>&, const std::string&)>& cb) {
+          std::multimap<std::string, std::string> header;
           std::string body = R"(
             {
                 "AccessKeyId": "key",
@@ -35,12 +34,10 @@ public:
         };
 
     EXPECT_CALL(*http_client_, get).Times(testing::AtLeast(1)).WillRepeatedly(testing::Invoke(http_get_action));
-    sts_credentials_provider->setHttpClient(std::move(http_client_));
+    sts_credentials_provider->withHttpClient(std::move(http_client_));
   }
 
-  void TearDown() override {
-    grpc_shutdown();
-  }
+  void TearDown() override { grpc_shutdown(); }
 
 protected:
   std::shared_ptr<StsCredentialsProviderImpl> sts_credentials_provider;

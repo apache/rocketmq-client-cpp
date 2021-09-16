@@ -3,7 +3,9 @@ cc_library(
     name = "asio",
     hdrs = glob(["include/**/*.hpp", "include/**/*.ipp"]),
     visibility =  ["//visibility:public"],
-    strip_include_prefix = "include",
+    includes = [
+        "include",
+    ],
     defines = [
         "ASIO_STANDALONE",
         "ASIO_HAS_STD_ADDRESSOF",

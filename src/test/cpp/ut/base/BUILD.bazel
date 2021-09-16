@@ -47,12 +47,12 @@ cc_test(
 )
 
 cc_test(
-    name = "ghttp_client_test",
+    name = "http_client_test",
     srcs = [
-        "GHttpClientTest.cpp",
+        "HttpClientTest.cpp",
     ],
     deps = [
-        "//src/main/cpp/base:ghttp_client",
+        "//src/main/cpp/base:base_library",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -64,7 +64,6 @@ cc_test(
     ],
     deps = [
         "//src/main/cpp/base:base_library",
-        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_googletest//:gtest_main",
     ],
 )

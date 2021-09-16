@@ -1,12 +1,15 @@
-#include "TopAddressing.h"
-#include "RateLimiter.h"
-#include "grpc/grpc.h"
-#include "spdlog/spdlog.h"
-#include "gtest/gtest.h"
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
 #include <thread>
+
+#include "absl/synchronization/mutex.h"
+#include "grpc/grpc.h"
+#include "spdlog/spdlog.h"
+#include "gtest/gtest.h"
+
+#include "RateLimiter.h"
+#include "TopAddressing.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -21,15 +24,15 @@ public:
 
   void SetEnv(const char* key, const char* value) {
     int overwrite = 1;
-    #ifdef _WIN32
+#ifdef _WIN32
     std::string env;
     env.append(key);
     env.push_back('=');
     env.append(value);
     _putenv(env.c_str());
-    #else
+#else
     setenv(key, value, overwrite);
-    #endif
+#endif
   }
 };
 

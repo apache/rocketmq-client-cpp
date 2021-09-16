@@ -5,7 +5,6 @@ cc_test(
         "TopAddressingTest.cpp",
     ],
     deps = [
-        "//src/main/cpp/base:top_addressing",
         "//src/main/cpp/base:base_library",
         "@com_google_googletest//:gtest_main",
     ],

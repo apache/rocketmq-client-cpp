@@ -1,18 +1,19 @@
-#include "GHttpClient.h"
-#include "MixAll.h"
-#include "StsCredentialsProviderImpl.h"
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <string>
+
 #include "absl/memory/memory.h"
 #include "absl/strings/match.h"
 #include "fmt/format.h"
 #include "ghc/filesystem.hpp"
 #include "google/protobuf/struct.pb.h"
 #include "google/protobuf/util/json_util.h"
-#include "rocketmq/Logger.h"
 #include "spdlog/spdlog.h"
-#include <cstdlib>
-#include <fstream>
-#include <iostream>
-#include <string>
+
+#include "MixAll.h"
+#include "StsCredentialsProviderImpl.h"
+#include "rocketmq/Logger.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -100,9 +101,7 @@ StsCredentialsProvider::StsCredentialsProvider(std::string ram_role_name)
 Credentials StsCredentialsProvider::getCredentials() { return impl_->getCredentials(); }
 
 StsCredentialsProviderImpl::StsCredentialsProviderImpl(std::string ram_role_name)
-    : ram_role_name_(std::move(ram_role_name)), http_client_(absl::make_unique<GHttpClient>()) {
-  http_client_->start();
-}
+    : ram_role_name_(std::move(ram_role_name)) {}
 
 StsCredentialsProviderImpl::~StsCredentialsProviderImpl() { http_client_->shutdown(); }
 
@@ -122,10 +121,9 @@ void StsCredentialsProviderImpl::refresh() {
   absl::Mutex sync_mtx;
   absl::CondVar sync_cv;
   bool completed = false;
-  auto callback = [&, this](int code, const absl::flat_hash_map<std::string, std::string>& headers,
-                            const std::string& body) {
+  auto callback = [&, this](int code, const std::multimap<std::string, std::string>& headers, const std::string& body) {
     SPDLOG_DEBUG("Received STS response. Code: {}", code);
-    if (GHttpClient::STATUS_OK == code) {
+    if (static_cast<int>(HttpStatus::OK) == code) {
       google::protobuf::Struct doc;
       google::protobuf::util::Status status = google::protobuf::util::JsonStringToMessage(body, &doc);
       if (status.ok()) {

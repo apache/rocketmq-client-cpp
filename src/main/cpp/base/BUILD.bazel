@@ -3,67 +3,27 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name = "http_client_interface",
-    hdrs = [
-        "include/HttpClient.h",
-    ],
-    strip_include_prefix = "//src/main/cpp/base/include",
-    deps = [
-        "//api:rocketmq_interface",
-        "@com_google_absl//absl/container:flat_hash_map",
-    ],
-)
-
-cc_library(
-    name = "ghttp_client",
-    hdrs = [
-        "include/GHttpClient.h",
-    ],
-    srcs = [
-        "GHttpClient.cpp",
-    ],
-    deps = [
-        ":http_client_interface",
-        "//src/main/cpp/log:log_library",
-        "@com_github_fmtlib_fmt//:fmtlib",
-        "@com_github_grpc_grpc//:grpc",
-    ],
-    strip_include_prefix = "//src/main/cpp/base/include",
-)
-
-cc_library(
-    name = "top_addressing",
-    hdrs = [
-        "include/TopAddressing.h",
-        "include/HostInfo.h"
-    ],
-    srcs = [
-        "TopAddressing.cpp",
-        "HostInfo.cpp",
-    ],
-    strip_include_prefix = "//src/main/cpp/base/include",
-    deps = [
-        ":ghttp_client",
-    ],
-)
-
-cc_library(
     name = "base_library",
     hdrs = glob(["include/*.h"]),
     srcs = glob(["*.cpp"]),
     strip_include_prefix = "//src/main/cpp/base/include",
     deps = [
         "//src/main/cpp/log:log_library",
+        "@com_github_fmtlib_fmt//:fmtlib",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/synchronization",        
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
         "@com_github_gabime_spdlog//:spdlog",
         "@com_github_grpc_grpc//:grpc",
         "@com_googlesource_code_re2//:re2",
-        "@zlib//:zlib",
         "@boringssl//:crypto",
         "@boringssl//:ssl",
         "//external:madler_zlib",
+        "@com_github_yhirose_cpp_httplib//:cpp_httplib",
         "@asio//:asio",
     ],
 )

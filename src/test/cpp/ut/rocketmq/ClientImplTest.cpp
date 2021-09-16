@@ -52,7 +52,7 @@ TEST_F(ClientImplTest, testBasic) {
 
   std::string once{"10.0.0.1:9876"};
   std::string then{"10.0.0.1:9876;10.0.0.2:9876"};
-  absl::flat_hash_map<std::string, std::string> header;
+  std::multimap<std::string, std::string> header;
 
   bool completed = false;
   absl::Mutex mtx;
@@ -61,12 +61,12 @@ TEST_F(ClientImplTest, testBasic) {
   int http_status = 200;
   auto once_cb =
       [&](HttpProtocol protocol, const std::string& host, std::uint16_t port, const std::string& path,
-          const std::function<void(int, const absl::flat_hash_map<std::string, std::string>&, const std::string&)>&
-              cb) { cb(http_status, header, once); };
+          const std::function<void(int, const std::multimap<std::string, std::string>&, const std::string&)>& cb) {
+        cb(http_status, header, once);
+      };
   auto then_cb =
       [&](HttpProtocol protocol, const std::string& host, std::uint16_t port, const std::string& path,
-          const std::function<void(int, const absl::flat_hash_map<std::string, std::string>&, const std::string&)>&
-              cb) {
+          const std::function<void(int, const std::multimap<std::string, std::string>&, const std::string&)>& cb) {
         cb(http_status, header, then);
         absl::MutexLock lk(&mtx);
         completed = true;

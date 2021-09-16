@@ -1,14 +1,3 @@
-#include "ClientImpl.h"
-#include "ClientManagerFactory.h"
-#include "GHttpClient.h"
-#include "InvocationContext.h"
-#include "LoggerImpl.h"
-#include "MessageAccessor.h"
-#include "Signature.h"
-#include "absl/strings/str_join.h"
-#include "absl/strings/str_split.h"
-#include "apache/rocketmq/v1/definition.pb.h"
-#include "rocketmq/MQMessageExt.h"
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
@@ -16,6 +5,19 @@
 #include <memory>
 #include <string>
 #include <utility>
+
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
+#include "apache/rocketmq/v1/definition.pb.h"
+
+#include "ClientImpl.h"
+#include "ClientManagerFactory.h"
+#include "HttpClientImpl.h"
+#include "InvocationContext.h"
+#include "LoggerImpl.h"
+#include "MessageAccessor.h"
+#include "Signature.h"
+#include "rocketmq/MQMessageExt.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -180,7 +182,7 @@ void ClientImpl::renewNameServerList() {
   std::vector<std::string> list;
   SPDLOG_DEBUG("Begin to renew name server list");
   auto callback = [this](int code, const std::vector<std::string>& name_server_list) {
-    if (GHttpClient::STATUS_OK != code) {
+    if (static_cast<int>(HttpStatus::OK) != code) {
       SPDLOG_WARN("Failed to fetch name server list");
       return;
     }

@@ -1,6 +1,6 @@
 #include "TopAddressing.h"
 
-#include "GHttpClient.h"
+#include "HttpClientImpl.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
@@ -12,7 +12,7 @@ ROCKETMQ_NAMESPACE_BEGIN
 TopAddressing::TopAddressing() : TopAddressing("jmenv.tbsite.net", 8080, "/rocketmq/nsaddr") {}
 
 TopAddressing::TopAddressing(std::string host, int port, std::string path)
-    : host_(std::move(host)), port_(port), path_(std::move(path)), http_client_(absl::make_unique<GHttpClient>()) {
+    : host_(std::move(host)), port_(port), path_(std::move(path)), http_client_(absl::make_unique<HttpClientImpl>()) {
   http_client_->start();
 }
 
@@ -36,10 +36,9 @@ void TopAddressing::fetchNameServerAddresses(const std::function<void(bool, cons
     query_string.append("nofix=1");
   }
 
-  auto callback = [cb](int code, const absl::flat_hash_map<std::string, std::string>& metadata,
-                       const std::string& body) {
+  auto callback = [cb](int code, const std::multimap<std::string, std::string>& metadata, const std::string& body) {
     SPDLOG_DEBUG("Receive HTTP response. Code: {}, body: {}", code, body);
-    if (GHttpClient::STATUS_OK == code) {
+    if (static_cast<int>(HttpStatus::OK) == code) {
       cb(true, absl::StrSplit(body, ';'));
     } else {
       std::vector<std::string> name_server_list;

@@ -119,11 +119,10 @@ def rocketmq_deps():
         ],
     )
 
-    # Curl library
     maybe(
         http_archive,
-        name = "com_github_curl",
-        build_file = "@org_apache_rocketmq//third_party:curl.BUILD",
-        strip_prefix = "curl-master",
-        urls = ["https://github.com/curl/curl/archive/master.zip"],
+        name = "com_github_yhirose_cpp_httplib",
+        build_file = "@org_apache_rocketmq//third_party:cpp_httplib.BUILD",
+        strip_prefix = "cpp-httplib-0.9.4",
+        urls = ["https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.9.4.tar.gz"],
     )
