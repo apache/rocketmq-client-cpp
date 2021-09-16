@@ -1,7 +1,6 @@
 #include "UtilAll.h"
 
 #include "LoggerImpl.h"
-#include "src/core/lib/iomgr/gethostname.h"
 #include "zlib.h"
 #include <cstring>
 
