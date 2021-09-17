@@ -250,6 +250,10 @@ void ClientImpl::heartbeat() {
 }
 
 void ClientImpl::onTopicRouteReady(const std::string& topic, const TopicRouteDataPtr& route) {
+  if (route) {
+    SPDLOG_DEBUG("Received route data for topic={}", topic);
+  }
+
   updateRouteCache(topic, route);
 
   // Take all pending callbacks
