@@ -196,6 +196,31 @@ cc_test(
         "//src/main/cpp/base/mocks:base_mocks",
         "//src/main/cpp/client/mocks:client_mocks",
         "//src/main/cpp/rocketmq:rocketmq_library",
+        "//src/main/cpp/rocketmq/mocks:rocketmq_mocks",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "static_name_server_resolver_test",
+    srcs = [
+        "StaticNameServerResolverTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/rocketmq:rocketmq_library",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+
+cc_test(
+    name = "dynamic_name_server_resolver_test",
+    srcs = [
+        "DynamicNameServerResolverTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/rocketmq:rocketmq_library",
+        "//src/main/cpp/base/mocks:base_mocks",
         "@com_google_googletest//:gtest_main",
     ],
 )

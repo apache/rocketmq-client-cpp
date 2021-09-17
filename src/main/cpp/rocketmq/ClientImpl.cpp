@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <cstdlib>
 #include <iterator>
 #include <memory>
 #include <string>
@@ -30,38 +31,19 @@ void ClientImpl::start() {
     return;
   }
 
+  if (!name_server_resolver_) {
+    SPDLOG_ERROR("No name server resolver is configured.");
+    abort();
+  }
+  name_server_resolver_->start();
+
   client_manager_ = ClientManagerFactory::getInstance().getClientManager(*this);
   client_manager_->start();
 
   exporter_ = std::make_shared<OtlpExporter>(client_manager_, this);
   exporter_->start();
 
-  bool update_name_server_list = false;
-  {
-    absl::MutexLock lock(&name_server_list_mtx_);
-    if (name_server_list_.empty()) {
-      update_name_server_list = true;
-    }
-  }
-
   std::weak_ptr<ClientImpl> ptr(self());
-
-  if (update_name_server_list) {
-    // Acquire name server list immediately
-    renewNameServerList();
-
-    // Schedule to renew name server list periodically
-    SPDLOG_INFO("Name server list was empty. Schedule a task to fetch and renew periodically");
-    auto name_server_update_functor = [ptr]() {
-      std::shared_ptr<ClientImpl> base = ptr.lock();
-      if (base) {
-        base->renewNameServerList();
-      }
-    };
-    name_server_update_handle_ =
-        client_manager_->getScheduler().schedule(name_server_update_functor, UPDATE_NAME_SERVER_LIST_TASK_NAME,
-                                                 std::chrono::milliseconds(0), std::chrono::seconds(30));
-  }
 
   auto route_update_functor = [ptr]() {
     std::shared_ptr<ClientImpl> base = ptr.lock();
@@ -77,9 +59,8 @@ void ClientImpl::start() {
 
 void ClientImpl::shutdown() {
   state_.store(State::STOPPING, std::memory_order_relaxed);
-  if (name_server_update_handle_) {
-    client_manager_->getScheduler().cancel(name_server_update_handle_);
-  }
+
+  name_server_resolver_->shutdown();
 
   if (route_update_handle_) {
     client_manager_->getScheduler().cancel(route_update_handle_);
@@ -91,7 +72,6 @@ void ClientImpl::shutdown() {
 }
 
 const char* ClientImpl::UPDATE_ROUTE_TASK_NAME = "route_updater";
-const char* ClientImpl::UPDATE_NAME_SERVER_LIST_TASK_NAME = "name_server_list_updater";
 
 void ClientImpl::endpointsInUse(absl::flat_hash_set<std::string>& endpoints) {
   absl::MutexLock lk(&topic_route_table_mtx_);
@@ -150,81 +130,11 @@ void ClientImpl::getRouteFor(const std::string& topic, const std::function<void(
   }
 }
 
-void ClientImpl::debugNameServerChanges(const std::vector<std::string>& list) {
-  std::string previous;
-  bool changed = false;
-  {
-    absl::MutexLock lock(&name_server_list_mtx_);
-    if (name_server_list_ != list) {
-      changed = true;
-      if (name_server_list_.empty()) {
-        previous.append("[]");
-      } else {
-        previous = absl::StrJoin(name_server_list_.begin(), name_server_list_.end(), ";");
-      }
-    }
-  }
-  std::string current = absl::StrJoin(list.begin(), list.end(), ";");
-  if (changed) {
-    SPDLOG_INFO("Name server list changed. {} --> {}", previous, current);
-  } else {
-    SPDLOG_DEBUG("Name server list remains the same: {}", current);
-  }
-}
-
-void ClientImpl::renewNameServerList() {
-  if (State::STARTED != state_.load(std::memory_order_relaxed) &&
-      State::STARTING != state_.load(std::memory_order_relaxed)) {
-    SPDLOG_WARN("Unexpected client instance state: {}", state_.load(std::memory_order_relaxed));
-    return;
-  }
-
-  std::vector<std::string> list;
-  SPDLOG_DEBUG("Begin to renew name server list");
-  auto callback = [this](int code, const std::vector<std::string>& name_server_list) {
-    if (static_cast<int>(HttpStatus::OK) != code) {
-      SPDLOG_WARN("Failed to fetch name server list");
-      return;
-    }
-
-    if (name_server_list.empty()) {
-      SPDLOG_WARN("Yuck, got an empty name server list");
-      return;
-    }
-
-    debugNameServerChanges(name_server_list);
-    {
-      absl::MutexLock lock(&name_server_list_mtx_);
-      if (name_server_list_ != name_server_list) {
-        name_server_list_.clear();
-        name_server_list_.insert(name_server_list_.begin(), name_server_list.begin(), name_server_list.end());
-      }
-    }
-  };
-  client_manager_->topAddressing().fetchNameServerAddresses(callback);
-}
-
-bool ClientImpl::selectNameServer(std::string& selected, bool change) {
-  static uint32_t index = 0;
-  if (change) {
-    index++;
-  }
-  {
-    absl::MutexLock lock(&name_server_list_mtx_);
-    if (name_server_list_.empty()) {
-      return false;
-    }
-    uint32_t idx = index % name_server_list_.size();
-    selected = name_server_list_[idx];
-  }
-  return true;
-}
-
 void ClientImpl::setAccessPoint(rmq::Endpoints* endpoints) {
   std::vector<std::pair<std::string, std::uint16_t>> pairs;
   {
-    absl::MutexLock lk(&name_server_list_mtx_);
-    for (const auto& name_server_item : name_server_list_) {
+    std::vector<std::string> name_server_list = name_server_resolver_->resolve();
+    for (const auto& name_server_item : name_server_list) {
       std::string::size_type pos = name_server_item.rfind(':');
       if (std::string::npos == pos) {
         continue;
@@ -254,8 +164,8 @@ void ClientImpl::setAccessPoint(rmq::Endpoints* endpoints) {
 }
 
 void ClientImpl::fetchRouteFor(const std::string& topic, const std::function<void(const TopicRouteDataPtr&)>& cb) {
-  std::string name_server;
-  if (!selectNameServer(name_server)) {
+  std::string name_server = name_server_resolver_->current();
+  if (name_server.empty()) {
     SPDLOG_WARN("No name server available");
     return;
   }
@@ -263,8 +173,8 @@ void ClientImpl::fetchRouteFor(const std::string& topic, const std::function<voi
   auto callback = [this, topic, name_server, cb](bool ok, const TopicRouteDataPtr& route) {
     if (!ok || !route) {
       SPDLOG_WARN("Failed to resolve route for topic={} from {}", topic, name_server);
-      std::string name_server_changed;
-      if (selectNameServer(name_server_changed, true)) {
+      std::string name_server_changed = name_server_resolver_->next();
+      if (!name_server_changed.empty()) {
         SPDLOG_INFO("Change current name server from {} to {}", name_server, name_server_changed);
       }
       cb(nullptr);

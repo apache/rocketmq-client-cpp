@@ -1,7 +1,13 @@
-#include "rocketmq/DefaultMQPushConsumer.h"
-#include "PushConsumerImpl.h"
-#include "absl/strings/str_split.h"
+#include <chrono>
+#include <memory>
 #include <set>
+
+#include "absl/strings/str_split.h"
+
+#include "DynamicNameServerResolver.h"
+#include "PushConsumerImpl.h"
+#include "StaticNameServerResolver.h"
+#include "rocketmq/DefaultMQPushConsumer.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -37,8 +43,17 @@ void DefaultMQPushConsumer::registerMessageListener(MessageListener* listener) {
 }
 
 void DefaultMQPushConsumer::setNamesrvAddr(const std::string& name_srv) {
-  std::vector<std::string> name_server_list = absl::StrSplit(name_srv, ';');
-  impl_->setNameServerList(name_server_list);
+  auto name_server_resolver = std::make_shared<StaticNameServerResolver>(name_srv);
+  impl_->withNameServerResolver(name_server_resolver);
+}
+
+void DefaultMQPushConsumer::setNameServerListDiscoveryEndpoint(const std::string& discovery_endpoint) {
+  if (discovery_endpoint.empty()) {
+    return;
+  }
+
+  auto name_server_resolver = std::make_shared<DynamicNameServerResolver>(discovery_endpoint, std::chrono::seconds(10));
+  impl_->withNameServerResolver(name_server_resolver);
 }
 
 void DefaultMQPushConsumer::setGroupName(const std::string& group_name) { impl_->setGroupName(group_name); }
@@ -67,7 +82,9 @@ void DefaultMQPushConsumer::setThrottle(const std::string& topic, uint32_t thres
   impl_->setThrottle(topic, threshold);
 }
 
-void DefaultMQPushConsumer::setResourceNamespace(const char* resource_namespace) { impl_->resourceNamespace(resource_namespace); }
+void DefaultMQPushConsumer::setResourceNamespace(const char* resource_namespace) {
+  impl_->resourceNamespace(resource_namespace);
+}
 
 void DefaultMQPushConsumer::setCredentialsProvider(CredentialsProviderPtr credentials_provider) {
   impl_->setCredentialsProvider(std::move(credentials_provider));

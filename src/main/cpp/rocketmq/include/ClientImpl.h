@@ -1,13 +1,19 @@
+#pragma once
+
+#include <chrono>
+#include <cstdint>
+
+#include "apache/rocketmq/v1/definition.pb.h"
+
 #include "Client.h"
 #include "ClientConfigImpl.h"
 #include "ClientManager.h"
 #include "ClientResourceBundle.h"
 #include "InvocationContext.h"
+#include "NameServerResolver.h"
 #include "OtlpExporter.h"
-#include "apache/rocketmq/v1/definition.pb.h"
 #include "rocketmq/MQMessageExt.h"
 #include "rocketmq/State.h"
-#include <chrono>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -31,11 +37,6 @@ public:
    */
   void endpointsInUse(absl::flat_hash_set<std::string>& endpoints) override LOCKS_EXCLUDED(topic_route_table_mtx_);
 
-  void setNameServerList(std::vector<std::string> name_server_list) {
-    absl::MutexLock lk(&name_server_list_mtx_);
-    name_server_list_ = std::move(name_server_list);
-  }
-
   void heartbeat() override;
 
   bool active() override {
@@ -47,6 +48,10 @@ public:
 
   void schedule(const std::string& task_name, const std::function<void(void)>& task,
                 std::chrono::milliseconds delay) override;
+
+  void withNameServerResolver(std::shared_ptr<NameServerResolver> name_server_resolver) {
+    name_server_resolver_ = std::move(name_server_resolver);
+  }
 
 protected:
   ClientManagerPtr client_manager_;
@@ -60,26 +65,16 @@ protected:
       inflight_route_requests_ GUARDED_BY(inflight_route_requests_mtx_);
   absl::Mutex inflight_route_requests_mtx_ ACQUIRED_BEFORE(topic_route_table_mtx_); // Protects inflight_route_requests_
   static const char* UPDATE_ROUTE_TASK_NAME;
-  std::uintptr_t route_update_handle_{0};
+  std::uint32_t route_update_handle_{0};
 
-  // Name server list management
-  std::vector<std::string> name_server_list_ GUARDED_BY(name_server_list_mtx_);
-  absl::Mutex name_server_list_mtx_; // protects name_server_list_
-
-  static const char* UPDATE_NAME_SERVER_LIST_TASK_NAME;
-  std::uintptr_t name_server_update_handle_{0};
+  // Set Name Server Resolver
+  std::shared_ptr<NameServerResolver> name_server_resolver_;
 
   absl::flat_hash_map<std::string, absl::Time> multiplexing_requests_;
   absl::Mutex multiplexing_requests_mtx_;
 
   absl::flat_hash_set<std::string> isolated_endpoints_ GUARDED_BY(isolated_endpoints_mtx_);
   absl::Mutex isolated_endpoints_mtx_;
-
-  void debugNameServerChanges(const std::vector<std::string>& list) LOCKS_EXCLUDED(name_server_list_mtx_);
-
-  void renewNameServerList() LOCKS_EXCLUDED(name_server_list_mtx_);
-
-  bool selectNameServer(std::string& selected, bool change = false) LOCKS_EXCLUDED(name_server_list_mtx_);
 
   void updateRouteInfo() LOCKS_EXCLUDED(topic_route_table_mtx_);
 
@@ -104,7 +99,7 @@ protected:
     return resource_bundle;
   }
 
-  void setAccessPoint(rmq::Endpoints* endpoints) LOCKS_EXCLUDED(name_server_list_mtx_);
+  void setAccessPoint(rmq::Endpoints* endpoints);
 
   virtual void notifyClientTermination();
 

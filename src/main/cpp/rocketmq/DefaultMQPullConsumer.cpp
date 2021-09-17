@@ -1,7 +1,12 @@
 #include "rocketmq/DefaultMQPullConsumer.h"
-#include "AwaitPullCallback.h"
-#include "PullConsumerImpl.h"
+
 #include "absl/strings/str_split.h"
+
+#include "AwaitPullCallback.h"
+#include "DynamicNameServerResolver.h"
+#include "PullConsumerImpl.h"
+#include "StaticNameServerResolver.h"
+#include <memory>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -28,15 +33,22 @@ void DefaultMQPullConsumer::pull(const PullMessageQuery& query, PullCallback* ca
   impl_->pull(query, callback);
 }
 
-void DefaultMQPullConsumer::setResourceNamespace(const std::string& resource_namespace) { impl_->resourceNamespace(resource_namespace); }
+void DefaultMQPullConsumer::setResourceNamespace(const std::string& resource_namespace) {
+  impl_->resourceNamespace(resource_namespace);
+}
 
 void DefaultMQPullConsumer::setCredentialsProvider(std::shared_ptr<CredentialsProvider> credentials_provider) {
   impl_->setCredentialsProvider(std::move(credentials_provider));
 }
 
 void DefaultMQPullConsumer::setNamesrvAddr(const std::string& name_srv) {
-  std::vector<std::string> name_server_list = absl::StrSplit(name_srv, absl::ByChar(';'));
-  impl_->setNameServerList(name_server_list);
+  auto name_server_resolver = std::make_shared<StaticNameServerResolver>(name_srv);
+  impl_->withNameServerResolver(name_server_resolver);
+}
+
+void DefaultMQPullConsumer::setNameServerListDiscoveryEndpoint(const std::string& discovery_endpoint) {
+  auto name_server_resolver = std::make_shared<DynamicNameServerResolver>(discovery_endpoint, std::chrono::seconds(10));
+  impl_->withNameServerResolver(name_server_resolver);
 }
 
 ROCKETMQ_NAMESPACE_END

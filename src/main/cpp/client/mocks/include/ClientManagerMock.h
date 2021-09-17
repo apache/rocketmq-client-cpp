@@ -14,8 +14,6 @@ public:
 
   MOCK_METHOD(Scheduler&, getScheduler, (), (override));
 
-  MOCK_METHOD(TopAddressing&, topAddressing, (), (override));
-
   MOCK_METHOD((std::shared_ptr<grpc::Channel>), createChannel, (const std::string&), (override));
 
   MOCK_METHOD(void, resolveRoute,

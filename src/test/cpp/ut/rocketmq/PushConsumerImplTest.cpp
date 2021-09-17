@@ -1,14 +1,17 @@
-#include "PushConsumerImpl.h"
+#include <memory>
+
+#include "gtest/gtest.h"
+
 #include "ClientManagerFactory.h"
 #include "ClientManagerMock.h"
 #include "InvocationContext.h"
 #include "MessageAccessor.h"
+#include "PushConsumerImpl.h"
+#include "StaticNameServerResolver.h"
 #include "grpc/grpc.h"
 #include "rocketmq/MQMessageExt.h"
 #include "rocketmq/MessageListener.h"
 #include "rocketmq/RocketMQ.h"
-#include "gtest/gtest.h"
-#include <memory>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -25,18 +28,22 @@ public:
 
   void SetUp() override {
     grpc_init();
+
+    name_server_resolver_ = std::make_shared<StaticNameServerResolver>(name_server_list_);
+
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
     ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
     push_consumer_ = std::make_shared<PushConsumerImpl>(group_);
     push_consumer_->resourceNamespace(resource_namespace_);
-    push_consumer_->setNameServerList(name_server_list_);
+    push_consumer_->withNameServerResolver(name_server_resolver_);
     push_consumer_->registerMessageListener(message_listener_.get());
   }
 
   void TearDown() override { grpc_shutdown(); }
 
 protected:
-  std::vector<std::string> name_server_list_{"10.0.0.1:9876"};
+  std::string name_server_list_{"10.0.0.1:9876"};
+  std::shared_ptr<StaticNameServerResolver> name_server_resolver_;
   std::string resource_namespace_{"mq://test"};
   std::string group_{"CID_test"};
   std::string topic_{"Topic0"};

@@ -79,6 +79,8 @@ public:
 
   void setNamesrvAddr(const std::string& name_server_address_list);
 
+  void setNameServerListDiscoveryEndpoint(const std::string& discovery_endpoint);
+
   void setGroupName(const std::string& group_name);
 
   void setInstanceName(const std::string& instance_name);

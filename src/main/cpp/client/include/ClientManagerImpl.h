@@ -130,8 +130,6 @@ public:
 
   Scheduler& getScheduler() override;
 
-  TopAddressing& topAddressing() override;
-
   /**
    * Ack message asynchronously.
    * @param target_host Target broker host address.
@@ -248,8 +246,6 @@ private:
   grpc::ChannelArguments channel_arguments_;
 
   bool trace_{false};
-
-  TopAddressing top_addressing_;
 };
 
 ROCKETMQ_NAMESPACE_END

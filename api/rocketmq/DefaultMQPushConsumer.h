@@ -36,6 +36,8 @@ public:
 
   void setNamesrvAddr(const std::string& name_srv);
 
+  void setNameServerListDiscoveryEndpoint(const std::string& discovery_endpoint);
+
   void setGroupName(const std::string& group_name);
 
   void setConsumeThreadCount(int thread_count);
@@ -53,8 +55,8 @@ public:
   bool isTracingEnabled();
 
   /**
-   * SDK of this version always uses asynchronous IO operation. As such, this function is no-op
-   * to keep backward compatibility.
+   * SDK of this version always uses asynchronous IO operation. As such, this
+   * function is no-op to keep backward compatibility.
    */
   void setAsyncPull(bool);
 
@@ -65,21 +67,23 @@ public:
   void setConsumeMessageBatchMaxSize(int batch_size);
 
   /**
-   * Lifecycle of executor is managed by external application. Passed-in executor should remain valid after consumer
-   * start and before stopping.
+   * Lifecycle of executor is managed by external application. Passed-in
+   * executor should remain valid after consumer start and before stopping.
    * @param executor Executor pool used to invoke consume callback.
    */
   void setCustomExecutor(const Executor& executor);
 
   /**
-   * This function sets maximum number of message that may be consumed per second.
+   * This function sets maximum number of message that may be consumed per
+   * second.
    * @param topic Topic to control
    * @param threshold Threshold before throttling is enforced.
    */
   void setThrottle(const std::string& topic, uint32_t threshold);
 
   /**
-   * Set abstract-resource-namespace, in which canonical name of topic, group remains unique.
+   * Set abstract-resource-namespace, in which canonical name of topic, group
+   * remains unique.
    * @param resource_namespace Abstract resource namespace.
    */
   void setResourceNamespace(const char* resource_namespace);

@@ -1,16 +1,19 @@
-#include "PullConsumerImpl.h"
-#include "ClientManagerFactory.h"
-#include "ClientManagerMock.h"
-#include "InvocationContext.h"
-#include "Scheduler.h"
-#include "rocketmq/AsyncCallback.h"
-#include "rocketmq/ConsumeType.h"
-#include "rocketmq/RocketMQ.h"
-#include "gtest/gtest.h"
-#include <apache/rocketmq/v1/definition.pb.h>
 #include <chrono>
 #include <memory>
 #include <string>
+
+#include "ClientManagerFactory.h"
+#include "ClientManagerMock.h"
+#include "InvocationContext.h"
+#include "PullConsumerImpl.h"
+#include "Scheduler.h"
+#include "StaticNameServerResolver.h"
+#include "apache/rocketmq/v1/definition.pb.h"
+#include "rocketmq/AsyncCallback.h"
+#include "rocketmq/ConsumeType.h"
+#include "rocketmq/RocketMQ.h"
+
+#include "gtest/gtest.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -18,13 +21,16 @@ class PullConsumerImplTest : public testing::Test {
 public:
   void SetUp() override {
     grpc_init();
+
+    name_server_resolver_ = std::make_shared<StaticNameServerResolver>(name_server_list_);
+
     scheduler_.start();
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
     ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler_));
     ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
 
     pull_consumer_ = std::make_shared<PullConsumerImpl>(group_);
-    pull_consumer_->setNameServerList(name_server_list_);
+    pull_consumer_->withNameServerResolver(name_server_resolver_);
     pull_consumer_->resourceNamespace(resource_namespace_);
 
     {
@@ -47,7 +53,8 @@ public:
 
 protected:
   std::string resource_namespace_{"mq://test"};
-  std::vector<std::string> name_server_list_{"10.0.0.1:9876"};
+  std::string name_server_list_{"10.0.0.1:9876"};
+  std::shared_ptr<NameServerResolver> name_server_resolver_;
   std::string group_{"Group-0"};
   std::string topic_{"Test"};
   std::string tag_{"TagB"};

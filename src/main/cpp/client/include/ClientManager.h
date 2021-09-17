@@ -24,8 +24,6 @@ public:
 
   virtual Scheduler& getScheduler() = 0;
 
-  virtual TopAddressing& topAddressing() = 0;
-
   virtual std::shared_ptr<grpc::Channel> createChannel(const std::string& target_host) = 0;
 
   virtual void resolveRoute(const std::string& target_host, const Metadata& metadata, const QueryRouteRequest& request,

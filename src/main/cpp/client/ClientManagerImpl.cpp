@@ -948,8 +948,6 @@ bool ClientManagerImpl::wrapMessage(const rmq::Message& item, MQMessageExt& mess
 
 Scheduler& ClientManagerImpl::getScheduler() { return scheduler_; }
 
-TopAddressing& ClientManagerImpl::topAddressing() { return top_addressing_; }
-
 void ClientManagerImpl::ack(const std::string& target, const Metadata& metadata, const AckMessageRequest& request,
                             std::chrono::milliseconds timeout, const std::function<void(bool)>& cb) {
   std::string target_host(target.data(), target.length());

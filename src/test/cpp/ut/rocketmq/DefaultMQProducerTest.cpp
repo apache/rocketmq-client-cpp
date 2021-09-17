@@ -132,7 +132,7 @@ private:
 TEST_F(DefaultMQProducerUnitTest, testAsyncSendMessage) {
   auto producer = std::make_shared<ProducerImpl>(group_name_);
   producer->resourceNamespace(resource_namespace_);
-  producer->setNameServerList(name_server_list_);
+  producer->withNameServerResolver(name_server_resolver_);
   producer->setCredentialsProvider(credentials_provider_);
   producer->start();
   MQMessage message;
@@ -155,7 +155,7 @@ TEST_F(DefaultMQProducerUnitTest, testAsyncSendMessage) {
 TEST_F(DefaultMQProducerUnitTest, testSendMessage) {
   auto producer = std::make_shared<ProducerImpl>(group_name_);
   producer->resourceNamespace(resource_namespace_);
-  producer->setNameServerList(name_server_list_);
+  producer->withNameServerResolver(name_server_resolver_);
   producer->setCredentialsProvider(credentials_provider_);
   producer->start();
   MQMessage message;
@@ -167,7 +167,7 @@ TEST_F(DefaultMQProducerUnitTest, testSendMessage) {
 TEST_F(DefaultMQProducerUnitTest, testEndpointIsolation) {
   auto producer = std::make_shared<ProducerImpl>(group_name_);
   producer->resourceNamespace(resource_namespace_);
-  producer->setNameServerList(name_server_list_);
+  producer->withNameServerResolver(name_server_resolver_);
   producer->setCredentialsProvider(credentials_provider_);
   producer->start();
 

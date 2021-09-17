@@ -1,8 +1,14 @@
 #include "rocketmq/DefaultMQProducer.h"
-#include "MixAll.h"
-#include "ProducerImpl.h"
+
+#include <chrono>
+#include <memory>
 
 #include "absl/strings/str_split.h"
+
+#include "DynamicNameServerResolver.h"
+#include "MixAll.h"
+#include "ProducerImpl.h"
+#include "StaticNameServerResolver.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -26,8 +32,13 @@ void DefaultMQProducer::setSendMsgTimeout(std::chrono::milliseconds timeout) {
 }
 
 void DefaultMQProducer::setNamesrvAddr(const std::string& name_server_address_list) {
-  std::vector<std::string> name_server_list = absl::StrSplit(name_server_address_list, ';');
-  impl_->setNameServerList(name_server_list);
+  auto name_server_resolver = std::make_shared<StaticNameServerResolver>(name_server_address_list);
+  impl_->withNameServerResolver(name_server_resolver);
+}
+
+void DefaultMQProducer::setNameServerListDiscoveryEndpoint(const std::string& discovery_endpoint) {
+  auto name_server_resolver = std::make_shared<DynamicNameServerResolver>(discovery_endpoint, std::chrono::seconds(10));
+  impl_->withNameServerResolver(name_server_resolver);
 }
 
 void DefaultMQProducer::setGroupName(const std::string& group_name) { impl_->setGroupName(group_name); }

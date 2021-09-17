@@ -1,13 +1,18 @@
+#include <chrono>
+#include <memory>
+#include <string>
+
 #include "ClientImpl.h"
 #include "ClientManagerFactory.h"
 #include "ClientManagerMock.h"
+#include "DynamicNameServerResolver.h"
 #include "HttpClientMock.h"
+#include "NameServerResolverMock.h"
 #include "SchedulerImpl.h"
 #include "TopAddressing.h"
 #include "rocketmq/RocketMQ.h"
+
 #include "gtest/gtest.h"
-#include <memory>
-#include <string>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -24,11 +29,13 @@ class ClientImplTest : public testing::Test {
 public:
   void SetUp() override {
     grpc_init();
+    name_server_resolver_ = std::make_shared<DynamicNameServerResolver>(endpoint_, std::chrono::seconds(1));
     scheduler_.start();
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
     ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
     ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler_));
     client_ = std::make_shared<TestClientImpl>(group_);
+    client_->withNameServerResolver(name_server_resolver_);
   }
 
   void TearDown() override {
@@ -37,16 +44,16 @@ public:
   }
 
 protected:
+  std::string endpoint_{"http://jmenv.tbsite.net:8080/rocketmq/nsaddr"};
   std::string resource_namespace_{"mq://test"};
   std::string group_{"Group-0"};
   std::shared_ptr<testing::NiceMock<ClientManagerMock>> client_manager_;
   SchedulerImpl scheduler_;
   std::shared_ptr<TestClientImpl> client_;
+  std::shared_ptr<DynamicNameServerResolver> name_server_resolver_;
 };
 
 TEST_F(ClientImplTest, testBasic) {
-
-  TopAddressing top_addressing_;
 
   auto http_client = absl::make_unique<HttpClientMock>();
 
@@ -74,9 +81,8 @@ TEST_F(ClientImplTest, testBasic) {
       };
 
   EXPECT_CALL(*http_client, get).WillOnce(testing::Invoke(once_cb)).WillRepeatedly(testing::Invoke(then_cb));
-  top_addressing_.injectHttpClient(std::move(http_client));
+  name_server_resolver_->injectHttpClient(std::move(http_client));
 
-  ON_CALL(*client_manager_, topAddressing).WillByDefault(testing::ReturnRef(top_addressing_));
   client_->resourceNamespace(resource_namespace_);
   client_->start();
   {

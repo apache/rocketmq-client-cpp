@@ -1,19 +1,22 @@
 #pragma once
 
-#include "ClientManagerFactory.h"
-#include "RpcClientMock.h"
-#include "ClientManagerImpl.h"
+#include <functional>
+#include <memory>
+
 #include "grpc/grpc.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include <functional>
-#include <memory>
+
+#include "ClientManagerFactory.h"
+#include "ClientManagerImpl.h"
+#include "RpcClientMock.h"
+#include "StaticNameServerResolver.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 class MQClientTest : public testing::Test {
 public:
-  MQClientTest()  = default;
+  MQClientTest() = default;
 
   void SetUp() override {
     grpc_init();
@@ -27,6 +30,8 @@ public:
             std::bind(&MQClientTest::mockQueryRoute, this, std::placeholders::_1, std::placeholders::_2)));
     client_instance_->addRpcClient(name_server_address_, rpc_client_ns_);
     ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_instance_);
+
+    name_server_resolver_ = std::make_shared<StaticNameServerResolver>(name_server_address_);
   }
 
   void TearDown() override {
@@ -43,6 +48,7 @@ protected:
   const int32_t partition_num_{24};
   const int32_t avg_partition_per_host_{8};
   std::string name_server_address_{"ipv4:127.0.0.1:9876"};
+  std::shared_ptr<NameServerResolver> name_server_resolver_;
   std::string group_name_{"CID_Test"};
   std::string topic_{"Topic_Test"};
   std::string resource_namespace_{"mq://test"};

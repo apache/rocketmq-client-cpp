@@ -36,6 +36,8 @@ public:
 
   void setNamesrvAddr(const std::string& name_srv);
 
+  void setNameServerListDiscoveryEndpoint(const std::string& discovery_endpoint);
+
   void setCredentialsProvider(std::shared_ptr<CredentialsProvider> credentials_provider);
 
 private:

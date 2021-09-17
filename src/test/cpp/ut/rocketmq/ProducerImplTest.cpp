@@ -1,14 +1,16 @@
-#include "ProducerImpl.h"
+#include <memory>
+
 #include "ClientManagerFactory.h"
 #include "ClientManagerMock.h"
+#include "ProducerImpl.h"
 #include "SchedulerImpl.h"
+#include "StaticNameServerResolver.h"
 #include "TopicRouteData.h"
 #include "rocketmq/AsyncCallback.h"
 #include "rocketmq/MQMessage.h"
 #include "rocketmq/MQSelector.h"
 #include "rocketmq/RocketMQ.h"
 #include "rocketmq/SendResult.h"
-#include <memory>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -19,11 +21,12 @@ public:
 
   void SetUp() override {
     grpc_init();
+    name_server_resolver_ = std::make_shared<StaticNameServerResolver>(name_server_list_);
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
     ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
     producer_ = std::make_shared<ProducerImpl>(group_);
     producer_->resourceNamespace(resource_namespace_);
-    producer_->setNameServerList(name_server_list_);
+    producer_->withNameServerResolver(name_server_resolver_);
     producer_->setCredentialsProvider(credentials_provider_);
 
     {
@@ -44,7 +47,8 @@ public:
 protected:
   std::shared_ptr<testing::NiceMock<ClientManagerMock>> client_manager_;
   std::shared_ptr<ProducerImpl> producer_;
-  std::vector<std::string> name_server_list_{"10.0.0.1:9876"};
+  std::string name_server_list_{"10.0.0.1:9876"};
+  std::shared_ptr<NameServerResolver> name_server_resolver_;
   std::string resource_namespace_{"mq://test"};
   std::string group_{"CID_test"};
   std::string topic_{"Topic0"};
