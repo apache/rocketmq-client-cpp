@@ -118,7 +118,7 @@ void SchedulerImpl::execute(const asio::error_code& ec, asio::steady_timer* time
   if (timer_task->interval.count()) {
     timer->expires_at(timer->expiry() + timer_task->interval);
     timer->async_wait(std::bind(&SchedulerImpl::execute, std::placeholders::_1, timer, task));
-    SPDLOG_DEBUG("Repeated timer-task to fire in {}ms", timer_task->interval.count());
+    SPDLOG_DEBUG("Repeated timer-task {} to fire in {}ms", timer_task->task_name, timer_task->interval.count());
   } else {
     delete timer;
   }
