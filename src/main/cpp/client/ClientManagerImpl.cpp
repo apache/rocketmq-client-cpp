@@ -49,12 +49,12 @@ ClientManagerImpl::ClientManagerImpl(std::string resource_namespace)
   tls_channel_credential_options_.watch_root_certs();
   tls_channel_credential_options_.watch_identity_key_cert_pairs();
   channel_credential_ = grpc::experimental::TlsCredentials(tls_channel_credential_options_);
-  SPDLOG_INFO("ClientManager[ARN={}] created", resource_namespace_);
+  SPDLOG_INFO("ClientManager[ResourceNamespace={}] created", resource_namespace_);
 }
 
 ClientManagerImpl::~ClientManagerImpl() {
   shutdown();
-  SPDLOG_INFO("ClientManager[ARN={}] destructed", resource_namespace_);
+  SPDLOG_INFO("ClientManager[ResourceNamespace={}] destructed", resource_namespace_);
 }
 
 void ClientManagerImpl::start() {
