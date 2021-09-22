@@ -22,6 +22,10 @@ public:
 
   bool rollback() override;
 
+  std::string messageId() const override;
+
+  std::string transactionId() const override;
+
 private:
   std::string message_id_;
   std::string transaction_id_;

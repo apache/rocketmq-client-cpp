@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <string>
 
 #include "RocketMQ.h"
 
@@ -16,6 +17,10 @@ public:
   virtual bool commit() = 0;
 
   virtual bool rollback() = 0;
+
+  virtual std::string messageId() const = 0;
+
+  virtual std::string transactionId() const = 0;
 };
 
 using TransactionPtr = std::unique_ptr<Transaction>;
