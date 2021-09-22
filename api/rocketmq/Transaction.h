@@ -1,7 +1,9 @@
 #pragma once
 
-#include "RocketMQ.h"
 #include <cstdint>
+#include <memory>
+
+#include "RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -15,6 +17,8 @@ public:
 
   virtual bool rollback() = 0;
 };
+
+using TransactionPtr = std::unique_ptr<Transaction>;
 
 enum class TransactionState : int8_t {
   COMMIT = 0,

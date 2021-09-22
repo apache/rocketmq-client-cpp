@@ -59,7 +59,7 @@ void ProducerImpl::ensureRunning() const {
   }
 }
 
-void ProducerImpl::validate(const MQMessage& message) {}
+bool ProducerImpl::validate(const MQMessage& message) { return MixAll::validate(message); }
 
 std::string ProducerImpl::wrapSendMessageRequest(const MQMessage& message, SendMessageRequest& request,
                                                  const MQMessageQueue& message_queue) {
@@ -79,15 +79,19 @@ std::string ProducerImpl::wrapSendMessageRequest(const MQMessage& message, SendM
   system_attribute->mutable_producer_group()->set_resource_namespace(resource_namespace_);
   system_attribute->mutable_producer_group()->set_name(group_name_);
 
-  // Set system flag if the message is transactional
-  const auto& properties = message.getProperties();
-  auto search = properties.find(MixAll::PROPERTY_TRANSACTION_PREPARED_);
-  // TODO: set message type for normal/order/delay
-  if (search != properties.end()) {
-    const std::string& transactional_flag = search->second;
-    if ("true" == transactional_flag) {
-      system_attribute->set_message_type(rmq::MessageType::TRANSACTION);
-    }
+  switch (message.messageType()) {
+  case MessageType::NORMAL:
+    system_attribute->set_message_type(rmq::MessageType::NORMAL);
+    break;
+  case MessageType::DELAY:
+    system_attribute->set_message_type(rmq::MessageType::DELAY);
+    break;
+  case MessageType::TRANSACTION:
+    system_attribute->set_message_type(rmq::MessageType::TRANSACTION);
+    break;
+  case MessageType::FIFO:
+    system_attribute->set_message_type(rmq::MessageType::FIFO);
+    break;
   }
 
   if (message.bodyLength() >= compress_body_threshold_) {
@@ -325,6 +329,13 @@ void ProducerImpl::sendImpl(RetrySendCallback* callback) {
 void ProducerImpl::send0(const MQMessage& message, SendCallback* callback, std::vector<MQMessageQueue> list,
                          int max_attempt_times) {
   assert(callback);
+
+  if (!validate(message)) {
+    MQClientException e("Message is illegal", MESSAGE_ILLEGAL, __FILE__, __LINE__);
+    callback->onException(e);
+    return;
+  }
+
   if (list.empty()) {
     MQClientException e("Topic route not found", NO_TOPIC_ROUTE_INFO, __FILE__, __LINE__);
     callback->onException(e);
@@ -472,8 +483,9 @@ void ProducerImpl::isolateEndpoint(const std::string& target) {
   isolated_endpoints_.insert(target);
 }
 
-std::unique_ptr<TransactionImpl> ProducerImpl::prepare(const MQMessage& message) {
+std::unique_ptr<TransactionImpl> ProducerImpl::prepare(MQMessage& message) {
   try {
+    message.messageType(MessageType::TRANSACTION);
     SendResult send_result = send(message);
     return std::unique_ptr<TransactionImpl>(new TransactionImpl(
         send_result.getMsgId(), send_result.getTransactionId(), send_result.getMessageQueue().serviceAddress(),

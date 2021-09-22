@@ -50,7 +50,7 @@ public:
 
   void setLocalTransactionStateChecker(LocalTransactionStateCheckerPtr checker);
 
-  std::unique_ptr<TransactionImpl> prepare(const MQMessage& message);
+  std::unique_ptr<TransactionImpl> prepare(MQMessage& message);
 
   bool commit(const std::string& message_id, const std::string& transaction_id, const std::string& trace_context, const std::string& target);
 
@@ -126,7 +126,7 @@ private:
 
   void ensureRunning() const;
 
-  void validate(const MQMessage& message);
+  bool validate(const MQMessage& message);
 
   void send0(const MQMessage& message, SendCallback* callback, std::vector<MQMessageQueue> list, int max_attempt_times);
 

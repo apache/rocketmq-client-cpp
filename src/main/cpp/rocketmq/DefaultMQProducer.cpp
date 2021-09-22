@@ -9,6 +9,7 @@
 #include "MixAll.h"
 #include "ProducerImpl.h"
 #include "StaticNameServerResolver.h"
+#include "rocketmq/Transaction.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -117,5 +118,10 @@ void DefaultMQProducer::setCredentialsProvider(CredentialsProviderPtr credential
 }
 
 void DefaultMQProducer::setRegion(const std::string& region) { impl_->region(region); }
+
+TransactionPtr DefaultMQProducer::prepare(MQMessage& message) {
+  auto transaction = impl_->prepare(message);
+  return transaction;
+}
 
 ROCKETMQ_NAMESPACE_END

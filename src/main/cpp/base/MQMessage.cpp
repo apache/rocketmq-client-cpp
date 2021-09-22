@@ -2,6 +2,7 @@
 #include "MessageAccessor.h"
 #include "MessageImpl.h"
 #include "MixAll.h"
+#include "Protocol.h"
 #include "UniqueIdGenerator.h"
 #include "UtilAll.h"
 #include "rocketmq/MQMessageExt.h"
@@ -111,4 +112,9 @@ void MQMessage::setProperties(const std::map<std::string, std::string>& properti
     impl_->user_attribute_map_.insert({it.first, it.second});
   }
 }
+
+void MQMessage::messageType(MessageType message_type) { impl_->system_attribute_.message_type = message_type; }
+
+MessageType MQMessage::messageType() const { return impl_->system_attribute_.message_type; }
+
 ROCKETMQ_NAMESPACE_END

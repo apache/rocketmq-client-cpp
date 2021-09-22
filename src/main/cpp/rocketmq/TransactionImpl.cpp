@@ -9,7 +9,7 @@ bool TransactionImpl::commit() {
     return false;
   }
 
-  return producer->commit(message_id_, transaction_id_, endpoint_, trace_context_);
+  return producer->commit(message_id_, transaction_id_, trace_context_, endpoint_);
 }
 
 bool TransactionImpl::rollback() {
@@ -17,7 +17,7 @@ bool TransactionImpl::rollback() {
   if (!producer) {
     return false;
   }
-  return producer->rollback(message_id_, transaction_id_, endpoint_, trace_context_);
+  return producer->rollback(message_id_, transaction_id_, trace_context_, endpoint_);
 }
 
 ROCKETMQ_NAMESPACE_END

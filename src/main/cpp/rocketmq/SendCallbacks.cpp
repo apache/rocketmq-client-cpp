@@ -2,8 +2,8 @@
 
 #include "ProducerImpl.h"
 #include "TransactionImpl.h"
-#include "opencensus/trace/span.h"
 #include "opencensus/trace/propagation/trace_context.h"
+#include "opencensus/trace/span.h"
 #include "rocketmq/Logger.h"
 #include "rocketmq/MQMessageQueue.h"
 #include "spdlog/spdlog.h"
@@ -52,6 +52,7 @@ void RetrySendCallback::onSuccess(SendResult& send_result) {
     span_.SetStatus(opencensus::trace::StatusCode::OK);
     span_.End();
   }
+  send_result.setMessageQueue(messageQueue());
   send_result.traceContext(opencensus::trace::propagation::ToTraceParentHeader(span_.context()));
   callback_->onSuccess(send_result);
   delete this;

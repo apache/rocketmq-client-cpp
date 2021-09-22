@@ -109,3 +109,13 @@ cc_binary(
         "//src/main/cpp/rocketmq:rocketmq_library",
     ],
 )
+
+cc_binary(
+    name = "example_transaction_producer",
+    srcs = [
+        "ExampleTransactionProducer.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/rocketmq:rocketmq_library",
+    ],
+)

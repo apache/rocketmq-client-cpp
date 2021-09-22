@@ -320,24 +320,6 @@ bool ClientManagerImpl::send(const std::string& target_host, const Metadata& met
   assert(cb);
   SPDLOG_DEBUG("Prepare to send message to {} asynchronously", target_host);
   RpcClientSharedPtr client = getRpcClient(target_host);
-
-#ifdef ENABLE_TRACING
-  nostd::shared_ptr<trace::Span> span = nostd::shared_ptr<trace::Span>(nullptr);
-  if (trace_) {
-    span = getTracer()->StartSpan("SendMessageAsync");
-
-    MQMessage message = context->getMessage();
-    span->SetAttribute(TracingUtility::get().topic_, message.getTopic());
-    span->SetAttribute(TracingUtility::get().tags_, message.getTags());
-    span->SetAttribute(TracingUtility::get().msg_id_, context->getMessageId());
-
-    const std::string& serialized_span_context = TracingUtility::injectSpanContextToTraceParent(span->GetContext());
-    request.mutable_message()->mutable_system_attribute()->set_trace_context(serialized_span_context);
-  }
-#else
-  bool span = false;
-#endif
-
   // Invocation context will be deleted in its onComplete() method.
   auto invocation_context = new InvocationContext<SendMessageResponse>();
   invocation_context->remote_address = target_host;
@@ -346,40 +328,20 @@ bool ClientManagerImpl::send(const std::string& target_host, const Metadata& met
   }
 
   const std::string& topic = request.message().topic().name();
-  auto completion_callback = [topic, cb, span, this](const InvocationContext<SendMessageResponse>* invocation_context) {
+  auto completion_callback = [topic, cb, this](const InvocationContext<SendMessageResponse>* invocation_context) {
     if (invocation_context->status.ok() &&
         google::rpc::Code::OK == invocation_context->response.common().status().code()) {
-
-#ifdef ENABLE_TRACING
-      if (span) {
-        span->SetAttribute(TracingUtility::get().success_, true);
-        span->End();
-      }
-#else
-      (void)span;
-#endif
       SendResult send_result;
+      send_result.setSendStatus(SendStatus::SEND_OK);
       send_result.setMsgId(invocation_context->response.message_id());
-      send_result.setQueueOffset(-1);
-      MQMessageQueue message_queue;
-      message_queue.setQueueId(-1);
-      message_queue.setTopic(topic);
-      send_result.setMessageQueue(message_queue);
+      send_result.setTransactionId(invocation_context->response.transaction_id());
       if (State::STARTED == state_.load(std::memory_order_relaxed)) {
         cb->onSuccess(send_result);
       } else {
-        SPDLOG_INFO("Client instance has stopped, state={}. Ignore send result {}",
+        SPDLOG_INFO("Client instance has stopped, state={}. Message[MessageId={}] ignored",
                     state_.load(std::memory_order_relaxed), send_result.getMsgId());
       }
     } else {
-
-#ifdef ENABLE_TRACING
-      if (span) {
-        span->SetAttribute(TracingUtility::get().success_, false);
-        span->End();
-      }
-#endif
-
       if (!invocation_context->status.ok()) {
         SPDLOG_WARN("Failed to send message to {} due to gRPC error. gRPC code: {}, gRPC error message: {}",
                     invocation_context->remote_address, invocation_context->status.error_code(),

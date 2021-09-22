@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "RocketMQ.h"
+#include "MessageType.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -68,6 +68,9 @@ public:
 
   const std::map<std::string, std::string>& getProperties() const;
   void setProperties(const std::map<std::string, std::string>& properties);
+
+  void messageType(MessageType message_type);
+  MessageType messageType() const;
 
 protected:
   MessageImpl* impl_;

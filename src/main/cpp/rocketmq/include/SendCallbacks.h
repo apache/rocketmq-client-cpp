@@ -1,14 +1,16 @@
 #pragma once
 
-#include "TransactionImpl.h"
+#include <memory>
+
 #include "absl/container/flat_hash_map.h"
 #include "absl/synchronization/mutex.h"
 #include "apache/rocketmq/v1/service.grpc.pb.h"
 #include "opencensus/trace/span.h"
+
+#include "TransactionImpl.h"
 #include "rocketmq/AsyncCallback.h"
 #include "rocketmq/MQMessage.h"
 #include "rocketmq/MQMessageQueue.h"
-#include <memory>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -78,11 +80,12 @@ private:
   MQMessage message_;
   int attempt_times_{0};
   int max_attempt_times_;
-  SendCallback* callback_;
+  SendCallback *callback_{nullptr};
 
   /**
-   * @brief Once the first publish attempt failed, the following routable message queues are employed. 
-   * 
+   * @brief Once the first publish attempt failed, the following routable
+   * message queues are employed.
+   *
    */
   std::vector<MQMessageQueue> candidates_;
 

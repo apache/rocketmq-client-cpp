@@ -1,11 +1,15 @@
 #pragma once
 
-#include "absl/time/clock.h"
-#include "absl/time/time.h"
-#include "rocketmq/RocketMQ.h"
 #include <chrono>
 #include <string>
 #include <vector>
+
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
+
+#include "DigestType.h"
+#include "Encoding.h"
+#include "rocketmq/MessageType.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -14,29 +18,10 @@ public:
   static const char* PROTOCOL_VERSION;
 };
 
-enum class MessageType : int8_t {
-  NORMAL = 0,
-  FIFO = 1,
-  DELAY = 2,
-  TRANSACTION = 3,
-};
-
-enum class DigestType : int8_t {
-  CRC32 = 0,
-  MD5 = 1,
-  SHA1 = 2,
-};
-
 struct Digest {
   DigestType digest_type{DigestType::MD5};
   std::string checksum;
   Digest() = default;
-};
-
-enum class Encoding : int8_t {
-  IDENTITY = 0,
-  GZIP = 1,
-  SNAPPY = 2,
 };
 
 struct Resource {
