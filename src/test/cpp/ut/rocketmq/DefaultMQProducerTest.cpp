@@ -66,6 +66,7 @@ protected:
   std::string access_key_{"access_key"};
   std::string access_secret_{"access_secret"};
   std::shared_ptr<CredentialsProvider> credentials_provider_;
+  std::string body_{"Test message body"};
 };
 
 TEST_F(DefaultMQProducerUnitTest, testBasicSetUp) {
@@ -135,8 +136,10 @@ TEST_F(DefaultMQProducerUnitTest, testAsyncSendMessage) {
   producer->withNameServerResolver(name_server_resolver_);
   producer->setCredentialsProvider(credentials_provider_);
   producer->start();
+  
   MQMessage message;
   message.setTopic(topic_);
+  message.setBody(body_);
 
   absl::Mutex mtx;
   absl::CondVar cv;
@@ -158,7 +161,11 @@ TEST_F(DefaultMQProducerUnitTest, testSendMessage) {
   producer->withNameServerResolver(name_server_resolver_);
   producer->setCredentialsProvider(credentials_provider_);
   producer->start();
+
   MQMessage message;
+  message.setTopic(topic_);
+  message.setBody(body_);
+
   SendResult send_result = producer->send(message);
   ASSERT_EQ(send_result.getMsgId(), message_id_);
   producer->shutdown();
