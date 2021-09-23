@@ -70,7 +70,7 @@ void DefaultMQPushConsumer::setThrottle(const std::string& topic, uint32_t thres
   impl_->setThrottle(topic, threshold);
 }
 
-void DefaultMQPushConsumer::setResourceNamespace(const char* resource_namespace) {
+void DefaultMQPushConsumer::setResourceNamespace(const std::string& resource_namespace) {
   impl_->resourceNamespace(resource_namespace);
 }
 

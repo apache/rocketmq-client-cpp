@@ -86,7 +86,7 @@ public:
    * remains unique.
    * @param resource_namespace Abstract resource namespace.
    */
-  void setResourceNamespace(const char* resource_namespace);
+  void setResourceNamespace(const std::string& resource_namespace);
 
   void setCredentialsProvider(CredentialsProviderPtr credentials_provider);
 
