@@ -1,13 +1,15 @@
 #include "ProcessQueueImpl.h"
+
+#include <atomic>
+#include <chrono>
+#include <memory>
+#include <utility>
+
 #include "ClientManagerImpl.h"
 #include "MetadataConstants.h"
 #include "Protocol.h"
 #include "PushConsumer.h"
 #include "Signature.h"
-#include <atomic>
-#include <chrono>
-#include <memory>
-#include <utility>
 
 using namespace std::chrono;
 
