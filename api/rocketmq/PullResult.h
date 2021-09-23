@@ -1,8 +1,9 @@
 #pragma once
 
-#include "MQMessageExt.h"
 #include <cstdlib>
 #include <vector>
+
+#include "MQMessageExt.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

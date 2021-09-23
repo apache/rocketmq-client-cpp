@@ -1,8 +1,8 @@
 #pragma once
 
-#include "rocketmq/RocketMQ.h"
-
 #include <cstdint>
+
+#include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

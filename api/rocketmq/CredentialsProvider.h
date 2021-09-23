@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Credentials.h"
-
-#include <mutex>
 #include <chrono>
-#include <utility>
 #include <memory>
+#include <mutex>
+#include <utility>
+
+#include "Credentials.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -44,6 +44,7 @@ public:
 
   static const char* ENVIRONMENT_ACCESS_KEY;
   static const char* ENVIRONMENT_ACCESS_SECRET;
+
 private:
   std::string access_key_;
   std::string access_secret_;
@@ -65,9 +66,8 @@ public:
    * For test purpose only.
    * @return
    */
-  static const char* credentialFile() {
-    return CREDENTIAL_FILE_;
-  }
+  static const char* credentialFile() { return CREDENTIAL_FILE_; }
+
 private:
   std::chrono::system_clock::duration refresh_interval_{std::chrono::seconds(10)};
   std::string access_key_;

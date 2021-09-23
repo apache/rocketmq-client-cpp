@@ -1,8 +1,11 @@
 #pragma once
 
-#include "ClientConfig.h"
-#include "ClientManager.h"
-#include "InvocationContext.h"
+#include <algorithm>
+#include <atomic>
+#include <cstdint>
+#include <memory>
+#include <thread>
+
 #include "absl/container/flat_hash_map.h"
 #include "absl/memory/memory.h"
 #include "absl/synchronization/mutex.h"
@@ -10,12 +13,11 @@
 #include "opencensus/trace/exporter/span_exporter.h"
 #include "opencensus/trace/sampler.h"
 #include "opentelemetry/proto/collector/trace/v1/trace_service.grpc.pb.h"
+
+#include "ClientConfig.h"
+#include "ClientManager.h"
+#include "InvocationContext.h"
 #include "rocketmq/RocketMQ.h"
-#include <algorithm>
-#include <atomic>
-#include <cstdint>
-#include <memory>
-#include <thread>
 
 ROCKETMQ_NAMESPACE_BEGIN
 

@@ -1,7 +1,8 @@
 #pragma once
 
-#include "rocketmq/RocketMQ.h"
 #include <string>
+
+#include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 struct HostInfo {

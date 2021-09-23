@@ -16,7 +16,7 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-PushConsumerImpl::PushConsumerImpl(std::string group_name) : ClientImpl(std::move(group_name)) {}
+PushConsumerImpl::PushConsumerImpl(absl::string_view group_name) : ClientImpl(group_name) {}
 
 PushConsumerImpl::~PushConsumerImpl() { SPDLOG_DEBUG("DefaultMQPushConsumerImpl is destructed"); }
 

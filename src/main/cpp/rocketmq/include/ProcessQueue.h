@@ -1,10 +1,11 @@
 #pragma once
 
+#include <memory>
+
 #include "ConsumeMessageType.h"
 #include "FilterExpression.h"
 #include "ReceiveMessageCallback.h"
 #include "rocketmq/MQMessageExt.h"
-#include <memory>
 
 ROCKETMQ_NAMESPACE_BEGIN
 

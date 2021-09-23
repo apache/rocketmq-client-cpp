@@ -1,8 +1,9 @@
 #pragma once
+
+#include <string>
+
 #include "rocketmq/MQMessage.h"
 #include "rocketmq/MQMessageQueue.h"
-#include "rocketmq/RocketMQ.h"
-#include <string>
 
 ROCKETMQ_NAMESPACE_BEGIN
 class SendMessageContext {

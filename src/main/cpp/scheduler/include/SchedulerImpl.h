@@ -1,6 +1,4 @@
 #pragma once
-#include "Scheduler.h"
-
 #include <atomic>
 #include <chrono>
 #include <cstdint>
@@ -13,6 +11,8 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/synchronization/mutex.h"
 #include "asio.hpp"
+
+#include "Scheduler.h"
 #include "rocketmq/State.h"
 
 ROCKETMQ_NAMESPACE_BEGIN

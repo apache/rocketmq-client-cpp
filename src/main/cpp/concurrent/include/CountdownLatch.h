@@ -1,10 +1,12 @@
 #pragma once
 
+#include <string>
+
 #include "absl/base/thread_annotations.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+
 #include "rocketmq/RocketMQ.h"
-#include <string>
 
 ROCKETMQ_NAMESPACE_BEGIN
 

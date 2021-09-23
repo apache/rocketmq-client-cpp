@@ -1,11 +1,10 @@
 #pragma once
 
-#include "TopicRouteData.h"
 #include "absl/strings/string_view.h"
 
+#include "TopicRouteData.h"
+
 ROCKETMQ_NAMESPACE_BEGIN
-
-
 
 class TopicRouteChangeCallback {
 public:

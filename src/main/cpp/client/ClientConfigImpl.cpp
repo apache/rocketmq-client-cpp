@@ -1,10 +1,12 @@
 #include "ClientConfigImpl.h"
-#include "UtilAll.h"
+
 #include <sstream>
 
 #ifndef _WIN32
 #include <unistd.h>
 #endif
+
+#include "UtilAll.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -22,10 +24,9 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 const char* ClientConfigImpl::CLIENT_VERSION = CLIENT_VERSION_MAJOR "." CLIENT_VERSION_MINOR "." CLIENT_VERSION_PATCH;
 
-ClientConfigImpl::ClientConfigImpl() : ClientConfigImpl(std::string()) {}
-
-ClientConfigImpl::ClientConfigImpl(std::string group_name)
-    : group_name_(std::move(group_name)), io_timeout_(absl::Seconds(3)), long_polling_timeout_(absl::Seconds(30)) {
+ClientConfigImpl::ClientConfigImpl(absl::string_view group_name)
+    : group_name_(group_name.data(), group_name.length()), io_timeout_(absl::Seconds(3)),
+      long_polling_timeout_(absl::Seconds(30)) {
   instance_name_ = "DEFAULT";
 }
 

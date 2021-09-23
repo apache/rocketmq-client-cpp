@@ -1,7 +1,6 @@
 #pragma once
 
 #include "rocketmq/MQMessage.h"
-#include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

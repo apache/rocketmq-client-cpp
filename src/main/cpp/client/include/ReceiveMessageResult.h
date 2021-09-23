@@ -1,12 +1,12 @@
 #pragma once
 
-#include "MixAll.h"
-#include "absl/time/time.h"
-#include "rocketmq/MQMessageExt.h"
-
 #include <cstdlib>
 #include <sstream>
 #include <utility>
+
+#include "MixAll.h"
+#include "absl/time/time.h"
+#include "rocketmq/MQMessageExt.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

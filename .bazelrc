@@ -128,3 +128,5 @@ build:coverage --strategy=TestRunner=sandboxed,local
 build:coverage --strategy=CoverageReport=sandboxed,local
 build:coverage --collect_code_coverage
 build:coverage --instrumentation_filter="//src/main/cpp[/:],//api[/:],-//src/main/cpp/base/mocks[/:],-//src/main/cpp/client/mocks[/:],-//src/main/cpp/rocketmq/mocks[/:]"
+
+test --test_output=errors

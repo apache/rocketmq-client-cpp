@@ -1,10 +1,12 @@
 #pragma once
 
-#include "absl/strings/string_view.h"
-#include "rocketmq/RocketMQ.h"
 #include <cstdint>
 #include <string>
 #include <vector>
+
+#include "absl/strings/string_view.h"
+
+#include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

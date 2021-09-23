@@ -13,9 +13,9 @@
 #include "rocketmq/Logger.h"
 #include "spdlog/spdlog.h"
 #include "gtest/gtest.h"
+#include <iostream>
 #include <thread>
 #include <unordered_map>
-#include <iostream>
 
 using namespace testing;
 
@@ -174,7 +174,7 @@ protected:
   std::string region_id_{"cn-hangzhou"};
   std::string service_name_{"MQ"};
   absl::flat_hash_map<std::string, std::string> metadata_;
-  ClientConfigImpl client_config_;
+  ClientConfigImpl client_config_{group_};
   CredentialsProviderPtr credentials_provider_;
   std::shared_ptr<grpc::experimental::StaticDataCertificateProvider> certificate_provider_;
   grpc::experimental::TlsChannelCredentialsOptions tls_channel_credential_options_;

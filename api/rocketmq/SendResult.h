@@ -83,10 +83,10 @@ public:
   }
 
 private:
-  SendStatus send_status_;
+  SendStatus send_status_{SendStatus::SEND_OK};
   std::string message_id_;
   mutable MQMessageQueue message_queue_;
-  long long queue_offset_;
+  long long queue_offset_{0};
   std::string transaction_id_;
   std::string region_id_;
   std::string trace_context_;

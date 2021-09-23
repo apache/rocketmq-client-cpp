@@ -3,6 +3,8 @@
 #include <future>
 #include <memory>
 
+#include "absl/strings/string_view.h"
+
 #include "ClientConfig.h"
 #include "ClientImpl.h"
 #include "ClientManagerImpl.h"
@@ -14,7 +16,7 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class PullConsumerImpl : public ClientImpl, public std::enable_shared_from_this<PullConsumerImpl> {
 public:
-  explicit PullConsumerImpl(std::string group_name) : ClientImpl(std::move(group_name)) {}
+  explicit PullConsumerImpl(absl::string_view group_name) : ClientImpl(group_name) {}
 
   void start() override;
 

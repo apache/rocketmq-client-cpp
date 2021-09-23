@@ -22,7 +22,7 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-ClientImpl::ClientImpl(std::string group_name) : ClientConfigImpl(std::move(group_name)), state_(State::CREATED) {}
+ClientImpl::ClientImpl(absl::string_view group_name) : ClientConfigImpl(group_name), state_(State::CREATED) {}
 
 void ClientImpl::start() {
   State expected = CREATED;

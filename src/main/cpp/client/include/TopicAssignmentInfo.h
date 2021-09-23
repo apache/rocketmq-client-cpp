@@ -1,9 +1,10 @@
 #pragma once
 
-#include "Assignment.h"
-#include "RpcClient.h"
 #include <atomic>
 #include <vector>
+
+#include "Assignment.h"
+#include "RpcClient.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

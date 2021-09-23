@@ -1,9 +1,10 @@
 #pragma once
 
-#include "rocketmq/CredentialsProvider.h"
-#include "absl/time/time.h"
-#include "rocketmq/RocketMQ.h"
 #include <string>
+
+#include "absl/time/time.h"
+
+#include "rocketmq/CredentialsProvider.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

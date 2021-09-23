@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+
 #include "Protocol.h"
 
 ROCKETMQ_NAMESPACE_BEGIN

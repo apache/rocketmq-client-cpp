@@ -1,9 +1,10 @@
 #pragma once
 
-#include "Partition.h"
-#include "RpcClient.h"
 #include <algorithm>
 #include <vector>
+
+#include "Partition.h"
+#include "RpcClient.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

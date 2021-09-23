@@ -5,6 +5,8 @@
 #include <mutex>
 #include <string>
 
+#include "absl/strings/string_view.h"
+
 #include "ClientImpl.h"
 #include "ClientManagerImpl.h"
 #include "MixAll.h"
@@ -23,7 +25,7 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class ProducerImpl : virtual public ClientImpl, public std::enable_shared_from_this<ProducerImpl> {
 public:
-  explicit ProducerImpl(std::string group_name);
+  explicit ProducerImpl(absl::string_view group_name);
 
   ~ProducerImpl() override;
 
@@ -52,9 +54,11 @@ public:
 
   std::unique_ptr<TransactionImpl> prepare(MQMessage& message);
 
-  bool commit(const std::string& message_id, const std::string& transaction_id, const std::string& trace_context, const std::string& target);
+  bool commit(const std::string& message_id, const std::string& transaction_id, const std::string& trace_context,
+              const std::string& target);
 
-  bool rollback(const std::string& message_id, const std::string& transaction_id, const std::string& trace_context, const std::string& target);
+  bool rollback(const std::string& message_id, const std::string& transaction_id, const std::string& trace_context,
+                const std::string& target);
 
   /**
    * Check if the RPC client for the target host is isolated or not

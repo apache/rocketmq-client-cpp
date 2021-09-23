@@ -1,5 +1,19 @@
 #pragma once
 
+#include <atomic>
+#include <chrono>
+#include <cstdint>
+#include <functional>
+#include <future>
+#include <string>
+#include <vector>
+
+#include "absl/base/thread_annotations.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/strings/string_view.h"
+#include "absl/synchronization/mutex.h"
+
 #include "Client.h"
 #include "ClientManager.h"
 #include "HeartbeatDataCallback.h"
@@ -15,21 +29,8 @@
 #include "TopAddressing.h"
 #include "TopicRouteChangeCallback.h"
 #include "TopicRouteData.h"
-#include "absl/base/thread_annotations.h"
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
-#include "absl/strings/string_view.h"
-#include "absl/synchronization/mutex.h"
 #include "rocketmq/AsyncCallback.h"
-#include "rocketmq/CommunicationMode.h"
 #include "rocketmq/State.h"
-#include <atomic>
-#include <chrono>
-#include <cstdint>
-#include <functional>
-#include <future>
-#include <string>
-#include <vector>
 
 ROCKETMQ_NAMESPACE_BEGIN
 

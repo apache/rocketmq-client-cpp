@@ -1,8 +1,5 @@
 #include <chrono>
 #include <memory>
-#include <set>
-
-#include "absl/strings/str_split.h"
 
 #include "DynamicNameServerResolver.h"
 #include "PushConsumerImpl.h"
@@ -11,24 +8,15 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-static std::set<std::string> consumerTable{};
-DefaultMQPushConsumer::DefaultMQPushConsumer(const std::string& group_name) : group_name_(group_name) {
-  if (consumerTable.count(group_name)) {
-    SPDLOG_ERROR("create consumer with same group name in a process, group name : {}", group_name);
-    std::string err_msg = "create consumer with same group name in a process, group name :" + group_name;
-    THROW_MQ_EXCEPTION(MQClientException, err_msg, -1);
-  } else {
-    impl_ = std::make_shared<PushConsumerImpl>(group_name);
-    consumerTable.insert(group_name);
-  }
+DefaultMQPushConsumer::DefaultMQPushConsumer(const std::string& group_name) {
+  impl_ = std::make_shared<PushConsumerImpl>(group_name);
 }
 
 void DefaultMQPushConsumer::start() { impl_->start(); }
 
 void DefaultMQPushConsumer::shutdown() {
   impl_->shutdown();
-  consumerTable.erase(group_name_);
-  SPDLOG_DEBUG("DefaultMQPushConsumerImpl shared_ptr use_count : {}", impl_.use_count());
+  SPDLOG_DEBUG("PushConsumerImpl shared_ptr use_count={}", impl_.use_count());
 }
 
 void DefaultMQPushConsumer::subscribe(const std::string& topic, const std::string& expression,
@@ -91,5 +79,7 @@ void DefaultMQPushConsumer::setCredentialsProvider(CredentialsProviderPtr creden
 }
 
 void DefaultMQPushConsumer::setMessageModel(MessageModel message_model) { impl_->setMessageModel(message_model); }
+
+std::string DefaultMQPushConsumer::groupName() const { return impl_->getGroupName(); }
 
 ROCKETMQ_NAMESPACE_END

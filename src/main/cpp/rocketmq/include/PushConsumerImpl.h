@@ -4,6 +4,8 @@
 #include <mutex>
 #include <string>
 
+#include "absl/strings/string_view.h"
+
 #include "ClientConfigImpl.h"
 #include "ClientImpl.h"
 #include "ClientManagerImpl.h"
@@ -30,7 +32,7 @@ class PushConsumerImpl : virtual public ClientImpl,
                          virtual public PushConsumer,
                          public std::enable_shared_from_this<PushConsumerImpl> {
 public:
-  explicit PushConsumerImpl(std::string group_name);
+  explicit PushConsumerImpl(absl::string_view group_name);
 
   ~PushConsumerImpl() override;
 

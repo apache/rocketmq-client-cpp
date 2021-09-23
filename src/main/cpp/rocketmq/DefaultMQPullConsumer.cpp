@@ -1,12 +1,13 @@
 #include "rocketmq/DefaultMQPullConsumer.h"
 
+#include <memory>
+
 #include "absl/strings/str_split.h"
 
 #include "AwaitPullCallback.h"
 #include "DynamicNameServerResolver.h"
 #include "PullConsumerImpl.h"
 #include "StaticNameServerResolver.h"
-#include <memory>
 
 ROCKETMQ_NAMESPACE_BEGIN
 

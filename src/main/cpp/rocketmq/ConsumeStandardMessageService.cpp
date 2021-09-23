@@ -1,3 +1,14 @@
+#include <limits>
+#include <string>
+#include <utility>
+
+#include "absl/memory/memory.h"
+#include "absl/strings/str_join.h"
+#include "absl/time/time.h"
+#include "absl/types/span.h"
+#include "opencensus/trace/propagation/trace_context.h"
+#include "opencensus/trace/span.h"
+
 #include "ConsumeMessageService.h"
 #include "LoggerImpl.h"
 #include "MessageAccessor.h"
@@ -5,20 +16,10 @@
 #include "OtlpExporter.h"
 #include "Protocol.h"
 #include "PushConsumer.h"
-#include "TracingUtility.h"
 #include "UtilAll.h"
-#include "absl/memory/memory.h"
-#include "absl/strings/str_join.h"
-#include "absl/time/time.h"
-#include "absl/types/span.h"
-#include "opencensus/trace/propagation/trace_context.h"
-#include "opencensus/trace/span.h"
 #include "rocketmq/ConsumeType.h"
 #include "rocketmq/MQMessage.h"
 #include "rocketmq/MessageListener.h"
-#include <limits>
-#include <string>
-#include <utility>
 
 ROCKETMQ_NAMESPACE_BEGIN
 

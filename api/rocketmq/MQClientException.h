@@ -11,7 +11,7 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class MQException : public std::exception {
 public:
-  MQException(const std::string& msg, int error, const char* file, int line) throw()
+  MQException(const std::string& msg, int error, const char* file, int line) noexcept
       : m_error(error), m_line(line), m_file(file) {
     try {
       std::stringstream ss;
@@ -21,7 +21,7 @@ public:
     }
   }
 
-  MQException(const std::string& msg, int error, const char* file, const char* type, int line) throw()
+  MQException(const std::string& msg, int error, const char* file, const char* type, int line) noexcept
       : m_error(error), m_line(line), m_file(file), m_type(type) {
     try {
       std::stringstream ss;
@@ -31,13 +31,13 @@ public:
     }
   }
 
-  virtual ~MQException() throw() {}
+  ~MQException() noexcept override = default;
 
-  const char* what() const throw() { return m_msg.c_str(); }
+  const char* what() const noexcept override { return m_msg.c_str(); }
 
-  int GetError() const throw() { return m_error; }
+  int GetError() const noexcept { return m_error; }
 
-  virtual const char* GetType() const throw() { return m_type.c_str(); }
+  virtual const char* GetType() const noexcept { return m_type.c_str(); }
 
 protected:
   int m_error;

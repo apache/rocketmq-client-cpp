@@ -1,8 +1,10 @@
 #pragma once
 
-#include "apache/rocketmq/v1/admin.grpc.pb.h"
-#include "rocketmq/RocketMQ.h"
 #include <cassert>
+
+#include "apache/rocketmq/v1/admin.grpc.pb.h"
+
+#include "rocketmq/RocketMQ.h"
 
 namespace rmq = apache::rocketmq::v1;
 

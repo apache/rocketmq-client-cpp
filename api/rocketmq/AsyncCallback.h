@@ -15,8 +15,11 @@ using sendCallbackType = SendCallbackType;
 class SendCallback : public AsyncCallback {
 public:
   virtual ~SendCallback() = default;
+
   virtual void onSuccess(SendResult& send_result) = 0;
+
   virtual void onException(const MQException& e) = 0;
+
   virtual SendCallbackType getSendCallbackType() { return SendCallbackType::noAutoDeleteSendCallback; }
 };
 

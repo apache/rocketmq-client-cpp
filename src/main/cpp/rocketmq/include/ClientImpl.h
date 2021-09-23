@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cstdint>
 
+#include "absl/strings/string_view.h"
 #include "apache/rocketmq/v1/definition.pb.h"
 
 #include "Client.h"
@@ -17,9 +18,9 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class ClientImpl : virtual public Client, virtual public ClientConfigImpl {
+class ClientImpl : public ClientConfigImpl, virtual public Client {
 public:
-  explicit ClientImpl(std::string group_name);
+  explicit ClientImpl(absl::string_view group_name);
 
   ~ClientImpl() override = default;
 

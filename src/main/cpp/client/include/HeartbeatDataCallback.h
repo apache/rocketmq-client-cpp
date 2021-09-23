@@ -1,7 +1,6 @@
 #pragma once
 
 #include "RpcClient.h"
-#include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

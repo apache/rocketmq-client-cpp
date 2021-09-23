@@ -92,9 +92,10 @@ public:
 
   void setMessageModel(MessageModel message_model);
 
+  std::string groupName() const;
+
 private:
   std::shared_ptr<PushConsumerImpl> impl_;
-  std::string group_name_;
 };
 
 ROCKETMQ_NAMESPACE_END

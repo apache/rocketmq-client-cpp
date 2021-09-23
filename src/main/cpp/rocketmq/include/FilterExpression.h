@@ -1,7 +1,9 @@
 #pragma once
+
+#include <string>
+
 #include "rocketmq/MQMessageExt.h"
 #include "rocketmq/ExpressionType.h"
-#include <string>
 
 ROCKETMQ_NAMESPACE_BEGIN
 

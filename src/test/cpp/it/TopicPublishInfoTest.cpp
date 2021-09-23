@@ -1,12 +1,12 @@
 #include "TopicPublishInfo.h"
+#include "ClientConfigImpl.h"
 #include "LogInterceptorFactory.h"
 #include "RpcClientImpl.h"
 #include "Signature.h"
 #include "TlsHelper.h"
-#include "rocketmq/MQMessageQueue.h"
-#include "ClientConfigImpl.h"
-#include "gtest/gtest.h"
 #include "grpcpp/security/tls_credentials_options.h"
+#include "rocketmq/MQMessageQueue.h"
+#include "gtest/gtest.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -62,7 +62,7 @@ protected:
   std::string region_id_{"cn-hangzhou"};
   std::string service_name_{"MQ"};
   std::string target_{"dns:grpc.dev:9876"};
-  ClientConfigImpl client_config_;
+  ClientConfigImpl client_config_{group_};
   absl::flat_hash_map<std::string, std::string> metadata_;
   std::shared_ptr<grpc::CompletionQueue> completion_queue_;
   std::shared_ptr<RpcClientImpl> client_;
@@ -81,7 +81,7 @@ TEST_F(TopicPublishInfoTest, testTopicPublishInfo) {
   request.mutable_topic()->set_name(topic_);
   auto invocation_context = new InvocationContext<QueryRouteResponse>();
   invocation_context->context.set_deadline(std::chrono::system_clock::now() +
-                                            absl::ToChronoMilliseconds(client_config_.getIoTimeout()));
+                                           absl::ToChronoMilliseconds(client_config_.getIoTimeout()));
   for (const auto& item : metadata_) {
     invocation_context->context.AddMetadata(item.first, item.second);
   }

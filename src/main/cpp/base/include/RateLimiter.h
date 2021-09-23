@@ -1,6 +1,5 @@
 #pragma once
 
-#include "rocketmq/RocketMQ.h"
 #include <array>
 #include <atomic>
 #include <condition_variable>
@@ -9,6 +8,8 @@
 #include <string>
 #include <thread>
 #include <vector>
+
+#include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

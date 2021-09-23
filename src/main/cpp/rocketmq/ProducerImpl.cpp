@@ -1,5 +1,11 @@
 #include "ProducerImpl.h"
 
+#include <atomic>
+
+#include "absl/strings/str_join.h"
+#include "opencensus/trace/propagation/trace_context.h"
+#include "opencensus/trace/span.h"
+
 #include "MessageAccessor.h"
 #include "MessageGroupQueueSelector.h"
 #include "MetadataConstants.h"
@@ -13,20 +19,16 @@
 #include "TransactionImpl.h"
 #include "UniqueIdGenerator.h"
 #include "UtilAll.h"
-#include "absl/strings/str_join.h"
-#include "opencensus/trace/propagation/trace_context.h"
-#include "opencensus/trace/span.h"
 #include "rocketmq/ErrorCode.h"
 #include "rocketmq/MQClientException.h"
 #include "rocketmq/MQMessage.h"
 #include "rocketmq/MQMessageQueue.h"
 #include "rocketmq/Transaction.h"
-#include <atomic>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-ProducerImpl::ProducerImpl(std::string group_name)
-    : ClientImpl(std::move(group_name)), compress_body_threshold_(MixAll::DEFAULT_COMPRESS_BODY_THRESHOLD_) {
+ProducerImpl::ProducerImpl(absl::string_view group_name)
+    : ClientImpl(group_name), compress_body_threshold_(MixAll::DEFAULT_COMPRESS_BODY_THRESHOLD_) {
   // TODO: initialize client_config_ and fault_strategy_
 }
 

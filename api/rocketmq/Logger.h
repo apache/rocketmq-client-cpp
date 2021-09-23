@@ -6,6 +6,7 @@
 #include <mutex>
 #include <string>
 #include <cstdint>
+
 #include "RocketMQ.h"
 
 #ifndef SPDLOG_ACTIVE_LEVEL

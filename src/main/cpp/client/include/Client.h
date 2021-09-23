@@ -1,8 +1,10 @@
 #pragma once
 
-#include "ClientConfig.h"
-#include "absl/container/flat_hash_set.h"
 #include <functional>
+
+#include "absl/container/flat_hash_set.h"
+
+#include "ClientConfig.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

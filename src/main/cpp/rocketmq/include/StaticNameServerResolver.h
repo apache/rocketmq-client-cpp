@@ -13,7 +13,7 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class StaticNameServerResolver : public NameServerResolver {
 public:
-  StaticNameServerResolver(absl::string_view name_server_list);
+  explicit StaticNameServerResolver(absl::string_view name_server_list);
 
   void start() override {}
 

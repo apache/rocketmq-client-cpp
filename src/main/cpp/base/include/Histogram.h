@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+
 #include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
