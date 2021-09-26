@@ -273,7 +273,7 @@ int DestroyProducer(CProducer* pProducer) {
   }
   DefaultProducer* defaultMQProducer = (DefaultProducer*)pProducer;
   if (defaultMQProducer->version != NULL) {
-    delete defaultMQProducer->version;
+    delete[] defaultMQProducer->version;
     defaultMQProducer->version = NULL;
   }
   if (CAPI_C_PRODUCER_TYPE_TRANSACTION == defaultMQProducer->producerType) {
