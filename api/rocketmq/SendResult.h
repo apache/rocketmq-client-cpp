@@ -82,6 +82,8 @@ public:
     trace_context_ = std::move(trace_context);
   }
 
+  operator bool() { return !message_id_.empty(); }
+
 private:
   SendStatus send_status_{SendStatus::SEND_OK};
   std::string message_id_;

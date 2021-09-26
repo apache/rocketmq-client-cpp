@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <memory>
+#include <system_error>
 
 #include "Client.h"
 #include "ReceiveMessageCallback.h"
@@ -10,6 +11,7 @@
 #include "TopAddressing.h"
 #include "TopicRouteData.h"
 #include "rocketmq/MQMessageExt.h"
+#include "rocketmq/State.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -29,11 +31,11 @@ public:
 
   virtual void resolveRoute(const std::string& target_host, const Metadata& metadata, const QueryRouteRequest& request,
                             std::chrono::milliseconds timeout,
-                            const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) = 0;
+                            const std::function<void(const std::error_code&, const TopicRouteDataPtr& ptr)>& cb) = 0;
 
   virtual void heartbeat(const std::string& target_host, const Metadata& metadata, const HeartbeatRequest& request,
                          std::chrono::milliseconds timeout,
-                         const std::function<void(bool, const HeartbeatResponse&)>& cb) = 0;
+                         const std::function<void(const std::error_code&, const HeartbeatResponse&)>& cb) = 0;
 
   virtual void multiplexingCall(const std::string& target, const Metadata& metadata, const MultiplexingRequest& request,
                                 std::chrono::milliseconds timeout,
@@ -42,10 +44,10 @@ public:
   virtual bool wrapMessage(const rmq::Message& item, MQMessageExt& message_ext) = 0;
 
   virtual void ack(const std::string& target_host, const Metadata& metadata, const AckMessageRequest& request,
-                   std::chrono::milliseconds timeout, const std::function<void(bool)>& cb) = 0;
+                   std::chrono::milliseconds timeout, const std::function<void(const std::error_code&)>& cb) = 0;
 
   virtual void nack(const std::string& target_host, const Metadata& metadata, const NackMessageRequest& request,
-                    std::chrono::milliseconds timeout, const std::function<void(bool)>& callback) = 0;
+                    std::chrono::milliseconds timeout, const std::function<void(const std::error_code&)>& callback) = 0;
 
   virtual void forwardMessageToDeadLetterQueue(
       const std::string& target_host, const Metadata& metadata, const ForwardMessageToDeadLetterQueueRequest& request,
@@ -54,22 +56,23 @@ public:
 
   virtual void endTransaction(const std::string& target_host, const Metadata& metadata,
                               const EndTransactionRequest& request, std::chrono::milliseconds timeout,
-                              const std::function<void(bool, const EndTransactionResponse&)>& cb) = 0;
+                              const std::function<void(const std::error_code&, const EndTransactionResponse&)>& cb) = 0;
 
   virtual void queryOffset(const std::string& target_host, const Metadata& metadata, const QueryOffsetRequest& request,
                            std::chrono::milliseconds timeout,
-                           const std::function<void(bool, const QueryOffsetResponse&)>& cb) = 0;
+                           const std::function<void(const std::error_code&, const QueryOffsetResponse&)>& cb) = 0;
 
   virtual void
   healthCheck(const std::string& target_host, const Metadata& metadata, const HealthCheckRequest& request,
               std::chrono::milliseconds timeout,
-              const std::function<void(const std::string&, const InvocationContext<HealthCheckResponse>*)>& cb) = 0;
+              const std::function<void(const std::error_code&, const InvocationContext<HealthCheckResponse>*)>& cb) = 0;
 
   virtual void addClientObserver(std::weak_ptr<Client> client) = 0;
 
-  virtual void queryAssignment(const std::string& target, const Metadata& metadata,
-                               const QueryAssignmentRequest& request, std::chrono::milliseconds timeout,
-                               const std::function<void(bool, const QueryAssignmentResponse&)>& cb) = 0;
+  virtual void
+  queryAssignment(const std::string& target, const Metadata& metadata, const QueryAssignmentRequest& request,
+                  std::chrono::milliseconds timeout,
+                  const std::function<void(const std::error_code&, const QueryAssignmentResponse&)>& cb) = 0;
 
   virtual void receiveMessage(const std::string& target, const Metadata& metadata, const ReceiveMessageRequest& request,
                               std::chrono::milliseconds timeout, const std::shared_ptr<ReceiveMessageCallback>& cb) = 0;
@@ -87,6 +90,8 @@ public:
   virtual bool notifyClientTermination(const std::string& target_host, const Metadata& metadata,
                                        const NotifyClientTerminationRequest& request,
                                        std::chrono::milliseconds timeout) = 0;
+
+  virtual State state() const = 0;
 };
 
 using ClientManagerPtr = std::shared_ptr<ClientManager>;

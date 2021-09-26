@@ -1,5 +1,6 @@
 #include <limits>
 #include <string>
+#include <system_error>
 #include <utility>
 
 #include "absl/memory/memory.h"
@@ -25,7 +26,8 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 ConsumeStandardMessageService::ConsumeStandardMessageService(std::weak_ptr<PushConsumer> consumer, int thread_count,
                                                              MessageListener* message_listener_ptr)
-    : ConsumeMessageService(std::move(consumer), thread_count, message_listener_ptr) {}
+    : ConsumeMessageService(std::move(consumer), thread_count, message_listener_ptr) {
+}
 
 void ConsumeStandardMessageService::start() {
   ConsumeMessageService::start();
@@ -88,7 +90,9 @@ void ConsumeStandardMessageService::submitConsumeTask(const ProcessQueueWeakPtr&
   }
 }
 
-MessageListenerType ConsumeStandardMessageService::messageListenerType() { return MessageListenerType::STANDARD; }
+MessageListenerType ConsumeStandardMessageService::messageListenerType() {
+  return MessageListenerType::STANDARD;
+}
 
 void ConsumeStandardMessageService::consumeTask(const ProcessQueueWeakPtr& process_queue,
                                                 const std::vector<MQMessageExt>& msgs) {
@@ -197,12 +201,12 @@ void ConsumeStandardMessageService::consumeTask(const ProcessQueueWeakPtr& proce
   {
     for (auto& span : spans) {
       switch (status) {
-      case ConsumeMessageResult::SUCCESS:
-        span.SetStatus(opencensus::trace::StatusCode::OK);
-        break;
-      case ConsumeMessageResult::FAILURE:
-        span.SetStatus(opencensus::trace::StatusCode::UNKNOWN);
-        break;
+        case ConsumeMessageResult::SUCCESS:
+          span.SetStatus(opencensus::trace::StatusCode::OK);
+          break;
+        case ConsumeMessageResult::FAILURE:
+          span.SetStatus(opencensus::trace::StatusCode::UNKNOWN);
+          break;
       }
       span.End();
     }
@@ -219,26 +223,26 @@ void ConsumeStandardMessageService::consumeTask(const ProcessQueueWeakPtr& proce
       process_queue_ptr->release(msg.getBody().size(), msg.getQueueOffset());
 
       if (status == ConsumeMessageResult::SUCCESS) {
-        auto callback = [process_queue_ptr, message_id](bool ok) {
-          if (ok) {
+        auto callback = [process_queue_ptr, message_id](const std::error_code& ec) {
+          if (ec) {
+            SPDLOG_WARN("Failed to acknowledge message[MessageQueue={}, MsgId={}]. Cause: {}",
+                        process_queue_ptr->simpleName(), message_id, ec.message());
+          } else {
             SPDLOG_DEBUG("Acknowledge message[MessageQueue={}, MsgId={}] OK", process_queue_ptr->simpleName(),
                          message_id);
-          } else {
-            SPDLOG_WARN("Failed to acknowledge message[MessageQueue={}, MsgId={}]", process_queue_ptr->simpleName(),
-                        message_id);
           }
         };
         consumer->ack(msg, callback);
       } else {
-        auto callback = [process_queue_ptr, message_id](bool ok) {
-          if (ok) {
-            SPDLOG_DEBUG("Nack message[MessageQueue={}, MsgId={}] OK", process_queue_ptr->simpleName(), message_id);
-          } else {
-            SPDLOG_INFO(
-                "Failed to negative acknowledge message[MessageQueue={}, MsgId={}]. Message will be re-consumed "
-                "after default invisible time",
-                process_queue_ptr->simpleName(), message_id);
+        auto callback = [process_queue_ptr, message_id](const std::error_code& ec) {
+          if (ec) {
+            SPDLOG_WARN("Failed to negative acknowledge message[MessageQueue={}, MsgId={}]. Cause: {} Message will be "
+                        "re-consumed after default invisible time",
+                        process_queue_ptr->simpleName(), message_id, ec.message());
+            return;
           }
+
+          SPDLOG_DEBUG("Nack message[MessageQueue={}, MsgId={}] OK", process_queue_ptr->simpleName(), message_id);
         };
         consumer->nack(msg, callback);
       }

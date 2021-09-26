@@ -3,6 +3,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <system_error>
 
 #include "absl/strings/string_view.h"
 
@@ -72,7 +73,8 @@ public:
    * @param topic Topic to query
    * @return shared pointer to topic assignment info
    */
-  void queryAssignment(const std::string& topic, const std::function<void(const TopicAssignmentPtr&)>& cb);
+  void queryAssignment(const std::string& topic,
+                       const std::function<void(const std::error_code&, const TopicAssignmentPtr&)>& cb);
 
   void syncProcessQueue(const std::string& topic, const TopicAssignmentPtr& topic_assignment,
                         const FilterExpression& filter_expression) LOCKS_EXCLUDED(process_queue_table_mtx_);
@@ -98,7 +100,7 @@ public:
 
   std::shared_ptr<ConsumeMessageService> getConsumeMessageService() override;
 
-  void ack(const MQMessageExt& msg, const std::function<void(bool)>& callback) override;
+  void ack(const MQMessageExt& msg, const std::function<void(const std::error_code&)>& callback) override;
 
   /**
    * Negative acknowledge the given message; Refer to
@@ -109,7 +111,7 @@ public:
    *
    * @param message Message to negate on the broker side.
    */
-  void nack(const MQMessageExt& message, const std::function<void(bool)>& callback) override;
+  void nack(const MQMessageExt& message, const std::function<void(const std::error_code&)>& callback) override;
 
   void forwardToDeadLetterQueue(const MQMessageExt& message, const std::function<void(bool)>& cb) override;
 

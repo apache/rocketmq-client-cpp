@@ -3,6 +3,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <system_error>
 
 #include "ProcessQueue.h"
 #include "RateLimiter.h"
@@ -123,7 +124,7 @@ private:
 
   void scheduleAckTask(const ProcessQueueWeakPtr& process_queue, const MQMessageExt& message);
 
-  void onAck(const ProcessQueueWeakPtr& process_queue, const MQMessageExt& message, bool ok);
+  void onAck(const ProcessQueueWeakPtr& process_queue, const MQMessageExt& message, const std::error_code& ec);
 
   void scheduleConsumeTask(const ProcessQueueWeakPtr& process_queue, const MQMessageExt& message);
 

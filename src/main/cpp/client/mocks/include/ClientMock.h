@@ -13,6 +13,8 @@ public:
 
   MOCK_METHOD(bool, active, (), (override));
 
+  MOCK_METHOD(void, onRemoteEndpointRemoval, (const std::vector<std::string>&), (override));
+
   MOCK_METHOD(void, healthCheck, (), (override));
 
   MOCK_METHOD(void, schedule, (const std::string&, const std::function<void()>&, std::chrono::milliseconds),

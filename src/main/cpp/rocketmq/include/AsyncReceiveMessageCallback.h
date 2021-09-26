@@ -2,6 +2,7 @@
 
 #include "ProcessQueue.h"
 #include "ReceiveMessageCallback.h"
+#include <system_error>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -14,7 +15,7 @@ public:
 
   void onSuccess(ReceiveMessageResult& result) override;
 
-  void onException(MQException& e) override;
+  void onFailure(const std::error_code& ec) override;
 
   void receiveMessageLater();
 

@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <system_error>
 
 #include "ConsumeMessageService.h"
 #include "Consumer.h"
@@ -20,7 +21,7 @@ public:
 
   virtual MessageModel messageModel() const = 0;
 
-  virtual void ack(const MQMessageExt& msg, const std::function<void(bool)>& callback) = 0;
+  virtual void ack(const MQMessageExt& msg, const std::function<void(const std::error_code&)>& callback) = 0;
 
   virtual void forwardToDeadLetterQueue(const MQMessageExt& message, const std::function<void(bool)>& cb) = 0;
 
@@ -32,7 +33,7 @@ public:
 
   virtual void updateOffset(const MQMessageQueue& message_queue, int64_t offset) = 0;
 
-  virtual void nack(const MQMessageExt& message, const std::function<void(bool)>& callback) = 0;
+  virtual void nack(const MQMessageExt& message, const std::function<void(const std::error_code&)>& callback) = 0;
 
   virtual std::shared_ptr<ConsumeMessageService> getConsumeMessageService() = 0;
 

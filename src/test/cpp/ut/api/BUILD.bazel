@@ -1,0 +1,12 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+
+cc_test(
+    name = "error_code_test",
+    srcs = [
+        "ErrorCodeTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/base:base_library",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

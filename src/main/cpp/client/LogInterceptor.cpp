@@ -34,8 +34,12 @@ void LogInterceptor::Intercept(grpc::experimental::InterceptorBatchMethods* meth
         response_headers.insert({absl::string_view(it.first.data(), it.first.length()),
                                  absl::string_view(it.second.data(), it.second.length())});
       }
-      SPDLOG_DEBUG("[Inbound]Response Headers of {}:\n{}", client_rpc_info_->method(),
-                   absl::StrJoin(response_headers, "\n", absl::PairFormatter(" --> ")));
+      if (!response_headers.empty()) {
+        SPDLOG_DEBUG("[Inbound]Response Headers of {}:\n{}", client_rpc_info_->method(),
+                     absl::StrJoin(response_headers, "\n", absl::PairFormatter(" --> ")));
+      } else {
+        SPDLOG_DEBUG("[Inbound]Response metadata of {} is empty", client_rpc_info_->method());
+      }
     }
   }
 

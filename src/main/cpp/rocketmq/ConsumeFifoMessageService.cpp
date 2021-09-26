@@ -1,16 +1,19 @@
+#include <chrono>
+#include <functional>
+#include <limits>
+#include <system_error>
+
 #include "ConsumeMessageService.h"
 #include "MessageAccessor.h"
 #include "ProcessQueue.h"
 #include "PushConsumerImpl.h"
-#include <chrono>
-#include <functional>
-#include <limits>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 ConsumeFifoMessageService ::ConsumeFifoMessageService(std::weak_ptr<PushConsumer> consumer, int thread_count,
                                                       MessageListener* message_listener)
-    : ConsumeMessageService(std::move(consumer), thread_count, message_listener) {}
+    : ConsumeMessageService(std::move(consumer), thread_count, message_listener) {
+}
 
 void ConsumeFifoMessageService::start() {
   ConsumeMessageService::start();
@@ -78,7 +81,9 @@ void ConsumeFifoMessageService::submitConsumeTask(const ProcessQueueWeakPtr& pro
   }
 }
 
-MessageListenerType ConsumeFifoMessageService::messageListenerType() { return MessageListenerType::FIFO; }
+MessageListenerType ConsumeFifoMessageService::messageListenerType() {
+  return MessageListenerType::FIFO;
+}
 
 void ConsumeFifoMessageService::consumeTask(const ProcessQueueWeakPtr& process_queue, MQMessageExt& message) {
   ProcessQueueSharedPtr process_queue_ptr = process_queue.lock();
@@ -145,31 +150,32 @@ void ConsumeFifoMessageService::consumeTask(const ProcessQueueWeakPtr& process_q
   }
 }
 
-void ConsumeFifoMessageService::onAck(const ProcessQueueWeakPtr& process_queue, const MQMessageExt& message, bool ok) {
+void ConsumeFifoMessageService::onAck(const ProcessQueueWeakPtr& process_queue, const MQMessageExt& message,
+                                      const std::error_code& ec) {
   auto process_queue_ptr = process_queue.lock();
   if (!process_queue_ptr) {
     SPDLOG_WARN("ProcessQueue has destructed.");
     return;
   }
-  if (ok) {
-    SPDLOG_DEBUG("Acknowledge FIFO message[MessageQueue={}, MsgId={}] OK", process_queue_ptr->simpleName(),
-                 message.getMsgId());
-    process_queue_ptr->unbindFifoConsumeTask();
-    signalDispatcher();
-  } else {
-    SPDLOG_WARN("Failed to acknowledge FIFO message[MessageQueue={}, MsgId={}]", process_queue_ptr->simpleName(),
-                message.getMsgId());
+
+  if (ec) {
+    SPDLOG_WARN("Failed to acknowledge FIFO message[MessageQueue={}, MsgId={}]. Cause: {}",
+                process_queue_ptr->simpleName(), message.getMsgId(), ec.message());
     auto consumer = consumer_.lock();
     if (!consumer) {
       SPDLOG_WARN("Consumer instance has destructed");
       return;
     }
-
     auto task = std::bind(&ConsumeFifoMessageService::scheduleAckTask, this, process_queue, message);
     int32_t duration = 100;
     consumer->schedule("Ack-FIFO-Message-On-Failure", task, std::chrono::milliseconds(duration));
     SPDLOG_INFO("Scheduled to ack message[Topic={}, MessageId={}] in {}ms", message.getTopic(), message.getMsgId(),
                 duration);
+  } else {
+    SPDLOG_DEBUG("Acknowledge FIFO message[MessageQueue={}, MsgId={}] OK", process_queue_ptr->simpleName(),
+                 message.getMsgId());
+    process_queue_ptr->unbindFifoConsumeTask();
+    signalDispatcher();
   }
 }
 

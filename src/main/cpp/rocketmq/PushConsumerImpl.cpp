@@ -1,5 +1,12 @@
 #include "PushConsumerImpl.h"
 
+#include <cassert>
+#include <chrono>
+#include <cstdlib>
+#include <system_error>
+
+#include "apache/rocketmq/v1/definition.pb.h"
+
 #include "AsyncReceiveMessageCallback.h"
 #include "ClientManagerFactory.h"
 #include "MessageAccessor.h"
@@ -9,16 +16,15 @@
 #include "Signature.h"
 #include "rocketmq/MQClientException.h"
 #include "rocketmq/MessageModel.h"
-#include <apache/rocketmq/v1/definition.pb.h>
-#include <cassert>
-#include <chrono>
-#include <cstdlib>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-PushConsumerImpl::PushConsumerImpl(absl::string_view group_name) : ClientImpl(group_name) {}
+PushConsumerImpl::PushConsumerImpl(absl::string_view group_name) : ClientImpl(group_name) {
+}
 
-PushConsumerImpl::~PushConsumerImpl() { SPDLOG_DEBUG("DefaultMQPushConsumerImpl is destructed"); }
+PushConsumerImpl::~PushConsumerImpl() {
+  SPDLOG_DEBUG("DefaultMQPushConsumerImpl is destructed");
+}
 
 void PushConsumerImpl::start() {
   ClientImpl::start();
@@ -152,11 +158,12 @@ void PushConsumerImpl::scanAssignments() {
       std::string topic = entry.first;
       const auto& filter_expression = entry.second;
       SPDLOG_DEBUG("Scan assignments for {}", topic);
-      auto callback = [this, topic, filter_expression](const TopicAssignmentPtr& assignments) {
-        if (assignments && !assignments->assignmentList().empty()) {
+      auto callback = [this, topic, filter_expression](const std::error_code& ec,
+                                                       const TopicAssignmentPtr& assignments) {
+        if (ec) {
+          SPDLOG_WARN("Failed to acquire assignments for topic={} from load balancer. Cause: {}", topic, ec.message());
+        } else if (assignments && !assignments->assignmentList().empty()) {
           syncProcessQueue(topic, assignments, filter_expression);
-        } else {
-          SPDLOG_WARN("Failed to acquire assignments for topic={} from load balancer for the first time", topic);
         }
       };
       queryAssignment(topic, callback);
@@ -193,15 +200,15 @@ void PushConsumerImpl::wrapQueryAssignmentRequest(const std::string& topic, cons
   request.set_client_id(client_id);
 }
 
-void PushConsumerImpl::queryAssignment(const std::string& topic,
-                                       const std::function<void(const TopicAssignmentPtr&)>& cb) {
+void PushConsumerImpl::queryAssignment(
+    const std::string& topic, const std::function<void(const std::error_code&, const TopicAssignmentPtr&)>& cb) {
 
-  auto callback = [this, topic, cb](const TopicRouteDataPtr& topic_route) {
+  auto callback = [this, topic, cb](const std::error_code& ec, const TopicRouteDataPtr& topic_route) {
     TopicAssignmentPtr topic_assignment;
     if (MessageModel::BROADCASTING == message_model_) {
-      if (!topic_route) {
-        SPDLOG_WARN("Failed to get valid route entries for topic={}", topic);
-        cb(topic_assignment);
+      if (ec) {
+        SPDLOG_WARN("Failed to get valid route entries for topic={}. Cause: {}", topic, ec.message());
+        cb(ec, topic_assignment);
       }
 
       std::vector<Assignment> assignments;
@@ -210,7 +217,7 @@ void PushConsumerImpl::queryAssignment(const std::string& topic,
         assignments.emplace_back(Assignment(partition.asMessageQueue()));
       }
       topic_assignment = std::make_shared<TopicAssignment>(std::move(assignments));
-      cb(topic_assignment);
+      cb(ec, topic_assignment);
       return;
     }
 
@@ -226,16 +233,16 @@ void PushConsumerImpl::queryAssignment(const std::string& topic,
 
     absl::flat_hash_map<std::string, std::string> metadata;
     Signature::sign(this, metadata);
-
-    auto assignment_callback = [this, cb, topic, broker_host](bool ok, const QueryAssignmentResponse& response) {
-      if (ok) {
+    auto assignment_callback = [this, cb, topic, broker_host](const std::error_code& ec,
+                                                              const QueryAssignmentResponse& response) {
+      if (ec) {
+        SPDLOG_WARN("Failed to acquire queue assignment of topic={} from brokerAddress={}", topic, broker_host);
+        cb(ec, nullptr);
+      } else {
         SPDLOG_DEBUG("Query topic assignment OK. Topic={}, group={}, assignment-size={}", topic, group_name_,
                      response.assignments().size());
         SPDLOG_TRACE("Query assignment response for {} is: {}", topic, response.DebugString());
-        cb(std::make_shared<TopicAssignment>(response));
-      } else {
-        SPDLOG_WARN("Failed to acquire queue assignment of topic={} from brokerAddress={}", topic, broker_host);
-        cb(nullptr);
+        cb(ec, std::make_shared<TopicAssignment>(response));
       }
     };
 
@@ -348,42 +355,45 @@ bool PushConsumerImpl::receiveMessage(const MQMessageQueue& message_queue, const
   }
 
   switch (receive_message_policy_) {
-  case ReceiveMessageAction::PULL: {
-    int64_t offset = -1;
-    if (!offset_store_ || !offset_store_->readOffset(message_queue, offset)) {
-      // Query latest offset from server.
-      QueryOffsetRequest request;
-      request.mutable_partition()->mutable_topic()->set_resource_namespace(resource_namespace_);
-      request.mutable_partition()->mutable_topic()->set_name(message_queue.getTopic());
-      request.mutable_partition()->set_id(message_queue.getQueueId());
-      request.mutable_partition()->mutable_broker()->set_name(message_queue.getBrokerName());
-      request.set_policy(rmq::QueryOffsetPolicy::END);
-      absl::flat_hash_map<std::string, std::string> metadata;
-      Signature::sign(this, metadata);
-      auto callback = [broker_host, message_queue, process_queue_ptr](bool ok, const QueryOffsetResponse& response) {
-        if (ok) {
-          assert(response.offset() >= 0);
-          process_queue_ptr->nextOffset(response.offset());
-          process_queue_ptr->receiveMessage();
-        } else {
-          SPDLOG_WARN("Failed to acquire latest offset for partition[{}] from server[host={}]",
-                      message_queue.simpleName(), broker_host);
-        }
-      };
-      client_manager_->queryOffset(broker_host, metadata, request, absl::ToChronoMilliseconds(io_timeout_), callback);
+    case ReceiveMessageAction::PULL: {
+      int64_t offset = -1;
+      if (!offset_store_ || !offset_store_->readOffset(message_queue, offset)) {
+        // Query latest offset from server.
+        QueryOffsetRequest request;
+        request.mutable_partition()->mutable_topic()->set_resource_namespace(resource_namespace_);
+        request.mutable_partition()->mutable_topic()->set_name(message_queue.getTopic());
+        request.mutable_partition()->set_id(message_queue.getQueueId());
+        request.mutable_partition()->mutable_broker()->set_name(message_queue.getBrokerName());
+        request.set_policy(rmq::QueryOffsetPolicy::END);
+        absl::flat_hash_map<std::string, std::string> metadata;
+        Signature::sign(this, metadata);
+        auto callback = [broker_host, message_queue, process_queue_ptr](const std::error_code& ec,
+                                                                        const QueryOffsetResponse& response) {
+          if (ec) {
+            SPDLOG_WARN("Failed to acquire latest offset for partition[{}] from server[host={}]. Cause: {}",
+                        message_queue.simpleName(), broker_host, ec.message());
+          } else {
+            assert(response.offset() >= 0);
+            process_queue_ptr->nextOffset(response.offset());
+            process_queue_ptr->receiveMessage();
+          }
+        };
+        client_manager_->queryOffset(broker_host, metadata, request, absl::ToChronoMilliseconds(io_timeout_), callback);
+      }
+      break;
     }
-    break;
-  }
-  case ReceiveMessageAction::POLLING:
-    process_queue_ptr->receiveMessage();
-    break;
+    case ReceiveMessageAction::POLLING:
+      process_queue_ptr->receiveMessage();
+      break;
   }
   return true;
 }
 
-std::shared_ptr<ConsumeMessageService> PushConsumerImpl::getConsumeMessageService() { return consume_message_service_; }
+std::shared_ptr<ConsumeMessageService> PushConsumerImpl::getConsumeMessageService() {
+  return consume_message_service_;
+}
 
-void PushConsumerImpl::ack(const MQMessageExt& msg, const std::function<void(bool)>& callback) {
+void PushConsumerImpl::ack(const MQMessageExt& msg, const std::function<void(const std::error_code&)>& callback) {
   const std::string& target_host = MessageAccessor::targetEndpoint(msg);
   assert(!target_host.empty());
   SPDLOG_DEBUG("Prepare to send ack to broker. BrokerAddress={}, topic={}, queueId={}, msgId={}", target_host,
@@ -395,7 +405,7 @@ void PushConsumerImpl::ack(const MQMessageExt& msg, const std::function<void(boo
   client_manager_->ack(target_host, metadata, request, absl::ToChronoMilliseconds(io_timeout_), callback);
 }
 
-void PushConsumerImpl::nack(const MQMessageExt& msg, const std::function<void(bool)>& callback) {
+void PushConsumerImpl::nack(const MQMessageExt& msg, const std::function<void(const std::error_code&)>& callback) {
   std::string target_host = MessageAccessor::targetEndpoint(msg);
 
   absl::flat_hash_map<std::string, std::string> metadata;
@@ -452,7 +462,9 @@ void PushConsumerImpl::wrapAckMessageRequest(const MQMessageExt& msg, AckMessage
   request.set_receipt_handle(msg.receiptHandle());
 }
 
-uint32_t PushConsumerImpl::consumeThreadPoolSize() const { return consume_thread_pool_size_; }
+uint32_t PushConsumerImpl::consumeThreadPoolSize() const {
+  return consume_thread_pool_size_;
+}
 
 void PushConsumerImpl::consumeThreadPoolSize(int thread_pool_size) {
   if (thread_pool_size >= 1) {
@@ -460,7 +472,9 @@ void PushConsumerImpl::consumeThreadPoolSize(int thread_pool_size) {
   }
 }
 
-uint32_t PushConsumerImpl::consumeBatchSize() const { return consume_batch_size_; }
+uint32_t PushConsumerImpl::consumeBatchSize() const {
+  return consume_batch_size_;
+}
 
 void PushConsumerImpl::consumeBatchSize(uint32_t consume_batch_size) {
 
@@ -492,15 +506,6 @@ void PushConsumerImpl::setThrottle(const std::string& topic, uint32_t threshold)
   }
 }
 
-#ifdef ENABLE_TRACING
-nostd::shared_ptr<trace::Tracer> DefaultMQPushConsumerImpl::getTracer() {
-  if (nullptr == client_manager_) {
-    return nostd::shared_ptr<trace::Tracer>(nullptr);
-  }
-  return client_manager_->getTracer();
-}
-#endif
-
 void PushConsumerImpl::iterateProcessQueue(const std::function<void(ProcessQueueSharedPtr)>& callback) {
   absl::MutexLock lock(&process_queue_table_mtx_);
   for (const auto& item : process_queue_table_) {
@@ -527,11 +532,11 @@ void PushConsumerImpl::fetchRoutes() {
   absl::Mutex mtx;
   absl::CondVar cv;
   int acquired = 0;
-  auto callback = [&](const TopicRouteDataPtr& route) {
+  auto callback = [&](const std::error_code& ec, const TopicRouteDataPtr& route) {
     absl::MutexLock lk(&mtx);
     countdown--;
     cv.SignalAll();
-    if (route) {
+    if (!ec) {
       acquired++;
     }
   };
@@ -552,12 +557,12 @@ void PushConsumerImpl::prepareHeartbeatData(HeartbeatRequest& request) {
 
   if (message_listener_) {
     switch (message_listener_->listenerType()) {
-    case MessageListenerType::FIFO:
-      request.set_fifo_flag(true);
-      break;
-    case MessageListenerType::STANDARD:
-      request.set_fifo_flag(false);
-      break;
+      case MessageListenerType::FIFO:
+        request.set_fifo_flag(true);
+        break;
+      case MessageListenerType::STANDARD:
+        request.set_fifo_flag(false);
+        break;
     }
   }
 
@@ -566,14 +571,14 @@ void PushConsumerImpl::prepareHeartbeatData(HeartbeatRequest& request) {
   consumer_data->mutable_group()->set_resource_namespace(resource_namespace_);
 
   switch (message_model_) {
-  case MessageModel::BROADCASTING:
-    consumer_data->set_consume_model(rmq::ConsumeModel::BROADCASTING);
-    break;
-  case MessageModel::CLUSTERING:
-    consumer_data->set_consume_model(rmq::ConsumeModel::CLUSTERING);
-    break;
-  default:
-    break;
+    case MessageModel::BROADCASTING:
+      consumer_data->set_consume_model(rmq::ConsumeModel::BROADCASTING);
+      break;
+    case MessageModel::CLUSTERING:
+      consumer_data->set_consume_model(rmq::ConsumeModel::CLUSTERING);
+      break;
+    default:
+      break;
   }
 
   auto subscriptions = consumer_data->mutable_subscriptions();
@@ -586,12 +591,12 @@ void PushConsumerImpl::prepareHeartbeatData(HeartbeatRequest& request) {
       subscription->mutable_topic()->set_name(entry.first);
       subscription->mutable_expression()->set_expression(entry.second.content_);
       switch (entry.second.type_) {
-      case ExpressionType::TAG:
-        subscription->mutable_expression()->set_type(rmq::FilterType::TAG);
-        break;
-      case ExpressionType::SQL92:
-        subscription->mutable_expression()->set_type(rmq::FilterType::SQL);
-        break;
+        case ExpressionType::TAG:
+          subscription->mutable_expression()->set_type(rmq::FilterType::TAG);
+          break;
+        case ExpressionType::SQL92:
+          subscription->mutable_expression()->set_type(rmq::FilterType::SQL);
+          break;
       }
       subscriptions->AddAllocated(subscription);
     }

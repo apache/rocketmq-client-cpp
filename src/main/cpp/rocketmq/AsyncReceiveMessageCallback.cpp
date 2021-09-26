@@ -3,6 +3,7 @@
 #include "ConsumeMessageType.h"
 #include "LoggerImpl.h"
 #include "PushConsumer.h"
+#include <system_error>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -98,10 +99,10 @@ void AsyncReceiveMessageCallback::checkThrottleThenReceive() {
   }
 }
 
-void AsyncReceiveMessageCallback::onException(MQException& e) {
+void AsyncReceiveMessageCallback::onFailure(const std::error_code& ec) {
   auto process_queue_ptr = process_queue_.lock();
   if (process_queue_ptr) {
-    SPDLOG_WARN("pop message error:{}, pop message later. Queue={}", e.what(), process_queue_ptr->simpleName());
+    SPDLOG_WARN("pop message error:{}, pop message later. Queue={}", ec.message(), process_queue_ptr->simpleName());
     // pop message later
     receiveMessageLater();
   }

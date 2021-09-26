@@ -10,11 +10,11 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-void OnewaySendCallback::onException(const MQException& e) {
-  SPDLOG_WARN("Failed to one-way send message. Message: {}", e.what());
+void OnewaySendCallback::onFailure(const std::error_code& ec) noexcept {
+  SPDLOG_WARN("Failed to one-way send message. Message: {}", ec.message());
 }
 
-void OnewaySendCallback::onSuccess(SendResult& send_result) {
+void OnewaySendCallback::onSuccess(SendResult& send_result) noexcept {
   SPDLOG_DEBUG("Send message in one-way OK. MessageId: {}", send_result.getMsgId());
 }
 
@@ -30,23 +30,21 @@ void AwaitSendCallback::await() {
   }
 }
 
-void AwaitSendCallback::onSuccess(SendResult& send_result) {
+void AwaitSendCallback::onSuccess(SendResult& send_result) noexcept {
   send_result_ = send_result;
-  success_ = true;
   completed_ = true;
   absl::MutexLock lk(&mtx_);
   cv_.SignalAll();
 }
 
-void AwaitSendCallback::onException(const MQException& e) {
-  success_ = false;
-  error_message_ = e.what();
+void AwaitSendCallback::onFailure(const std::error_code& ec) noexcept {
   completed_ = true;
+  ec_ = ec;
   absl::MutexLock lk(&mtx_);
   cv_.SignalAll();
 }
 
-void RetrySendCallback::onSuccess(SendResult& send_result) {
+void RetrySendCallback::onSuccess(SendResult& send_result) noexcept {
   {
     // Mark end of send-message span.
     span_.SetStatus(opencensus::trace::StatusCode::OK);
@@ -58,7 +56,7 @@ void RetrySendCallback::onSuccess(SendResult& send_result) {
   delete this;
 }
 
-void RetrySendCallback::onException(const MQException& e) {
+void RetrySendCallback::onFailure(const std::error_code& ec) noexcept {
   {
     // Mark end of the send-message span.
     span_.SetStatus(opencensus::trace::StatusCode::INTERNAL);
@@ -67,7 +65,7 @@ void RetrySendCallback::onException(const MQException& e) {
 
   if (++attempt_times_ >= max_attempt_times_) {
     SPDLOG_WARN("Retried {} times, which exceeds the limit: {}", attempt_times_, max_attempt_times_);
-    callback_->onException(e);
+    callback_->onFailure(ec);
     delete this;
     return;
   }
@@ -75,14 +73,14 @@ void RetrySendCallback::onException(const MQException& e) {
   std::shared_ptr<ProducerImpl> producer = producer_.lock();
   if (!producer) {
     SPDLOG_WARN("Producer has been destructed");
-    callback_->onException(e);
+    callback_->onFailure(ec);
     delete this;
     return;
   }
 
   if (candidates_.empty()) {
     SPDLOG_WARN("No alternative hosts to perform additional retries");
-    callback_->onException(e);
+    callback_->onFailure(ec);
     delete this;
     return;
   }

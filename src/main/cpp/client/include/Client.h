@@ -18,6 +18,8 @@ public:
 
   virtual bool active() = 0;
 
+  virtual void onRemoteEndpointRemoval(const std::vector<std::string>&) = 0;
+
   /**
    * For endpoints that are marked as inactive due to one or multiple business operation failure, this function is to
    * initiate health-check RPCs; Once the health-check passes, they are conceptually add back to serve further business

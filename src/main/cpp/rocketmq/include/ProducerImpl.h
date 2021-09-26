@@ -4,6 +4,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <system_error>
 
 #include "absl/strings/string_view.h"
 
@@ -35,24 +36,15 @@ public:
 
   void shutdown() override;
 
-  SendResult send(const MQMessage& message);
-  SendResult send(const MQMessage& message, const std::string& message_group);
-  SendResult send(const MQMessage& message, const MQMessageQueue& message_queue);
-  SendResult send(const MQMessage& message, MessageQueueSelector* selector, void* arg);
-
-  SendResult send(const MQMessage& message, MessageQueueSelector* selector, void* arg, int max_attempts);
+  SendResult send(const MQMessage& message, std::error_code& ec) noexcept;
 
   void send(const MQMessage& message, SendCallback* callback);
-  void send(const MQMessage& message, const MQMessageQueue& message_queue, SendCallback* callback);
-  void send(const MQMessage& message, MessageQueueSelector* selector, void* arg, SendCallback* callback);
 
-  void sendOneway(const MQMessage& message);
-  void sendOneway(const MQMessage& message, const MQMessageQueue& message_queue);
-  void sendOneway(const MQMessage& message, MessageQueueSelector* selector, void* arg);
+  void sendOneway(const MQMessage& message, std::error_code& ec);
 
   void setLocalTransactionStateChecker(LocalTransactionStateCheckerPtr checker);
 
-  std::unique_ptr<TransactionImpl> prepare(MQMessage& message);
+  std::unique_ptr<TransactionImpl> prepare(MQMessage& message, std::error_code& ec);
 
   bool commit(const std::string& message_id, const std::string& transaction_id, const std::string& trace_context,
               const std::string& target);
@@ -81,7 +73,7 @@ public:
 
   void setFailedTimes(int times) { failed_times_ = times; }
 
-  std::vector<MQMessageQueue> getTopicMessageQueueInfo(const std::string& topic);
+  std::vector<MQMessageQueue> listMessageQueue(const std::string& topic, std::error_code& ec);
 
   uint32_t compressBodyThreshold() const { return compress_body_threshold_; }
 
@@ -112,13 +104,11 @@ private:
 
   LocalTransactionStateCheckerPtr transaction_state_checker_;
 
-  void asyncPublishInfo(const std::string& topic, const std::function<void(const TopicPublishInfoPtr&)>& cb)
+  void asyncPublishInfo(const std::string& topic,
+                        const std::function<void(const std::error_code&, const TopicPublishInfoPtr&)>& cb)
       LOCKS_EXCLUDED(topic_publish_info_mtx_);
 
   TopicPublishInfoPtr getPublishInfo(const std::string& topic);
-
-  bool executeMessageQueueSelector(const MQMessage& message, MessageQueueSelector* selector, void* arg,
-                                   std::vector<MQMessageQueue>& result);
 
   void takeMessageQueuesRoundRobin(const TopicPublishInfoPtr& publish_info, std::vector<MQMessageQueue>& message_queues,
                                    int number);
@@ -128,7 +118,7 @@ private:
 
   bool isRunning() const;
 
-  void ensureRunning() const;
+  void ensureRunning(std::error_code& ec) const noexcept;
 
   bool validate(const MQMessage& message);
 
@@ -139,7 +129,7 @@ private:
 
   void isolatedEndpoints(absl::flat_hash_set<std::string>& endpoints) LOCKS_EXCLUDED(isolated_endpoints_mtx_);
 
-  MQMessageQueue withServiceAddress(const MQMessageQueue& message_queue);
+  MQMessageQueue withServiceAddress(const MQMessageQueue& message_queue, std::error_code& ec);
 };
 
 ROCKETMQ_NAMESPACE_END

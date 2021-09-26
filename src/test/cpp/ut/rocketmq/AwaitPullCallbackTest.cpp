@@ -1,10 +1,13 @@
+#include <system_error>
+#include <thread>
+
 #include "AwaitPullCallback.h"
 #include "MessageAccessor.h"
+#include "rocketmq/ErrorCode.h"
 #include "rocketmq/MQClientException.h"
 #include "rocketmq/MQMessageExt.h"
 #include "rocketmq/PullResult.h"
 #include "gtest/gtest.h"
-#include <thread>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -51,8 +54,8 @@ TEST(AwaitPullCallbackTest, testOnFailure) {
   AwaitPullCallback callback(pull_result);
   std::string topic{"Test"};
   auto task = [&]() {
-    MQClientException e("test exception", -1, __FILE__, __LINE__);
-    callback.onException(e);
+    std::error_code ec = ErrorCode::NotImplemented;
+    callback.onFailure(ec);
   };
 
   std::thread t(task);

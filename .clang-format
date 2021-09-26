@@ -7,6 +7,12 @@ PointerAlignment: Left
 SortIncludes: true
 IndentWidth: 2
 NamespaceIndentation: Inner
+AlwaysBreakTemplateDeclarations: true
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: false
+IndentCaseBlocks: false
+IndentCaseLabels: true
 ...
 
 ---

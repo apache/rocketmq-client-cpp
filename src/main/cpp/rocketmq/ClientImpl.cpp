@@ -2,9 +2,11 @@
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
+#include <functional>
 #include <iterator>
 #include <memory>
 #include <string>
+#include <system_error>
 #include <utility>
 
 #include "absl/strings/str_join.h"
@@ -85,7 +87,8 @@ void ClientImpl::endpointsInUse(absl::flat_hash_set<std::string>& endpoints) {
   }
 }
 
-void ClientImpl::getRouteFor(const std::string& topic, const std::function<void(TopicRouteDataPtr)>& cb) {
+void ClientImpl::getRouteFor(const std::string& topic,
+                             const std::function<void(const std::error_code&, TopicRouteDataPtr)>& cb) {
   TopicRouteDataPtr route = nullptr;
   {
     absl::MutexLock lock(&topic_route_table_mtx_);
@@ -95,7 +98,8 @@ void ClientImpl::getRouteFor(const std::string& topic, const std::function<void(
   }
 
   if (route) {
-    cb(route);
+    std::error_code ec;
+    cb(ec, route);
     return;
   }
 
@@ -116,7 +120,7 @@ void ClientImpl::getRouteFor(const std::string& topic, const std::function<void(
         SPDLOG_DEBUG("Would reuse prior route request for topic={}", topic);
         return;
       } else {
-        std::vector<std::function<void(const TopicRouteDataPtr&)>> inflight{cb};
+        std::vector<std::function<void(const std::error_code&, const TopicRouteDataPtr&)>> inflight{cb};
         inflight_route_requests_.insert({topic, inflight});
         SPDLOG_INFO("Create inflight route query cache for topic={}", topic);
       }
@@ -124,9 +128,11 @@ void ClientImpl::getRouteFor(const std::string& topic, const std::function<void(
   }
 
   if (!query_backend && route) {
-    cb(route);
+    std::error_code ec;
+    cb(ec, route);
   } else {
-    fetchRouteFor(topic, std::bind(&ClientImpl::onTopicRouteReady, this, topic, std::placeholders::_1));
+    fetchRouteFor(topic,
+                  std::bind(&ClientImpl::onTopicRouteReady, this, topic, std::placeholders::_1, std::placeholders::_2));
   }
 }
 
@@ -163,26 +169,27 @@ void ClientImpl::setAccessPoint(rmq::Endpoints* endpoints) {
   }
 }
 
-void ClientImpl::fetchRouteFor(const std::string& topic, const std::function<void(const TopicRouteDataPtr&)>& cb) {
+void ClientImpl::fetchRouteFor(const std::string& topic,
+                               const std::function<void(const std::error_code&, const TopicRouteDataPtr&)>& cb) {
   std::string name_server = name_server_resolver_->current();
   if (name_server.empty()) {
     SPDLOG_WARN("No name server available");
     return;
   }
 
-  auto callback = [this, topic, name_server, cb](bool ok, const TopicRouteDataPtr& route) {
-    if (!ok || !route) {
+  auto callback = [this, topic, name_server, cb](const std::error_code& ec, const TopicRouteDataPtr& route) {
+    if (ec) {
       SPDLOG_WARN("Failed to resolve route for topic={} from {}", topic, name_server);
       std::string name_server_changed = name_server_resolver_->next();
       if (!name_server_changed.empty()) {
         SPDLOG_INFO("Change current name server from {} to {}", name_server, name_server_changed);
       }
-      cb(nullptr);
+      cb(ec, nullptr);
       return;
     }
 
     SPDLOG_DEBUG("Apply callback of fetchRouteFor({}) since a valid route is fetched", topic);
-    cb(route);
+    cb(ec, route);
   };
 
   QueryRouteRequest request;
@@ -212,14 +219,10 @@ void ClientImpl::updateRouteInfo() {
 
   if (!topics.empty()) {
     for (const auto& topic : topics) {
-      fetchRouteFor(topic, std::bind(&ClientImpl::updateRouteCache, this, topic, std::placeholders::_1));
+      fetchRouteFor(
+          topic, std::bind(&ClientImpl::updateRouteCache, this, topic, std::placeholders::_1, std::placeholders::_2));
     }
   }
-
-#ifdef ENABLE_TRACING
-  updateTraceProvider();
-#endif
-
   SPDLOG_DEBUG("Topic route info updated");
 }
 
@@ -238,9 +241,9 @@ void ClientImpl::heartbeat() {
   Signature::sign(this, metadata);
 
   for (const auto& target : hosts) {
-    auto callback = [target](bool ok, const HeartbeatResponse& response) {
-      if (!ok) {
-        SPDLOG_WARN("Failed to send heartbeat request to {}", target);
+    auto callback = [target](const std::error_code& ec, const HeartbeatResponse& response) {
+      if (ec) {
+        SPDLOG_WARN("Failed to heartbeat against {}. Cause: {}", target, ec.message());
         return;
       }
       SPDLOG_DEBUG("Heartbeat to {} OK", target);
@@ -249,15 +252,16 @@ void ClientImpl::heartbeat() {
   }
 }
 
-void ClientImpl::onTopicRouteReady(const std::string& topic, const TopicRouteDataPtr& route) {
+void ClientImpl::onTopicRouteReady(const std::string& topic, const std::error_code& ec,
+                                   const TopicRouteDataPtr& route) {
   if (route) {
     SPDLOG_DEBUG("Received route data for topic={}", topic);
   }
 
-  updateRouteCache(topic, route);
+  updateRouteCache(topic, ec, route);
 
   // Take all pending callbacks
-  std::vector<std::function<void(const TopicRouteDataPtr&)>> pending_requests;
+  std::vector<std::function<void(const std::error_code&, const TopicRouteDataPtr&)>> pending_requests;
   {
     absl::MutexLock lk(&inflight_route_requests_mtx_);
     assert(inflight_route_requests_.contains(topic));
@@ -268,13 +272,13 @@ void ClientImpl::onTopicRouteReady(const std::string& topic, const TopicRouteDat
 
   SPDLOG_DEBUG("Apply cached callbacks with acquired route data for topic={}", topic);
   for (const auto& cb : pending_requests) {
-    cb(route);
+    cb(ec, route);
   }
 }
 
-void ClientImpl::updateRouteCache(const std::string& topic, const TopicRouteDataPtr& route) {
-  if (!route || route->partitions().empty()) {
-    SPDLOG_WARN("Yuck! route for {} is invalid", topic);
+void ClientImpl::updateRouteCache(const std::string& topic, const std::error_code& ec, const TopicRouteDataPtr& route) {
+  if (ec || !route || route->partitions().empty()) {
+    SPDLOG_WARN("Yuck! route for {} is invalid. Cause: {}", topic, ec.message());
     return;
   }
 
@@ -385,6 +389,18 @@ void ClientImpl::onMultiplexingResponse(const InvocationContext<MultiplexingResp
   }
 }
 
+void ClientImpl::onRemoteEndpointRemoval(const std::vector<std::string>& hosts) {
+  absl::MutexLock lk(&isolated_endpoints_mtx_);
+  for (auto it = isolated_endpoints_.begin(); it != isolated_endpoints_.end();) {
+    if (hosts.end() != std::find_if(hosts.begin(), hosts.end(), [&](const std::string& item) { return *it == item; })) {
+      SPDLOG_INFO("Drop isolated-endoint[{}] as it has been removed from route table", *it);
+      isolated_endpoints_.erase(it++);
+    } else {
+      it++;
+    }
+  }
+}
+
 void ClientImpl::healthCheck() {
   std::vector<std::string> endpoints;
   {
@@ -395,14 +411,14 @@ void ClientImpl::healthCheck() {
   }
 
   std::weak_ptr<ClientImpl> base(self());
-  auto callback = [base](const std::string& endpoint,
-                         const InvocationContext<HealthCheckResponse>* invocation_context) {
+  auto callback = [base](const std::error_code& ec, const InvocationContext<HealthCheckResponse>* invocation_context) {
     std::shared_ptr<ClientImpl> ptr = base.lock();
-    if (ptr) {
-      ptr->onHealthCheckResponse(endpoint, invocation_context);
-    } else {
+    if (!ptr) {
       SPDLOG_INFO("BaseImpl has been destructed");
+      return;
     }
+
+    ptr->onHealthCheckResponse(ec, invocation_context);
   };
 
   for (const auto& endpoint : endpoints) {
@@ -418,31 +434,16 @@ void ClientImpl::schedule(const std::string& task_name, const std::function<void
   client_manager_->getScheduler().schedule(task, task_name, delay, std::chrono::milliseconds(0));
 }
 
-void ClientImpl::onHealthCheckResponse(const std::string& endpoint, const InvocationContext<HealthCheckResponse>* ctx) {
-  if (!ctx) {
-    SPDLOG_WARN("ClientInstance does not have RPC client for {}. It might have been offline and thus cleaned",
-                endpoint);
-    {
-      absl::MutexLock lk(&isolated_endpoints_mtx_);
-      isolated_endpoints_.erase(endpoint);
-    }
+void ClientImpl::onHealthCheckResponse(const std::error_code& ec, const InvocationContext<HealthCheckResponse>* ctx) {
+  if (ec) {
+    SPDLOG_WARN("Health check to server[host={}] failed. Cause: {}", ec.message());
     return;
   }
 
-  assert(endpoint == ctx->remote_address);
-
-  if (ctx->status.ok()) {
-    if (google::rpc::Code::OK == ctx->response.common().status().code()) {
-      SPDLOG_INFO("Health check to server[host={}] passed. Move it back to active node pool", endpoint);
-      absl::MutexLock lk(&isolated_endpoints_mtx_);
-      isolated_endpoints_.erase(endpoint);
-    } else {
-      SPDLOG_INFO("Health check to server[host={}] failed due to application layer reason: {}",
-                  ctx->response.common().DebugString());
-    }
-  } else {
-    SPDLOG_INFO("Health check to server[host={}] failed due to transport layer reason: {}", endpoint,
-                ctx->status.error_message());
+  SPDLOG_INFO("Health check to server[host={}] passed. Remove it from isolated endpoint pool", ctx->remote_address);
+  {
+    absl::MutexLock lk(&isolated_endpoints_mtx_);
+    isolated_endpoints_.erase(ctx->remote_address);
   }
 }
 

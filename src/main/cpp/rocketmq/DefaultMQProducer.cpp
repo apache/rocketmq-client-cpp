@@ -2,6 +2,8 @@
 
 #include <chrono>
 #include <memory>
+#include <system_error>
+#include <utility>
 
 #include "absl/strings/str_split.h"
 
@@ -24,8 +26,14 @@ std::chrono::milliseconds DefaultMQProducer::getSendMsgTimeout() const {
   return absl::ToChronoMilliseconds(impl_->getIoTimeout());
 }
 
-SendResult DefaultMQProducer::send(const MQMessage& message, const std::string& message_group) {
-  return impl_->send(message, message_group);
+SendResult DefaultMQProducer::send(MQMessage& message, const std::string& message_group) {
+  message.bindMessageGroup(message_group);
+  std::error_code ec;
+  auto&& send_result = impl_->send(message, ec);
+  if (ec) {
+    THROW_MQ_EXCEPTION(MQClientException, ec.message(), ec.value());
+  }
+  return std::move(send_result);
 }
 
 void DefaultMQProducer::setSendMsgTimeout(std::chrono::milliseconds timeout) {
@@ -50,43 +58,109 @@ void DefaultMQProducer::enableTracing(bool enabled) { impl_->enableTracing(enabl
 
 bool DefaultMQProducer::isTracingEnabled() { return impl_->isTracingEnabled(); }
 
-SendResult DefaultMQProducer::send(const rocketmq::MQMessage& message, bool filter_active_broker) {
-  return impl_->send(message);
+SendResult DefaultMQProducer::send(const MQMessage& message, bool filter_active_broker) {
+  std::error_code ec;
+  auto&& send_result = impl_->send(message, ec);
+  if (ec) {
+    THROW_MQ_EXCEPTION(MQClientException, ec.message(), ec.value());
+  }
+  return std::move(send_result);
 }
 
-SendResult DefaultMQProducer::send(const MQMessage& msg, const MQMessageQueue& mq) { return impl_->send(msg, mq); }
-
-SendResult DefaultMQProducer::send(const MQMessage& msg, MessageQueueSelector* selector, void* arg) {
-  return impl_->send(msg, selector, arg);
+SendResult DefaultMQProducer::send(const MQMessage& message, std::error_code& ec) noexcept {
+  return impl_->send(message, ec);
 }
 
-SendResult DefaultMQProducer::send(const MQMessage& message, MessageQueueSelector* selector, void* arg, int retry_times,
+SendResult DefaultMQProducer::send(MQMessage& msg, const MQMessageQueue& mq) {
+  msg.bindMessageQueue(mq);
+  std::error_code ec;
+  auto&& send_result = impl_->send(msg, ec);
+  if (ec) {
+    THROW_MQ_EXCEPTION(MQClientException, ec.message(), ec.value());
+  }
+  return std::move(send_result);
+}
+
+SendResult DefaultMQProducer::send(MQMessage& msg, MessageQueueSelector* selector, void* arg) {
+  std::error_code ec;
+  auto&& list = impl_->listMessageQueue(msg.getTopic(), ec);
+  if (ec) {
+    THROW_MQ_EXCEPTION(MQClientException, ec.message(), ec.value());
+  }
+
+  auto&& message_queue = selector->select(list, msg, arg);
+  msg.bindMessageQueue(message_queue);
+
+  auto&& send_result = impl_->send(msg, ec);
+  if (ec) {
+    THROW_MQ_EXCEPTION(MQClientException, ec.message(), ec.value());
+  }
+  return std::move(send_result);
+}
+
+SendResult DefaultMQProducer::send(MQMessage& message, MessageQueueSelector* selector, void* arg, int retry_times,
                                    bool select_active_broker) {
-  return impl_->send(message, selector, arg, retry_times);
+  return send(message, selector, arg);
 }
 
 void DefaultMQProducer::send(const MQMessage& message, SendCallback* send_callback, bool select_active_broker) {
   impl_->send(message, send_callback);
 }
 
-void DefaultMQProducer::send(const MQMessage& message, const MQMessageQueue& message_queue,
+void DefaultMQProducer::send(MQMessage& message, const MQMessageQueue& message_queue, SendCallback* send_callback) {
+  message.bindMessageQueue(message_queue);
+  impl_->send(message, send_callback);
+}
+
+void DefaultMQProducer::send(MQMessage& message, MessageQueueSelector* selector, void* arg,
                              SendCallback* send_callback) {
-  impl_->send(message, message_queue, send_callback);
+  std::error_code ec;
+
+  // TODO: make querying route async
+  auto&& list = impl_->listMessageQueue(message.getTopic(), ec);
+  if (ec) {
+    send_callback->onFailure(ec);
+  }
+
+  if (list.empty()) {
+    send_callback->onFailure(ErrorCode::ServiceUnavailable);
+  }
+
+  auto&& message_queue = selector->select(list, message, arg);
+  message.bindMessageQueue(message_queue);
+
+  impl_->send(message, send_callback);
 }
 
-void DefaultMQProducer::send(const MQMessage& message, MessageQueueSelector* selector, void* arg,
-                             SendCallback* send_callback) {
-  impl_->send(message, selector, arg, send_callback);
+void DefaultMQProducer::sendOneway(const MQMessage& message, bool select_active_broker) {
+  std::error_code ec;
+  impl_->sendOneway(message, ec);
 }
 
-void DefaultMQProducer::sendOneway(const MQMessage& message, bool select_active_broker) { impl_->sendOneway(message); }
-
-void DefaultMQProducer::sendOneway(const MQMessage& message, const MQMessageQueue& message_queue) {
-  impl_->sendOneway(message, message_queue);
+void DefaultMQProducer::sendOneway(MQMessage& message, const MQMessageQueue& message_queue) {
+  message.bindMessageQueue(message_queue);
+  std::error_code ec;
+  impl_->sendOneway(message, ec);
+  if (ec) {
+    SPDLOG_INFO("Failed to send message in one-way: {}", ec.message());
+  }
 }
 
-void DefaultMQProducer::sendOneway(const MQMessage& message, MessageQueueSelector* selector, void* arg) {
-  impl_->sendOneway(message, selector, arg);
+void DefaultMQProducer::sendOneway(MQMessage& message, MessageQueueSelector* selector, void* arg) {
+  std::error_code ec;
+  auto&& list = impl_->listMessageQueue(message.getTopic(), ec);
+  if (ec) {
+    THROW_MQ_EXCEPTION(MQClientException, ec.message(), ec.value());
+  }
+
+  if (list.empty()) {
+    ec = ErrorCode::ServiceUnavailable;
+    THROW_MQ_EXCEPTION(MQClientException, ec.message(), ec.value());
+  }
+
+  auto&& message_queue = selector->select(list, message, arg);
+  message.bindMessageQueue(message_queue);
+  impl_->sendOneway(message, ec);
 }
 
 void DefaultMQProducer::setLocalTransactionStateChecker(LocalTransactionStateCheckerPtr checker) {
@@ -98,7 +172,12 @@ void DefaultMQProducer::setMaxAttemptTimes(int max_attempt_times) { impl_->maxAt
 int DefaultMQProducer::getMaxAttemptTimes() const { return impl_->maxAttemptTimes(); }
 
 std::vector<MQMessageQueue> DefaultMQProducer::getTopicMessageQueueInfo(const std::string& topic) {
-  return impl_->getTopicMessageQueueInfo(topic);
+  std::error_code ec;
+  auto&& list = impl_->listMessageQueue(topic, ec);
+  if (ec) {
+    THROW_MQ_EXCEPTION(MQClientException, ec.message(), ec.value());
+  }
+  return std::move(list);
 }
 
 void DefaultMQProducer::setUnitName(std::string unit_name) { impl_->setUnitName(std::move(unit_name)); }
@@ -120,7 +199,11 @@ void DefaultMQProducer::setCredentialsProvider(CredentialsProviderPtr credential
 void DefaultMQProducer::setRegion(const std::string& region) { impl_->region(region); }
 
 TransactionPtr DefaultMQProducer::prepare(MQMessage& message) {
-  auto transaction = impl_->prepare(message);
+  std::error_code ec;
+  auto transaction = impl_->prepare(message, ec);
+  if (ec) {
+    THROW_MQ_EXCEPTION(MQClientException, ec.message(), ec.value());
+  }
   return transaction;
 }
 

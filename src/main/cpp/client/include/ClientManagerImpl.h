@@ -6,6 +6,7 @@
 #include <functional>
 #include <future>
 #include <string>
+#include <system_error>
 #include <vector>
 
 #include "absl/base/thread_annotations.h"
@@ -65,7 +66,7 @@ public:
    */
   void resolveRoute(const std::string& target_host, const Metadata& metadata, const QueryRouteRequest& request,
                     std::chrono::milliseconds timeout,
-                    const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) override
+                    const std::function<void(const std::error_code&, const TopicRouteDataPtr&)>& cb) override
       LOCKS_EXCLUDED(rpc_clients_mtx_);
 
   void doHealthCheck() LOCKS_EXCLUDED(clients_mtx_);
@@ -74,16 +75,15 @@ public:
    * If inactive RPC clients refer to remote hosts that are absent from topic_route_table_, we need to purge them
    * immediately.
    */
-  void cleanOfflineRpcClients() LOCKS_EXCLUDED(clients_mtx_, rpc_clients_mtx_);
+  std::vector<std::string> cleanOfflineRpcClients() LOCKS_EXCLUDED(clients_mtx_, rpc_clients_mtx_);
 
   /**
    * Execute health-check on behalf of the client.
    */
-  void
-  healthCheck(const std::string& target_host, const Metadata& metadata, const HealthCheckRequest& request,
-              std::chrono::milliseconds timeout,
-              const std::function<void(const std::string&, const InvocationContext<HealthCheckResponse>*)>& cb) override
-      LOCKS_EXCLUDED(rpc_clients_mtx_);
+  void healthCheck(const std::string& target_host, const Metadata& metadata, const HealthCheckRequest& request,
+                   std::chrono::milliseconds timeout,
+                   const std::function<void(const std::error_code&, const InvocationContext<HealthCheckResponse>*)>& cb)
+      override LOCKS_EXCLUDED(rpc_clients_mtx_);
 
   bool send(const std::string& target_host, const Metadata& metadata, SendMessageRequest& request,
             SendCallback* cb) override LOCKS_EXCLUDED(rpc_clients_mtx_);
@@ -114,7 +114,7 @@ public:
 
   void queryAssignment(const std::string& target, const Metadata& metadata, const QueryAssignmentRequest& request,
                        std::chrono::milliseconds timeout,
-                       const std::function<void(bool, const QueryAssignmentResponse&)>& cb) override;
+                       const std::function<void(const std::error_code&, const QueryAssignmentResponse&)>& cb) override;
 
   void receiveMessage(const std::string& target, const Metadata& metadata, const ReceiveMessageRequest& request,
                       std::chrono::milliseconds timeout, const std::shared_ptr<ReceiveMessageCallback>& cb) override
@@ -137,10 +137,10 @@ public:
    * @param request Ack message request.
    */
   void ack(const std::string& target_host, const Metadata& metadata, const AckMessageRequest& request,
-           std::chrono::milliseconds timeout, const std::function<void(bool)>& cb) override;
+           std::chrono::milliseconds timeout, const std::function<void(const std::error_code&)>& cb) override;
 
   void nack(const std::string& target_host, const Metadata& metadata, const NackMessageRequest& request,
-            std::chrono::milliseconds timeout, const std::function<void(bool)>& callback) override;
+            std::chrono::milliseconds timeout, const std::function<void(const std::error_code&)>& callback) override;
 
   void forwardMessageToDeadLetterQueue(
       const std::string& target_host, const Metadata& metadata, const ForwardMessageToDeadLetterQueueRequest& request,
@@ -163,7 +163,7 @@ public:
    */
   void endTransaction(const std::string& target_host, const Metadata& metadata, const EndTransactionRequest& request,
                       std::chrono::milliseconds timeout,
-                      const std::function<void(bool, const EndTransactionResponse&)>& cb) override;
+                      const std::function<void(const std::error_code&, const EndTransactionResponse&)>& cb) override;
 
   void multiplexingCall(const std::string& target, const Metadata& metadata, const MultiplexingRequest& request,
                         std::chrono::milliseconds timeout,
@@ -171,7 +171,7 @@ public:
 
   void queryOffset(const std::string& target_host, const Metadata& metadata, const QueryOffsetRequest& request,
                    std::chrono::milliseconds timeout,
-                   const std::function<void(bool, const QueryOffsetResponse&)>& cb) override;
+                   const std::function<void(const std::error_code&, const QueryOffsetResponse&)>& cb) override;
 
   void pullMessage(const std::string& target_host, const Metadata& metadata, const PullMessageRequest& request,
                    std::chrono::milliseconds timeout,
@@ -181,14 +181,18 @@ public:
                                const NotifyClientTerminationRequest& request,
                                std::chrono::milliseconds timeout) override;
 
-  void trace(bool trace) { trace_ = trace; }
+  void trace(bool trace) {
+    trace_ = trace;
+  }
 
   void heartbeat(const std::string& target_host, const Metadata& metadata, const HeartbeatRequest& request,
                  std::chrono::milliseconds timeout,
-                 const std::function<void(bool, const HeartbeatResponse&)>& cb) override;
+                 const std::function<void(const std::error_code&, const HeartbeatResponse&)>& cb) override;
 
   void processPullResult(const grpc::ClientContext& client_context, const PullMessageResponse& response,
                          ReceiveMessageResult& result, const std::string& target_host) override;
+
+  State state() const override;
 
 private:
   void processPopResult(const grpc::ClientContext& client_context, const ReceiveMessageResponse& response,

@@ -1,4 +1,5 @@
 #include "rocketmq/DefaultMQProducer.h"
+#include "rocketmq/ErrorCode.h"
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -6,6 +7,7 @@
 #include <iostream>
 #include <mutex>
 #include <random>
+#include <system_error>
 
 using namespace rocketmq;
 
@@ -41,7 +43,8 @@ std::string randomString(std::string::size_type len) {
   return result;
 }
 
-template <int PARTITION> class RateLimiter {
+template <int PARTITION>
+class RateLimiter {
 public:
   explicit RateLimiter(int permit) : permits_{0}, interval_(1000 / PARTITION), stopped_(false) {
     int avg = permit / PARTITION;
@@ -137,9 +140,9 @@ class SampleSendCallback : public rocketmq::SendCallback {
 public:
   SampleSendCallback(std::atomic_int& counter, std::atomic_int& error) : counter_(counter), error_(error) {}
 
-  void onSuccess(SendResult& send_result) override { counter_.fetch_add(1, std::memory_order_relaxed); }
+  void onSuccess(SendResult& send_result) noexcept override { counter_.fetch_add(1, std::memory_order_relaxed); }
 
-  void onException(const MQException& e) override { error_.fetch_add(1, std::memory_order_relaxed); }
+  void onFailure(const std::error_code& ec) noexcept override { error_.fetch_add(1, std::memory_order_relaxed); }
 
 private:
   std::atomic_int& counter_;

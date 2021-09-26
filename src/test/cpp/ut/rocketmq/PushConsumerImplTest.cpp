@@ -1,6 +1,7 @@
 #include <memory>
 
 #include "gtest/gtest.h"
+#include <system_error>
 
 #include "ClientManagerFactory.h"
 #include "ClientManagerMock.h"
@@ -11,7 +12,6 @@
 #include "grpc/grpc.h"
 #include "rocketmq/MQMessageExt.h"
 #include "rocketmq/MessageListener.h"
-#include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -24,7 +24,8 @@ public:
 
 class PushConsumerImplTest : public testing::Test {
 public:
-  PushConsumerImplTest() : message_listener_(absl::make_unique<TestStandardMessageListener>()) {}
+  PushConsumerImplTest() : message_listener_(absl::make_unique<TestStandardMessageListener>()) {
+  }
 
   void SetUp() override {
     grpc_init();
@@ -39,7 +40,9 @@ public:
     push_consumer_->registerMessageListener(message_listener_.get());
   }
 
-  void TearDown() override { grpc_shutdown(); }
+  void TearDown() override {
+    grpc_shutdown();
+  }
 
 protected:
   std::string name_server_list_{"10.0.0.1:9876"};
@@ -63,7 +66,10 @@ TEST_F(PushConsumerImplTest, testAck) {
   ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler));
 
   auto ack_cb = [](const std::string& target_host, const Metadata& metadata, const AckMessageRequest& request,
-                   std::chrono::milliseconds timeout, const std::function<void(bool)>& cb) { cb(true); };
+                   std::chrono::milliseconds timeout, const std::function<void(const std::error_code&)>& cb) {
+    std::error_code ec;
+    cb(ec);
+  };
 
   EXPECT_CALL(*client_manager_, ack).Times(testing::AtLeast(1)).WillRepeatedly(testing::Invoke(ack_cb));
 
@@ -72,7 +78,7 @@ TEST_F(PushConsumerImplTest, testAck) {
   bool completed = false;
   absl::Mutex mtx;
   absl::CondVar cv;
-  auto callback = [&](bool ok) {
+  auto callback = [&](const std::error_code& ec) {
     absl::MutexLock lk(&mtx);
     completed = true;
     cv.SignalAll();
@@ -105,7 +111,10 @@ TEST_F(PushConsumerImplTest, testNack) {
   ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler));
 
   auto nack_cb = [](const std::string& target_host, const Metadata& metadata, const NackMessageRequest& request,
-                    std::chrono::milliseconds timeout, const std::function<void(bool)>& cb) { cb(true); };
+                    std::chrono::milliseconds timeout, const std::function<void(const std::error_code&)>& cb) {
+    std::error_code ec;
+    cb(ec);
+  };
 
   EXPECT_CALL(*client_manager_, nack).Times(testing::AtLeast(1)).WillRepeatedly(testing::Invoke(nack_cb));
 
@@ -114,7 +123,7 @@ TEST_F(PushConsumerImplTest, testNack) {
   bool completed = false;
   absl::Mutex mtx;
   absl::CondVar cv;
-  auto callback = [&](bool ok) {
+  auto callback = [&](const std::error_code& ec) {
     absl::MutexLock lk(&mtx);
     completed = true;
     cv.SignalAll();

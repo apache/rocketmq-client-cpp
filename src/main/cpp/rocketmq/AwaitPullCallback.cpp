@@ -2,19 +2,18 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-void AwaitPullCallback::onSuccess(const PullResult& pull_result) {
+void AwaitPullCallback::onSuccess(const PullResult& pull_result) noexcept {
   absl::MutexLock lk(&mtx_);
-  has_failure_ = false;
   completed_ = true;
   // TODO: optimize out messages copy here.
   pull_result_ = pull_result;
   cv_.SignalAll();
 }
 
-void AwaitPullCallback::onException(const MQException& e) {
+void AwaitPullCallback::onFailure(const std::error_code& ec) noexcept {
   absl::MutexLock lk(&mtx_);
-  has_failure_ = true;
   completed_ = true;
+  ec_ = ec;
   cv_.SignalAll();
 }
 
@@ -24,7 +23,7 @@ bool AwaitPullCallback::await() {
     while (!completed_) {
       cv_.Wait(&mtx_);
     }
-    return !has_failure_;
+    return !hasFailure();
   }
 }
 

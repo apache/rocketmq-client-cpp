@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <system_error>
 
 #include "absl/strings/string_view.h"
 #include "apache/rocketmq/v1/definition.pb.h"
@@ -28,11 +29,12 @@ public:
 
   virtual void shutdown();
 
-  void getRouteFor(const std::string& topic, const std::function<void(TopicRouteDataPtr)>& cb)
+  void getRouteFor(const std::string& topic, const std::function<void(const std::error_code&, TopicRouteDataPtr)>& cb)
       LOCKS_EXCLUDED(inflight_route_requests_mtx_, topic_route_table_mtx_);
 
   /**
-   * Gather collection of endpoints that are reachable from latest topic route table.
+   * Gather collection of endpoints that are reachable from latest topic route
+   * table.
    *
    * @param endpoints
    */
@@ -45,7 +47,9 @@ public:
     return State::STARTING == state || State::STARTED == state;
   }
 
-  void healthCheck() LOCKS_EXCLUDED(isolated_endpoints_mtx_) override;
+  void onRemoteEndpointRemoval(const std::vector<std::string>& hosts) override LOCKS_EXCLUDED(isolated_endpoints_mtx_);
+
+  void healthCheck() override LOCKS_EXCLUDED(isolated_endpoints_mtx_);
 
   void schedule(const std::string& task_name, const std::function<void(void)>& task,
                 std::chrono::milliseconds delay) override;
@@ -62,7 +66,7 @@ protected:
   absl::flat_hash_map<std::string, TopicRouteDataPtr> topic_route_table_ GUARDED_BY(topic_route_table_mtx_);
   absl::Mutex topic_route_table_mtx_ ACQUIRED_AFTER(inflight_route_requests_mtx_); // protects topic_route_table_
 
-  absl::flat_hash_map<std::string, std::vector<std::function<void(const TopicRouteDataPtr&)>>>
+  absl::flat_hash_map<std::string, std::vector<std::function<void(const std::error_code&, const TopicRouteDataPtr&)>>>
       inflight_route_requests_ GUARDED_BY(inflight_route_requests_mtx_);
   absl::Mutex inflight_route_requests_mtx_ ACQUIRED_BEFORE(topic_route_table_mtx_); // Protects inflight_route_requests_
   static const char* UPDATE_ROUTE_TASK_NAME;
@@ -91,7 +95,8 @@ protected:
   virtual void resolveOrphanedTransactionalMessage(const std::string& transaction_id, const MQMessageExt& message) {}
 
   /**
-   * Concrete publisher/subscriber client is expected to fill other type-specific resources.
+   * Concrete publisher/subscriber client is expected to fill other
+   * type-specific resources.
    */
   virtual ClientResourceBundle resourceBundle() {
     ClientResourceBundle resource_bundle;
@@ -106,36 +111,38 @@ protected:
 
 private:
   /**
-   * This is a low-level API that fetches route data from name server through gRPC unary request/response. Once
-   * request/response is completed, either timeout or response arrival in time, callback would get invoked.
+   * This is a low-level API that fetches route data from name server through
+   * gRPC unary request/response. Once request/response is completed, either
+   * timeout or response arrival in time, callback would get invoked.
    * @param topic
    * @param cb
    */
-  void fetchRouteFor(const std::string& topic, const std::function<void(const TopicRouteDataPtr&)>& cb);
+  void fetchRouteFor(const std::string& topic,
+                     const std::function<void(const std::error_code&, const TopicRouteDataPtr&)>& cb);
 
   /**
    * Callback to execute once route data is fetched from name server.
    * @param topic
    * @param route
    */
-  void onTopicRouteReady(const std::string& topic, const TopicRouteDataPtr& route)
+  void onTopicRouteReady(const std::string& topic, const std::error_code& ec, const TopicRouteDataPtr& route)
       LOCKS_EXCLUDED(inflight_route_requests_mtx_);
 
   /**
-   * Update local cache for the topic. Note, route differences are logged in INFO level since route bears fundamental
-   * importance.
+   * Update local cache for the topic. Note, route differences are logged in
+   * INFO level since route bears fundamental importance.
    *
    * @param topic
    * @param route
    */
-  void updateRouteCache(const std::string& topic, const TopicRouteDataPtr& route)
+  void updateRouteCache(const std::string& topic, const std::error_code& ec, const TopicRouteDataPtr& route)
       LOCKS_EXCLUDED(topic_route_table_mtx_);
 
   void multiplexing(const std::string& target, const MultiplexingRequest& request);
 
   void onMultiplexingResponse(const InvocationContext<MultiplexingResponse>* ctx);
 
-  void onHealthCheckResponse(const std::string& endpoint, const InvocationContext<HealthCheckResponse>* ctx)
+  void onHealthCheckResponse(const std::error_code& endpoint, const InvocationContext<HealthCheckResponse>* ctx)
       LOCKS_EXCLUDED(isolated_endpoints_mtx_);
 
   void fillGenericPollingRequest(MultiplexingRequest& request);

@@ -4,6 +4,7 @@
 #include "apache/rocketmq/v1/definition.pb.h"
 #include "gtest/gtest.h"
 #include <memory>
+#include <system_error>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -20,7 +21,9 @@ public:
     metadata_.insert({"name", "Donald.J.Trump"});
   }
 
-  void TearDown() override { client_manager_->shutdown(); }
+  void TearDown() override {
+    client_manager_->shutdown();
+  }
 
 protected:
   std::string resource_namespace_{"mq://test"};
@@ -65,7 +68,7 @@ TEST_F(ClientManagerTest, testResolveRoute) {
   QueryRouteRequest request;
   request.mutable_topic()->set_resource_namespace(resource_namespace_);
   request.mutable_topic()->set_name(topic_);
-  auto callback = [&](bool, const TopicRouteDataPtr&) {
+  auto callback = [&](const std::error_code& ec, const TopicRouteDataPtr&) {
     absl::MutexLock lk(&mtx);
     completed = true;
     cv.SignalAll();
@@ -97,7 +100,7 @@ TEST_F(ClientManagerTest, testQueryAssignment) {
       .WillRepeatedly(testing::Invoke(mock_query_assignment));
   QueryAssignmentRequest request;
   bool callback_invoked = false;
-  auto callback = [&](bool ok, const QueryAssignmentResponse& response) { callback_invoked = true; };
+  auto callback = [&](const std::error_code& ec, const QueryAssignmentResponse& response) { callback_invoked = true; };
 
   client_manager_->queryAssignment(target_host_, metadata_, request, absl::ToChronoMilliseconds(io_timeout_), callback);
 
@@ -164,7 +167,7 @@ TEST_F(ClientManagerTest, testReceiveMessage_Failure) {
       .WillRepeatedly(testing::Invoke(mock_async_receive));
   ReceiveMessageRequest request;
 
-  EXPECT_CALL(*receive_message_callback_, onException).Times(testing::AtLeast(1));
+  EXPECT_CALL(*receive_message_callback_, onFailure).Times(testing::AtLeast(1));
 
   client_manager_->receiveMessage(target_host_, metadata_, request, absl::ToChronoMilliseconds(io_timeout_),
                                   receive_message_callback_);
@@ -193,7 +196,7 @@ TEST_F(ClientManagerTest, testAck) {
   EXPECT_CALL(*rpc_client_, asyncAck).Times(testing::AtLeast(1)).WillRepeatedly(testing::Invoke(mock_ack));
   AckMessageRequest request;
   bool callback_invoked = false;
-  auto callback = [&](bool ok) { callback_invoked = true; };
+  auto callback = [&](const std::error_code& ec) { callback_invoked = true; };
 
   client_manager_->ack(target_host_, metadata_, request, absl::ToChronoMilliseconds(io_timeout_), callback);
 
@@ -222,7 +225,7 @@ TEST_F(ClientManagerTest, testNack) {
   EXPECT_CALL(*rpc_client_, asyncNack).Times(testing::AtLeast(1)).WillRepeatedly(testing::Invoke(mock_nack));
   NackMessageRequest request;
   bool callback_invoked = false;
-  auto callback = [&](bool ok) { callback_invoked = true; };
+  auto callback = [&](const std::error_code& ec) { callback_invoked = true; };
 
   client_manager_->nack(target_host_, metadata_, request, absl::ToChronoMilliseconds(io_timeout_), callback);
 
@@ -268,7 +271,8 @@ TEST_F(ClientManagerTest, testForwardMessageToDeadLetterQueue) {
   EXPECT_TRUE(callback_invoked);
 }
 
-TEST_F(ClientManagerTest, testMultiplexingCall) {}
+TEST_F(ClientManagerTest, testMultiplexingCall) {
+}
 
 TEST_F(ClientManagerTest, testEndTransaction) {
   bool completed = false;
@@ -288,7 +292,7 @@ TEST_F(ClientManagerTest, testEndTransaction) {
       .WillRepeatedly(testing::Invoke(mock_end_transaction));
   EndTransactionRequest request;
   bool callback_invoked = false;
-  auto callback = [&](bool ok, const EndTransactionResponse& response) { callback_invoked = true; };
+  auto callback = [&](const std::error_code& ec, const EndTransactionResponse& response) { callback_invoked = true; };
 
   client_manager_->endTransaction(target_host_, metadata_, request, absl::ToChronoMilliseconds(io_timeout_), callback);
   {
@@ -342,8 +346,9 @@ TEST_F(ClientManagerTest, testHealthCheck) {
       .WillRepeatedly(testing::Invoke(mock_health_check));
   HealthCheckRequest request;
   bool callback_invoked = false;
-  auto callback = [&](const std::string& target_host,
-                      const InvocationContext<HealthCheckResponse>* invocation_context) { callback_invoked = true; };
+  auto callback = [&](const std::error_code& ec, const InvocationContext<HealthCheckResponse>* invocation_context) {
+    callback_invoked = true;
+  };
 
   client_manager_->healthCheck(target_host_, metadata_, request, absl::ToChronoMilliseconds(io_timeout_), callback);
   {

@@ -5,4 +5,7 @@ cc_library(
     hdrs = glob(["rocketmq/*.h"]),
     strip_include_prefix = "//api",
     visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_absl//absl/strings",
+    ],
 )

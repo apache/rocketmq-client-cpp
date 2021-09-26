@@ -1,6 +1,7 @@
 #include <chrono>
 #include <memory>
 #include <string>
+#include <system_error>
 
 #include "ClientManagerFactory.h"
 #include "ClientManagerMock.h"
@@ -78,11 +79,13 @@ TEST_F(PullConsumerImplTest, testStartShutdown) {
 
 TEST_F(PullConsumerImplTest, testQueuesFor) {
   pull_consumer_->start();
-  auto mock_resolve_route = [this](const std::string& target_host, const Metadata& metadata,
-                                   const QueryRouteRequest& request, std::chrono::milliseconds timeout,
-                                   const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) {
-    cb(true, topic_route_data_);
-  };
+  auto mock_resolve_route =
+      [this](const std::string& target_host, const Metadata& metadata, const QueryRouteRequest& request,
+             std::chrono::milliseconds timeout,
+             const std::function<void(const std::error_code& ec, const TopicRouteDataPtr& ptr)>& cb) {
+        std::error_code ec;
+        cb(ec, topic_route_data_);
+      };
 
   EXPECT_CALL(*client_manager_, resolveRoute)
       .Times(testing::AtLeast(1))
@@ -100,12 +103,12 @@ TEST_F(PullConsumerImplTest, testQueuesFor) {
 class TestPullCallback : public PullCallback {
 public:
   TestPullCallback(bool& success, bool& failure) : success_(success), failure_(failure) {}
-  void onSuccess(const PullResult& pull_result) override {
+  void onSuccess(const PullResult& pull_result) noexcept override {
     success_ = true;
     failure_ = false;
   }
 
-  void onException(const MQException& e) override {
+  void onFailure(const std::error_code& e) noexcept override {
     failure_ = true;
     success_ = false;
   }
@@ -117,11 +120,13 @@ private:
 
 TEST_F(PullConsumerImplTest, testPull) {
   pull_consumer_->start();
-  auto mock_resolve_route = [this](const std::string& target_host, const Metadata& metadata,
-                                   const QueryRouteRequest& request, std::chrono::milliseconds timeout,
-                                   const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) {
-    cb(true, topic_route_data_);
-  };
+  auto mock_resolve_route =
+      [this](const std::string& target_host, const Metadata& metadata, const QueryRouteRequest& request,
+             std::chrono::milliseconds timeout,
+             const std::function<void(const std::error_code& ec, const TopicRouteDataPtr& ptr)>& cb) {
+        std::error_code ec;
+        cb(ec, topic_route_data_);
+      };
 
   EXPECT_CALL(*client_manager_, resolveRoute)
       .Times(testing::AtLeast(1))
@@ -179,11 +184,13 @@ TEST_F(PullConsumerImplTest, testPull) {
 
 TEST_F(PullConsumerImplTest, testPull_gRPC_error) {
   pull_consumer_->start();
-  auto mock_resolve_route = [this](const std::string& target_host, const Metadata& metadata,
-                                   const QueryRouteRequest& request, std::chrono::milliseconds timeout,
-                                   const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) {
-    cb(true, topic_route_data_);
-  };
+  auto mock_resolve_route =
+      [this](const std::string& target_host, const Metadata& metadata, const QueryRouteRequest& request,
+             std::chrono::milliseconds timeout,
+             const std::function<void(const std::error_code& ec, const TopicRouteDataPtr& ptr)>& cb) {
+        std::error_code ec;
+        cb(ec, topic_route_data_);
+      };
 
   EXPECT_CALL(*client_manager_, resolveRoute)
       .Times(testing::AtLeast(1))
@@ -224,11 +231,13 @@ TEST_F(PullConsumerImplTest, testPull_gRPC_error) {
 
 TEST_F(PullConsumerImplTest, testPull_biz_error) {
   pull_consumer_->start();
-  auto mock_resolve_route = [this](const std::string& target_host, const Metadata& metadata,
-                                   const QueryRouteRequest& request, std::chrono::milliseconds timeout,
-                                   const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) {
-    cb(true, topic_route_data_);
-  };
+  auto mock_resolve_route =
+      [this](const std::string& target_host, const Metadata& metadata, const QueryRouteRequest& request,
+             std::chrono::milliseconds timeout,
+             const std::function<void(const std::error_code& ec, const TopicRouteDataPtr& ptr)>& cb) {
+        std::error_code ec;
+        cb(ec, topic_route_data_);
+      };
 
   EXPECT_CALL(*client_manager_, resolveRoute)
       .Times(testing::AtLeast(1))
@@ -269,11 +278,13 @@ TEST_F(PullConsumerImplTest, testPull_biz_error) {
 
 TEST_F(PullConsumerImplTest, testQueryOffset) {
   pull_consumer_->start();
-  auto mock_resolve_route = [this](const std::string& target_host, const Metadata& metadata,
-                                   const QueryRouteRequest& request, std::chrono::milliseconds timeout,
-                                   const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) {
-    cb(true, topic_route_data_);
-  };
+  auto mock_resolve_route =
+      [this](const std::string& target_host, const Metadata& metadata, const QueryRouteRequest& request,
+             std::chrono::milliseconds timeout,
+             const std::function<void(const std::error_code& ec, const TopicRouteDataPtr& ptr)>& cb) {
+        std::error_code ec;
+        cb(ec, topic_route_data_);
+      };
 
   EXPECT_CALL(*client_manager_, resolveRoute)
       .Times(testing::AtLeast(1))
@@ -289,7 +300,10 @@ TEST_F(PullConsumerImplTest, testQueryOffset) {
 
   auto mock_query_offset = [&](const std::string& target_host, const Metadata& metadata,
                                const QueryOffsetRequest& request, std::chrono::milliseconds timeout,
-                               const std::function<void(bool, const QueryOffsetResponse&)>& cb) { cb(true, response); };
+                               const std::function<void(const std::error_code&, const QueryOffsetResponse&)>& cb) {
+    std::error_code ec;
+    cb(ec, response);
+  };
 
   EXPECT_CALL(*client_manager_, queryOffset)
       .Times(testing::AtLeast(1))
@@ -307,11 +321,13 @@ TEST_F(PullConsumerImplTest, testQueryOffset) {
 
 TEST_F(PullConsumerImplTest, testQueryOffset_End) {
   pull_consumer_->start();
-  auto mock_resolve_route = [this](const std::string& target_host, const Metadata& metadata,
-                                   const QueryRouteRequest& request, std::chrono::milliseconds timeout,
-                                   const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) {
-    cb(true, topic_route_data_);
-  };
+  auto mock_resolve_route =
+      [this](const std::string& target_host, const Metadata& metadata, const QueryRouteRequest& request,
+             std::chrono::milliseconds timeout,
+             const std::function<void(const std::error_code& ec, const TopicRouteDataPtr& ptr)>& cb) {
+        std::error_code ec;
+        cb(ec, topic_route_data_);
+      };
 
   EXPECT_CALL(*client_manager_, resolveRoute)
       .Times(testing::AtLeast(1))
@@ -327,7 +343,10 @@ TEST_F(PullConsumerImplTest, testQueryOffset_End) {
 
   auto mock_query_offset = [&](const std::string& target_host, const Metadata& metadata,
                                const QueryOffsetRequest& request, std::chrono::milliseconds timeout,
-                               const std::function<void(bool, const QueryOffsetResponse&)>& cb) { cb(true, response); };
+                               const std::function<void(const std::error_code&, const QueryOffsetResponse&)>& cb) {
+    std::error_code ec;
+    cb(ec, response);
+  };
 
   EXPECT_CALL(*client_manager_, queryOffset)
       .Times(testing::AtLeast(1))
@@ -345,11 +364,13 @@ TEST_F(PullConsumerImplTest, testQueryOffset_End) {
 
 TEST_F(PullConsumerImplTest, testQueryOffset_Timepoint) {
   pull_consumer_->start();
-  auto mock_resolve_route = [this](const std::string& target_host, const Metadata& metadata,
-                                   const QueryRouteRequest& request, std::chrono::milliseconds timeout,
-                                   const std::function<void(bool, const TopicRouteDataPtr& ptr)>& cb) {
-    cb(true, topic_route_data_);
-  };
+  auto mock_resolve_route =
+      [this](const std::string& target_host, const Metadata& metadata, const QueryRouteRequest& request,
+             std::chrono::milliseconds timeout,
+             const std::function<void(const std::error_code& ec, const TopicRouteDataPtr& ptr)>& cb) {
+        std::error_code ec;
+        cb(ec, topic_route_data_);
+      };
 
   EXPECT_CALL(*client_manager_, resolveRoute)
       .Times(testing::AtLeast(1))
@@ -365,7 +386,10 @@ TEST_F(PullConsumerImplTest, testQueryOffset_Timepoint) {
 
   auto mock_query_offset = [&](const std::string& target_host, const Metadata& metadata,
                                const QueryOffsetRequest& request, std::chrono::milliseconds timeout,
-                               const std::function<void(bool, const QueryOffsetResponse&)>& cb) { cb(true, response); };
+                               const std::function<void(const std::error_code&, const QueryOffsetResponse&)>& cb) {
+    std::error_code ec;
+    cb(ec, response);
+  };
 
   EXPECT_CALL(*client_manager_, queryOffset)
       .Times(testing::AtLeast(1))
