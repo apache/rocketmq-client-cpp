@@ -88,7 +88,7 @@ public:
                (const std::function<void(const InvocationContext<PullMessageResponse>*)>&)),
               (override));
 
-  MOCK_METHOD(bool, notifyClientTermination,
+  MOCK_METHOD(std::error_code, notifyClientTermination,
               (const std::string&, const Metadata&, const NotifyClientTerminationRequest&, std::chrono::milliseconds),
               (override));
 

@@ -1427,7 +1427,8 @@ void ClientManagerImpl::forwardMessageToDeadLetterQueue(
 
   auto callback = [cb](const InvocationContext<ForwardMessageToDeadLetterQueueResponse>* invocation_context) {
     if (!invocation_context->status.ok()) {
-      SPDLOG_WARN("Failed to transmit SendMessageToDeadLetterQueueRequest to {}", invocation_context->remote_address);
+      SPDLOG_WARN("Failed to transmit SendMessageToDeadLetterQueueRequest to host={}",
+                  invocation_context->remote_address);
       cb(invocation_context);
       return;
     }
@@ -1439,12 +1440,15 @@ void ClientManagerImpl::forwardMessageToDeadLetterQueue(
   client->asyncForwardMessageToDeadLetterQueue(request, invocation_context);
 }
 
-bool ClientManagerImpl::notifyClientTermination(const std::string& target_host, const Metadata& metadata,
-                                                const NotifyClientTerminationRequest& request,
-                                                std::chrono::milliseconds timeout) {
+std::error_code ClientManagerImpl::notifyClientTermination(const std::string& target_host, const Metadata& metadata,
+                                                           const NotifyClientTerminationRequest& request,
+                                                           std::chrono::milliseconds timeout) {
+  std::error_code ec;
   auto client = getRpcClient(target_host);
   if (!client) {
-    return false;
+    SPDLOG_WARN("Failed to create RpcClient for host={}", target_host);
+    ec = ErrorCode::RequestTimeout;
+    return ec;
   }
 
   grpc::ClientContext context;
@@ -1456,18 +1460,41 @@ bool ClientManagerImpl::notifyClientTermination(const std::string& target_host, 
   NotifyClientTerminationResponse response;
   grpc::Status status = client->notifyClientTermination(&context, request, &response);
   if (!status.ok()) {
-    SPDLOG_WARN("Failed to write NotifyClientTermination request to wire. gRPC-code: {}, gRPC-message: {}, host={}",
-                status.error_code(), status.error_message(), target_host);
-    return false;
+    SPDLOG_WARN("NotifyClientTermination failed. gRPC-code={}, gRPC-message={}, host={}", status.error_code(),
+                status.error_message(), target_host);
+    ec = ErrorCode::RequestTimeout;
+    return ec;
   }
 
-  if (google::rpc::Code::OK == response.common().status().code()) {
-    SPDLOG_INFO("Notify client termination to {}", target_host);
-    return true;
-  }
+  const auto& common = response.common();
 
-  SPDLOG_WARN("Failed to notify client termination to {}", target_host);
-  return false;
+  switch (common.status().code()) {
+    case google::rpc::Code::OK: {
+      SPDLOG_DEBUG("NotifyClientTermination OK. host={}", target_host);
+      break;
+    }
+    case google::rpc::Code::INTERNAL: {
+      SPDLOG_WARN("InternalServerError: Cause={}, host={}", common.status().message(), target_host);
+      ec = ErrorCode::InternalServerError;
+      break;
+    }
+    case google::rpc::Code::UNAUTHENTICATED: {
+      SPDLOG_WARN("Unauthenticated: Cause={}, host={}", common.status().message(), target_host);
+      ec = ErrorCode::Unauthorized;
+      break;
+    }
+    case google::rpc::Code::PERMISSION_DENIED: {
+      SPDLOG_WARN("PermissionDenied: Cause={}, host={}", common.status().message(), target_host);
+      ec = ErrorCode::Forbidden;
+      break;
+    }
+    default: {
+      SPDLOG_WARN("NotImplemented. Please upgrade to latest SDK release. host={}", target_host);
+      ec = ErrorCode::NotImplemented;
+      break;
+    }
+  }
+  return ec;
 }
 
 void ClientManagerImpl::logStats() {

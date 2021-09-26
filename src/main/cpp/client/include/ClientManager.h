@@ -87,9 +87,9 @@ public:
                            std::chrono::milliseconds timeout,
                            const std::function<void(const InvocationContext<PullMessageResponse>*)>& cb) = 0;
 
-  virtual bool notifyClientTermination(const std::string& target_host, const Metadata& metadata,
-                                       const NotifyClientTerminationRequest& request,
-                                       std::chrono::milliseconds timeout) = 0;
+  virtual std::error_code notifyClientTermination(const std::string& target_host, const Metadata& metadata,
+                                                  const NotifyClientTerminationRequest& request,
+                                                  std::chrono::milliseconds timeout) = 0;
 
   virtual State state() const = 0;
 };

@@ -177,9 +177,9 @@ public:
                    std::chrono::milliseconds timeout,
                    const std::function<void(const InvocationContext<PullMessageResponse>*)>& cb) override;
 
-  bool notifyClientTermination(const std::string& target_host, const Metadata& metadata,
-                               const NotifyClientTerminationRequest& request,
-                               std::chrono::milliseconds timeout) override;
+  std::error_code notifyClientTermination(const std::string& target_host, const Metadata& metadata,
+                                          const NotifyClientTerminationRequest& request,
+                                          std::chrono::milliseconds timeout) override;
 
   void trace(bool trace) {
     trace_ = trace;
