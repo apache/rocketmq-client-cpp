@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cstdint>
+#include <exception>
 #include <functional>
 #include <iostream>
 #include <thread>
@@ -11,7 +12,8 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class SchedulerTest : public testing::Test {
 public:
-  void SetUp() override {}
+  void SetUp() override {
+  }
 
 protected:
 };
@@ -105,5 +107,4 @@ TEST_F(SchedulerTest, testSingleShotWithZeroDelay) {
 
   scheduler.shutdown();
 }
-
 ROCKETMQ_NAMESPACE_END

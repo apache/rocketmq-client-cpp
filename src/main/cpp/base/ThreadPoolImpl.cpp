@@ -8,13 +8,16 @@
 #include "spdlog/spdlog.h"
 #include <atomic>
 #include <cstdint>
+#include <exception>
+#include <system_error>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 ThreadPoolImpl::ThreadPoolImpl(std::uint16_t workers)
     : work_guard_(
           absl::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(context_.get_executor())),
-      workers_(workers) {}
+      workers_(workers) {
+}
 
 void ThreadPoolImpl::start() {
   for (std::uint16_t i = 0; i < workers_; i++) {
@@ -24,7 +27,23 @@ void ThreadPoolImpl::start() {
         absl::MutexLock lk(&start_mtx_);
         start_cv_.SignalAll();
       }
-      context_.run();
+
+      while (true) {
+        try {
+          std::error_code ec;
+          context_.run(ec);
+          if (ec) {
+            SPDLOG_WARN("Error raised from ThreadPool: {}", ec.message());
+          }
+        } catch (std::exception& e) {
+          SPDLOG_WARN("Exception raised from ThreadPool: {}", e.what());
+        }
+
+        if (State::STARTED != state_.load(std::memory_order_relaxed)) {
+          SPDLOG_INFO("A thread-pool worker quit");
+          break;
+        }
+      }
     });
     threads_.emplace_back(std::move(worker));
   }

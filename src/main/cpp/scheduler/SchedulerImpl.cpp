@@ -1,18 +1,22 @@
 #include "SchedulerImpl.h"
 
-#include "LoggerImpl.h"
+#include <atomic>
+#include <cassert>
+#include <cstdint>
+#include <cstdlib>
+#include <exception>
+#include <functional>
+#include <memory>
+#include <system_error>
+#include <thread>
+
 #include "absl/memory/memory.h"
 #include "asio/error_code.hpp"
 #include "asio/executor_work_guard.hpp"
 #include "asio/io_context.hpp"
 #include "asio/steady_timer.hpp"
-#include <atomic>
-#include <cassert>
-#include <cstdint>
-#include <cstdlib>
-#include <functional>
-#include <memory>
-#include <thread>
+
+#include "LoggerImpl.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -35,7 +39,23 @@ void SchedulerImpl::start() {
             start_cv_.SignalAll();
           }
         }
-        context_.run();
+
+        while (true) {
+          try {
+            std::error_code ec;
+            context_.run(ec);
+            if (ec) {
+              SPDLOG_WARN("Error raised from thread-pool: {}", ec.message());
+            }
+          } catch (std::exception& e) {
+            SPDLOG_WARN("Exception raised from thread-pool: {}", e.what());
+          }
+
+          if (State::STARTED != state_.load(std::memory_order_relaxed)) {
+            SPDLOG_INFO("A scheduler worker quit");
+            break;
+          }
+        }
       });
       threads_.emplace_back(std::move(worker));
     }

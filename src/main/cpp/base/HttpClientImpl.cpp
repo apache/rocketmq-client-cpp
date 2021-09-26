@@ -10,13 +10,11 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-HttpClientImpl::HttpClientImpl() {}
+void HttpClientImpl::start() {
+}
 
-HttpClientImpl::~HttpClientImpl() {}
-
-void HttpClientImpl::start() {}
-
-void HttpClientImpl::shutdown() {}
+void HttpClientImpl::shutdown() {
+}
 
 /**
  * @brief We current implement this function in sync mode since async http request in CURL is sort of unnecessarily
@@ -34,12 +32,12 @@ void HttpClientImpl::get(
 
   std::string key;
   switch (protocol) {
-  case HttpProtocol::HTTP:
-    key = fmt::format("http://{}:{}", host, port);
-    break;
-  case HttpProtocol::HTTPS:
-    key = fmt::format("https://{}:{}", host, port);
-    break;
+    case HttpProtocol::HTTP:
+      key = fmt::format("http://{}:{}", host, port);
+      break;
+    case HttpProtocol::HTTPS:
+      key = fmt::format("https://{}:{}", host, port);
+      break;
   }
 
   std::shared_ptr<httplib::Client> client;

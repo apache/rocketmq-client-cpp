@@ -12,9 +12,7 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class HttpClientImpl : public HttpClient {
 public:
-  HttpClientImpl();
-
-  ~HttpClientImpl() override;
+  ~HttpClientImpl() override = default;
 
   void start() override;
 
