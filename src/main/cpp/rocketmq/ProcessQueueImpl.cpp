@@ -108,11 +108,17 @@ void ProcessQueueImpl::popMessage() {
 void ProcessQueueImpl::pullMessage() {
   rmq::PullMessageRequest request;
   absl::flat_hash_map<std::string, std::string> metadata;
-  wrapPullMessageRequest(metadata, request);
+  auto consumer = consumer_.lock();
+  if (!consumer) {
+    SPDLOG_INFO("Owner consumer has destructed");
+    return;
+  }
+
+  Signature::sign(consumer.get(), metadata);
+  wrapPullMessageRequest(request);
   syncIdleState();
   SPDLOG_DEBUG("Try to pull message from {}", message_queue_.simpleName());
 
-  auto consumer = consumer_.lock();
   auto timeout = consumer->getLongPollingTimeout();
 
   auto callback = [this](const InvocationContext<PullMessageResponse>* invocation_context) {
@@ -324,8 +330,7 @@ void ProcessQueueImpl::wrapPopMessageRequest(absl::flat_hash_map<std::string, st
   request.mutable_invisible_duration()->set_nanos(nano_seconds);
 }
 
-void ProcessQueueImpl::wrapPullMessageRequest(absl::flat_hash_map<std::string, std::string>& metadata,
-                                              rmq::PullMessageRequest& request) {
+void ProcessQueueImpl::wrapPullMessageRequest(rmq::PullMessageRequest& request) {
   std::shared_ptr<PushConsumer> consumer = consumer_.lock();
   assert(consumer);
   request.set_client_id(consumer->clientId());

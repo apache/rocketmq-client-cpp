@@ -183,8 +183,7 @@ private:
                              rmq::ReceiveMessageRequest& request);
 
   void pullMessage();
-  void wrapPullMessageRequest(absl::flat_hash_map<std::string, std::string>& metadata,
-                              rmq::PullMessageRequest& request);
+  void wrapPullMessageRequest(rmq::PullMessageRequest& request);
 
   void wrapFilterExpression(rmq::FilterExpression* filter_expression);
 
