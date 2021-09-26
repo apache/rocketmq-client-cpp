@@ -1343,6 +1343,11 @@ void ClientManagerImpl::queryOffset(const std::string& target_host, const Metada
   auto invocation_context = new InvocationContext<QueryOffsetResponse>();
   invocation_context->remote_address = target_host;
   invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
+
+  for (const auto& entry : metadata) {
+    invocation_context->context.AddMetadata(entry.first, entry.second);
+  }
+
   auto callback = [cb](const InvocationContext<QueryOffsetResponse>* invocation_context) {
     std::error_code ec;
 
