@@ -29,16 +29,19 @@ void ThreadPoolImpl::start() {
       }
 
       while (true) {
+#ifdef __EXCEPTIONS
         try {
+#endif
           std::error_code ec;
           context_.run(ec);
           if (ec) {
             SPDLOG_WARN("Error raised from ThreadPool: {}", ec.message());
           }
+#ifdef __EXCEPTIONS
         } catch (std::exception& e) {
           SPDLOG_WARN("Exception raised from ThreadPool: {}", e.what());
         }
-
+#endif
         if (State::STARTED != state_.load(std::memory_order_relaxed)) {
           SPDLOG_INFO("A thread-pool worker quit");
           break;

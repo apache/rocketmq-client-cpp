@@ -107,4 +107,36 @@ TEST_F(SchedulerTest, testSingleShotWithZeroDelay) {
 
   scheduler.shutdown();
 }
+
+TEST_F(SchedulerTest, testException) {
+  SchedulerImpl scheduler;
+  scheduler.start();
+  absl::Mutex mtx;
+  absl::CondVar cv;
+  int callback_fire_count{0};
+  auto callback = [&]() {
+    {
+      absl::MutexLock lock(&mtx);
+      cv.Signal();
+      callback_fire_count++;
+    }
+
+    std::exception e;
+    throw e;
+  };
+
+  scheduler.schedule(callback, "test-exception", std::chrono::milliseconds(100), std::chrono::milliseconds(100));
+
+  // Wait till callback is executed.
+  {
+    absl::MutexLock lock(&mtx);
+    if (callback_fire_count <= 5) {
+      cv.Wait(&mtx);
+    }
+  }
+
+  std::this_thread::sleep_for(std::chrono::seconds(3));
+
+  scheduler.shutdown();
+}
 ROCKETMQ_NAMESPACE_END

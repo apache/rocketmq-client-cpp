@@ -41,15 +41,19 @@ void SchedulerImpl::start() {
         }
 
         while (true) {
+#ifdef __EXCEPTIONS
           try {
+#endif
             std::error_code ec;
             context_.run(ec);
             if (ec) {
               SPDLOG_WARN("Error raised from thread-pool: {}", ec.message());
             }
+#ifdef __EXCEPTIONS
           } catch (std::exception& e) {
             SPDLOG_WARN("Exception raised from thread-pool: {}", e.what());
           }
+#endif
 
           if (State::STARTED != state_.load(std::memory_order_relaxed)) {
             SPDLOG_INFO("A scheduler worker quit");
@@ -133,7 +137,19 @@ void SchedulerImpl::execute(const asio::error_code& ec, asio::steady_timer* time
   SPDLOG_INFO("Execute task: {}. Use-count: {}", timer_task->task_name, timer_task.use_count());
 
   // Execute the actual callback.
-  timer_task->callback();
+#ifdef __EXCEPTIONS
+  try {
+#endif
+    timer_task->callback();
+#ifdef __EXCEPTIONS
+  } catch (std::exception& e) {
+    SPDLOG_WARN("Exception raised: {}", e.what());
+  } catch (std::string& e) {
+    SPDLOG_WARN("Exception raised: {}", e);
+  } catch (...) {
+    SPDLOG_WARN("Unknown exception type raised");
+  }
+#endif
 
   if (timer_task->interval.count()) {
     timer->expires_at(timer->expiry() + timer_task->interval);
