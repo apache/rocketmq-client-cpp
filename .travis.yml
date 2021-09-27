@@ -1,14 +1,15 @@
 language: cpp
 sudo: required
 dist: trusty
+compiler: gcc
 
 addons:
   apt:
     packages: lcov
 
 install:
-  - sudo apt-get update
-  - sudo apt-get install -y git gcc-4.8 g++-4.8 autoconf cmake libtool wget unzip libbz2-dev zlib1g-dev
+  #- sudo apt-get update
+  #- sudo apt-get install -y git gcc-4.8 g++-4.8 autoconf cmake libtool wget unzip libbz2-dev zlib1g-dev
   - echo 'MAVEN_OPTS="$MAVEN_OPTS -Xmx1024m -XX:MaxPermSize=512m -XX:+BytecodeVerificationLocal"' >> ~/.mavenrc
   - cat ~/.mavenrc
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then export JAVA_HOME=$(/usr/libexec/java_home); fi
