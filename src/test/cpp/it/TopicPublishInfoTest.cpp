@@ -53,7 +53,9 @@ protected:
     Signature::sign(&client_config_, metadata_);
   }
 
-  void TearDown() override { completion_queue_->Shutdown(); }
+  void TearDown() override {
+    completion_queue_->Shutdown();
+  }
 
   std::string topic_{"yc001"};
   std::string group_{"yc001"};
@@ -100,33 +102,33 @@ TEST_F(TopicPublishInfoTest, testTopicPublishInfo) {
       Topic topic(resource_namespace_, topic_);
       Permission permission;
       switch (item.permission()) {
-      case rmq::Permission::READ:
-        permission = Permission::READ;
-        break;
-      case rmq::Permission::WRITE:
-        permission = Permission::WRITE;
-        break;
-      case rmq::Permission::READ_WRITE:
-        permission = Permission::READ_WRITE;
-        break;
-      default:
-        permission = Permission::NONE;
-        break;
+        case rmq::Permission::READ:
+          permission = Permission::READ;
+          break;
+        case rmq::Permission::WRITE:
+          permission = Permission::WRITE;
+          break;
+        case rmq::Permission::READ_WRITE:
+          permission = Permission::READ_WRITE;
+          break;
+        default:
+          permission = Permission::NONE;
+          break;
       }
 
       AddressScheme scheme;
       switch (item.broker().endpoints().scheme()) {
-      case rmq::AddressScheme::IPv4:
-        scheme = AddressScheme::IPv4;
-        break;
-      case rmq::AddressScheme::IPv6:
-        scheme = AddressScheme::IPv6;
-        break;
-      case rmq::AddressScheme::DOMAIN_NAME:
-        scheme = AddressScheme::DOMAIN_NAME;
-        break;
-      default:
-        scheme = AddressScheme::IPv4;
+        case rmq::AddressScheme::IPv4:
+          scheme = AddressScheme::IPv4;
+          break;
+        case rmq::AddressScheme::IPv6:
+          scheme = AddressScheme::IPv6;
+          break;
+        case rmq::AddressScheme::DOMAIN_NAME:
+          scheme = AddressScheme::DOMAIN_NAME;
+          break;
+        default:
+          scheme = AddressScheme::IPv4;
       }
 
       std::vector<Address> addresses;

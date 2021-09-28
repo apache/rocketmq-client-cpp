@@ -2,8 +2,8 @@
 
 #include <string>
 
-#include "rocketmq/MQMessageExt.h"
 #include "rocketmq/ExpressionType.h"
+#include "rocketmq/MQMessageExt.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

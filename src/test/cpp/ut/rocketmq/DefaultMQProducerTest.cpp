@@ -112,7 +112,8 @@ TEST_F(DefaultMQProducerUnitTest, testBasicSetUp) {
 class UnitTestSendCallback : public SendCallback {
 public:
   UnitTestSendCallback(absl::Mutex& mtx, absl::CondVar& cv, std::string& msg_id, bool& completed)
-      : mtx_(mtx), cv_(cv), msg_id_(msg_id), completed_(completed) {}
+      : mtx_(mtx), cv_(cv), msg_id_(msg_id), completed_(completed) {
+  }
 
   void onSuccess(SendResult& send_result) noexcept override {
     absl::MutexLock lk(&mtx_);

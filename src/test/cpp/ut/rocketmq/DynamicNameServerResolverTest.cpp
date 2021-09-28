@@ -17,7 +17,8 @@ ROCKETMQ_NAMESPACE_BEGIN
 class DynamicNameServerResolverTest : public testing::Test {
 public:
   DynamicNameServerResolverTest()
-      : resolver_(std::make_shared<DynamicNameServerResolver>(endpoint_, std::chrono::seconds(1))) {}
+      : resolver_(std::make_shared<DynamicNameServerResolver>(endpoint_, std::chrono::seconds(1))) {
+  }
 
   void SetUp() override {
     auto http_client = absl::make_unique<testing::NiceMock<HttpClientMock>>();
@@ -37,7 +38,9 @@ public:
     resolver_->start();
   }
 
-  void TearDown() override { resolver_->shutdown(); }
+  void TearDown() override {
+    resolver_->shutdown();
+  }
 
 protected:
   std::string endpoint_{"http://jmenv.tbsite.net:8080/rocketmq/nsaddr"};

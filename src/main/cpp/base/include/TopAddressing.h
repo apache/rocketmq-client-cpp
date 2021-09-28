@@ -7,8 +7,8 @@
 #include <string>
 #include <vector>
 
-#include "HttpClient.h"
 #include "HostInfo.h"
+#include "HttpClient.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

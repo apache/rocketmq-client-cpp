@@ -36,10 +36,9 @@ int main(int argc, char* argv[]) {
   DefaultMQPushConsumer push_consumer(group_id);
   push_consumer.setResourceNamespace(resource_namespace);
   push_consumer.setCredentialsProvider(std::make_shared<ConfigFileCredentialsProvider>());
-  push_consumer.setNamesrvAddr("47.98.116.189:80");
+  push_consumer.setNamesrvAddr("121.43.42.193:80");
   MessageListener* listener = new SampleMQMessageListener;
   push_consumer.setInstanceName("instance_0");
-  // push_consumer.setGroupName(group_id);
   push_consumer.subscribe(topic, "*");
   push_consumer.registerMessageListener(listener);
   push_consumer.setConsumeThreadCount(4);

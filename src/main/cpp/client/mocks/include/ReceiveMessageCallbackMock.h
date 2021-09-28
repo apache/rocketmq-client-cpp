@@ -8,9 +8,7 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class ReceiveMessageCallbackMock : public ReceiveMessageCallback {
 public:
-  MOCK_METHOD(void, onSuccess, (ReceiveMessageResult &), (override));
-
-  MOCK_METHOD(void, onFailure, (const std::error_code &), (override));
+  MOCK_METHOD(void, onCompletion, (const std::error_code&, const ReceiveMessageResult&), (override));
 };
 
 ROCKETMQ_NAMESPACE_END

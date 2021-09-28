@@ -19,26 +19,29 @@ public:
 
   ~ClientConfigImpl() override = default;
 
-  const std::string &resourceNamespace() const override {
+  const std::string& resourceNamespace() const override {
     return resource_namespace_;
   }
 
   void resourceNamespace(absl::string_view resource_namespace) {
-    resource_namespace_ =
-        std::string(resource_namespace.data(), resource_namespace.length());
+    resource_namespace_ = std::string(resource_namespace.data(), resource_namespace.length());
   }
 
   std::string clientId() const override;
 
-  const std::string &getInstanceName() const;
+  const std::string& getInstanceName() const;
 
   void setInstanceName(std::string instance_name);
 
-  const std::string &getGroupName() const override;
+  const std::string& getGroupName() const override;
   void setGroupName(std::string group_name);
 
-  const std::string &getUnitName() const { return unit_name_; }
-  void setUnitName(std::string unit_name) { unit_name_ = std::move(unit_name); }
+  const std::string& getUnitName() const {
+    return unit_name_;
+  }
+  void setUnitName(std::string unit_name) {
+    unit_name_ = std::move(unit_name);
+  }
 
   absl::Duration getIoTimeout() const override;
   void setIoTimeout(absl::Duration timeout);
@@ -51,8 +54,12 @@ public:
     long_polling_timeout_ = timeout;
   }
 
-  bool isTracingEnabled() { return enable_tracing_.load(); }
-  void enableTracing(bool enabled) { enable_tracing_.store(enabled); }
+  bool isTracingEnabled() {
+    return enable_tracing_.load();
+  }
+  void enableTracing(bool enabled) {
+    enable_tracing_.store(enabled);
+  }
 
   CredentialsProviderPtr credentialsProvider() override;
   void setCredentialsProvider(CredentialsProviderPtr credentials_provider);
@@ -60,15 +67,25 @@ public:
   void serviceName(std::string service_name) {
     service_name_ = std::move(service_name);
   }
-  const std::string &serviceName() const override { return service_name_; }
+  const std::string& serviceName() const override {
+    return service_name_;
+  }
 
-  void region(std::string region) { region_ = std::move(region); }
-  const std::string &region() const override { return region_; }
+  void region(std::string region) {
+    region_ = std::move(region);
+  }
+  const std::string& region() const override {
+    return region_;
+  }
 
-  void tenantId(std::string tenant_id) { tenant_id_ = std::move(tenant_id); }
-  const std::string &tenantId() const override { return tenant_id_; }
+  void tenantId(std::string tenant_id) {
+    tenant_id_ = std::move(tenant_id);
+  }
+  const std::string& tenantId() const override {
+    return tenant_id_;
+  }
 
-  static const char *CLIENT_VERSION;
+  static const char* CLIENT_VERSION;
 
 protected:
   /**
@@ -92,7 +109,7 @@ protected:
    */
   std::string tenant_id_;
 
-  std::string instance_name_;
+  std::string instance_name_{steadyName()};
 
   std::string group_name_;
 
@@ -105,6 +122,8 @@ protected:
   absl::Duration long_polling_timeout_;
 
   std::atomic<bool> enable_tracing_{false};
+
+  static std::string steadyName();
 };
 
 ROCKETMQ_NAMESPACE_END

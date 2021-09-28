@@ -77,7 +77,9 @@ public:
     }
   }
 
-  std::array<int, PARTITION>& partition() { return permits_; }
+  std::array<int, PARTITION>& partition() {
+    return permits_;
+  }
 
   int slot() {
     auto current = std::chrono::steady_clock::now();
@@ -138,11 +140,16 @@ private:
 
 class SampleSendCallback : public rocketmq::SendCallback {
 public:
-  SampleSendCallback(std::atomic_int& counter, std::atomic_int& error) : counter_(counter), error_(error) {}
+  SampleSendCallback(std::atomic_int& counter, std::atomic_int& error) : counter_(counter), error_(error) {
+  }
 
-  void onSuccess(SendResult& send_result) noexcept override { counter_.fetch_add(1, std::memory_order_relaxed); }
+  void onSuccess(SendResult& send_result) noexcept override {
+    counter_.fetch_add(1, std::memory_order_relaxed);
+  }
 
-  void onFailure(const std::error_code& ec) noexcept override { error_.fetch_add(1, std::memory_order_relaxed); }
+  void onFailure(const std::error_code& ec) noexcept override {
+    error_.fetch_add(1, std::memory_order_relaxed);
+  }
 
 private:
   std::atomic_int& counter_;

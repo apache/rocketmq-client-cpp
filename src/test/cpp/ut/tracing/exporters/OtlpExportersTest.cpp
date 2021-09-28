@@ -13,9 +13,12 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class OtlpExporterTest : public testing::Test {
 public:
-  void SetUp() override { client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>(); }
+  void SetUp() override {
+    client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
+  }
 
-  void TearDown() override {}
+  void TearDown() override {
+  }
 
 protected:
   std::shared_ptr<testing::NiceMock<ClientManagerMock>> client_manager_;

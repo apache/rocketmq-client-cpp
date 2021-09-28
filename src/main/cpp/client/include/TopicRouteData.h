@@ -20,13 +20,21 @@ public:
     std::sort(partitions_.begin(), partitions_.end());
   }
 
-  const std::vector<Partition>& partitions() const { return partitions_; }
+  const std::vector<Partition>& partitions() const {
+    return partitions_;
+  }
 
-  const std::string& debugString() const { return debug_string_; }
+  const std::string& debugString() const {
+    return debug_string_;
+  }
 
-  bool operator==(const TopicRouteData& other) const { return partitions_ == other.partitions_; }
+  bool operator==(const TopicRouteData& other) const {
+    return partitions_ == other.partitions_;
+  }
 
-  bool operator!=(const TopicRouteData& other) const { return !this->operator==(other); }
+  bool operator!=(const TopicRouteData& other) const {
+    return !this->operator==(other);
+  }
 
 private:
   std::vector<Partition> partitions_;

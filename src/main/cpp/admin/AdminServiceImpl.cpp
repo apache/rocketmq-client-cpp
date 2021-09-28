@@ -13,24 +13,24 @@ Status applyChange(const rmq::ChangeLogLevelRequest* request) {
 
   auto level = request->level();
   switch (level) {
-  case rmq::ChangeLogLevelRequest_Level_TRACE:
-    logger->set_level(spdlog::level::trace);
-    break;
-  case rmq::ChangeLogLevelRequest_Level_DEBUG:
-    logger->set_level(spdlog::level::debug);
-    break;
-  case rmq::ChangeLogLevelRequest_Level_INFO:
-    logger->set_level(spdlog::level::info);
-    break;
-  case rmq::ChangeLogLevelRequest_Level_WARN:
-    logger->set_level(spdlog::level::warn);
-    break;
-  case rmq::ChangeLogLevelRequest_Level_ERROR:
-    logger->set_level(spdlog::level::err);
-    break;
-  default:
-    logger->set_level(spdlog::level::info);
-    break;
+    case rmq::ChangeLogLevelRequest_Level_TRACE:
+      logger->set_level(spdlog::level::trace);
+      break;
+    case rmq::ChangeLogLevelRequest_Level_DEBUG:
+      logger->set_level(spdlog::level::debug);
+      break;
+    case rmq::ChangeLogLevelRequest_Level_INFO:
+      logger->set_level(spdlog::level::info);
+      break;
+    case rmq::ChangeLogLevelRequest_Level_WARN:
+      logger->set_level(spdlog::level::warn);
+      break;
+    case rmq::ChangeLogLevelRequest_Level_ERROR:
+      logger->set_level(spdlog::level::err);
+      break;
+    default:
+      logger->set_level(spdlog::level::info);
+      break;
   }
   return grpc::Status::OK;
 }

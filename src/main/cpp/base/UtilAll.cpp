@@ -82,12 +82,12 @@ bool UtilAll::macAddress(std::vector<unsigned char>& mac) {
   PIP_ADAPTER_INFO adaptor_info;
   DWORD buf_len = sizeof(IP_ADAPTER_INFO);
   char mac_address[18];
-  adaptor_info = (IP_ADAPTER_INFO*) malloc(buf_len);
+  adaptor_info = (IP_ADAPTER_INFO*)malloc(buf_len);
   if (!adaptor_info) {
     // TODO: running out of memroy
   }
 
-  if(GetAdaptersInfo(adaptor_info, &buf_len) == NO_ERROR) {
+  if (GetAdaptersInfo(adaptor_info, &buf_len) == NO_ERROR) {
     PIP_ADAPTER_INFO item = adaptor_info;
     do {
       bool all_zero = true;
@@ -105,7 +105,7 @@ bool UtilAll::macAddress(std::vector<unsigned char>& mac) {
         break;
       }
       item = item->Next;
-    } while (item);    
+    } while (item);
   } else {
     free(adaptor_info);
   }

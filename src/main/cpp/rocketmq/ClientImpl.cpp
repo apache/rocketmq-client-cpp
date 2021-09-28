@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
@@ -24,12 +25,14 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-ClientImpl::ClientImpl(absl::string_view group_name) : ClientConfigImpl(group_name), state_(State::CREATED) {}
+ClientImpl::ClientImpl(absl::string_view group_name) : ClientConfigImpl(group_name), state_(State::CREATED) {
+}
 
 void ClientImpl::start() {
   State expected = CREATED;
   if (!state_.compare_exchange_strong(expected, State::STARTING)) {
-    SPDLOG_WARN("Unexpected state: {}", state_.load(std::memory_order_relaxed));
+    SPDLOG_ERROR("Attempt to start ClientImpl failed. Expecting: {} Actual: {}", State::CREATED,
+                 state_.load(std::memory_order_relaxed));
     return;
   }
 
@@ -56,21 +59,21 @@ void ClientImpl::start() {
 
   route_update_handle_ = client_manager_->getScheduler().schedule(route_update_functor, UPDATE_ROUTE_TASK_NAME,
                                                                   std::chrono::seconds(10), std::chrono::seconds(30));
-  state_.store(State::STARTED);
 }
 
 void ClientImpl::shutdown() {
-  state_.store(State::STOPPING, std::memory_order_relaxed);
-
-  name_server_resolver_->shutdown();
-
-  if (route_update_handle_) {
-    client_manager_->getScheduler().cancel(route_update_handle_);
+  State expected = State::STOPPING;
+  if (state_.compare_exchange_strong(expected, State::STOPPED)) {
+    name_server_resolver_->shutdown();
+    if (route_update_handle_) {
+      client_manager_->getScheduler().cancel(route_update_handle_);
+    }
+    notifyClientTermination();
+    client_manager_.reset();
+  } else {
+    SPDLOG_ERROR("Try to shutdown ClientImpl, but its state is not as expected. Expecting: {}, Actual: {}",
+                 State::STOPPING, state_.load(std::memory_order_relaxed));
   }
-
-  notifyClientTermination();
-
-  client_manager_.reset();
 }
 
 const char* ClientImpl::UPDATE_ROUTE_TASK_NAME = "route_updater";
@@ -321,71 +324,71 @@ void ClientImpl::onMultiplexingResponse(const InvocationContext<MultiplexingResp
   }
 
   switch (ctx->response.type_case()) {
-  case MultiplexingResponse::TypeCase::kPrintThreadStackRequest: {
-    MultiplexingRequest request;
-    request.mutable_print_thread_stack_response()->mutable_common()->mutable_status()->set_code(
-        google::rpc::Code::UNIMPLEMENTED);
-    request.mutable_print_thread_stack_response()->set_stack_trace(
-        "Print thread stack trace is not supported by C++ SDK");
-    absl::flat_hash_map<std::string, std::string> metadata;
-    Signature::sign(this, metadata);
-    client_manager_->multiplexingCall(ctx->remote_address, metadata, request, absl::ToChronoMilliseconds(io_timeout_),
-                                      std::bind(&ClientImpl::onMultiplexingResponse, this, std::placeholders::_1));
-    break;
-  }
+    case MultiplexingResponse::TypeCase::kPrintThreadStackRequest: {
+      MultiplexingRequest request;
+      request.mutable_print_thread_stack_response()->mutable_common()->mutable_status()->set_code(
+          google::rpc::Code::UNIMPLEMENTED);
+      request.mutable_print_thread_stack_response()->set_stack_trace(
+          "Print thread stack trace is not supported by C++ SDK");
+      absl::flat_hash_map<std::string, std::string> metadata;
+      Signature::sign(this, metadata);
+      client_manager_->multiplexingCall(ctx->remote_address, metadata, request, absl::ToChronoMilliseconds(io_timeout_),
+                                        std::bind(&ClientImpl::onMultiplexingResponse, this, std::placeholders::_1));
+      break;
+    }
 
-  case MultiplexingResponse::TypeCase::kVerifyMessageConsumptionRequest: {
-    auto data = ctx->response.verify_message_consumption_request().message();
-    MQMessageExt message;
-    MultiplexingRequest request;
-    if (!client_manager_->wrapMessage(data, message)) {
-      SPDLOG_WARN("Message to verify consumption is corrupted");
+    case MultiplexingResponse::TypeCase::kVerifyMessageConsumptionRequest: {
+      auto data = ctx->response.verify_message_consumption_request().message();
+      MQMessageExt message;
+      MultiplexingRequest request;
+      if (!client_manager_->wrapMessage(data, message)) {
+        SPDLOG_WARN("Message to verify consumption is corrupted");
+        request.mutable_verify_message_consumption_response()->mutable_common()->mutable_status()->set_code(
+            google::rpc::Code::INVALID_ARGUMENT);
+        request.mutable_verify_message_consumption_response()->mutable_common()->mutable_status()->set_message(
+            "Message to verify is corrupted");
+        multiplexing(ctx->remote_address, request);
+        return;
+      }
+      std::string&& result = verifyMessageConsumption(message);
       request.mutable_verify_message_consumption_response()->mutable_common()->mutable_status()->set_code(
-          google::rpc::Code::INVALID_ARGUMENT);
-      request.mutable_verify_message_consumption_response()->mutable_common()->mutable_status()->set_message(
-          "Message to verify is corrupted");
+          google::rpc::Code::OK);
+      request.mutable_verify_message_consumption_response()->mutable_common()->mutable_status()->set_message(result);
       multiplexing(ctx->remote_address, request);
-      return;
+      break;
     }
-    std::string&& result = verifyMessageConsumption(message);
-    request.mutable_verify_message_consumption_response()->mutable_common()->mutable_status()->set_code(
-        google::rpc::Code::OK);
-    request.mutable_verify_message_consumption_response()->mutable_common()->mutable_status()->set_message(result);
-    multiplexing(ctx->remote_address, request);
-    break;
-  }
 
-  case MultiplexingResponse::TypeCase::kResolveOrphanedTransactionRequest: {
-    auto orphan = ctx->response.resolve_orphaned_transaction_request().orphaned_transactional_message();
-    MQMessageExt message;
-    if (client_manager_->wrapMessage(orphan, message)) {
-      MessageAccessor::setTargetEndpoint(message, ctx->remote_address);
-      const std::string& transaction_id = ctx->response.resolve_orphaned_transaction_request().transaction_id();
-      resolveOrphanedTransactionalMessage(transaction_id, message);
-    } else {
-      SPDLOG_WARN("Failed to resolve orphaned transactional message, potentially caused by message-body checksum "
-                  "verification failure.");
+    case MultiplexingResponse::TypeCase::kResolveOrphanedTransactionRequest: {
+      auto orphan = ctx->response.resolve_orphaned_transaction_request().orphaned_transactional_message();
+      MQMessageExt message;
+      if (client_manager_->wrapMessage(orphan, message)) {
+        MessageAccessor::setTargetEndpoint(message, ctx->remote_address);
+        const std::string& transaction_id = ctx->response.resolve_orphaned_transaction_request().transaction_id();
+        resolveOrphanedTransactionalMessage(transaction_id, message);
+      } else {
+        SPDLOG_WARN("Failed to resolve orphaned transactional message, potentially caused by message-body checksum "
+                    "verification failure.");
+      }
+      MultiplexingRequest request;
+      fillGenericPollingRequest(request);
+      multiplexing(ctx->remote_address, request);
+      break;
     }
-    MultiplexingRequest request;
-    fillGenericPollingRequest(request);
-    multiplexing(ctx->remote_address, request);
-    break;
-  }
 
-  case MultiplexingResponse::TypeCase::kPollingResponse: {
-    MultiplexingRequest request;
-    fillGenericPollingRequest(request);
-    multiplexing(ctx->remote_address, request);
-    break;
-  }
+    case MultiplexingResponse::TypeCase::kPollingResponse: {
+      MultiplexingRequest request;
+      fillGenericPollingRequest(request);
+      multiplexing(ctx->remote_address, request);
+      break;
+    }
 
-  default: {
-    SPDLOG_WARN("Unsupported multiplex type");
-    MultiplexingRequest request;
-    fillGenericPollingRequest(request);
-    multiplexing(ctx->remote_address, request);
-    break;
-  }
+    default: {
+      SPDLOG_WARN("Unsupported multiplex type");
+      MultiplexingRequest request;
+      fillGenericPollingRequest(request);
+      multiplexing(ctx->remote_address, request);
+      break;
+    }
   }
 }
 
@@ -452,15 +455,15 @@ void ClientImpl::fillGenericPollingRequest(MultiplexingRequest& request) {
   auto polling_request = request.mutable_polling_request();
   polling_request->set_client_id(clientId());
   switch (resource_bundle.group_type) {
-  case GroupType::PUBLISHER:
-    polling_request->mutable_producer_group()->set_resource_namespace(resource_namespace_);
-    polling_request->mutable_producer_group()->set_name(group_name_);
-    break;
+    case GroupType::PUBLISHER:
+      polling_request->mutable_producer_group()->set_resource_namespace(resource_namespace_);
+      polling_request->mutable_producer_group()->set_name(group_name_);
+      break;
 
-  case GroupType::SUBSCRIBER:
-    polling_request->mutable_consumer_group()->set_resource_namespace(resource_namespace_);
-    polling_request->mutable_consumer_group()->set_name(group_name_);
-    break;
+    case GroupType::SUBSCRIBER:
+      polling_request->mutable_consumer_group()->set_resource_namespace(resource_namespace_);
+      polling_request->mutable_consumer_group()->set_name(group_name_);
+      break;
   }
   auto topics = polling_request->mutable_topics();
   for (const auto& item : resource_bundle.topics) {

@@ -16,12 +16,15 @@ public:
     }));
   }
 
-  void TearDown() override {}
+  void TearDown() override {
+  }
 
 protected:
   std::shared_ptr<testing::NiceMock<ClientMock>> client_;
 };
 
-TEST_F(ClientTest, testActive) { EXPECT_TRUE(client_->active()); }
+TEST_F(ClientTest, testActive) {
+  EXPECT_TRUE(client_->active());
+}
 
 ROCKETMQ_NAMESPACE_END

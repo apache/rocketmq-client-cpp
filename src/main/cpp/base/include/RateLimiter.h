@@ -37,7 +37,8 @@ private:
   std::thread tick_thread_;
 };
 
-template <int PARTITION> class RateLimiter : public Tick {
+template <int PARTITION>
+class RateLimiter : public Tick {
 public:
   explicit RateLimiter(uint32_t permit) : permits_{0}, interval_(1000 / PARTITION) {
     uint32_t avg = permit / PARTITION;
@@ -57,7 +58,9 @@ public:
 
   ~RateLimiter() override = default;
 
-  std::array<uint32_t, PARTITION>& partition() { return permits_; }
+  std::array<uint32_t, PARTITION>& partition() {
+    return permits_;
+  }
 
   int slot() {
     auto current = std::chrono::steady_clock::now();

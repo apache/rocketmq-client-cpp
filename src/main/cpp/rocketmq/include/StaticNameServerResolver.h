@@ -1,8 +1,8 @@
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 #include <vector>
-#include <atomic>
 
 #include "absl/strings/string_view.h"
 
@@ -15,9 +15,11 @@ class StaticNameServerResolver : public NameServerResolver {
 public:
   explicit StaticNameServerResolver(absl::string_view name_server_list);
 
-  void start() override {}
+  void start() override {
+  }
 
-  void shutdown() override {}
+  void shutdown() override {
+  }
 
   std::string current() override;
 

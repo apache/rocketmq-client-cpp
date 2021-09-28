@@ -18,9 +18,12 @@
 ROCKETMQ_NAMESPACE_BEGIN
 
 StaticCredentialsProvider::StaticCredentialsProvider(std::string access_key, std::string access_secret)
-    : access_key_(std::move(access_key)), access_secret_(std::move(access_secret)) {}
+    : access_key_(std::move(access_key)), access_secret_(std::move(access_secret)) {
+}
 
-Credentials StaticCredentialsProvider::getCredentials() { return Credentials(access_key_, access_secret_); }
+Credentials StaticCredentialsProvider::getCredentials() {
+  return Credentials(access_key_, access_secret_);
+}
 
 const char* EnvironmentVariablesCredentialsProvider::ENVIRONMENT_ACCESS_KEY = "ROCKETMQ_ACCESS_KEY";
 const char* EnvironmentVariablesCredentialsProvider::ENVIRONMENT_ACCESS_SECRET = "ROCKETMQ_ACCESS_SECRET";
@@ -91,19 +94,28 @@ ConfigFileCredentialsProvider::ConfigFileCredentialsProvider() {
 }
 
 ConfigFileCredentialsProvider::ConfigFileCredentialsProvider(std::string config_file,
-                                                             std::chrono::milliseconds refresh_interval) {}
+                                                             std::chrono::milliseconds refresh_interval) {
+}
 
-Credentials ConfigFileCredentialsProvider::getCredentials() { return Credentials(access_key_, access_secret_); }
+Credentials ConfigFileCredentialsProvider::getCredentials() {
+  return Credentials(access_key_, access_secret_);
+}
 
 StsCredentialsProvider::StsCredentialsProvider(std::string ram_role_name)
-    : impl_(absl::make_unique<StsCredentialsProviderImpl>(std::move(ram_role_name))) {}
+    : impl_(absl::make_unique<StsCredentialsProviderImpl>(std::move(ram_role_name))) {
+}
 
-Credentials StsCredentialsProvider::getCredentials() { return impl_->getCredentials(); }
+Credentials StsCredentialsProvider::getCredentials() {
+  return impl_->getCredentials();
+}
 
 StsCredentialsProviderImpl::StsCredentialsProviderImpl(std::string ram_role_name)
-    : ram_role_name_(std::move(ram_role_name)) {}
+    : ram_role_name_(std::move(ram_role_name)) {
+}
 
-StsCredentialsProviderImpl::~StsCredentialsProviderImpl() { http_client_->shutdown(); }
+StsCredentialsProviderImpl::~StsCredentialsProviderImpl() {
+  http_client_->shutdown();
+}
 
 Credentials StsCredentialsProviderImpl::getCredentials() {
   if (std::chrono::system_clock::now() >= expiration_) {

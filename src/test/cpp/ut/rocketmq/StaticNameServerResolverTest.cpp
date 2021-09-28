@@ -9,11 +9,16 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class StaticNameServerResolverTest : public testing::Test {
 public:
-  StaticNameServerResolverTest() : resolver_(name_server_list_) {}
+  StaticNameServerResolverTest() : resolver_(name_server_list_) {
+  }
 
-  void SetUp() override { resolver_.start(); }
+  void SetUp() override {
+    resolver_.start();
+  }
 
-  void TearDown() override { resolver_.shutdown(); }
+  void TearDown() override {
+    resolver_.shutdown();
+  }
 
 protected:
   std::string name_server_list_{"10.0.0.1:9876;10.0.0.2:9876"};

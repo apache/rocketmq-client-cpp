@@ -18,11 +18,15 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class TestClientImpl : public ClientImpl, public std::enable_shared_from_this<TestClientImpl> {
 public:
-  TestClientImpl(std::string group) : ClientImpl(std::move(group)) {}
+  TestClientImpl(std::string group) : ClientImpl(std::move(group)) {
+  }
 
-  std::shared_ptr<ClientImpl> self() override { return shared_from_this(); }
+  std::shared_ptr<ClientImpl> self() override {
+    return shared_from_this();
+  }
 
-  void prepareHeartbeatData(HeartbeatRequest& request) override {}
+  void prepareHeartbeatData(HeartbeatRequest& request) override {
+  }
 };
 
 class ClientImplTest : public testing::Test {
@@ -93,6 +97,8 @@ TEST_F(ClientImplTest, testBasic) {
   }
   EXPECT_TRUE(completed);
 
+  // Now that the derivative class has closed its resources, state of ClientImpl should be STOPPING.
+  client_->state(State::STOPPING);
   client_->shutdown();
 }
 

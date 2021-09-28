@@ -13,7 +13,8 @@ public:
   RpcClientImpl(std::shared_ptr<CompletionQueue> completion_queue, std::shared_ptr<Channel> channel,
                 bool need_heartbeat = true)
       : completion_queue_(std::move(completion_queue)), channel_(std::move(channel)),
-        stub_(rmq::MessagingService::NewStub(channel_)), need_heartbeat_(need_heartbeat) {}
+        stub_(rmq::MessagingService::NewStub(channel_)), need_heartbeat_(need_heartbeat) {
+  }
 
   RpcClientImpl(const RpcClientImpl&) = delete;
 

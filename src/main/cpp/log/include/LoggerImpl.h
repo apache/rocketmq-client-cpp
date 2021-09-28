@@ -15,9 +15,13 @@ public:
 
   void setConsoleLevel(Level level) override;
 
-  void setFileSize(std::size_t file_size) override { file_size_ = file_size; }
+  void setFileSize(std::size_t file_size) override {
+    file_size_ = file_size;
+  }
 
-  void setFileCount(std::size_t file_count) override { file_count_ = file_count; }
+  void setFileCount(std::size_t file_count) override {
+    file_count_ = file_count;
+  }
 
   void setPattern(std::string pattern) override {
     pattern_ = std::move(pattern);
@@ -34,27 +38,28 @@ public:
 private:
   void init0();
 
-  template <typename T> void setLevel(std::shared_ptr<T>& target, Level level) {
+  template <typename T>
+  void setLevel(std::shared_ptr<T>& target, Level level) {
     if (!target) {
       return;
     }
 
     switch (level) {
-    case Level::Trace:
-      target->set_level(spdlog::level::trace);
-      break;
-    case Level::Debug:
-      target->set_level(spdlog::level::debug);
-      break;
-    case Level::Info:
-      target->set_level(spdlog::level::info);
-      break;
-    case Level::Warn:
-      target->set_level(spdlog::level::warn);
-      break;
-    case Level::Error:
-      target->set_level(spdlog::level::err);
-      break;
+      case Level::Trace:
+        target->set_level(spdlog::level::trace);
+        break;
+      case Level::Debug:
+        target->set_level(spdlog::level::debug);
+        break;
+      case Level::Info:
+        target->set_level(spdlog::level::info);
+        break;
+      case Level::Warn:
+        target->set_level(spdlog::level::warn);
+        break;
+      case Level::Error:
+        target->set_level(spdlog::level::err);
+        break;
     }
   }
 

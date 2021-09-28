@@ -24,7 +24,12 @@ ROCKETMQ_NAMESPACE_BEGIN
 namespace collector = opentelemetry::proto::collector;
 namespace collector_trace = collector::trace::v1;
 
-enum class TraceMode : std::uint8_t { OFF = 0, DEBUG = 1, GRPC = 2 };
+enum class TraceMode : std::uint8_t
+{
+  OFF = 0,
+  DEBUG = 1,
+  GRPC = 2
+};
 
 class Samplers {
 public:
@@ -34,7 +39,8 @@ public:
 class OtlpExporter : public std::enable_shared_from_this<OtlpExporter> {
 public:
   OtlpExporter(std::weak_ptr<ClientManager> client_manager, ClientConfig* client_config)
-      : client_manager_(std::move(client_manager)), client_config_(client_config) {}
+      : client_manager_(std::move(client_manager)), client_config_(client_config) {
+  }
 
   void updateHosts(std::vector<std::string> hosts) LOCKS_EXCLUDED(hosts_mtx_) {
     absl::MutexLock lk(&hosts_mtx_);
@@ -50,13 +56,21 @@ public:
     return hosts_;
   }
 
-  std::weak_ptr<ClientManager>& clientManager() { return client_manager_; }
+  std::weak_ptr<ClientManager>& clientManager() {
+    return client_manager_;
+  }
 
-  ClientConfig* clientConfig() { return client_config_; }
+  ClientConfig* clientConfig() {
+    return client_config_;
+  }
 
-  void traceMode(TraceMode mode) { mode_ = mode; }
+  void traceMode(TraceMode mode) {
+    mode_ = mode;
+  }
 
-  TraceMode traceMode() const { return mode_; }
+  TraceMode traceMode() const {
+    return mode_;
+  }
 
 private:
   std::weak_ptr<ClientManager> client_manager_;
@@ -71,7 +85,8 @@ private:
 class ExportClient {
 public:
   ExportClient(std::shared_ptr<CompletionQueue> completion_queue, std::shared_ptr<grpc::Channel> channel)
-      : completion_queue_(std::move(completion_queue)), stub_(collector_trace::TraceService::NewStub(channel)) {}
+      : completion_queue_(std::move(completion_queue)), stub_(collector_trace::TraceService::NewStub(channel)) {
+  }
 
   void asyncExport(const collector_trace::ExportTraceServiceRequest& request,
                    InvocationContext<collector_trace::ExportTraceServiceResponse>* invocation_context);

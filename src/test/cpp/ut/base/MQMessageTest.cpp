@@ -13,7 +13,8 @@ public:
     message.setDelayTimeLevel(delay_level_);
   }
 
-  void TearDown() override {}
+  void TearDown() override {
+  }
 
 protected:
   std::string topic_{"Test"};

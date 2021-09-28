@@ -37,7 +37,9 @@ public:
     return 0;
   }
 
-  ~TlsServerAuthorizationChecker() override { SPDLOG_DEBUG("~TlsServerAuthorizationChecker() invoked"); }
+  ~TlsServerAuthorizationChecker() override {
+    SPDLOG_DEBUG("~TlsServerAuthorizationChecker() invoked");
+  }
 };
 
 ROCKETMQ_NAMESPACE_END

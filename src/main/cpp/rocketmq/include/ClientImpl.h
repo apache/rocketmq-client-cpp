@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <system_error>
@@ -58,6 +59,13 @@ public:
     name_server_resolver_ = std::move(name_server_resolver);
   }
 
+  /**
+   * Expose for test purpose only.
+   */
+  void state(State state) {
+    state_.store(state, std::memory_order_relaxed);
+  }
+
 protected:
   ClientManagerPtr client_manager_;
   std::shared_ptr<OtlpExporter> exporter_;
@@ -90,9 +98,12 @@ protected:
 
   virtual void prepareHeartbeatData(HeartbeatRequest& request) = 0;
 
-  virtual std::string verifyMessageConsumption(const MQMessageExt& message) { return "Unsupported"; }
+  virtual std::string verifyMessageConsumption(const MQMessageExt& message) {
+    return "Unsupported";
+  }
 
-  virtual void resolveOrphanedTransactionalMessage(const std::string& transaction_id, const MQMessageExt& message) {}
+  virtual void resolveOrphanedTransactionalMessage(const std::string& transaction_id, const MQMessageExt& message) {
+  }
 
   /**
    * Concrete publisher/subscriber client is expected to fill other

@@ -4,8 +4,8 @@
 #include "absl/types/optional.h"
 
 #include "Client.h"
+#include "ConsumeMessageService.h"
 #include "FilterExpression.h"
-#include "ReceiveMessageAction.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -13,8 +13,7 @@ class Consumer : virtual public Client {
 public:
   ~Consumer() override = default;
 
-  virtual absl::optional<FilterExpression>
-  getFilterExpression(const std::string &topic) const = 0;
+  virtual absl::optional<FilterExpression> getFilterExpression(const std::string& topic) const = 0;
 
   virtual uint32_t maxCachedMessageQuantity() const = 0;
 
@@ -22,7 +21,7 @@ public:
 
   virtual int32_t receiveBatchSize() const = 0;
 
-  virtual ReceiveMessageAction receiveMessageAction() const = 0;
+  virtual std::shared_ptr<ConsumeMessageService> getConsumeMessageService() = 0;
 };
 
 ROCKETMQ_NAMESPACE_END

@@ -20,7 +20,9 @@ public:
     spdlog::set_level(spdlog::level::debug);
   }
 
-  void TearDown() override { grpc_shutdown(); }
+  void TearDown() override {
+    grpc_shutdown();
+  }
 
   void SetEnv(const char* key, const char* value) {
     int overwrite = 1;

@@ -1,6 +1,6 @@
 #include "rocketmq/MQMessageExt.h"
-#include "rocketmq/MQMessage.h"
 #include "MessageAccessor.h"
+#include "rocketmq/MQMessage.h"
 #include "gtest/gtest.h"
 #include <chrono>
 
@@ -12,7 +12,8 @@ public:
     MessageAccessor::setMessageId(message_, msg_id_);
   }
 
-  void TearDown() override {}
+  void TearDown() override {
+  }
 
 protected:
   std::string msg_id_{"msg-0"};
@@ -20,14 +21,18 @@ protected:
   MQMessageExt message_;
 };
 
-TEST_F(MQMessageExtTest, testGetQueueId) { EXPECT_EQ(message_.getQueueId(), 0); }
+TEST_F(MQMessageExtTest, testGetQueueId) {
+  EXPECT_EQ(message_.getQueueId(), 0);
+}
 
 TEST_F(MQMessageExtTest, testBornTimestamp) {
   auto born_timestamp = message_.bornTimestamp();
   EXPECT_TRUE(std::chrono::system_clock::now() - born_timestamp < std::chrono::seconds(1));
 }
 
-TEST_F(MQMessageExtTest, testGetDeliveryAttempt) { EXPECT_EQ(message_.getDeliveryAttempt(), 0); }
+TEST_F(MQMessageExtTest, testGetDeliveryAttempt) {
+  EXPECT_EQ(message_.getDeliveryAttempt(), 0);
+}
 
 TEST_F(MQMessageExtTest, testGetBornTimestamp) {
   int64_t born_timestamp = message_.getBornTimestamp();

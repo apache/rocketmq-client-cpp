@@ -29,7 +29,8 @@ protected:
   HttpClientImpl http_client;
 };
 
-TEST_F(HttpClientTest, testBasics) {}
+TEST_F(HttpClientTest, testBasics) {
+}
 
 TEST_F(HttpClientTest, testGet) {
   auto cb = [](int code, const std::multimap<std::string, std::string>& headers, const std::string& body) {

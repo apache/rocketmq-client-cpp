@@ -16,7 +16,9 @@ public:
 
   Credentials getCredentials() override;
 
-  void withHttpClient(std::unique_ptr<HttpClient> http_client) { http_client_ = std::move(http_client); }
+  void withHttpClient(std::unique_ptr<HttpClient> http_client) {
+    http_client_ = std::move(http_client);
+  }
 
 private:
   static const char* RAM_ROLE_HOST;

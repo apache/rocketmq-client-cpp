@@ -65,19 +65,31 @@ public:
    */
   void isolateEndpoint(const std::string& target) LOCKS_EXCLUDED(isolated_endpoints_mtx_);
 
-  int maxAttemptTimes() const { return max_attempt_times_; }
+  int maxAttemptTimes() const {
+    return max_attempt_times_;
+  }
 
-  void maxAttemptTimes(int times) { max_attempt_times_ = times; }
+  void maxAttemptTimes(int times) {
+    max_attempt_times_ = times;
+  }
 
-  int getFailedTimes() const { return failed_times_; }
+  int getFailedTimes() const {
+    return failed_times_;
+  }
 
-  void setFailedTimes(int times) { failed_times_ = times; }
+  void setFailedTimes(int times) {
+    failed_times_ = times;
+  }
 
   std::vector<MQMessageQueue> listMessageQueue(const std::string& topic, std::error_code& ec);
 
-  uint32_t compressBodyThreshold() const { return compress_body_threshold_; }
+  uint32_t compressBodyThreshold() const {
+    return compress_body_threshold_;
+  }
 
-  void compressBodyThreshold(uint32_t threshold) { compress_body_threshold_ = threshold; }
+  void compressBodyThreshold(uint32_t threshold) {
+    compress_body_threshold_ = threshold;
+  }
 
   /**
    * @brief Send message with tracing.
@@ -90,7 +102,9 @@ public:
   void sendImpl(RetrySendCallback* callback);
 
 protected:
-  std::shared_ptr<ClientImpl> self() override { return shared_from_this(); }
+  std::shared_ptr<ClientImpl> self() override {
+    return shared_from_this();
+  }
 
   void resolveOrphanedTransactionalMessage(const std::string& transaction_id, const MQMessageExt& message) override;
 

@@ -3,7 +3,7 @@
 #include <limits>
 #include <system_error>
 
-#include "ConsumeMessageService.h"
+#include "ConsumeFifoMessageService.h"
 #include "MessageAccessor.h"
 #include "ProcessQueue.h"
 #include "PushConsumerImpl.h"
@@ -12,11 +12,11 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 ConsumeFifoMessageService ::ConsumeFifoMessageService(std::weak_ptr<PushConsumer> consumer, int thread_count,
                                                       MessageListener* message_listener)
-    : ConsumeMessageService(std::move(consumer), thread_count, message_listener) {
+    : ConsumeMessageServiceBase(std::move(consumer), thread_count, message_listener) {
 }
 
 void ConsumeFifoMessageService::start() {
-  ConsumeMessageService::start();
+  ConsumeMessageServiceBase::start();
   State expected = State::STARTING;
   if (state_.compare_exchange_strong(expected, State::STARTED)) {
     SPDLOG_DEBUG("ConsumeMessageOrderlyService started");
@@ -32,7 +32,7 @@ void ConsumeFifoMessageService::shutdown() {
 
   State expected = State::STARTED;
   if (state_.compare_exchange_strong(expected, STOPPING)) {
-    ConsumeMessageService::shutdown();
+    ConsumeMessageServiceBase::shutdown();
     SPDLOG_INFO("ConsumeMessageOrderlyService shut down");
   }
 }

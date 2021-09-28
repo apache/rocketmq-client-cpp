@@ -10,7 +10,7 @@
 #include "opencensus/trace/propagation/trace_context.h"
 #include "opencensus/trace/span.h"
 
-#include "ConsumeMessageService.h"
+#include "ConsumeStandardMessageService.h"
 #include "LoggerImpl.h"
 #include "MessageAccessor.h"
 #include "MixAll.h"
@@ -26,11 +26,11 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 ConsumeStandardMessageService::ConsumeStandardMessageService(std::weak_ptr<PushConsumer> consumer, int thread_count,
                                                              MessageListener* message_listener_ptr)
-    : ConsumeMessageService(std::move(consumer), thread_count, message_listener_ptr) {
+    : ConsumeMessageServiceBase(std::move(consumer), thread_count, message_listener_ptr) {
 }
 
 void ConsumeStandardMessageService::start() {
-  ConsumeMessageService::start();
+  ConsumeMessageServiceBase::start();
   State expected = State::STARTING;
   if (state_.compare_exchange_strong(expected, State::STARTED)) {
     SPDLOG_DEBUG("ConsumeMessageConcurrentlyService started");
@@ -44,7 +44,7 @@ void ConsumeStandardMessageService::shutdown() {
 
   State expected = State::STARTED;
   if (state_.compare_exchange_strong(expected, State::STOPPING)) {
-    ConsumeMessageService::shutdown();
+    ConsumeMessageServiceBase::shutdown();
     SPDLOG_DEBUG("ConsumeMessageConcurrentlyService shut down");
   }
 }

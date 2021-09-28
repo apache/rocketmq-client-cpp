@@ -1,7 +1,7 @@
+#include "rocketmq/MQMessageExt.h"
 #include <chrono>
 #include <gtest/gtest.h>
 #include <thread>
-#include "rocketmq/MQMessageExt.h"
 
 TEST(MessageTest, testExpire) {
   auto expire_time_point = std::chrono::steady_clock::now() + std::chrono::milliseconds(300);

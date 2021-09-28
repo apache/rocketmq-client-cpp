@@ -66,7 +66,9 @@ public:
    * For test purpose only.
    * @return
    */
-  static const char* credentialFile() { return CREDENTIAL_FILE_; }
+  static const char* credentialFile() {
+    return CREDENTIAL_FILE_;
+  }
 
 private:
   std::chrono::system_clock::duration refresh_interval_{std::chrono::seconds(10)};

@@ -36,7 +36,9 @@ public:
    * Change labels of histogram duration the initialization phase only.
    * @return
    */
-  std::vector<std::string>& labels() { return labels_; }
+  std::vector<std::string>& labels() {
+    return labels_;
+  }
 
   void reportAndReset(std::string& result) {
     assert(labels_.size() == static_cast<std::vector<std::string>::size_type>(capacity_));

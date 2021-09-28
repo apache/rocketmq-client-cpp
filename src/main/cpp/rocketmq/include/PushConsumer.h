@@ -4,7 +4,6 @@
 #include <memory>
 #include <system_error>
 
-#include "ConsumeMessageService.h"
 #include "Consumer.h"
 #include "ProcessQueue.h"
 #include "rocketmq/Executor.h"
@@ -34,8 +33,6 @@ public:
   virtual void updateOffset(const MQMessageQueue& message_queue, int64_t offset) = 0;
 
   virtual void nack(const MQMessageExt& message, const std::function<void(const std::error_code&)>& callback) = 0;
-
-  virtual std::shared_ptr<ConsumeMessageService> getConsumeMessageService() = 0;
 
   virtual bool receiveMessage(const MQMessageQueue& message_queue, const FilterExpression& filter_expression) = 0;
 

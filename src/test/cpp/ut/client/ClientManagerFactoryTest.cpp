@@ -6,9 +6,11 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class ClientManagerFactoryTest : public testing::Test {
 public:
-  void SetUp() override {}
+  void SetUp() override {
+  }
 
-  void TearDown() override {}
+  void TearDown() override {
+  }
 
 protected:
   testing::NiceMock<ClientConfigMock> client_config_;
@@ -16,7 +18,9 @@ protected:
 };
 
 TEST_F(ClientManagerFactoryTest, testGetClientManager) {
-  EXPECT_CALL(client_config_, resourceNamespace).Times(testing::AtLeast(1)).WillRepeatedly(testing::ReturnRef(resource_namespace_));
+  EXPECT_CALL(client_config_, resourceNamespace)
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(testing::ReturnRef(resource_namespace_));
   ClientManagerPtr client_manager = ClientManagerFactory::getInstance().getClientManager(client_config_);
   EXPECT_TRUE(client_manager);
 }

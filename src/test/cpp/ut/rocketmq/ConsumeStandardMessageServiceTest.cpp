@@ -1,4 +1,4 @@
-#include "ConsumeMessageService.h"
+#include "ConsumeStandardMessageService.h"
 #include "MessageListenerMock.h"
 #include "ProcessQueueMock.h"
 #include "PushConsumerMock.h"
@@ -13,7 +13,8 @@ ROCKETMQ_NAMESPACE_BEGIN
 class ConsumeStandardMessageServiceTest : public testing::Test {
 public:
   ConsumeStandardMessageServiceTest()
-      : credentials_provider_(std::make_shared<StaticCredentialsProvider>("access_key", "access_secret")) {}
+      : credentials_provider_(std::make_shared<StaticCredentialsProvider>("access_key", "access_secret")) {
+  }
 
   void SetUp() override {
     grpc_init();
@@ -41,7 +42,9 @@ public:
     ON_CALL(*consumer_, getGroupName).WillByDefault(testing::ReturnRef(group_name_));
   }
 
-  void TearDown() override { grpc_shutdown(); }
+  void TearDown() override {
+    grpc_shutdown();
+  }
 
 protected:
   int thread_count_{2};

@@ -6,7 +6,8 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-enum class Encoding : int8_t {
+enum class Encoding : int8_t
+{
   IDENTITY = 0,
   GZIP = 1,
   SNAPPY = 2,

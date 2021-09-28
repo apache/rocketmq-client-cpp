@@ -25,7 +25,8 @@ public:
 
 using TransactionPtr = std::unique_ptr<Transaction>;
 
-enum class TransactionState : int8_t {
+enum class TransactionState : int8_t
+{
   COMMIT = 0,
   ROLLBACK = 1,
 };

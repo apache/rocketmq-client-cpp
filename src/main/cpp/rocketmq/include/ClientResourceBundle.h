@@ -5,8 +5,9 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-enum class GroupType : int8_t {
-  PUBLISHER  = 0,
+enum class GroupType : int8_t
+{
+  PUBLISHER = 0,
   SUBSCRIBER = 1,
 };
 

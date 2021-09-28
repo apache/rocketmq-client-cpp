@@ -1,11 +1,11 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
-#include <thread>
 #include <mutex>
 #include <string>
-#include <cstdint>
+#include <thread>
 
 #include "RocketMQ.h"
 
@@ -15,7 +15,14 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-enum class Level : uint8_t { Trace = 0, Debug = 1, Info = 2, Warn = 3, Error = 4 };
+enum class Level : uint8_t
+{
+  Trace = 0,
+  Debug = 1,
+  Info = 2,
+  Warn = 3,
+  Error = 4
+};
 
 class Logger {
 public:
@@ -23,15 +30,15 @@ public:
 
   /**
    * @brief Set log level for file sink. Its default log level is: Info.
-   * 
-   * @param level 
+   *
+   * @param level
    */
   virtual void setLevel(Level level) = 0;
 
   /**
    * @brief Set log level for stdout, aka, console. Its default log level is: Warn.
-   * 
-   * @param level 
+   *
+   * @param level
    */
   virtual void setConsoleLevel(Level level) = 0;
 

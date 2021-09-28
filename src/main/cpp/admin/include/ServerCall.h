@@ -10,7 +10,12 @@ namespace rmq = apache::rocketmq::v1;
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-enum ServerCallStatus : int8_t { CREATE = 0, PROCESS = 1, FINISH = 2 };
+enum ServerCallStatus : int8_t
+{
+  CREATE = 0,
+  PROCESS = 1,
+  FINISH = 2
+};
 
 class ServerCall {
 public:
@@ -23,27 +28,27 @@ public:
 
   void proceed() {
     switch (status_) {
-    case CREATE: {
-      status_ = PROCESS;
-      async_stub_->RequestChangeLogLevel(&context_, &request_, &response_observer_, completion_queue_,
-                                         completion_queue_, this);
-      break;
-    }
-    case PROCESS: {
-      // Create a new ServerCall to serve the next incoming request.
-      new ServerCall(async_stub_, service_, completion_queue_);
+      case CREATE: {
+        status_ = PROCESS;
+        async_stub_->RequestChangeLogLevel(&context_, &request_, &response_observer_, completion_queue_,
+                                           completion_queue_, this);
+        break;
+      }
+      case PROCESS: {
+        // Create a new ServerCall to serve the next incoming request.
+        new ServerCall(async_stub_, service_, completion_queue_);
 
-      // Now that request_ is already filled with actual data from clients, invoke the actual process function
-      const grpc::Status rpc_status = service_->ChangeLogLevel(&context_, &request_, &response_);
+        // Now that request_ is already filled with actual data from clients, invoke the actual process function
+        const grpc::Status rpc_status = service_->ChangeLogLevel(&context_, &request_, &response_);
 
-      status_ = FINISH;
-      response_observer_.Finish(response_, rpc_status, this);
-      break;
-    }
-    default: {
-      assert(FINISH == status_);
-      delete this;
-    }
+        status_ = FINISH;
+        response_observer_.Finish(response_, rpc_status, this);
+        break;
+      }
+      default: {
+        assert(FINISH == status_);
+        delete this;
+      }
     }
   }
 

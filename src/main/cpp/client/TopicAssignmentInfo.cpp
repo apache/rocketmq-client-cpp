@@ -32,18 +32,18 @@ TopicAssignment::TopicAssignment(const QueryAssignmentResponse& response) : debu
     for (const auto& address : broker.endpoints().addresses()) {
       if (service_address.empty()) {
         switch (broker.endpoints().scheme()) {
-        case rmq::AddressScheme::IPv4:
-          service_address.append("ipv4:");
-          break;
-        case rmq::AddressScheme::IPv6:
-          service_address.append("ipv6:");
-          break;
-        case rmq::AddressScheme::DOMAIN_NAME:
-          service_address.append("dns:");
-          break;
-        default:
-          SPDLOG_WARN("Unsupported gRPC naming scheme");
-          break;
+          case rmq::AddressScheme::IPv4:
+            service_address.append("ipv4:");
+            break;
+          case rmq::AddressScheme::IPv6:
+            service_address.append("ipv6:");
+            break;
+          case rmq::AddressScheme::DOMAIN_NAME:
+            service_address.append("dns:");
+            break;
+          default:
+            SPDLOG_WARN("Unsupported gRPC naming scheme");
+            break;
         }
       } else {
         service_address.append(",");

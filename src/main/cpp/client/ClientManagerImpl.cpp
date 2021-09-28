@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "ReceiveMessageResult.h"
 #include "google/rpc/code.pb.h"
 
 #include "InvocationContext.h"
@@ -168,6 +169,8 @@ void ClientManagerImpl::healthCheck(
     return;
   }
 
+  SPDLOG_DEBUG("Prepare to send health-check to {}. Request: {}", target_host, request.DebugString());
+
   auto invocation_context = new InvocationContext<HealthCheckResponse>();
   invocation_context->remote_address = target_host;
   invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
@@ -283,11 +286,8 @@ std::vector<std::string> ClientManagerImpl::cleanOfflineRpcClients() {
 void ClientManagerImpl::heartbeat(const std::string& target_host, const Metadata& metadata,
                                   const HeartbeatRequest& request, std::chrono::milliseconds timeout,
                                   const std::function<void(const std::error_code&, const HeartbeatResponse&)>& cb) {
+  SPDLOG_DEBUG("Prepare to send heartbeat to {}. Request: {}", target_host, request.DebugString());
   auto client = getRpcClient(target_host, true);
-  if (!client) {
-    return;
-  }
-
   auto invocation_context = new InvocationContext<HeartbeatResponse>();
   invocation_context->remote_address = target_host;
   for (const auto& item : metadata) {
@@ -621,32 +621,32 @@ void ClientManagerImpl::resolveRoute(const std::string& target_host, const Metad
         cb(ec, ptr);
       } break;
       case google::rpc::Code::UNAUTHENTICATED: {
-        SPDLOG_WARN("Unauthenticated: {}", common.status().message());
+        SPDLOG_WARN("Unauthenticated: {}. Host={}", common.status().message(), invocation_context->remote_address);
         ec = ErrorCode::Unauthorized;
         cb(ec, nullptr);
       } break;
       case google::rpc::Code::PERMISSION_DENIED: {
-        SPDLOG_WARN("PermissionDenied: {}", common.status().message());
+        SPDLOG_WARN("PermissionDenied: {}. Host={}", common.status().message(), invocation_context->remote_address);
         ec = ErrorCode::Forbidden;
         cb(ec, nullptr);
       } break;
       case google::rpc::Code::INVALID_ARGUMENT: {
-        SPDLOG_WARN("InvalidArgument: {}", common.status().message());
+        SPDLOG_WARN("InvalidArgument: {}. Host={}", common.status().message(), invocation_context->remote_address);
         ec = ErrorCode::BadRequest;
         cb(ec, nullptr);
       } break;
       case google::rpc::Code::NOT_FOUND: {
-        SPDLOG_WARN("NotFound: {}", common.status().message());
+        SPDLOG_WARN("NotFound: {}. Host={}", common.status().message(), invocation_context->remote_address);
         ec = ErrorCode::NotFound;
         cb(ec, nullptr);
       } break;
       case google::rpc::Code::INTERNAL: {
-        SPDLOG_WARN("InternalServerError: {}", common.status().message());
+        SPDLOG_WARN("InternalServerError: {}. Host={}", common.status().message(), invocation_context->remote_address);
         ec = ErrorCode::InternalServerError;
         cb(ec, nullptr);
       } break;
       default: {
-        SPDLOG_WARN("NotImplement: Please upgrade to latest SDK release");
+        SPDLOG_WARN("NotImplement: Please upgrade to latest SDK release. Host={}", invocation_context->remote_address);
         ec = ErrorCode::NotImplemented;
         cb(ec, nullptr);
       } break;
@@ -678,23 +678,24 @@ void ClientManagerImpl::queryAssignment(
         SPDLOG_DEBUG("Query assignment OK");
       } break;
       case google::rpc::Code::UNAUTHENTICATED: {
-        SPDLOG_WARN("Unauthenticated: {}", common.status().message());
+        SPDLOG_WARN("Unauthenticated: {}, host={}", common.status().message(), invocation_context->remote_address);
         ec = ErrorCode::Unauthorized;
       } break;
       case google::rpc::Code::PERMISSION_DENIED: {
-        SPDLOG_WARN("PermissionDenied: {}", common.status().message());
+        SPDLOG_WARN("PermissionDenied: {}, host={}", common.status().message(), invocation_context->remote_address);
         ec = ErrorCode::Forbidden;
       } break;
       case google::rpc::Code::INVALID_ARGUMENT: {
-        SPDLOG_WARN("InvalidArgument: {}", common.status().message());
+        SPDLOG_WARN("InvalidArgument: {}, host={}", common.status().message(), invocation_context->remote_address);
         ec = ErrorCode::BadRequest;
       } break;
       case google::rpc::Code::INTERNAL: {
-        SPDLOG_WARN("InternalServerError: {}", common.status().message());
+        SPDLOG_WARN("InternalServerError: {}, host={}", common.status().message(), invocation_context->remote_address);
         ec = ErrorCode::InternalServerError;
       } break;
       default: {
-        SPDLOG_WARN("NotImplemented: please upgrade SDK to latest release");
+        SPDLOG_WARN("NotImplemented: please upgrade SDK to latest release. Host={}",
+                    invocation_context->remote_address);
         ec = ErrorCode::NotImplemented;
       } break;
     }
@@ -714,7 +715,7 @@ void ClientManagerImpl::queryAssignment(
 void ClientManagerImpl::receiveMessage(const std::string& target_host, const Metadata& metadata,
                                        const ReceiveMessageRequest& request, std::chrono::milliseconds timeout,
                                        const std::shared_ptr<ReceiveMessageCallback>& cb) {
-  SPDLOG_DEBUG("Prepare to pop message from {} asynchronously. Request: {}", target_host, request.DebugString());
+  SPDLOG_DEBUG("Prepare to receive message from {} asynchronously. Request: {}", target_host, request.DebugString());
   RpcClientSharedPtr client = getRpcClient(target_host);
 
   auto invocation_context = new InvocationContext<ReceiveMessageResponse>();
@@ -727,166 +728,71 @@ void ClientManagerImpl::receiveMessage(const std::string& target_host, const Met
   invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
 
   auto callback = [this, cb](const InvocationContext<ReceiveMessageResponse>* invocation_context) {
-    if (invocation_context->status.ok()) {
-      SPDLOG_DEBUG("Received pop response through gRPC from brokerAddress={}", invocation_context->remote_address);
-      const auto& common = invocation_context->response.common();
-      switch (common.status().code()) {
-        case google::rpc::Code::OK: {
-          ReceiveMessageResult receive_result;
-          this->processPopResult(invocation_context->context, invocation_context->response, receive_result,
-                                 invocation_context->remote_address);
-          cb->onSuccess(receive_result);
-        } break;
+    std::error_code ec;
+    ReceiveMessageResult result;
 
-        case google::rpc::Code::UNAUTHENTICATED: {
-          SPDLOG_WARN("Unauthenticated: {}", common.status().message());
-          std::error_code ec = ErrorCode::Unauthorized;
-          cb->onFailure(ec);
-        } break;
-
-        case google::rpc::Code::PERMISSION_DENIED: {
-          SPDLOG_WARN("PermissionDenied: {}", common.status().message());
-          std::error_code ec = ErrorCode::Forbidden;
-          cb->onFailure(ec);
-        } break;
-
-        case google::rpc::Code::INVALID_ARGUMENT: {
-          SPDLOG_WARN("InvalidArgument: {}", common.status().message());
-          std::error_code ec = ErrorCode::BadRequest;
-          cb->onFailure(ec);
-        } break;
-
-        case google::rpc::Code::DEADLINE_EXCEEDED: {
-          SPDLOG_WARN("DeadlineExceeded: {}", common.status().message());
-          std::error_code ec = ErrorCode::GatewayTimeout;
-          cb->onFailure(ec);
-        } break;
-
-        case google::rpc::Code::INTERNAL: {
-          SPDLOG_WARN("IntervalServerError: {}", common.status().message());
-          std::error_code ec = ErrorCode::InternalServerError;
-          cb->onFailure(ec);
-        } break;
-        default: {
-          SPDLOG_WARN("Unsupported code. Please upgrade to use the latest release");
-          std::error_code ec = ErrorCode::NotImplemented;
-          cb->onFailure(ec);
-        } break;
-      }
-
-    } else {
-      SPDLOG_WARN("Failed to pop messages through GRPC from {}, gRPC code: {}, gRPC error message: {}",
+    // Handle network error.
+    if (!invocation_context->status.ok()) {
+      SPDLOG_WARN("Failed to pop messages through gRPC from {}, gRPC code: {}, gRPC error message: {}",
                   invocation_context->remote_address, invocation_context->status.error_code(),
                   invocation_context->status.error_message());
-      std::error_code ec = ErrorCode::RequestTimeout;
-      cb->onFailure(ec);
+      ec = ErrorCode::RequestTimeout;
+      cb->onCompletion(ec, result);
+      return;
     }
+
+    // Handle application layer logic
+    result.source_host = invocation_context->remote_address;
+    const auto& common = invocation_context->response.common();
+    switch (common.status().code()) {
+      case google::rpc::Code::OK: {
+        SPDLOG_DEBUG("ReceivedMessage Resonse: {}, host={}", invocation_context->response.DebugString(),
+                     invocation_context->remote_address);
+        for (auto& item : invocation_context->response.messages()) {
+          MQMessageExt message_ext;
+          MessageAccessor::setTargetEndpoint(message_ext, invocation_context->remote_address);
+          if (wrapMessage(item, message_ext)) {
+            result.messages.emplace_back(message_ext);
+          } else {
+            SPDLOG_WARN("A message fails to pass body checksum validation. Skip processing it.");
+          }
+        }
+        break;
+      }
+      case google::rpc::Code::UNAUTHENTICATED: {
+        SPDLOG_WARN("Unauthenticated: {}. Host={}", common.status().message(), invocation_context->remote_address);
+        ec = ErrorCode::Unauthorized;
+      } break;
+
+      case google::rpc::Code::PERMISSION_DENIED: {
+        SPDLOG_WARN("PermissionDenied: {}. Host={}", common.status().message(), invocation_context->remote_address);
+        ec = ErrorCode::Forbidden;
+      } break;
+
+      case google::rpc::Code::INVALID_ARGUMENT: {
+        SPDLOG_WARN("InvalidArgument: {}. Host={}", common.status().message(), invocation_context->remote_address);
+        ec = ErrorCode::BadRequest;
+      } break;
+
+      case google::rpc::Code::DEADLINE_EXCEEDED: {
+        SPDLOG_WARN("DeadlineExceeded: {}. Host={}", common.status().message(), invocation_context->remote_address);
+        ec = ErrorCode::GatewayTimeout;
+      } break;
+
+      case google::rpc::Code::INTERNAL: {
+        SPDLOG_WARN("IntervalServerError: {}. Host={}", common.status().message(), invocation_context->remote_address);
+        ec = ErrorCode::InternalServerError;
+      } break;
+      default: {
+        SPDLOG_WARN("Unsupported code. Please upgrade to use the latest release. Host={}",
+                    invocation_context->remote_address);
+        ec = ErrorCode::NotImplemented;
+      } break;
+    }
+    cb->onCompletion(ec, result);
   };
   invocation_context->callback = callback;
   client->asyncReceive(request, invocation_context);
-}
-
-void ClientManagerImpl::processPopResult(const grpc::ClientContext& client_context,
-                                         const ReceiveMessageResponse& response, ReceiveMessageResult& result,
-                                         const std::string& target_host) {
-  // process response to result
-  ReceiveMessageStatus status;
-  switch (response.common().status().code()) {
-    case google::rpc::Code::OK: {
-      status = ReceiveMessageStatus::OK;
-      break;
-    }
-    case google::rpc::Code::RESOURCE_EXHAUSTED: {
-      status = ReceiveMessageStatus::RESOURCE_EXHAUSTED;
-      SPDLOG_WARN("Too many pop requests in broker. Long polling is full in the broker side. BrokerAddress={}",
-                  target_host);
-      break;
-    }
-
-    case google::rpc::Code::DEADLINE_EXCEEDED: {
-      status = ReceiveMessageStatus::DEADLINE_EXCEEDED;
-      break;
-    }
-    case google::rpc::Code::NOT_FOUND: {
-      status = ReceiveMessageStatus::NOT_FOUND;
-      break;
-    }
-    default: {
-      SPDLOG_WARN("Pop response indicates server-side error. BrokerAddress={}, Reason={}", target_host,
-                  response.common().DebugString());
-      status = ReceiveMessageStatus::INTERNAL;
-      break;
-    }
-  }
-
-  result.sourceHost(target_host);
-
-  std::vector<MQMessageExt> msg_found_list;
-  if (ReceiveMessageStatus::OK == status) {
-    for (auto& item : response.messages()) {
-      MQMessageExt message_ext;
-      MessageAccessor::setTargetEndpoint(message_ext, target_host);
-      if (wrapMessage(item, message_ext)) {
-        msg_found_list.emplace_back(message_ext);
-      } else {
-        // TODO: NACK
-      }
-    }
-  }
-
-  result.status(status);
-  auto& delivery_timestamp = response.delivery_timestamp();
-  timeval tv{};
-  tv.tv_sec = delivery_timestamp.seconds();
-  tv.tv_usec = delivery_timestamp.nanos() / 1000;
-  result.setPopTime(absl::TimeFromTimeval(tv));
-
-  const auto& protobuf_invisible_duration = response.invisible_duration();
-  absl::Duration invisible_period =
-      absl::Seconds(protobuf_invisible_duration.seconds()) + absl::Nanoseconds(protobuf_invisible_duration.nanos());
-  result.invisibleTime(invisible_period);
-  result.setMsgFoundList(msg_found_list);
-}
-
-void ClientManagerImpl::processPullResult(const grpc::ClientContext& client_context,
-                                          const PullMessageResponse& response, ReceiveMessageResult& result,
-                                          const std::string& target_host) {
-  if (google::rpc::Code::OK != response.common().status().code()) {
-    result.status_ = ReceiveMessageStatus::INTERNAL;
-    return;
-  }
-  result.sourceHost(target_host);
-  switch (response.common().status().code()) {
-    case google::rpc::Code::OK: {
-      assert(!response.messages().empty());
-      result.status_ = ReceiveMessageStatus::OK;
-      for (const auto& item : response.messages()) {
-        MQMessageExt message;
-        if (!wrapMessage(item, message)) {
-          result.status_ = ReceiveMessageStatus::DATA_CORRUPTED;
-          return;
-        }
-        result.messages_.emplace_back(message);
-      }
-      break;
-    }
-
-    case google::rpc::Code::DEADLINE_EXCEEDED: {
-      result.status_ = ReceiveMessageStatus::DEADLINE_EXCEEDED;
-      break;
-    }
-
-    case google::rpc::Code::RESOURCE_EXHAUSTED: {
-      result.status_ = ReceiveMessageStatus::RESOURCE_EXHAUSTED;
-      break;
-    }
-
-    case google::rpc::Code::OUT_OF_RANGE: {
-      result.status_ = ReceiveMessageStatus::OUT_OF_RANGE;
-      result.next_offset_ = response.next_offset();
-      break;
-    }
-  }
 }
 
 State ClientManagerImpl::state() const {
@@ -1393,22 +1299,81 @@ void ClientManagerImpl::queryOffset(const std::string& target_host, const Metada
   client->asyncQueryOffset(request, invocation_context);
 }
 
-void ClientManagerImpl::pullMessage(const std::string& target_host, const Metadata& metadata,
-                                    const PullMessageRequest& request, std::chrono::milliseconds timeout,
-                                    const std::function<void(const InvocationContext<PullMessageResponse>*)>& cb) {
+void ClientManagerImpl::pullMessage(
+    const std::string& target_host, const Metadata& metadata, const PullMessageRequest& request,
+    std::chrono::milliseconds timeout,
+    const std::function<void(const std::error_code&, const ReceiveMessageResult&)>& cb) {
+  SPDLOG_DEBUG("PullMessage Request: {}, target_host={}", request.DebugString(), target_host);
   auto client = getRpcClient(target_host);
-  if (!client) {
-    cb(nullptr);
-    return;
-  }
-
   auto invocation_context = new InvocationContext<PullMessageResponse>();
   invocation_context->remote_address = target_host;
   invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
   for (const auto& item : metadata) {
     invocation_context->context.AddMetadata(item.first, item.second);
   }
-  invocation_context->callback = cb;
+
+  auto callback = [cb, this](const InvocationContext<PullMessageResponse>* invocation_context) {
+    std::error_code ec;
+    ReceiveMessageResult result;
+    result.source_host = invocation_context->remote_address;
+    // Handle network issue.
+    if (!invocation_context->status.ok()) {
+      ec = ErrorCode::RequestTimeout;
+      cb(ec, result);
+      return;
+    }
+
+    // Handle application layer logic: map status::code to corresponding error_code.
+    const auto& common = invocation_context->response.common();
+    result.min_offset = invocation_context->response.min_offset();
+    result.next_offset = invocation_context->response.next_offset();
+    result.max_offset = invocation_context->response.max_offset();
+    switch (common.status().code()) {
+      case google::rpc::Code::OK: {
+        SPDLOG_DEBUG("Received PullMessage Response: {}, host={}", invocation_context->response.DebugString(),
+                     invocation_context->remote_address);
+        for (const auto& item : invocation_context->response.messages()) {
+          MQMessageExt message;
+          if (!wrapMessage(item, message)) {
+            return;
+          }
+          result.messages.emplace_back(message);
+        }
+      } break;
+      case google::rpc::Code::PERMISSION_DENIED: {
+        SPDLOG_WARN("PermissionDenied: {}, host={}", common.status().message(), invocation_context->remote_address);
+        ec = ErrorCode::Forbidden;
+      } break;
+      case google::rpc::Code::UNAUTHENTICATED: {
+        SPDLOG_WARN("Unauthenticated: {}, host={}", common.status().message(), invocation_context->remote_address);
+        ec = ErrorCode::Unauthorized;
+      } break;
+      case google::rpc::Code::DEADLINE_EXCEEDED: {
+        SPDLOG_WARN("DeadlineExceeded: {}, host={}", common.status().message(), invocation_context->remote_address);
+        ec = ErrorCode::GatewayTimeout;
+      } break;
+      case google::rpc::Code::INVALID_ARGUMENT: {
+        SPDLOG_WARN("InvalidArgument: {}, host={}", common.status().message(), invocation_context->remote_address);
+        ec = ErrorCode::BadRequest;
+      } break;
+      case google::rpc::Code::FAILED_PRECONDITION: {
+        SPDLOG_WARN("FailedPrecondition: {}, host={}", common.status().message(), invocation_context->remote_address);
+        ec = ErrorCode::PreconditionRequired;
+      } break;
+      case google::rpc::Code::INTERNAL: {
+        SPDLOG_WARN("InternalServerError: {}, host={}", common.status().message(), invocation_context->remote_address);
+        ec = ErrorCode::InternalServerError;
+      } break;
+      default: {
+        SPDLOG_WARN("Unimplemented: Please upgrade to use latest SDK release, host={}",
+                    invocation_context->remote_address);
+        ec = ErrorCode::NotImplemented;
+      } break;
+    }
+    cb(ec, result);
+  };
+
+  invocation_context->callback = callback;
   client->asyncPull(request, invocation_context);
 }
 
@@ -1416,12 +1381,8 @@ void ClientManagerImpl::forwardMessageToDeadLetterQueue(
     const std::string& target_host, const Metadata& metadata, const ForwardMessageToDeadLetterQueueRequest& request,
     std::chrono::milliseconds timeout,
     const std::function<void(const InvocationContext<ForwardMessageToDeadLetterQueueResponse>*)>& cb) {
+  SPDLOG_DEBUG("ForwardMessageToDeadLetterQueue Request: {}", request.DebugString());
   auto client = getRpcClient(target_host);
-  if (!client) {
-    cb(nullptr);
-    return;
-  }
-
   auto invocation_context = new InvocationContext<ForwardMessageToDeadLetterQueueResponse>();
   invocation_context->remote_address = target_host;
   invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
@@ -1461,6 +1422,8 @@ std::error_code ClientManagerImpl::notifyClientTermination(const std::string& ta
   for (const auto& item : metadata) {
     context.AddMetadata(item.first, item.second);
   }
+
+  SPDLOG_DEBUG("NotifyClientTermination request: {}", request.DebugString());
 
   NotifyClientTerminationResponse response;
   grpc::Status status = client->notifyClientTermination(&context, request, &response);

@@ -30,7 +30,9 @@ void HostInfo::getEnv(const char* env, std::string& holder) {
   }
 }
 
-bool HostInfo::hasHostInfo() const { return !unit_.empty() && !stage_.empty(); }
+bool HostInfo::hasHostInfo() const {
+  return !unit_.empty() && !stage_.empty();
+}
 
 std::string HostInfo::queryString() const {
   if (!hasHostInfo()) {

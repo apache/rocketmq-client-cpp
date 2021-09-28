@@ -25,8 +25,10 @@
 ROCKETMQ_NAMESPACE_BEGIN
 
 struct OffsetRecord {
-  explicit OffsetRecord(int64_t offset) : offset_(offset), released_(false) {}
-  OffsetRecord(int64_t offset, bool released) : offset_(offset), released_(released) {}
+  explicit OffsetRecord(int64_t offset) : offset_(offset), released_(false) {
+  }
+  OffsetRecord(int64_t offset, bool released) : offset_(offset), released_(released) {
+  }
   int64_t offset_;
   bool released_;
 };
@@ -35,7 +37,8 @@ ROCKETMQ_NAMESPACE_END
 
 namespace std {
 
-template <> struct less<ROCKETMQ_NAMESPACE::OffsetRecord> {
+template <>
+struct less<ROCKETMQ_NAMESPACE::OffsetRecord> {
   bool operator()(const ROCKETMQ_NAMESPACE::OffsetRecord& lhs, const ROCKETMQ_NAMESPACE::OffsetRecord& rhs) const {
     return lhs.offset_ < rhs.offset_;
   }
@@ -76,9 +79,13 @@ public:
 
   void receiveMessage() override;
 
-  const std::string& simpleName() const override { return simple_name_; }
+  const std::string& simpleName() const override {
+    return simple_name_;
+  }
 
-  std::string topic() const override { return message_queue_.getTopic(); }
+  std::string topic() const override {
+    return message_queue_.getTopic();
+  }
 
   bool hasPendingMessages() const override LOCKS_EXCLUDED(messages_mtx_);
 
@@ -105,14 +112,18 @@ public:
    */
   bool take(uint32_t batch_size, std::vector<MQMessageExt>& messages) override LOCKS_EXCLUDED(messages_mtx_);
 
-  void syncIdleState() override { idle_since_ = std::chrono::steady_clock::now(); }
+  void syncIdleState() override {
+    idle_since_ = std::chrono::steady_clock::now();
+  }
 
   void nextOffset(int64_t next_offset) override {
     assert(next_offset >= 0);
     next_offset_ = next_offset;
   }
 
-  int64_t nextOffset() const { return next_offset_; }
+  int64_t nextOffset() const {
+    return next_offset_;
+  }
 
   bool committedOffset(int64_t& offset) override LOCKS_EXCLUDED(offsets_mtx_);
 

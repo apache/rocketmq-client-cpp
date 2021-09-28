@@ -7,7 +7,8 @@
 ROCKETMQ_NAMESPACE_BEGIN
 
 StaticNameServerResolver::StaticNameServerResolver(absl::string_view name_server_list)
-    : name_server_list_(absl::StrSplit(name_server_list, ';')) {}
+    : name_server_list_(absl::StrSplit(name_server_list, ';')) {
+}
 
 std::string StaticNameServerResolver::current() {
   std::uint32_t index = index_.load(std::memory_order_relaxed) % name_server_list_.size();
@@ -19,6 +20,8 @@ std::string StaticNameServerResolver::next() {
   return current();
 }
 
-std::vector<std::string> StaticNameServerResolver::resolve() { return name_server_list_; }
+std::vector<std::string> StaticNameServerResolver::resolve() {
+  return name_server_list_;
+}
 
 ROCKETMQ_NAMESPACE_END

@@ -79,13 +79,9 @@ public:
 
   MOCK_METHOD(bool, send, (const std::string&, const Metadata&, SendMessageRequest&, SendCallback*), (override));
 
-  MOCK_METHOD(void, processPullResult,
-              (const grpc::ClientContext&, const PullMessageResponse&, ReceiveMessageResult&, const std::string&),
-              (override));
-
   MOCK_METHOD(void, pullMessage,
               (const std::string&, const Metadata&, const PullMessageRequest&, std::chrono::milliseconds,
-               (const std::function<void(const InvocationContext<PullMessageResponse>*)>&)),
+               (const std::function<void(const std::error_code&, const ReceiveMessageResult&)>&)),
               (override));
 
   MOCK_METHOD(std::error_code, notifyClientTermination,

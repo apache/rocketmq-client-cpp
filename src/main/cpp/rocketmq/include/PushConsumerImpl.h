@@ -90,13 +90,17 @@ public:
 
   void consumeThreadPoolSize(int thread_pool_size);
 
-  int32_t maxDeliveryAttempts() const override { return max_delivery_attempts_; }
+  int32_t maxDeliveryAttempts() const override {
+    return max_delivery_attempts_;
+  }
 
   uint32_t consumeBatchSize() const override;
 
   void consumeBatchSize(uint32_t consume_batch_size);
 
-  int32_t receiveBatchSize() const override { return receive_batch_size_; }
+  int32_t receiveBatchSize() const override {
+    return receive_batch_size_;
+  }
 
   std::shared_ptr<ConsumeMessageService> getConsumeMessageService() override;
 
@@ -120,21 +124,27 @@ public:
   // only for test
   std::size_t getProcessQueueTableSize() LOCKS_EXCLUDED(process_queue_table_mtx_);
 
-  void setCustomExecutor(const Executor& executor) { custom_executor_ = executor; }
+  void setCustomExecutor(const Executor& executor) {
+    custom_executor_ = executor;
+  }
 
-  const Executor& customExecutor() const override { return custom_executor_; }
+  const Executor& customExecutor() const override {
+    return custom_executor_;
+  }
 
   void setThrottle(const std::string& topic, uint32_t threshold);
 
-#ifdef ENABLE_TRACING
-  nostd::shared_ptr<trace::Tracer> getTracer();
-#endif
+  MessageModel messageModel() const override {
+    return message_model_;
+  }
 
-  MessageModel messageModel() const override { return message_model_; }
+  void setMessageModel(MessageModel message_model) {
+    message_model_ = message_model;
+  }
 
-  void setMessageModel(MessageModel message_model) { message_model_ = message_model; }
-
-  void offsetStore(std::unique_ptr<OffsetStore> offset_store) { offset_store_ = std::move(offset_store); }
+  void offsetStore(std::unique_ptr<OffsetStore> offset_store) {
+    offset_store_ = std::move(offset_store);
+  }
 
   void updateOffset(const MQMessageQueue& message_queue, int64_t offset) override {
     if (offset_store_) {
@@ -147,23 +157,29 @@ public:
    * back-pressure.
    * @return
    */
-  uint32_t maxCachedMessageQuantity() const override { return MixAll::DEFAULT_CACHED_MESSAGE_COUNT; }
+  uint32_t maxCachedMessageQuantity() const override {
+    return MixAll::DEFAULT_CACHED_MESSAGE_COUNT;
+  }
 
   /**
    * Threshold of total cached message body size by queue before applying
    * back-pressure.
    * @return
    */
-  uint64_t maxCachedMessageMemory() const override { return MixAll::DEFAULT_CACHED_MESSAGE_MEMORY; }
+  uint64_t maxCachedMessageMemory() const override {
+    return MixAll::DEFAULT_CACHED_MESSAGE_MEMORY;
+  }
 
   void iterateProcessQueue(const std::function<void(ProcessQueueSharedPtr)>& callback) override;
 
-  MessageListener* messageListener() override { return message_listener_; }
-
-  ReceiveMessageAction receiveMessageAction() const override { return receive_message_policy_; }
+  MessageListener* messageListener() override {
+    return message_listener_;
+  }
 
 protected:
-  std::shared_ptr<ClientImpl> self() override { return shared_from_this(); }
+  std::shared_ptr<ClientImpl> self() override {
+    return shared_from_this();
+  }
 
   ClientResourceBundle resourceBundle() LOCKS_EXCLUDED(topic_filter_expression_table_mtx_) override;
 
@@ -200,8 +216,6 @@ private:
   int32_t max_delivery_attempts_{MixAll::DEFAULT_MAX_DELIVERY_ATTEMPTS};
 
   MessageModel message_model_{MessageModel::CLUSTERING};
-
-  ReceiveMessageAction receive_message_policy_{ReceiveMessageAction::POLLING};
 
   mutable std::unique_ptr<OffsetStore> offset_store_;
 

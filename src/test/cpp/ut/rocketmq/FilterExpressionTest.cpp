@@ -5,11 +5,14 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class FilterExpressionTest : public testing::Test {
 public:
-  FilterExpressionTest() : filter_expression_("TagA") {}
+  FilterExpressionTest() : filter_expression_("TagA") {
+  }
 
-  void SetUp() override {}
+  void SetUp() override {
+  }
 
-  void TearDown() override {}
+  void TearDown() override {
+  }
 
 protected:
   FilterExpression filter_expression_;

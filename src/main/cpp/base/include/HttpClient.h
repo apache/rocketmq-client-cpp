@@ -9,12 +9,14 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-enum class HttpProtocol : int8_t {
+enum class HttpProtocol : int8_t
+{
   HTTP = 1,
   HTTPS = 2,
 };
 
-enum class HttpStatus : int {
+enum class HttpStatus : int
+{
   OK = 200,
   INTERNAL = 500,
 };

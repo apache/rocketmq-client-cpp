@@ -268,11 +268,17 @@ int DH_set_length(DH* dh, long length) {
   return 1;
 }
 
-const unsigned char* EVP_CIPHER_CTX_iv(const EVP_CIPHER_CTX* ctx) { return ctx->iv; }
+const unsigned char* EVP_CIPHER_CTX_iv(const EVP_CIPHER_CTX* ctx) {
+  return ctx->iv;
+}
 
-unsigned char* EVP_CIPHER_CTX_iv_noconst(EVP_CIPHER_CTX* ctx) { return ctx->iv; }
+unsigned char* EVP_CIPHER_CTX_iv_noconst(EVP_CIPHER_CTX* ctx) {
+  return ctx->iv;
+}
 
-EVP_MD_CTX* EVP_MD_CTX_new(void) { return OPENSSL_zalloc(sizeof(EVP_MD_CTX)); }
+EVP_MD_CTX* EVP_MD_CTX_new(void) {
+  return OPENSSL_zalloc(sizeof(EVP_MD_CTX));
+}
 
 void EVP_MD_CTX_free(EVP_MD_CTX* ctx) {
   EVP_MD_CTX_cleanup(ctx);
@@ -334,7 +340,9 @@ void RSA_meth_free(RSA_METHOD* meth) {
   }
 }
 
-int RSA_bits(const RSA* r) { return (BN_num_bits(r->n)); }
+int RSA_bits(const RSA* r) {
+  return (BN_num_bits(r->n));
+}
 
 RSA* EVP_PKEY_get0_RSA(EVP_PKEY* pkey) {
   if (pkey->type != EVP_PKEY_RSA) {

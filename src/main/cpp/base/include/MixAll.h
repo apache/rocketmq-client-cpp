@@ -72,11 +72,13 @@ public:
   static const char* SPAN_ANNOTATION_AWAIT_CONSUMPTION;
   static const char* SPAN_ANNOTATION_ATTR_START_TIME;
 
-  template <typename Rep, typename Period> static int64_t millisecondsOf(std::chrono::duration<Rep, Period> duration) {
+  template <typename Rep, typename Period>
+  static int64_t millisecondsOf(std::chrono::duration<Rep, Period> duration) {
     return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
   }
 
-  template <typename Rep, typename Period> static int64_t microsecondsOf(std::chrono::duration<Rep, Period> duration) {
+  template <typename Rep, typename Period>
+  static int64_t microsecondsOf(std::chrono::duration<Rep, Period> duration) {
     return std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
   }
 

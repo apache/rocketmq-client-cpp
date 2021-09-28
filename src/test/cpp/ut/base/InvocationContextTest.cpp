@@ -1,6 +1,6 @@
 #include "InvocationContext.h"
-#include "gtest/gtest.h"
 #include "RpcClient.h"
+#include "gtest/gtest.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

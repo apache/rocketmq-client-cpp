@@ -8,7 +8,8 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class InterceptorContinuation {
 public:
-  explicit InterceptorContinuation(grpc::experimental::InterceptorBatchMethods* methods) : methods_(methods) {}
+  explicit InterceptorContinuation(grpc::experimental::InterceptorBatchMethods* methods) : methods_(methods) {
+  }
 
   ~InterceptorContinuation() {
     if (!hijacked_) {
@@ -16,7 +17,9 @@ public:
     }
   }
 
-  void hijack() { hijacked_ = true; }
+  void hijack() {
+    hijacked_ = true;
+  }
 
 private:
   grpc::experimental::InterceptorBatchMethods* methods_;

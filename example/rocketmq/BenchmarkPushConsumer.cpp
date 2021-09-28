@@ -2,15 +2,16 @@
 
 #include <atomic>
 #include <chrono>
+#include <iostream>
 #include <mutex>
 #include <thread>
-#include <iostream>
 
 using namespace rocketmq;
 
 class CounterMessageListener : public StandardMessageListener {
 public:
-  explicit CounterMessageListener(std::atomic_long& counter) : counter_(counter) {}
+  explicit CounterMessageListener(std::atomic_long& counter) : counter_(counter) {
+  }
 
   ConsumeMessageResult consumeMessage(const std::vector<MQMessageExt>& msgs) override {
     counter_.fetch_add(msgs.size());

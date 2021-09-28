@@ -37,7 +37,9 @@ void RpcClientImpl::asyncQueryAssignment(const QueryAssignmentRequest& request,
                                               invocation_context);
 }
 
-std::shared_ptr<grpc::CompletionQueue>& rocketmq::RpcClientImpl::completionQueue() { return completion_queue_; }
+std::shared_ptr<grpc::CompletionQueue>& rocketmq::RpcClientImpl::completionQueue() {
+  return completion_queue_;
+}
 
 void RpcClientImpl::asyncReceive(const ReceiveMessageRequest& request,
                                  InvocationContext<ReceiveMessageResponse>* invocation_context) {
@@ -109,9 +111,13 @@ void RpcClientImpl::addMetadata(grpc::ClientContext& context,
   }
 }
 
-bool RpcClientImpl::needHeartbeat() { return need_heartbeat_; }
+bool RpcClientImpl::needHeartbeat() {
+  return need_heartbeat_;
+}
 
-void RpcClientImpl::needHeartbeat(bool need_heartbeat) { need_heartbeat_ = need_heartbeat; }
+void RpcClientImpl::needHeartbeat(bool need_heartbeat) {
+  need_heartbeat_ = need_heartbeat;
+}
 
 void RpcClientImpl::asyncMultiplexingCall(const MultiplexingRequest& request,
                                           InvocationContext<MultiplexingResponse>* invocation_context) {

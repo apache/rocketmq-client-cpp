@@ -11,6 +11,8 @@
 #include "Protocol.h"
 #include "PushConsumer.h"
 #include "Signature.h"
+#include "rocketmq/MessageListener.h"
+#include "rocketmq/MessageModel.h"
 
 using namespace std::chrono;
 
@@ -76,14 +78,15 @@ void ProcessQueueImpl::receiveMessage() {
     return;
   }
 
-  auto policy = consumer->receiveMessageAction();
-  switch (policy) {
-    case ReceiveMessageAction::POLLING:
+  switch (consumer->messageModel()) {
+    case MessageModel::CLUSTERING: {
       popMessage();
       break;
-    case ReceiveMessageAction::PULL:
+    }
+    case MessageModel::BROADCASTING: {
       pullMessage();
       break;
+    }
   }
 }
 
@@ -121,60 +124,8 @@ void ProcessQueueImpl::pullMessage() {
 
   auto timeout = consumer->getLongPollingTimeout();
 
-  auto callback = [this](const InvocationContext<PullMessageResponse>* invocation_context) {
-    auto status = invocation_context->status;
-    if (status.ok()) {
-      const auto& common = invocation_context->response.common();
-
-      switch (common.status().code()) {
-        case google::rpc::Code::OK: {
-          ReceiveMessageResult result;
-          client_manager_->processPullResult(invocation_context->context, invocation_context->response, result,
-                                             invocation_context->remote_address);
-          receive_callback_->onSuccess(result);
-        } break;
-        case google::rpc::Code::PERMISSION_DENIED: {
-          SPDLOG_WARN("PermissionDenied: {}", common.status().message());
-          std::error_code ec = ErrorCode::Forbidden;
-          receive_callback_->onFailure(ec);
-        } break;
-        case google::rpc::Code::UNAUTHENTICATED: {
-          SPDLOG_WARN("Unauthenticated: {}", common.status().message());
-          std::error_code ec = ErrorCode::Unauthorized;
-          receive_callback_->onFailure(ec);
-        } break;
-        case google::rpc::Code::DEADLINE_EXCEEDED: {
-          SPDLOG_WARN("DeadlineExceeded: {}", common.status().message());
-          std::error_code ec = ErrorCode::GatewayTimeout;
-          receive_callback_->onFailure(ec);
-        } break;
-        case google::rpc::Code::INVALID_ARGUMENT: {
-          SPDLOG_WARN("InvalidArgument: {}", common.status().message());
-          std::error_code ec = ErrorCode::BadRequest;
-          receive_callback_->onFailure(ec);
-        } break;
-        case google::rpc::Code::FAILED_PRECONDITION: {
-          SPDLOG_WARN("FailedPrecondition: {}", common.status().message());
-          std::error_code ec = ErrorCode::PreconditionRequired;
-          receive_callback_->onFailure(ec);
-        } break;
-        case google::rpc::Code::INTERNAL: {
-          SPDLOG_WARN("InternalServerError: {}", common.status().message());
-          std::error_code ec = ErrorCode::InternalServerError;
-          receive_callback_->onFailure(ec);
-        } break;
-        default: {
-          SPDLOG_WARN("Unimplemented: Please upgrade to use latest SDK release");
-          std::error_code ec = ErrorCode::NotImplemented;
-          receive_callback_->onFailure(ec);
-        } break;
-      }
-    } else {
-      SPDLOG_WARN("Failed to receive valid gRPC response from server. gRPC-status[code={}, message={}]",
-                  status.error_code(), status.error_message());
-      std::error_code ec = ErrorCode::RequestTimeout;
-      receive_callback_->onFailure(ec);
-    }
+  auto callback = [this](const std::error_code& ec, const ReceiveMessageResult& result) {
+    receive_callback_->onCompletion(ec, result);
   };
 
   client_manager_->pullMessage(message_queue_.serviceAddress(), metadata, request, absl::ToChronoMilliseconds(timeout),
@@ -311,10 +262,22 @@ void ProcessQueueImpl::wrapPopMessageRequest(absl::flat_hash_map<std::string, st
   request.mutable_group()->set_name(consumer->getGroupName());
   request.mutable_group()->set_resource_namespace(consumer->resourceNamespace());
   request.mutable_partition()->set_id(message_queue_.getQueueId());
+  request.mutable_partition()->mutable_broker()->set_name(message_queue_.getBrokerName());
   request.mutable_partition()->mutable_topic()->set_name(message_queue_.getTopic());
   request.mutable_partition()->mutable_topic()->set_resource_namespace(consumer->resourceNamespace());
 
   wrapFilterExpression(request.mutable_filter_expression());
+
+  switch (consumer->getConsumeMessageService()->messageListenerType()) {
+    case MessageListenerType::STANDARD: {
+      request.set_fifo_flag(false);
+      break;
+    }
+    case MessageListenerType::FIFO: {
+      request.set_fifo_flag(true);
+      break;
+    }
+  }
 
   // Batch size
   request.set_batch_size(consumer->receiveBatchSize());
@@ -337,6 +300,7 @@ void ProcessQueueImpl::wrapPullMessageRequest(rmq::PullMessageRequest& request) 
   request.mutable_group()->set_name(consumer->getGroupName());
   request.mutable_group()->set_resource_namespace(consumer->resourceNamespace());
   request.mutable_partition()->set_id(message_queue_.getQueueId());
+  request.mutable_partition()->mutable_broker()->set_name(message_queue_.getBrokerName());
   request.mutable_partition()->mutable_topic()->set_name(message_queue_.getTopic());
   request.mutable_partition()->mutable_topic()->set_resource_namespace(consumer->resourceNamespace());
   request.set_offset(next_offset_);

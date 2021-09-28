@@ -38,7 +38,8 @@ struct BaseInvocationContext {
   std::chrono::steady_clock::time_point start_time{std::chrono::steady_clock::now()};
 };
 
-template <typename T> struct InvocationContext : public BaseInvocationContext {
+template <typename T>
+struct InvocationContext : public BaseInvocationContext {
 
   void onCompletion(bool ok) override {
     /// Client-side Read, Server-side Read, Client-side

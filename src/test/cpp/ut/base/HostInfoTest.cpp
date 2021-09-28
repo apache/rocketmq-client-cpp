@@ -1,16 +1,18 @@
-#include "gtest/gtest.h"
 #include "HostInfo.h"
-#include "rocketmq/RocketMQ.h"
-#include <cstdlib>
 #include "fmt/format.h"
+#include "rocketmq/RocketMQ.h"
+#include "gtest/gtest.h"
+#include <cstdlib>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 class HostInfoTest : public testing::Test {
 public:
-  void SetUp() override {}
+  void SetUp() override {
+  }
 
-  void TearDown() override {}
+  void TearDown() override {
+  }
 
 protected:
   std::string site_{"site"};
@@ -20,15 +22,15 @@ protected:
 
   void SetEnv(const char* key, const char* value) {
     int overwrite = 1;
-    #ifdef _WIN32
+#ifdef _WIN32
     std::string env;
     env.append(key);
     env.push_back('=');
     env.append(value);
     _putenv(env.c_str());
-    #else
+#else
     setenv(key, value, overwrite);
-    #endif
+#endif
   }
 };
 

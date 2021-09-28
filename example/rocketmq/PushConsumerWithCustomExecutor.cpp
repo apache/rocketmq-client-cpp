@@ -11,22 +11,23 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class ExecutorImpl {
 public:
-  ExecutorImpl() : state_(State::CREATED) {}
+  ExecutorImpl() : state_(State::CREATED) {
+  }
 
   virtual ~ExecutorImpl() {
     switch (state_.load(std::memory_order_relaxed)) {
-    case CREATED:
-    case STOPPING:
-    case STOPPED:
-      break;
+      case CREATED:
+      case STOPPING:
+      case STOPPED:
+        break;
 
-    case STARTING:
-    case STARTED:
-      state_.store(State::STOPPED);
-      if (worker_.joinable()) {
-        worker_.join();
-      }
-      break;
+      case STARTING:
+      case STARTED:
+        state_.store(State::STOPPED);
+        if (worker_.joinable()) {
+          worker_.join();
+        }
+        break;
     }
   }
 

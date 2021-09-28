@@ -19,7 +19,9 @@ public:
     completed = false;
   }
 
-  void TearDown() override { pool_->shutdown(); }
+  void TearDown() override {
+    pool_->shutdown();
+  }
 
 protected:
   std::unique_ptr<ThreadPool> pool_;

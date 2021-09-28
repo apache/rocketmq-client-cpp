@@ -7,20 +7,35 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-enum Permission : int8_t { NONE = 0, READ = 1, WRITE = 2, READ_WRITE = 3 };
+enum Permission : int8_t
+{
+  NONE = 0,
+  READ = 1,
+  WRITE = 2,
+  READ_WRITE = 3
+};
 
 class Partition {
 public:
   Partition(Topic topic, int32_t id, Permission permission, Broker broker)
-      : topic_(std::move(topic)), broker_(std::move(broker)), id_(id), permission_(permission) {}
+      : topic_(std::move(topic)), broker_(std::move(broker)), id_(id), permission_(permission) {
+  }
 
-  const Topic& topic() const { return topic_; }
+  const Topic& topic() const {
+    return topic_;
+  }
 
-  int32_t id() const { return id_; }
+  int32_t id() const {
+    return id_;
+  }
 
-  const Broker& broker() const { return broker_; }
+  const Broker& broker() const {
+    return broker_;
+  }
 
-  Permission permission() const { return permission_; }
+  Permission permission() const {
+    return permission_;
+  }
 
   MQMessageQueue asMessageQueue() const {
     MQMessageQueue message_queue(topic_.name(), broker_.name(), id_);

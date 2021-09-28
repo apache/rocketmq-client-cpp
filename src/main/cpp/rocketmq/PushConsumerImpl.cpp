@@ -1,5 +1,6 @@
 #include "PushConsumerImpl.h"
 
+#include <atomic>
 #include <cassert>
 #include <chrono>
 #include <cstdlib>
@@ -9,12 +10,15 @@
 
 #include "AsyncReceiveMessageCallback.h"
 #include "ClientManagerFactory.h"
+#include "ConsumeFifoMessageService.h"
+#include "ConsumeStandardMessageService.h"
 #include "MessageAccessor.h"
 #include "MixAll.h"
 #include "ProcessQueueImpl.h"
 #include "RpcClient.h"
 #include "Signature.h"
 #include "rocketmq/MQClientException.h"
+#include "rocketmq/MessageListener.h"
 #include "rocketmq/MessageModel.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -29,53 +33,46 @@ PushConsumerImpl::~PushConsumerImpl() {
 void PushConsumerImpl::start() {
   ClientImpl::start();
 
-  if (State::STARTED != state_.load(std::memory_order_relaxed)) {
-    SPDLOG_WARN("Unexpected consumer state: {}", state_.load(std::memory_order_relaxed));
+  State expecting = State::STARTING;
+  if (!state_.compare_exchange_strong(expecting, State::STARTED)) {
+    SPDLOG_ERROR("Unexpected consumer state. Expecting: {}, Actual: {}", State::STARTING,
+                 state_.load(std::memory_order_relaxed));
     return;
   }
 
   if (!message_listener_) {
-    SPDLOG_ERROR("Message listener is nullptr");
+    SPDLOG_ERROR("Required message listener is nullptr");
     abort();
     return;
-  }
-
-  if (MessageListenerType::STANDARD == message_listener_->listenerType() &&
-      MessageModel::CLUSTERING == message_model_) {
-    receive_message_policy_ = ReceiveMessageAction::POLLING;
-  } else {
-    receive_message_policy_ = ReceiveMessageAction::PULL;
   }
 
   client_manager_->addClientObserver(shared_from_this());
 
   fetchRoutes();
-  heartbeat();
 
-  if (message_listener_) {
-    if (message_listener_->listenerType() == MessageListenerType::FIFO) {
-      SPDLOG_INFO("start orderly consume service: {}", group_name_);
-      consume_message_service_ =
-          std::make_shared<ConsumeFifoMessageService>(shared_from_this(), consume_thread_pool_size_, message_listener_);
-      consume_batch_size_ = 1;
-    } else {
-      // For backward compatibility, by default, ConsumeMessageConcurrentlyService is assumed.
-      SPDLOG_INFO("start concurrently consume service: {}", group_name_);
-      consume_message_service_ = std::make_shared<ConsumeStandardMessageService>(
-          shared_from_this(), consume_thread_pool_size_, message_listener_);
-    }
-    consume_message_service_->start();
-
-    {
-      // Set consumer throttling
-      absl::MutexLock lock(&throttle_table_mtx_);
-      for (const auto& item : throttle_table_) {
-        consume_message_service_->throttle(item.first, item.second);
-      }
-    }
+  if (message_listener_->listenerType() == MessageListenerType::FIFO) {
+    SPDLOG_INFO("start orderly consume service: {}", group_name_);
+    consume_message_service_ =
+        std::make_shared<ConsumeFifoMessageService>(shared_from_this(), consume_thread_pool_size_, message_listener_);
+    consume_batch_size_ = 1;
   } else {
-    SPDLOG_WARN("Message listener is unexpected nullptr");
+    // For backward compatibility, by default, ConsumeMessageConcurrentlyService is assumed.
+    SPDLOG_INFO("start concurrently consume service: {}", group_name_);
+    consume_message_service_ = std::make_shared<ConsumeStandardMessageService>(
+        shared_from_this(), consume_thread_pool_size_, message_listener_);
   }
+  consume_message_service_->start();
+
+  {
+    // Set consumer throttling
+    absl::MutexLock lock(&throttle_table_mtx_);
+    for (const auto& item : throttle_table_) {
+      consume_message_service_->throttle(item.first, item.second);
+    }
+  }
+
+  // Heartbeat depends on initialization of consume-message-service
+  heartbeat();
 
   std::weak_ptr<PushConsumerImpl> consumer_weak_ptr(shared_from_this());
   auto scan_assignment_functor = [consumer_weak_ptr]() {
@@ -88,33 +85,35 @@ void PushConsumerImpl::start() {
   scan_assignment_handle_ = client_manager_->getScheduler().schedule(
       scan_assignment_functor, SCAN_ASSIGNMENT_TASK_NAME, std::chrono::milliseconds(100), std::chrono::seconds(5));
 
-  state_.store(State::STARTED, std::memory_order_relaxed);
   SPDLOG_INFO("PushConsumer started, groupName={}", group_name_);
 }
 
 const char* PushConsumerImpl::SCAN_ASSIGNMENT_TASK_NAME = "scan-assignment-task";
 
 void PushConsumerImpl::shutdown() {
+  State expecting = State::STARTED;
+  if (state_.compare_exchange_strong(expecting, State::STOPPING)) {
+    if (scan_assignment_handle_) {
+      client_manager_->getScheduler().cancel(scan_assignment_handle_);
+      SPDLOG_DEBUG("Scan assignment periodic task cancelled");
+    }
 
-  if (scan_assignment_handle_) {
-    client_manager_->getScheduler().cancel(scan_assignment_handle_);
-    SPDLOG_DEBUG("Scan assignment periodic task cancelled");
-  }
+    {
+      absl::MutexLock lock(&process_queue_table_mtx_);
+      process_queue_table_.clear();
+    }
 
-  {
-    absl::MutexLock lock(&process_queue_table_mtx_);
-    process_queue_table_.clear();
-  }
+    if (consume_message_service_) {
+      consume_message_service_->shutdown();
+    }
 
-  if (consume_message_service_) {
-    consume_message_service_->shutdown();
-  }
+    // Shutdown services started by parent
+    ClientImpl::shutdown();
 
-  // Shutdown services started by parent
-  ClientImpl::shutdown();
-  State expected = State::STOPPING;
-  if (state_.compare_exchange_strong(expected, State::STOPPED)) {
     SPDLOG_INFO("PushConsumerImpl stopped");
+  } else {
+    SPDLOG_ERROR("Shutdown with unexpected state. Expecting: {}, Actual: {}", State::STARTED,
+                 state_.load(std::memory_order_relaxed));
   }
 }
 
@@ -354,8 +353,8 @@ bool PushConsumerImpl::receiveMessage(const MQMessageQueue& message_queue, const
     return false;
   }
 
-  switch (receive_message_policy_) {
-    case ReceiveMessageAction::PULL: {
+  switch (message_model_) {
+    case MessageModel::BROADCASTING: {
       int64_t offset = -1;
       if (!offset_store_ || !offset_store_->readOffset(message_queue, offset)) {
         // Query latest offset from server.
@@ -382,7 +381,7 @@ bool PushConsumerImpl::receiveMessage(const MQMessageQueue& message_queue, const
       }
       break;
     }
-    case ReceiveMessageAction::POLLING:
+    case MessageModel::CLUSTERING:
       process_queue_ptr->receiveMessage();
       break;
   }
@@ -599,6 +598,19 @@ void PushConsumerImpl::prepareHeartbeatData(HeartbeatRequest& request) {
           break;
       }
       subscriptions->AddAllocated(subscription);
+    }
+  }
+
+  assert(consume_message_service_);
+  switch (consume_message_service_->messageListenerType()) {
+    case MessageListenerType::FIFO: {
+      // TODO: Use enumeration in the protocol buffer specification?
+      request.set_fifo_flag(true);
+      break;
+    }
+    case MessageListenerType::STANDARD: {
+      request.set_fifo_flag(false);
+      break;
     }
   }
 }

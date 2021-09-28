@@ -7,4 +7,3 @@ TEST(SpanContextTest, testSpanContext) {
   EXPECT_NO_THROW(span_context = opencensus::trace::propagation::FromTraceParentHeader(empty_context));
   EXPECT_FALSE(span_context.IsValid());
 }
-

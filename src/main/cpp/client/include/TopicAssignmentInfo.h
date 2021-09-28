@@ -18,15 +18,25 @@ public:
 
   ~TopicAssignment() = default;
 
-  const std::vector<Assignment>& assignmentList() const { return assignment_list_; }
+  const std::vector<Assignment>& assignmentList() const {
+    return assignment_list_;
+  }
 
-  bool operator==(const TopicAssignment& rhs) const { return assignment_list_ == rhs.assignment_list_; }
+  bool operator==(const TopicAssignment& rhs) const {
+    return assignment_list_ == rhs.assignment_list_;
+  }
 
-  bool operator!=(const TopicAssignment& rhs) const { return assignment_list_ != rhs.assignment_list_; }
+  bool operator!=(const TopicAssignment& rhs) const {
+    return assignment_list_ != rhs.assignment_list_;
+  }
 
-  const std::string& debugString() const { return debug_string_; }
+  const std::string& debugString() const {
+    return debug_string_;
+  }
 
-  static unsigned int getAndIncreaseQueryWhichBroker() { return ++query_which_broker_; }
+  static unsigned int getAndIncreaseQueryWhichBroker() {
+    return ++query_which_broker_;
+  }
 
 private:
   /**

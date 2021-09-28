@@ -1,12 +1,13 @@
 #include "MessageGroupQueueSelector.h"
 
-#include <utility>
 #include <cassert>
+#include <utility>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 MessageGroupQueueSelector::MessageGroupQueueSelector(std::string message_group)
-    : message_group_(std::move(message_group)) {}
+    : message_group_(std::move(message_group)) {
+}
 
 MQMessageQueue MessageGroupQueueSelector::select(const std::vector<MQMessageQueue>& mqs, const MQMessage& msg,
                                                  void* arg) {

@@ -6,7 +6,8 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-enum class MessageModel : int8_t {
+enum class MessageModel : int8_t
+{
   BROADCASTING,
   CLUSTERING,
 };

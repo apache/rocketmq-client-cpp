@@ -35,11 +35,17 @@ public:
 
   void await();
 
-  explicit operator bool() const { return !ec_.operator bool(); }
+  explicit operator bool() const {
+    return !ec_.operator bool();
+  }
 
-  const SendResult& sendResult() const { return send_result_; }
+  const SendResult& sendResult() const {
+    return send_result_;
+  }
 
-  const std::error_code& errorCode() const { return ec_; }
+  const std::error_code& errorCode() const {
+    return ec_;
+  }
 
 private:
   absl::Mutex mtx_;
@@ -56,22 +62,29 @@ public:
   RetrySendCallback(std::weak_ptr<ProducerImpl> producer, MQMessage message, int max_attempt_times,
                     SendCallback* callback, std::vector<MQMessageQueue> candidates)
       : producer_(std::move(producer)), message_(std::move(message)), max_attempt_times_(max_attempt_times),
-        callback_(callback), candidates_(std::move(candidates)), span_(opencensus::trace::Span::BlankSpan()) {}
+        callback_(callback), candidates_(std::move(candidates)), span_(opencensus::trace::Span::BlankSpan()) {
+  }
 
   void onSuccess(SendResult& send_result) noexcept override;
 
   void onFailure(const std::error_code& ec) noexcept override;
 
-  MQMessage& message() { return message_; }
+  MQMessage& message() {
+    return message_;
+  }
 
-  int attemptTime() const { return attempt_times_; }
+  int attemptTime() const {
+    return attempt_times_;
+  }
 
   const MQMessageQueue& messageQueue() const {
     int index = attempt_times_ % candidates_.size();
     return candidates_[index];
   }
 
-  opencensus::trace::Span& span() { return span_; }
+  opencensus::trace::Span& span() {
+    return span_;
+  }
 
 private:
   std::weak_ptr<ProducerImpl> producer_;

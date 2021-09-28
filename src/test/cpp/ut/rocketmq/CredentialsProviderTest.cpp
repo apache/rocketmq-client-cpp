@@ -4,14 +4,13 @@
 #include "google/protobuf/struct.pb.h"
 #include "google/protobuf/util/json_util.h"
 #include "gtest/gtest.h"
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
-#include <cstdlib>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class CredentialsProviderTest : public testing::Test {
-};
+class CredentialsProviderTest : public testing::Test {};
 
 TEST_F(CredentialsProviderTest, testStaticCredentialsProvider) {
   std::string access_key("abc");

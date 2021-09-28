@@ -29,7 +29,9 @@ public:
     top_addressing_->injectHttpClient(std::move(http_client_));
   }
 
-  void TearDown() override { grpc_shutdown(); }
+  void TearDown() override {
+    grpc_shutdown();
+  }
 
 protected:
   std::unique_ptr<TopAddressing> top_addressing_;

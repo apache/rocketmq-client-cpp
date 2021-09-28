@@ -5,7 +5,8 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class HistogramTest : public testing::Test {
 public:
-  HistogramTest() : histogram_("Test", 3) {}
+  HistogramTest() : histogram_("Test", 3) {
+  }
 
   void SetUp() override {
     histogram_.labels().emplace_back("Foo: ");

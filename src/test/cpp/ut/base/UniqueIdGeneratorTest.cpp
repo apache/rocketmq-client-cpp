@@ -8,7 +8,7 @@
 ROCKETMQ_NAMESPACE_BEGIN
 
 TEST(UniqueIdGeneratorTest, testOutputSampleId) {
-std::cout << "A sample unique ID: " << UniqueIdGenerator::instance().next() << std::endl;
+  std::cout << "A sample unique ID: " << UniqueIdGenerator::instance().next() << std::endl;
 }
 
 TEST(UniqueIdGeneratorTest, testNext) {

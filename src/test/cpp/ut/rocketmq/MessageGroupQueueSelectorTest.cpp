@@ -1,7 +1,7 @@
-#include "gtest/gtest.h"
 #include "MessageGroupQueueSelector.h"
 #include "rocketmq/MQMessage.h"
 #include "rocketmq/MQMessageQueue.h"
+#include "gtest/gtest.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

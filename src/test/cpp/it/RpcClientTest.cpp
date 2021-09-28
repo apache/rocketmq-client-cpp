@@ -60,9 +60,12 @@ protected:
         name_server_target_, channel_credential_, channel_arguments_, std::move(interceptor_factories));
   }
 
-  void TearDown() override {}
+  void TearDown() override {
+  }
 
-  ~RpcClientTest() override { completion_queue_->Shutdown(); }
+  ~RpcClientTest() override {
+    completion_queue_->Shutdown();
+  }
 
   bool brokerEndpoint(const std::string& topic, std::string& endpoint) {
     QueryRouteRequest route_request;

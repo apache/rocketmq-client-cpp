@@ -29,18 +29,17 @@ int main(int argc, char* argv[]) {
   logger.setLevel(Level::Debug);
   logger.init();
 
-  const char* cid = "GID_group003";
-  const char *topic = "yc001";
-  const char* resource_namespace = "MQ_INST_1973281269661160_BXmPlOA6";
+  const char* cid = "GID_cpp_sdk_standard";
+  const char* topic = "cpp_sdk_standard";
+  const char* resource_namespace = "MQ_INST_1080056302921134_BXuIbML7";
 
   DefaultMQPushConsumer push_consumer(cid);
   push_consumer.setMessageModel(MessageModel::BROADCASTING);
   push_consumer.setResourceNamespace(resource_namespace);
   push_consumer.setCredentialsProvider(std::make_shared<ConfigFileCredentialsProvider>());
-  push_consumer.setNamesrvAddr("11.165.223.199:9876");
+  push_consumer.setNamesrvAddr("121.43.42.193:80");
   MessageListener* listener = new SampleMQMessageListener;
   push_consumer.setGroupName(cid);
-  push_consumer.setInstanceName("instance_0");
   push_consumer.subscribe(topic, "*");
   push_consumer.registerMessageListener(listener);
   push_consumer.start();

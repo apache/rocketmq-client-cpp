@@ -8,7 +8,8 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-enum class ErrorCode : int {
+enum class ErrorCode : int
+{
   Success = 0,
 
   /**

@@ -1,19 +1,21 @@
 #pragma once
 
-#include <functional>
-#include <cstdlib>
 #include <chrono>
+#include <cstdlib>
+#include <functional>
 
 #include "MQMessageQueue.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-enum ConsumeType {
+enum ConsumeType
+{
   CONSUME_ACTIVELY,
   CONSUME_PASSIVELY,
 };
 
-enum ConsumeFromWhere {
+enum ConsumeFromWhere
+{
   CONSUME_FROM_LAST_OFFSET,
   CONSUME_FROM_LAST_OFFSET_AND_FROM_MIN_WHEN_BOOT_FIRST,
   CONSUME_FROM_MIN_OFFSET,
@@ -22,12 +24,14 @@ enum ConsumeFromWhere {
   CONSUME_FROM_TIMESTAMP,
 };
 
-enum ConsumeInitialMode {
+enum ConsumeInitialMode
+{
   MIN,
   MAX,
 };
 
-enum QueryOffsetPolicy : uint8_t {
+enum QueryOffsetPolicy : uint8_t
+{
   BEGINNING = 0,
   END = 1,
   TIME_POINT = 2,

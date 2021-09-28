@@ -17,8 +17,8 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class ProducerImplTest : public testing::Test {
 public:
-  ProducerImplTest()
-      : credentials_provider_(std::make_shared<StaticCredentialsProvider>(access_key_, access_secret_)) {}
+  ProducerImplTest() : credentials_provider_(std::make_shared<StaticCredentialsProvider>(access_key_, access_secret_)) {
+  }
 
   void SetUp() override {
     grpc_init();
@@ -43,7 +43,9 @@ public:
     }
   }
 
-  void TearDown() override { grpc_shutdown(); }
+  void TearDown() override {
+    grpc_shutdown();
+  }
 
 protected:
   std::shared_ptr<testing::NiceMock<ClientManagerMock>> client_manager_;
@@ -198,7 +200,8 @@ TEST_F(ProducerImplTest, testSend_WithMessageQueueSelector) {
 
 class TestSendCallback : public SendCallback {
 public:
-  TestSendCallback(bool& completed, absl::Mutex& mtx, absl::CondVar& cv) : completed_(completed), mtx_(mtx), cv_(cv) {}
+  TestSendCallback(bool& completed, absl::Mutex& mtx, absl::CondVar& cv) : completed_(completed), mtx_(mtx), cv_(cv) {
+  }
   void onSuccess(SendResult& send_result) noexcept override {
     absl::MutexLock lk(&mtx_);
     completed_ = true;

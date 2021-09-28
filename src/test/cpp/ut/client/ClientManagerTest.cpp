@@ -133,7 +133,7 @@ TEST_F(ClientManagerTest, testReceiveMessage) {
       .WillRepeatedly(testing::Invoke(mock_async_receive));
   ReceiveMessageRequest request;
 
-  EXPECT_CALL(*receive_message_callback_, onSuccess).Times(testing::AtLeast(1));
+  EXPECT_CALL(*receive_message_callback_, onCompletion).Times(testing::AtLeast(1));
 
   client_manager_->receiveMessage(target_host_, metadata_, request, absl::ToChronoMilliseconds(io_timeout_),
                                   receive_message_callback_);
@@ -167,7 +167,7 @@ TEST_F(ClientManagerTest, testReceiveMessage_Failure) {
       .WillRepeatedly(testing::Invoke(mock_async_receive));
   ReceiveMessageRequest request;
 
-  EXPECT_CALL(*receive_message_callback_, onFailure).Times(testing::AtLeast(1));
+  EXPECT_CALL(*receive_message_callback_, onCompletion).Times(testing::AtLeast(1));
 
   client_manager_->receiveMessage(target_host_, metadata_, request, absl::ToChronoMilliseconds(io_timeout_),
                                   receive_message_callback_);
@@ -303,29 +303,6 @@ TEST_F(ClientManagerTest, testEndTransaction) {
   }
   EXPECT_TRUE(completed);
   EXPECT_TRUE(callback_invoked);
-}
-
-TEST_F(ClientManagerTest, processPullResult) {
-  grpc::ClientContext client_context;
-  PullMessageResponse response;
-  auto message = new rmq::Message;
-  message->mutable_topic()->set_resource_namespace(resource_namespace_);
-  message->mutable_topic()->set_name(topic_);
-  message->set_body(message_body_);
-  message->mutable_system_attribute()->mutable_body_digest()->set_type(rmq::DigestType::MD5);
-  std::string checksum;
-  EXPECT_TRUE(MixAll::md5(message_body_, checksum));
-  message->mutable_system_attribute()->mutable_body_digest()->set_checksum(checksum);
-  message->mutable_system_attribute()->set_tag(tag_);
-  message->mutable_system_attribute()->mutable_keys()->Add(key_.c_str());
-  response.mutable_messages()->AddAllocated(message);
-  ReceiveMessageResult result;
-  client_manager_->processPullResult(client_context, response, result, target_host_);
-  EXPECT_EQ(1, result.messages_.size());
-  const auto& msg = *result.messages_.begin();
-  EXPECT_EQ(msg.getTopic(), topic_);
-  EXPECT_EQ(msg.getTags(), tag_);
-  EXPECT_EQ(msg.getBody(), message_body_);
 }
 
 TEST_F(ClientManagerTest, testHealthCheck) {

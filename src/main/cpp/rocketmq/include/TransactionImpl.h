@@ -14,7 +14,8 @@ public:
   TransactionImpl(std::string message_id, std::string transaction_id, std::string endpoint, std::string trace_context,
                   const std::shared_ptr<ProducerImpl>& producer)
       : message_id_(std::move(message_id)), transaction_id_(std::move(transaction_id)), endpoint_(std::move(endpoint)),
-        trace_context_(std::move(trace_context)), producer_(producer) {}
+        trace_context_(std::move(trace_context)), producer_(producer) {
+  }
 
   ~TransactionImpl() override = default;
 

@@ -9,7 +9,9 @@ namespace ut {
 class RpcClientTest : public testing::Test {
 
 public:
-  void SetUp() override { grpc::internal::GrpcLibraryInitializer initializer; }
+  void SetUp() override {
+    grpc::internal::GrpcLibraryInitializer initializer;
+  }
 
   static void mockQueryRouteInfo(const QueryRouteRequest& request,
                                  InvocationContext<QueryRouteResponse>* invocation_context) {

@@ -12,6 +12,8 @@
 #include "apache/rocketmq/v1/definition.pb.h"
 #include "rocketmq/AsyncCallback.h"
 #include "rocketmq/ConsumeType.h"
+#include "rocketmq/ErrorCode.h"
+#include "rocketmq/MQMessageExt.h"
 #include "rocketmq/RocketMQ.h"
 
 #include "gtest/gtest.h"
@@ -102,7 +104,8 @@ TEST_F(PullConsumerImplTest, testQueuesFor) {
 
 class TestPullCallback : public PullCallback {
 public:
-  TestPullCallback(bool& success, bool& failure) : success_(success), failure_(failure) {}
+  TestPullCallback(bool& success, bool& failure) : success_(success), failure_(failure) {
+  }
   void onSuccess(const PullResult& pull_result) noexcept override {
     success_ = true;
     failure_ = false;
@@ -132,30 +135,21 @@ TEST_F(PullConsumerImplTest, testPull) {
       .Times(testing::AtLeast(1))
       .WillRepeatedly(testing::Invoke(mock_resolve_route));
 
-  auto invocation_context = new InvocationContext<PullMessageResponse>();
-
-  auto messages = invocation_context->response.mutable_messages();
+  std::error_code ec;
+  ReceiveMessageResult result;
 
   for (int i = 0; i < batch_size_; i++) {
-    auto message = new rmq::Message();
-    message->set_body(message_body_);
-    std::string md5;
-    EXPECT_TRUE(MixAll::md5(message_body_, md5));
-    message->mutable_system_attribute()->mutable_body_digest()->set_type(rmq::DigestType::MD5);
-    message->mutable_system_attribute()->mutable_body_digest()->set_checksum(md5);
-
-    message->mutable_topic()->set_resource_namespace(resource_namespace_);
-    message->mutable_topic()->set_name(topic_);
-
-    message->mutable_system_attribute()->set_tag(tag_);
-
-    messages->AddAllocated(message);
+    MQMessageExt message;
+    message.setBody(message_body_);
+    message.setTopic(topic_);
+    message.setTags(tag_);
+    result.messages.emplace_back(message);
   }
 
   auto mock_pull_message = [&](const std::string& target_host, const Metadata& metadata,
                                const PullMessageRequest& request, std::chrono::milliseconds timeout,
-                               const std::function<void(const InvocationContext<PullMessageResponse>*)>& cb) {
-    cb(invocation_context);
+                               const std::function<void(const std::error_code&, const ReceiveMessageResult&)>& cb) {
+    cb(ec, result);
   };
 
   EXPECT_CALL(*client_manager_, pullMessage)
@@ -196,13 +190,13 @@ TEST_F(PullConsumerImplTest, testPull_gRPC_error) {
       .Times(testing::AtLeast(1))
       .WillRepeatedly(testing::Invoke(mock_resolve_route));
 
-  auto invocation_context = new InvocationContext<PullMessageResponse>();
-  invocation_context->status = grpc::Status::CANCELLED;
-
+  std::error_code ec;
+  ReceiveMessageResult result;
   auto mock_pull_message = [&](const std::string& target_host, const Metadata& metadata,
                                const PullMessageRequest& request, std::chrono::milliseconds timeout,
-                               const std::function<void(const InvocationContext<PullMessageResponse>*)>& cb) {
-    cb(invocation_context);
+                               const std::function<void(const std::error_code&, const ReceiveMessageResult&)>& cb) {
+    ec = ErrorCode::BadRequest;
+    cb(ec, result);
   };
 
   EXPECT_CALL(*client_manager_, pullMessage)
@@ -243,13 +237,14 @@ TEST_F(PullConsumerImplTest, testPull_biz_error) {
       .Times(testing::AtLeast(1))
       .WillRepeatedly(testing::Invoke(mock_resolve_route));
 
-  auto invocation_context = new InvocationContext<PullMessageResponse>();
-  invocation_context->response.mutable_common()->mutable_status()->set_code(google::rpc::Code::NOT_FOUND);
+  std::error_code ec;
+  ReceiveMessageResult result;
 
   auto mock_pull_message = [&](const std::string& target_host, const Metadata& metadata,
                                const PullMessageRequest& request, std::chrono::milliseconds timeout,
-                               const std::function<void(const InvocationContext<PullMessageResponse>*)>& cb) {
-    cb(invocation_context);
+                               const std::function<void(const std::error_code&, const ReceiveMessageResult&)>& cb) {
+    ec = ErrorCode::BadRequest;
+    cb(ec, result);
   };
 
   EXPECT_CALL(*client_manager_, pullMessage)

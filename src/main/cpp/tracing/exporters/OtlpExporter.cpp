@@ -129,37 +129,37 @@ void OtlpExporterHandler::Export(const std::vector<::opencensus::trace::exporter
   }
 
   switch (exp->traceMode()) {
-  case TraceMode::OFF:
-    return;
-  case TraceMode::DEBUG: {
-    {
-      for (const auto& span : spans) {
-        SPDLOG_INFO("{} --> {}: {}", absl::FormatTime(span.start_time()), absl::FormatTime(span.end_time()),
-                    span.name().data());
-        for (const auto& event : span.annotations().events()) {
-          for (const auto& attr : event.event().attributes()) {
-            switch (attr.second.type()) {
-            case opencensus::trace::AttributeValueRef::Type::kString:
-              SPDLOG_INFO("Annotation {} attribute: {} --> {}", event.event().description().data(), attr.first,
-                          attr.second.string_value());
-              break;
-            case opencensus::trace::AttributeValueRef::Type::kInt:
-              SPDLOG_INFO("Annotation {} attribute: {} --> {}", event.event().description().data(), attr.first,
-                          attr.second.int_value());
-              break;
-            case opencensus::trace::AttributeValueRef::Type::kBool:
-              SPDLOG_INFO("Annotation {} attribute: {} --> {}", event.event().description().data(), attr.first,
-                          attr.second.bool_value());
-              break;
+    case TraceMode::OFF:
+      return;
+    case TraceMode::DEBUG: {
+      {
+        for (const auto& span : spans) {
+          SPDLOG_INFO("{} --> {}: {}", absl::FormatTime(span.start_time()), absl::FormatTime(span.end_time()),
+                      span.name().data());
+          for (const auto& event : span.annotations().events()) {
+            for (const auto& attr : event.event().attributes()) {
+              switch (attr.second.type()) {
+                case opencensus::trace::AttributeValueRef::Type::kString:
+                  SPDLOG_INFO("Annotation {} attribute: {} --> {}", event.event().description().data(), attr.first,
+                              attr.second.string_value());
+                  break;
+                case opencensus::trace::AttributeValueRef::Type::kInt:
+                  SPDLOG_INFO("Annotation {} attribute: {} --> {}", event.event().description().data(), attr.first,
+                              attr.second.int_value());
+                  break;
+                case opencensus::trace::AttributeValueRef::Type::kBool:
+                  SPDLOG_INFO("Annotation {} attribute: {} --> {}", event.event().description().data(), attr.first,
+                              attr.second.bool_value());
+                  break;
+              }
             }
           }
         }
       }
+      return;
     }
-    return;
-  }
-  case TraceMode::GRPC:
-    break;
+    case TraceMode::GRPC:
+      break;
   }
 
   syncExportClients();
@@ -225,15 +225,15 @@ void OtlpExporterHandler::Export(const std::vector<::opencensus::trace::exporter
           kv->set_key(attr.first);
           auto value = new common::AnyValue();
           switch (attr.second.type()) {
-          case opencensus::trace::AttributeValueRef::Type::kString:
-            value->set_string_value(attr.second.string_value());
-            break;
-          case opencensus::trace::AttributeValueRef::Type::kInt:
-            value->set_int_value(attr.second.int_value());
-            break;
-          case opencensus::trace::AttributeValueRef::Type::kBool:
-            value->set_bool_value(attr.second.bool_value());
-            break;
+            case opencensus::trace::AttributeValueRef::Type::kString:
+              value->set_string_value(attr.second.string_value());
+              break;
+            case opencensus::trace::AttributeValueRef::Type::kInt:
+              value->set_int_value(attr.second.int_value());
+              break;
+            case opencensus::trace::AttributeValueRef::Type::kBool:
+              value->set_bool_value(attr.second.bool_value());
+              break;
           }
           ev->mutable_attributes()->AddAllocated(kv);
         }
@@ -251,15 +251,15 @@ void OtlpExporterHandler::Export(const std::vector<::opencensus::trace::exporter
         kv->set_key(attribute.first);
         auto value = new common::AnyValue();
         switch (attribute.second.type()) {
-        case opencensus::trace::AttributeValueRef::Type::kString:
-          value->set_string_value(attribute.second.string_value());
-          break;
-        case opencensus::trace::AttributeValueRef::Type::kBool:
-          value->set_bool_value(attribute.second.bool_value());
-          break;
-        case opencensus::trace::AttributeValueRef::Type::kInt:
-          value->set_int_value(attribute.second.int_value());
-          break;
+          case opencensus::trace::AttributeValueRef::Type::kString:
+            value->set_string_value(attribute.second.string_value());
+            break;
+          case opencensus::trace::AttributeValueRef::Type::kBool:
+            value->set_bool_value(attribute.second.bool_value());
+            break;
+          case opencensus::trace::AttributeValueRef::Type::kInt:
+            value->set_int_value(attribute.second.int_value());
+            break;
         }
         kv->set_allocated_value(value);
         span_link->mutable_attributes()->AddAllocated(kv);
@@ -274,15 +274,15 @@ void OtlpExporterHandler::Export(const std::vector<::opencensus::trace::exporter
       kv->set_key(attribute.first);
       auto value = new common::AnyValue();
       switch (attribute.second.type()) {
-      case opencensus::trace::AttributeValueRef::Type::kString:
-        value->set_string_value(attribute.second.string_value());
-        break;
-      case opencensus::trace::AttributeValueRef::Type::kBool:
-        value->set_bool_value(attribute.second.bool_value());
-        break;
-      case opencensus::trace::AttributeValueRef::Type::kInt:
-        value->set_int_value(attribute.second.int_value());
-        break;
+        case opencensus::trace::AttributeValueRef::Type::kString:
+          value->set_string_value(attribute.second.string_value());
+          break;
+        case opencensus::trace::AttributeValueRef::Type::kBool:
+          value->set_bool_value(attribute.second.bool_value());
+          break;
+        case opencensus::trace::AttributeValueRef::Type::kInt:
+          value->set_int_value(attribute.second.int_value());
+          break;
       }
       item->mutable_attributes()->AddAllocated(kv);
     }

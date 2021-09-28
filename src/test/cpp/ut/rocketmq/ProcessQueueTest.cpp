@@ -1,5 +1,15 @@
+#include <chrono>
+#include <functional>
+#include <memory>
+#include <string>
+#include <system_error>
+#include <vector>
+
+#include "gtest/gtest.h"
+
 #include "Assignment.h"
 #include "ClientManagerMock.h"
+#include "ConsumeMessageServiceMock.h"
 #include "ConsumeMessageType.h"
 #include "InvocationContext.h"
 #include "MessageAccessor.h"
@@ -10,12 +20,6 @@
 #include "RpcClientMock.h"
 #include "rocketmq/CredentialsProvider.h"
 #include "rocketmq/MQMessageExt.h"
-#include "gtest/gtest.h"
-#include <chrono>
-#include <functional>
-#include <memory>
-#include <string>
-#include <vector>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -31,12 +35,20 @@ public:
     credentials_provider_ = std::make_shared<StaticCredentialsProvider>(access_key_, access_secret_);
     consumer_ = std::make_shared<testing::NiceMock<PushConsumerMock>>();
     auto consumer = std::dynamic_pointer_cast<PushConsumer>(consumer_);
+
+    consume_message_service_ = std::make_shared<testing::NiceMock<ConsumeMessageServiceMock>>();
+    ON_CALL(*consume_message_service_, messageListenerType)
+        .WillByDefault(testing::Return(MessageListenerType::STANDARD));
+
+    ON_CALL(*consumer_, getConsumeMessageService).WillByDefault(testing::Return(consume_message_service_));
+
     process_queue_ = std::make_shared<ProcessQueueImpl>(message_queue_, filter_expression_, consumer, client_manager_);
     receive_message_callback_ = std::make_shared<testing::NiceMock<ReceiveMessageCallbackMock>>();
     process_queue_->callback(receive_message_callback_);
   }
 
-  void TearDown() override {}
+  void TearDown() override {
+  }
 
 protected:
   std::string tenant_id_{"tenant-0"};
@@ -57,6 +69,7 @@ protected:
   std::shared_ptr<testing::NiceMock<RpcClientMock>> rpc_client_;
   std::shared_ptr<testing::NiceMock<ClientManagerMock>> client_manager_;
   std::shared_ptr<testing::NiceMock<PushConsumerMock>> consumer_;
+  std::shared_ptr<testing::NiceMock<ConsumeMessageServiceMock>> consume_message_service_;
   std::shared_ptr<ProcessQueueImpl> process_queue_;
   std::shared_ptr<testing::NiceMock<ReceiveMessageCallbackMock>> receive_message_callback_;
   std::string resource_namespace_{"mq://test"};
@@ -138,7 +151,9 @@ TEST_F(ProcessQueueTest, testShouldThrottle_ByMemory) {
   EXPECT_TRUE(process_queue_->shouldThrottle());
 }
 
-TEST_F(ProcessQueueTest, testHasPendingMessages) { EXPECT_FALSE(process_queue_->hasPendingMessages()); }
+TEST_F(ProcessQueueTest, testHasPendingMessages) {
+  EXPECT_FALSE(process_queue_->hasPendingMessages());
+}
 
 TEST_F(ProcessQueueTest, testHasPendingMessages2) {
   std::vector<MQMessageExt> messages;
@@ -271,19 +286,18 @@ TEST_F(ProcessQueueTest, testReceiveMessage_POP) {
   EXPECT_CALL(*consumer_, clientId).WillRepeatedly(testing::Return(client_id_));
   EXPECT_CALL(*consumer_, getGroupName).WillRepeatedly(testing::ReturnRef(group_name_));
   EXPECT_CALL(*consumer_, getLongPollingTimeout).WillRepeatedly(testing::Return(absl::Seconds(3)));
-  EXPECT_CALL(*consumer_, receiveMessageAction).WillRepeatedly(testing::Return(ReceiveMessageAction::POLLING));
 
   auto optional = absl::make_optional(filter_expression_);
 
   EXPECT_CALL(*consumer_, getFilterExpression).WillRepeatedly(testing::Return(optional));
   EXPECT_CALL(*consumer_, receiveBatchSize).WillRepeatedly(testing::Return(threshold_quantity_));
+  EXPECT_CALL(*consumer_, messageModel).WillRepeatedly(testing::Return(MessageModel::CLUSTERING));
 
   auto receive_message_mock = [this](const std::string& target, const Metadata& metadata,
                                      const ReceiveMessageRequest& request, std::chrono::milliseconds timeout,
                                      const std::shared_ptr<ReceiveMessageCallback>& cb) {
-    ReceiveMessageResult receive_message_result;
-    receive_message_result.status_ = ReceiveMessageStatus::OK;
-
+    std::error_code ec;
+    ReceiveMessageResult result;
     for (size_t i = 0; i < threshold_quantity_; i++) {
       MQMessageExt message;
       message.setTopic(topic_);
@@ -291,9 +305,9 @@ TEST_F(ProcessQueueTest, testReceiveMessage_POP) {
       message.setBody(message_body_);
       MessageAccessor::setQueueId(message, queue_id_);
       MessageAccessor::setQueueOffset(message, i);
-      receive_message_result.messages_.emplace_back(message);
+      result.messages.emplace_back(message);
     }
-    cb->onSuccess(receive_message_result);
+    cb->onCompletion(ec, result);
   };
 
   EXPECT_CALL(*client_manager_, receiveMessage)
@@ -311,24 +325,24 @@ TEST_F(ProcessQueueTest, testReceiveMessage_Pull) {
   EXPECT_CALL(*consumer_, clientId).WillRepeatedly(testing::Return(client_id_));
   EXPECT_CALL(*consumer_, getGroupName).WillRepeatedly(testing::ReturnRef(group_name_));
   EXPECT_CALL(*consumer_, getLongPollingTimeout).WillRepeatedly(testing::Return(absl::Seconds(3)));
-  EXPECT_CALL(*consumer_, receiveMessageAction).WillRepeatedly(testing::Return(ReceiveMessageAction::PULL));
 
   auto optional = absl::make_optional(filter_expression_);
 
   EXPECT_CALL(*consumer_, getFilterExpression).WillRepeatedly(testing::Return(optional));
   EXPECT_CALL(*consumer_, receiveBatchSize).WillRepeatedly(testing::Return(threshold_quantity_));
 
-  auto invocation_context = new InvocationContext<PullMessageResponse>();
+  std::error_code ec;
+  ReceiveMessageResult result;
+
   auto pull_message_mock = [&](const std::string& target_host, const Metadata& metadata,
                                const PullMessageRequest& request, std::chrono::milliseconds timeout,
-                               const std::function<void(const InvocationContext<PullMessageResponse>*)>& cb) {
-    cb(invocation_context);
+                               const std::function<void(const std::error_code&, const ReceiveMessageResult&)>& cb) {
+    cb(ec, result);
   };
 
   EXPECT_CALL(*client_manager_, pullMessage)
       .Times(testing::AtLeast(1))
       .WillRepeatedly(testing::Invoke(pull_message_mock));
-  EXPECT_CALL(*client_manager_, processPullResult);
   process_queue_->receiveMessage();
 }
 

@@ -11,7 +11,9 @@ public:
     return instance;
   }
 
-  const char* name() const noexcept override { return "RocketMQ"; }
+  const char* name() const noexcept override {
+    return "RocketMQ";
+  }
 
   std::string message(int code) const override;
 

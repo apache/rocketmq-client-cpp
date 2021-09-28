@@ -1,6 +1,6 @@
-#include "gtest/gtest.h"
-#include "gmock/gmock.h"
 #include "ConsumerMock.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

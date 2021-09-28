@@ -11,7 +11,9 @@ class RpcClientMock : public RpcClient {
 public:
   RpcClientMock();
 
-  ~RpcClientMock() override { std::cout << "~RpcClientMock()" << std::endl; }
+  ~RpcClientMock() override {
+    std::cout << "~RpcClientMock()" << std::endl;
+  }
 
   MOCK_METHOD(void, asyncQueryRoute, (const QueryRouteRequest&, InvocationContext<QueryRouteResponse>*), (override));
 

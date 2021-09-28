@@ -6,6 +6,7 @@
 #include "rocketmq/ErrorCode.h"
 #include "rocketmq/MQClientException.h"
 #include "rocketmq/MessageModel.h"
+#include "rocketmq/PullResult.h"
 #include <exception>
 #include <system_error>
 
@@ -69,19 +70,19 @@ std::future<std::vector<MQMessageQueue>> PullConsumerImpl::queuesFor(const std::
 std::future<int64_t> PullConsumerImpl::queryOffset(const OffsetQuery& query) {
   QueryOffsetRequest request;
   switch (query.policy) {
-  case QueryOffsetPolicy::BEGINNING:
-    request.set_policy(rmq::QueryOffsetPolicy::BEGINNING);
-    break;
-  case QueryOffsetPolicy::END:
-    request.set_policy(rmq::QueryOffsetPolicy::END);
-    break;
-  case QueryOffsetPolicy::TIME_POINT:
-    request.set_policy(rmq::QueryOffsetPolicy::TIME_POINT);
-    auto duration = absl::FromChrono(query.time_point.time_since_epoch());
-    int64_t seconds = absl::ToInt64Seconds(duration);
-    request.mutable_time_point()->set_seconds(seconds);
-    request.mutable_time_point()->set_nanos(absl::ToInt64Nanoseconds(duration - absl::Seconds(seconds)));
-    break;
+    case QueryOffsetPolicy::BEGINNING:
+      request.set_policy(rmq::QueryOffsetPolicy::BEGINNING);
+      break;
+    case QueryOffsetPolicy::END:
+      request.set_policy(rmq::QueryOffsetPolicy::END);
+      break;
+    case QueryOffsetPolicy::TIME_POINT:
+      request.set_policy(rmq::QueryOffsetPolicy::TIME_POINT);
+      auto duration = absl::FromChrono(query.time_point.time_since_epoch());
+      int64_t seconds = absl::ToInt64Seconds(duration);
+      request.mutable_time_point()->set_seconds(seconds);
+      request.mutable_time_point()->set_nanos(absl::ToInt64Nanoseconds(duration - absl::Seconds(seconds)));
+      break;
   }
 
   request.mutable_partition()->mutable_topic()->set_name(query.message_queue.getTopic());
@@ -127,65 +128,14 @@ void PullConsumerImpl::pull(const PullMessageQuery& query, PullCallback* cb) {
   std::string target_host = query.message_queue.serviceAddress();
   assert(!target_host.empty());
 
-  auto callback = [this, target_host, cb](const InvocationContext<PullMessageResponse>* invocation_context) {
-    if (!invocation_context || !invocation_context->status.ok()) {
-      std::error_code ec = ErrorCode::RequestTimeout;
+  auto callback = [target_host, cb](const std::error_code& ec, const ReceiveMessageResult& result) {
+    if (ec) {
       cb->onFailure(ec);
       return;
     }
 
-    auto response = invocation_context->response;
-    auto biz_status = response.common().status();
-
-    switch (biz_status.code()) {
-    case google::rpc::Code::OK: {
-      std::vector<MQMessageExt> messages;
-      for (const auto& item : response.messages()) {
-        MQMessageExt message_ext;
-        if (client_manager_->wrapMessage(item, message_ext)) {
-          messages.emplace_back(message_ext);
-        }
-      }
-      PullResult pull_result(response.min_offset(), response.max_offset(), response.next_offset(), std::move(messages));
-      cb->onSuccess(pull_result);
-    } break;
-
-    case google::rpc::Code::PERMISSION_DENIED: {
-      SPDLOG_WARN("PermissionDenied: {}", response.common().status().message());
-      std::error_code ec = ErrorCode::Forbidden;
-      cb->onFailure(ec);
-    } break;
-
-    case google::rpc::Code::UNAUTHENTICATED: {
-      SPDLOG_WARN("Unauthenticated: {}", response.common().status().message());
-      std::error_code ec = ErrorCode::Unauthorized;
-      cb->onFailure(ec);
-    } break;
-
-    case google::rpc::Code::DEADLINE_EXCEEDED: {
-      SPDLOG_WARN("GatewayTimeout: {}", response.common().status().message());
-      std::error_code ec = ErrorCode::GatewayTimeout;
-      cb->onFailure(ec);
-    } break;
-
-    case google::rpc::Code::INVALID_ARGUMENT: {
-      SPDLOG_WARN("BadRequest: {}", response.common().status().message());
-      std::error_code ec = ErrorCode::BadRequest;
-      cb->onFailure(ec);
-    } break;
-
-    case google::rpc::Code::INTERNAL: {
-      SPDLOG_WARN("ServerIntervalError: {}", response.common().status().message());
-      std::error_code ec = ErrorCode::InternalServerError;
-      cb->onFailure(ec);
-    } break;
-
-    default: {
-      SPDLOG_WARN("Unsupported response code. Please upgrade to lastest SDK");
-      std::error_code ec = ErrorCode::NotImplemented;
-      cb->onFailure(ec);
-    } break;
-    }
+    PullResult pull_result(result.min_offset, result.max_offset, result.next_offset, result.messages);
+    cb->onSuccess(pull_result);
   };
 
   absl::flat_hash_map<std::string, std::string> metadata;
@@ -201,12 +151,12 @@ void PullConsumerImpl::prepareHeartbeatData(HeartbeatRequest& request) {
   consumer_data->mutable_group()->set_resource_namespace(resource_namespace_);
   consumer_data->mutable_group()->set_name(group_name_);
   switch (message_model_) {
-  case MessageModel::BROADCASTING:
-    consumer_data->set_consume_model(rmq::ConsumeModel::BROADCASTING);
-    break;
-  case MessageModel::CLUSTERING:
-    consumer_data->set_consume_model(rmq::ConsumeModel::CLUSTERING);
-    break;
+    case MessageModel::BROADCASTING:
+      consumer_data->set_consume_model(rmq::ConsumeModel::BROADCASTING);
+      break;
+    case MessageModel::CLUSTERING:
+      consumer_data->set_consume_model(rmq::ConsumeModel::CLUSTERING);
+      break;
   }
 }
 

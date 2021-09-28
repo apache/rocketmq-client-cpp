@@ -17,13 +17,16 @@ namespace admin {
 class AdminServerImpl : public AdminServer {
 public:
   AdminServerImpl()
-      : port_(0), state_(State::CREATED), async_stub_(new rmq::Admin::AsyncService), service_(new AdminServiceImpl) {}
+      : port_(0), state_(State::CREATED), async_stub_(new rmq::Admin::AsyncService), service_(new AdminServiceImpl) {
+  }
 
   bool start() override;
 
   bool stop() override;
 
-  int port() const override { return port_; }
+  int port() const override {
+    return port_;
+  }
 
 private:
   int port_;

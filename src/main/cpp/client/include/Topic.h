@@ -10,11 +10,16 @@ ROCKETMQ_NAMESPACE_BEGIN
 class Topic {
 public:
   Topic(std::string resource_namespace, std::string name)
-      : resource_namespace_(std::move(resource_namespace)), name_(std::move(name)) {}
+      : resource_namespace_(std::move(resource_namespace)), name_(std::move(name)) {
+  }
 
-  const std::string& resourceNamespace() const { return resource_namespace_; }
+  const std::string& resourceNamespace() const {
+    return resource_namespace_;
+  }
 
-  const std::string& name() const { return name_; }
+  const std::string& name() const {
+    return name_;
+  }
 
   bool operator==(const Topic& other) const {
     return resource_namespace_ == other.resource_namespace_ && name_ == other.name_;

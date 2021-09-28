@@ -10,7 +10,8 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class AwaitPullCallback : public PullCallback {
 public:
-  explicit AwaitPullCallback(PullResult& pull_result) : pull_result_(pull_result) {}
+  explicit AwaitPullCallback(PullResult& pull_result) : pull_result_(pull_result) {
+  }
 
   void onSuccess(const PullResult& pull_result) noexcept override;
 
@@ -18,11 +19,17 @@ public:
 
   bool await();
 
-  bool hasFailure() const { return ec_.operator bool(); }
+  bool hasFailure() const {
+    return ec_.operator bool();
+  }
 
-  bool isCompleted() const { return completed_; }
+  bool isCompleted() const {
+    return completed_;
+  }
 
-  const std::error_code& errorCode() const noexcept { return ec_; }
+  const std::error_code& errorCode() const noexcept {
+    return ec_;
+  }
 
 private:
   PullResult& pull_result_;

@@ -34,12 +34,17 @@ ProducerImpl::ProducerImpl(absl::string_view group_name)
   // TODO: initialize client_config_ and fault_strategy_
 }
 
-ProducerImpl::~ProducerImpl() { SPDLOG_INFO("Producer instance is destructed"); }
+ProducerImpl::~ProducerImpl() {
+  SPDLOG_INFO("Producer instance is destructed");
+}
 
 void ProducerImpl::start() {
   ClientImpl::start();
-  if (State::STARTED != state_.load(std::memory_order_relaxed)) {
-    SPDLOG_WARN("Unexpected producer state: {}", state_.load(std::memory_order_relaxed));
+
+  State expecting = State::STARTING;
+  if (!state_.compare_exchange_strong(expecting, State::STARTED)) {
+    SPDLOG_ERROR("Start with unexpected state. Expecting: {}, Actual: {}", State::STARTING,
+                 state_.load(std::memory_order_relaxed));
     return;
   }
 
@@ -47,15 +52,21 @@ void ProducerImpl::start() {
 }
 
 void ProducerImpl::shutdown() {
-  ClientImpl::shutdown();
-
-  State expected = State::STOPPING;
-  if (state_.compare_exchange_strong(expected, State::STOPPED)) {
-    SPDLOG_INFO("DefaultMQProducerImpl stopped");
+  State expected = State::STARTED;
+  if (!state_.compare_exchange_strong(expected, State::STOPPING)) {
+    SPDLOG_ERROR("Shutdown with unexpected state. Expecting: {}, Actual: {}", State::STOPPING,
+                 state_.load(std::memory_order_relaxed));
+    return;
   }
+
+  ClientImpl::shutdown();
+  assert(State::STOPPED == state_.load());
+  SPDLOG_INFO("Producer instance stopped");
 }
 
-bool ProducerImpl::isRunning() const { return State::STARTED == state_.load(std::memory_order_relaxed); }
+bool ProducerImpl::isRunning() const {
+  return State::STARTED == state_.load(std::memory_order_relaxed);
+}
 
 void ProducerImpl::ensureRunning(std::error_code& ec) const noexcept {
   if (!isRunning()) {
@@ -63,7 +74,9 @@ void ProducerImpl::ensureRunning(std::error_code& ec) const noexcept {
   }
 }
 
-bool ProducerImpl::validate(const MQMessage& message) { return MixAll::validate(message); }
+bool ProducerImpl::validate(const MQMessage& message) {
+  return MixAll::validate(message);
+}
 
 std::string ProducerImpl::wrapSendMessageRequest(const MQMessage& message, SendMessageRequest& request,
                                                  const MQMessageQueue& message_queue) {
@@ -84,18 +97,18 @@ std::string ProducerImpl::wrapSendMessageRequest(const MQMessage& message, SendM
   system_attribute->mutable_producer_group()->set_name(group_name_);
 
   switch (message.messageType()) {
-  case MessageType::NORMAL:
-    system_attribute->set_message_type(rmq::MessageType::NORMAL);
-    break;
-  case MessageType::DELAY:
-    system_attribute->set_message_type(rmq::MessageType::DELAY);
-    break;
-  case MessageType::TRANSACTION:
-    system_attribute->set_message_type(rmq::MessageType::TRANSACTION);
-    break;
-  case MessageType::FIFO:
-    system_attribute->set_message_type(rmq::MessageType::FIFO);
-    break;
+    case MessageType::NORMAL:
+      system_attribute->set_message_type(rmq::MessageType::NORMAL);
+      break;
+    case MessageType::DELAY:
+      system_attribute->set_message_type(rmq::MessageType::DELAY);
+      break;
+    case MessageType::TRANSACTION:
+      system_attribute->set_message_type(rmq::MessageType::TRANSACTION);
+      break;
+    case MessageType::FIFO:
+      system_attribute->set_message_type(rmq::MessageType::FIFO);
+      break;
   }
 
   if (message.bodyLength() >= compress_body_threshold_) {
@@ -223,7 +236,9 @@ void ProducerImpl::send(const MQMessage& message, SendCallback* cb) {
   asyncPublishInfo(message.getTopic(), callback);
 }
 
-void ProducerImpl::sendOneway(const MQMessage& message, std::error_code& ec) { send(message, ec); }
+void ProducerImpl::sendOneway(const MQMessage& message, std::error_code& ec) {
+  send(message, ec);
+}
 
 void ProducerImpl::setLocalTransactionStateChecker(LocalTransactionStateCheckerPtr checker) {
   transaction_state_checker_ = std::move(checker);
@@ -317,14 +332,14 @@ bool ProducerImpl::endTransaction0(const std::string& target, const std::string&
   request.set_transaction_id(transaction_id);
   std::string action;
   switch (resolution) {
-  case TransactionState::COMMIT:
-    request.set_resolution(rmq::EndTransactionRequest_TransactionResolution_COMMIT);
-    action = "commit";
-    break;
-  case TransactionState::ROLLBACK:
-    request.set_resolution(rmq::EndTransactionRequest_TransactionResolution_ROLLBACK);
-    action = "rollback";
-    break;
+    case TransactionState::COMMIT:
+      request.set_resolution(rmq::EndTransactionRequest_TransactionResolution_COMMIT);
+      action = "commit";
+      break;
+    case TransactionState::ROLLBACK:
+      request.set_resolution(rmq::EndTransactionRequest_TransactionResolution_ROLLBACK);
+      action = "rollback";
+      break;
   }
   absl::flat_hash_map<std::string, std::string> metadata;
   Signature::sign(this, metadata);
@@ -346,12 +361,12 @@ bool ProducerImpl::endTransaction0(const std::string& target, const std::string&
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_MESSAGE_ID, message_id);
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_HOST, UtilAll::hostname());
   switch (resolution) {
-  case TransactionState::COMMIT:
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TRANSACTION_RESOLUTION, "commit");
-    break;
-  case TransactionState::ROLLBACK:
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TRANSACTION_RESOLUTION, "rollback");
-    break;
+    case TransactionState::COMMIT:
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TRANSACTION_RESOLUTION, "commit");
+      break;
+    case TransactionState::ROLLBACK:
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TRANSACTION_RESOLUTION, "rollback");
+      break;
   }
 
   absl::Mutex mtx;

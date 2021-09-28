@@ -9,14 +9,17 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-TopAddressing::TopAddressing() : TopAddressing("jmenv.tbsite.net", 8080, "/rocketmq/nsaddr") {}
+TopAddressing::TopAddressing() : TopAddressing("jmenv.tbsite.net", 8080, "/rocketmq/nsaddr") {
+}
 
 TopAddressing::TopAddressing(std::string host, int port, std::string path)
     : host_(std::move(host)), port_(port), path_(std::move(path)), http_client_(absl::make_unique<HttpClientImpl>()) {
   http_client_->start();
 }
 
-TopAddressing::~TopAddressing() { http_client_->shutdown(); }
+TopAddressing::~TopAddressing() {
+  http_client_->shutdown();
+}
 
 void TopAddressing::fetchNameServerAddresses(const std::function<void(bool, const std::vector<std::string>&)>& cb) {
   SPDLOG_DEBUG("Prepare to send HTTP request, timeout=3s");

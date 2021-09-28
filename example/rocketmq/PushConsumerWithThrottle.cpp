@@ -10,7 +10,8 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class CounterMessageListener : public StandardMessageListener {
 public:
-  explicit CounterMessageListener(std::atomic_long& counter) : counter_(counter) {}
+  explicit CounterMessageListener(std::atomic_long& counter) : counter_(counter) {
+  }
 
   ConsumeMessageResult consumeMessage(const std::vector<MQMessageExt>& msgs) override {
     counter_.fetch_add(msgs.size());

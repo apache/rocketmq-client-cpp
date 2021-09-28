@@ -80,12 +80,9 @@ public:
   virtual bool send(const std::string& target_host, const Metadata& metadata, SendMessageRequest& request,
                     SendCallback* cb) = 0;
 
-  virtual void processPullResult(const grpc::ClientContext& client_context, const PullMessageResponse& response,
-                                 ReceiveMessageResult& result, const std::string& target_host) = 0;
-
   virtual void pullMessage(const std::string& target_host, const Metadata& metadata, const PullMessageRequest& request,
                            std::chrono::milliseconds timeout,
-                           const std::function<void(const InvocationContext<PullMessageResponse>*)>& cb) = 0;
+                           const std::function<void(const std::error_code&, const ReceiveMessageResult&)>& cb) = 0;
 
   virtual std::error_code notifyClientTermination(const std::string& target_host, const Metadata& metadata,
                                                   const NotifyClientTerminationRequest& request,

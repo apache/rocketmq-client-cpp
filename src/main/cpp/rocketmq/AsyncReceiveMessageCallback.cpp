@@ -1,9 +1,11 @@
 #include "AsyncReceiveMessageCallback.h"
+
+#include <system_error>
+
 #include "ClientManagerImpl.h"
 #include "ConsumeMessageType.h"
 #include "LoggerImpl.h"
 #include "PushConsumer.h"
-#include <system_error>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -12,71 +14,35 @@ AsyncReceiveMessageCallback::AsyncReceiveMessageCallback(ProcessQueueWeakPtr pro
   receive_message_later_ = std::bind(&AsyncReceiveMessageCallback::checkThrottleThenReceive, this);
 }
 
-void AsyncReceiveMessageCallback::onSuccess(ReceiveMessageResult& result) {
-  ProcessQueueSharedPtr process_queue_shared_ptr = process_queue_.lock();
-  if (!process_queue_shared_ptr) {
-    SPDLOG_WARN("Process queue has been released. Drop PopResult: {}", result.toString());
+void AsyncReceiveMessageCallback::onCompletion(const std::error_code& ec, const ReceiveMessageResult& result) {
+  ProcessQueueSharedPtr process_queue = process_queue_.lock();
+  if (!process_queue) {
+    SPDLOG_INFO("Process queue has been destructed.");
     return;
   }
 
-  std::shared_ptr<PushConsumer> impl = process_queue_shared_ptr->getConsumer().lock();
+  std::shared_ptr<PushConsumer> impl = process_queue->getConsumer().lock();
   if (!impl->active()) {
+    SPDLOG_INFO("Consumer is not active any more. It should be quitting");
     return;
   }
 
-  auto receive_message_action = process_queue_shared_ptr->getConsumer().lock()->receiveMessageAction();
-
-  switch (result.status()) {
-  case ReceiveMessageStatus::OK:
-    SPDLOG_DEBUG("Receive messages from broker[host={}] returns with status=FOUND, msgListSize={}, queue={}",
-                 result.sourceHost(), result.getMsgFoundList().size(), process_queue_shared_ptr->simpleName());
-    process_queue_shared_ptr->cacheMessages(result.getMsgFoundList());
-    impl->getConsumeMessageService()->signalDispatcher();
-
-    if (ReceiveMessageAction::PULL == receive_message_action) {
-      process_queue_shared_ptr->nextOffset(result.next_offset_);
-    }
-    checkThrottleThenReceive();
-    break;
-  case ReceiveMessageStatus::DATA_CORRUPTED:
-    if (ReceiveMessageAction::POLLING == receive_message_action) {
-      process_queue_shared_ptr->cacheMessages(result.messages_);
-      impl->getConsumeMessageService()->signalDispatcher();
-    }
-    checkThrottleThenReceive();
-    break;
-
-  case ReceiveMessageStatus::OUT_OF_RANGE:
-    assert(ReceiveMessageAction::PULL == receive_message_action);
-    process_queue_shared_ptr->nextOffset(result.next_offset_);
-    checkThrottleThenReceive();
-    break;
-  case ReceiveMessageStatus::DEADLINE_EXCEEDED:
-    SPDLOG_DEBUG("Receive messages from broker[host={}] returns with status=DEADLINE_EXCEEDED, queue={}",
-                 result.sourceHost(), process_queue_shared_ptr->simpleName());
-    checkThrottleThenReceive();
-    break;
-  case ReceiveMessageStatus::INTERNAL:
-    SPDLOG_DEBUG("Receive messages from broker[host={}] returns with status=UNKNOWN, queue={}", result.sourceHost(),
-                 process_queue_shared_ptr->simpleName());
-    receiveMessageLater();
-    break;
-  case ReceiveMessageStatus::RESOURCE_EXHAUSTED:
-    SPDLOG_DEBUG("Receive messages from broker[host={}] returns with status=RESOURCE_EXHAUSTED, queue={}",
-                 result.sourceHost(), process_queue_shared_ptr->simpleName());
-    receiveMessageLater();
-    break;
-  case ReceiveMessageStatus::NOT_FOUND:
-    SPDLOG_DEBUG("Receive messages from broker[host={}] returns with status=NOT_FOUND, queue={}", result.sourceHost(),
-                 process_queue_shared_ptr->simpleName());
-    receiveMessageLater();
-    break;
-  default:
-    SPDLOG_WARN("Unknown receive message status: {} from broker[host={}], queue={}", result.status(),
-                result.sourceHost(), process_queue_shared_ptr->simpleName());
-    receiveMessageLater();
-    break;
+  auto consumer = process_queue->getConsumer().lock();
+  if (!consumer) {
+    return;
   }
+
+  if (ec) {
+    SPDLOG_WARN("Receive message from {} failed. Cause: {}. Attempt later.", process_queue->simpleName(), ec.message());
+    receiveMessageLater();
+    return;
+  }
+
+  SPDLOG_DEBUG("Receive messages from broker[host={}] returns with status=FOUND, msgListSize={}, queue={}",
+               result.source_host, result.messages.size(), process_queue->simpleName());
+  process_queue->cacheMessages(result.messages);
+  impl->getConsumeMessageService()->signalDispatcher();
+  checkThrottleThenReceive();
 }
 
 const char* AsyncReceiveMessageCallback::RECEIVE_LATER_TASK_NAME = "receive-later-task";
@@ -96,15 +62,6 @@ void AsyncReceiveMessageCallback::checkThrottleThenReceive() {
   } else {
     // Receive message immediately
     receiveMessageImmediately();
-  }
-}
-
-void AsyncReceiveMessageCallback::onFailure(const std::error_code& ec) {
-  auto process_queue_ptr = process_queue_.lock();
-  if (process_queue_ptr) {
-    SPDLOG_WARN("pop message error:{}, pop message later. Queue={}", ec.message(), process_queue_ptr->simpleName());
-    // pop message later
-    receiveMessageLater();
   }
 }
 

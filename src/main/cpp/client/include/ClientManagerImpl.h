@@ -175,7 +175,7 @@ public:
 
   void pullMessage(const std::string& target_host, const Metadata& metadata, const PullMessageRequest& request,
                    std::chrono::milliseconds timeout,
-                   const std::function<void(const InvocationContext<PullMessageResponse>*)>& cb) override;
+                   const std::function<void(const std::error_code&, const ReceiveMessageResult&)>& cb) override;
 
   std::error_code notifyClientTermination(const std::string& target_host, const Metadata& metadata,
                                           const NotifyClientTerminationRequest& request,
@@ -189,15 +189,9 @@ public:
                  std::chrono::milliseconds timeout,
                  const std::function<void(const std::error_code&, const HeartbeatResponse&)>& cb) override;
 
-  void processPullResult(const grpc::ClientContext& client_context, const PullMessageResponse& response,
-                         ReceiveMessageResult& result, const std::string& target_host) override;
-
   State state() const override;
 
 private:
-  void processPopResult(const grpc::ClientContext& client_context, const ReceiveMessageResponse& response,
-                        ReceiveMessageResult& result, const std::string& target_host);
-
   void doHeartbeat();
 
   void pollCompletionQueue();

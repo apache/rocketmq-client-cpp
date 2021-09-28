@@ -35,8 +35,12 @@ void ClientManagerFactory::addClientManager(const std::string& resource_namespac
   client_manager_table_.insert_or_assign(resource_namespace, std::weak_ptr<ClientManager>(client_manager));
 }
 
-ClientManagerFactory::ClientManagerFactory() : admin_server_(admin::AdminFacade::getServer()) { admin_server_.start(); }
+ClientManagerFactory::ClientManagerFactory() : admin_server_(admin::AdminFacade::getServer()) {
+  admin_server_.start();
+}
 
-ClientManagerFactory::~ClientManagerFactory() { admin_server_.stop(); }
+ClientManagerFactory::~ClientManagerFactory() {
+  admin_server_.stop();
+}
 
 ROCKETMQ_NAMESPACE_END

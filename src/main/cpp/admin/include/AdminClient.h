@@ -15,7 +15,8 @@ namespace admin {
 
 class AdminClient {
 public:
-  explicit AdminClient(std::shared_ptr<Channel>& channel) : stub_(rmq::Admin::NewStub(channel)) {}
+  explicit AdminClient(std::shared_ptr<Channel>& channel) : stub_(rmq::Admin::NewStub(channel)) {
+  }
 
   Status changeLogLevel(const rmq::ChangeLogLevelRequest& request, rmq::ChangeLogLevelResponse& response);
 

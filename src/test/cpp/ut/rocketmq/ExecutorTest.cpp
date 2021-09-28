@@ -20,20 +20,20 @@ public:
 
   virtual ~ExecutorImpl() {
     switch (state_.load(std::memory_order_relaxed)) {
-    case CREATED:
-    case STOPPING:
-    case STOPPED:
-      break;
+      case CREATED:
+      case STOPPING:
+      case STOPPED:
+        break;
 
-    case STARTING:
-    case STARTED:
-      state_.store(State::STOPPED);
-      for (auto& worker : workers_) {
-        if (worker.joinable()) {
-          worker.join();
+      case STARTING:
+      case STARTED:
+        state_.store(State::STOPPED);
+        for (auto& worker : workers_) {
+          if (worker.joinable()) {
+            worker.join();
+          }
         }
-      }
-      break;
+        break;
     }
   }
 
@@ -103,15 +103,20 @@ private:
 
 class ExecutorTest : public ::testing::Test {
 public:
-  void SetUp() override { executor_.start(); }
+  void SetUp() override {
+    executor_.start();
+  }
 
-  void TearDown() override { executor_.stop(); }
+  void TearDown() override {
+    executor_.stop();
+  }
 
 protected:
   ExecutorImpl executor_{0};
 };
 
-TEST_F(ExecutorTest, testBasic) {}
+TEST_F(ExecutorTest, testBasic) {
+}
 
 std::mutex submit_mtx_;
 std::condition_variable submit_cv_;

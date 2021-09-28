@@ -12,17 +12,24 @@
 ROCKETMQ_NAMESPACE_BEGIN
 
 DefaultMQPullConsumer::DefaultMQPullConsumer(const std::string& group_name)
-    : impl_(std::make_shared<PullConsumerImpl>(group_name)) {}
+    : impl_(std::make_shared<PullConsumerImpl>(group_name)) {
+}
 
-void DefaultMQPullConsumer::start() { impl_->start(); }
+void DefaultMQPullConsumer::start() {
+  impl_->start();
+}
 
-void DefaultMQPullConsumer::shutdown() { impl_->shutdown(); }
+void DefaultMQPullConsumer::shutdown() {
+  impl_->shutdown();
+}
 
 std::future<std::vector<MQMessageQueue>> DefaultMQPullConsumer::queuesFor(const std::string& topic) {
   return impl_->queuesFor(topic);
 }
 
-std::future<int64_t> DefaultMQPullConsumer::queryOffset(const OffsetQuery& query) { return impl_->queryOffset(query); }
+std::future<int64_t> DefaultMQPullConsumer::queryOffset(const OffsetQuery& query) {
+  return impl_->queryOffset(query);
+}
 
 bool DefaultMQPullConsumer::pull(const PullMessageQuery& query, PullResult& pull_result) {
   auto callback = absl::make_unique<AwaitPullCallback>(pull_result);

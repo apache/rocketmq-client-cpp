@@ -16,7 +16,8 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class PullConsumerImpl : public ClientImpl, public std::enable_shared_from_this<PullConsumerImpl> {
 public:
-  explicit PullConsumerImpl(absl::string_view group_name) : ClientImpl(group_name) {}
+  explicit PullConsumerImpl(absl::string_view group_name) : ClientImpl(group_name) {
+  }
 
   void start() override;
 
@@ -31,7 +32,9 @@ public:
   void prepareHeartbeatData(HeartbeatRequest& request) override;
 
 protected:
-  std::shared_ptr<ClientImpl> self() override { return shared_from_this(); }
+  std::shared_ptr<ClientImpl> self() override {
+    return shared_from_this();
+  }
 
   MessageModel message_model_{MessageModel::CLUSTERING};
 };

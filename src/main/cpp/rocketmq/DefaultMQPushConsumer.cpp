@@ -12,7 +12,9 @@ DefaultMQPushConsumer::DefaultMQPushConsumer(const std::string& group_name) {
   impl_ = std::make_shared<PushConsumerImpl>(group_name);
 }
 
-void DefaultMQPushConsumer::start() { impl_->start(); }
+void DefaultMQPushConsumer::start() {
+  impl_->start();
+}
 
 void DefaultMQPushConsumer::shutdown() {
   impl_->shutdown();
@@ -24,7 +26,9 @@ void DefaultMQPushConsumer::subscribe(const std::string& topic, const std::strin
   impl_->subscribe(topic, expression, expression_type);
 }
 
-void DefaultMQPushConsumer::setConsumeFromWhere(ConsumeFromWhere policy) { impl_->setConsumeFromWhere(policy); }
+void DefaultMQPushConsumer::setConsumeFromWhere(ConsumeFromWhere policy) {
+  impl_->setConsumeFromWhere(policy);
+}
 
 void DefaultMQPushConsumer::registerMessageListener(MessageListener* listener) {
   impl_->registerMessageListener(listener);
@@ -44,27 +48,48 @@ void DefaultMQPushConsumer::setNameServerListDiscoveryEndpoint(const std::string
   impl_->withNameServerResolver(name_server_resolver);
 }
 
-void DefaultMQPushConsumer::setGroupName(const std::string& group_name) { impl_->setGroupName(group_name); }
+void DefaultMQPushConsumer::setGroupName(const std::string& group_name) {
+  impl_->setGroupName(group_name);
+}
 
-void DefaultMQPushConsumer::setConsumeThreadCount(int thread_count) { impl_->consumeThreadPoolSize(thread_count); }
+void DefaultMQPushConsumer::setConsumeThreadCount(int thread_count) {
+  impl_->consumeThreadPoolSize(thread_count);
+}
 
-void DefaultMQPushConsumer::setInstanceName(const std::string& instance_name) { impl_->setInstanceName(instance_name); }
+void DefaultMQPushConsumer::setInstanceName(const std::string& instance_name) {
+  impl_->setInstanceName(instance_name);
+}
 
-int DefaultMQPushConsumer::getProcessQueueTableSize() { return impl_->getProcessQueueTableSize(); }
+int DefaultMQPushConsumer::getProcessQueueTableSize() {
+  return impl_->getProcessQueueTableSize();
+}
 
-void DefaultMQPushConsumer::setUnitName(std::string unit_name) { impl_->setUnitName(std::move(unit_name)); }
+void DefaultMQPushConsumer::setUnitName(std::string unit_name) {
+  impl_->setUnitName(std::move(unit_name));
+}
 
-const std::string& DefaultMQPushConsumer::getUnitName() const { return impl_->getUnitName(); }
+const std::string& DefaultMQPushConsumer::getUnitName() const {
+  return impl_->getUnitName();
+}
 
-void DefaultMQPushConsumer::enableTracing(bool enabled) { impl_->enableTracing(enabled); }
+void DefaultMQPushConsumer::enableTracing(bool enabled) {
+  impl_->enableTracing(enabled);
+}
 
-bool DefaultMQPushConsumer::isTracingEnabled() { return impl_->isTracingEnabled(); }
+bool DefaultMQPushConsumer::isTracingEnabled() {
+  return impl_->isTracingEnabled();
+}
 
-void DefaultMQPushConsumer::setAsyncPull(bool) {}
+void DefaultMQPushConsumer::setAsyncPull(bool) {
+}
 
-void DefaultMQPushConsumer::setConsumeMessageBatchMaxSize(int batch_size) { impl_->consumeBatchSize(batch_size); }
+void DefaultMQPushConsumer::setConsumeMessageBatchMaxSize(int batch_size) {
+  impl_->consumeBatchSize(batch_size);
+}
 
-void DefaultMQPushConsumer::setCustomExecutor(const Executor& executor) { impl_->setCustomExecutor(executor); }
+void DefaultMQPushConsumer::setCustomExecutor(const Executor& executor) {
+  impl_->setCustomExecutor(executor);
+}
 
 void DefaultMQPushConsumer::setThrottle(const std::string& topic, uint32_t threshold) {
   impl_->setThrottle(topic, threshold);
@@ -78,8 +103,12 @@ void DefaultMQPushConsumer::setCredentialsProvider(CredentialsProviderPtr creden
   impl_->setCredentialsProvider(std::move(credentials_provider));
 }
 
-void DefaultMQPushConsumer::setMessageModel(MessageModel message_model) { impl_->setMessageModel(message_model); }
+void DefaultMQPushConsumer::setMessageModel(MessageModel message_model) {
+  impl_->setMessageModel(message_model);
+}
 
-std::string DefaultMQPushConsumer::groupName() const { return impl_->getGroupName(); }
+std::string DefaultMQPushConsumer::groupName() const {
+  return impl_->getGroupName();
+}
 
 ROCKETMQ_NAMESPACE_END

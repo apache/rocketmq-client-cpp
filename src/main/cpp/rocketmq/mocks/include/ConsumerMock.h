@@ -15,7 +15,7 @@ public:
 
   MOCK_METHOD(int32_t, receiveBatchSize, (), (const override));
 
-  MOCK_METHOD(ReceiveMessageAction, receiveMessageAction, (), (const override));
+  MOCK_METHOD(std::shared_ptr<ConsumeMessageService>, getConsumeMessageService, (), (override));
 };
 
 ROCKETMQ_NAMESPACE_END

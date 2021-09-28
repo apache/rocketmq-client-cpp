@@ -29,8 +29,12 @@ struct PeriodicTimer {
 
 class GrpcTimerTest : public testing::Test {
 public:
-  void SetUp() override { grpc_init(); }
-  void TearDown() override { grpc_shutdown(); }
+  void SetUp() override {
+    grpc_init();
+  }
+  void TearDown() override {
+    grpc_shutdown();
+  }
 
   static void schedule(void* arg, grpc_error_handle error) {
     auto timer = static_cast<PeriodicTimer*>(arg);
@@ -54,7 +58,8 @@ public:
   }
 };
 
-TEST_F(GrpcTimerTest, testSetUp) {}
+TEST_F(GrpcTimerTest, testSetUp) {
+}
 
 TEST_F(GrpcTimerTest, testSingleShot) {
   grpc_core::ExecCtx exec_ctx;

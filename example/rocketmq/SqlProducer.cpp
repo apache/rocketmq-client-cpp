@@ -21,15 +21,15 @@ int main(int argc, char* argv[]) {
       message.setBody(body);
       message.setProperty("a", std::to_string(i % 5));
       switch (i % 3) {
-      case 0:
-        message.setTags("TagA");
-        break;
-      case 1:
-        message.setTags("TagB");
-        break;
-      case 2:
-        message.setTags("TagC");
-        break;
+        case 0:
+          message.setTags("TagA");
+          break;
+        case 1:
+          message.setTags("TagB");
+          break;
+        case 2:
+          message.setTags("TagC");
+          break;
       }
       SendResult sendResult = producer.send(message);
       std::cout << "Message sent with msgId=" << sendResult.getMsgId()

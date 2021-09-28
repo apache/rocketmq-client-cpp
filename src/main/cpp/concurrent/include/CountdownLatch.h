@@ -12,8 +12,10 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class CountdownLatch {
 public:
-  explicit CountdownLatch(int32_t count) : CountdownLatch(count, "anonymous") {}
-  CountdownLatch(int32_t count, absl::string_view name) : count_(count), name_(name.data(), name.length()) {}
+  explicit CountdownLatch(int32_t count) : CountdownLatch(count, "anonymous") {
+  }
+  CountdownLatch(int32_t count, absl::string_view name) : count_(count), name_(name.data(), name.length()) {
+  }
 
   void await() LOCKS_EXCLUDED(mtx_);
 

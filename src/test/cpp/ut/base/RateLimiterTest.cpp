@@ -7,7 +7,9 @@
 ROCKETMQ_NAMESPACE_BEGIN
 class RateLimiterTest : public ::testing::Test {
 public:
-  void TearDown() override { observer.stop(); }
+  void TearDown() override {
+    observer.stop();
+  }
 
 protected:
   RateLimiterObserver observer;

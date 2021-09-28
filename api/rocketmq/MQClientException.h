@@ -33,11 +33,17 @@ public:
 
   ~MQException() noexcept override = default;
 
-  const char* what() const noexcept override { return m_msg.c_str(); }
+  const char* what() const noexcept override {
+    return m_msg.c_str();
+  }
 
-  int GetError() const noexcept { return m_error; }
+  int GetError() const noexcept {
+    return m_error;
+  }
 
-  virtual const char* GetType() const noexcept { return m_type.c_str(); }
+  virtual const char* GetType() const noexcept {
+    return m_type.c_str();
+  }
 
 protected:
   int m_error;
@@ -56,8 +62,11 @@ inline std::ostream& operator<<(std::ostream& os, const MQException& e) {
   class name : public MQException {                                                                                    \
   public:                                                                                                              \
     name(const std::string& msg, int error, const char* file, int line) throw()                                        \
-        : MQException(msg, error, file, #name, line) {}                                                                \
-    virtual const char* GetType() const throw() { return m_type.c_str(); }                                             \
+        : MQException(msg, error, file, #name, line) {                                                                 \
+    }                                                                                                                  \
+    virtual const char* GetType() const throw() {                                                                      \
+      return m_type.c_str();                                                                                           \
+    }                                                                                                                  \
   };
 
 DEFINE_MQ_CLIENT_EXCEPTION(MQClientException)

@@ -12,9 +12,11 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class UtilAllTest : public testing::Test {
 public:
-  void SetUp() override {}
+  void SetUp() override {
+  }
 
-  void TearDown() override {}
+  void TearDown() override {
+  }
 };
 
 TEST_F(UtilAllTest, testCompress) {

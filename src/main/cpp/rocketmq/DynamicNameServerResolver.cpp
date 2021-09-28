@@ -106,7 +106,9 @@ void DynamicNameServerResolver::start() {
                        std::chrono::milliseconds(0), refresh_interval_);
 }
 
-void DynamicNameServerResolver::shutdown() { scheduler_->shutdown(); }
+void DynamicNameServerResolver::shutdown() {
+  scheduler_->shutdown();
+}
 
 std::string DynamicNameServerResolver::current() {
   absl::MutexLock lk(&name_server_list_mtx_);

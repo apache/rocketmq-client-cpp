@@ -6,7 +6,8 @@ using namespace opentelemetry::trace;
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-template <typename T> static std::string hex(const T& id_item) {
+template <typename T>
+static std::string hex(const T& id_item) {
   char buf[T::kSize * 2];
   id_item.ToLowerBase16(buf);
   return std::string(buf, sizeof(buf));

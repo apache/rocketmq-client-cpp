@@ -1,21 +1,23 @@
 #pragma once
 
+#include <functional>
+#include <system_error>
+
 #include "ProcessQueue.h"
 #include "ReceiveMessageCallback.h"
-#include <system_error>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class AsyncReceiveMessageCallback : public ReceiveMessageCallback,
-                                    public std::enable_shared_from_this<AsyncReceiveMessageCallback> {
+class AsyncReceiveMessageCallback
+    : public ReceiveMessageCallback,
+      public std::enable_shared_from_this<AsyncReceiveMessageCallback> {
 public:
   explicit AsyncReceiveMessageCallback(ProcessQueueWeakPtr process_queue);
 
   ~AsyncReceiveMessageCallback() override = default;
 
-  void onSuccess(ReceiveMessageResult& result) override;
-
-  void onFailure(const std::error_code& ec) override;
+  void onCompletion(const std::error_code &ec,
+                    const ReceiveMessageResult &result) override;
 
   void receiveMessageLater();
 
@@ -32,7 +34,7 @@ private:
 
   void checkThrottleThenReceive();
 
-  static const char* RECEIVE_LATER_TASK_NAME;
+  static const char *RECEIVE_LATER_TASK_NAME;
 };
 
 ROCKETMQ_NAMESPACE_END
