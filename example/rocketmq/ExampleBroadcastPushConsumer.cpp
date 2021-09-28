@@ -1,12 +1,10 @@
 #include "rocketmq/DefaultMQPushConsumer.h"
 
-#ifndef SPDLOG_ACTIVE_LEVEL
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
-#endif
-
+#include "rocketmq/Logger.h"
 #include "spdlog/spdlog.h"
 
 #include <chrono>
+#include <iostream>
 #include <mutex>
 #include <thread>
 
@@ -17,6 +15,7 @@ public:
   ConsumeMessageResult consumeMessage(const std::vector<MQMessageExt>& msgs) override {
     for (const MQMessageExt& msg : msgs) {
       SPDLOG_INFO("Receive a message. MessageId={}", msg.getMsgId());
+      std::cout << "Received a message. MessageId: " << msg.getMsgId() << std::endl;
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     return ConsumeMessageResult::SUCCESS;
@@ -24,7 +23,6 @@ public:
 };
 
 int main(int argc, char* argv[]) {
-
   Logger& logger = getLogger();
   logger.setLevel(Level::Debug);
   logger.init();

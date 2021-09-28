@@ -1348,6 +1348,11 @@ void ClientManagerImpl::pullMessage(
         SPDLOG_WARN("Unauthenticated: {}, host={}", common.status().message(), invocation_context->remote_address);
         ec = ErrorCode::Unauthorized;
       } break;
+      case google::rpc::Code::NOT_FOUND: {
+        SPDLOG_WARN("NotFound: {}, host={}", common.status().message(), invocation_context->remote_address);
+        ec = ErrorCode::NotFound;
+        break;
+      }
       case google::rpc::Code::DEADLINE_EXCEEDED: {
         SPDLOG_WARN("DeadlineExceeded: {}, host={}", common.status().message(), invocation_context->remote_address);
         ec = ErrorCode::GatewayTimeout;

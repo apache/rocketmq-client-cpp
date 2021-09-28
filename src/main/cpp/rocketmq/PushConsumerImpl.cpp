@@ -581,7 +581,6 @@ void PushConsumerImpl::prepareHeartbeatData(HeartbeatRequest& request) {
   }
 
   auto subscriptions = consumer_data->mutable_subscriptions();
-
   {
     absl::MutexLock lk(&topic_filter_expression_table_mtx_);
     for (const auto& entry : topic_filter_expression_table_) {
@@ -613,6 +612,10 @@ void PushConsumerImpl::prepareHeartbeatData(HeartbeatRequest& request) {
       break;
     }
   }
+
+  consumer_data->set_consume_policy(rmq::ConsumePolicy::RESUME);
+  consumer_data->mutable_dead_letter_policy()->set_max_delivery_attempts(maxDeliveryAttempts());
+  consumer_data->set_consume_type(rmq::ConsumeMessageType::PASSIVE);
 }
 
 ClientResourceBundle PushConsumerImpl::resourceBundle() {
