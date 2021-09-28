@@ -92,14 +92,12 @@ void ProcessQueueImpl::receiveMessage() {
 
 void ProcessQueueImpl::popMessage() {
   rmq::ReceiveMessageRequest request;
-
   absl::flat_hash_map<std::string, std::string> metadata;
   auto consumer_client = consumer_.lock();
   if (!consumer_client) {
     return;
   }
   Signature::sign(consumer_client.get(), metadata);
-
   wrapPopMessageRequest(metadata, request);
   syncIdleState();
   SPDLOG_DEBUG("Try to pop message from {}", message_queue_.simpleName());
@@ -145,7 +143,6 @@ void ProcessQueueImpl::cacheMessages(const std::vector<MQMessageExt>& messages) 
 
   {
     absl::MutexLock messages_lock_guard(&messages_mtx_);
-    // TODO: use lock-when semantics
     absl::MutexLock offsets_lock_guard(&offsets_mtx_);
     for (const auto& message : messages) {
       const std::string& msg_id = message.getMsgId();
