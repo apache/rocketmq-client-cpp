@@ -866,9 +866,10 @@ bool ClientManagerImpl::wrapMessage(const rmq::Message& item, MQMessageExt& mess
         if (success) {
           body_digest_match = (digest.checksum() == checksum);
           if (body_digest_match) {
-            SPDLOG_DEBUG("MD5 checksum validation passed.");
+            SPDLOG_DEBUG("Body of message[{}] MD5 checksum validation passed.", message_ext.getMsgId());
           } else {
-            SPDLOG_WARN("Body MD5 checksum validation failed. Expect: {}, Actual: {}", digest.checksum(), checksum);
+            SPDLOG_WARN("Body of message[{}] MD5 checksum validation failed. Expect: {}, Actual: {}",
+                        message_ext.getMsgId(), digest.checksum(), checksum);
           }
         } else {
           SPDLOG_WARN("Failed to calculate MD5 digest. Skip.");
@@ -882,12 +883,13 @@ bool ClientManagerImpl::wrapMessage(const rmq::Message& item, MQMessageExt& mess
         if (success) {
           body_digest_match = (checksum == digest.checksum());
           if (body_digest_match) {
-            SPDLOG_DEBUG("SHA1 checksum validation passed");
+            SPDLOG_DEBUG("Body of message[{}] SHA1 checksum validation passed", message_ext.getMsgId());
           } else {
-            SPDLOG_WARN("Body SHA1 checksum validation failed. Expect: {}, Actual: {}", digest.checksum(), checksum);
+            SPDLOG_WARN("Body of message[{}] SHA1 checksum validation failed. Expect: {}, Actual: {}",
+                        message_ext.getMsgId(), digest.checksum(), checksum);
           }
         } else {
-          SPDLOG_WARN("Failed to calculate SHA1 digest. Skip.");
+          SPDLOG_WARN("Failed to calculate SHA1 digest for message[{}]. Skip.", message_ext.getMsgId());
         }
         break;
       }
