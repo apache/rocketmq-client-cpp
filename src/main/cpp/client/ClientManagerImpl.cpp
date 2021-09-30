@@ -54,6 +54,10 @@ ClientManagerImpl::ClientManagerImpl(std::string resource_namespace)
   tls_channel_credential_options_.watch_root_certs();
   tls_channel_credential_options_.watch_identity_key_cert_pairs();
   channel_credential_ = grpc::experimental::TlsCredentials(tls_channel_credential_options_);
+
+  int max_message_size = 1024 * 1024 * 16;
+  channel_arguments_.SetMaxReceiveMessageSize(max_message_size);
+  channel_arguments_.SetMaxSendMessageSize(max_message_size);
   SPDLOG_INFO("ClientManager[ResourceNamespace={}] created", resource_namespace_);
 }
 
@@ -172,6 +176,7 @@ void ClientManagerImpl::healthCheck(
   SPDLOG_DEBUG("Prepare to send health-check to {}. Request: {}", target_host, request.DebugString());
 
   auto invocation_context = new InvocationContext<HealthCheckResponse>();
+  invocation_context->task_name = fmt::format("HealthCheck to {}", target_host);
   invocation_context->remote_address = target_host;
   invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
 
@@ -289,6 +294,7 @@ void ClientManagerImpl::heartbeat(const std::string& target_host, const Metadata
   SPDLOG_DEBUG("Prepare to send heartbeat to {}. Request: {}", target_host, request.DebugString());
   auto client = getRpcClient(target_host, true);
   auto invocation_context = new InvocationContext<HeartbeatResponse>();
+  invocation_context->task_name = fmt::format("Heartbeat to {}", target_host);
   invocation_context->remote_address = target_host;
   for (const auto& item : metadata) {
     invocation_context->context.AddMetadata(item.first, item.second);
@@ -390,6 +396,8 @@ bool ClientManagerImpl::send(const std::string& target_host, const Metadata& met
   RpcClientSharedPtr client = getRpcClient(target_host);
   // Invocation context will be deleted in its onComplete() method.
   auto invocation_context = new InvocationContext<SendMessageResponse>();
+  invocation_context->task_name =
+      fmt::format("Send message[] to {}", request.message().system_attribute().message_id(), target_host);
   invocation_context->remote_address = target_host;
   for (const auto& entry : metadata) {
     invocation_context->context.AddMetadata(entry.first, entry.second);
@@ -551,6 +559,7 @@ void ClientManagerImpl::resolveRoute(const std::string& target_host, const Metad
   }
 
   auto invocation_context = new InvocationContext<QueryRouteResponse>();
+  invocation_context->task_name = fmt::format("Query route of topic={} from {}", request.topic().name(), target_host);
   invocation_context->remote_address = target_host;
   invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
   for (const auto& item : metadata) {
@@ -703,6 +712,7 @@ void ClientManagerImpl::queryAssignment(
   };
 
   auto invocation_context = new InvocationContext<QueryAssignmentResponse>();
+  invocation_context->task_name = fmt::format("QueryAssignment from {}", target);
   invocation_context->remote_address = target;
   for (const auto& item : metadata) {
     invocation_context->context.AddMetadata(item.first, item.second);
@@ -719,6 +729,9 @@ void ClientManagerImpl::receiveMessage(const std::string& target_host, const Met
   RpcClientSharedPtr client = getRpcClient(target_host);
 
   auto invocation_context = new InvocationContext<ReceiveMessageResponse>();
+  invocation_context->task_name = fmt::format("ReceiveMessage from queue[{}-{}-{}-{}], host={}", request.group().name(),
+                                              request.partition().topic().name(), request.partition().broker().name(),
+                                              request.partition().id(), target_host);
   invocation_context->remote_address = target_host;
   if (!metadata.empty()) {
     for (const auto& item : metadata) {
@@ -1024,6 +1037,7 @@ void ClientManagerImpl::ack(const std::string& target, const Metadata& metadata,
   RpcClientSharedPtr client = getRpcClient(target_host);
 
   auto invocation_context = new InvocationContext<AckMessageResponse>();
+  invocation_context->task_name = fmt::format("Ack message[{}] against {}", request.message_id(), target);
   invocation_context->remote_address = target_host;
   invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
 
@@ -1078,6 +1092,7 @@ void ClientManagerImpl::nack(const std::string& target_host, const Metadata& met
   RpcClientSharedPtr client = getRpcClient(target_host);
   assert(client);
   auto invocation_context = new InvocationContext<NackMessageResponse>();
+  invocation_context->task_name = fmt::format("Nack Message[{}] against {}", request.message_id(), target_host);
   invocation_context->remote_address = target_host;
   invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
 
@@ -1144,6 +1159,8 @@ void ClientManagerImpl::endTransaction(
   SPDLOG_DEBUG("Prepare to endTransaction. TargetHost={}, Request: {}", target_host.data(), request.DebugString());
 
   auto invocation_context = new InvocationContext<EndTransactionResponse>();
+  invocation_context->task_name = fmt::format("End transaction[{}] of message[] against {}", request.transaction_id(),
+                                              request.message_id(), target_host);
   invocation_context->remote_address = target_host;
   for (const auto& item : metadata) {
     invocation_context->context.AddMetadata(item.first, item.second);
@@ -1306,6 +1323,9 @@ void ClientManagerImpl::pullMessage(
   SPDLOG_DEBUG("PullMessage Request: {}, target_host={}", request.DebugString(), target_host);
   auto client = getRpcClient(target_host);
   auto invocation_context = new InvocationContext<PullMessageResponse>();
+  invocation_context->task_name = fmt::format("PullMessage for queue[{}-{}-{}-{}] from {}", request.group().name(),
+                                              request.partition().topic().name(), request.partition().broker().name(),
+                                              request.partition().id(), target_host);
   invocation_context->remote_address = target_host;
   invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
   for (const auto& item : metadata) {
@@ -1389,6 +1409,8 @@ void ClientManagerImpl::forwardMessageToDeadLetterQueue(
   SPDLOG_DEBUG("ForwardMessageToDeadLetterQueue Request: {}", request.DebugString());
   auto client = getRpcClient(target_host);
   auto invocation_context = new InvocationContext<ForwardMessageToDeadLetterQueueResponse>();
+  invocation_context->task_name =
+      fmt::format("Forward message[{}] to DLQ against {}", request.message_id(), target_host);
   invocation_context->remote_address = target_host;
   invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
 

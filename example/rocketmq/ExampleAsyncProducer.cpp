@@ -174,7 +174,7 @@ int main(int argc, char* argv[]) {
   }
 
   Logger& logger = getLogger();
-  logger.setLevel(Level::Debug);
+  logger.setLevel(Level::Info);
   logger.init();
 
   const char* topic = "cpp_sdk_standard";

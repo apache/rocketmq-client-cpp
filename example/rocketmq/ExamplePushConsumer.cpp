@@ -16,8 +16,9 @@ public:
   ConsumeMessageResult consumeMessage(const std::vector<MQMessageExt>& msgs) override {
     for (const MQMessageExt& msg : msgs) {
       SPDLOG_INFO("Consume message[Topic={}, MessageId={}] OK", msg.getTopic(), msg.getMsgId());
-      std::cout << "Consume Message[MsgId=" << msg.getMsgId() << "] OK" << std::endl;
-      std::this_thread::sleep_for(std::chrono::seconds(1));
+      std::cout << "Consume Message[MsgId=" << msg.getMsgId() << "] OK. Body Size: " << msg.getBody().size()
+                << std::endl;
+      // std::this_thread::sleep_for(std::chrono::seconds(1));
     }
     return ConsumeMessageResult::SUCCESS;
   }
@@ -44,7 +45,7 @@ int main(int argc, char* argv[]) {
   push_consumer.setConsumeThreadCount(4);
   push_consumer.start();
 
-  std::this_thread::sleep_for(std::chrono::seconds(300));
+  std::this_thread::sleep_for(std::chrono::minutes(30));
 
   push_consumer.shutdown();
   return EXIT_SUCCESS;

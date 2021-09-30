@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
 
   std::thread stats_thread(stats_lambda);
 
-  std::string body = randomString(1024);
+  std::string body = randomString(1024 * 1024 * 4);
   std::cout << "Message body: " << body << std::endl;
   message.setBody(body);
 
