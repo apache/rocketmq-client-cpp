@@ -47,7 +47,13 @@ void LogInterceptor::Intercept(grpc::experimental::InterceptorBatchMethods* meth
     void* message = methods->GetRecvMessage();
     if (message) {
       auto* response = reinterpret_cast<google::protobuf::Message*>(message);
-      SPDLOG_DEBUG("[Inbound] {}\n{}", client_rpc_info_->method(), response->DebugString());
+      std::string&& response_text = response->DebugString();
+      int limit = 1024;
+      if (response_text.size() <= limit) {
+        SPDLOG_DEBUG("[Inbound] {}\n{}", client_rpc_info_->method(), response_text);
+      } else {
+        SPDLOG_DEBUG("[Inbound] {}\n{}...", client_rpc_info_->method(), response_text.substr(0, limit));
+      }
     }
   }
 }
