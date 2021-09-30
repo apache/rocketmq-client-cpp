@@ -1352,7 +1352,7 @@ void ClientManagerImpl::pullMessage(
     result.max_offset = invocation_context->response.max_offset();
     switch (common.status().code()) {
       case google::rpc::Code::OK: {
-        SPDLOG_DEBUG("Received PullMessage Response: {}, host={}", invocation_context->response.DebugString(),
+        SPDLOG_TRACE("Received PullMessage Response: {}, host={}", invocation_context->response.DebugString(),
                      invocation_context->remote_address);
         for (const auto& item : invocation_context->response.messages()) {
           MQMessageExt message;
