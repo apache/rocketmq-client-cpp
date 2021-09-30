@@ -759,7 +759,7 @@ void ClientManagerImpl::receiveMessage(const std::string& target_host, const Met
     const auto& common = invocation_context->response.common();
     switch (common.status().code()) {
       case google::rpc::Code::OK: {
-        SPDLOG_DEBUG("ReceivedMessage Resonse: {}, host={}", invocation_context->response.DebugString(),
+        SPDLOG_TRACE("ReceivedMessage Resonse: {}, host={}", invocation_context->response.DebugString(),
                      invocation_context->remote_address);
         for (auto& item : invocation_context->response.messages()) {
           MQMessageExt message_ext;
