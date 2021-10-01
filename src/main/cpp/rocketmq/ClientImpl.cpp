@@ -13,6 +13,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "apache/rocketmq/v1/definition.pb.h"
+#include "google/rpc/code.pb.h"
 
 #include "ClientImpl.h"
 #include "ClientManagerFactory.h"
@@ -358,12 +359,12 @@ void ClientImpl::onMultiplexingResponse(const InvocationContext<MultiplexingResp
       break;
     }
 
-    case MultiplexingResponse::TypeCase::kResolveOrphanedTransactionRequest: {
-      auto orphan = ctx->response.resolve_orphaned_transaction_request().orphaned_transactional_message();
+    case MultiplexingResponse::TypeCase::kRecoverOrphanedTransactionRequest: {
+      auto orphan = ctx->response.recover_orphaned_transaction_request().orphaned_transactional_message();
       MQMessageExt message;
       if (client_manager_->wrapMessage(orphan, message)) {
         MessageAccessor::setTargetEndpoint(message, ctx->remote_address);
-        const std::string& transaction_id = ctx->response.resolve_orphaned_transaction_request().transaction_id();
+        const std::string& transaction_id = ctx->response.recover_orphaned_transaction_request().transaction_id();
         resolveOrphanedTransactionalMessage(transaction_id, message);
       } else {
         SPDLOG_WARN("Failed to resolve orphaned transactional message, potentially caused by message-body checksum "

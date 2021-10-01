@@ -18,16 +18,22 @@ enum Permission {
   READ = 1;
   WRITE = 2;
   READ_WRITE = 3;
+
+  reserved 4 to 64;
 }
 
 enum FilterType {
   TAG = 0;
   SQL = 1;
+
+  reserved 2 to 64;
 }
 
 message FilterExpression {
   FilterType type = 1;
   string expression = 2;
+
+  reserved 3 to 64;
 }
 
 // Dead lettering is done on a best effort basis. The same message might be
@@ -42,6 +48,8 @@ message DeadLetterPolicy {
   //
   // If this parameter is 0, a default value of 5 is used.
   int32 max_delivery_attempts = 1;
+
+  reserved 2 to 64;
 }
 
 message Resource {
@@ -50,25 +58,37 @@ message Resource {
   // Resource name identifier, which remains unique within the abstract resource
   // namespace.
   string name = 2;
+
+  reserved 3 to 64;
 }
 
 enum ConsumeModel {
   CLUSTERING = 0;
   BROADCASTING = 1;
+
+  reserved 2 to 64;
 }
 
-message ProducerData { Resource group = 1; }
+message ProducerData {
+  Resource group = 1;
+
+  reserved 2 to 64;
+}
 
 enum ConsumePolicy {
   RESUME = 0;
   PLAYBACK = 1;
   DISCARD = 2;
   TARGET_TIMESTAMP = 3;
+
+  reserved 4 to 64;
 }
 
 enum ConsumeMessageType {
   ACTIVE = 0;
   PASSIVE = 1;
+
+  reserved 2 to 64;
 }
 
 message ConsumerData {
@@ -83,27 +103,37 @@ message ConsumerData {
   DeadLetterPolicy dead_letter_policy = 5;
 
   ConsumeMessageType consume_type = 6;
+
+  reserved 7 to 64;
 }
 
 message SubscriptionEntry {
   Resource topic = 1;
   FilterExpression expression = 2;
+
+  reserved 3 to 64;
 }
 
 enum AddressScheme {
   IPv4 = 0;
   IPv6 = 1;
   DOMAIN_NAME = 2;
+
+  reserved 3 to 64;
 }
 
 message Address {
   string host = 1;
   int32 port = 2;
+
+  reserved 3 to 64;
 }
 
 message Endpoints {
   AddressScheme scheme = 1;
   repeated Address addresses = 2;
+
+  reserved 3 to 64;
 }
 
 message Broker {
@@ -119,6 +149,8 @@ message Broker {
   // 2. ipv4:address[:port][,address[:port],...] – IPv4 addresses
   // 3. ipv6:address[:port][,address[:port],...] – IPv6 addresses
   Endpoints endpoints = 3;
+
+  reserved 4 to 64;
 }
 
 message Partition {
@@ -126,6 +158,8 @@ message Partition {
   int32 id = 2;
   Permission permission = 3;
   Broker broker = 4;
+
+  reserved 5 to 64;
 }
 
 enum MessageType {
@@ -140,6 +174,8 @@ enum MessageType {
   // Messages that are transactional. Only committed messages are delivered to
   // subscribers.
   TRANSACTION = 3;
+
+  reserved 4 to 64;
 }
 
 enum DigestType {
@@ -154,16 +190,22 @@ enum DigestType {
   // SHA-family has substantially fewer collision with fair amount of
   // computation.
   SHA1 = 2;
+
+  reserved 3 to 64;
 }
 
 message Digest {
   DigestType type = 1;
   string checksum = 2;
+
+  reserved 3 to 64;
 }
 
 enum Encoding {
   IDENTITY = 0;
   GZIP = 1;
+
+  reserved 2 to 64;
 }
 
 message SystemAttribute {
@@ -233,8 +275,10 @@ message SystemAttribute {
   // Trace context.
   string trace_context = 20;
 
-  // Delay time of first resolve orphaned transaction request from server.
+  // Delay time of first recover orphaned transaction request from server.
   google.protobuf.Duration orphaned_transaction_recovery_period = 21;
+
+  reserved 22 to 64;
 }
 
 message Message {
@@ -243,9 +287,15 @@ message Message {
   map<string, string> user_attribute = 2;
   SystemAttribute system_attribute = 3;
   bytes body = 4;
+
+  reserved 5 to 64;
 }
 
-message Assignment { Partition Partition = 1; }
+message Assignment {
+  Partition Partition = 1;
+
+  reserved 2 to 64;
+}
 
 enum QueryOffsetPolicy {
   // Use this option if client wishes to playback all existing messages.
@@ -256,4 +306,6 @@ enum QueryOffsetPolicy {
 
   // Use this option if time-based seek is targeted.
   TIME_POINT = 2;
+
+  reserved 3 to 64;
 }

@@ -3,6 +3,7 @@
 #include <functional>
 #include <memory>
 
+#include "google/rpc/code.pb.h"
 #include "grpc/grpc.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"

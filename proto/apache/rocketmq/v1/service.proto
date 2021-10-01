@@ -1,10 +1,8 @@
 syntax = "proto3";
 
-import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "google/rpc/error_details.proto";
-import "google/rpc/code.proto";
 import "google/rpc/status.proto";
 
 import "apache/rocketmq/v1/definition.proto";
@@ -26,6 +24,8 @@ message ResponseCommon {
   google.rpc.RetryInfo retry_info = 4;
   google.rpc.DebugInfo debug_info = 5;
   google.rpc.ErrorInfo error_info = 6;
+
+  reserved 7 to 64;
 }
 
 message QueryRouteRequest {
@@ -33,22 +33,30 @@ message QueryRouteRequest {
 
   // Service access point
   Endpoints endpoints = 2;
+
+  reserved 3 to 64;
 }
 
 message QueryRouteResponse {
   ResponseCommon common = 1;
   repeated Partition partitions = 2;
+
+  reserved 3 to 64;
 }
 
 message SendMessageRequest {
   Message message = 1;
   Partition partition = 2;
+
+  reserved 3 to 64;
 }
 
 message SendMessageResponse {
   ResponseCommon common = 1;
   string message_id = 2;
   string transaction_id = 3;
+
+  reserved 4 to 64;
 }
 
 message QueryAssignmentRequest {
@@ -58,11 +66,15 @@ message QueryAssignmentRequest {
 
   // Service access point
   Endpoints endpoints = 4;
+
+  reserved 5 to 64;
 }
 
 message QueryAssignmentResponse {
   ResponseCommon common = 1;
   repeated Assignment assignments = 2;
+
+  reserved 3 to 64;
 }
 
 message ReceiveMessageRequest {
@@ -76,6 +88,8 @@ message ReceiveMessageRequest {
   google.protobuf.Duration invisible_duration = 8;
   google.protobuf.Duration await_time = 9;
   bool fifo_flag = 10;
+
+  reserved 11 to 64;
 }
 
 message ReceiveMessageResponse {
@@ -83,6 +97,8 @@ message ReceiveMessageResponse {
   repeated Message messages = 2;
   google.protobuf.Timestamp delivery_timestamp = 3;
   google.protobuf.Duration invisible_duration = 4;
+
+  reserved 5 to 64;
 }
 
 message AckMessageRequest {
@@ -94,9 +110,15 @@ message AckMessageRequest {
     int64 offset = 5;
   }
   string message_id = 6;
+
+  reserved 7 to 64;
 }
 
-message AckMessageResponse { ResponseCommon common = 1; }
+message AckMessageResponse {
+  ResponseCommon common = 1;
+
+  reserved 2 to 64;
+}
 
 message NackMessageRequest {
   Resource group = 1;
@@ -106,9 +128,15 @@ message NackMessageRequest {
   string message_id = 5;
   int32 delivery_attempt = 6;
   int32 max_delivery_attempts = 7;
+
+  reserved 8 to 64;
 }
 
-message NackMessageResponse { ResponseCommon common = 1; }
+message NackMessageResponse {
+  ResponseCommon common = 1;
+
+  reserved 2 to 64;
+}
 
 message ForwardMessageToDeadLetterQueueRequest {
   Resource group = 1;
@@ -118,9 +146,15 @@ message ForwardMessageToDeadLetterQueueRequest {
   string message_id = 5;
   int32 delivery_attempt = 6;
   int32 max_delivery_attempts = 7;
+
+  reserved 8 to 64;
 }
 
-message ForwardMessageToDeadLetterQueueResponse { ResponseCommon common = 1; }
+message ForwardMessageToDeadLetterQueueResponse {
+  ResponseCommon common = 1;
+
+  reserved 2 to 64;
+}
 
 message HeartbeatRequest {
   string client_id = 1;
@@ -129,16 +163,28 @@ message HeartbeatRequest {
     ConsumerData consumer_data = 3;
   }
   bool fifo_flag = 4;
+
+  reserved 5 to 64;
 }
 
-message HeartbeatResponse { ResponseCommon common = 1; }
+message HeartbeatResponse {
+  ResponseCommon common = 1;
+
+  reserved 2 to 64;
+}
 
 message HealthCheckRequest {
   Resource group = 1;
   string client_host = 2;
+
+  reserved 3 to 64;
 }
 
-message HealthCheckResponse { ResponseCommon common = 1; }
+message HealthCheckResponse {
+  ResponseCommon common = 1;
+
+  reserved 2 to 64;
+}
 
 message EndTransactionRequest {
   Resource group = 1;
@@ -155,19 +201,29 @@ message EndTransactionRequest {
   }
   Source source = 5;
   string trace_context = 6;
+
+  reserved 7 to 64;
 }
 
-message EndTransactionResponse { ResponseCommon common = 1; }
+message EndTransactionResponse {
+  ResponseCommon common = 1;
+
+  reserved 2 to 64;
+}
 
 message QueryOffsetRequest {
   Partition partition = 1;
   QueryOffsetPolicy policy = 2;
   google.protobuf.Timestamp time_point = 3;
+
+  reserved 4 to 64;
 }
 
 message QueryOffsetResponse {
   ResponseCommon common = 1;
   int64 offset = 2;
+
+  reserved 3 to 64;
 }
 
 message PullMessageRequest {
@@ -178,6 +234,8 @@ message PullMessageRequest {
   google.protobuf.Duration await_time = 5;
   FilterExpression filter_expression = 6;
   string client_id = 7;
+
+  reserved 8 to 64;
 }
 
 message PullMessageResponse {
@@ -186,15 +244,23 @@ message PullMessageResponse {
   int64 next_offset = 3;
   int64 max_offset = 4;
   repeated Message messages = 5;
+
+  reserved 6 to 64;
 }
 
 message UpdateOffsetRequest {
   Resource group = 1;
   Partition partition = 2;
   int64 partition_offset = 3;
+
+  reserved 4 to 64;
 }
 
-message UpdateOffsetResponse { ResponseCommon common = 1; }
+message UpdateOffsetResponse {
+  ResponseCommon common = 1;
+
+  reserved 2 to 64;
+}
 
 message GenericPollingRequest {
   string client_id = 1;
@@ -203,31 +269,49 @@ message GenericPollingRequest {
     Resource producer_group = 3;
     Resource consumer_group = 4;
   }
+
+  reserved 5 to 64;
 }
 
-message GenericPollingResponse { ResponseCommon common = 1; }
+message GenericPollingResponse {
+  ResponseCommon common = 1;
 
-message PrintThreadStackRequest { string mid = 1; }
+  reserved 2 to 64;
+}
+
+message PrintThreadStackRequest {
+  string mid = 1;
+
+  reserved 2 to 64;
+}
 
 message PrintThreadStackResponse {
   ResponseCommon common = 1;
   string mid = 2;
   string stack_trace = 3;
+
+  reserved 4 to 64;
 }
 
 message VerifyMessageConsumptionRequest {
   string mid = 1;
   Message message = 2;
+
+  reserved 3 to 64;
 }
 
 message VerifyMessageConsumptionResponse {
   string mid = 1;
   ResponseCommon common = 2;
+
+  reserved 3 to 64;
 }
 
-message ResolveOrphanedTransactionRequest {
+message RecoverOrphanedTransactionRequest {
   Message orphaned_transactional_message = 1;
   string transaction_id = 2;
+
+  reserved 3 to 64;
 }
 
 message MultiplexingRequest {
@@ -236,6 +320,8 @@ message MultiplexingRequest {
     PrintThreadStackResponse print_thread_stack_response = 2;
     VerifyMessageConsumptionResponse verify_message_consumption_response = 3;
   }
+
+  reserved 4 to 64;
 }
 
 message MultiplexingResponse {
@@ -243,16 +329,24 @@ message MultiplexingResponse {
     GenericPollingResponse polling_response = 1;
     PrintThreadStackRequest print_thread_stack_request = 2;
     VerifyMessageConsumptionRequest verify_message_consumption_request = 3;
-    ResolveOrphanedTransactionRequest resolve_orphaned_transaction_request = 4;
+    RecoverOrphanedTransactionRequest recover_orphaned_transaction_request = 4;
   }
+
+  reserved 5 to 64;
 }
 
 message NotifyClientTerminationRequest {
   Resource group = 1;
   string client_id = 2;
+
+  reserved 3 to 64;
 }
 
-message NotifyClientTerminationResponse { ResponseCommon common = 1; }
+message NotifyClientTerminationResponse {
+  ResponseCommon common = 1;
+
+  reserved 2 to 64;
+}
 
 service MessagingService {
   rpc QueryRoute(QueryRouteRequest) returns (QueryRouteResponse) {}

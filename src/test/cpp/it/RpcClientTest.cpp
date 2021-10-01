@@ -1,3 +1,13 @@
+#include <iostream>
+#include <thread>
+#include <unordered_map>
+
+#include "absl/container/flat_hash_set.h"
+#include "apache/rocketmq/v1/service.pb.h"
+#include "google/rpc/code.pb.h"
+#include "spdlog/spdlog.h"
+#include "gtest/gtest.h"
+
 #include "ClientConfigImpl.h"
 #include "InvocationContext.h"
 #include "LogInterceptorFactory.h"
@@ -7,15 +17,8 @@
 #include "TlsHelper.h"
 #include "UniqueIdGenerator.h"
 #include "UtilAll.h"
-#include "absl/container/flat_hash_set.h"
-#include "apache/rocketmq/v1/service.pb.h"
 #include "rocketmq/CredentialsProvider.h"
 #include "rocketmq/Logger.h"
-#include "spdlog/spdlog.h"
-#include "gtest/gtest.h"
-#include <iostream>
-#include <thread>
-#include <unordered_map>
 
 using namespace testing;
 

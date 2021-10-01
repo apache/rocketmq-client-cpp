@@ -1,0 +1,13 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "remoting",
+    hdrs = glob(["include/*.h"]),
+    srcs = glob(["*.cpp"]),
+    strip_include_prefix = "//src/main/cpp/remoting/include",
+    deps = [
+        "//api:rocketmq_interface",
+        "@asio//:asio",
+    ]
+)

@@ -1,6 +1,8 @@
 #include "RpcClientMock.h"
-#include <grpcpp/impl/grpc_library.h>
-#include <gtest/gtest.h>
+
+#include "google/rpc/code.pb.h"
+#include "grpcpp/impl/grpc_library.h"
+#include "gtest/gtest.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

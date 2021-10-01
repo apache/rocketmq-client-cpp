@@ -126,3 +126,13 @@ def rocketmq_deps():
         strip_prefix = "cpp-httplib-0.9.4",
         urls = ["https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.9.4.tar.gz"],
     )
+
+    maybe(
+        http_archive,
+        name = "com_google_googleapis",
+        sha256 = "e89f15d54b0ddab0cd41d18cb2299e5447db704e2b05ff141cb1769170671466",
+        urls = [
+            "https://github.com/googleapis/googleapis/archive/af7fb72df59a814221b123a4d1acb3f6c3e6cc95.zip"
+        ],
+        strip_prefix = "googleapis-af7fb72df59a814221b123a4d1acb3f6c3e6cc95",
+    )
