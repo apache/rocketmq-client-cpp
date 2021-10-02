@@ -129,9 +129,9 @@ void OtlpExporterHandler::Export(const std::vector<::opencensus::trace::exporter
   }
 
   switch (exp->traceMode()) {
-    case TraceMode::OFF:
+    case TraceMode::Off:
       return;
-    case TraceMode::DEBUG: {
+    case TraceMode::Develop: {
       {
         for (const auto& span : spans) {
           SPDLOG_INFO("{} --> {}: {}", absl::FormatTime(span.start_time()), absl::FormatTime(span.end_time()),
@@ -158,7 +158,7 @@ void OtlpExporterHandler::Export(const std::vector<::opencensus::trace::exporter
       }
       return;
     }
-    case TraceMode::GRPC:
+    case TraceMode::Grpc:
       break;
   }
 

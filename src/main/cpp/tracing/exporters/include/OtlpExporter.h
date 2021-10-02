@@ -26,9 +26,9 @@ namespace collector_trace = collector::trace::v1;
 
 enum class TraceMode : std::uint8_t
 {
-  OFF = 0,
-  DEBUG = 1,
-  GRPC = 2
+  Off = 0,
+  Develop = 1,
+  Grpc = 2
 };
 
 class Samplers {
@@ -79,7 +79,7 @@ private:
   std::vector<std::string> hosts_;
   absl::Mutex hosts_mtx_;
 
-  TraceMode mode_{TraceMode::OFF};
+  TraceMode mode_{TraceMode::Off};
 };
 
 class ExportClient {

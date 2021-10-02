@@ -27,7 +27,7 @@ protected:
 
 TEST_F(OtlpExporterTest, testExport) {
   auto exporter = std::make_shared<OtlpExporter>(client_manager_, &client_config_);
-  exporter->traceMode(TraceMode::DEBUG);
+  exporter->traceMode(TraceMode::Develop);
   exporter->start();
 
   auto& sampler = Samplers::always();
