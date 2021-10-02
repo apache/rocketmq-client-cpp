@@ -11,6 +11,25 @@ ROCKETMQ_NAMESPACE_BEGIN
 void LogInterceptor::Intercept(grpc::experimental::InterceptorBatchMethods* methods) {
   InterceptorContinuation continuation(methods);
 
+  auto level = spdlog::default_logger()->level();
+  switch (level) {
+    case spdlog::level::trace:
+      // fall-through on purpose.
+    case spdlog::level::debug: {
+      break;
+    }
+    case spdlog::level::info:
+      // fall-through on purpose.
+    case spdlog::level::warn:
+      // fall-through on purpose.
+    case spdlog::level::err: {
+      return;
+    }
+    default: {
+      return;
+    }
+  }
+
   if (methods->QueryInterceptionHookPoint(grpc::experimental::InterceptionHookPoints::PRE_SEND_INITIAL_METADATA)) {
     std::multimap<std::string, std::string>* metadata = methods->GetSendInitialMetadata();
     if (metadata) {

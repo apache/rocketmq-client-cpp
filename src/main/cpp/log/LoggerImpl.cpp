@@ -1,4 +1,6 @@
 #include "LoggerImpl.h"
+#include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
 
@@ -77,7 +79,30 @@ void LoggerImpl::init0() {
   auto default_logger =
       std::make_shared<spdlog::logger>(LOGGER_NAME, spdlog::sinks_init_list{console_sink_, file_sink_});
   default_logger->flush_on(spdlog::level::warn);
-  default_logger->set_level(spdlog::level::trace);
+  Level logger_level =
+      static_cast<Level>(std::min(static_cast<std::uint8_t>(level_), static_cast<std::uint8_t>(console_level_)));
+  switch (logger_level) {
+    case Level::Trace: {
+      default_logger->set_level(spdlog::level::trace);
+      break;
+    }
+    case Level::Debug: {
+      default_logger->set_level(spdlog::level::debug);
+      break;
+    }
+    case Level::Info: {
+      default_logger->set_level(spdlog::level::info);
+      break;
+    }
+    case Level::Warn: {
+      default_logger->set_level(spdlog::level::warn);
+      break;
+    }
+    default: {
+      default_logger->set_level(spdlog::level::info);
+      break;
+    }
+  }
   spdlog::flush_every(std::chrono::seconds(1));
   spdlog::set_default_logger(default_logger);
 }
