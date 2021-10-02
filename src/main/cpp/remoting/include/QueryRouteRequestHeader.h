@@ -21,6 +21,8 @@ public:
     return topic_;
   }
 
+  void encode(google::protobuf::Value& root) const override;
+
 private:
   std::string topic_;
 };

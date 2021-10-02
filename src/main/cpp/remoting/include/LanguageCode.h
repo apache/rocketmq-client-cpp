@@ -17,7 +17,7 @@ enum class LanguageCode : std::uint8_t
   RUBY = 6,
   OTHER = 7,
   HTTP = 8,
-  Go = 9,
+  GO = 9,
   PHP = 10,
   OMS = 11,
 };
