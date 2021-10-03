@@ -112,6 +112,7 @@ def rocketmq_deps():
     maybe(
         http_archive,
         name = "asio",
+        sha256 = "c864363205f78768c795ba14a9989200075e732f877ddef01a19237c2eccf44b",
         build_file = "@org_apache_rocketmq//third_party:asio.BUILD",
         strip_prefix = "asio-1.18.2",
         urls = [
@@ -122,6 +123,7 @@ def rocketmq_deps():
     maybe(
         http_archive,
         name = "com_github_yhirose_cpp_httplib",
+        sha256 = "0ff62e28eb0f6e563178d44b77c94dddb8702141d83dd34b83cb046399c2b1d5",
         build_file = "@org_apache_rocketmq//third_party:cpp_httplib.BUILD",
         strip_prefix = "cpp-httplib-0.9.4",
         urls = ["https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.9.4.tar.gz"],
