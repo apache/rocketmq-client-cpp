@@ -24,6 +24,8 @@ void PullConsumerImpl::start() {
 void PullConsumerImpl::shutdown() {
   // Shutdown services started by current tier
 
+  notifyClientTermination();
+
   // Shutdown services that are started by the parent
   ClientImpl::shutdown();
   State expected = State::STOPPING;
@@ -158,6 +160,14 @@ void PullConsumerImpl::prepareHeartbeatData(HeartbeatRequest& request) {
       consumer_data->set_consume_model(rmq::ConsumeModel::CLUSTERING);
       break;
   }
+}
+
+void PullConsumerImpl::notifyClientTermination() {
+  NotifyClientTerminationRequest request;
+  request.mutable_consumer_group()->set_resource_namespace(resource_namespace_);
+  request.mutable_consumer_group()->set_name(group_name_);
+  request.set_client_id(clientId());
+  ClientImpl::notifyClientTermination(request);
 }
 
 ROCKETMQ_NAMESPACE_END

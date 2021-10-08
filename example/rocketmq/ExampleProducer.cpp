@@ -66,12 +66,12 @@ int main(int argc, char* argv[]) {
   std::thread stats_thread(stats_lambda);
 
   std::string body = randomString(1024 * 4);
-  std::cout << "Message body: " << body << std::endl;
+  std::cout << "Message body size: " << body.length() << std::endl;
   message.setBody(body);
 
   try {
     producer.start();
-    for (int i = 0; i < 102400; ++i) {
+    for (int i = 0; i < 16; ++i) {
       SendResult sendResult = producer.send(message);
       std::cout << sendResult.getMessageQueue().simpleName() << ": " << sendResult.getMsgId() << std::endl;
       count++;

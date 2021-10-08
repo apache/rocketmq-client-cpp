@@ -630,4 +630,12 @@ ClientResourceBundle PushConsumerImpl::resourceBundle() {
   return std::move(resource_bundle);
 }
 
+void PushConsumerImpl::notifyClientTermination() {
+  NotifyClientTerminationRequest request;
+  request.mutable_consumer_group()->set_resource_namespace(resource_namespace_);
+  request.mutable_consumer_group()->set_name(group_name_);
+  request.set_client_id(clientId());
+  ClientImpl::notifyClientTermination(request);
+}
+
 ROCKETMQ_NAMESPACE_END

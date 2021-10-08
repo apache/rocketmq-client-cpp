@@ -108,6 +108,8 @@ protected:
 
   void resolveOrphanedTransactionalMessage(const std::string& transaction_id, const MQMessageExt& message) override;
 
+  void notifyClientTermination() override;
+
 private:
   absl::flat_hash_map<std::string, TopicPublishInfoPtr> topic_publish_info_table_ GUARDED_BY(topic_publish_info_mtx_);
   absl::Mutex topic_publish_info_mtx_; // protects topic_publish_info_

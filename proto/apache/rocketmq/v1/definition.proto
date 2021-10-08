@@ -1,3 +1,18 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
@@ -9,8 +24,6 @@ option java_multiple_files = true;
 option java_package = "apache.rocketmq.v1";
 option java_generate_equals_and_hash = true;
 option java_string_check_utf8 = true;
-
-// Ali Cloud Service
 option java_outer_classname = "MQDomain";
 
 enum Permission {
@@ -46,7 +59,7 @@ message DeadLetterPolicy {
   //
   // This field will be honored on a best effort basis.
   //
-  // If this parameter is 0, a default value of 5 is used.
+  // If this parameter is 0, a default value of 16 is used.
   int32 max_delivery_attempts = 1;
 
   reserved 2 to 64;
@@ -216,6 +229,7 @@ message SystemAttribute {
   repeated string keys = 2;
 
   // Message identifier, client-side generated, remains unique.
+  // if message_id is empty, the send message request will be aborted with status `INVALID_ARGUMENT`
   string message_id = 3;
 
   // Message body digest
@@ -284,6 +298,9 @@ message SystemAttribute {
 message Message {
   Resource topic = 1;
   // User defined key-value pairs.
+  // If user_attribute contains the reserved keys by RocketMQ,
+  // the send message request will be aborted with status `INVALID_ARGUMENT`. See below links for the reserved keys
+  // https://github.com/apache/rocketmq/blob/master/common/src/main/java/org/apache/rocketmq/common/message/MessageConst.java#L58
   map<string, string> user_attribute = 2;
   SystemAttribute system_attribute = 3;
   bytes body = 4;

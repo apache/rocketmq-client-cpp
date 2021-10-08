@@ -10,6 +10,7 @@
 #include <system_error>
 #include <utility>
 
+#include "RpcClient.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "apache/rocketmq/v1/definition.pb.h"
@@ -69,7 +70,6 @@ void ClientImpl::shutdown() {
     if (route_update_handle_) {
       client_manager_->getScheduler().cancel(route_update_handle_);
     }
-    notifyClientTermination();
     client_manager_.reset();
   } else {
     SPDLOG_ERROR("Try to shutdown ClientImpl, but its state is not as expected. Expecting: {}, Actual: {}",
@@ -476,15 +476,16 @@ void ClientImpl::fillGenericPollingRequest(MultiplexingRequest& request) {
 }
 
 void ClientImpl::notifyClientTermination() {
+  SPDLOG_WARN("Should NOT reach here. Subclass should have overridden this function.");
+  std::abort();
+}
+
+void ClientImpl::notifyClientTermination(const NotifyClientTerminationRequest& request) {
   absl::flat_hash_set<std::string> endpoints;
   endpointsInUse(endpoints);
 
   Metadata metadata;
   Signature::sign(this, metadata);
-  NotifyClientTerminationRequest request;
-  request.mutable_group()->set_resource_namespace(resource_namespace_);
-  request.mutable_group()->set_name(group_name_);
-  request.set_client_id(clientId());
 
   for (const auto& endpoint : endpoints) {
     client_manager_->notifyClientTermination(endpoint, metadata, request, absl::ToChronoMilliseconds(io_timeout_));

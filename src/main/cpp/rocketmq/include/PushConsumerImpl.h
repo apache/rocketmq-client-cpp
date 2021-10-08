@@ -183,6 +183,8 @@ protected:
 
   ClientResourceBundle resourceBundle() LOCKS_EXCLUDED(topic_filter_expression_table_mtx_) override;
 
+  void notifyClientTermination() override;
+
 private:
   absl::flat_hash_map<std::string, FilterExpression>
       topic_filter_expression_table_ GUARDED_BY(topic_filter_expression_table_mtx_);

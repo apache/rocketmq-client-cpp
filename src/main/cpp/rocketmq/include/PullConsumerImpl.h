@@ -36,6 +36,8 @@ protected:
     return shared_from_this();
   }
 
+  void notifyClientTermination() override;
+
   MessageModel message_model_{MessageModel::CLUSTERING};
 };
 

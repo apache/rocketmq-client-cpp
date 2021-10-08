@@ -55,9 +55,12 @@ ClientManagerImpl::ClientManagerImpl(std::string resource_namespace)
   tls_channel_credential_options_.watch_identity_key_cert_pairs();
   channel_credential_ = grpc::experimental::TlsCredentials(tls_channel_credential_options_);
 
-  int max_message_size = 1024 * 1024 * 16;
-  channel_arguments_.SetMaxReceiveMessageSize(max_message_size);
-  channel_arguments_.SetMaxSendMessageSize(max_message_size);
+
+  // Use unlimited receive message size.
+  channel_arguments_.SetMaxReceiveMessageSize(-1);
+
+  int max_send_message_size = 1024 * 1024 * 16;
+  channel_arguments_.SetMaxSendMessageSize(max_send_message_size);
 
   /*
    * Keep-alive settings:

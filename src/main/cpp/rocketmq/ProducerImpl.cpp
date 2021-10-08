@@ -5,6 +5,7 @@
 #include <system_error>
 #include <utility>
 
+#include "Client.h"
 #include "absl/strings/str_join.h"
 #include "opencensus/trace/propagation/trace_context.h"
 #include "opencensus/trace/span.h"
@@ -59,9 +60,19 @@ void ProducerImpl::shutdown() {
     return;
   }
 
+  notifyClientTermination();
+
   ClientImpl::shutdown();
   assert(State::STOPPED == state_.load());
   SPDLOG_INFO("Producer instance stopped");
+}
+
+void ProducerImpl::notifyClientTermination() {
+  NotifyClientTerminationRequest request;
+  request.mutable_producer_group()->set_resource_namespace(resource_namespace_);
+  request.mutable_producer_group()->set_name(group_name_);
+  request.set_client_id(clientId());
+  ClientImpl::notifyClientTermination(request);
 }
 
 bool ProducerImpl::isRunning() const {

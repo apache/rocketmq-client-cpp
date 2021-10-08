@@ -19,6 +19,8 @@ public:
 
   MOCK_METHOD(void, schedule, (const std::string&, const std::function<void()>&, std::chrono::milliseconds),
               (override));
+
+  MOCK_METHOD(void, notifyClientTermination, (), (override));
 };
 
 ROCKETMQ_NAMESPACE_END

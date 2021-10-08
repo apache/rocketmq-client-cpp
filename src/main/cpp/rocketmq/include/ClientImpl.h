@@ -3,8 +3,10 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <cstdlib>
 #include <system_error>
 
+#include "RpcClient.h"
 #include "absl/strings/string_view.h"
 #include "apache/rocketmq/v1/definition.pb.h"
 
@@ -118,7 +120,9 @@ protected:
 
   void setAccessPoint(rmq::Endpoints* endpoints);
 
-  virtual void notifyClientTermination();
+  void notifyClientTermination() override;
+
+  void notifyClientTermination(const NotifyClientTerminationRequest& request);
 
 private:
   /**
