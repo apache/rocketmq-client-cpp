@@ -21,3 +21,37 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "broker_data_test",
+    srcs = [
+        "BrokerDataTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/remoting",
+        "@com_google_googletest//:gtest_main",
+    ]
+)
+
+
+cc_test(
+    name = "queue_data_test",
+    srcs = [
+        "QueueDataTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/remoting",
+        "@com_google_googletest//:gtest_main",
+    ]
+)
+
+cc_test(
+    name = "topic_route_data_test",
+    srcs = [
+        "TopicRouteDataTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/remoting",
+        "@com_google_googletest//:gtest_main",
+    ]
+)
