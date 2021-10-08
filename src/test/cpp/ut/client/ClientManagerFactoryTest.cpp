@@ -23,6 +23,7 @@ TEST_F(ClientManagerFactoryTest, testGetClientManager) {
       .WillRepeatedly(testing::ReturnRef(resource_namespace_));
   ClientManagerPtr client_manager = ClientManagerFactory::getInstance().getClientManager(client_config_);
   EXPECT_TRUE(client_manager);
+  client_manager->start();
 }
 
 ROCKETMQ_NAMESPACE_END
