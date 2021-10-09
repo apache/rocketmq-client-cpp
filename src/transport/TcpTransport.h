@@ -44,8 +44,8 @@ class TcpTransportInfo {
 
 class TcpTransport : public noncopyable, public std::enable_shared_from_this<TcpTransport> {
  public:
-  typedef std::function<void(ByteArrayRef, TcpTransportPtr) noexcept> ReadCallback;
-  typedef std::function<void(TcpTransportPtr) noexcept> CloseCallback;
+  typedef std::function<void(ByteArrayRef, TcpTransportPtr) /* noexcept */> ReadCallback;
+  typedef std::function<void(TcpTransportPtr) /* noexcept */> CloseCallback;
 
  public:
   static TcpTransportPtr CreateTransport(ReadCallback readCallback,
