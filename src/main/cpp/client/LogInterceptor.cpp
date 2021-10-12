@@ -5,6 +5,7 @@
 #include "google/protobuf/message.h"
 #include "rocketmq/Logger.h"
 #include "spdlog/spdlog.h"
+#include <cstddef>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -67,7 +68,7 @@ void LogInterceptor::Intercept(grpc::experimental::InterceptorBatchMethods* meth
     if (message) {
       auto* response = reinterpret_cast<google::protobuf::Message*>(message);
       std::string&& response_text = response->DebugString();
-      int limit = 1024;
+      std::size_t limit = 1024;
       if (response_text.size() <= limit) {
         SPDLOG_DEBUG("[Inbound] {}\n{}", client_rpc_info_->method(), response_text);
       } else {

@@ -1,7 +1,9 @@
+#include <cstdlib>
+#include <iostream>
+
 #include "rocketmq/CredentialsProvider.h"
 #include "rocketmq/DefaultMQPullConsumer.h"
 #include "rocketmq/Logger.h"
-#include <cstdlib>
 
 int main(int argc, char* argv[]) {
   const char* group = "GID_group003";
@@ -28,6 +30,7 @@ int main(int argc, char* argv[]) {
     offset_query.policy = rocketmq::QueryOffsetPolicy::BEGINNING;
     auto offset_future = pull_consumer.queryOffset(offset_query);
     int64_t offset = offset_future.get();
+    std::cout << "offset: " << offset << std::endl;
   }
 
   pull_consumer.shutdown();
