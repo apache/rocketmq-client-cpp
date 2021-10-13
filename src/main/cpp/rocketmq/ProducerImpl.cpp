@@ -341,6 +341,9 @@ bool ProducerImpl::endTransaction0(const std::string& target, const std::string&
   EndTransactionRequest request;
   request.set_message_id(message_id);
   request.set_transaction_id(transaction_id);
+  request.mutable_group()->set_name(group_name_);
+  request.mutable_group()->set_resource_namespace(resource_namespace_);
+
   std::string action;
   switch (resolution) {
     case TransactionState::COMMIT:
