@@ -27,9 +27,9 @@ public:
                (const std::function<void(const std::error_code&, const HeartbeatResponse&)>&)),
               (override));
 
-  MOCK_METHOD(void, multiplexingCall,
-              (const std::string&, const Metadata&, const MultiplexingRequest&, std::chrono::milliseconds,
-               (const std::function<void(const InvocationContext<MultiplexingResponse>*)>&)),
+  MOCK_METHOD(void, pollCommand,
+              (const std::string&, const Metadata&, const PollCommandRequest&, std::chrono::milliseconds,
+               const std::function<void(const InvocationContext<PollCommandResponse>*)>&),
               (override));
 
   MOCK_METHOD(bool, wrapMessage, (const rmq::Message&, MQMessageExt&), (override));
@@ -88,7 +88,18 @@ public:
               (const std::string&, const Metadata&, const NotifyClientTerminationRequest&, std::chrono::milliseconds),
               (override));
 
+  MOCK_METHOD(std::error_code, reportThreadStackTrace,
+              (const std::string&, const Metadata&, const ReportThreadStackTraceRequest&, std::chrono::milliseconds),
+              (override));
+
+  MOCK_METHOD(std::error_code, reportMessageConsumptionResult,
+              (const std::string&, const Metadata&, const ReportMessageConsumptionResultRequest&,
+               std::chrono::milliseconds),
+              (override));
+
   MOCK_METHOD(State, state, (), (const override));
+
+  MOCK_METHOD(void, submit, (std::function<void()>), (override));
 };
 
 ROCKETMQ_NAMESPACE_END

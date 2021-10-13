@@ -40,24 +40,25 @@ using HealthCheckRequest = rmq::HealthCheckRequest;
 using HealthCheckResponse = rmq::HealthCheckResponse;
 using EndTransactionRequest = rmq::EndTransactionRequest;
 using EndTransactionResponse = rmq::EndTransactionResponse;
-using MultiplexingRequest = rmq::MultiplexingRequest;
-using MultiplexingResponse = rmq::MultiplexingResponse;
-using GenericPollingRequest = rmq::GenericPollingRequest;
-using GenericPollingResponse = rmq::GenericPollingRequest;
-using PrintThreadStackRequest = rmq::PrintThreadStackRequest;
-using PrintThreadStackResponse = rmq::PrintThreadStackResponse;
-using VerifyMessageConsumptionRequest = rmq::VerifyMessageConsumptionRequest;
-using VerifyMessageConsumptionResponse = rmq::VerifyMessageConsumptionResponse;
-using RecoverOrphanedTransactionRequest = rmq::RecoverOrphanedTransactionRequest;
 using QueryOffsetRequest = rmq::QueryOffsetRequest;
 using QueryOffsetResponse = rmq::QueryOffsetResponse;
 using PullMessageRequest = rmq::PullMessageRequest;
 using PullMessageResponse = rmq::PullMessageResponse;
+using PollCommandRequest = rmq::PollCommandRequest;
+using PollCommandResponse = rmq::PollCommandResponse;
+using ReportThreadStackTraceRequest = rmq::ReportThreadStackTraceRequest;
+using ReportThreadStackTraceResponse = rmq::ReportThreadStackTraceResponse;
+using ReportMessageConsumptionResultRequest = rmq::ReportMessageConsumptionResultRequest;
+using ReportMessageConsumptionResultResponse = rmq::ReportMessageConsumptionResultResponse;
 using ForwardMessageToDeadLetterQueueRequest = rmq::ForwardMessageToDeadLetterQueueRequest;
 using ForwardMessageToDeadLetterQueueResponse = rmq::ForwardMessageToDeadLetterQueueResponse;
 using NotifyClientTerminationRequest = rmq::NotifyClientTerminationRequest;
 using NotifyClientTerminationResponse = rmq::NotifyClientTerminationResponse;
 
+/**
+ * @brief A RpcClient represents a session between client and a remote broker.
+ *
+ */
 class RpcClient {
 public:
   RpcClient() = default;
@@ -93,8 +94,8 @@ public:
   virtual void asyncEndTransaction(const EndTransactionRequest& request,
                                    InvocationContext<EndTransactionResponse>* invocation_context) = 0;
 
-  virtual void asyncMultiplexingCall(const MultiplexingRequest& request,
-                                     InvocationContext<MultiplexingResponse>* invocation_context) = 0;
+  virtual void asyncPollCommand(const PollCommandRequest& request,
+                                InvocationContext<PollCommandResponse>* invocation_context) = 0;
 
   virtual void asyncQueryOffset(const QueryOffsetRequest& request,
                                 InvocationContext<QueryOffsetResponse>* invocation_context) = 0;
@@ -105,6 +106,14 @@ public:
   virtual void asyncForwardMessageToDeadLetterQueue(
       const ForwardMessageToDeadLetterQueueRequest& request,
       InvocationContext<ForwardMessageToDeadLetterQueueResponse>* invocation_context) = 0;
+
+  virtual grpc::Status reportThreadStackTrace(grpc::ClientContext* context,
+                                              const ReportThreadStackTraceRequest& request,
+                                              ReportThreadStackTraceResponse* response) = 0;
+
+  virtual grpc::Status reportMessageConsumptionResult(grpc::ClientContext* context,
+                                                      const ReportMessageConsumptionResultRequest& request,
+                                                      ReportMessageConsumptionResultResponse* response) = 0;
 
   virtual grpc::Status notifyClientTermination(grpc::ClientContext* context,
                                                const NotifyClientTerminationRequest& request,

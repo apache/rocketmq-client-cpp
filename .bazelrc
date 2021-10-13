@@ -117,7 +117,7 @@ build:ubsan --linkopt -lubsan
 # Use remote cache, --config=remote_cache See https://docs.bazel.build/versions/main/guide.html#--config
 build:remote_cache --remote_cache=grpc://11.122.50.85:9092
 build:remote_cache --experimental_remote_downloader=grpc://11.122.50.85:9092
-test:remote_cache --remote_cache=http://11.122.50.85:9090
+test:remote_cache --remote_cache=grpc://11.122.50.85:9090
 test:remote_cache --remote_upload_local_results=true
 
 # Coverage options

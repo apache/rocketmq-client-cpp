@@ -3,6 +3,7 @@
 #include <chrono>
 #include <memory>
 #include <system_error>
+#include <functional>
 
 #include "Client.h"
 #include "ReceiveMessageCallback.h"
@@ -37,10 +38,10 @@ public:
                          std::chrono::milliseconds timeout,
                          const std::function<void(const std::error_code&, const HeartbeatResponse&)>& cb) = 0;
 
-  virtual void multiplexingCall(const std::string& target, const Metadata& metadata, const MultiplexingRequest& request,
-                                std::chrono::milliseconds timeout,
-                                const std::function<void(const InvocationContext<MultiplexingResponse>*)>& cb) = 0;
-
+  virtual void pollCommand(const std::string& target, const Metadata& metadata, const PollCommandRequest& request,
+                           std::chrono::milliseconds timeout,
+                           const std::function<void(const InvocationContext<PollCommandResponse>*)>& cb) = 0;
+  
   virtual bool wrapMessage(const rmq::Message& item, MQMessageExt& message_ext) = 0;
 
   virtual void ack(const std::string& target_host, const Metadata& metadata, const AckMessageRequest& request,
@@ -88,7 +89,19 @@ public:
                                                   const NotifyClientTerminationRequest& request,
                                                   std::chrono::milliseconds timeout) = 0;
 
+  virtual std::error_code reportThreadStackTrace(const std::string& target_host, const Metadata& metadata,
+                                                 const ReportThreadStackTraceRequest& request,
+                                                 std::chrono::milliseconds timeout) = 0;
+  
+  virtual std::error_code reportMessageConsumptionResult(const std::string& target_host, const Metadata& metadata,
+                                                         const ReportMessageConsumptionResultRequest& request,
+                                                         std::chrono::milliseconds timeout) = 0;
+
   virtual State state() const = 0;
+
+
+  virtual void submit(std::function<void()> task) = 0;
+  
 };
 
 using ClientManagerPtr = std::shared_ptr<ClientManager>;

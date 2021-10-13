@@ -55,7 +55,6 @@ ClientManagerImpl::ClientManagerImpl(std::string resource_namespace)
   tls_channel_credential_options_.watch_identity_key_cert_pairs();
   channel_credential_ = grpc::experimental::TlsCredentials(tls_channel_credential_options_);
 
-
   // Use unlimited receive message size.
   channel_arguments_.SetMaxReceiveMessageSize(-1);
 
@@ -1237,42 +1236,23 @@ void ClientManagerImpl::endTransaction(
   client->asyncEndTransaction(request, invocation_context);
 }
 
-void ClientManagerImpl::multiplexingCall(
-    const std::string& target_host, const Metadata& metadata, const MultiplexingRequest& request,
-    std::chrono::milliseconds timeout, const std::function<void(const InvocationContext<MultiplexingResponse>*)>& cb) {
-  RpcClientSharedPtr client = getRpcClient(target_host);
-  if (!client) {
-    SPDLOG_WARN("No RPC client for {}", target_host);
-    cb(nullptr);
-    return;
-  }
+void ClientManagerImpl::pollCommand(const std::string& target, const Metadata& metadata,
+                                    const PollCommandRequest& request, std::chrono::milliseconds timeout,
+                                    const std::function<void(const InvocationContext<PollCommandResponse>*)>& cb) {
+  auto client = getRpcClient(target);
 
-  SPDLOG_DEBUG("Prepare to endTransaction. TargetHost={}, Request: {}", target_host.data(), request.DebugString());
-
-  auto invocation_context = new InvocationContext<MultiplexingResponse>();
-  invocation_context->remote_address = target_host;
+  auto invocation_context = new InvocationContext<PollCommandResponse>();
+  invocation_context->remote_address = target;
   for (const auto& item : metadata) {
     invocation_context->context.AddMetadata(item.first, item.second);
   }
-
-  // Set RPC deadline.
   auto deadline = std::chrono::system_clock::now() + timeout;
   invocation_context->context.set_deadline(deadline);
 
-  auto callback = [cb](const InvocationContext<MultiplexingResponse>* invocation_context) {
-    if (!invocation_context->status.ok()) {
-      SPDLOG_WARN("Failed to apply multiplexing-call. TargetHost={}, gRPC statusCode={}, errorMessage={}",
-                  invocation_context->remote_address, invocation_context->status.error_message(),
-                  invocation_context->status.error_message());
-      cb(invocation_context);
-      return;
-    }
+  auto callback = [cb](const InvocationContext<PollCommandResponse>* invocation_context) { cb(invocation_context); };
 
-    SPDLOG_DEBUG("endTransaction completed OK. Response: {}", invocation_context->response.DebugString());
-    cb(invocation_context);
-  };
   invocation_context->callback = callback;
-  client->asyncMultiplexingCall(request, invocation_context);
+  client->asyncPollCommand(request, invocation_context);
 }
 
 void ClientManagerImpl::queryOffset(const std::string& target_host, const Metadata& metadata,
@@ -1458,6 +1438,93 @@ void ClientManagerImpl::forwardMessageToDeadLetterQueue(
   client->asyncForwardMessageToDeadLetterQueue(request, invocation_context);
 }
 
+std::error_code ClientManagerImpl::reportThreadStackTrace(const std::string& target_host, const Metadata& metadata,
+                                                          const ReportThreadStackTraceRequest& request,
+                                                          std::chrono::milliseconds timeout) {
+  std::error_code ec;
+  auto client = getRpcClient(target_host);
+  grpc::ClientContext context;
+  auto deadline = std::chrono::system_clock::now() + timeout;
+  context.set_deadline(deadline);
+
+  for (const auto& item : metadata) {
+    context.AddMetadata(item.first, item.second);
+  }
+
+  ReportThreadStackTraceResponse response;
+  auto status = client->reportThreadStackTrace(&context, request, &response);
+  if (!status.ok()) {
+    ec = ErrorCode::RequestTimeout;
+    SPDLOG_WARN("Failed to report thread-stack-trace to {}. Cause: {}", target_host, status.error_message());
+    return ec;
+  }
+
+  switch (response.common().status().code()) {
+    case google::rpc::Code::OK: {
+      return ec;
+    }
+    case google::rpc::Code::UNAUTHENTICATED: {
+      SPDLOG_WARN("Unauthorized. Host={}, Cause: {}", target_host, response.common().status().message());
+      ec = ErrorCode::Unauthorized;
+      break;
+    }
+    case google::rpc::Code::PERMISSION_DENIED: {
+      SPDLOG_WARN("Forbidden. Host={}, Cause: {}", target_host, response.common().status().message());
+      ec = ErrorCode::Forbidden;
+      break;
+    }
+    default: {
+      ec = ErrorCode::NotImplemented;
+      SPDLOG_WARN("Unsupported response code, please update client to latest release. Host={}", target_host);
+    }
+  }
+  return ec;
+}
+
+std::error_code ClientManagerImpl::reportMessageConsumptionResult(const std::string& target_host,
+                                                                  const Metadata& metadata,
+                                                                  const ReportMessageConsumptionResultRequest& request,
+                                                                  std::chrono::milliseconds timeout) {
+  std::error_code ec;
+  auto client = getRpcClient(target_host);
+  grpc::ClientContext context;
+  auto deadline = std::chrono::system_clock::now() + timeout;
+  context.set_deadline(deadline);
+
+  for (const auto& item : metadata) {
+    context.AddMetadata(item.first, item.second);
+  }
+
+  ReportMessageConsumptionResultResponse response;
+  auto status = client->reportMessageConsumptionResult(&context, request, &response);
+  if (!status.ok()) {
+    ec = ErrorCode::RequestTimeout;
+    SPDLOG_WARN("Failed to report thread-stack-trace to {}. Cause: {}", target_host, status.error_message());
+    return ec;
+  }
+
+  switch (response.common().status().code()) {
+    case google::rpc::Code::OK: {
+      return ec;
+    }
+    case google::rpc::Code::UNAUTHENTICATED: {
+      SPDLOG_WARN("Unauthorized. Host={}, Cause: {}", target_host, response.common().status().message());
+      ec = ErrorCode::Unauthorized;
+      break;
+    }
+    case google::rpc::Code::PERMISSION_DENIED: {
+      SPDLOG_WARN("Forbidden. Host={}, Cause: {}", target_host, response.common().status().message());
+      ec = ErrorCode::Forbidden;
+      break;
+    }
+    default: {
+      ec = ErrorCode::NotImplemented;
+      SPDLOG_WARN("Unsupported response code, please update client to latest release. Host={}", target_host);
+    }
+  }
+  return ec;
+}
+
 std::error_code ClientManagerImpl::notifyClientTermination(const std::string& target_host, const Metadata& metadata,
                                                            const NotifyClientTerminationRequest& request,
                                                            std::chrono::milliseconds timeout) {
@@ -1521,6 +1588,10 @@ void ClientManagerImpl::logStats() {
   std::string stats;
   latency_histogram_.reportAndReset(stats);
   SPDLOG_INFO("{}", stats);
+}
+
+void ClientManagerImpl::submit(std::function<void()> task) {
+  callback_thread_pool_->submit(task);
 }
 
 const char* ClientManagerImpl::HEARTBEAT_TASK_NAME = "heartbeat-task";

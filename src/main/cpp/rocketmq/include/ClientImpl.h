@@ -18,6 +18,7 @@
 #include "NameServerResolver.h"
 #include "OtlpExporter.h"
 #include "rocketmq/MQMessageExt.h"
+#include "rocketmq/MessageListener.h"
 #include "rocketmq/State.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -100,10 +101,16 @@ protected:
 
   virtual void prepareHeartbeatData(HeartbeatRequest& request) = 0;
 
-  virtual std::string verifyMessageConsumption(const MQMessageExt& message) {
-    return "Unsupported";
-  }
+  virtual void verifyMessageConsumption(std::string remote_address, std::string command_id, MQMessageExt message);
 
+  /**
+   * @brief Execute transaction-state-checker to commit or roll-back the orphan transactional message.
+   *
+   * It is no-op by default and Producer-subclass is supposed to override it.
+   *
+   * @param transaction_id
+   * @param message
+   */
   virtual void resolveOrphanedTransactionalMessage(const std::string& transaction_id, const MQMessageExt& message) {
   }
 
@@ -123,6 +130,17 @@ protected:
   void notifyClientTermination() override;
 
   void notifyClientTermination(const NotifyClientTerminationRequest& request);
+
+  /**
+   * @brief Return application developer provided message listener if this client is of PushConsumer type.
+   *
+   * By default, it returns nullptr such that error messages are generated and directed to server immediately.
+   *
+   * @return nullptr by default.
+   */
+  virtual MessageListener* messageListener() {
+    return nullptr;
+  }
 
 private:
   /**
@@ -153,14 +171,14 @@ private:
   void updateRouteCache(const std::string& topic, const std::error_code& ec, const TopicRouteDataPtr& route)
       LOCKS_EXCLUDED(topic_route_table_mtx_);
 
-  void multiplexing(const std::string& target, const MultiplexingRequest& request);
+  void pollCommand(const std::string& target);
 
-  void onMultiplexingResponse(const InvocationContext<MultiplexingResponse>* ctx);
+  void onPollCommandResponse(const InvocationContext<PollCommandResponse>* ctx);
 
   void onHealthCheckResponse(const std::error_code& endpoint, const InvocationContext<HealthCheckResponse>* ctx)
       LOCKS_EXCLUDED(isolated_endpoints_mtx_);
 
-  void fillGenericPollingRequest(MultiplexingRequest& request);
+  void doVerify(std::string target, std::string command_id, MQMessageExt message);
 };
 
 ROCKETMQ_NAMESPACE_END

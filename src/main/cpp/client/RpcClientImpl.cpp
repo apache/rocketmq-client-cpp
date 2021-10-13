@@ -119,14 +119,25 @@ void RpcClientImpl::needHeartbeat(bool need_heartbeat) {
   need_heartbeat_ = need_heartbeat;
 }
 
-void RpcClientImpl::asyncMultiplexingCall(const MultiplexingRequest& request,
-                                          InvocationContext<MultiplexingResponse>* invocation_context) {
-  assert(invocation_context);
+void RpcClientImpl::asyncPollCommand(const PollCommandRequest& request,
+                                     InvocationContext<PollCommandResponse>* invocation_context) {
   invocation_context->response_reader =
-      stub_->PrepareAsyncMultiplexingCall(&invocation_context->context, request, completion_queue_.get());
+      stub_->PrepareAsyncPollCommand(&invocation_context->context, request, completion_queue_.get());
   invocation_context->response_reader->StartCall();
   invocation_context->response_reader->Finish(&invocation_context->response, &invocation_context->status,
                                               invocation_context);
+}
+
+grpc::Status RpcClientImpl::reportThreadStackTrace(grpc::ClientContext* context,
+                                                   const ReportThreadStackTraceRequest& request,
+                                                   ReportThreadStackTraceResponse* response) {
+  return stub_->ReportThreadStackTrace(context, request, response);
+}
+
+grpc::Status RpcClientImpl::reportMessageConsumptionResult(grpc::ClientContext* context,
+                                                           const ReportMessageConsumptionResultRequest& request,
+                                                           ReportMessageConsumptionResultResponse* response) {
+  return stub_->ReportMessageConsumptionResult(context, request, response);
 }
 
 grpc::Status RpcClientImpl::notifyClientTermination(grpc::ClientContext* context,

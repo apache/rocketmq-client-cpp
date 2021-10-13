@@ -38,9 +38,6 @@ public:
   MOCK_METHOD(void, asyncEndTransaction, (const EndTransactionRequest&, InvocationContext<EndTransactionResponse>*),
               (override));
 
-  MOCK_METHOD(void, asyncMultiplexingCall, (const MultiplexingRequest&, InvocationContext<MultiplexingResponse>*),
-              (override));
-
   MOCK_METHOD(void, asyncQueryOffset, (const QueryOffsetRequest&, InvocationContext<QueryOffsetResponse>*), (override));
 
   MOCK_METHOD(void, asyncPull, (const PullMessageRequest&, InvocationContext<PullMessageResponse>*), (override));
@@ -48,6 +45,17 @@ public:
   MOCK_METHOD(void, asyncForwardMessageToDeadLetterQueue,
               (const ForwardMessageToDeadLetterQueueRequest&,
                InvocationContext<ForwardMessageToDeadLetterQueueResponse>*),
+              (override));
+
+  MOCK_METHOD(void, asyncPollCommand, (const PollCommandRequest&, InvocationContext<PollCommandResponse>*), (override));
+
+  MOCK_METHOD(grpc::Status, reportThreadStackTrace,
+              (grpc::ClientContext*, const ReportThreadStackTraceRequest&, ReportThreadStackTraceResponse*),
+              (override));
+
+  MOCK_METHOD(grpc::Status, reportMessageConsumptionResult,
+              (grpc::ClientContext*, const ReportMessageConsumptionResultRequest&,
+               ReportMessageConsumptionResultResponse*),
               (override));
 
   MOCK_METHOD(grpc::Status, notifyClientTermination,

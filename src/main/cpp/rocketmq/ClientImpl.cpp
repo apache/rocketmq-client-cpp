@@ -24,6 +24,7 @@
 #include "MessageAccessor.h"
 #include "Signature.h"
 #include "rocketmq/MQMessageExt.h"
+#include "rocketmq/MessageListener.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -303,94 +304,133 @@ void ClientImpl::updateRouteCache(const std::string& topic, const std::error_cod
   }
 }
 
-void ClientImpl::multiplexing(const std::string& target, const MultiplexingRequest& request) {
+void ClientImpl::pollCommand(const std::string& target) {
   absl::flat_hash_map<std::string, std::string> metadata;
   Signature::sign(this, metadata);
-  client_manager_->multiplexingCall(target, metadata, request, absl::ToChronoMilliseconds(long_polling_timeout_),
-                                    std::bind(&ClientImpl::onMultiplexingResponse, this, std::placeholders::_1));
+
+  PollCommandRequest request;
+  auto&& resource_bundle = resourceBundle();
+  request.set_client_id(resource_bundle.client_id);
+  switch (resource_bundle.group_type) {
+    case GroupType::PUBLISHER:
+      request.mutable_producer_group()->set_resource_namespace(resource_namespace_);
+      request.mutable_producer_group()->set_name(group_name_);
+      break;
+
+    case GroupType::SUBSCRIBER:
+      request.mutable_consumer_group()->set_resource_namespace(resource_namespace_);
+      request.mutable_consumer_group()->set_name(group_name_);
+      break;
+  }
+  auto topics = request.mutable_topics();
+  for (const auto& item : resource_bundle.topics) {
+    auto topic = new rmq::Resource();
+    topic->set_resource_namespace(resource_namespace_);
+    topic->set_name(item);
+    topics->AddAllocated(topic);
+  }
+
+  client_manager_->pollCommand(target, metadata, request, absl::ToChronoMilliseconds(long_polling_timeout_),
+                               std::bind(&ClientImpl::onPollCommandResponse, this, std::placeholders::_1));
 }
 
-void ClientImpl::onMultiplexingResponse(const InvocationContext<MultiplexingResponse>* ctx) {
+void ClientImpl::verifyMessageConsumption(std::string remote_address, std::string command_id, MQMessageExt message) {
+  MessageListener* listener = messageListener();
+
+  Metadata metadata;
+  Signature::sign(this, metadata);
+  ReportMessageConsumptionResultRequest request;
+  request.set_command_id(command_id);
+
+  if (!listener) {
+    request.mutable_status()->set_code(google::rpc::Code::FAILED_PRECONDITION);
+    request.mutable_status()->set_message("Target is not a push consumer client");
+    client_manager_->reportMessageConsumptionResult(remote_address, metadata, request,
+                                                    absl::ToChronoMilliseconds(io_timeout_));
+    return;
+  }
+
+  if (MessageListenerType::FIFO == listener->listenerType()) {
+    request.mutable_status()->set_code(google::rpc::Code::FAILED_PRECONDITION);
+    request.mutable_status()->set_message("FIFO message does NOT support verification of message consumption");
+    client_manager_->reportMessageConsumptionResult(remote_address, metadata, request,
+                                                    absl::ToChronoMilliseconds(io_timeout_));
+    return;
+  }
+
+  // Execute the actual verification task in dedicated thread-pool.
+  client_manager_->submit(std::bind(&ClientImpl::doVerify, this, remote_address, command_id, message));
+}
+
+void ClientImpl::onPollCommandResponse(const InvocationContext<PollCommandResponse>* ctx) {
   if (!ctx->status.ok()) {
-    std::string remote_address = ctx->remote_address;
-    auto multiplexingLater = [this, remote_address]() {
-      MultiplexingRequest request;
-      fillGenericPollingRequest(request);
-      multiplexing(remote_address, request);
-    };
-    static std::string task_name = "Initiate multiplex request later";
-    client_manager_->getScheduler().schedule(multiplexingLater, task_name, std::chrono::seconds(3),
-                                             std::chrono::seconds(0));
+    static std::string task_name = "Poll-Command-Later";
+    client_manager_->getScheduler().schedule(std::bind(&ClientImpl::pollCommand, this, ctx->remote_address), task_name,
+                                             std::chrono::seconds(3), std::chrono::seconds(0));
     return;
   }
 
   switch (ctx->response.type_case()) {
-    case MultiplexingResponse::TypeCase::kPrintThreadStackRequest: {
-      MultiplexingRequest request;
-      request.mutable_print_thread_stack_response()->mutable_common()->mutable_status()->set_code(
-          google::rpc::Code::UNIMPLEMENTED);
-      request.mutable_print_thread_stack_response()->set_stack_trace(
-          "Print thread stack trace is not supported by C++ SDK");
+    case PollCommandResponse::TypeCase::kPrintThreadStackTraceCommand: {
       absl::flat_hash_map<std::string, std::string> metadata;
       Signature::sign(this, metadata);
-      client_manager_->multiplexingCall(ctx->remote_address, metadata, request, absl::ToChronoMilliseconds(io_timeout_),
-                                        std::bind(&ClientImpl::onMultiplexingResponse, this, std::placeholders::_1));
+      ReportThreadStackTraceRequest request;
+      auto command_id = ctx->response.print_thread_stack_trace_command().command_id();
+      request.set_command_id(command_id);
+      request.set_thread_stack_trace("--RocketMQ-Client-CPP does NOT support thread stack trace report--");
+      client_manager_->reportThreadStackTrace(ctx->remote_address, metadata, request,
+                                              absl::ToChronoMilliseconds(io_timeout_));
       break;
     }
 
-    case MultiplexingResponse::TypeCase::kVerifyMessageConsumptionRequest: {
-      auto data = ctx->response.verify_message_consumption_request().message();
+    case PollCommandResponse::TypeCase::kVerifyMessageConsumptionCommand: {
+      auto command_id = ctx->response.verify_message_consumption_command().command_id();
+      auto data = ctx->response.verify_message_consumption_command().message();
       MQMessageExt message;
-      MultiplexingRequest request;
+      ReportMessageConsumptionResultRequest request;
+      request.set_command_id(command_id);
+      Metadata metadata;
+      Signature::sign(this, metadata);
       if (!client_manager_->wrapMessage(data, message)) {
         SPDLOG_WARN("Message to verify consumption is corrupted");
-        request.mutable_verify_message_consumption_response()->mutable_common()->mutable_status()->set_code(
-            google::rpc::Code::INVALID_ARGUMENT);
-        request.mutable_verify_message_consumption_response()->mutable_common()->mutable_status()->set_message(
-            "Message to verify is corrupted");
-        multiplexing(ctx->remote_address, request);
-        return;
+        request.mutable_status()->set_code(google::rpc::Code::INVALID_ARGUMENT);
+        request.mutable_status()->set_message("Data corrupted");
+        client_manager_->reportMessageConsumptionResult(ctx->remote_address, metadata, request,
+                                                        absl::ToChronoMilliseconds(io_timeout_));
       }
-      std::string&& result = verifyMessageConsumption(message);
-      request.mutable_verify_message_consumption_response()->mutable_common()->mutable_status()->set_code(
-          google::rpc::Code::OK);
-      request.mutable_verify_message_consumption_response()->mutable_common()->mutable_status()->set_message(result);
-      multiplexing(ctx->remote_address, request);
+      verifyMessageConsumption(std::move(ctx->remote_address), std::move(command_id), std::move(message));
       break;
     }
 
-    case MultiplexingResponse::TypeCase::kRecoverOrphanedTransactionRequest: {
-      auto orphan = ctx->response.recover_orphaned_transaction_request().orphaned_transactional_message();
+    case PollCommandResponse::TypeCase::kRecoverOrphanedTransactionCommand: {
+      auto orphan = ctx->response.recover_orphaned_transaction_command().orphaned_transactional_message();
       MQMessageExt message;
       if (client_manager_->wrapMessage(orphan, message)) {
         MessageAccessor::setTargetEndpoint(message, ctx->remote_address);
-        const std::string& transaction_id = ctx->response.recover_orphaned_transaction_request().transaction_id();
-        resolveOrphanedTransactionalMessage(transaction_id, message);
+        const std::string& transaction_id = ctx->response.recover_orphaned_transaction_command().transaction_id();
+        // Dispatch task to thread-pool.
+        client_manager_->submit(
+            std::bind(&ClientImpl::resolveOrphanedTransactionalMessage, this, transaction_id, message));
       } else {
         SPDLOG_WARN("Failed to resolve orphaned transactional message, potentially caused by message-body checksum "
                     "verification failure.");
       }
-      MultiplexingRequest request;
-      fillGenericPollingRequest(request);
-      multiplexing(ctx->remote_address, request);
       break;
     }
 
-    case MultiplexingResponse::TypeCase::kPollingResponse: {
-      MultiplexingRequest request;
-      fillGenericPollingRequest(request);
-      multiplexing(ctx->remote_address, request);
+    case PollCommandResponse::TypeCase::kNoopCommand: {
+      SPDLOG_DEBUG("A long-polling-command period completed.");
       break;
     }
 
     default: {
       SPDLOG_WARN("Unsupported multiplex type");
-      MultiplexingRequest request;
-      fillGenericPollingRequest(request);
-      multiplexing(ctx->remote_address, request);
       break;
     }
   }
+
+  // Initiate next round of long-polling-command immediately.
+  pollCommand(ctx->remote_address);
 }
 
 void ClientImpl::onRemoteEndpointRemoval(const std::vector<std::string>& hosts) {
@@ -451,30 +491,6 @@ void ClientImpl::onHealthCheckResponse(const std::error_code& ec, const Invocati
   }
 }
 
-void ClientImpl::fillGenericPollingRequest(MultiplexingRequest& request) {
-  auto&& resource_bundle = resourceBundle();
-  auto polling_request = request.mutable_polling_request();
-  polling_request->set_client_id(clientId());
-  switch (resource_bundle.group_type) {
-    case GroupType::PUBLISHER:
-      polling_request->mutable_producer_group()->set_resource_namespace(resource_namespace_);
-      polling_request->mutable_producer_group()->set_name(group_name_);
-      break;
-
-    case GroupType::SUBSCRIBER:
-      polling_request->mutable_consumer_group()->set_resource_namespace(resource_namespace_);
-      polling_request->mutable_consumer_group()->set_name(group_name_);
-      break;
-  }
-  auto topics = polling_request->mutable_topics();
-  for (const auto& item : resource_bundle.topics) {
-    auto topic = new rmq::Resource();
-    topic->set_resource_namespace(resource_namespace_);
-    topic->set_name(item);
-    topics->AddAllocated(topic);
-  }
-}
-
 void ClientImpl::notifyClientTermination() {
   SPDLOG_WARN("Should NOT reach here. Subclass should have overridden this function.");
   std::abort();
@@ -490,6 +506,40 @@ void ClientImpl::notifyClientTermination(const NotifyClientTerminationRequest& r
   for (const auto& endpoint : endpoints) {
     client_manager_->notifyClientTermination(endpoint, metadata, request, absl::ToChronoMilliseconds(io_timeout_));
   }
+}
+
+void ClientImpl::doVerify(std::string target, std::string command_id, MQMessageExt message) {
+  ReportMessageConsumptionResultRequest request;
+  request.set_command_id(command_id);
+  StandardMessageListener* callback = reinterpret_cast<StandardMessageListener*>(messageListener());
+  try {
+    std::vector<MQMessageExt> batch = {message};
+    auto result = callback->consumeMessage(batch);
+    switch (result) {
+      case ConsumeMessageResult::SUCCESS: {
+        SPDLOG_DEBUG("Verify message[MsgId={}] OK", message.getMsgId());
+        request.mutable_status()->set_message("Consume Success");
+        break;
+      }
+      case ConsumeMessageResult::FAILURE: {
+        SPDLOG_WARN("Message Listener failed to consume message[MsgId={}] when verifying", message.getMsgId());
+        request.mutable_status()->set_code(google::rpc::Code::INTERNAL);
+        request.mutable_status()->set_message("Consume Failed");
+        break;
+      }
+    }
+  } catch (...) {
+    SPDLOG_WARN("Exception raised when invoking message listener provided by application developer. MsgId of message "
+                "to verify: {}",
+                message.getMsgId());
+    request.mutable_status()->set_code(google::rpc::Code::INTERNAL);
+    request.mutable_status()->set_message(
+        "Unexpected exception raised while invoking message listener provided by application developer");
+  }
+
+  Metadata metadata;
+  Signature::sign(this, metadata);
+  client_manager_->reportMessageConsumptionResult(target, metadata, request, absl::ToChronoMilliseconds(io_timeout_));
 }
 
 ROCKETMQ_NAMESPACE_END

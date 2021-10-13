@@ -50,8 +50,8 @@ public:
   void asyncEndTransaction(const EndTransactionRequest& request,
                            InvocationContext<EndTransactionResponse>* invocation_context) override;
 
-  void asyncMultiplexingCall(const MultiplexingRequest& request,
-                             InvocationContext<MultiplexingResponse>* invocation_context) override;
+  void asyncPollCommand(const PollCommandRequest& request,
+                        InvocationContext<PollCommandResponse>* invocation_context) override;
 
   void asyncQueryOffset(const QueryOffsetRequest& request,
                         InvocationContext<QueryOffsetResponse>* invocation_context) override;
@@ -62,6 +62,13 @@ public:
   void asyncForwardMessageToDeadLetterQueue(
       const ForwardMessageToDeadLetterQueueRequest& request,
       InvocationContext<ForwardMessageToDeadLetterQueueResponse>* invocation_context) override;
+
+  grpc::Status reportThreadStackTrace(grpc::ClientContext* context, const ReportThreadStackTraceRequest& request,
+                                      ReportThreadStackTraceResponse* response) override;
+
+  grpc::Status reportMessageConsumptionResult(grpc::ClientContext* context,
+                                              const ReportMessageConsumptionResultRequest& request,
+                                              ReportMessageConsumptionResultResponse* response) override;
 
   grpc::Status notifyClientTermination(grpc::ClientContext* context, const NotifyClientTerminationRequest& request,
                                        NotifyClientTerminationResponse* response) override;

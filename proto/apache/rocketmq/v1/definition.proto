@@ -207,6 +207,21 @@ enum DigestType {
   reserved 3 to 64;
 }
 
+// When publishing messages to or subscribing messages from brokers, clients
+// shall include or validate digests of message body to ensure data integrity.
+//
+// For message publishment, when an invalid digest were detected, brokers need
+// respond client with BAD_REQUEST.
+//
+// For messags subscription, when an invalid digest were detected, consumers
+// need to handle this case according to message type:
+// 1) Standard messages should be negatively acknowledged instantly, causing
+// immediate re-delivery; 2) FIFO messages require special RPC, to re-fetch
+// previously acquired messages batch;
+//
+// Message consumption model also affects how invalid digest are handled. When
+// messages are consumed in broadcasting way,
+// TODO: define semantics of invalid-digest-when-broadcasting.
 message Digest {
   DigestType type = 1;
   string checksum = 2;
@@ -229,7 +244,8 @@ message SystemAttribute {
   repeated string keys = 2;
 
   // Message identifier, client-side generated, remains unique.
-  // if message_id is empty, the send message request will be aborted with status `INVALID_ARGUMENT`
+  // if message_id is empty, the send message request will be aborted with
+  // status `INVALID_ARGUMENT`
   string message_id = 3;
 
   // Message body digest
@@ -296,13 +312,18 @@ message SystemAttribute {
 }
 
 message Message {
+
   Resource topic = 1;
+
   // User defined key-value pairs.
   // If user_attribute contains the reserved keys by RocketMQ,
-  // the send message request will be aborted with status `INVALID_ARGUMENT`. See below links for the reserved keys
+  // the send message request will be aborted with status `INVALID_ARGUMENT`.
+  // See below links for the reserved keys
   // https://github.com/apache/rocketmq/blob/master/common/src/main/java/org/apache/rocketmq/common/message/MessageConst.java#L58
   map<string, string> user_attribute = 2;
+
   SystemAttribute system_attribute = 3;
+
   bytes body = 4;
 
   reserved 5 to 64;

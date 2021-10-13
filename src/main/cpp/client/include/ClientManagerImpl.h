@@ -165,9 +165,9 @@ public:
                       std::chrono::milliseconds timeout,
                       const std::function<void(const std::error_code&, const EndTransactionResponse&)>& cb) override;
 
-  void multiplexingCall(const std::string& target, const Metadata& metadata, const MultiplexingRequest& request,
-                        std::chrono::milliseconds timeout,
-                        const std::function<void(const InvocationContext<MultiplexingResponse>*)>& cb) override;
+  void pollCommand(const std::string& target, const Metadata& metadata, const PollCommandRequest& request,
+                   std::chrono::milliseconds timeout,
+                   const std::function<void(const InvocationContext<PollCommandResponse>*)>& cb) override;
 
   void queryOffset(const std::string& target_host, const Metadata& metadata, const QueryOffsetRequest& request,
                    std::chrono::milliseconds timeout,
@@ -181,6 +181,14 @@ public:
                                           const NotifyClientTerminationRequest& request,
                                           std::chrono::milliseconds timeout) override;
 
+  std::error_code reportThreadStackTrace(const std::string& target_host, const Metadata& metadata,
+                                         const ReportThreadStackTraceRequest& request,
+                                         std::chrono::milliseconds timeout) override;
+
+  std::error_code reportMessageConsumptionResult(const std::string& target_host, const Metadata& metadata,
+                                                 const ReportMessageConsumptionResultRequest& request,
+                                                 std::chrono::milliseconds timeout) override;
+
   void trace(bool trace) {
     trace_ = trace;
   }
@@ -190,6 +198,8 @@ public:
                  const std::function<void(const std::error_code&, const HeartbeatResponse&)>& cb) override;
 
   State state() const override;
+
+  void submit(std::function<void()> task) override;
 
 private:
   void doHeartbeat();
