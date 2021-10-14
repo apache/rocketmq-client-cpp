@@ -26,12 +26,9 @@ jobs:
       - uses: actions/checkout@v2
       
       - name: Setup Bazel
-        uses: abhinavsingh/setup-bazel@v3
-        with:
-          version: 4.1.0
-      - name: Use Bazel (Windows only)
-        if: matrix.os == 'windows'
-        run: ./bazel.exe -h
+        run: |
+          sudo apt-get -qq install npm
+          sudo npm install -g @bazel/bazelisk
       - name: Use Bazel
         if: matrix.os != 'windows'
         run: bazel -h
