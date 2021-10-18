@@ -1,8 +1,0 @@
-add_subdirectory(base)
-add_subdirectory(concurrent)
-add_subdirectory(scheduler)
-add_subdirectory(client)
-add_subdirectory(grpc)
-add_subdirectory(rocketmq)
-add_subdirectory(logger)
-add_subdirectory(admin)
