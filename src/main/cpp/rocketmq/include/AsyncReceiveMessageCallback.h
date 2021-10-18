@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,16 +24,14 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class AsyncReceiveMessageCallback
-    : public ReceiveMessageCallback,
-      public std::enable_shared_from_this<AsyncReceiveMessageCallback> {
+class AsyncReceiveMessageCallback : public ReceiveMessageCallback,
+                                    public std::enable_shared_from_this<AsyncReceiveMessageCallback> {
 public:
   explicit AsyncReceiveMessageCallback(ProcessQueueWeakPtr process_queue);
 
   ~AsyncReceiveMessageCallback() override = default;
 
-  void onCompletion(const std::error_code &ec,
-                    const ReceiveMessageResult &result) override;
+  void onCompletion(const std::error_code& ec, const ReceiveMessageResult& result) override;
 
   void receiveMessageLater();
 
@@ -50,7 +48,7 @@ private:
 
   void checkThrottleThenReceive();
 
-  static const char *RECEIVE_LATER_TASK_NAME;
+  static const char* RECEIVE_LATER_TASK_NAME;
 };
 
 ROCKETMQ_NAMESPACE_END

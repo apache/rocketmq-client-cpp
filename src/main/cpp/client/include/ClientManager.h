@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,9 +17,9 @@
 #pragma once
 
 #include <chrono>
+#include <functional>
 #include <memory>
 #include <system_error>
-#include <functional>
 
 #include "Client.h"
 #include "ReceiveMessageCallback.h"
@@ -57,7 +57,7 @@ public:
   virtual void pollCommand(const std::string& target, const Metadata& metadata, const PollCommandRequest& request,
                            std::chrono::milliseconds timeout,
                            const std::function<void(const InvocationContext<PollCommandResponse>*)>& cb) = 0;
-  
+
   virtual bool wrapMessage(const rmq::Message& item, MQMessageExt& message_ext) = 0;
 
   virtual void ack(const std::string& target_host, const Metadata& metadata, const AckMessageRequest& request,
@@ -108,16 +108,14 @@ public:
   virtual std::error_code reportThreadStackTrace(const std::string& target_host, const Metadata& metadata,
                                                  const ReportThreadStackTraceRequest& request,
                                                  std::chrono::milliseconds timeout) = 0;
-  
+
   virtual std::error_code reportMessageConsumptionResult(const std::string& target_host, const Metadata& metadata,
                                                          const ReportMessageConsumptionResultRequest& request,
                                                          std::chrono::milliseconds timeout) = 0;
 
   virtual State state() const = 0;
 
-
   virtual void submit(std::function<void()> task) = 0;
-  
 };
 
 using ClientManagerPtr = std::shared_ptr<ClientManager>;
