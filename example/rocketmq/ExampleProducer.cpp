@@ -20,7 +20,7 @@
 #include <iostream>
 #include <random>
 
-    using namespace rocketmq;
+using namespace rocketmq;
 
 const std::string& alphaNumeric() {
   static std::string alpha_numeric("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");

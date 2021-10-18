@@ -22,7 +22,7 @@
 #include <mutex>
 #include <thread>
 
-    using namespace rocketmq;
+using namespace rocketmq;
 
 class CounterMessageListener : public StandardMessageListener {
 public:

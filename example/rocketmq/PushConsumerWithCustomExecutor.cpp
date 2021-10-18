@@ -23,9 +23,9 @@
 #include <mutex>
 #include <thread>
 
-    ROCKETMQ_NAMESPACE_BEGIN
+ROCKETMQ_NAMESPACE_BEGIN
 
-    class ExecutorImpl {
+class ExecutorImpl {
 public:
   ExecutorImpl() : state_(State::CREATED) {
   }

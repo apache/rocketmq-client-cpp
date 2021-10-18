@@ -17,7 +17,7 @@
 #include "rocketmq/DefaultMQProducer.h"
 #include <iostream>
 
-    using namespace rocketmq;
+using namespace rocketmq;
 
 int main(int argc, char* argv[]) {
 

@@ -17,7 +17,7 @@
 #include "rocketmq/DefaultMQProducer.h"
 #include <cstdlib>
 
-    using namespace ROCKETMQ_NAMESPACE;
+using namespace ROCKETMQ_NAMESPACE;
 
 int main(int argc, char* argv[]) {
   DefaultMQProducer producer("TestGroup");
