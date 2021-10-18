@@ -22,9 +22,9 @@
 #include <mutex>
 #include <thread>
 
-    ROCKETMQ_NAMESPACE_BEGIN
+ROCKETMQ_NAMESPACE_BEGIN
 
-    class CounterMessageListener : public StandardMessageListener {
+class CounterMessageListener : public StandardMessageListener {
 public:
   explicit CounterMessageListener(std::atomic_long& counter) : counter_(counter) {
   }

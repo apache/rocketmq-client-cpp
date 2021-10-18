@@ -25,7 +25,7 @@
 #include <random>
 #include <system_error>
 
-    using namespace rocketmq;
+using namespace rocketmq;
 
 int getAndReset(std::atomic_int& counter) {
   int current;

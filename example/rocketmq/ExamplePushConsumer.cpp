@@ -25,7 +25,7 @@
 
 #include "rocketmq/DefaultMQPushConsumer.h"
 
-    using namespace rocketmq;
+using namespace rocketmq;
 
 class SampleMQMessageListener : public StandardMessageListener {
 public:

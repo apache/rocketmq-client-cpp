@@ -21,7 +21,7 @@
 #include <mutex>
 #include <thread>
 
-    using namespace rocketmq;
+using namespace rocketmq;
 
 class SampleMQMessageListener : public StandardMessageListener {
 public:

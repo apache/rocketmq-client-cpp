@@ -21,7 +21,7 @@
 #include "rocketmq/DefaultMQPullConsumer.h"
 #include "rocketmq/Logger.h"
 
-    int main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
   const char* group = "GID_group003";
   const char* topic = "yc001";
   const char* resource_namespace = "MQ_INST_1973281269661160_BXmPlOA6";
