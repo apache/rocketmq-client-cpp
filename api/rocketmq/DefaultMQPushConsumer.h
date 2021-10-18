@@ -28,6 +28,7 @@
 #include "MessageListener.h"
 #include "rocketmq/Executor.h"
 #include "rocketmq/MessageModel.h"
+#include "rocketmq/OffsetStore.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -109,6 +110,8 @@ public:
   void setMessageModel(MessageModel message_model);
 
   std::string groupName() const;
+
+  void setOffsetStore(std::unique_ptr<OffsetStore> offset_store);
 
 private:
   std::shared_ptr<PushConsumerImpl> impl_;

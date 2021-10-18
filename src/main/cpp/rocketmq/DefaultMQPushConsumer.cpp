@@ -127,4 +127,8 @@ std::string DefaultMQPushConsumer::groupName() const {
   return impl_->getGroupName();
 }
 
+void DefaultMQPushConsumer::setOffsetStore(std::unique_ptr<OffsetStore> offset_store) {
+  impl_->setOffsetStore(std::move(offset_store));
+}
+
 ROCKETMQ_NAMESPACE_END

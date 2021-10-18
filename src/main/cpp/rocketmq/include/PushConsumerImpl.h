@@ -158,7 +158,7 @@ public:
     message_model_ = message_model;
   }
 
-  void offsetStore(std::unique_ptr<OffsetStore> offset_store) {
+  void setOffsetStore(std::unique_ptr<OffsetStore> offset_store) override {
     offset_store_ = std::move(offset_store);
   }
 

@@ -46,6 +46,8 @@ public:
   MOCK_METHOD(bool, receiveMessage, (const MQMessageQueue&, const FilterExpression&), (override));
 
   MOCK_METHOD(MessageListener*, messageListener, (), (override));
+
+  MOCK_METHOD(void, setOffsetStore, (std::unique_ptr<OffsetStore>), (override));
 };
 
 ROCKETMQ_NAMESPACE_END
