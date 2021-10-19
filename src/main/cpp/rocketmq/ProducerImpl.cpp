@@ -17,6 +17,7 @@
 #include "ProducerImpl.h"
 
 #include <atomic>
+#include <chrono>
 #include <limits>
 #include <system_error>
 #include <utility>
@@ -112,6 +113,36 @@ std::string ProducerImpl::wrapSendMessageRequest(const MQMessage& message, SendM
 
   auto system_attribute = request.mutable_message()->mutable_system_attribute();
 
+  // Handle Tag
+  auto&& tag = message.getTags();
+  if (!tag.empty()) {
+    system_attribute->set_tag(tag);
+  }
+
+  // Handle Key
+  const auto& keys = message.getKeys();
+  if (!keys.empty()) {
+    system_attribute->mutable_keys()->Add(keys.begin(), keys.end());
+  }
+
+  // TraceContext
+  const auto& trace_context = message.traceContext();
+  if (!trace_context.empty()) {
+    system_attribute->set_trace_context(trace_context);
+  }
+
+  // Delivery Timestamp
+  auto delivery_timestamp = message.deliveryTimestamp();
+  if (delivery_timestamp.time_since_epoch().count()) {
+    auto duration = delivery_timestamp.time_since_epoch();
+    system_attribute->set_delivery_attempt(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
+  }
+
+  // Delay Level
+  if (message.getDelayTimeLevel()) {
+    system_attribute->set_delay_level(message.getDelayTimeLevel());
+  }
+
   // Born-time
   auto duration = absl::Now() - absl::UnixEpoch();
   int64_t seconds = absl::ToInt64Seconds(duration);
@@ -148,6 +179,7 @@ std::string ProducerImpl::wrapSendMessageRequest(const MQMessage& message, SendM
     system_attribute->set_body_encoding(rmq::Encoding::IDENTITY);
   }
 
+  // Forward user-defined-properties
   for (auto& item : message.getProperties()) {
     request.mutable_message()->mutable_user_attribute()->insert({item.first, item.second});
   }
