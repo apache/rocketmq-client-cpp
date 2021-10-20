@@ -178,6 +178,11 @@ private:
       LOCKS_EXCLUDED(inflight_route_requests_mtx_);
 
   /**
+   * Update Trace candidate hosts.
+   */
+  void updateTraceHosts() LOCKS_EXCLUDED(topic_route_table_mtx_);
+
+  /**
    * Update local cache for the topic. Note, route differences are logged in
    * INFO level since route bears fundamental importance.
    *

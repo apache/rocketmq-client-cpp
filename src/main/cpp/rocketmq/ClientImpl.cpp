@@ -297,6 +297,28 @@ void ClientImpl::onTopicRouteReady(const std::string& topic, const std::error_co
   }
 }
 
+void ClientImpl::updateTraceHosts() {
+  absl::flat_hash_set<std::string> hosts;
+  absl::MutexLock lk(&topic_route_table_mtx_);
+  for (const auto& item : topic_route_table_) {
+    for (const auto& partition : item.second->partitions()) {
+      if (Permission::NONE == partition.permission()) {
+        continue;
+      }
+      if (MixAll::MASTER_BROKER_ID != partition.broker().id()) {
+        continue;
+      }
+      std::string endpoint = partition.asMessageQueue().serviceAddress();
+      if (!hosts.contains(endpoint)) {
+        hosts.emplace(std::move(endpoint));
+      }
+    }
+  }
+  std::vector<std::string> host_list(hosts.begin(), hosts.end());
+  SPDLOG_DEBUG("Trace candidate hosts size={}", host_list.size());
+  exporter_->updateHosts(host_list);
+}
+
 void ClientImpl::updateRouteCache(const std::string& topic, const std::error_code& ec, const TopicRouteDataPtr& route) {
   if (ec || !route || route->partitions().empty()) {
     SPDLOG_WARN("Yuck! route for {} is invalid. Cause: {}", topic, ec.message());
@@ -339,6 +361,7 @@ void ClientImpl::updateRouteCache(const std::string& topic, const std::error_cod
     std::set_difference(hosts.begin(), hosts.end(), existed_hosts.begin(), existed_hosts.end(),
                         std::inserter(new_hosts, new_hosts.begin()));
   }
+  updateTraceHosts();
   for (const auto& endpoints : new_hosts) {
     pollCommand(endpoints);
   }
