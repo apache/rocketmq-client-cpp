@@ -94,7 +94,7 @@ void OtlpExporterHandler::syncExportClients() {
   std::vector<std::string>&& hosts = exp->hosts();
   {
     absl::MutexLock lk(&clients_map_mtx_);
-    for (auto i = clients_map_.begin(); i != clients_map_.end(); i++) {
+    for (auto i = clients_map_.begin(); i != clients_map_.end();) {
       if (std::none_of(hosts.cbegin(), hosts.cend(), [&](const std::string& host) { return i->first == host; })) {
         clients_map_.erase(i++);
       } else {
