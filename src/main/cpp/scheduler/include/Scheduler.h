@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <functional>
 #include <string>
+#include <memory>
 
 #include "rocketmq/RocketMQ.h"
 
@@ -38,5 +39,8 @@ public:
 
   virtual void cancel(std::uint32_t task_id) = 0;
 };
+
+using SchedulerPtr = std::weak_ptr<Scheduler>;
+using SchedulerSharedPtr = std::shared_ptr<Scheduler>;
 
 ROCKETMQ_NAMESPACE_END

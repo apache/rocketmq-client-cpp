@@ -34,12 +34,16 @@
 ROCKETMQ_NAMESPACE_BEGIN
 
 struct TimerTask {
+  std::uint32_t task_id;  
+  std::string task_name;
   std::function<void(void)> callback;
   std::chrono::milliseconds interval;
-  std::string task_name;
+  std::unique_ptr<asio::steady_timer> timer;
+  SchedulerPtr scheduler;
 };
 
-class SchedulerImpl : public Scheduler {
+class SchedulerImpl : public std::enable_shared_from_this<SchedulerImpl>,
+                      public Scheduler {
 public:
   SchedulerImpl();
 
@@ -76,7 +80,7 @@ private:
   absl::flat_hash_map<std::uint32_t, std::shared_ptr<TimerTask>> tasks_ GUARDED_BY(tasks_mtx_);
   absl::Mutex tasks_mtx_;
 
-  static void execute(const asio::error_code& ec, asio::steady_timer* timer, std::weak_ptr<TimerTask> task);
+  static void execute(const asio::error_code& ec, std::weak_ptr<TimerTask> task);
 };
 
 ROCKETMQ_NAMESPACE_END

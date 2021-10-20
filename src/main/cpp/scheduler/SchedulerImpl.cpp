@@ -31,8 +31,7 @@
 #include "asio/executor_work_guard.hpp"
 #include "asio/io_context.hpp"
 #include "asio/steady_timer.hpp"
-
-#include "LoggerImpl.h"
+#include "spdlog/spdlog.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -125,9 +124,12 @@ std::uint32_t SchedulerImpl::schedule(const std::function<void(void)>& functor, 
     id = ++task_id;
     tasks_.insert({id, task});
   }
-  asio::steady_timer* timer = new asio::steady_timer(context_, delay);
+  task->task_id = id;
+  task->timer = absl::make_unique<asio::steady_timer>(context_, delay);
+  task->scheduler = shared_from_this();
   SPDLOG_DEBUG("Timer-task[name={}] to fire in {}ms", task_name, delay.count());
-  timer->async_wait(std::bind(&SchedulerImpl::execute, std::placeholders::_1, timer, std::weak_ptr<TimerTask>(task)));
+  auto timer_task_weak_ptr = std::weak_ptr<TimerTask>(task);
+  task->timer->async_wait(std::bind(&SchedulerImpl::execute, std::placeholders::_1, timer_task_weak_ptr));
   return id;
 }
 
@@ -143,10 +145,9 @@ void SchedulerImpl::cancel(std::uint32_t task_id) {
   tasks_.erase(search);
 }
 
-void SchedulerImpl::execute(const asio::error_code& ec, asio::steady_timer* timer, std::weak_ptr<TimerTask> task) {
+void SchedulerImpl::execute(const asio::error_code& ec, std::weak_ptr<TimerTask> task) {
   std::shared_ptr<TimerTask> timer_task = task.lock();
   if (!timer_task) {
-    delete timer;
     return;
   }
 
@@ -168,11 +169,15 @@ void SchedulerImpl::execute(const asio::error_code& ec, asio::steady_timer* time
 #endif
 
   if (timer_task->interval.count()) {
+    auto& timer = timer_task->timer;
     timer->expires_at(timer->expiry() + timer_task->interval);
-    timer->async_wait(std::bind(&SchedulerImpl::execute, std::placeholders::_1, timer, task));
+    timer->async_wait(std::bind(&SchedulerImpl::execute, std::placeholders::_1, task));
     SPDLOG_DEBUG("Repeated timer-task {} to fire in {}ms", timer_task->task_name, timer_task->interval.count());
   } else {
-    delete timer;
+    auto scheduler = timer_task->scheduler.lock();
+    if (scheduler) {
+      scheduler->cancel(timer_task->task_id);
+    }
   }
 }
 
