@@ -28,15 +28,22 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class SchedulerTest : public testing::Test {
 public:
+  SchedulerTest() : scheduler(std::make_shared<SchedulerImpl>()) {  
+  }
+
   void SetUp() override {
+    scheduler->start();
+  }
+
+  void TearDown() override {
+    scheduler->shutdown();
   }
 
 protected:
+    SchedulerSharedPtr scheduler;
 };
 
 TEST_F(SchedulerTest, testSingleShot) {
-  SchedulerImpl scheduler;
-  scheduler.start();
   absl::Mutex mtx;
   absl::CondVar cv;
   int callback_fire_count{0};
@@ -46,7 +53,7 @@ TEST_F(SchedulerTest, testSingleShot) {
     callback_fire_count++;
   };
 
-  scheduler.schedule(callback, "single-shot", std::chrono::milliseconds(10), std::chrono::milliseconds(0));
+  scheduler->schedule(callback, "single-shot", std::chrono::milliseconds(10), std::chrono::milliseconds(0));
 
   // Wait till callback is executed.
   {
@@ -55,13 +62,9 @@ TEST_F(SchedulerTest, testSingleShot) {
       cv.Wait(&mtx);
     }
   }
-
-  scheduler.shutdown();
 }
 
 TEST_F(SchedulerTest, testCancel) {
-  SchedulerImpl scheduler;
-  scheduler.start();
   absl::Mutex mtx;
   absl::CondVar cv;
   int callback_fire_count{0};
@@ -71,16 +74,13 @@ TEST_F(SchedulerTest, testCancel) {
     callback_fire_count++;
   };
 
-  std::uint32_t task_id = scheduler.schedule(callback, "test-cancel", std::chrono::seconds(1), std::chrono::seconds(1));
-  scheduler.cancel(task_id);
+  std::uint32_t task_id = scheduler->schedule(callback, "test-cancel", std::chrono::seconds(1), std::chrono::seconds(1));
+  scheduler->cancel(task_id);
   std::this_thread::sleep_for(std::chrono::seconds(2));
   ASSERT_EQ(0, callback_fire_count);
-  scheduler.shutdown();
 }
 
 TEST_F(SchedulerTest, testPeriodicShot) {
-  SchedulerImpl scheduler;
-  scheduler.start();
   absl::Mutex mtx;
   absl::CondVar cv;
   int callback_fire_count{0};
@@ -91,17 +91,14 @@ TEST_F(SchedulerTest, testPeriodicShot) {
   };
 
   std::uintptr_t task_id =
-      scheduler.schedule(callback, "periodic-task", std::chrono::milliseconds(10), std::chrono::seconds(1));
+      scheduler->schedule(callback, "periodic-task", std::chrono::milliseconds(10), std::chrono::seconds(1));
   // Wait till callback is executed.
   std::this_thread::sleep_for(std::chrono::seconds(5));
   ASSERT_TRUE(callback_fire_count >= 4);
-  scheduler.cancel(task_id);
-  scheduler.shutdown();
+  scheduler->cancel(task_id);
 }
 
 TEST_F(SchedulerTest, testSingleShotWithZeroDelay) {
-  SchedulerImpl scheduler;
-  scheduler.start();
   absl::Mutex mtx;
   absl::CondVar cv;
   int callback_fire_count{0};
@@ -111,7 +108,7 @@ TEST_F(SchedulerTest, testSingleShotWithZeroDelay) {
     callback_fire_count++;
   };
 
-  scheduler.schedule(callback, "single-shot-with-0-delay", std::chrono::milliseconds(0), std::chrono::milliseconds(0));
+  scheduler->schedule(callback, "single-shot-with-0-delay", std::chrono::milliseconds(0), std::chrono::milliseconds(0));
 
   // Wait till callback is executed.
   {
@@ -120,13 +117,9 @@ TEST_F(SchedulerTest, testSingleShotWithZeroDelay) {
       cv.Wait(&mtx);
     }
   }
-
-  scheduler.shutdown();
 }
 
 TEST_F(SchedulerTest, testException) {
-  SchedulerImpl scheduler;
-  scheduler.start();
   absl::Mutex mtx;
   absl::CondVar cv;
   int callback_fire_count{0};
@@ -141,7 +134,7 @@ TEST_F(SchedulerTest, testException) {
     throw e;
   };
 
-  scheduler.schedule(callback, "test-exception", std::chrono::milliseconds(100), std::chrono::milliseconds(100));
+  scheduler->schedule(callback, "test-exception", std::chrono::milliseconds(100), std::chrono::milliseconds(100));
 
   // Wait till callback is executed.
   {
@@ -152,7 +145,6 @@ TEST_F(SchedulerTest, testException) {
   }
 
   std::this_thread::sleep_for(std::chrono::seconds(3));
-
-  scheduler.shutdown();
 }
+
 ROCKETMQ_NAMESPACE_END
