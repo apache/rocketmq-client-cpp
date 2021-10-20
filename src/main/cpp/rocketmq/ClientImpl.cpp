@@ -409,7 +409,7 @@ void ClientImpl::onPollCommandResponse(const InvocationContext<PollCommandRespon
   absl::flat_hash_set<std::string> hosts;
   endpointsInUse(hosts);
   if (!hosts.contains(address)) {
-    SPDLOG_INFO("Endpoints={} was not used, stop to poll command.", address);
+    SPDLOG_INFO("Endpoint={} is now absent from route table. Break poll-command-cycle.", address);
     return;
   }
   if (!ctx->status.ok()) {
