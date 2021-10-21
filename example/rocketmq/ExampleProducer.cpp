@@ -60,11 +60,6 @@ int main(int argc, char* argv[]) {
   producer.setResourceNamespace(resource_namespace);
   producer.setCredentialsProvider(std::make_shared<ConfigFileCredentialsProvider>());
 
-  MQMessage message;
-  message.setTopic(topic);
-  message.setTags("TagA");
-  message.setKey("Yuck! Why-plural?");
-
   std::atomic_bool stopped;
   std::atomic_long count(0);
 
@@ -83,11 +78,16 @@ int main(int argc, char* argv[]) {
 
   std::string body = randomString(1024 * 4);
   std::cout << "Message body size: " << body.length() << std::endl;
-  message.setBody(body);
 
   try {
     producer.start();
     for (int i = 0; i < 16; ++i) {
+      MQMessage message;
+      message.setTopic(topic);
+      message.setTags("TagA");
+      message.setKey("Yuck! Why-plural?");
+      message.setBody(body);
+
       SendResult sendResult = producer.send(message);
       std::cout << sendResult.getMessageQueue().simpleName() << ": " << sendResult.getMsgId() << std::endl;
       count++;

@@ -145,8 +145,8 @@ private:
   void takeMessageQueuesRoundRobin(const TopicPublishInfoPtr& publish_info, std::vector<MQMessageQueue>& message_queues,
                                    int number);
 
-  std::string wrapSendMessageRequest(const MQMessage& message, SendMessageRequest& request,
-                                     const MQMessageQueue& message_queue);
+  void wrapSendMessageRequest(const MQMessage& message, SendMessageRequest& request,
+                              const MQMessageQueue& message_queue);
 
   bool isRunning() const;
 

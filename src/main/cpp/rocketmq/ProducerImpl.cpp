@@ -106,8 +106,8 @@ bool ProducerImpl::validate(const MQMessage& message) {
   return MixAll::validate(message);
 }
 
-std::string ProducerImpl::wrapSendMessageRequest(const MQMessage& message, SendMessageRequest& request,
-                                                 const MQMessageQueue& message_queue) {
+void ProducerImpl::wrapSendMessageRequest(const MQMessage& message, SendMessageRequest& request,
+                                          const MQMessageQueue& message_queue) {
   request.mutable_message()->mutable_topic()->set_resource_namespace(resource_namespace_);
   request.mutable_message()->mutable_topic()->set_name(message.getTopic());
 
@@ -184,12 +184,9 @@ std::string ProducerImpl::wrapSendMessageRequest(const MQMessage& message, SendM
     request.mutable_message()->mutable_user_attribute()->insert({item.first, item.second});
   }
 
-  // Create unique message-id
-  std::string message_id = UniqueIdGenerator::instance().next();
-  system_attribute->set_message_id(message_id);
+  system_attribute->set_message_id(message.getMsgId());
   system_attribute->set_partition_id(message_queue.getQueueId());
   SPDLOG_TRACE("SendMessageRequest: {}", request.DebugString());
-  return message_id;
 }
 
 SendResult ProducerImpl::send(const MQMessage& message, std::error_code& ec) noexcept {
