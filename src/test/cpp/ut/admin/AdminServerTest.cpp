@@ -59,6 +59,8 @@ TEST(AdminServerTest, testSetUp) {
   EXPECT_EQ(spdlog::level::info, logger->level());
 
   admin_server->stop();
+
+  delete admin_server;
 }
 
 } // namespace admin

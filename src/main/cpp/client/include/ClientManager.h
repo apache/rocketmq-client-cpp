@@ -42,7 +42,7 @@ public:
 
   virtual void shutdown() = 0;
 
-  virtual Scheduler& getScheduler() = 0;
+  virtual SchedulerSharedPtr getScheduler() = 0;
 
   virtual std::shared_ptr<grpc::Channel> createChannel(const std::string& target_host) = 0;
 

@@ -55,6 +55,7 @@ public:
 private:
   std::string endpoint_;
 
+  SchedulerSharedPtr scheduler_;
   std::chrono::milliseconds refresh_interval_;
 
   void fetch();
@@ -68,8 +69,6 @@ private:
 
   bool ssl_{false};
   std::unique_ptr<TopAddressing> top_addressing_;
-
-  std::unique_ptr<Scheduler> scheduler_;
 };
 
 ROCKETMQ_NAMESPACE_END

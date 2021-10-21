@@ -98,7 +98,7 @@ void PushConsumerImpl::start() {
     }
   };
 
-  scan_assignment_handle_ = client_manager_->getScheduler().schedule(
+  scan_assignment_handle_ = client_manager_->getScheduler()->schedule(
       scan_assignment_functor, SCAN_ASSIGNMENT_TASK_NAME, std::chrono::milliseconds(100), std::chrono::seconds(5));
 
   SPDLOG_INFO("PushConsumer started, groupName={}", group_name_);
@@ -110,7 +110,7 @@ void PushConsumerImpl::shutdown() {
   State expecting = State::STARTED;
   if (state_.compare_exchange_strong(expecting, State::STOPPING)) {
     if (scan_assignment_handle_) {
-      client_manager_->getScheduler().cancel(scan_assignment_handle_);
+      client_manager_->getScheduler()->cancel(scan_assignment_handle_);
       SPDLOG_DEBUG("Scan assignment periodic task cancelled");
     }
 

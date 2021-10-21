@@ -16,6 +16,7 @@
  */
 #pragma once
 #include <atomic>
+#include <bits/c++config.h>
 #include <chrono>
 #include <cstdint>
 #include <functional>
@@ -34,16 +35,21 @@
 ROCKETMQ_NAMESPACE_BEGIN
 
 struct TimerTask {
+  std::uint32_t task_id;
+  std::string task_name;
   std::function<void(void)> callback;
   std::chrono::milliseconds interval;
-  std::string task_name;
+  std::unique_ptr<asio::steady_timer> timer;
+  SchedulerPtr scheduler;
 };
 
-class SchedulerImpl : public Scheduler {
+class SchedulerImpl : public std::enable_shared_from_this<SchedulerImpl>, public Scheduler {
 public:
   SchedulerImpl();
 
-  ~SchedulerImpl() override = default;
+  explicit SchedulerImpl(std::uint32_t worker_num);
+
+  ~SchedulerImpl() override;
 
   void start() override;
 
@@ -70,13 +76,16 @@ private:
   std::unique_ptr<asio::executor_work_guard<asio::io_context::executor_type>> work_guard_;
   absl::Mutex start_mtx_;
   absl::CondVar start_cv_;
+  std::uint32_t worker_num_{std::thread::hardware_concurrency()};
   std::vector<std::thread> threads_;
   std::atomic<State> state_{State::CREATED};
 
   absl::flat_hash_map<std::uint32_t, std::shared_ptr<TimerTask>> tasks_ GUARDED_BY(tasks_mtx_);
   absl::Mutex tasks_mtx_;
 
-  static void execute(const asio::error_code& ec, asio::steady_timer* timer, std::weak_ptr<TimerTask> task);
+  static void execute(const asio::error_code& ec, std::weak_ptr<TimerTask> task);
+
+  void shutdown0();
 };
 
 ROCKETMQ_NAMESPACE_END

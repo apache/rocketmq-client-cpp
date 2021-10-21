@@ -31,8 +31,8 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 DynamicNameServerResolver::DynamicNameServerResolver(absl::string_view endpoint,
                                                      std::chrono::milliseconds refresh_interval)
-    : endpoint_(endpoint.data(), endpoint.length()), refresh_interval_(refresh_interval),
-      scheduler_(absl::make_unique<SchedulerImpl>()) {
+    : endpoint_(endpoint.data(), endpoint.length()), scheduler_(std::make_shared<SchedulerImpl>(1)),
+      refresh_interval_(refresh_interval) {
   absl::string_view remains;
   if (absl::StartsWith(endpoint_, "https://")) {
     ssl_ = true;
