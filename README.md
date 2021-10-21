@@ -1,4 +1,4 @@
-[![CI](https://github.com/lizhanhui/rocketmq-client-cpp/actions/workflows/main.yml/badge.svg)](https://github.com/lizhanhui/rocketmq-client-cpp/actions/workflows/main.yml)
+[![CI](https://github.com/apache/rocketmq-client-cpp/actions/workflows/main.yml/badge.svg)](https://github.com/lizhanhui/rocketmq-client-cpp/actions/workflows/main.yml)
 ### Introduction
 Apache RocketMQ supports two styles of APIs to acknowledge messages once they are successfully processed.
 
