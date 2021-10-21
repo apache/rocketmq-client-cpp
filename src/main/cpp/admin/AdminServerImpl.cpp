@@ -69,6 +69,7 @@ void AdminServerImpl::loop() {
 
     while (completion_queue_->Next(&tag, &ok)) {
       if (!ok) {
+        delete static_cast<ServerCall*>(tag);
         break;
       }
       static_cast<ServerCall*>(tag)->proceed();

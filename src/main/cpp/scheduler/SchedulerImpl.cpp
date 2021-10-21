@@ -35,17 +35,23 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-SchedulerImpl::SchedulerImpl()
+SchedulerImpl::SchedulerImpl(std::uint32_t worker_num)
     : work_guard_(
-          absl::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(context_.get_executor())) {
-  spdlog::set_level(spdlog::level::debug);
+          absl::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(context_.get_executor())),
+      worker_num_(worker_num) {
+}
+
+SchedulerImpl::SchedulerImpl() : SchedulerImpl(std::thread::hardware_concurrency()) {
+}
+
+SchedulerImpl::~SchedulerImpl() {
+  shutdown0();
 }
 
 void SchedulerImpl::start() {
   State expected = State::CREATED;
   if (state_.compare_exchange_strong(expected, State::STARTING, std::memory_order_relaxed)) {
-
-    for (unsigned int i = 0; i < std::thread::hardware_concurrency(); i++) {
+    for (std::uint32_t i = 0; i < worker_num_; i++) {
       auto worker = std::thread([this]() {
         {
           State expect = State::STARTING;
@@ -71,7 +77,7 @@ void SchedulerImpl::start() {
 #endif
 
           if (State::STARTED != state_.load(std::memory_order_relaxed)) {
-            SPDLOG_INFO("A scheduler worker quit");
+            SPDLOG_INFO("One scheduler worker thread quit");
             break;
           }
         }
@@ -90,6 +96,10 @@ void SchedulerImpl::start() {
 }
 
 void SchedulerImpl::shutdown() {
+  shutdown0();
+}
+
+void SchedulerImpl::shutdown0() {
   State expected = State::STARTED;
   if (state_.compare_exchange_strong(expected, State::STOPPING, std::memory_order_relaxed)) {
     work_guard_->reset();
@@ -104,6 +114,7 @@ void SchedulerImpl::shutdown() {
         worker.join();
       }
     }
+    threads_.clear();
 
     state_.store(State::STOPPED);
   }

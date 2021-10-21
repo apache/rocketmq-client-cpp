@@ -40,6 +40,8 @@ TEST_F(ClientManagerFactoryTest, testGetClientManager) {
   ClientManagerPtr client_manager = ClientManagerFactory::getInstance().getClientManager(client_config_);
   EXPECT_TRUE(client_manager);
   client_manager->start();
+
+  client_manager->shutdown();
 }
 
 ROCKETMQ_NAMESPACE_END

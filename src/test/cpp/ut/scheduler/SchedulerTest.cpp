@@ -19,6 +19,7 @@
 #include <exception>
 #include <functional>
 #include <iostream>
+#include <memory>
 #include <thread>
 
 #include "SchedulerImpl.h"
@@ -145,6 +146,11 @@ TEST_F(SchedulerTest, testException) {
   }
 
   std::this_thread::sleep_for(std::chrono::seconds(3));
+}
+
+TEST(SchedulerLifeCycleTest, testLifeCycle) {
+  auto scheduler = std::make_shared<SchedulerImpl>();
+  scheduler->start();
 }
 
 ROCKETMQ_NAMESPACE_END

@@ -40,12 +40,12 @@ class PullConsumerImplTest : public testing::Test {
 public:
   void SetUp() override {
     grpc_init();
-
+    scheduler_ = std::make_shared<SchedulerImpl>();
     name_server_resolver_ = std::make_shared<StaticNameServerResolver>(name_server_list_);
 
-    scheduler_.start();
+    scheduler_->start();
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
-    ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler_));
+    ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::Return(scheduler_));
     ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
 
     pull_consumer_ = std::make_shared<PullConsumerImpl>(group_);
@@ -67,7 +67,7 @@ public:
 
   void TearDown() override {
     grpc_shutdown();
-    scheduler_.shutdown();
+    scheduler_->shutdown();
   }
 
 protected:
@@ -79,7 +79,7 @@ protected:
   std::string tag_{"TagB"};
   std::shared_ptr<testing::NiceMock<ClientManagerMock>> client_manager_;
   std::shared_ptr<PullConsumerImpl> pull_consumer_;
-  SchedulerImpl scheduler_;
+  SchedulerSharedPtr scheduler_;
   std::string broker_name_{"broker-a"};
   int broker_id_{0};
   std::string message_body_{"Message Body Content"};
@@ -190,6 +190,7 @@ TEST_F(PullConsumerImplTest, testPull) {
   EXPECT_FALSE(failure);
 
   pull_consumer_->shutdown();
+  delete pull_callback;
 }
 
 TEST_F(PullConsumerImplTest, testPull_gRPC_error) {
@@ -237,6 +238,7 @@ TEST_F(PullConsumerImplTest, testPull_gRPC_error) {
   EXPECT_FALSE(success);
 
   pull_consumer_->shutdown();
+  delete pull_callback;
 }
 
 TEST_F(PullConsumerImplTest, testPull_biz_error) {
@@ -285,6 +287,7 @@ TEST_F(PullConsumerImplTest, testPull_biz_error) {
   EXPECT_TRUE(failure);
 
   pull_consumer_->shutdown();
+  delete pull_callback;
 }
 
 TEST_F(PullConsumerImplTest, testQueryOffset) {

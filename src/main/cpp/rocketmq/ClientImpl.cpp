@@ -76,8 +76,8 @@ void ClientImpl::start() {
     }
   };
 
-  route_update_handle_ = client_manager_->getScheduler().schedule(route_update_functor, UPDATE_ROUTE_TASK_NAME,
-                                                                  std::chrono::seconds(10), std::chrono::seconds(30));
+  route_update_handle_ = client_manager_->getScheduler()->schedule(route_update_functor, UPDATE_ROUTE_TASK_NAME,
+                                                                   std::chrono::seconds(10), std::chrono::seconds(30));
 }
 
 void ClientImpl::shutdown() {
@@ -85,7 +85,7 @@ void ClientImpl::shutdown() {
   if (state_.compare_exchange_strong(expected, State::STOPPED)) {
     name_server_resolver_->shutdown();
     if (route_update_handle_) {
-      client_manager_->getScheduler().cancel(route_update_handle_);
+      client_manager_->getScheduler()->cancel(route_update_handle_);
     }
     client_manager_.reset();
   } else {
@@ -437,8 +437,8 @@ void ClientImpl::onPollCommandResponse(const InvocationContext<PollCommandRespon
   }
   if (!ctx->status.ok()) {
     static std::string task_name = "Poll-Command-Later";
-    client_manager_->getScheduler().schedule(std::bind(&ClientImpl::pollCommand, this, ctx->remote_address), task_name,
-                                             std::chrono::seconds(3), std::chrono::seconds(0));
+    client_manager_->getScheduler()->schedule(std::bind(&ClientImpl::pollCommand, this, ctx->remote_address), task_name,
+                                              std::chrono::seconds(3), std::chrono::seconds(0));
     return;
   }
 
@@ -547,7 +547,7 @@ void ClientImpl::healthCheck() {
 
 void ClientImpl::schedule(const std::string& task_name, const std::function<void()>& task,
                           std::chrono::milliseconds delay) {
-  client_manager_->getScheduler().schedule(task, task_name, delay, std::chrono::milliseconds(0));
+  client_manager_->getScheduler()->schedule(task, task_name, delay, std::chrono::milliseconds(0));
 }
 
 void ClientImpl::onHealthCheckResponse(const std::error_code& ec, const InvocationContext<HealthCheckResponse>* ctx) {

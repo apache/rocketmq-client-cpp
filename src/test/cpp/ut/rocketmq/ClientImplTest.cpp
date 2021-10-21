@@ -24,6 +24,7 @@
 #include "DynamicNameServerResolver.h"
 #include "HttpClientMock.h"
 #include "NameServerResolverMock.h"
+#include "Scheduler.h"
 #include "SchedulerImpl.h"
 #include "TopAddressing.h"
 #include "rocketmq/RocketMQ.h"
@@ -49,18 +50,23 @@ class ClientImplTest : public testing::Test {
 public:
   void SetUp() override {
     grpc_init();
+    scheduler_ = std::make_shared<SchedulerImpl>();
+
+    http_client_ = absl::make_unique<testing::NiceMock<HttpClientMock>>();
     name_server_resolver_ = std::make_shared<DynamicNameServerResolver>(endpoint_, std::chrono::seconds(1));
-    scheduler_.start();
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
     ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
-    ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler_));
+
+    ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::Return(scheduler_));
+    ON_CALL(*client_manager_, start).WillByDefault([&]() { scheduler_->start(); });
+    ON_CALL(*client_manager_, shutdown).WillByDefault([&]() { scheduler_->shutdown(); });
+
     client_ = std::make_shared<TestClientImpl>(group_);
     client_->withNameServerResolver(name_server_resolver_);
   }
 
   void TearDown() override {
     grpc_shutdown();
-    scheduler_.shutdown();
   }
 
 protected:
@@ -68,15 +74,13 @@ protected:
   std::string resource_namespace_{"mq://test"};
   std::string group_{"Group-0"};
   std::shared_ptr<testing::NiceMock<ClientManagerMock>> client_manager_;
-  SchedulerImpl scheduler_;
+  SchedulerSharedPtr scheduler_;
   std::shared_ptr<TestClientImpl> client_;
   std::shared_ptr<DynamicNameServerResolver> name_server_resolver_;
+  std::unique_ptr<testing::NiceMock<HttpClientMock>> http_client_;
 };
 
 TEST_F(ClientImplTest, testBasic) {
-
-  auto http_client = absl::make_unique<HttpClientMock>();
-
   std::string once{"10.0.0.1:9876"};
   std::string then{"10.0.0.1:9876;10.0.0.2:9876"};
   std::multimap<std::string, std::string> header;
@@ -100,8 +104,8 @@ TEST_F(ClientImplTest, testBasic) {
         cv.SignalAll();
       };
 
-  EXPECT_CALL(*http_client, get).WillOnce(testing::Invoke(once_cb)).WillRepeatedly(testing::Invoke(then_cb));
-  name_server_resolver_->injectHttpClient(std::move(http_client));
+  EXPECT_CALL(*http_client_, get).WillOnce(testing::Invoke(once_cb)).WillRepeatedly(testing::Invoke(then_cb));
+  name_server_resolver_->injectHttpClient(std::move(http_client_));
 
   client_->resourceNamespace(resource_namespace_);
   client_->start();
@@ -111,9 +115,10 @@ TEST_F(ClientImplTest, testBasic) {
       cv.WaitWithDeadline(&mtx, absl::Now() + absl::Seconds(3));
     }
   }
-  EXPECT_TRUE(completed);
 
-  // Now that the derivative class has closed its resources, state of ClientImpl should be STOPPING.
+  ASSERT_TRUE(completed);
+
+  // Now that the derivative class has closed its own resources, state of ClientImpl should be STOPPING.
   client_->state(State::STOPPING);
   client_->shutdown();
 }

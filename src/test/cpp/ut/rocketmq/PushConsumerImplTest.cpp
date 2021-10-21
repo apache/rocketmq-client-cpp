@@ -24,6 +24,7 @@
 #include "InvocationContext.h"
 #include "MessageAccessor.h"
 #include "PushConsumerImpl.h"
+#include "Scheduler.h"
 #include "StaticNameServerResolver.h"
 #include "grpc/grpc.h"
 #include "rocketmq/MQMessageExt.h"
@@ -45,22 +46,26 @@ public:
 
   void SetUp() override {
     grpc_init();
-
+    scheduler_ = std::make_shared<SchedulerImpl>();
     name_server_resolver_ = std::make_shared<StaticNameServerResolver>(name_server_list_);
-
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
     ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
     push_consumer_ = std::make_shared<PushConsumerImpl>(group_);
     push_consumer_->resourceNamespace(resource_namespace_);
     push_consumer_->withNameServerResolver(name_server_resolver_);
     push_consumer_->registerMessageListener(message_listener_.get());
+    scheduler_->start();
+
+    ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::Return(scheduler_));
   }
 
   void TearDown() override {
+    scheduler_->shutdown();
     grpc_shutdown();
   }
 
 protected:
+  SchedulerSharedPtr scheduler_;
   std::string name_server_list_{"10.0.0.1:9876"};
   std::shared_ptr<StaticNameServerResolver> name_server_resolver_;
   std::string resource_namespace_{"mq://test"};
@@ -77,10 +82,6 @@ protected:
 };
 
 TEST_F(PushConsumerImplTest, testAck) {
-  SchedulerImpl scheduler;
-  scheduler.start();
-  ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler));
-
   auto ack_cb = [](const std::string& target_host, const Metadata& metadata, const AckMessageRequest& request,
                    std::chrono::milliseconds timeout, const std::function<void(const std::error_code&)>& cb) {
     std::error_code ec;
@@ -118,14 +119,9 @@ TEST_F(PushConsumerImplTest, testAck) {
   }
   EXPECT_TRUE(completed);
   push_consumer_->shutdown();
-  scheduler.shutdown();
 }
 
 TEST_F(PushConsumerImplTest, testNack) {
-  SchedulerImpl scheduler;
-  scheduler.start();
-  ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler));
-
   auto nack_cb = [](const std::string& target_host, const Metadata& metadata, const NackMessageRequest& request,
                     std::chrono::milliseconds timeout, const std::function<void(const std::error_code&)>& cb) {
     std::error_code ec;
@@ -161,14 +157,9 @@ TEST_F(PushConsumerImplTest, testNack) {
   }
   EXPECT_TRUE(completed);
   push_consumer_->shutdown();
-  scheduler.shutdown();
 }
 
 TEST_F(PushConsumerImplTest, testForward) {
-  SchedulerImpl scheduler;
-  scheduler.start();
-  ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::ReturnRef(scheduler));
-
   InvocationContext<ForwardMessageToDeadLetterQueueResponse> invocation_context;
 
   auto forward_cb =
@@ -201,7 +192,6 @@ TEST_F(PushConsumerImplTest, testForward) {
   message.setDelayTimeLevel(delay_level_);
 
   push_consumer_->forwardToDeadLetterQueue(message, callback);
-
   {
     absl::MutexLock lk(&mtx);
     if (!completed) {
@@ -210,7 +200,6 @@ TEST_F(PushConsumerImplTest, testForward) {
   }
   EXPECT_TRUE(completed);
   push_consumer_->shutdown();
-  scheduler.shutdown();
 }
 
 ROCKETMQ_NAMESPACE_END

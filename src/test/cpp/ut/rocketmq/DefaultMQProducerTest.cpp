@@ -174,6 +174,7 @@ TEST_F(DefaultMQProducerUnitTest, testAsyncSendMessage) {
   }
   ASSERT_EQ(msg_id, message_id_);
   producer->shutdown();
+  delete send_callback;
 }
 
 TEST_F(DefaultMQProducerUnitTest, testSendMessage) {

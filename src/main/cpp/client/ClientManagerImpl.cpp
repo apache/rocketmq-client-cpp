@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "ReceiveMessageResult.h"
+#include "Scheduler.h"
 #include "google/rpc/code.pb.h"
 
 #include "InvocationContext.h"
@@ -46,8 +47,8 @@
 ROCKETMQ_NAMESPACE_BEGIN
 
 ClientManagerImpl::ClientManagerImpl(std::string resource_namespace)
-    : resource_namespace_(std::move(resource_namespace)), state_(State::CREATED),
-      completion_queue_(std::make_shared<CompletionQueue>()),
+    : scheduler_(std::make_shared<SchedulerImpl>()), resource_namespace_(std::move(resource_namespace)),
+      state_(State::CREATED), completion_queue_(std::make_shared<CompletionQueue>()),
       callback_thread_pool_(absl::make_unique<ThreadPoolImpl>(std::thread::hardware_concurrency())),
       latency_histogram_("Message-Latency", 11) {
   spdlog::set_level(spdlog::level::trace);
@@ -112,7 +113,8 @@ void ClientManagerImpl::start() {
   state_.store(State::STARTING, std::memory_order_relaxed);
 
   callback_thread_pool_->start();
-  scheduler_.start();
+  
+  scheduler_->start();
 
   std::weak_ptr<ClientManagerImpl> client_instance_weak_ptr = shared_from_this();
 
@@ -122,8 +124,8 @@ void ClientManagerImpl::start() {
       client_instance->doHealthCheck();
     }
   };
-  health_check_task_id_ = scheduler_.schedule(health_check_functor, HEALTH_CHECK_TASK_NAME, std::chrono::seconds(5),
-                                              std::chrono::seconds(5));
+  health_check_task_id_ = scheduler_->schedule(health_check_functor, HEALTH_CHECK_TASK_NAME, std::chrono::seconds(5),
+                                               std::chrono::seconds(5));
   auto heartbeat_functor = [client_instance_weak_ptr]() {
     auto client_instance = client_instance_weak_ptr.lock();
     if (client_instance) {
@@ -131,7 +133,7 @@ void ClientManagerImpl::start() {
     }
   };
   heartbeat_task_id_ =
-      scheduler_.schedule(heartbeat_functor, HEARTBEAT_TASK_NAME, std::chrono::seconds(1), std::chrono::seconds(10));
+      scheduler_->schedule(heartbeat_functor, HEARTBEAT_TASK_NAME, std::chrono::seconds(1), std::chrono::seconds(10));
 
   completion_queue_thread_ = std::thread(std::bind(&ClientManagerImpl::pollCompletionQueue, this));
 
@@ -142,12 +144,12 @@ void ClientManagerImpl::start() {
     }
   };
   stats_task_id_ =
-      scheduler_.schedule(stats_functor_, STATS_TASK_NAME, std::chrono::seconds(0), std::chrono::seconds(10));
+      scheduler_->schedule(stats_functor_, STATS_TASK_NAME, std::chrono::seconds(0), std::chrono::seconds(10));
   state_.store(State::STARTED, std::memory_order_relaxed);
 }
 
 void ClientManagerImpl::shutdown() {
-  SPDLOG_DEBUG("Client instance shutdown");
+  SPDLOG_INFO("Client manager shutdown");
   if (State::STARTED != state_.load(std::memory_order_relaxed)) {
     SPDLOG_WARN("Unexpected client instance state: {}", state_.load(std::memory_order_relaxed));
     return;
@@ -157,17 +159,18 @@ void ClientManagerImpl::shutdown() {
   callback_thread_pool_->shutdown();
 
   if (health_check_task_id_) {
-    scheduler_.cancel(health_check_task_id_);
+    scheduler_->cancel(health_check_task_id_);
   }
 
   if (heartbeat_task_id_) {
-    scheduler_.cancel(heartbeat_task_id_);
+    scheduler_->cancel(heartbeat_task_id_);
   }
 
   if (stats_task_id_) {
-    scheduler_.cancel(stats_task_id_);
+    scheduler_->cancel(stats_task_id_);
   }
-  scheduler_.shutdown();
+  
+  scheduler_->shutdown();
 
   {
     absl::MutexLock lk(&rpc_clients_mtx_);
@@ -1065,7 +1068,7 @@ bool ClientManagerImpl::wrapMessage(const rmq::Message& item, MQMessageExt& mess
   return true;
 }
 
-Scheduler& ClientManagerImpl::getScheduler() {
+SchedulerSharedPtr ClientManagerImpl::getScheduler() {
   return scheduler_;
 }
 

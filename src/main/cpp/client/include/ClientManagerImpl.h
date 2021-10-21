@@ -25,6 +25,7 @@
 #include <system_error>
 #include <vector>
 
+#include "Scheduler.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -145,7 +146,7 @@ public:
    */
   bool wrapMessage(const rmq::Message& item, MQMessageExt& message_ext) override;
 
-  Scheduler& getScheduler() override;
+  SchedulerSharedPtr getScheduler() override;
 
   /**
    * Ack message asynchronously.
@@ -224,7 +225,7 @@ private:
 
   void logStats();
 
-  SchedulerImpl scheduler_;
+  SchedulerSharedPtr scheduler_;
 
   static const char* HEARTBEAT_TASK_NAME;
   static const char* STATS_TASK_NAME;
