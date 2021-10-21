@@ -16,31 +16,16 @@
  */
 #pragma once
 
-#include <chrono>
-#include <cstdint>
-#include <functional>
-#include <memory>
-#include <string>
+#include "opencensus/trace/span.h"
 
-#include "rocketmq/RocketMQ.h"
+#include "ClientConfig.h"
+#include "rocketmq/MQMessage.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class Scheduler {
+class TracingUtility {
 public:
-  virtual ~Scheduler() = default;
-
-  virtual void start() = 0;
-
-  virtual void shutdown() = 0;
-
-  virtual std::uint32_t schedule(const std::function<void(void)>& functor, const std::string& task_name,
-                                 std::chrono::milliseconds delay, std::chrono::milliseconds interval) = 0;
-
-  virtual void cancel(std::uint32_t task_id) = 0;
+  static void addUniversalSpanAttributes(const MQMessage& message, ClientConfig&, opencensus::trace::Span& span);
 };
-
-using SchedulerPtr = std::weak_ptr<Scheduler>;
-using SchedulerSharedPtr = std::shared_ptr<Scheduler>;
 
 ROCKETMQ_NAMESPACE_END

@@ -37,6 +37,7 @@
 #include "SendCallbacks.h"
 #include "SendMessageContext.h"
 #include "Signature.h"
+#include "TracingUtility.h"
 #include "TransactionImpl.h"
 #include "UniqueIdGenerator.h"
 #include "UtilAll.h"
@@ -326,24 +327,26 @@ void ProducerImpl::sendImpl(RetrySendCallback* callback) {
     } else {
       span = opencensus::trace::Span::StartSpan(MixAll::SPAN_NAME_SEND_MESSAGE, nullptr, {&Samplers::always()});
     }
+    TracingUtility::addUniversalSpanAttributes(message, *this, span);
 
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ACCESS_KEY, credentialsProvider()->getCredentials().accessKey());
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ARN, resourceNamespace());
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TOPIC, message.getTopic());
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_MESSAGE_ID, message.getMsgId());
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_GROUP, getGroupName());
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TAG, message.getTags());
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ACCESS_KEY,
+                      credentialsProvider()->getCredentials().accessKey());
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_NAMESPACE, resourceNamespace());
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_DESTINATION, message.getTopic());
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_ID, message.getMsgId());
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_CLIENT_GROUP, getGroupName());
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_TAG, message.getTags());
     const auto& keys = callback->message().getKeys();
     if (!keys.empty()) {
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEYS,
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_KEYS,
                         absl::StrJoin(keys.begin(), keys.end(), MixAll::MESSAGE_KEY_SEPARATOR));
     }
     // Note: attempt-time is 0-based
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ATTEMPT_TIME, 1 + callback->attemptTime());
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_HOST, UtilAll::hostname());
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ATTEMPT, 1 + callback->attemptTime());
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_HOST_NAME, UtilAll::hostname());
 
     if (message.deliveryTimestamp() != absl::ToChronoTime(absl::UnixEpoch())) {
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_DELIVERY_TIMESTAMP,
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_DELIVERY_TIMESTAMP,
                         absl::FormatTime(absl::FromChrono(message.deliveryTimestamp())));
     }
     callback->message().traceContext(opencensus::trace::propagation::ToTraceParentHeader(span.context()));
@@ -413,18 +416,18 @@ bool ProducerImpl::endTransaction0(const std::string& target, const std::string&
   } else {
     span = opencensus::trace::Span::StartSpan(MixAll::SPAN_NAME_END_TRANSACTION, nullptr, {&Samplers::always()});
   }
-
-  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ACCESS_KEY, credentialsProvider()->getCredentials().accessKey());
-  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_ARN, resourceNamespace());
-  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_GROUP, getGroupName());
-  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_MESSAGE_ID, message_id);
-  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_HOST, UtilAll::hostname());
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ACCESS_KEY,
+                    credentialsProvider()->getCredentials().accessKey());
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_NAMESPACE, resourceNamespace());
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_CLIENT_GROUP, getGroupName());
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_ID, message_id);
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_HOST_NAME, UtilAll::hostname());
   switch (resolution) {
     case TransactionState::COMMIT:
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TRANSACTION_RESOLUTION, "commit");
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_TRANSACTION_RESOLUTION, "commit");
       break;
     case TransactionState::ROLLBACK:
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_TRANSACTION_RESOLUTION, "rollback");
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_TRANSACTION_RESOLUTION, "rollback");
       break;
   }
 
