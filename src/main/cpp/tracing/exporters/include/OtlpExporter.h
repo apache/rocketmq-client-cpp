@@ -59,6 +59,9 @@ public:
   }
 
   void updateHosts(std::vector<std::string> hosts) LOCKS_EXCLUDED(hosts_mtx_) {
+    if (hosts.empty()) {
+      return;
+    }
     absl::MutexLock lk(&hosts_mtx_);
     hosts_ = std::move(hosts);
   }
@@ -114,6 +117,9 @@ private:
 
 class OtlpExporterHandler : public ::opencensus::trace::exporter::SpanExporter::Handler {
 public:
+  static const int SPAN_ID_SIZE;
+  static const int TRACE_ID_SIZE;
+
   OtlpExporterHandler(std::weak_ptr<OtlpExporter> exporter);
 
   void Export(const std::vector<::opencensus::trace::exporter::SpanData>& spans) override;

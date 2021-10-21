@@ -65,6 +65,9 @@ void ExportClient::asyncExport(const collector_trace::ExportTraceServiceRequest&
                                               invocation_context);
 }
 
+const int OtlpExporterHandler::SPAN_ID_SIZE = 8;
+const int OtlpExporterHandler::TRACE_ID_SIZE = 16;
+
 OtlpExporterHandler::OtlpExporterHandler(std::weak_ptr<OtlpExporter> exporter)
     : exporter_(std::move(exporter)), completion_queue_(std::make_shared<CompletionQueue>()) {
   auto exp = exporter_.lock();
@@ -198,11 +201,21 @@ void OtlpExporterHandler::Export(const std::vector<::opencensus::trace::exporter
 
   auto resource = new trace::ResourceSpans();
   auto instrument_library_span = new trace::InstrumentationLibrarySpans();
+
+  uint8_t span_id_buf[SPAN_ID_SIZE];
+  uint8_t trace_id_buf[TRACE_ID_SIZE];
   for (const auto& span : spans) {
     auto item = new trace::Span();
-    item->set_trace_id(span.context().trace_id().ToHex());
-    item->set_span_id(span.context().span_id().ToHex());
-    item->set_parent_span_id(span.parent_span_id().ToHex());
+
+    span.context().span_id().CopyTo(trace_id_buf);
+    item->set_trace_id(&trace_id_buf, TRACE_ID_SIZE);
+
+    span.context().span_id().CopyTo(span_id_buf);
+    item->set_span_id(&span_id_buf, SPAN_ID_SIZE);
+
+    span.parent_span_id().CopyTo(span_id_buf);
+    item->set_parent_span_id(&span_id_buf, SPAN_ID_SIZE);
+
     item->set_name(span.name().data());
 
     item->set_start_time_unix_nano(absl::ToUnixNanos(span.start_time()));
@@ -260,8 +273,13 @@ void OtlpExporterHandler::Export(const std::vector<::opencensus::trace::exporter
 
     for (const auto& link : span.links()) {
       auto span_link = new trace::Span::Link();
-      span_link->set_trace_id(link.trace_id().ToHex());
-      span_link->set_span_id(link.span_id().ToHex());
+
+      link.trace_id().CopyTo(trace_id_buf);
+      item->set_trace_id(&trace_id_buf, TRACE_ID_SIZE);
+
+      link.span_id().CopyTo(span_id_buf);
+      item->set_trace_id(&span_id_buf, SPAN_ID_SIZE);
+
       for (const auto& attribute : link.attributes()) {
         auto kv = new common::KeyValue();
         kv->set_key(attribute.first);
@@ -331,7 +349,9 @@ void OtlpExporterHandler::Export(const std::vector<::opencensus::trace::exporter
     if (invocation_context->status.ok()) {
       SPDLOG_DEBUG("Export tracing spans OK");
     } else {
-      SPDLOG_WARN("Failed to export tracing spans to {}", invocation_context->remote_address);
+      SPDLOG_WARN("Failed to export tracing spans to {}, gRPC code:{}, gRPC error message: {}",
+                  invocation_context->remote_address, invocation_context->status.error_code(),
+                  invocation_context->status.error_message());
     }
   };
   invocation_context->callback = callback;
