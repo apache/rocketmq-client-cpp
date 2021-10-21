@@ -29,7 +29,7 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class SchedulerTest : public testing::Test {
 public:
-  SchedulerTest() : scheduler(std::make_shared<SchedulerImpl>()) {  
+  SchedulerTest() : scheduler(std::make_shared<SchedulerImpl>()) {
   }
 
   void SetUp() override {
@@ -41,7 +41,7 @@ public:
   }
 
 protected:
-    SchedulerSharedPtr scheduler;
+  SchedulerSharedPtr scheduler;
 };
 
 TEST_F(SchedulerTest, testSingleShot) {
@@ -75,7 +75,8 @@ TEST_F(SchedulerTest, testCancel) {
     callback_fire_count++;
   };
 
-  std::uint32_t task_id = scheduler->schedule(callback, "test-cancel", std::chrono::seconds(1), std::chrono::seconds(1));
+  std::uint32_t task_id =
+      scheduler->schedule(callback, "test-cancel", std::chrono::seconds(1), std::chrono::seconds(1));
   scheduler->cancel(task_id);
   std::this_thread::sleep_for(std::chrono::seconds(2));
   ASSERT_EQ(0, callback_fire_count);

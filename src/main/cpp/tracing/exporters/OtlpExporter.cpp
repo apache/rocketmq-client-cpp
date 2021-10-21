@@ -153,8 +153,8 @@ void OtlpExporterHandler::Export(const std::vector<::opencensus::trace::exporter
     case TraceMode::Develop: {
       {
         for (const auto& span : spans) {
-          SPDLOG_INFO("{} --> {}: {}", absl::FormatTime(span.start_time()), absl::FormatTime(span.end_time()),
-                      span.name().data());
+          SPDLOG_INFO("trace span {} --> {}: {}", absl::FormatTime(span.start_time()),
+                      absl::FormatTime(span.end_time()), span.name().data());
           for (const auto& event : span.annotations().events()) {
             for (const auto& attr : event.event().attributes()) {
               switch (attr.second.type()) {
@@ -171,6 +171,21 @@ void OtlpExporterHandler::Export(const std::vector<::opencensus::trace::exporter
                               attr.second.bool_value());
                   break;
               }
+            }
+          }
+          SPDLOG_INFO("Attributes size={}", span.attributes().size());
+          for (const auto& attribute : span.attributes()) {
+            switch (attribute.second.type()) {
+              case opencensus::trace::AttributeValueRef::Type::kString:
+                SPDLOG_INFO("Span attribute: {} --> {}", attribute.first, attribute.second.string_value());
+                break;
+                break;
+              case opencensus::trace::AttributeValueRef::Type::kBool:
+                SPDLOG_INFO("Span attribute: {} --> {}", attribute.first, attribute.second.bool_value());
+                break;
+              case opencensus::trace::AttributeValueRef::Type::kInt:
+                SPDLOG_INFO("Span attribute: {} --> {}", attribute.first, attribute.second.int_value());
+                break;
             }
           }
         }

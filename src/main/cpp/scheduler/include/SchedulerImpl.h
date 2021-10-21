@@ -16,7 +16,6 @@
  */
 #pragma once
 #include <atomic>
-#include <bits/c++config.h>
 #include <chrono>
 #include <cstdint>
 #include <functional>

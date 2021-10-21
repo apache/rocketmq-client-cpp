@@ -73,21 +73,45 @@ const char* MixAll::SPAN_NAME_AWAIT_CONSUMPTION = "AwaitingConsumption";
 const char* MixAll::SPAN_NAME_CONSUME_MESSAGE = "ConsumeMessage";
 const char* MixAll::SPAN_NAME_PULL_MESSAGE = "PullMessage";
 
-// Span attribute name list
-const char* MixAll::SPAN_ATTRIBUTE_ACCESS_KEY = "ak";
-const char* MixAll::SPAN_ATTRIBUTE_ARN = "setResourceNamespace";
-const char* MixAll::SPAN_ATTRIBUTE_KEYS = "keys";
-const char* MixAll::SPAN_ATTRIBUTE_MESSAGE_TYPE = "msgType";
-const char* MixAll::SPAN_ATTRIBUTE_DELIVERY_TIMESTAMP = "deliveryTimestamp";
-const char* MixAll::SPAN_ATTRIBUTE_TOPIC = "topic";
-const char* MixAll::SPAN_ATTRIBUTE_GROUP = "group";
-const char* MixAll::SPAN_ATTRIBUTE_MESSAGE_ID = "msgId";
-const char* MixAll::SPAN_ATTRIBUTE_TAG = "tags";
-const char* MixAll::SPAN_ATTRIBUTE_HOST = "host";
-const char* MixAll::SPAN_ATTRIBUTE_ATTEMPT_TIME = "attempt";
-const char* MixAll::SPAN_ATTRIBUTE_TRANSACTION_RESOLUTION = "commitAction";
-const char* MixAll::SPAN_ATTRIBUTE_AVAILABLE_TIMESTAMP = "availableTimestamp";
-const char* MixAll::SPAN_ATTRIBUTE_BATCH_SIZE = "batchSize";
+// Span attributes follows to the opentelemetry specification, refers to:
+// https://github.com/open-telemetry/opentelemetry-specification
+
+// RocketMQ span attribute name list
+const char* MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_NAMESPACE = "messaging.rocketmq.namespace";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_TAG = "messaging.rocketmq.tag";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_KEYS = "messaging.rocketmq.keys";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_CLIENT_ID = "messaging.rocketmq.client_id";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_MESSAGE_TYPE = "messaging.rocketmq.message_type";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_CLIENT_GROUP = "messaging.rocketmq.client_group";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ATTEMPT = "messaging.rocketmq.attempt";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_BATCH_SIZE = "messaging.rocketmq.batch_size";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_DELIVERY_TIMESTAMP = "messaging.rocketmq.delivery_timestamp";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_AVAILABLE_TIMESTAMP = "messaging.rocketmq.available_timestamp";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ACCESS_KEY = "messaging.rocketmq.access_key";
+
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_MESSAGING_SYSTEM = "rocketmq";
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_DESTINATION_KIND = "topic";
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_MESSAGING_PROTOCOL = "RMQ-gRPC";
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_MESSAGING_PROTOCOL_VERSION = "v1";
+
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_NORMAL_MESSAGE = "normal";
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_FIFO_MESSAGE = "fifo";
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_DELAY_MESSAGE = "delay";
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_TRANSACTION_MESSAGE = "transaction";
+
+// Messaging span attribute name list
+const char* MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_SYSTEM = "messaging.system";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_DESTINATION = "messaging.destination";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_DESTINATION_KIND = "messaging.destination_kind";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_PROTOCOL = "messaging.protocol";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_PROTOCOL_VERSION = "messaging.protocol_version";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_URL = "messaging.url";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_ID = "messaging.message_id";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_PAYLOAD_SIZE_BYTES = "messaging.message_payload_size_bytes";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_OPERATION = "messaging.operation";
+
+const char* MixAll::SPAN_ATTRIBUTE_KEY_HOST_NAME = "host.name";
+const char* MixAll::SPAN_ATTRIBUTE_KEY_TRANSACTION_RESOLUTION = "commitAction";
 
 // Span annotation
 const char* MixAll::SPAN_ANNOTATION_AWAIT_CONSUMPTION = "__await_consumption";

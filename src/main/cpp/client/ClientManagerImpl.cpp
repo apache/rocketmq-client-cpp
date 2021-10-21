@@ -113,7 +113,7 @@ void ClientManagerImpl::start() {
   state_.store(State::STARTING, std::memory_order_relaxed);
 
   callback_thread_pool_->start();
-  
+
   scheduler_->start();
 
   std::weak_ptr<ClientManagerImpl> client_instance_weak_ptr = shared_from_this();
@@ -169,7 +169,7 @@ void ClientManagerImpl::shutdown() {
   if (stats_task_id_) {
     scheduler_->cancel(stats_task_id_);
   }
-  
+
   scheduler_->shutdown();
 
   {

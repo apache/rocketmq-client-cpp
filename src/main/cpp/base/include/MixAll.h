@@ -68,21 +68,42 @@ public:
   static const char* SPAN_NAME_CONSUME_MESSAGE;
   static const char* SPAN_NAME_PULL_MESSAGE;
 
-  // Tracing attribute name list
-  static const char* SPAN_ATTRIBUTE_ACCESS_KEY;
-  static const char* SPAN_ATTRIBUTE_ARN;
-  static const char* SPAN_ATTRIBUTE_TOPIC;
-  static const char* SPAN_ATTRIBUTE_GROUP;
-  static const char* SPAN_ATTRIBUTE_MESSAGE_ID;
-  static const char* SPAN_ATTRIBUTE_TAG;
-  static const char* SPAN_ATTRIBUTE_KEYS;
-  static const char* SPAN_ATTRIBUTE_HOST;
-  static const char* SPAN_ATTRIBUTE_MESSAGE_TYPE;
-  static const char* SPAN_ATTRIBUTE_ATTEMPT_TIME;
-  static const char* SPAN_ATTRIBUTE_DELIVERY_TIMESTAMP;
-  static const char* SPAN_ATTRIBUTE_TRANSACTION_RESOLUTION;
-  static const char* SPAN_ATTRIBUTE_AVAILABLE_TIMESTAMP;
-  static const char* SPAN_ATTRIBUTE_BATCH_SIZE;
+  // RocketMQ span attribute name list
+  static const char* SPAN_ATTRIBUTE_KEY_ROCKETMQ_NAMESPACE;
+  static const char* SPAN_ATTRIBUTE_KEY_ROCKETMQ_TAG;
+  static const char* SPAN_ATTRIBUTE_KEY_ROCKETMQ_KEYS;
+  static const char* SPAN_ATTRIBUTE_KEY_ROCKETMQ_CLIENT_ID;
+  static const char* SPAN_ATTRIBUTE_KEY_ROCKETMQ_MESSAGE_TYPE;
+  static const char* SPAN_ATTRIBUTE_KEY_ROCKETMQ_CLIENT_GROUP;
+  static const char* SPAN_ATTRIBUTE_KEY_ROCKETMQ_ATTEMPT;
+  static const char* SPAN_ATTRIBUTE_KEY_ROCKETMQ_BATCH_SIZE;
+  static const char* SPAN_ATTRIBUTE_KEY_ROCKETMQ_DELIVERY_TIMESTAMP;
+  static const char* SPAN_ATTRIBUTE_KEY_ROCKETMQ_AVAILABLE_TIMESTAMP;
+  static const char* SPAN_ATTRIBUTE_KEY_ROCKETMQ_ACCESS_KEY;
+
+  static const char* SPAN_ATTRIBUTE_VALUE_ROCKETMQ_MESSAGING_SYSTEM;
+  static const char* SPAN_ATTRIBUTE_VALUE_DESTINATION_KIND;
+  static const char* SPAN_ATTRIBUTE_VALUE_MESSAGING_PROTOCOL;
+  static const char* SPAN_ATTRIBUTE_VALUE_MESSAGING_PROTOCOL_VERSION;
+
+  static const char* SPAN_ATTRIBUTE_VALUE_ROCKETMQ_NORMAL_MESSAGE;
+  static const char* SPAN_ATTRIBUTE_VALUE_ROCKETMQ_FIFO_MESSAGE;
+  static const char* SPAN_ATTRIBUTE_VALUE_ROCKETMQ_DELAY_MESSAGE;
+  static const char* SPAN_ATTRIBUTE_VALUE_ROCKETMQ_TRANSACTION_MESSAGE;
+
+  // Messaging attribute name list
+  static const char* SPAN_ATTRIBUTE_KEY_MESSAGING_SYSTEM;
+  static const char* SPAN_ATTRIBUTE_KEY_MESSAGING_DESTINATION;
+  static const char* SPAN_ATTRIBUTE_KEY_MESSAGING_DESTINATION_KIND;
+  static const char* SPAN_ATTRIBUTE_KEY_MESSAGING_PROTOCOL;
+  static const char* SPAN_ATTRIBUTE_KEY_MESSAGING_PROTOCOL_VERSION;
+  static const char* SPAN_ATTRIBUTE_KEY_MESSAGING_URL;
+  static const char* SPAN_ATTRIBUTE_KEY_MESSAGING_ID;
+  static const char* SPAN_ATTRIBUTE_KEY_MESSAGING_PAYLOAD_SIZE_BYTES;
+  static const char* SPAN_ATTRIBUTE_KEY_MESSAGING_OPERATION;
+
+  static const char* SPAN_ATTRIBUTE_KEY_HOST_NAME;
+  static const char* SPAN_ATTRIBUTE_KEY_TRANSACTION_RESOLUTION;
 
   // Tracing annotation
   static const char* SPAN_ANNOTATION_AWAIT_CONSUMPTION;
