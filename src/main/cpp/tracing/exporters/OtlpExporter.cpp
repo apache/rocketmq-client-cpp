@@ -18,6 +18,7 @@
 #include "InvocationContext.h"
 #include "MixAll.h"
 #include "Signature.h"
+#include "UtilAll.h"
 #include "fmt/format.h"
 #include "opentelemetry/proto/collector/trace/v1/trace_service.pb.h"
 #include "opentelemetry/proto/common/v1/common.pb.h"
@@ -333,6 +334,7 @@ void OtlpExporterHandler::Export(const std::vector<::opencensus::trace::exporter
           value->set_int_value(attribute.second.int_value());
           break;
       }
+      kv->set_allocated_value(value);
       item->mutable_attributes()->AddAllocated(kv);
     }
 
@@ -348,6 +350,28 @@ void OtlpExporterHandler::Export(const std::vector<::opencensus::trace::exporter
     instrument_library_span->mutable_spans()->AddAllocated(item);
   }
   resource->mutable_instrumentation_library_spans()->AddAllocated(instrument_library_span);
+
+  auto telemetry_sdk_language_kv = new common::KeyValue();
+  telemetry_sdk_language_kv->set_key(MixAll::TRACE_RESOURCE_ATTRIBUTE_KEY_TELEMETRY_SDK_LANGUAGE);
+  auto telemetry_sdk_language_value = new common::AnyValue();
+  telemetry_sdk_language_value->set_string_value(MixAll::TRACE_RESOURCE_ATTRIBUTE_VALUE_TELEMETRY_SDK_LANGUAGE);
+  telemetry_sdk_language_kv->set_allocated_value(telemetry_sdk_language_value);
+  resource->mutable_resource()->mutable_attributes()->AddAllocated(telemetry_sdk_language_kv);
+
+  auto host_name_kv = new common::KeyValue();
+  host_name_kv->set_key(MixAll::TRACE_RESOURCE_ATTRIBUTE_KEY_HOST_NAME);
+  auto host_name_value = new common::AnyValue();
+  host_name_value->set_string_value(UtilAll::hostname());
+  host_name_kv->set_allocated_value(host_name_value);
+  resource->mutable_resource()->mutable_attributes()->AddAllocated(host_name_kv);
+
+  auto service_name_kv = new common::KeyValue();
+  service_name_kv->set_key(MixAll::TRACE_RESOURCE_ATTRIBUTE_KEY_SERVICE_NAME);
+  auto service_name_value = new common::AnyValue();
+  service_name_value->set_string_value(MixAll::TRACE_RESOURCE_ATTRIBUTE_VALUE_SERVICE_NAME);
+  service_name_kv->set_allocated_value(service_name_value);
+  resource->mutable_resource()->mutable_attributes()->AddAllocated(service_name_kv);
+
   request.mutable_resource_spans()->AddAllocated(resource);
 
   auto invocation_context = new InvocationContext<collector_trace::ExportTraceServiceResponse>();
@@ -362,7 +386,7 @@ void OtlpExporterHandler::Export(const std::vector<::opencensus::trace::exporter
   }
   auto callback = [](const InvocationContext<collector_trace::ExportTraceServiceResponse>* invocation_context) {
     if (invocation_context->status.ok()) {
-      SPDLOG_DEBUG("Export tracing spans OK");
+      SPDLOG_DEBUG("Export tracing spans OK, target={}", invocation_context->remote_address);
     } else {
       SPDLOG_WARN("Failed to export tracing spans to {}, gRPC code:{}, gRPC error message: {}",
                   invocation_context->remote_address, invocation_context->status.error_code(),
