@@ -61,6 +61,8 @@ public:
 
   static const char* MESSAGE_KEY_SEPARATOR;
 
+  static const char* OTLP_NAME_VALUE;
+
   static const char* TRACE_RESOURCE_ATTRIBUTE_KEY_TELEMETRY_SDK_LANGUAGE;
   static const char* TRACE_RESOURCE_ATTRIBUTE_VALUE_TELEMETRY_SDK_LANGUAGE;
 
@@ -68,11 +70,7 @@ public:
   static const char* TRACE_RESOURCE_ATTRIBUTE_KEY_SERVICE_NAME;
   static const char* TRACE_RESOURCE_ATTRIBUTE_VALUE_SERVICE_NAME;
 
-  // Tracing span name list
-  static const char* SPAN_NAME_SEND_MESSAGE;
   static const char* SPAN_NAME_END_TRANSACTION;
-  static const char* SPAN_NAME_AWAIT_CONSUMPTION;
-  static const char* SPAN_NAME_CONSUME_MESSAGE;
   static const char* SPAN_NAME_PULL_MESSAGE;
 
   // RocketMQ span attribute name list
@@ -125,7 +123,6 @@ public:
   static const char* SPAN_ATTRIBUTE_VALUE_MESSAGING_RECEIVE_OPERATION;
   static const char* SPAN_ATTRIBUTE_VALUE_MESSAGING_PROCESS_OPERATION;
 
-  static const char* SPAN_ATTRIBUTE_KEY_HOST_NAME;
   static const char* SPAN_ATTRIBUTE_KEY_TRANSACTION_RESOLUTION;
 
   // Tracing annotation

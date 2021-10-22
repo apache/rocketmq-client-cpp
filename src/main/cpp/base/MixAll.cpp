@@ -66,6 +66,8 @@ const uint32_t MixAll::DEFAULT_COMPRESS_BODY_THRESHOLD_ = 1024 * 1024 * 4;
 const char* MixAll::HOME_PROFILE_ENV_ = "HOME";
 const char* MixAll::MESSAGE_KEY_SEPARATOR = " ";
 
+const char* MixAll::OTLP_NAME_VALUE = "org.apache.rocketmq.message";
+
 const char* MixAll::TRACE_RESOURCE_ATTRIBUTE_KEY_TELEMETRY_SDK_LANGUAGE = "telemetry.sdk.language";
 const char* MixAll::TRACE_RESOURCE_ATTRIBUTE_VALUE_TELEMETRY_SDK_LANGUAGE = "cpp";
 
@@ -73,11 +75,7 @@ const char* MixAll::TRACE_RESOURCE_ATTRIBUTE_KEY_HOST_NAME = "host.name";
 const char* MixAll::TRACE_RESOURCE_ATTRIBUTE_KEY_SERVICE_NAME = "service.name";
 const char* MixAll::TRACE_RESOURCE_ATTRIBUTE_VALUE_SERVICE_NAME = "rocketmq-client";
 
-// Span name list
-const char* MixAll::SPAN_NAME_SEND_MESSAGE = "SendMessage";
 const char* MixAll::SPAN_NAME_END_TRANSACTION = "EndTransaction";
-const char* MixAll::SPAN_NAME_AWAIT_CONSUMPTION = "AwaitingConsumption";
-const char* MixAll::SPAN_NAME_CONSUME_MESSAGE = "ConsumeMessage";
 const char* MixAll::SPAN_NAME_PULL_MESSAGE = "PullMessage";
 
 // Span attributes follows to the opentelemetry specification, refers to:
@@ -133,7 +131,6 @@ const char* MixAll::SPAN_ATTRIBUTE_VALUE_MESSAGING_SEND_OPERATION = "send";
 const char* MixAll::SPAN_ATTRIBUTE_VALUE_MESSAGING_RECEIVE_OPERATION = "receive";
 const char* MixAll::SPAN_ATTRIBUTE_VALUE_MESSAGING_PROCESS_OPERATION = "process";
 
-const char* MixAll::SPAN_ATTRIBUTE_KEY_HOST_NAME = "host.name";
 const char* MixAll::SPAN_ATTRIBUTE_KEY_TRANSACTION_RESOLUTION = "commitAction";
 
 // Span annotation
