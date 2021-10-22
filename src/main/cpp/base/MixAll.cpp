@@ -66,6 +66,13 @@ const uint32_t MixAll::DEFAULT_COMPRESS_BODY_THRESHOLD_ = 1024 * 1024 * 4;
 const char* MixAll::HOME_PROFILE_ENV_ = "HOME";
 const char* MixAll::MESSAGE_KEY_SEPARATOR = " ";
 
+const char* MixAll::TRACE_RESOURCE_ATTRIBUTE_KEY_TELEMETRY_SDK_LANGUAGE = "telemetry.sdk.language";
+const char* MixAll::TRACE_RESOURCE_ATTRIBUTE_VALUE_TELEMETRY_SDK_LANGUAGE = "cpp";
+
+const char* MixAll::TRACE_RESOURCE_ATTRIBUTE_KEY_HOST_NAME = "host.name";
+const char* MixAll::TRACE_RESOURCE_ATTRIBUTE_KEY_SERVICE_NAME = "service.name";
+const char* MixAll::TRACE_RESOURCE_ATTRIBUTE_VALUE_SERVICE_NAME = "rocketmq-client";
+
 // Span name list
 const char* MixAll::SPAN_NAME_SEND_MESSAGE = "SendMessage";
 const char* MixAll::SPAN_NAME_END_TRANSACTION = "EndTransaction";
@@ -77,6 +84,7 @@ const char* MixAll::SPAN_NAME_PULL_MESSAGE = "PullMessage";
 // https://github.com/open-telemetry/opentelemetry-specification
 
 // RocketMQ span attribute name list
+const char* MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_OPERATION = "messaging.rocketmq.operation";
 const char* MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_NAMESPACE = "messaging.rocketmq.namespace";
 const char* MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_TAG = "messaging.rocketmq.tag";
 const char* MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_KEYS = "messaging.rocketmq.keys";
@@ -99,6 +107,17 @@ const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_FIFO_MESSAGE = "fifo";
 const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_DELAY_MESSAGE = "delay";
 const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_TRANSACTION_MESSAGE = "transaction";
 
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_SEND_OPERATION = "send";
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_RECEIVE_OPERATION = "receive";
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_PULL_OPERATION = "pull";
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_AWAIT_OPERATION = "await";
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_PROCESS_OPERATION = "process";
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_ACK_OPERATION = "ack";
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_NACK_OPERATION = "nack";
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_COMMIT_OPERATION = "commit";
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_ROLLBACK_OPERATION = "rollback";
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_DLQ_OPERATION = "dlq";
+
 // Messaging span attribute name list
 const char* MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_SYSTEM = "messaging.system";
 const char* MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_DESTINATION = "messaging.destination";
@@ -109,6 +128,10 @@ const char* MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_URL = "messaging.url";
 const char* MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_ID = "messaging.message_id";
 const char* MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_PAYLOAD_SIZE_BYTES = "messaging.message_payload_size_bytes";
 const char* MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_OPERATION = "messaging.operation";
+
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_MESSAGING_SEND_OPERATION = "send";
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_MESSAGING_RECEIVE_OPERATION = "receive";
+const char* MixAll::SPAN_ATTRIBUTE_VALUE_MESSAGING_PROCESS_OPERATION = "process";
 
 const char* MixAll::SPAN_ATTRIBUTE_KEY_HOST_NAME = "host.name";
 const char* MixAll::SPAN_ATTRIBUTE_KEY_TRANSACTION_RESOLUTION = "commitAction";

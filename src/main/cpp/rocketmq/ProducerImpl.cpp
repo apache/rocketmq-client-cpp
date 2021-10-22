@@ -321,21 +321,18 @@ void ProducerImpl::sendImpl(RetrySendCallback* callback) {
     auto span_context = opencensus::trace::propagation::FromTraceParentHeader(message.traceContext());
 
     auto span = opencensus::trace::Span::BlankSpan();
+    std::string span_name =
+        resourceNamespace() + "/" + message.getTopic() + " " + MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_SEND_OPERATION;
     if (span_context.IsValid()) {
-      span = opencensus::trace::Span::StartSpanWithRemoteParent(MixAll::SPAN_NAME_SEND_MESSAGE, span_context,
-                                                                {&Samplers::always()});
+      span = opencensus::trace::Span::StartSpanWithRemoteParent(span_name, span_context, {&Samplers::always()});
     } else {
-      span = opencensus::trace::Span::StartSpan(MixAll::SPAN_NAME_SEND_MESSAGE, nullptr, {&Samplers::always()});
+      span = opencensus::trace::Span::StartSpan(span_name, nullptr, {&Samplers::always()});
     }
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_OPERATION,
+                      MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_SEND_OPERATION);
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_OPERATION,
+                      MixAll::SPAN_ATTRIBUTE_VALUE_MESSAGING_SEND_OPERATION);
     TracingUtility::addUniversalSpanAttributes(message, *this, span);
-
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ACCESS_KEY,
-                      credentialsProvider()->getCredentials().accessKey());
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_NAMESPACE, resourceNamespace());
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_DESTINATION, message.getTopic());
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_ID, message.getMsgId());
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_CLIENT_GROUP, getGroupName());
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_TAG, message.getTags());
     const auto& keys = callback->message().getKeys();
     if (!keys.empty()) {
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_KEYS,
@@ -343,7 +340,6 @@ void ProducerImpl::sendImpl(RetrySendCallback* callback) {
     }
     // Note: attempt-time is 0-based
     span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ATTEMPT, 1 + callback->attemptTime());
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_HOST_NAME, UtilAll::hostname());
 
     if (message.deliveryTimestamp() != absl::ToChronoTime(absl::UnixEpoch())) {
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_DELIVERY_TIMESTAMP,
