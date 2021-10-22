@@ -310,11 +310,6 @@ void ProducerImpl::sendImpl(RetrySendCallback* callback) {
     return;
   }
 
-  SendMessageRequest request;
-  wrapSendMessageRequest(callback->message(), request, callback->messageQueue());
-  Metadata metadata;
-  Signature::sign(this, metadata);
-
   {
     // Trace Send RPC
     auto& message = callback->message();
@@ -348,6 +343,12 @@ void ProducerImpl::sendImpl(RetrySendCallback* callback) {
     callback->message().traceContext(opencensus::trace::propagation::ToTraceParentHeader(span.context()));
     callback->span() = span;
   }
+
+  SendMessageRequest request;
+  wrapSendMessageRequest(callback->message(), request, callback->messageQueue());
+  Metadata metadata;
+  Signature::sign(this, metadata);
+
   client_manager_->send(target, metadata, request, callback);
 }
 
@@ -417,7 +418,6 @@ bool ProducerImpl::endTransaction0(const std::string& target, const std::string&
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_NAMESPACE, resourceNamespace());
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_CLIENT_GROUP, getGroupName());
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_ID, message_id);
-  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_HOST_NAME, UtilAll::hostname());
   switch (resolution) {
     case TransactionState::COMMIT:
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_TRANSACTION_RESOLUTION, "commit");

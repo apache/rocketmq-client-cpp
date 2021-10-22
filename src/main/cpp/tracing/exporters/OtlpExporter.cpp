@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "OtlpExporter.h"
+#include "ClientConfigImpl.h"
 #include "InvocationContext.h"
 #include "MixAll.h"
 #include "Signature.h"
@@ -223,7 +224,7 @@ void OtlpExporterHandler::Export(const std::vector<::opencensus::trace::exporter
   for (const auto& span : spans) {
     auto item = new trace::Span();
 
-    span.context().span_id().CopyTo(trace_id_buf);
+    span.context().trace_id().CopyTo(trace_id_buf);
     item->set_trace_id(&trace_id_buf, TRACE_ID_SIZE);
 
     span.context().span_id().CopyTo(span_id_buf);
@@ -345,8 +346,9 @@ void OtlpExporterHandler::Export(const std::vector<::opencensus::trace::exporter
       item->mutable_status()->set_message(span.status().error_message());
     }
 
-    // item->mutable_status()->set_code()
-
+    instrument_library_span->mutable_instrumentation_library()->mutable_name()->assign(MixAll::OTLP_NAME_VALUE);
+    instrument_library_span->mutable_instrumentation_library()->mutable_version()->assign(
+        ClientConfigImpl::CLIENT_VERSION);
     instrument_library_span->mutable_spans()->AddAllocated(item);
   }
   resource->mutable_instrumentation_library_spans()->AddAllocated(instrument_library_span);

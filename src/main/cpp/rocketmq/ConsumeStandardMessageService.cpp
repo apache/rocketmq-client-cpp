@@ -19,6 +19,7 @@
 #include <system_error>
 #include <utility>
 
+#include "TracingUtility.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_join.h"
 #include "absl/time/time.h"
@@ -36,6 +37,7 @@
 #include "UtilAll.h"
 #include "rocketmq/ConsumeType.h"
 #include "rocketmq/MQMessage.h"
+#include "rocketmq/MQMessageExt.h"
 #include "rocketmq/MessageListener.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -139,33 +141,30 @@ void ConsumeStandardMessageService::consumeTask(const ProcessQueueWeakPtr& proce
       auto span_context = opencensus::trace::propagation::FromTraceParentHeader(msg.traceContext());
 
       auto span = opencensus::trace::Span::BlankSpan();
+      std::string span_name = consumer->resourceNamespace() + "/" + msg.getTopic() + " " +
+                              MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_AWAIT_OPERATION;
       if (span_context.IsValid()) {
-        span = opencensus::trace::Span::StartSpanWithRemoteParent(MixAll::SPAN_NAME_AWAIT_CONSUMPTION, span_context,
-                                                                  &Samplers::always());
+        span = opencensus::trace::Span::StartSpanWithRemoteParent(span_name, span_context, &Samplers::always());
       } else {
-        span = opencensus::trace::Span::StartSpan(MixAll::SPAN_NAME_AWAIT_CONSUMPTION, nullptr, {&Samplers::always()});
+        span = opencensus::trace::Span::StartSpan(span_name, nullptr, {&Samplers::always()});
       }
-
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ACCESS_KEY,
-                        consumer->credentialsProvider()->getCredentials().accessKey());
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_NAMESPACE, consumer->resourceNamespace());
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_DESTINATION, msg.getTopic());
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_ID, msg.getMsgId());
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_CLIENT_GROUP, consumer->getGroupName());
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_TAG, msg.getTags());
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_OPERATION,
+                        MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_AWAIT_OPERATION);
+      TracingUtility::addUniversalSpanAttributes(msg, *consumer, span);
       const auto& keys = msg.getKeys();
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_KEYS,
                         absl::StrJoin(keys.begin(), keys.end(), MixAll::MESSAGE_KEY_SEPARATOR));
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ATTEMPT, msg.getDeliveryAttempt());
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_AVAILABLE_TIMESTAMP,
                         absl::FormatTime(absl::FromUnixMillis(msg.getStoreTimestamp())));
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_HOST_NAME, UtilAll::hostname());
       absl::Time decoded_timestamp = MessageAccessor::decodedTimestamp(msg);
       span.AddAnnotation(
           MixAll::SPAN_ANNOTATION_AWAIT_CONSUMPTION,
           {{MixAll::SPAN_ANNOTATION_ATTR_START_TIME,
             opencensus::trace::AttributeValueRef(absl::ToInt64Milliseconds(decoded_timestamp - absl::UnixEpoch()))}});
       span.End();
+      MessageAccessor::setTraceContext(const_cast<MQMessageExt&>(msg),
+                                       opencensus::trace::propagation::ToTraceParentHeader(span.context()));
     }
   }
 
@@ -175,27 +174,28 @@ void ConsumeStandardMessageService::consumeTask(const ProcessQueueWeakPtr& proce
     for (const auto& msg : msgs) {
       auto span_context = opencensus::trace::propagation::FromTraceParentHeader(msg.traceContext());
       auto span = opencensus::trace::Span::BlankSpan();
+      std::string span_name = consumer->resourceNamespace() + "/" + msg.getTopic() + " " +
+                              MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_PROCESS_OPERATION;
       if (span_context.IsValid()) {
-        span = opencensus::trace::Span::StartSpanWithRemoteParent(MixAll::SPAN_NAME_CONSUME_MESSAGE, span_context);
+        span = opencensus::trace::Span::StartSpanWithRemoteParent(span_name, span_context);
       } else {
-        span = opencensus::trace::Span::StartSpan(MixAll::SPAN_NAME_CONSUME_MESSAGE);
+        span = opencensus::trace::Span::StartSpan(span_name);
       }
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ACCESS_KEY,
-                        consumer->credentialsProvider()->getCredentials().accessKey());
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_NAMESPACE, consumer->resourceNamespace());
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_DESTINATION, msg.getTopic());
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_ID, msg.getMsgId());
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_CLIENT_GROUP, consumer->getGroupName());
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_TAG, msg.getTags());
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_OPERATION,
+                        MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_PROCESS_OPERATION);
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_OPERATION,
+                        MixAll::SPAN_ATTRIBUTE_VALUE_MESSAGING_PROCESS_OPERATION);
+      TracingUtility::addUniversalSpanAttributes(msg, *consumer, span);
       const auto& keys = msg.getKeys();
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_KEYS,
                         absl::StrJoin(keys.begin(), keys.end(), MixAll::MESSAGE_KEY_SEPARATOR));
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ATTEMPT, msg.getDeliveryAttempt());
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_AVAILABLE_TIMESTAMP,
                         absl::FormatTime(absl::FromUnixMillis(msg.getStoreTimestamp())));
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_HOST_NAME, UtilAll::hostname());
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_BATCH_SIZE, msgs.size());
       spans.emplace_back(std::move(span));
+      MessageAccessor::setTraceContext(const_cast<MQMessageExt&>(msg),
+                                       opencensus::trace::propagation::ToTraceParentHeader(span.context()));
     }
   }
 
