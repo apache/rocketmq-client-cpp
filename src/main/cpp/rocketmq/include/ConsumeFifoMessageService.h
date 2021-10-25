@@ -28,8 +28,8 @@ public:
 
   /**
    * @brief Entry of ConsumeMessageService
-   * 
-   * @param process_queue 
+   *
+   * @param process_queue
    */
   void submitConsumeTask(const ProcessQueueWeakPtr& process_queue) override;
 

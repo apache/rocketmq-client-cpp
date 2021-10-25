@@ -329,11 +329,6 @@ void ProducerImpl::sendImpl(RetrySendCallback* callback) {
     span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_OPERATION,
                       MixAll::SPAN_ATTRIBUTE_VALUE_MESSAGING_SEND_OPERATION);
     TracingUtility::addUniversalSpanAttributes(message, *this, span);
-    const auto& keys = callback->message().getKeys();
-    if (!keys.empty()) {
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_KEYS,
-                        absl::StrJoin(keys.begin(), keys.end(), MixAll::MESSAGE_KEY_SEPARATOR));
-    }
     // Note: attempt-time is 0-based
     span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ATTEMPT, 1 + callback->attemptTime());
 
