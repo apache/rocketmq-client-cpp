@@ -375,12 +375,11 @@ void ProducerImpl::send0(const MQMessage& message, SendCallback* callback, std::
   sendImpl(retry_callback);
 }
 
-bool ProducerImpl::endTransaction0(const std::string& target, const std::string& message_id,
-                                   const std::string& transaction_id, TransactionState resolution,
-                                   std::string trace_context) {
+bool ProducerImpl::endTransaction0(const std::string& target, const MQMessage& message,
+                                   const std::string& transaction_id, TransactionState resolution) {
 
   EndTransactionRequest request;
-  request.set_message_id(message_id);
+  request.set_message_id(message.getMsgId());
   request.set_transaction_id(transaction_id);
   request.mutable_group()->set_name(group_name_);
   request.mutable_group()->set_resource_namespace(resource_namespace_);
@@ -401,7 +400,8 @@ bool ProducerImpl::endTransaction0(const std::string& target, const std::string&
   bool completed = false;
   bool success = false;
   // Trace transactional message
-  opencensus::trace::SpanContext span_context = opencensus::trace::propagation::FromTraceParentHeader(trace_context);
+  opencensus::trace::SpanContext span_context =
+      opencensus::trace::propagation::FromTraceParentHeader(message.traceContext());
   auto span = opencensus::trace::Span::BlankSpan();
   if (span_context.IsValid()) {
     span = opencensus::trace::Span::StartSpanWithRemoteParent(MixAll::SPAN_NAME_END_TRANSACTION, span_context,
@@ -413,7 +413,7 @@ bool ProducerImpl::endTransaction0(const std::string& target, const std::string&
                     credentialsProvider()->getCredentials().accessKey());
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_NAMESPACE, resourceNamespace());
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_CLIENT_GROUP, getGroupName());
-  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_ID, message_id);
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_ID, message.getMsgId());
   switch (resolution) {
     case TransactionState::COMMIT:
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_TRANSACTION_RESOLUTION, "commit");
@@ -508,19 +508,17 @@ std::unique_ptr<TransactionImpl> ProducerImpl::prepare(MQMessage& message, std::
     return nullptr;
   }
 
-  return std::unique_ptr<TransactionImpl>(new TransactionImpl(
-      send_result.getMsgId(), send_result.getTransactionId(), send_result.getMessageQueue().serviceAddress(),
-      send_result.traceContext(), ProducerImpl::shared_from_this()));
+  return absl::make_unique<TransactionImpl>(message, send_result.getTransactionId(),
+                                            send_result.getMessageQueue().serviceAddress(), send_result.traceContext(),
+                                            ProducerImpl::shared_from_this());
 }
 
-bool ProducerImpl::commit(const std::string& message_id, const std::string& transaction_id,
-                          const std::string& trace_context, const std::string& target) {
-  return endTransaction0(target, message_id, transaction_id, TransactionState::COMMIT, trace_context);
+bool ProducerImpl::commit(const MQMessage& message, const std::string& transaction_id, const std::string& target) {
+  return endTransaction0(target, message, transaction_id, TransactionState::COMMIT);
 }
 
-bool ProducerImpl::rollback(const std::string& message_id, const std::string& transaction_id,
-                            const std::string& trace_context, const std::string& target) {
-  return endTransaction0(target, message_id, transaction_id, TransactionState::ROLLBACK, trace_context);
+bool ProducerImpl::rollback(const MQMessage& message, const std::string& transaction_id, const std::string& target) {
+  return endTransaction0(target, message, transaction_id, TransactionState::ROLLBACK);
 }
 
 void ProducerImpl::asyncPublishInfo(const std::string& topic,
@@ -624,7 +622,7 @@ void ProducerImpl::resolveOrphanedTransactionalMessage(const std::string& transa
   if (transaction_state_checker_) {
     TransactionState state = transaction_state_checker_->checkLocalTransactionState(message);
     const std::string& target_host = MessageAccessor::targetEndpoint(message);
-    endTransaction0(target_host, message.getMsgId(), transaction_id, state, message.traceContext());
+    endTransaction0(target_host, message, transaction_id, state);
   } else {
     SPDLOG_WARN("LocalTransactionStateChecker is unexpectedly nullptr");
   }
