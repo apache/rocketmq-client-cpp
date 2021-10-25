@@ -19,10 +19,17 @@
 #include <limits>
 #include <system_error>
 
+#include "TracingUtility.h"
+#include "absl/strings/str_join.h"
+
+#include "opencensus/trace/propagation/trace_context.h"
+#include "opencensus/trace/span.h"
+
 #include "ConsumeFifoMessageService.h"
 #include "MessageAccessor.h"
 #include "ProcessQueue.h"
 #include "PushConsumerImpl.h"
+#include "rocketmq/MessageListener.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -120,6 +127,59 @@ void ConsumeFifoMessageService::consumeTask(const ProcessQueueWeakPtr& process_q
     SPDLOG_DEBUG("Rate-limit permit acquired");
   }
 
+  // Record await-consumption-span
+  {
+    auto span_context = opencensus::trace::propagation::FromTraceParentHeader(message.traceContext());
+
+    auto span = opencensus::trace::Span::BlankSpan();
+    std::string span_name = consumer->resourceNamespace() + "/" + message.getTopic() + " " +
+                            MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_AWAIT_OPERATION;
+    if (span_context.IsValid()) {
+      span = opencensus::trace::Span::StartSpanWithRemoteParent(span_name, span_context, &Samplers::always());
+    } else {
+      span = opencensus::trace::Span::StartSpan(span_name, nullptr, {&Samplers::always()});
+    }
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_OPERATION,
+                      MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_AWAIT_OPERATION);
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_OPERATION,
+                      MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_AWAIT_OPERATION);
+    TracingUtility::addUniversalSpanAttributes(message, *consumer, span);
+    const auto& keys = message.getKeys();
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_KEYS,
+                      absl::StrJoin(keys.begin(), keys.end(), MixAll::MESSAGE_KEY_SEPARATOR));
+    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_AVAILABLE_TIMESTAMP, message.getStoreTimestamp());
+    absl::Time decoded_timestamp = MessageAccessor::decodedTimestamp(message);
+    span.AddAnnotation(
+        MixAll::SPAN_ANNOTATION_AWAIT_CONSUMPTION,
+        {{MixAll::SPAN_ANNOTATION_ATTR_START_TIME,
+          opencensus::trace::AttributeValueRef(absl::ToInt64Milliseconds(decoded_timestamp - absl::UnixEpoch()))}});
+    span.End();
+    MessageAccessor::setTraceContext(const_cast<MQMessageExt&>(message),
+                                     opencensus::trace::propagation::ToTraceParentHeader(span.context()));
+  }
+
+  auto span_context = opencensus::trace::propagation::FromTraceParentHeader(message.traceContext());
+  auto span = opencensus::trace::Span::BlankSpan();
+  std::string span_name = consumer->resourceNamespace() + "/" + message.getTopic() + " " +
+                          MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_PROCESS_OPERATION;
+  if (span_context.IsValid()) {
+    span = opencensus::trace::Span::StartSpanWithRemoteParent(span_name, span_context);
+  } else {
+    span = opencensus::trace::Span::StartSpan(span_name);
+  }
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_OPERATION,
+                    MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_PROCESS_OPERATION);
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_OPERATION,
+                    MixAll::SPAN_ATTRIBUTE_VALUE_MESSAGING_PROCESS_OPERATION);
+  TracingUtility::addUniversalSpanAttributes(message, *consumer, span);
+  const auto& keys = message.getKeys();
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_KEYS,
+                    absl::StrJoin(keys.begin(), keys.end(), MixAll::MESSAGE_KEY_SEPARATOR));
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ATTEMPT, message.getDeliveryAttempt());
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_AVAILABLE_TIMESTAMP, message.getStoreTimestamp());
+  MessageAccessor::setTraceContext(const_cast<MQMessageExt&>(message),
+                                   opencensus::trace::propagation::ToTraceParentHeader(span.context()));
+
   auto steady_start = std::chrono::steady_clock::now();
 
   try {
@@ -131,6 +191,16 @@ void ConsumeFifoMessageService::consumeTask(const ProcessQueueWeakPtr& process_q
     result = ConsumeMessageResult::FAILURE;
     SPDLOG_ERROR("Business FIFO callback raised an exception when consumeMessage");
   }
+
+  switch (result) {
+    case ConsumeMessageResult::SUCCESS:
+      span.SetStatus(opencensus::trace::StatusCode::OK);
+      break;
+    case ConsumeMessageResult::FAILURE:
+      span.SetStatus(opencensus::trace::StatusCode::UNKNOWN);
+      break;
+  }
+  span.End();
 
   auto duration = std::chrono::steady_clock::now() - steady_start;
 
