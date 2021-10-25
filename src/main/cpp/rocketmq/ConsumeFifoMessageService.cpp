@@ -97,7 +97,8 @@ void ConsumeFifoMessageService::submitConsumeTask(const ProcessQueueWeakPtr& pro
 
   if (process_queue_ptr->bindFifoConsumeTask()) {
     std::vector<MQMessageExt> messages;
-    if (process_queue_ptr->take(consumer->consumeBatchSize(), messages)) {
+    process_queue_ptr->take(consumer->consumeBatchSize(), messages);
+    if (!messages.empty()) {
       assert(1 == messages.size());
       submitConsumeTask0(consumer, process_queue, *messages.begin());
     }
