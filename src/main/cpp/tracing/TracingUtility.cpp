@@ -16,6 +16,7 @@
  */
 #include "TracingUtility.h"
 #include "MixAll.h"
+#include "absl/strings/str_join.h"
 #include "rocketmq/CredentialsProvider.h"
 #include "spdlog/spdlog.h"
 
@@ -26,6 +27,12 @@ void TracingUtility::addUniversalSpanAttributes(const MQMessage& message, Client
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_ID, message.getMsgId());
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_PAYLOAD_SIZE_BYTES, message.getBody().length());
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_TAG, message.getTags());
+  const std::vector<std::string>& keys = message.getKeys();
+  if (!keys.empty()) {
+    span.AddAnnotation(MixAll::SPAN_ANNOTATION_MESSAGE_KEYS,
+                       {{MixAll::SPAN_ANNOTATION_MESSAGE_KEYS,
+                         absl::StrJoin(keys.begin(), keys.end(), MixAll::MESSAGE_KEY_SEPARATOR)}});
+  }
   switch (message.messageType()) {
     case MessageType::FIFO:
       span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_MESSAGE_TYPE,
