@@ -26,6 +26,11 @@ public:
 
   void shutdown() override;
 
+  /**
+   * @brief Entry of ConsumeMessageService
+   * 
+   * @param process_queue 
+   */
   void submitConsumeTask(const ProcessQueueWeakPtr& process_queue) override;
 
   MessageListenerType messageListenerType() override;

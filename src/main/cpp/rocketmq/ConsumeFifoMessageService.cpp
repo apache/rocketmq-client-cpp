@@ -262,7 +262,7 @@ void ConsumeFifoMessageService::onAck(const ProcessQueueWeakPtr& process_queue, 
     SPDLOG_DEBUG("Acknowledge FIFO message[MessageQueue={}, MsgId={}] OK", process_queue_ptr->simpleName(),
                  message.getMsgId());
     process_queue_ptr->unbindFifoConsumeTask();
-    signalDispatcher();
+    submitConsumeTask(process_queue);
   }
 }
 
