@@ -20,6 +20,7 @@
 #include "MixAll.h"
 #include "Signature.h"
 #include "UtilAll.h"
+#include "absl/strings/str_split.h"
 #include "fmt/format.h"
 #include "opentelemetry/proto/collector/trace/v1/trace_service.pb.h"
 #include "opentelemetry/proto/common/v1/common.pb.h"
@@ -259,6 +260,28 @@ void OtlpExporterHandler::Export(const std::vector<::opencensus::trace::exporter
             if (attr.first == MixAll::SPAN_ANNOTATION_ATTR_START_TIME) {
               assert(attr.second.type() == opencensus::trace::AttributeValueRef::Type::kInt);
               item->set_start_time_unix_nano(attr.second.int_value() * 1e6);
+            }
+          }
+          continue;
+        }
+        if (annotation.event().description() == MixAll::SPAN_ANNOTATION_MESSAGE_KEYS) {
+          for (const auto& attr : annotation.event().attributes()) {
+            if (attr.first == MixAll::SPAN_ANNOTATION_MESSAGE_KEYS) {
+              assert(attr.second.type() == opencensus::trace::AttributeValueRef::Type::kString);
+              std::string message_keys = attr.second.string_value();
+              std::vector<std::string> key_list = absl::StrSplit(message_keys, MixAll::MESSAGE_KEY_SEPARATOR);
+              auto key_kv = new common::KeyValue();
+              key_kv->set_key(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_KEYS);
+              auto key_value = new common::AnyValue();
+              auto key_array_value = new common::ArrayValue();
+              for (const auto& key : key_list) {
+                auto value = new common::AnyValue();
+                value->set_string_value(key);
+                key_array_value->mutable_values()->AddAllocated(value);
+              }
+              key_value->set_allocated_array_value(key_array_value);
+              key_kv->set_allocated_value(key_value);
+              item->mutable_attributes()->AddAllocated(key_kv);
             }
           }
           continue;

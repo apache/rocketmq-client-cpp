@@ -127,6 +127,7 @@ public:
 
   // Tracing annotation
   static const char* SPAN_ANNOTATION_AWAIT_CONSUMPTION;
+  static const char* SPAN_ANNOTATION_MESSAGE_KEYS;
   static const char* SPAN_ANNOTATION_ATTR_START_TIME;
 
   template <typename Rep, typename Period>

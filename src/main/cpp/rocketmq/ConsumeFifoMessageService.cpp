@@ -145,9 +145,6 @@ void ConsumeFifoMessageService::consumeTask(const ProcessQueueWeakPtr& process_q
     span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_OPERATION,
                       MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_AWAIT_OPERATION);
     TracingUtility::addUniversalSpanAttributes(message, *consumer, span);
-    const auto& keys = message.getKeys();
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_KEYS,
-                      absl::StrJoin(keys.begin(), keys.end(), MixAll::MESSAGE_KEY_SEPARATOR));
     span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_AVAILABLE_TIMESTAMP, message.getStoreTimestamp());
     absl::Time decoded_timestamp = MessageAccessor::decodedTimestamp(message);
     span.AddAnnotation(
@@ -173,9 +170,6 @@ void ConsumeFifoMessageService::consumeTask(const ProcessQueueWeakPtr& process_q
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_OPERATION,
                     MixAll::SPAN_ATTRIBUTE_VALUE_MESSAGING_PROCESS_OPERATION);
   TracingUtility::addUniversalSpanAttributes(message, *consumer, span);
-  const auto& keys = message.getKeys();
-  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_KEYS,
-                    absl::StrJoin(keys.begin(), keys.end(), MixAll::MESSAGE_KEY_SEPARATOR));
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ATTEMPT, message.getDeliveryAttempt());
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_AVAILABLE_TIMESTAMP, message.getStoreTimestamp());
   MessageAccessor::setTraceContext(const_cast<MQMessageExt&>(message),
