@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 
+#include "rocketmq/MQMessage.h"
 #include "rocketmq/Transaction.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -27,9 +28,9 @@ class ProducerImpl;
 
 class TransactionImpl : public Transaction {
 public:
-  TransactionImpl(std::string message_id, std::string transaction_id, std::string endpoint, std::string trace_context,
+  TransactionImpl(MQMessage message, std::string transaction_id, std::string endpoint, std::string trace_context,
                   const std::shared_ptr<ProducerImpl>& producer)
-      : message_id_(std::move(message_id)), transaction_id_(std::move(transaction_id)), endpoint_(std::move(endpoint)),
+      : message_(std::move(message)), transaction_id_(std::move(transaction_id)), endpoint_(std::move(endpoint)),
         trace_context_(std::move(trace_context)), producer_(producer) {
   }
 
@@ -44,7 +45,7 @@ public:
   std::string transactionId() const override;
 
 private:
-  std::string message_id_;
+  MQMessage message_;
   std::string transaction_id_;
   std::string endpoint_;
   std::string trace_context_;
