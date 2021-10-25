@@ -91,17 +91,13 @@ public:
   void messageType(MessageType message_type);
   MessageType messageType() const;
 
-  void bindMessageGroup(absl::string_view message_group) {
-    message_group_ = std::string(message_group.data(), message_group.length());
-  }
+  void bindMessageGroup(absl::string_view message_group);
 
   void bindMessageQueue(const MQMessageQueue& message_queue) {
     message_queue_ = message_queue;
   }
 
-  const std::string& messageGroup() const {
-    return message_group_;
-  }
+  const std::string& messageGroup() const;
 
   const MQMessageQueue& messageQueue() const {
     return message_queue_;
@@ -113,7 +109,6 @@ protected:
   friend class MessageAccessor;
 
 private:
-  std::string message_group_;
   MQMessageQueue message_queue_;
 };
 

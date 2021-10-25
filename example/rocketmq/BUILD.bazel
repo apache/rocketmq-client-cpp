@@ -27,6 +27,16 @@ cc_binary(
 )
 
 cc_binary(
+    name = "example_fifo_producer",
+    srcs = [
+        "ExampleFifoProducer.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/rocketmq:rocketmq_library",
+    ],
+)
+
+cc_binary(
     name = "example_async_producer",
     srcs = [
         "ExampleAsyncProducer.cpp",
@@ -50,6 +60,16 @@ cc_binary(
     name = "example_push_consumer",
     srcs = [
         "ExamplePushConsumer.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/rocketmq:rocketmq_library",
+    ],
+)
+
+cc_binary(
+    name = "example_fifo_push_consumer",
+    srcs = [
+        "ExampleFifoPushConsumer.cpp",
     ],
     deps = [
         "//src/main/cpp/rocketmq:rocketmq_library",
