@@ -74,6 +74,7 @@ struct SystemAttribute {
   Resource publisher_group;
   std::string trace_context;
   std::string target_endpoint;
+  std::string message_group;
 };
 
 ROCKETMQ_NAMESPACE_END

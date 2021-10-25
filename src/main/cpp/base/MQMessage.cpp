@@ -178,4 +178,13 @@ MessageType MQMessage::messageType() const {
   return impl_->system_attribute_.message_type;
 }
 
+void MQMessage::bindMessageGroup(absl::string_view message_group) {
+  impl_->system_attribute_.message_group.append(message_group.data(), message_group.length());
+  messageType(MessageType::FIFO);
+}
+
+const std::string& MQMessage::messageGroup() const {
+  return impl_->system_attribute_.message_group;
+}
+
 ROCKETMQ_NAMESPACE_END

@@ -180,13 +180,14 @@ void ProducerImpl::wrapSendMessageRequest(const MQMessage& message, SendMessageR
     system_attribute->set_body_encoding(rmq::Encoding::IDENTITY);
   }
 
+  system_attribute->set_message_group(message.messageGroup());
+  system_attribute->set_message_id(message.getMsgId());
+  system_attribute->set_partition_id(message_queue.getQueueId());
+
   // Forward user-defined-properties
   for (auto& item : message.getProperties()) {
     request.mutable_message()->mutable_user_attribute()->insert({item.first, item.second});
   }
-
-  system_attribute->set_message_id(message.getMsgId());
-  system_attribute->set_partition_id(message_queue.getQueueId());
   SPDLOG_TRACE("SendMessageRequest: {}", request.DebugString());
 }
 
