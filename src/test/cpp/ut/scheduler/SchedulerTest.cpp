@@ -76,9 +76,9 @@ TEST_F(SchedulerTest, testCancel) {
   };
 
   std::uint32_t task_id =
-      scheduler->schedule(callback, "test-cancel", std::chrono::seconds(1), std::chrono::seconds(1));
+      scheduler->schedule(callback, "test-cancel", std::chrono::milliseconds(100), std::chrono::milliseconds(100));
   scheduler->cancel(task_id);
-  std::this_thread::sleep_for(std::chrono::seconds(2));
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
   ASSERT_EQ(0, callback_fire_count);
 }
 
@@ -93,9 +93,9 @@ TEST_F(SchedulerTest, testPeriodicShot) {
   };
 
   std::uintptr_t task_id =
-      scheduler->schedule(callback, "periodic-task", std::chrono::milliseconds(10), std::chrono::seconds(1));
+      scheduler->schedule(callback, "periodic-task", std::chrono::milliseconds(10), std::chrono::milliseconds(100));
   // Wait till callback is executed.
-  std::this_thread::sleep_for(std::chrono::seconds(5));
+  std::this_thread::sleep_for(std::chrono::milliseconds(600));
   ASSERT_TRUE(callback_fire_count >= 4);
   scheduler->cancel(task_id);
 }
@@ -145,13 +145,5 @@ TEST_F(SchedulerTest, testException) {
       cv.Wait(&mtx);
     }
   }
-
-  std::this_thread::sleep_for(std::chrono::seconds(3));
 }
-
-TEST(SchedulerLifeCycleTest, testLifeCycle) {
-  auto scheduler = std::make_shared<SchedulerImpl>();
-  scheduler->start();
-}
-
 ROCKETMQ_NAMESPACE_END
