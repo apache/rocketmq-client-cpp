@@ -26,7 +26,7 @@ bool TransactionImpl::commit() {
     return false;
   }
 
-  return producer->commit(message_id_, transaction_id_, trace_context_, endpoint_);
+  return producer->commit(message_, transaction_id_, endpoint_);
 }
 
 bool TransactionImpl::rollback() {
@@ -34,11 +34,11 @@ bool TransactionImpl::rollback() {
   if (!producer) {
     return false;
   }
-  return producer->rollback(message_id_, transaction_id_, trace_context_, endpoint_);
+  return producer->rollback(message_, transaction_id_, endpoint_);
 }
 
 std::string TransactionImpl::messageId() const {
-  return message_id_;
+  return message_.getMsgId();
 }
 
 std::string TransactionImpl::transactionId() const {
