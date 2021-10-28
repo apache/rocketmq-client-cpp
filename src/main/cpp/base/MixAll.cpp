@@ -75,8 +75,6 @@ const char* MixAll::TRACE_RESOURCE_ATTRIBUTE_KEY_HOST_NAME = "host.name";
 const char* MixAll::TRACE_RESOURCE_ATTRIBUTE_KEY_SERVICE_NAME = "service.name";
 const char* MixAll::TRACE_RESOURCE_ATTRIBUTE_VALUE_SERVICE_NAME = "rocketmq-client";
 
-const char* MixAll::SPAN_NAME_END_TRANSACTION = "EndTransaction";
-
 // Span attributes follows to the opentelemetry specification, refers to:
 // https://github.com/open-telemetry/opentelemetry-specification
 
