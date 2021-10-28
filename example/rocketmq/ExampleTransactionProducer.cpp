@@ -44,6 +44,8 @@ int main(int argc, char* argv[]) {
 
   transaction->commit();
 
+  std::this_thread::sleep_for(std::chrono::minutes(30));
+
   producer.shutdown();
 
   return EXIT_SUCCESS;

@@ -373,6 +373,8 @@ void ProducerImpl::send0(const MQMessage& message, SendCallback* callback, std::
   auto retry_callback =
       new RetrySendCallback(shared_from_this(), message, max_attempt_times, callback, std::move(list));
   sendImpl(retry_callback);
+  const_cast<MQMessage&>(message).traceContext(
+      opencensus::trace::propagation::ToTraceParentHeader(retry_callback->span().context()));
 }
 
 bool ProducerImpl::endTransaction0(const std::string& target, const MQMessage& message,
@@ -403,25 +405,18 @@ bool ProducerImpl::endTransaction0(const std::string& target, const MQMessage& m
   opencensus::trace::SpanContext span_context =
       opencensus::trace::propagation::FromTraceParentHeader(message.traceContext());
   auto span = opencensus::trace::Span::BlankSpan();
+  std::string trace_operation_name = TransactionState::COMMIT == resolution
+                                         ? MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_COMMIT_OPERATION
+                                         : MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_ROLLBACK_OPERATION;
+  std::string span_name = resourceNamespace() + "/" + message.getTopic() + " " + trace_operation_name;
   if (span_context.IsValid()) {
-    span = opencensus::trace::Span::StartSpanWithRemoteParent(MixAll::SPAN_NAME_END_TRANSACTION, span_context,
-                                                              {&Samplers::always()});
+    span = opencensus::trace::Span::StartSpanWithRemoteParent(span_name, span_context, {&Samplers::always()});
   } else {
-    span = opencensus::trace::Span::StartSpan(MixAll::SPAN_NAME_END_TRANSACTION, nullptr, {&Samplers::always()});
+    span = opencensus::trace::Span::StartSpan(span_name, nullptr, {&Samplers::always()});
   }
-  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ACCESS_KEY,
-                    credentialsProvider()->getCredentials().accessKey());
-  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_NAMESPACE, resourceNamespace());
-  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_CLIENT_GROUP, getGroupName());
-  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_ID, message.getMsgId());
-  switch (resolution) {
-    case TransactionState::COMMIT:
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_TRANSACTION_RESOLUTION, "commit");
-      break;
-    case TransactionState::ROLLBACK:
-      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_TRANSACTION_RESOLUTION, "rollback");
-      break;
-  }
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_OPERATION, trace_operation_name);
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_OPERATION, trace_operation_name);
+  TracingUtility::addUniversalSpanAttributes(message, *this, span);
 
   absl::Mutex mtx;
   absl::CondVar cv;

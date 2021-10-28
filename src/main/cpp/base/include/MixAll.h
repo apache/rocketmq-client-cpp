@@ -70,8 +70,6 @@ public:
   static const char* TRACE_RESOURCE_ATTRIBUTE_KEY_SERVICE_NAME;
   static const char* TRACE_RESOURCE_ATTRIBUTE_VALUE_SERVICE_NAME;
 
-  static const char* SPAN_NAME_END_TRANSACTION;
-
   // RocketMQ span attribute name list
   static const char* SPAN_ATTRIBUTE_KEY_ROCKETMQ_OPERATION;
   static const char* SPAN_ATTRIBUTE_KEY_ROCKETMQ_NAMESPACE;
