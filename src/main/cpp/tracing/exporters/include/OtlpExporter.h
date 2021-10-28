@@ -56,6 +56,9 @@ class OtlpExporter : public std::enable_shared_from_this<OtlpExporter> {
 public:
   OtlpExporter(std::weak_ptr<ClientManager> client_manager, ClientConfig* client_config)
       : client_manager_(std::move(client_manager)), client_config_(client_config) {
+    if (client_config_->isTracingEnabled()) {
+      mode_ = TraceMode::Grpc;
+    }
   }
 
   void updateHosts(std::vector<std::string> hosts) LOCKS_EXCLUDED(hosts_mtx_) {

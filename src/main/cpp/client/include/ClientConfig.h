@@ -45,6 +45,8 @@ public:
   virtual const std::string& getGroupName() const = 0;
 
   virtual std::string clientId() const = 0;
+
+  virtual bool isTracingEnabled() const = 0;
 };
 
 ROCKETMQ_NAMESPACE_END

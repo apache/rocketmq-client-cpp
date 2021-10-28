@@ -33,6 +33,7 @@ public:
   MOCK_METHOD(absl::Duration, getLongPollingTimeout, (), (const override));
   MOCK_METHOD(const std::string&, getGroupName, (), (const override));
   MOCK_METHOD(std::string, clientId, (), (const override));
+  MOCK_METHOD(bool, isTracingEnabled, (), (const override));
 };
 
 ROCKETMQ_NAMESPACE_END

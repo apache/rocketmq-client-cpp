@@ -70,9 +70,10 @@ public:
     long_polling_timeout_ = timeout;
   }
 
-  bool isTracingEnabled() {
+  bool isTracingEnabled() const override {
     return enable_tracing_.load();
   }
+
   void enableTracing(bool enabled) {
     enable_tracing_.store(enabled);
   }
@@ -137,7 +138,7 @@ protected:
 
   absl::Duration long_polling_timeout_;
 
-  std::atomic<bool> enable_tracing_{false};
+  std::atomic<bool> enable_tracing_{true};
 
   static std::string steadyName();
 };
