@@ -16,10 +16,12 @@
  */
 #pragma once
 
+#include "absl/strings/string_view.h"
 #include "google/protobuf/struct.pb.h"
 #include "google/protobuf/util/json_util.h"
 
 #include "rocketmq/RocketMQ.h"
+#include <type_traits>
 
 ROCKETMQ_NAMESPACE_BEGIN
 

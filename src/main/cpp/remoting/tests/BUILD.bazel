@@ -1,0 +1,33 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+cc_test(
+    name = "send_message_request_header_test",
+    srcs = [
+        "SendMessageRequestHeaderTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/remoting",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "pop_message_request_header_test",
+    srcs = [
+        "PopMessageRequestHeaderTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/remoting",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "ack_message_request_header_test",
+    srcs = [
+        "AckMessageRequestHeaderTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/remoting",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
