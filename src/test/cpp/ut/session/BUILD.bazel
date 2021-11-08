@@ -1,0 +1,13 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+
+cc_test(
+    name = "remoting_session_test",
+    srcs = [
+        "RemotingSessionTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/session",
+        "//src/main/cpp/remoting",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

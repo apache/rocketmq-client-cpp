@@ -21,6 +21,7 @@
 #include <memory>
 
 #include "LanguageCode.h"
+#include "absl/base/internal/endian.h"
 #include "absl/memory/memory.h"
 
 #include "QueryRouteRequestHeader.h"
@@ -35,6 +36,10 @@ std::int32_t RemotingCommand::nextRequestId() {
 RemotingCommand RemotingCommand::createRequest(RequestCode code, CommandCustomHeader* ext_fields) {
   RemotingCommand command;
   command.code_ = static_cast<std::int32_t>(code);
+  command.opaque_ = nextRequestId();
+  command.language_ = LanguageCode::CPP;
+  // TODO: create enumeration for version.
+  command.version_ = 300;
   command.ext_fields_ = ext_fields;
   return command;
 }
@@ -104,6 +109,30 @@ void RemotingCommand::encodeHeader(google::protobuf::Value& root) {
     ext_fields_->encode(ext_fields);
     fields->insert({"extFields", ext_fields});
   }
+}
+
+std::vector<char> RemotingCommand::encode() {
+  std::vector<char> frame;
+  google::protobuf::Value root;
+  encodeHeader(root);
+  std::string header_json;
+  google::protobuf::util::MessageToJsonString(root, &header_json);
+
+  std::uint32_t frame_length = 4 + header_json.length();
+  if (!body_.empty()) {
+    frame_length += body_.size();
+  }
+
+  std::vector<char> result;
+  result.reserve(4 + 4 + header_json.length() + body_.size());
+  result.resize(8);
+  result.insert(result.end(), header_json.begin(), header_json.end());
+  result.insert(result.end(), body_.begin(), body_.end());
+
+  uint32_t* ptr = reinterpret_cast<std::uint32_t*>(result.data());
+  *(ptr) = absl::ghtonl(frame_length);
+  *(ptr + 1) = absl::ghtonl(header_json.length());
+  return result;
 }
 
 const std::uint8_t RemotingCommand::RPC_TYPE_RESPONSE = 0;

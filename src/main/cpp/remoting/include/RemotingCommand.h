@@ -75,7 +75,9 @@ public:
 
   static RemotingCommand createResponse(ResponseCode, CommandCustomHeader*);
 
-  virtual void encodeHeader(google::protobuf::Value& root);
+  std::vector<char> encode();
+
+  void encodeHeader(google::protobuf::Value& root);
 
 private:
   RemotingCommand() = default;

@@ -1,0 +1,13 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+cc_library(
+    name = "session",
+    hdrs = glob(["include/*.h"]),
+    srcs = glob(["*.cpp"]),
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/main/cpp/remoting",
+        "//src/main/cpp/log:log_library",
+    ],
+    strip_include_prefix = "//src/main/cpp/session/include",
+)
