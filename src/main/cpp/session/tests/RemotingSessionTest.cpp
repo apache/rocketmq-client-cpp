@@ -67,14 +67,14 @@ protected:
   std::string topic_{"zhanhui-test"};
 };
 
-TEST_F(RemotingSessionTest, testConnect) {
+TEST_F(RemotingSessionTest, DISABLED_testConnect) {
   auto session = std::make_shared<RemotingSession>(context_, endpoint_);
   session->connect(std::chrono::milliseconds(1000));
   std::this_thread::sleep_for(std::chrono::milliseconds(300));
   ASSERT_EQ(SessionState::Connected, session->state());
 }
 
-TEST_F(RemotingSessionTest, testWrite) {
+TEST_F(RemotingSessionTest, DISABLED_testWrite) {
   auto session = std::make_shared<RemotingSession>(context_, endpoint_);
   session->connect(std::chrono::milliseconds(1000));
   std::this_thread::sleep_for(std::chrono::milliseconds(300));
