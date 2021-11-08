@@ -1,7 +1,9 @@
 #include "RemotingSession.h"
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <iostream>
@@ -95,9 +97,66 @@ void RemotingSession::onConnection(std::weak_ptr<RemotingSession> session, const
   if (remoting_session->state_.compare_exchange_strong(expected, SessionState::Connected)) {
     SPDLOG_INFO("Connection to {} established", remoting_session->endpoint_);
     remoting_session->read_buffer_.resize(1024);
-    remoting_session->socket_->async_read_some(
-        asio::mutable_buffer(remoting_session->read_buffer_.data(), remoting_session->read_buffer_.size()),
-        std::bind(&RemotingSession::onData, session, std::placeholders::_1, std::placeholders::_2));
+    remoting_session->fireRead();
+  }
+}
+
+void RemotingSession::fireRead() {
+  if (state_.load(std::memory_order_relaxed) != SessionState::Connected) {
+    return;
+  }
+
+  std::weak_ptr<RemotingSession> session(shared_from_this());
+  socket_->async_read_some(
+      asio::mutable_buffer(read_buffer_.data() + write_index_, read_buffer_.capacity() - write_index_),
+      std::bind(&RemotingSession::onData, session, std::placeholders::_1, std::placeholders::_2));
+}
+
+void RemotingSession::fireDecode() {
+  while (true) {
+    if (write_index_ - read_index_ <= 8) {
+      SPDLOG_DEBUG("There are {} bytes remaining. Stop decoding", write_index_ - read_index_);
+      break;
+    }
+
+    std::uint32_t* frame_length_ptr = reinterpret_cast<std::uint32_t*>(read_buffer_.data() + read_index_);
+    std::uint32_t* header_length_ptr = reinterpret_cast<std::uint32_t*>(read_buffer_.data() + read_index_ + 4);
+
+    std::uint32_t frame_length = absl::gntohl(*frame_length_ptr);
+    std::uint32_t header_length = absl::gntohl(*header_length_ptr);
+    if (frame_length + 4 <= write_index_ - read_index_) {
+      // A complete frame is available
+
+      std::string json(read_buffer_.data() + read_index_ + 8, header_length);
+      google::protobuf::Struct root;
+
+      google::protobuf::util::Status status = google::protobuf::util::JsonStringToMessage(json, &root);
+      if (status.ok()) {
+        
+      } else {
+
+      }
+
+      read_index_ += 4 + frame_length;
+    } else if (frame_length + 4 > read_buffer_.capacity()) {
+      if (frame_length + 4 > MaxFrameLength) {
+        // Yuck
+        state_.store(SessionState::Closing);
+        socket_->close();
+        break;
+      }
+
+      std::size_t expanded = std::min(2 * frame_length + 8, MaxFrameLength);
+      SPDLOG_DEBUG("Expand read_buffer from {} to {} bytes", read_buffer_.capacity(), expanded);
+      // We need to expand read_buffer_ to hold the whole frame.
+      read_buffer_.resize(expanded);
+    }
+  }
+
+  if (read_index_) {
+    read_buffer_.erase(read_buffer_.begin(), read_buffer_.begin() + read_index_);
+    write_index_ -= read_index_;
+    read_index_ = 0;
   }
 }
 
@@ -116,18 +175,26 @@ void RemotingSession::onData(std::weak_ptr<RemotingSession> session, const asio:
   }
 
   SPDLOG_DEBUG("Received {} bytes from {}", bytes_transferred, remoting_session->endpoint_);
-  std::cout << std::string(remoting_session->read_buffer_.data(), bytes_transferred) << std::endl;
 
-  remoting_session->socket_->async_read_some(
-      asio::mutable_buffer(remoting_session->read_buffer_.data(), remoting_session->read_buffer_.size()),
-      std::bind(&RemotingSession::onData, session, std::placeholders::_1, std::placeholders::_2));
+  remoting_session->write_index_ += bytes_transferred;
+  remoting_session->fireDecode();
+
+  remoting_session->fireRead();
 }
 
-void RemotingSession::write(const std::vector<char>& data, std::error_code& ec) {
+void RemotingSession::write(RemotingCommand command, std::error_code& ec) {
   if (state_.load(std::memory_order_relaxed) != SessionState::Connected) {
     ec = std::make_error_code(std::errc::not_connected);
     return;
   }
+
+  // Maintain opaque-code mapping to help decode
+  if (!command.oneWay()) {
+    absl::MutexLock lk(&opaque_code_mapping_mtx_);
+    opaque_code_mapping_.insert({command.opaque(), command.code()});
+  }
+
+  auto&& data = command.encode();
 
   {
     absl::MutexLock lk(&write_buffer_mtx_);
@@ -184,5 +251,7 @@ void RemotingSession::onWrite(std::weak_ptr<RemotingSession> session, const asio
         std::bind(&RemotingSession::onWrite, session, std::placeholders::_1, std::placeholders::_2));
   }
 }
+
+const std::uint32_t RemotingSession::MaxFrameLength = 16777216;
 
 ROCKETMQ_NAMESPACE_END

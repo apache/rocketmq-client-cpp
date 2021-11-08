@@ -74,7 +74,7 @@ TEST_F(RemotingSessionTest, DISABLED_testConnect) {
   ASSERT_EQ(SessionState::Connected, session->state());
 }
 
-TEST_F(RemotingSessionTest, DISABLED_testWrite) {
+TEST_F(RemotingSessionTest, testWrite) {
   auto session = std::make_shared<RemotingSession>(context_, endpoint_);
   session->connect(std::chrono::milliseconds(1000));
   std::this_thread::sleep_for(std::chrono::milliseconds(300));
@@ -83,10 +83,8 @@ TEST_F(RemotingSessionTest, DISABLED_testWrite) {
   auto header = new QueryRouteRequestHeader();
   header->topic(topic_);
   RemotingCommand command = RemotingCommand::createRequest(RequestCode::QueryRoute, header);
-
-  auto&& frame = command.encode();
   std::error_code ec;
-  session->write(frame, ec);
+  session->write(std::move(command), ec);
   std::this_thread::sleep_for(std::chrono::milliseconds(300));
   if (ec) {
     std::cerr << ec.message() << std::endl;

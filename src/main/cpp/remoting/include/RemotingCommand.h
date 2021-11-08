@@ -77,7 +77,21 @@ public:
 
   std::vector<char> encode();
 
+  static RemotingCommand decode(const google::protobuf::Struct& root);
+
   void encodeHeader(google::protobuf::Value& root);
+
+  bool oneWay() const {
+    return (flag_ & RPC_TYPE_ONE_WAY) == RPC_TYPE_ONE_WAY;
+  }
+
+  std::int32_t opaque() const {
+    return opaque_;
+  }
+
+  std::int32_t code() const {
+    return code_;
+  }
 
 private:
   RemotingCommand() = default;
@@ -94,13 +108,14 @@ private:
   std::vector<std::uint8_t> body_;
 
   /**
-   * Bit-field shift amount for flag_ field, indicating the RPC is a response from broker or name-server.
+   * Bit-field shift amount for flag_ field, indicating the RPC is a response
+   * from broker or name-server.
    */
   const static std::uint8_t RPC_TYPE_RESPONSE;
 
   /**
-   * Bit-field shift amount for flag_ field. Request marked one-way should NOT expect a respose from broker or
-   * name-server.
+   * Bit-field shift amount for flag_ field. Request marked one-way should NOT
+   * expect a respose from broker or name-server.
    */
   const static std::uint8_t RPC_TYPE_ONE_WAY;
 };

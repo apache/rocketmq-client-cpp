@@ -111,6 +111,32 @@ void RemotingCommand::encodeHeader(google::protobuf::Value& root) {
   }
 }
 
+RemotingCommand RemotingCommand::decode(const google::protobuf::Struct& root) {
+  RemotingCommand command;
+  auto fields = root.fields();
+  if (fields.contains("code")) {
+    auto item = fields["code"];
+    command.code_ = item.number_value();
+  }
+
+  if (fields.contains("version")) {
+    command.version_ = fields["version"].number_value();
+  }
+
+  if (fields.contains("opaque")) {
+    command.opaque_ = fields["opaque"].number_value();
+  }
+
+  if (fields.contains("flag")) {
+    command.flag_ = fields["flag"].number_value();
+  }
+
+  if (fields.contains("remark")) {
+    command.remark_ = fields["remark"].string_value();
+  }
+  return command;
+}
+
 std::vector<char> RemotingCommand::encode() {
   std::vector<char> frame;
   google::protobuf::Value root;
