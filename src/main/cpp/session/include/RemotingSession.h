@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <system_error>
 
@@ -20,12 +21,13 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class RemotingSession : public std::enable_shared_from_this<RemotingSession> {
 public:
-  RemotingSession(std::shared_ptr<asio::io_context> context, absl::string_view endpoint)
+  RemotingSession(std::shared_ptr<asio::io_context> context, absl::string_view endpoint,
+                  std::function<void(const std::vector<RemotingCommand>&)> callback)
       : context_(context), endpoint_(endpoint.data(), endpoint.length()), state_(SessionState::Created),
-        deadline_(*context) {
+        deadline_(*context), callback_(callback) {
   }
 
-  void connect(std::chrono::milliseconds timeout);
+  void connect(std::chrono::milliseconds timeout, bool await = false);
 
   void write(RemotingCommand command, std::error_code& ec);
 
@@ -39,6 +41,8 @@ private:
   std::unique_ptr<asio::ip::tcp::socket> socket_;
   std::atomic<SessionState> state_;
 
+  absl::Mutex connect_mtx_;
+  absl::CondVar connect_cv_;
   asio::steady_timer deadline_;
 
   std::vector<char> read_buffer_;
@@ -54,6 +58,10 @@ private:
 
   absl::flat_hash_map<std::int32_t, std::int32_t> opaque_code_mapping_ GUARDED_BY(opaque_code_mapping_mtx_);
   absl::Mutex opaque_code_mapping_mtx_;
+
+  std::function<void(const std::vector<RemotingCommand>&)> callback_;
+
+  void notifyOnConnection();
 
   static void onDeadline(std::weak_ptr<RemotingSession> session, const asio::error_code& ec);
 

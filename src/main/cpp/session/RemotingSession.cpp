@@ -21,7 +21,7 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-void RemotingSession::connect(std::chrono::milliseconds timeout) {
+void RemotingSession::connect(std::chrono::milliseconds timeout, bool await) {
   SessionState expected = SessionState::Created;
 
   if (state_.compare_exchange_strong(expected, SessionState::Connecting, std::memory_order_relaxed)) {
@@ -61,6 +61,11 @@ void RemotingSession::connect(std::chrono::milliseconds timeout) {
     deadline_.async_wait(std::bind(&RemotingSession::onDeadline, session, std::placeholders::_1));
 
     socket_->async_connect(endpoint, std::bind(&RemotingSession::onConnection, session, std::placeholders::_1));
+
+    if (await) {
+      absl::MutexLock lk(&connect_mtx_);
+      connect_cv_.WaitWithTimeout(&connect_mtx_, absl::FromChrono(timeout));
+    }
   }
 }
 
@@ -79,6 +84,11 @@ void RemotingSession::onDeadline(std::weak_ptr<RemotingSession> session, const a
   remoting_session->socket_->close();
 }
 
+void RemotingSession::notifyOnConnection() {
+  absl::MutexLock lk(&connect_mtx_);
+  connect_cv_.SignalAll();
+}
+
 void RemotingSession::onConnection(std::weak_ptr<RemotingSession> session, const asio::error_code& ec) {
   std::cout << "RemotingSession::onConnection" << std::endl;
 
@@ -92,6 +102,7 @@ void RemotingSession::onConnection(std::weak_ptr<RemotingSession> session, const
   if (ec) {
     SPDLOG_WARN("Failed to connect to {}, message: {}", remoting_session->endpoint_, ec.message());
     remoting_session->state_.store(SessionState::Closing, std::memory_order_relaxed);
+    remoting_session->notifyOnConnection();
     return;
   }
 
@@ -102,6 +113,7 @@ void RemotingSession::onConnection(std::weak_ptr<RemotingSession> session, const
     remoting_session->read_buffer_.resize(1024);
     remoting_session->fireRead();
   }
+  remoting_session->notifyOnConnection();
 }
 
 void RemotingSession::fireRead() {
@@ -208,8 +220,8 @@ void RemotingSession::onData(std::weak_ptr<RemotingSession> session, const asio:
 
   auto&& commands = remoting_session->fireDecode();
   if (!commands.empty()) {
-    std::cout << "Received " << commands.size() << " commands. " << std::endl;
-    for (const auto& command : commands) {
+    if (remoting_session->callback_) {
+      remoting_session->callback_(commands);
     }
   }
 

@@ -1,7 +1,9 @@
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <system_error>
 #include <thread>
 
@@ -67,17 +69,35 @@ protected:
   std::string topic_{"zhanhui-test"};
 };
 
-TEST_F(RemotingSessionTest, DISABLED_testConnect) {
-  auto session = std::make_shared<RemotingSession>(context_, endpoint_);
-  session->connect(std::chrono::milliseconds(1000));
-  std::this_thread::sleep_for(std::chrono::milliseconds(300));
+TEST_F(RemotingSessionTest, testConnect) {
+
+  auto callback = [](const std::vector<RemotingCommand>& commands) {};
+
+  auto session = std::make_shared<RemotingSession>(context_, endpoint_, callback);
+  session->connect(std::chrono::milliseconds(1000), true);
   ASSERT_EQ(SessionState::Connected, session->state());
 }
 
 TEST_F(RemotingSessionTest, testWrite) {
-  auto session = std::make_shared<RemotingSession>(context_, endpoint_);
-  session->connect(std::chrono::milliseconds(1000));
-  std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+  std::atomic_bool callback_invoked{false};
+  std::mutex callback_mtx;
+  std::condition_variable callback_cv;
+
+  auto callback = [&](const std::vector<RemotingCommand>& commands) {
+    for (const auto& command : commands) {
+      std::string json(reinterpret_cast<const char*>(command.body().data()), command.body().size());
+      std::cout << json << std::endl;
+    }
+
+    {
+      std::lock_guard<std::mutex> lk(callback_mtx);
+      callback_invoked.store(true);
+      callback_cv.notify_all();
+    }
+  };
+  auto session = std::make_shared<RemotingSession>(context_, endpoint_, callback);
+  session->connect(std::chrono::milliseconds(1000), true);
   ASSERT_EQ(SessionState::Connected, session->state());
 
   auto header = new QueryRouteRequestHeader();
@@ -85,9 +105,11 @@ TEST_F(RemotingSessionTest, testWrite) {
   RemotingCommand command = RemotingCommand::createRequest(RequestCode::QueryRoute, header);
   std::error_code ec;
   session->write(std::move(command), ec);
-  std::this_thread::sleep_for(std::chrono::milliseconds(300));
-  if (ec) {
-    std::cerr << ec.message() << std::endl;
+  ASSERT_FALSE(ec);
+
+  {
+    std::unique_lock<std::mutex> lk(callback_mtx);
+    callback_cv.wait(lk, [&]() -> bool { return callback_invoked.load(); });
   }
 }
 
