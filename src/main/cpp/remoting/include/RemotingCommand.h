@@ -29,6 +29,8 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
+class RemotingSession;
+
 /**
  * RemotingCommand is non-copyable. It is movable.
  */
@@ -81,7 +83,7 @@ public:
 
   static RemotingCommand decode(const google::protobuf::Struct& root);
 
-  void decodeHeader(RequestCode code, const google::protobuf::Struct& ext);
+  void decodeHeader(RequestCode code, const google::protobuf::Value& ext);
 
   bool oneWay() const {
     return (flag_ & RPC_TYPE_ONE_WAY) == RPC_TYPE_ONE_WAY;
@@ -120,6 +122,8 @@ private:
    * expect a respose from broker or name-server.
    */
   const static std::uint8_t RPC_TYPE_ONE_WAY;
+
+  friend class RemotingSession;
 };
 
 ROCKETMQ_NAMESPACE_END

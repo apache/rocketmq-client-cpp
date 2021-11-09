@@ -21,6 +21,8 @@
 #include <memory>
 
 #include "LanguageCode.h"
+#include "PopMessageResponseHeader.h"
+#include "SendMessageResponseHeader.h"
 #include "absl/base/internal/endian.h"
 #include "absl/memory/memory.h"
 
@@ -138,15 +140,17 @@ RemotingCommand RemotingCommand::decode(const google::protobuf::Struct& root) {
   return command;
 }
 
-void RemotingCommand::decodeHeader(RequestCode code, const google::protobuf::Struct& ext) {
+void RemotingCommand::decodeHeader(RequestCode code, const google::protobuf::Value& ext) {
   switch (code) {
     case RequestCode::QueryRoute: {
       break;
     }
     case RequestCode::SendMessage: {
+      this->ext_fields_ = SendMessageResponseHeader::decode(ext);
       break;
     }
     case RequestCode::PopMessage: {
+      this->ext_fields_ = PopMessageResponseHeader::decode(ext);
       break;
     }
     case RequestCode::AckMessage: {

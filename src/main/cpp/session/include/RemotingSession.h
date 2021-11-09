@@ -61,7 +61,7 @@ private:
 
   static void onData(std::weak_ptr<RemotingSession> session, const asio::error_code& ec, std::size_t bytes_transferred);
 
-  void fireDecode();
+  std::vector<RemotingCommand> fireDecode();
 
   void fireRead();
 

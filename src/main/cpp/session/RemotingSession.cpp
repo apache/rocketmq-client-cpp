@@ -5,12 +5,15 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <functional>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <system_error>
+#include <vector>
 
+#include "RemotingCommand.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
@@ -112,7 +115,8 @@ void RemotingSession::fireRead() {
       std::bind(&RemotingSession::onData, session, std::placeholders::_1, std::placeholders::_2));
 }
 
-void RemotingSession::fireDecode() {
+std::vector<RemotingCommand> RemotingSession::fireDecode() {
+  std::vector<RemotingCommand> result;
   while (true) {
     if (write_index_ - read_index_ <= 8) {
       SPDLOG_DEBUG("There are {} bytes remaining. Stop decoding", write_index_ - read_index_);
@@ -126,15 +130,37 @@ void RemotingSession::fireDecode() {
     std::uint32_t header_length = absl::gntohl(*header_length_ptr);
     if (frame_length + 4 <= write_index_ - read_index_) {
       // A complete frame is available
-
       std::string json(read_buffer_.data() + read_index_ + 8, header_length);
       google::protobuf::Struct root;
-
       google::protobuf::util::Status status = google::protobuf::util::JsonStringToMessage(json, &root);
       if (status.ok()) {
-        
-      } else {
+        RemotingCommand&& command = RemotingCommand::decode(root);
+        RequestCode request_code = RequestCode::QueryRoute;
+        {
+          absl::MutexLock lk(&opaque_code_mapping_mtx_);
+          if (opaque_code_mapping_.contains(command.opaque())) {
+            request_code = static_cast<RequestCode>(opaque_code_mapping_[command.opaque()]);
+            opaque_code_mapping_.erase(command.opaque());
+          }
+        }
+        const auto& fields = root.fields();
+        if (fields.contains("extFields")) {
+          command.decodeHeader(request_code, fields.at("extFields"));
+        }
 
+        std::size_t body_size = frame_length - header_length;
+        if (body_size) {
+          command.body_.clear();
+          command.body_.resize(body_size);
+          memcpy(command.body_.data(), read_buffer_.data() + read_index_ + 8 + header_length, body_size);
+        }
+        result.emplace_back(std::move(command));
+      } else {
+        SPDLOG_WARN("Failed to prase JSON. Content: {}, Reason: {}", json,
+                    std::string(status.message().data(), status.message().length()));
+        state_.store(SessionState::Closing, std::memory_order_relaxed);
+        socket_->close();
+        break;
       }
 
       read_index_ += 4 + frame_length;
@@ -158,6 +184,8 @@ void RemotingSession::fireDecode() {
     write_index_ -= read_index_;
     read_index_ = 0;
   }
+
+  return result;
 }
 
 void RemotingSession::onData(std::weak_ptr<RemotingSession> session, const asio::error_code& ec,
@@ -177,7 +205,13 @@ void RemotingSession::onData(std::weak_ptr<RemotingSession> session, const asio:
   SPDLOG_DEBUG("Received {} bytes from {}", bytes_transferred, remoting_session->endpoint_);
 
   remoting_session->write_index_ += bytes_transferred;
-  remoting_session->fireDecode();
+
+  auto&& commands = remoting_session->fireDecode();
+  if (!commands.empty()) {
+    std::cout << "Received " << commands.size() << " commands. " << std::endl;
+    for (const auto& command : commands) {
+    }
+  }
 
   remoting_session->fireRead();
 }
