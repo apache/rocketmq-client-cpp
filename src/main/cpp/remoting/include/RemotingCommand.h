@@ -77,9 +77,11 @@ public:
 
   std::vector<char> encode();
 
+  void encodeHeader(google::protobuf::Value& root);
+
   static RemotingCommand decode(const google::protobuf::Struct& root);
 
-  void encodeHeader(google::protobuf::Value& root);
+  void decodeHeader(RequestCode code, const google::protobuf::Struct& ext);
 
   bool oneWay() const {
     return (flag_ & RPC_TYPE_ONE_WAY) == RPC_TYPE_ONE_WAY;

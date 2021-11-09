@@ -25,6 +25,7 @@
 #include "absl/memory/memory.h"
 
 #include "QueryRouteRequestHeader.h"
+#include "include/RequestCode.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -135,6 +136,26 @@ RemotingCommand RemotingCommand::decode(const google::protobuf::Struct& root) {
     command.remark_ = fields["remark"].string_value();
   }
   return command;
+}
+
+void RemotingCommand::decodeHeader(RequestCode code, const google::protobuf::Struct& ext) {
+  switch (code) {
+    case RequestCode::QueryRoute: {
+      break;
+    }
+    case RequestCode::SendMessage: {
+      break;
+    }
+    case RequestCode::PopMessage: {
+      break;
+    }
+    case RequestCode::AckMessage: {
+      break;
+    }
+    case RequestCode::PullMessage: {
+      break;
+    }
+  }
 }
 
 std::vector<char> RemotingCommand::encode() {

@@ -17,15 +17,6 @@ public:
     producer_group_ = std::string(producer_group.data(), producer_group.length());
   }
 
-protected:
-  template <typename T, typename = typename std::enable_if<std::is_integral<T>::value, void>>
-  void addEntry(google::protobuf::Map<std::basic_string<char>, google::protobuf::Value>* fields, absl::string_view key,
-                T value) const {
-    google::protobuf::Value item;
-    item.set_number_value(value);
-    fields->insert({std::string(key.data(), key.size()), item});
-  }
-
 private:
   std::string producer_group_;
   std::string topic_;

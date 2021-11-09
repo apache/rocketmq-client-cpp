@@ -16,12 +16,16 @@
  */
 #pragma once
 
+#include <cstdint>
+#include <type_traits>
+
+#include "absl/strings/numbers.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/struct.pb.h"
 #include "google/protobuf/util/json_util.h"
+#include "spdlog/spdlog.h"
 
 #include "rocketmq/RocketMQ.h"
-#include <type_traits>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -31,5 +35,38 @@ public:
 
   virtual void encode(google::protobuf::Value& root) const = 0;
 };
+
+template <typename T>
+typename std::enable_if<std::is_integral<T>::value, bool>::type
+assign(const google::protobuf::Map<std::string, google::protobuf::Value>& fields, const char* label, T* ptr) {
+  if (fields.contains(label)) {
+    auto& item = fields.at(label);
+    if (item.has_number_value()) {
+      *ptr = item.number_value();
+      return true;
+    } else if (item.has_string_value()) {
+      if (!absl::SimpleAtoi(item.string_value(), ptr)) {
+        SPDLOG_WARN("Failed to acquire integral value for {}", label);
+        return false;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+bool assign(const google::protobuf::Map<std::string, google::protobuf::Value>& fields, const char* label,
+            std::string* ptr);
+
+template <typename T>
+typename std::enable_if<std::is_integral<T>::value>::type
+addEntry(google::protobuf::Map<std::string, google::protobuf::Value>* fields, absl::string_view key, T value) {
+  google::protobuf::Value item;
+  item.set_number_value(value);
+  fields->insert({std::string(key.data(), key.size()), item});
+}
+
+void addEntry(google::protobuf::Map<std::string, google::protobuf::Value>* fields, absl::string_view key,
+              std::string value);
 
 ROCKETMQ_NAMESPACE_END

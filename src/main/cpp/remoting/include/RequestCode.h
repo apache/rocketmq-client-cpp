@@ -26,6 +26,8 @@ enum class RequestCode : std::int32_t
 {
   SendMessage = 10,
   PullMessage = 11,
+  PopMessage = 50,
+  AckMessage = 51,
   QueryRoute = 105,
 };
 
