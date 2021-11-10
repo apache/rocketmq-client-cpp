@@ -29,6 +29,7 @@
 
 #include "LoggerImpl.h"
 #include "MetadataConstants.h"
+#include "RequestCode.h"
 #include "UniqueIdGenerator.h"
 #include "rocketmq/RocketMQ.h"
 
@@ -36,8 +37,8 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 /**
  * Note:
- *   Before modifying anything in this file, ensure you have read all comments in completion_queue_impl.h and
- *   async_stream.h
+ *   Before modifying anything in this file, ensure you have read all comments
+ * in completion_queue_impl.h and async_stream.h
  */
 struct BaseInvocationContext {
   BaseInvocationContext() : request_id_(UniqueIdGenerator::instance().next()) {
@@ -52,15 +53,17 @@ struct BaseInvocationContext {
   grpc::Status status;
   std::string task_name;
   absl::Time created_time{absl::Now()};
-  std::chrono::steady_clock::time_point start_time{std::chrono::steady_clock::now()};
+  std::chrono::steady_clock::time_point start_time{
+      std::chrono::steady_clock::now()};
+  RequestCode request_code{RequestCode::Absent};
 };
 
-template <typename T>
-struct InvocationContext : public BaseInvocationContext {
+template <typename T> struct InvocationContext : public BaseInvocationContext {
 
   void onCompletion(bool ok) override {
-    auto elapsed =
-        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                       std::chrono::steady_clock::now() - start_time)
+                       .count();
     SPDLOG_DEBUG("RPC[{}] costs {}ms", task_name, elapsed);
     /// Client-side Read, Server-side Read, Client-side
     /// RecvInitialMetadata (which is typically included in Read if not
@@ -79,19 +82,24 @@ struct InvocationContext : public BaseInvocationContext {
       return;
     }
 
-    if (!status.ok() && grpc::StatusCode::DEADLINE_EXCEEDED == status.error_code()) {
-      auto diff =
-          std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - context.deadline())
-              .count();
-      SPDLOG_WARN("Asynchronous RPC[{}.{}] timed out, elapsing {}ms, deadline-over-due: {}ms",
-                  absl::FormatTime(created_time, absl::UTCTimeZone()), elapsed, diff);
+    if (!status.ok() &&
+        grpc::StatusCode::DEADLINE_EXCEEDED == status.error_code()) {
+      auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(
+                      std::chrono::system_clock::now() - context.deadline())
+                      .count();
+      SPDLOG_WARN("Asynchronous RPC[{}.{}] timed out, elapsing {}ms, "
+                  "deadline-over-due: {}ms",
+                  absl::FormatTime(created_time, absl::UTCTimeZone()), elapsed,
+                  diff);
     }
     try {
       if (callback) {
         callback(this);
       }
-    } catch (const std::exception& e) {
-      SPDLOG_WARN("Unexpected error while invoking user-defined callback. Reason: {}", e.what());
+    } catch (const std::exception &e) {
+      SPDLOG_WARN(
+          "Unexpected error while invoking user-defined callback. Reason: {}",
+          e.what());
     } catch (...) {
       SPDLOG_WARN("Unexpected error while invoking user-defined callback");
     }
@@ -99,7 +107,7 @@ struct InvocationContext : public BaseInvocationContext {
   }
 
   T response;
-  std::function<void(const InvocationContext<T>*)> callback;
+  std::function<void(const InvocationContext<T> *)> callback;
   std::unique_ptr<grpc::ClientAsyncResponseReader<T>> response_reader;
 };
 ROCKETMQ_NAMESPACE_END

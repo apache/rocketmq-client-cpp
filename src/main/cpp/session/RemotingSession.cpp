@@ -160,7 +160,7 @@ std::vector<RemotingCommand> RemotingSession::fireDecode() {
           command.decodeHeader(request_code, fields.at("extFields"));
         }
 
-        std::size_t body_size = frame_length - header_length;
+        std::size_t body_size = frame_length - header_length - 4;
         if (body_size) {
           command.body_.clear();
           command.body_.resize(body_size);

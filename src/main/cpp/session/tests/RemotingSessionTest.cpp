@@ -64,7 +64,7 @@ protected:
   bool started_{false};
   absl::Mutex start_mtx_;
   absl::CondVar start_cv_;
-  std::string endpoint_{"100.81.180.83:9876"};
+  std::string endpoint_{"11.163.70.118:9876"};
 
   std::string topic_{"zhanhui-test"};
 };
@@ -84,10 +84,15 @@ TEST_F(RemotingSessionTest, testWrite) {
   std::mutex callback_mtx;
   std::condition_variable callback_cv;
 
-  auto callback = [&](const std::vector<RemotingCommand>& commands) {
+  auto callback = [&](const std::vector<RemotingCommand>& commands) -> void {
     for (const auto& command : commands) {
+      EXPECT_EQ(0, command.code());
       std::string json(reinterpret_cast<const char*>(command.body().data()), command.body().size());
-      std::cout << json << std::endl;
+      ASSERT_FALSE(json.empty());
+      google::protobuf::Struct root;
+      google::protobuf::util::JsonParseOptions options;
+      auto status = google::protobuf::util::JsonStringToMessage(json, &root, options);
+      ASSERT_TRUE(status.ok());
     }
 
     {

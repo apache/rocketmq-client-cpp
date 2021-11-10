@@ -29,6 +29,7 @@ cc_library(
         "//src/main/cpp/base:base_library",
         "//src/main/cpp/scheduler:scheduler_library",
         "//src/main/cpp/concurrent:countdown_latch_library",
+        "//src/main/cpp/session",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_github_grpc_grpc//:grpc_secure",

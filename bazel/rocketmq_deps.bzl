@@ -55,10 +55,10 @@ def rocketmq_deps():
     if "com_google_protobuf" not in native.existing_rules():
         http_archive(
             name = "com_google_protobuf",
-            sha256 = "36f81e03a0702f8f935fffd5a486dac1c0fc6d4bae1cd02c7a32448ad6e63bcb",
-            strip_prefix = "protobuf-3.17.2",
+            sha256 = "87407cd28e7a9c95d9f61a098a53cf031109d451a7763e7dd1253abf8b4df422",
+            strip_prefix = "protobuf-3.19.1",
             urls = [
-                "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v3.17.2.tar.gz",
+                "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v3.19.1.tar.gz",
             ],
         )
 

@@ -26,6 +26,9 @@ using ClientContext = grpc::ClientContext;
 
 ROCKETMQ_NAMESPACE_BEGIN
 
+void RpcClientImpl::connect() {
+}
+
 void RpcClientImpl::asyncQueryRoute(const QueryRouteRequest& request,
                                     InvocationContext<QueryRouteResponse>* invocation_context) {
   invocation_context->response_reader =

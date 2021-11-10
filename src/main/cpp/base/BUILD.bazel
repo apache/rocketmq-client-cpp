@@ -24,7 +24,7 @@ cc_library(
     srcs = glob(["*.cpp"]),
     strip_include_prefix = "//src/main/cpp/base/include",
     deps = [
-        "//src/main/cpp/log:log_library",
+        "//src/main/cpp/remoting",
         "@com_github_fmtlib_fmt//:fmtlib",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/container:flat_hash_map",

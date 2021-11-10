@@ -1,42 +1,22 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 #pragma once
 
+#include <cstdint>
 #include <memory>
 
-#include "absl/container/flat_hash_map.h"
+#include "absl/base/thread_annotations.h"
+#include "absl/synchronization/mutex.h"
+#include "asio.hpp"
 
+#include "RemotingSession.h"
 #include "RpcClient.h"
+#include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class RpcClientImpl : public RpcClient, public std::enable_shared_from_this<RpcClientImpl> {
+class RpcClientRemoting : public RpcClient, public std::enable_shared_from_this<RpcClientRemoting> {
 public:
-  RpcClientImpl(std::shared_ptr<CompletionQueue> completion_queue, std::shared_ptr<Channel> channel,
-                bool need_heartbeat = true)
-      : completion_queue_(std::move(completion_queue)), channel_(std::move(channel)),
-        stub_(rmq::MessagingService::NewStub(channel_)), need_heartbeat_(need_heartbeat) {
+  RpcClientRemoting(std::weak_ptr<asio::io_context> context, std::string endpoint) : context_(std::move(context)) {
   }
-
-  RpcClientImpl(const RpcClientImpl&) = delete;
-
-  RpcClientImpl& operator=(const RpcClientImpl&) = delete;
-
-  ~RpcClientImpl() override = default;
 
   void connect() override;
 
@@ -75,7 +55,8 @@ public:
                         InvocationContext<QueryOffsetResponse>* invocation_context) override;
 
   void asyncPull(const PullMessageRequest& request,
-                 InvocationContext<PullMessageResponse>* invocation_context) override;
+                 InvocationContext<PullMessageResponse>* invocation_context) override {
+  }
 
   void asyncForwardMessageToDeadLetterQueue(
       const ForwardMessageToDeadLetterQueueRequest& request,
@@ -91,22 +72,32 @@ public:
   grpc::Status notifyClientTermination(grpc::ClientContext* context, const NotifyClientTerminationRequest& request,
                                        NotifyClientTerminationResponse* response) override;
 
+  /**
+   * Indicate if heartbeat is required.
+   * @return true if periodic heartbeat is required; false otherwise.
+   */
   bool needHeartbeat() override;
 
   void needHeartbeat(bool need_heartbeat) override;
 
+  /**
+   * Indicate if current client connection state is OK or recoverable.
+   *
+   * @return true if underlying connection is OK or recoverable; false otherwise.
+   */
   bool ok() const override;
 
 private:
-  static void addMetadata(grpc::ClientContext& context, const absl::flat_hash_map<std::string, std::string>& metadata);
+  std::weak_ptr<asio::io_context> context_;
+  std::string endpoint_;
+  std::shared_ptr<RemotingSession> session_;
 
-  std::shared_ptr<CompletionQueue> completion_queue_;
-  std::shared_ptr<Channel> channel_;
-  std::unique_ptr<rmq::MessagingService::Stub> stub_;
-  std::chrono::milliseconds connect_timeout_{3000};
-  bool need_heartbeat_{true};
+  absl::flat_hash_map<std::int32_t, BaseInvocationContext*> in_flight_requests_ GUARDED_BY(in_flight_requests_mtx_);
+  absl::Mutex in_flight_requests_mtx_;
+
+  static void onCallback(std::weak_ptr<RpcClientRemoting> rpc_client, const std::vector<RemotingCommand>& commands);
+
+  void processCommand(const RemotingCommand& command) LOCKS_EXCLUDED(in_flight_requests_mtx_);
 };
-
-using RpcClientSharedPtr = std::shared_ptr<RpcClient>;
 
 ROCKETMQ_NAMESPACE_END

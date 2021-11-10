@@ -81,6 +81,8 @@ public:
 
   virtual ~RpcClient() = default;
 
+  virtual void connect() = 0;
+
   virtual void asyncQueryRoute(const QueryRouteRequest& request,
                                InvocationContext<QueryRouteResponse>* invocation_context) = 0;
 

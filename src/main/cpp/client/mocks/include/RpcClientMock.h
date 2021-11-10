@@ -31,6 +31,8 @@ public:
     std::cout << "~RpcClientMock()" << std::endl;
   }
 
+  MOCK_METHOD(void, connect, (), (override));
+
   MOCK_METHOD(void, asyncQueryRoute, (const QueryRouteRequest&, InvocationContext<QueryRouteResponse>*), (override));
 
   MOCK_METHOD(void, asyncSend, (const SendMessageRequest&, InvocationContext<SendMessageResponse>*), (override));
