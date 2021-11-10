@@ -91,6 +91,8 @@ public:
 
   const std::vector<std::uint8_t> &body() const { return body_; }
 
+  const std::string &remark() const { return remark_; }
+
 private:
   RemotingCommand() = default;
 

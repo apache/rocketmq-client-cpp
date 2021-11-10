@@ -543,7 +543,7 @@ RpcClientSharedPtr ClientManagerImpl::getRpcClient(const std::string& target_hos
       auto channel = grpc::experimental::CreateCustomChannelWithInterceptors(
           target_host, channel_credential_, channel_arguments_, std::move(interceptor_factories));
       client = std::make_shared<RpcClientImpl>(completion_queue_, channel, need_heartbeat);
-      client->start();
+      client->connect();
       rpc_clients_.insert_or_assign(target_host, client);
     } else {
       client = search->second;

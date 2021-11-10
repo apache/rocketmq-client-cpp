@@ -87,11 +87,11 @@ TEST_F(RemotingSessionTest, testWrite) {
   auto callback = [&](const std::vector<RemotingCommand>& commands) -> void {
     for (const auto& command : commands) {
       EXPECT_EQ(0, command.code());
-      std::string json(reinterpret_cast<const char*>(command.body().data()), command.body().size());
+      auto ptr = reinterpret_cast<const char*>(command.body().data());
+      google::protobuf::StringPiece json(ptr, command.body().size());
       ASSERT_FALSE(json.empty());
       google::protobuf::Struct root;
-      google::protobuf::util::JsonParseOptions options;
-      auto status = google::protobuf::util::JsonStringToMessage(json, &root, options);
+      auto status = google::protobuf::util::JsonStringToMessage(json, &root);
       ASSERT_TRUE(status.ok());
     }
 

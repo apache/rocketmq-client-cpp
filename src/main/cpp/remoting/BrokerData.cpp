@@ -15,23 +15,22 @@
  * limitations under the License.
  */
 #include "BrokerData.h"
+
 #include <string>
+
+#include "CommandCustomHeader.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 BrokerData BrokerData::decode(const google::protobuf::Struct& root) {
   BrokerData broker_data;
-  auto fields = root.fields();
-  if (fields.contains("cluster")) {
-    broker_data.cluster_ = fields["cluster"].string_value();
-  }
+  const auto& fields = root.fields();
 
-  if (fields.contains("brokerName")) {
-    broker_data.broker_name_ = fields["brokerName"].string_value();
-  }
+  assign(fields, "cluster", &broker_data.cluster_);
+  assign(fields, "brokerName", &broker_data.broker_name_);
 
   if (fields.contains("brokerAddrs")) {
-    auto items = fields["brokerAddrs"].struct_value().fields();
+    auto items = fields.at("brokerAddrs").struct_value().fields();
     for (const auto& item : items) {
       auto k = std::stoll(item.first);
       broker_data.broker_addresses_.insert({k, item.second.string_value()});

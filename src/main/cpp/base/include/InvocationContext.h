@@ -22,6 +22,7 @@
 
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
+#include "google/protobuf/message.h"
 #include "grpcpp/client_context.h"
 #include "grpcpp/grpcpp.h"
 #include "grpcpp/impl/codegen/async_stream.h"
@@ -53,17 +54,21 @@ struct BaseInvocationContext {
   grpc::Status status;
   std::string task_name;
   absl::Time created_time{absl::Now()};
-  std::chrono::steady_clock::time_point start_time{
-      std::chrono::steady_clock::now()};
+  std::chrono::steady_clock::time_point start_time{std::chrono::steady_clock::now()};
+
+  /**
+   * For remoting protocol adapting.
+   */
   RequestCode request_code{RequestCode::Absent};
+  std::unique_ptr<google::protobuf::Message> request;
 };
 
-template <typename T> struct InvocationContext : public BaseInvocationContext {
+template <typename T>
+struct InvocationContext : public BaseInvocationContext {
 
   void onCompletion(bool ok) override {
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                       std::chrono::steady_clock::now() - start_time)
-                       .count();
+    auto elapsed =
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count();
     SPDLOG_DEBUG("RPC[{}] costs {}ms", task_name, elapsed);
     /// Client-side Read, Server-side Read, Client-side
     /// RecvInitialMetadata (which is typically included in Read if not
@@ -82,24 +87,20 @@ template <typename T> struct InvocationContext : public BaseInvocationContext {
       return;
     }
 
-    if (!status.ok() &&
-        grpc::StatusCode::DEADLINE_EXCEEDED == status.error_code()) {
-      auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(
-                      std::chrono::system_clock::now() - context.deadline())
-                      .count();
+    if (!status.ok() && grpc::StatusCode::DEADLINE_EXCEEDED == status.error_code()) {
+      auto diff =
+          std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - context.deadline())
+              .count();
       SPDLOG_WARN("Asynchronous RPC[{}.{}] timed out, elapsing {}ms, "
                   "deadline-over-due: {}ms",
-                  absl::FormatTime(created_time, absl::UTCTimeZone()), elapsed,
-                  diff);
+                  absl::FormatTime(created_time, absl::UTCTimeZone()), elapsed, diff);
     }
     try {
       if (callback) {
         callback(this);
       }
-    } catch (const std::exception &e) {
-      SPDLOG_WARN(
-          "Unexpected error while invoking user-defined callback. Reason: {}",
-          e.what());
+    } catch (const std::exception& e) {
+      SPDLOG_WARN("Unexpected error while invoking user-defined callback. Reason: {}", e.what());
     } catch (...) {
       SPDLOG_WARN("Unexpected error while invoking user-defined callback");
     }
@@ -107,7 +108,7 @@ template <typename T> struct InvocationContext : public BaseInvocationContext {
   }
 
   T response;
-  std::function<void(const InvocationContext<T> *)> callback;
+  std::function<void(const InvocationContext<T>*)> callback;
   std::unique_ptr<grpc::ClientAsyncResponseReader<T>> response_reader;
 };
 ROCKETMQ_NAMESPACE_END
