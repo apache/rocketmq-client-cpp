@@ -69,10 +69,12 @@ void RpcClientRemoting::asyncQueryRoute(const QueryRouteRequest& request,
     in_flight_requests_.insert({command.opaque(), invocation_context});
   }
 
+  SPDLOG_INFO("Writing RemotingCommand to {}", invocation_context->remote_address);
   std::error_code ec;
   session_->write(std::move(command), ec);
 
   if (ec) {
+    SPDLOG_WARN("Failed to write request to {}", invocation_context->remote_address);
     grpc::Status aborted(grpc::StatusCode::ABORTED, ec.message());
     invocation_context->status = aborted;
     invocation_context->onCompletion(false);

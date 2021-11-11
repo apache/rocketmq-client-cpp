@@ -90,8 +90,6 @@ void RemotingSession::notifyOnConnection() {
 }
 
 void RemotingSession::onConnection(std::weak_ptr<RemotingSession> session, const asio::error_code& ec) {
-  std::cout << "RemotingSession::onConnection" << std::endl;
-
   auto remoting_session = session.lock();
 
   if (!remoting_session) {
@@ -275,6 +273,8 @@ void RemotingSession::onWrite(std::weak_ptr<RemotingSession> session, const asio
     remoting_session->socket_->close();
     return;
   }
+
+  SPDLOG_DEBUG("{} bytes written to {}", bytes_transferred, remoting_session->endpoint_);
 
   auto& in_flight_buffer = remoting_session->in_flight_buffer_;
   in_flight_buffer.erase(in_flight_buffer.begin(), in_flight_buffer.begin() + bytes_transferred);

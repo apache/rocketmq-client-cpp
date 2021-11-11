@@ -258,6 +258,9 @@ private:
 
   std::unique_ptr<ThreadPoolImpl> callback_thread_pool_;
 
+  /**
+   * @brief Event-loop thread
+   */
   std::thread loop_thread_;
 
   Histogram latency_histogram_;

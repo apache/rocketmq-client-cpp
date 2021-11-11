@@ -122,7 +122,7 @@ ClientManagerImpl::~ClientManagerImpl() {
 
 void ClientManagerImpl::start() {
   if (State::CREATED != state_.load(std::memory_order_relaxed)) {
-    SPDLOG_WARN("Unexpected client instance state: {}", state_.load(std::memory_order_relaxed));
+    SPDLOG_WARN("Unexpected client state: {}", state_.load(std::memory_order_relaxed));
     return;
   }
   state_.store(State::STARTING, std::memory_order_relaxed);
@@ -164,9 +164,9 @@ void ClientManagerImpl::start() {
 }
 
 void ClientManagerImpl::shutdown() {
-  SPDLOG_INFO("Client manager shutdown");
+  SPDLOG_INFO("Shutting down client manager");
   if (State::STARTED != state_.load(std::memory_order_relaxed)) {
-    SPDLOG_WARN("Unexpected client instance state: {}", state_.load(std::memory_order_relaxed));
+    SPDLOG_WARN("Unexpected client manager state: {}", state_.load(std::memory_order_relaxed));
     return;
   }
 
@@ -186,6 +186,7 @@ void ClientManagerImpl::shutdown() {
   }
   if (loop_thread_.joinable()) {
     loop_thread_.join();
+    SPDLOG_DEBUG("event-loop-thread stopped");
   }
 
   callback_thread_pool_->shutdown();
@@ -207,12 +208,10 @@ void ClientManagerImpl::shutdown() {
   {
     absl::MutexLock lk(&rpc_clients_mtx_);
     rpc_clients_.clear();
-    SPDLOG_DEBUG("CompletionQueue of active clients stopped");
   }
-  SPDLOG_DEBUG("Completion queue thread completes OK");
 
   state_.store(State::STOPPED, std::memory_order_relaxed);
-  SPDLOG_DEBUG("Client instance stopped");
+  SPDLOG_INFO("ClientManager stopped");
 }
 
 void ClientManagerImpl::assignLabels(Histogram& histogram) {
@@ -458,7 +457,14 @@ void ClientManagerImpl::loop() {
         break;
       }
       case TransportType::Remoting: {
+        SPDLOG_DEBUG("asio::io_context starts to run");
         io_context_->run();
+        SPDLOG_DEBUG("asio::io_context run completed");
+        break;
+      }
+      default: {
+        SPDLOG_ERROR("Unsupported transport type");
+        abort();
         break;
       }
     }
@@ -572,20 +578,22 @@ RpcClientSharedPtr ClientManagerImpl::getRpcClient(const std::string& target_hos
     auto search = rpc_clients_.find(target_host);
     if (search == rpc_clients_.end() || !search->second->ok()) {
       if (search == rpc_clients_.end()) {
-        SPDLOG_INFO("Create a RPC client to {}", target_host.data());
+        SPDLOG_INFO("Create a new session to {}", target_host.data());
       } else if (!search->second->ok()) {
-        SPDLOG_INFO("Prior RPC client to {} is not OK. Re-create one", target_host);
+        SPDLOG_INFO("Existing session to {} is not OK. Re-create one", target_host);
       }
-      std::vector<std::unique_ptr<grpc::experimental::ClientInterceptorFactoryInterface>> interceptor_factories;
-      interceptor_factories.emplace_back(absl::make_unique<LogInterceptorFactory>());
-      auto channel = grpc::experimental::CreateCustomChannelWithInterceptors(
-          target_host, channel_credential_, channel_arguments_, std::move(interceptor_factories));
       switch (client_config_.transportType()) {
         case TransportType::Grpc: {
+          SPDLOG_INFO("Creating gRPC session to {}", target_host);
+          std::vector<std::unique_ptr<grpc::experimental::ClientInterceptorFactoryInterface>> interceptor_factories;
+          interceptor_factories.emplace_back(absl::make_unique<LogInterceptorFactory>());
+          auto channel = grpc::experimental::CreateCustomChannelWithInterceptors(
+              target_host, channel_credential_, channel_arguments_, std::move(interceptor_factories));
           client = std::make_shared<RpcClientImpl>(completion_queue_, channel, need_heartbeat);
           break;
         }
         case TransportType::Remoting: {
+          SPDLOG_INFO("Creating remoting connection to {}", target_host);
           client = std::make_shared<RpcClientRemoting>(io_context_, target_host);
           client->needHeartbeat(need_heartbeat);
           break;

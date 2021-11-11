@@ -21,6 +21,8 @@ public:
     if (absl::StartsWith(endpoint, "ipv4:")) {
       auto view = absl::StripPrefix(endpoint, "ipv4:");
       endpoint_ = std::string(view.data(), view.length());
+    } else {
+      endpoint_ = endpoint;
     }
   }
 
