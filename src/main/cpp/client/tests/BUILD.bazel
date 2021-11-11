@@ -11,3 +11,14 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "client_manager_remoting_test",
+    srcs = [
+        "ClientManagerRemotingTest.cpp",
+    ],
+    deps = [
+       "//src/main/cpp/client:client_library",
+        "@com_google_googletest//:gtest_main", 
+    ],
+)

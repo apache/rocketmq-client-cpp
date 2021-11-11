@@ -169,10 +169,28 @@ void ClientManagerImpl::shutdown() {
     SPDLOG_WARN("Unexpected client instance state: {}", state_.load(std::memory_order_relaxed));
     return;
   }
+
+  // Flag stopping state
   state_.store(STOPPING, std::memory_order_relaxed);
+
+  // Stop the loop-thread
+  switch (client_config_.transportType()) {
+    case TransportType::Grpc: {
+      completion_queue_->Shutdown();
+      break;
+    }
+    case TransportType::Remoting: {
+      io_context_->stop();
+      break;
+    }
+  }
+  if (loop_thread_.joinable()) {
+    loop_thread_.join();
+  }
 
   callback_thread_pool_->shutdown();
 
+  // Stop scheduler
   if (health_check_task_id_) {
     scheduler_->cancel(health_check_task_id_);
   }
@@ -184,18 +202,12 @@ void ClientManagerImpl::shutdown() {
   if (stats_task_id_) {
     scheduler_->cancel(stats_task_id_);
   }
-
   scheduler_->shutdown();
 
   {
     absl::MutexLock lk(&rpc_clients_mtx_);
     rpc_clients_.clear();
     SPDLOG_DEBUG("CompletionQueue of active clients stopped");
-  }
-
-  completion_queue_->Shutdown();
-  if (loop_thread_.joinable()) {
-    loop_thread_.join();
   }
   SPDLOG_DEBUG("Completion queue thread completes OK");
 
