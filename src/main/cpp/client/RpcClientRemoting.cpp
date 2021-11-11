@@ -229,6 +229,20 @@ void RpcClientRemoting::processCommand(const RemotingCommand& command) {
           context->onCompletion(false);
           return;
         }
+        case ResponseCode::TopicNotFound: {
+          auto status = context->response.mutable_common()->mutable_status();
+          status->set_code(static_cast<std::int32_t>(grpc::StatusCode::NOT_FOUND));
+          status->set_message(command.remark());
+          context->onCompletion(true);
+          return;
+        }
+        default: {
+          auto status = context->response.mutable_common()->mutable_status();
+          status->set_code(static_cast<std::int32_t>(grpc::StatusCode::UNIMPLEMENTED));
+          status->set_message(command.remark());
+          context->onCompletion(true);
+          return;
+        }
       }
       break;
     }

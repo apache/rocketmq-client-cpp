@@ -22,11 +22,12 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-enum class ResponseCode : std::uint16_t
-{
+enum class ResponseCode : std::uint16_t {
   Success = 0,
   InternalSystemError = 1,
   TooManyRequests = 2,
+  NotSupported = 3,
+  TopicNotFound = 17,
 };
 
 ROCKETMQ_NAMESPACE_END
