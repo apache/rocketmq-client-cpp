@@ -40,8 +40,6 @@ public:
   MOCK_METHOD(void, asyncQueryAssignment, (const QueryAssignmentRequest&, InvocationContext<QueryAssignmentResponse>*),
               (override));
 
-  MOCK_METHOD(std::shared_ptr<CompletionQueue>&, completionQueue, (), (override));
-
   MOCK_METHOD(void, asyncReceive, (const ReceiveMessageRequest&, InvocationContext<ReceiveMessageResponse>*),
               (override));
 
@@ -85,9 +83,6 @@ public:
   MOCK_METHOD(void, needHeartbeat, (bool), (override));
 
   MOCK_METHOD(bool, ok, (), (const override));
-
-protected:
-  std::shared_ptr<grpc::CompletionQueue> completion_queue_;
 };
 
 ROCKETMQ_NAMESPACE_END

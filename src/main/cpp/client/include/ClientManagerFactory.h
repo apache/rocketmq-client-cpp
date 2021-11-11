@@ -23,7 +23,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/synchronization/mutex.h"
 
-#include "ClientConfig.h"
+#include "ClientConfigImpl.h"
 #include "ClientManager.h"
 #include "rocketmq/AdminServer.h"
 
@@ -33,10 +33,10 @@ class ClientManagerFactory {
 public:
   static ClientManagerFactory& getInstance();
 
-  ClientManagerPtr getClientManager(const ClientConfig& client_config) LOCKS_EXCLUDED(client_manager_table_mtx_);
+  ClientManagerPtr getClientManager(const ClientConfigImpl& client_config) LOCKS_EXCLUDED(client_manager_table_mtx_);
 
   // For test purpose only
-  void addClientManager(const std::string& resource_namespace, const ClientManagerPtr& client_manager)
+  void addClientManager(const ClientConfigImpl& client_config, const ClientManagerPtr& client_manager)
       LOCKS_EXCLUDED(client_manager_table_mtx_);
 
 private:
@@ -45,10 +45,11 @@ private:
   virtual ~ClientManagerFactory();
 
   /**
-   * Client Id --> Client Instance
+   * ClientConfig --> Client Manager
    */
-  absl::flat_hash_map<std::string, std::weak_ptr<ClientManager>>
+  absl::flat_hash_map<ClientConfigImpl, std::weak_ptr<ClientManager>>
       client_manager_table_ GUARDED_BY(client_manager_table_mtx_);
+
   absl::Mutex client_manager_table_mtx_; // protects client_manager_table_
 
   rocketmq::admin::AdminServer& admin_server_;

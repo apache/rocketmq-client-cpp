@@ -16,7 +16,6 @@
  */
 #pragma once
 
-#include <atomic>
 #include <chrono>
 #include <memory>
 #include <string>
@@ -26,6 +25,8 @@
 #include "absl/time/time.h"
 
 #include "ClientConfig.h"
+#include "rocketmq/MQMessageQueue.h"
+#include "rocketmq/TransportType.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -35,29 +36,26 @@ public:
 
   ~ClientConfigImpl() override = default;
 
-  const std::string& resourceNamespace() const override {
+  const std::string &resourceNamespace() const override {
     return resource_namespace_;
   }
 
   void resourceNamespace(absl::string_view resource_namespace) {
-    resource_namespace_ = std::string(resource_namespace.data(), resource_namespace.length());
+    resource_namespace_ =
+        std::string(resource_namespace.data(), resource_namespace.length());
   }
 
   std::string clientId() const override;
 
-  const std::string& getInstanceName() const;
+  const std::string &getInstanceName() const;
 
   void setInstanceName(std::string instance_name);
 
-  const std::string& getGroupName() const override;
+  const std::string &getGroupName() const override;
   void setGroupName(std::string group_name);
 
-  const std::string& getUnitName() const {
-    return unit_name_;
-  }
-  void setUnitName(std::string unit_name) {
-    unit_name_ = std::move(unit_name);
-  }
+  const std::string &getUnitName() const { return unit_name_; }
+  void setUnitName(std::string unit_name) { unit_name_ = std::move(unit_name); }
 
   absl::Duration getIoTimeout() const override;
   void setIoTimeout(absl::Duration timeout);
@@ -70,13 +68,9 @@ public:
     long_polling_timeout_ = timeout;
   }
 
-  bool isTracingEnabled() const override {
-    return enable_tracing_.load();
-  }
+  bool isTracingEnabled() const override { return enable_tracing_; }
 
-  void enableTracing(bool enabled) {
-    enable_tracing_.store(enabled);
-  }
+  void enableTracing(bool enabled) { enable_tracing_ = enabled; }
 
   CredentialsProviderPtr credentialsProvider() override;
   void setCredentialsProvider(CredentialsProviderPtr credentials_provider);
@@ -84,25 +78,28 @@ public:
   void serviceName(std::string service_name) {
     service_name_ = std::move(service_name);
   }
-  const std::string& serviceName() const override {
-    return service_name_;
-  }
+  const std::string &serviceName() const override { return service_name_; }
 
-  void region(std::string region) {
-    region_ = std::move(region);
-  }
-  const std::string& region() const override {
-    return region_;
-  }
+  void region(std::string region) { region_ = std::move(region); }
+  const std::string &region() const override { return region_; }
 
-  void tenantId(std::string tenant_id) {
-    tenant_id_ = std::move(tenant_id);
-  }
-  const std::string& tenantId() const override {
-    return tenant_id_;
-  }
+  void tenantId(std::string tenant_id) { tenant_id_ = std::move(tenant_id); }
+  const std::string &tenantId() const override { return tenant_id_; }
 
-  static const char* CLIENT_VERSION;
+  TransportType transportType() const override { return transport_type_; }
+
+  void transportType(TransportType type) { transport_type_ = type; }
+
+  static const char *CLIENT_VERSION;
+
+  /**
+   * @brief Make ClientConfigImpl hashable, refer
+   * https://abseil.io/docs/cpp/guides/hash
+   */
+  friend bool operator==(const ClientConfigImpl &lhs,
+                         const ClientConfigImpl &rhs);
+  template <typename H>
+  friend H AbslHashValue(H h, const ClientConfigImpl &client_config);
 
 protected:
   /**
@@ -138,9 +135,19 @@ protected:
 
   absl::Duration long_polling_timeout_;
 
-  std::atomic<bool> enable_tracing_{true};
+  bool enable_tracing_{true};
+
+  TransportType transport_type_{TransportType::Grpc};
 
   static std::string steadyName();
 };
+
+bool operator==(const ClientConfigImpl &lhs, const ClientConfigImpl &rhs);
+
+template <typename H>
+H AbslHashValue(H h, const ClientConfigImpl &client_config) {
+  return H::combine(std::move(h), client_config.resource_namespace_,
+                    client_config.transport_type_);
+}
 
 ROCKETMQ_NAMESPACE_END

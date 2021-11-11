@@ -21,6 +21,7 @@
 #include "absl/time/time.h"
 
 #include "rocketmq/CredentialsProvider.h"
+#include "rocketmq/TransportType.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -47,6 +48,8 @@ public:
   virtual std::string clientId() const = 0;
 
   virtual bool isTracingEnabled() const = 0;
+
+  virtual TransportType transportType() const = 0;
 };
 
 ROCKETMQ_NAMESPACE_END

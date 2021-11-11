@@ -56,10 +56,6 @@ void RpcClientImpl::asyncQueryAssignment(const QueryAssignmentRequest& request,
                                               invocation_context);
 }
 
-std::shared_ptr<grpc::CompletionQueue>& rocketmq::RpcClientImpl::completionQueue() {
-  return completion_queue_;
-}
-
 void RpcClientImpl::asyncReceive(const ReceiveMessageRequest& request,
                                  InvocationContext<ReceiveMessageResponse>* invocation_context) {
   invocation_context->response_reader =

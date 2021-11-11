@@ -253,4 +253,67 @@ void RpcClientRemoting::processCommand(const RemotingCommand& command) {
   }
 }
 
+void RpcClientRemoting::asyncSend(const SendMessageRequest& request,
+                                  InvocationContext<SendMessageResponse>* invocation_context) {
+}
+
+void RpcClientRemoting::asyncQueryAssignment(const QueryAssignmentRequest& request,
+                                             InvocationContext<QueryAssignmentResponse>* invocation_context) {
+}
+
+void RpcClientRemoting::asyncReceive(const ReceiveMessageRequest& request,
+                                     InvocationContext<ReceiveMessageResponse>* invocation_context) {
+}
+
+void RpcClientRemoting::asyncAck(const AckMessageRequest& request,
+                                 InvocationContext<AckMessageResponse>* invocation_context) {
+}
+
+void RpcClientRemoting::asyncNack(const NackMessageRequest& request,
+                                  InvocationContext<NackMessageResponse>* invocation_context) {
+}
+
+void RpcClientRemoting::asyncHeartbeat(const HeartbeatRequest& request,
+                                       InvocationContext<HeartbeatResponse>* invocation_context) {
+}
+
+void RpcClientRemoting::asyncHealthCheck(const HealthCheckRequest& request,
+                                         InvocationContext<HealthCheckResponse>* invocation_context) {
+}
+
+void RpcClientRemoting::asyncEndTransaction(const EndTransactionRequest& request,
+                                            InvocationContext<EndTransactionResponse>* invocation_context) {
+}
+
+void RpcClientRemoting::asyncPollCommand(const PollCommandRequest& request,
+                                         InvocationContext<PollCommandResponse>* invocation_context) {
+}
+
+void RpcClientRemoting::asyncQueryOffset(const QueryOffsetRequest& request,
+                                         InvocationContext<QueryOffsetResponse>* invocation_context) {
+}
+
+void RpcClientRemoting::asyncForwardMessageToDeadLetterQueue(
+    const ForwardMessageToDeadLetterQueueRequest& request,
+    InvocationContext<ForwardMessageToDeadLetterQueueResponse>* invocation_context) {
+}
+
+grpc::Status RpcClientRemoting::reportThreadStackTrace(grpc::ClientContext* context,
+                                                       const ReportThreadStackTraceRequest& request,
+                                                       ReportThreadStackTraceResponse* response) {
+  return grpc::Status::OK;
+}
+
+grpc::Status RpcClientRemoting::reportMessageConsumptionResult(grpc::ClientContext* context,
+                                                               const ReportMessageConsumptionResultRequest& request,
+                                                               ReportMessageConsumptionResultResponse* response) {
+  return grpc::Status::OK;
+}
+
+grpc::Status RpcClientRemoting::notifyClientTermination(grpc::ClientContext* context,
+                                                        const NotifyClientTerminationRequest& request,
+                                                        NotifyClientTerminationResponse* response) {
+  return grpc::Status::OK;
+}
+
 ROCKETMQ_NAMESPACE_END

@@ -31,8 +31,10 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "asio.hpp"
 
 #include "Client.h"
+#include "ClientConfigImpl.h"
 #include "ClientManager.h"
 #include "HeartbeatDataCallback.h"
 #include "Histogram.h"
@@ -52,6 +54,10 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
+/**
+ * @brief This class works as session manager, in charge of all sessions between current client and remote
+ * servers(including name server and brokers).
+ */
 class ClientManagerImpl : virtual public ClientManager, public std::enable_shared_from_this<ClientManagerImpl> {
 public:
   /**
@@ -60,7 +66,7 @@ public:
    * effectively.
    * @param resource_namespace Abstract resource namespace, in which this client manager lives.
    */
-  explicit ClientManagerImpl(std::string resource_namespace);
+  explicit ClientManagerImpl(ClientConfigImpl client_config);
 
   ~ClientManagerImpl() override;
 
@@ -221,7 +227,7 @@ public:
 private:
   void doHeartbeat();
 
-  void pollCompletionQueue();
+  void loop();
 
   void logStats();
 
@@ -231,7 +237,7 @@ private:
   static const char* STATS_TASK_NAME;
   static const char* HEALTH_CHECK_TASK_NAME;
 
-  std::string resource_namespace_;
+  ClientConfigImpl client_config_;
 
   std::atomic<State> state_;
 
@@ -246,9 +252,13 @@ private:
   std::uint32_t stats_task_id_{0};
 
   std::shared_ptr<CompletionQueue> completion_queue_;
+
+  std::shared_ptr<asio::io_context> io_context_;
+  std::unique_ptr<asio::executor_work_guard<asio::io_context::executor_type>> executor_work_guard_;
+
   std::unique_ptr<ThreadPoolImpl> callback_thread_pool_;
 
-  std::thread completion_queue_thread_;
+  std::thread loop_thread_;
 
   Histogram latency_histogram_;
 

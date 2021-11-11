@@ -49,8 +49,6 @@ public:
   void asyncQueryAssignment(const QueryAssignmentRequest& request,
                             InvocationContext<QueryAssignmentResponse>* invocation_context) override;
 
-  std::shared_ptr<CompletionQueue>& completionQueue() override;
-
   void asyncReceive(const ReceiveMessageRequest& request,
                     InvocationContext<ReceiveMessageResponse>* invocation_context) override;
 

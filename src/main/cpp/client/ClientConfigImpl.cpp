@@ -94,4 +94,8 @@ absl::Duration ClientConfigImpl::getIoTimeout() const {
   return io_timeout_;
 }
 
+bool operator==(const ClientConfigImpl& lhs, const ClientConfigImpl& rhs) {
+  return lhs.resource_namespace_ == rhs.resource_namespace_ && lhs.transport_type_ == rhs.transport_type_;
+}
+
 ROCKETMQ_NAMESPACE_END

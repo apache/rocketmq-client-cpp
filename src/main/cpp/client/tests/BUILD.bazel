@@ -1,0 +1,13 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+
+cc_test(
+    name = "client_config_impl_test",
+    srcs = [
+        "ClientConfigImplTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/client:client_library",
+        "@com_google_absl//absl/hash:hash_testing",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

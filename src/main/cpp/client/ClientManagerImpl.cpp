@@ -23,9 +23,8 @@
 #include <utility>
 #include <vector>
 
-#include "ReceiveMessageResult.h"
-#include "Scheduler.h"
 #include "google/rpc/code.pb.h"
+#include "grpcpp/create_channel.h"
 
 #include "InvocationContext.h"
 #include "LogInterceptor.h"
@@ -36,22 +35,38 @@
 #include "MixAll.h"
 #include "Partition.h"
 #include "Protocol.h"
+#include "ReceiveMessageResult.h"
 #include "RpcClient.h"
 #include "RpcClientImpl.h"
+#include "RpcClientRemoting.h"
+#include "Scheduler.h"
 #include "TlsHelper.h"
 #include "UtilAll.h"
-#include "grpcpp/create_channel.h"
 #include "rocketmq/ErrorCode.h"
 #include "rocketmq/MQMessageExt.h"
+#include "rocketmq/TransportType.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-ClientManagerImpl::ClientManagerImpl(std::string resource_namespace)
-    : scheduler_(std::make_shared<SchedulerImpl>()), resource_namespace_(std::move(resource_namespace)),
-      state_(State::CREATED), completion_queue_(std::make_shared<CompletionQueue>()),
+ClientManagerImpl::ClientManagerImpl(ClientConfigImpl client_config)
+    : scheduler_(std::make_shared<SchedulerImpl>()), client_config_(std::move(client_config)), state_(State::CREATED),
+
       callback_thread_pool_(absl::make_unique<ThreadPoolImpl>(std::thread::hardware_concurrency())),
       latency_histogram_("Message-Latency", 11) {
-  spdlog::set_level(spdlog::level::trace);
+
+  switch (client_config_.transportType()) {
+    case TransportType::Grpc: {
+      completion_queue_ = std::make_shared<CompletionQueue>();
+      break;
+    }
+    case TransportType::Remoting: {
+      io_context_ = std::make_shared<asio::io_context>();
+      executor_work_guard_ =
+          absl::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_->get_executor());
+      break;
+    }
+  }
+
   assignLabels(latency_histogram_);
   server_authorization_check_config_ = std::make_shared<grpc::experimental::TlsServerAuthorizationCheckConfig>(
       std::make_shared<TlsServerAuthorizationChecker>());
@@ -97,12 +112,12 @@ ClientManagerImpl::ClientManagerImpl(std::string resource_namespace)
    */
   channel_arguments_.SetInt(GRPC_ARG_ENABLE_RETRIES, 0);
 
-  SPDLOG_INFO("ClientManager[ResourceNamespace={}] created", resource_namespace_);
+  SPDLOG_INFO("ClientManager[ResourceNamespace={}] created", client_config_.resourceNamespace());
 }
 
 ClientManagerImpl::~ClientManagerImpl() {
   shutdown();
-  SPDLOG_INFO("ClientManager[ResourceNamespace={}] destructed", resource_namespace_);
+  SPDLOG_INFO("ClientManager[ResourceNamespace={}] destructed", client_config_.resourceNamespace());
 }
 
 void ClientManagerImpl::start() {
@@ -135,7 +150,7 @@ void ClientManagerImpl::start() {
   heartbeat_task_id_ =
       scheduler_->schedule(heartbeat_functor, HEARTBEAT_TASK_NAME, std::chrono::seconds(1), std::chrono::seconds(10));
 
-  completion_queue_thread_ = std::thread(std::bind(&ClientManagerImpl::pollCompletionQueue, this));
+  loop_thread_ = std::thread(std::bind(&ClientManagerImpl::loop, this));
 
   auto stats_functor_ = [client_instance_weak_ptr]() {
     auto client_instance = client_instance_weak_ptr.lock();
@@ -179,8 +194,8 @@ void ClientManagerImpl::shutdown() {
   }
 
   completion_queue_->Shutdown();
-  if (completion_queue_thread_.joinable()) {
-    completion_queue_thread_.join();
+  if (loop_thread_.joinable()) {
+    loop_thread_.join();
   }
   SPDLOG_DEBUG("Completion queue thread completes OK");
 
@@ -411,23 +426,34 @@ void ClientManagerImpl::doHeartbeat() {
   }
 }
 
-void ClientManagerImpl::pollCompletionQueue() {
-  while (State::STARTED == state_.load(std::memory_order_relaxed) ||
-         State::STARTING == state_.load(std::memory_order_relaxed)) {
-    bool ok = false;
-    void* opaque_invocation_context;
-    while (completion_queue_->Next(&opaque_invocation_context, &ok)) {
-      auto invocation_context = static_cast<BaseInvocationContext*>(opaque_invocation_context);
-      if (!ok) {
-        // the call is dead
-        SPDLOG_WARN("CompletionQueue#Next assigned ok false, indicating the call is dead");
+void ClientManagerImpl::loop() {
+  State current = state_.load(std::memory_order_relaxed);
+  while (State::STARTED == current || State::STARTING == current) {
+    switch (client_config_.transportType()) {
+      case TransportType::Grpc: {
+        bool ok = false;
+        void* opaque_invocation_context;
+        while (completion_queue_->Next(&opaque_invocation_context, &ok)) {
+          auto invocation_context = static_cast<BaseInvocationContext*>(opaque_invocation_context);
+          if (!ok) {
+            // the call is dead
+            SPDLOG_WARN("CompletionQueue#Next assigned ok false, indicating the call is dead");
+          }
+          auto callback = [invocation_context, ok]() { invocation_context->onCompletion(ok); };
+          callback_thread_pool_->submit(callback);
+        }
+        SPDLOG_INFO("CompletionQueue is fully drained and shut down");
+        break;
       }
-      auto callback = [invocation_context, ok]() { invocation_context->onCompletion(ok); };
-      callback_thread_pool_->submit(callback);
+      case TransportType::Remoting: {
+        io_context_->run();
+        break;
+      }
     }
-    SPDLOG_INFO("CompletionQueue is fully drained and shut down");
+
+    current = state_.load(std::memory_order_relaxed);
   }
-  SPDLOG_INFO("pollCompletionQueue completed and quit");
+  SPDLOG_INFO("Loop completed and quit");
 }
 
 bool ClientManagerImpl::send(const std::string& target_host, const Metadata& metadata, SendMessageRequest& request,
@@ -542,7 +568,18 @@ RpcClientSharedPtr ClientManagerImpl::getRpcClient(const std::string& target_hos
       interceptor_factories.emplace_back(absl::make_unique<LogInterceptorFactory>());
       auto channel = grpc::experimental::CreateCustomChannelWithInterceptors(
           target_host, channel_credential_, channel_arguments_, std::move(interceptor_factories));
-      client = std::make_shared<RpcClientImpl>(completion_queue_, channel, need_heartbeat);
+      switch (client_config_.transportType()) {
+        case TransportType::Grpc: {
+          client = std::make_shared<RpcClientImpl>(completion_queue_, channel, need_heartbeat);
+          break;
+        }
+        case TransportType::Remoting: {
+          client = std::make_shared<RpcClientRemoting>(io_context_, target_host);
+          client->needHeartbeat(need_heartbeat);
+          break;
+        }
+      }
+
       client->connect();
       rpc_clients_.insert_or_assign(target_host, client);
     } else {
@@ -855,7 +892,7 @@ State ClientManagerImpl::state() const {
 }
 
 bool ClientManagerImpl::wrapMessage(const rmq::Message& item, MQMessageExt& message_ext) {
-  assert(item.topic().resource_namespace() == resource_namespace_);
+  assert(item.topic().resource_namespace() == client_config_.resourceNamespace());
 
   // base
   message_ext.setTopic(item.topic().name());

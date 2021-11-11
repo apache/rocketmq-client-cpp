@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "absl/base/thread_annotations.h"
+#include "absl/strings/str_split.h"
 #include "absl/synchronization/mutex.h"
 #include "asio.hpp"
 
@@ -15,7 +16,12 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class RpcClientRemoting : public RpcClient, public std::enable_shared_from_this<RpcClientRemoting> {
 public:
-  RpcClientRemoting(std::weak_ptr<asio::io_context> context, std::string endpoint) : context_(std::move(context)) {
+  RpcClientRemoting(std::weak_ptr<asio::io_context> context, const std::string& endpoint)
+      : context_(std::move(context)) {
+    if (absl::StartsWith(endpoint, "ipv4:")) {
+      auto view = absl::StripPrefix(endpoint, "ipv4:");
+      endpoint_ = std::string(view.data(), view.length());
+    }
   }
 
   void connect() override;
@@ -28,8 +34,6 @@ public:
 
   void asyncQueryAssignment(const QueryAssignmentRequest& request,
                             InvocationContext<QueryAssignmentResponse>* invocation_context) override;
-
-  std::shared_ptr<CompletionQueue>& completionQueue() override;
 
   void asyncReceive(const ReceiveMessageRequest& request,
                     InvocationContext<ReceiveMessageResponse>* invocation_context) override;
@@ -76,9 +80,13 @@ public:
    * Indicate if heartbeat is required.
    * @return true if periodic heartbeat is required; false otherwise.
    */
-  bool needHeartbeat() override;
+  bool needHeartbeat() override {
+    return need_heartbeat_;
+  }
 
-  void needHeartbeat(bool need_heartbeat) override;
+  void needHeartbeat(bool need_heartbeat) override {
+    need_heartbeat_ = need_heartbeat;
+  }
 
   /**
    * Indicate if current client connection state is OK or recoverable.
@@ -91,6 +99,7 @@ private:
   std::weak_ptr<asio::io_context> context_;
   std::string endpoint_;
   std::shared_ptr<RemotingSession> session_;
+  bool need_heartbeat_{false};
 
   absl::flat_hash_map<std::int32_t, BaseInvocationContext*> in_flight_requests_ GUARDED_BY(in_flight_requests_mtx_);
   absl::Mutex in_flight_requests_mtx_;

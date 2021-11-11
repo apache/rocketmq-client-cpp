@@ -92,8 +92,6 @@ public:
   virtual void asyncQueryAssignment(const QueryAssignmentRequest& request,
                                     InvocationContext<QueryAssignmentResponse>* invocation_context) = 0;
 
-  virtual std::shared_ptr<CompletionQueue>& completionQueue() = 0;
-
   virtual void asyncReceive(const ReceiveMessageRequest& request,
                             InvocationContext<ReceiveMessageResponse>* invocation_context) = 0;
 
