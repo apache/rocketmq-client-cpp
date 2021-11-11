@@ -55,7 +55,8 @@ public:
     http_client_ = absl::make_unique<testing::NiceMock<HttpClientMock>>();
     name_server_resolver_ = std::make_shared<DynamicNameServerResolver>(endpoint_, std::chrono::seconds(1));
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
-    ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
+    client_config_.resourceNamespace(resource_namespace_);
+    ClientManagerFactory::getInstance().addClientManager(client_config_, client_manager_);
 
     ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::Return(scheduler_));
     ON_CALL(*client_manager_, start).WillByDefault([&]() { scheduler_->start(); });
@@ -73,6 +74,7 @@ protected:
   std::string endpoint_{"http://jmenv.tbsite.net:8080/rocketmq/nsaddr"};
   std::string resource_namespace_{"mq://test"};
   std::string group_{"Group-0"};
+  ClientConfigImpl client_config_{group_};
   std::shared_ptr<testing::NiceMock<ClientManagerMock>> client_manager_;
   SchedulerSharedPtr scheduler_;
   std::shared_ptr<TestClientImpl> client_;

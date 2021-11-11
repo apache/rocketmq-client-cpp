@@ -46,10 +46,11 @@ public:
 
   void SetUp() override {
     grpc_init();
+    client_config_.resourceNamespace(resource_namespace_);
     scheduler_ = std::make_shared<SchedulerImpl>();
     name_server_resolver_ = std::make_shared<StaticNameServerResolver>(name_server_list_);
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
-    ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
+    ClientManagerFactory::getInstance().addClientManager(client_config_, client_manager_);
     push_consumer_ = std::make_shared<PushConsumerImpl>(group_);
     push_consumer_->resourceNamespace(resource_namespace_);
     push_consumer_->withNameServerResolver(name_server_resolver_);
@@ -71,6 +72,7 @@ protected:
   std::string resource_namespace_{"mq://test"};
   std::string group_{"CID_test"};
   std::string topic_{"Topic0"};
+  ClientConfigImpl client_config_{group_};
   std::string tag_{"TagA"};
   std::string key_{"key-0"};
   std::string message_body_{"Message Body Content"};

@@ -25,8 +25,6 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class RpcClientMock : public RpcClient {
 public:
-  RpcClientMock();
-
   ~RpcClientMock() override {
     std::cout << "~RpcClientMock()" << std::endl;
   }

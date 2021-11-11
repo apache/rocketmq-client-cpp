@@ -46,7 +46,8 @@ public:
     scheduler_->start();
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
     ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::Return(scheduler_));
-    ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
+    client_config_.resourceNamespace(resource_namespace_);
+    ClientManagerFactory::getInstance().addClientManager(client_config_, client_manager_);
 
     pull_consumer_ = std::make_shared<PullConsumerImpl>(group_);
     pull_consumer_->withNameServerResolver(name_server_resolver_);
@@ -71,10 +72,11 @@ public:
   }
 
 protected:
+  std::string group_{"Group-0"};
   std::string resource_namespace_{"mq://test"};
+  ClientConfigImpl client_config_{group_};
   std::string name_server_list_{"10.0.0.1:9876"};
   std::shared_ptr<NameServerResolver> name_server_resolver_;
-  std::string group_{"Group-0"};
   std::string topic_{"Test"};
   std::string tag_{"TagB"};
   std::shared_ptr<testing::NiceMock<ClientManagerMock>> client_manager_;

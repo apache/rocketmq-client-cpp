@@ -29,14 +29,13 @@ public:
   }
 
 protected:
-  testing::NiceMock<ClientConfigMock> client_config_;
+  std::string group_name_{"TestGroup"};
+  ClientConfigImpl client_config_{group_name_};
   std::string resource_namespace_{"mq://test"};
 };
 
 TEST_F(ClientManagerFactoryTest, testGetClientManager) {
-  EXPECT_CALL(client_config_, resourceNamespace)
-      .Times(testing::AtLeast(1))
-      .WillRepeatedly(testing::ReturnRef(resource_namespace_));
+  client_config_.resourceNamespace(resource_namespace_);
   ClientManagerPtr client_manager = ClientManagerFactory::getInstance().getClientManager(client_config_);
   EXPECT_TRUE(client_manager);
   client_manager->start();

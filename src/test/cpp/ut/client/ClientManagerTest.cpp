@@ -27,7 +27,8 @@ ROCKETMQ_NAMESPACE_BEGIN
 class ClientManagerTest : public testing::Test {
 public:
   void SetUp() override {
-    client_manager_ = std::make_shared<ClientManagerImpl>(resource_namespace_);
+    client_config_.resourceNamespace(resource_namespace_);
+    client_manager_ = std::make_shared<ClientManagerImpl>(client_config_);
     client_manager_->start();
     rpc_client_ = std::make_shared<testing::NiceMock<RpcClientMock>>();
     ON_CALL(*rpc_client_, ok).WillByDefault(testing::Return(true));
@@ -43,6 +44,8 @@ public:
 
 protected:
   std::string resource_namespace_{"mq://test"};
+  std::string group_name_{"TestGroup"};
+  ClientConfigImpl client_config_{group_name_};
   std::string topic_{"TestTopic"};
   std::string target_host_{"ipv4:10.0.0.0:10911"};
   std::shared_ptr<ClientManagerImpl> client_manager_;

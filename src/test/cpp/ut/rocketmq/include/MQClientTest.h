@@ -37,8 +37,9 @@ public:
 
   void SetUp() override {
     grpc_init();
+    client_config_.resourceNamespace(resource_namespace_);
     name_server_list_.emplace_back(name_server_address_);
-    client_instance_ = std::make_shared<ClientManagerImpl>(resource_namespace_);
+    client_instance_ = std::make_shared<ClientManagerImpl>(client_config_);
     rpc_client_ns_ = std::make_shared<testing::NiceMock<RpcClientMock>>();
     ON_CALL(*rpc_client_ns_, needHeartbeat()).WillByDefault(testing::Return(false));
     ON_CALL(*rpc_client_ns_, ok()).WillByDefault(testing::Invoke([this]() { return client_ok_; }));
@@ -46,8 +47,7 @@ public:
         .WillByDefault(testing::Invoke(
             std::bind(&MQClientTest::mockQueryRoute, this, std::placeholders::_1, std::placeholders::_2)));
     client_instance_->addRpcClient(name_server_address_, rpc_client_ns_);
-    ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_instance_);
-
+    ClientManagerFactory::getInstance().addClientManager(client_config_, client_instance_);
     name_server_resolver_ = std::make_shared<StaticNameServerResolver>(name_server_address_);
   }
 
@@ -69,6 +69,7 @@ protected:
   std::string group_name_{"CID_Test"};
   std::string topic_{"Topic_Test"};
   std::string resource_namespace_{"mq://test"};
+  ClientConfigImpl client_config_{group_name_};
   google::rpc::Code ok_{google::rpc::Code::OK};
   bool client_ok_{true};
   std::vector<std::string> name_server_list_;

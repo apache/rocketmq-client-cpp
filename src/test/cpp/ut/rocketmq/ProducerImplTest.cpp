@@ -44,7 +44,8 @@ public:
     name_server_resolver_ = std::make_shared<StaticNameServerResolver>(name_server_list_);
     client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
     ON_CALL(*client_manager_, getScheduler).WillByDefault(testing::Return(scheduler_));
-    ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
+    client_config_.resourceNamespace(resource_namespace_);
+    ClientManagerFactory::getInstance().addClientManager(client_config_, client_manager_);
     producer_ = std::make_shared<ProducerImpl>(group_);
     producer_->resourceNamespace(resource_namespace_);
     producer_->withNameServerResolver(name_server_resolver_);
@@ -77,6 +78,7 @@ protected:
   std::string resource_namespace_{"mq://test"};
   std::string group_{"CID_test"};
   std::string topic_{"Topic0"};
+  ClientConfigImpl client_config_{group_};
   int queue_id_{1};
   std::string tag_{"TagA"};
   std::string key_{"key-0"};
