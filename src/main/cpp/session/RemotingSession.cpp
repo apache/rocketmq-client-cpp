@@ -164,6 +164,7 @@ std::vector<RemotingCommand> RemotingSession::fireDecode() {
           command.body_.resize(body_size);
           memcpy(command.body_.data(), read_buffer_.data() + read_index_ + 8 + header_length, body_size);
         }
+        SPDLOG_DEBUG("Decoded a RemotingCommand[opaque={}, body-size={}]", command.opaque(), command.body().size());
         result.emplace_back(std::move(command));
       } else {
         SPDLOG_WARN("Failed to prase JSON. Content: {}, Reason: {}", json,
@@ -176,7 +177,8 @@ std::vector<RemotingCommand> RemotingSession::fireDecode() {
       read_index_ += 4 + frame_length;
     } else if (frame_length + 4 > read_buffer_.capacity()) {
       if (frame_length + 4 > MaxFrameLength) {
-        // Yuck
+        SPDLOG_WARN("Yuck! Received a command whose claimed frame-length is {}, exceeding max allowed {}",
+                    frame_length + 4, MaxFrameLength);
         state_.store(SessionState::Closing);
         socket_->close();
         break;

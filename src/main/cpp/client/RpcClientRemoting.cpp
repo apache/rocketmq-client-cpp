@@ -4,22 +4,29 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <functional>
 #include <limits>
 #include <memory>
 #include <string>
 #include <system_error>
 
+#include "InvocationContext.h"
+#include "RemotingCommand.h"
+#include "SendMessageRequestHeader.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "apache/rocketmq/v1/definition.pb.h"
 #include "apache/rocketmq/v1/service.pb.h"
+#include "rocketmq/MessageType.h"
 #include "spdlog/spdlog.h"
 
 #include "BrokerData.h"
 #include "QueryRouteRequestHeader.h"
 #include "QueueData.h"
+#include "RemotingConstants.h"
 #include "ResponseCode.h"
+#include "SendMessageResponseHeader.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -46,6 +53,24 @@ bool RpcClientRemoting::ok() const {
   return session_->state() == SessionState::Connected;
 }
 
+void RpcClientRemoting::write(RemotingCommand command, BaseInvocationContext* invocation_context) {
+  {
+    absl::MutexLock lk(&in_flight_requests_mtx_);
+    in_flight_requests_.insert({command.opaque(), invocation_context});
+  }
+
+  SPDLOG_INFO("Writing RemotingCommand to {}", invocation_context->remote_address);
+  std::error_code ec;
+  session_->write(std::move(command), ec);
+
+  if (ec) {
+    SPDLOG_WARN("Failed to write request to {}", invocation_context->remote_address);
+    grpc::Status aborted(grpc::StatusCode::ABORTED, ec.message());
+    invocation_context->status = aborted;
+    invocation_context->onCompletion(false);
+  }
+}
+
 void RpcClientRemoting::asyncQueryRoute(const QueryRouteRequest& request,
                                         InvocationContext<QueryRouteResponse>* invocation_context) {
   assert(invocation_context);
@@ -63,22 +88,7 @@ void RpcClientRemoting::asyncQueryRoute(const QueryRouteRequest& request,
   }
 
   auto command = RemotingCommand::createRequest(RequestCode::QueryRoute, header);
-
-  {
-    absl::MutexLock lk(&in_flight_requests_mtx_);
-    in_flight_requests_.insert({command.opaque(), invocation_context});
-  }
-
-  SPDLOG_INFO("Writing RemotingCommand to {}", invocation_context->remote_address);
-  std::error_code ec;
-  session_->write(std::move(command), ec);
-
-  if (ec) {
-    SPDLOG_WARN("Failed to write request to {}", invocation_context->remote_address);
-    grpc::Status aborted(grpc::StatusCode::ABORTED, ec.message());
-    invocation_context->status = aborted;
-    invocation_context->onCompletion(false);
-  }
+  write(std::move(command), invocation_context);
 }
 
 void RpcClientRemoting::onCallback(std::weak_ptr<RpcClientRemoting> rpc_client,
@@ -248,6 +258,39 @@ void RpcClientRemoting::processCommand(const RemotingCommand& command) {
     }
 
     case RequestCode::SendMessage: {
+      auto context = dynamic_cast<InvocationContext<SendMessageResponse>*>(invocation_context);
+      auto response_code = static_cast<ResponseCode>(command.code());
+      auto status = context->response.mutable_common()->mutable_status();
+      status->set_message(command.remark());
+      switch (response_code) {
+        case ResponseCode::Success: {
+          auto header = dynamic_cast<const SendMessageResponseHeader*>(command.extHeader());
+          context->response.set_message_id(header->messageId());
+          context->response.set_transaction_id(header->transactionId());
+          context->onCompletion(true);
+          return;
+        }
+
+        case ResponseCode::InternalSystemError: {
+          status->set_code(static_cast<std::int32_t>(grpc::StatusCode::INTERNAL));
+          break;
+        }
+
+        case ResponseCode::TooManyRequests: {
+          status->set_code(static_cast<std::int32_t>(grpc::StatusCode::RESOURCE_EXHAUSTED));
+          break;
+        }
+        case ResponseCode::MessageIllegal: {
+          status->set_code(static_cast<std::int32_t>(grpc::StatusCode::INVALID_ARGUMENT));
+          break;
+        }
+        default: {
+          // TODO: error-handling
+          status->set_code(static_cast<std::int32_t>(grpc::StatusCode::UNKNOWN));
+          break;
+        }
+      }
+      context->onCompletion(true);
       break;
     }
 
@@ -271,6 +314,84 @@ void RpcClientRemoting::processCommand(const RemotingCommand& command) {
 
 void RpcClientRemoting::asyncSend(const SendMessageRequest& request,
                                   InvocationContext<SendMessageResponse>* invocation_context) {
+  auto header = new SendMessageRequestHeader();
+
+  // Assign topic
+  assert(request.has_message());
+  const auto& message = request.message();
+  const auto& topic = message.topic();
+  if (topic.resource_namespace().empty()) {
+    header->topic(topic.name());
+  } else {
+    header->topic(absl::StrJoin({topic.resource_namespace(), topic.name()}, "%"));
+  }
+
+  // Assign queue-id
+  if (request.has_partition()) {
+    header->queueId(request.partition().id());
+  }
+
+  absl::flat_hash_map<std::string, std::string> properties;
+  properties.insert(message.user_attribute().begin(), message.user_attribute().end());
+
+  auto keys = message.system_attribute().keys();
+  if (!keys.empty()) {
+    std::string all_keys = absl::StrJoin(keys.begin(), keys.end(), RemotingConstants::KeySeparator);
+    properties.insert({RemotingConstants::Keys, all_keys});
+  }
+
+  if (!message.system_attribute().tag().empty()) {
+    properties.insert({RemotingConstants::Tags, message.system_attribute().tag()});
+  }
+
+  properties.insert({RemotingConstants::MessageId, message.system_attribute().message_id()});
+
+  switch (message.system_attribute().timed_delivery_case()) {
+    case rmq::SystemAttribute::kDeliveryTimestamp: {
+      if (message.system_attribute().has_delivery_timestamp()) {
+        auto timestamp = message.system_attribute().delivery_timestamp();
+        timeval tv{};
+        tv.tv_sec = timestamp.seconds();
+        tv.tv_usec = timestamp.nanos() / 1000;
+
+        properties.insert({RemotingConstants::StartDeliveryTime,
+                           std::to_string(absl::ToInt64Milliseconds(absl::DurationFromTimeval(tv)))});
+        break;
+      }
+    }
+    case rmq::SystemAttribute::kDelayLevel: {
+      properties.insert({RemotingConstants::DelayLevel, std::to_string(message.system_attribute().delay_level())});
+      break;
+    }
+    default: {
+      break;
+    }
+  }
+
+  if (!message.system_attribute().message_group().empty()) {
+    properties.insert({RemotingConstants::MessageGroup, message.system_attribute().message_group()});
+  }
+
+  std::uint32_t system_flag = 0;
+  if (rmq::MessageType::TRANSACTION == message.system_attribute().message_type()) {
+    system_flag |= RemotingConstants::FlagTransactionPrepare;
+  }
+
+  if (rmq::Encoding::GZIP == message.system_attribute().body_encoding()) {
+    system_flag |= RemotingConstants::FlagCompression;
+  }
+
+  header->systemFlag(static_cast<std::int32_t>(system_flag));
+
+  RemotingCommand command = RemotingCommand::createRequest(RequestCode::SendMessage, header);
+
+  // Copy body to remoting command
+  auto& body = command.mutableBody();
+  std::size_t body_length = request.message().body().length();
+  body.resize(body_length);
+  memcpy(body.data(), request.message().body().data(), body_length);
+
+  write(std::move(command), invocation_context);
 }
 
 void RpcClientRemoting::asyncQueryAssignment(const QueryAssignmentRequest& request,

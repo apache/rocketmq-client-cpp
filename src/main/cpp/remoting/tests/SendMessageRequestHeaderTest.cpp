@@ -6,6 +6,7 @@ ROCKETMQ_NAMESPACE_BEGIN
 TEST(SendMessageRequestHeaderTest, testEncode) {
   SendMessageRequestHeader header;
   header.producerGroup("Group");
+
   google::protobuf::Value root;
   header.encode(root);
 

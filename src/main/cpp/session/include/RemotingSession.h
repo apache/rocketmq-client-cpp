@@ -56,6 +56,10 @@ private:
   std::vector<char> write_buffer_ GUARDED_BY(write_buffer_mtx_);
   absl::Mutex write_buffer_mtx_;
 
+  /**
+   * @brief
+   *  TODO: When session is disrupted, we need to respond all in-flight requests with errors.
+   */
   absl::flat_hash_map<std::int32_t, std::int32_t> opaque_code_mapping_ GUARDED_BY(opaque_code_mapping_mtx_);
   absl::Mutex opaque_code_mapping_mtx_;
 

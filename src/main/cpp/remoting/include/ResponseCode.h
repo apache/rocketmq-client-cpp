@@ -27,6 +27,13 @@ enum class ResponseCode : std::uint16_t {
   InternalSystemError = 1,
   TooManyRequests = 2,
   NotSupported = 3,
+  FlushDiskTimeout = 10,
+  SlaveNotAvailable = 11,
+  FlushSlaveTimeout = 12,
+  MessageIllegal = 13,
+  ServiceNotAvailable = 14,
+  VersionNotSupported = 15,
+  NoPermission = 16,
   TopicNotFound = 17,
 };
 

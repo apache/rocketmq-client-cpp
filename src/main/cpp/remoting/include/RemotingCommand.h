@@ -36,9 +36,9 @@ class RemotingSession;
  */
 class RemotingCommand {
 public:
-  RemotingCommand(const RemotingCommand &) = delete;
+  RemotingCommand(const RemotingCommand&) = delete;
 
-  RemotingCommand(RemotingCommand &&rhs) noexcept {
+  RemotingCommand(RemotingCommand&& rhs) noexcept {
     code_ = rhs.code_;
     language_ = rhs.language_;
     version_ = rhs.version_;
@@ -49,9 +49,9 @@ public:
     rhs.ext_fields_ = nullptr;
   }
 
-  RemotingCommand &operator=(const RemotingCommand &) = delete;
+  RemotingCommand& operator=(const RemotingCommand&) = delete;
 
-  RemotingCommand &operator=(RemotingCommand &&rhs) noexcept {
+  RemotingCommand& operator=(RemotingCommand&& rhs) noexcept {
     if (this == &rhs) {
       return *this;
     }
@@ -67,31 +67,51 @@ public:
     return *this;
   }
 
-  virtual ~RemotingCommand() { delete ext_fields_; }
+  virtual ~RemotingCommand() {
+    delete ext_fields_;
+  }
 
   static std::int32_t nextRequestId();
 
-  static RemotingCommand createRequest(RequestCode, CommandCustomHeader *);
+  static RemotingCommand createRequest(RequestCode, CommandCustomHeader*);
 
-  static RemotingCommand createResponse(ResponseCode, CommandCustomHeader *);
+  static RemotingCommand createResponse(ResponseCode, CommandCustomHeader*);
 
   std::vector<char> encode();
 
-  void encodeHeader(google::protobuf::Value &root);
+  void encodeHeader(google::protobuf::Value& root);
 
-  static RemotingCommand decode(const google::protobuf::Struct &root);
+  static RemotingCommand decode(const google::protobuf::Struct& root);
 
-  void decodeHeader(RequestCode code, const google::protobuf::Value &ext);
+  void decodeHeader(RequestCode code, const google::protobuf::Value& ext);
 
-  bool oneWay() const { return (flag_ & RPC_TYPE_ONE_WAY) == RPC_TYPE_ONE_WAY; }
+  bool oneWay() const {
+    return (flag_ & RPC_TYPE_ONE_WAY) == RPC_TYPE_ONE_WAY;
+  }
 
-  std::int32_t opaque() const { return opaque_; }
+  std::int32_t opaque() const {
+    return opaque_;
+  }
 
-  std::int32_t code() const { return code_; }
+  std::int32_t code() const {
+    return code_;
+  }
 
-  const std::vector<std::uint8_t> &body() const { return body_; }
+  const std::vector<std::uint8_t>& body() const {
+    return body_;
+  }
 
-  const std::string &remark() const { return remark_; }
+  std::vector<std::uint8_t>& mutableBody() {
+    return body_;
+  }
+
+  const std::string& remark() const {
+    return remark_;
+  }
+
+  const CommandCustomHeader* extHeader() const {
+    return ext_fields_;
+  }
 
 private:
   RemotingCommand() = default;
@@ -103,7 +123,7 @@ private:
   std::uint32_t flag_{0};
   std::string remark_;
 
-  CommandCustomHeader *ext_fields_{nullptr};
+  CommandCustomHeader* ext_fields_{nullptr};
 
   std::vector<std::uint8_t> body_;
 

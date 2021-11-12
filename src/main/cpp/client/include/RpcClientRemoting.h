@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <memory>
 
+#include "InvocationContext.h"
+#include "RemotingCommand.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/strings/str_split.h"
 #include "absl/synchronization/mutex.h"
@@ -105,6 +107,9 @@ private:
 
   absl::flat_hash_map<std::int32_t, BaseInvocationContext*> in_flight_requests_ GUARDED_BY(in_flight_requests_mtx_);
   absl::Mutex in_flight_requests_mtx_;
+
+  void write(RemotingCommand command, BaseInvocationContext* invocation_context)
+      LOCKS_EXCLUDED(in_flight_requests_mtx_);
 
   static void onCallback(std::weak_ptr<RpcClientRemoting> rpc_client, const std::vector<RemotingCommand>& commands);
 
