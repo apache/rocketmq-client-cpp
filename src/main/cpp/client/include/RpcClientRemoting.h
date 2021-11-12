@@ -114,6 +114,12 @@ private:
   static void onCallback(std::weak_ptr<RpcClientRemoting> rpc_client, const std::vector<RemotingCommand>& commands);
 
   void processCommand(const RemotingCommand& command) LOCKS_EXCLUDED(in_flight_requests_mtx_);
+
+  void handleQueryRoute(const RemotingCommand& command, BaseInvocationContext* context);
+
+  void handleSendMessage(const RemotingCommand& command, BaseInvocationContext* context);
+
+  void handlePopMessage(const RemotingCommand& command, BaseInvocationContext* context);
 };
 
 ROCKETMQ_NAMESPACE_END

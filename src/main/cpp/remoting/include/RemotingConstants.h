@@ -22,6 +22,9 @@ public:
   static const std::uint32_t FlagTransactionPrepare;
   static const std::uint32_t FlagTransactionCommit;
   static const std::uint32_t FlagTransactionRollback;
+
+  static const char* FilterTypeTag;
+  static const char* FilterTypeSQL;
 };
 
 ROCKETMQ_NAMESPACE_END

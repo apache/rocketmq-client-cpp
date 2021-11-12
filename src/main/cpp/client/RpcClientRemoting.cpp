@@ -1,6 +1,7 @@
 #include "RpcClientRemoting.h"
 
 #include <algorithm>
+#include <bits/types/struct_timeval.h>
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
@@ -21,6 +22,8 @@
 #include "BrokerData.h"
 #include "InvocationContext.h"
 #include "LoggerImpl.h"
+#include "PopMessageRequestHeader.h"
+#include "PopMessageResponseHeader.h"
 #include "QueryRouteRequestHeader.h"
 #include "QueueData.h"
 #include "RemotingCommand.h"
@@ -126,185 +129,17 @@ void RpcClientRemoting::processCommand(const RemotingCommand& command) {
 
   switch (invocation_context->request_code) {
     case RequestCode::QueryRoute: {
-      auto context = dynamic_cast<InvocationContext<QueryRouteResponse>*>(invocation_context);
-      assert(nullptr != context);
-      ResponseCode code = static_cast<ResponseCode>(command.code());
-      switch (code) {
-        case ResponseCode::Success: {
-          google::protobuf::Struct root;
-          auto data_ptr = reinterpret_cast<const char*>(command.body().data());
-          google::protobuf::StringPiece json(data_ptr, command.body().size());
-
-          /*
-           * Sample JSON:
-           * {
-           *    "brokerDatas":[{"brokerName":"broker-a","brokerAddrs":{"0":"11.163.70.118:10911"},"cluster":"DefaultCluster","enableActingMaster":false}],
-           *    "filterServerTable":{},
-           *    "queueDatas":[{"brokerName":"broker-a","perm":6,"writeQueueNums":8,"readQueueNums":8,"topicSynFlag":0}]
-           * }
-           */
-          auto status = google::protobuf::util::JsonStringToMessage(json, &root);
-          if (!status.ok()) {
-            SPDLOG_WARN("Failed to parse JSON: {}. Cause: {}", json.as_string(), status.message().as_string());
-            return;
-          }
-
-          auto request = dynamic_cast<rmq::QueryRouteRequest*>(invocation_context->request.get());
-          auto topic = new rmq::Resource();
-          topic->CopyFrom(request->topic());
-
-          // broker_name --> BrokerData
-          absl::flat_hash_map<std::string, BrokerData> broker_data_map;
-          // broker_name --> QueueData
-          absl::flat_hash_map<std::string, QueueData> queue_data_map;
-
-          const auto& fields = root.fields();
-          if (fields.contains("brokerDatas")) {
-            for (const auto& item : fields.at("brokerDatas").list_value().values()) {
-              const auto& broker_data_struct = item.struct_value();
-              auto&& broker_data = BrokerData::decode(broker_data_struct);
-              broker_data_map.insert({broker_data.broker_name_, broker_data});
-            }
-          }
-
-          if (fields.contains("queueDatas")) {
-            for (const auto& item : fields.at("queueDatas").list_value().values()) {
-              const auto& queue_data_struct = item.struct_value();
-              auto&& queue_data = QueueData::decode(queue_data_struct);
-              queue_data_map.insert({queue_data.broker_name_, queue_data});
-            }
-          }
-
-          for (const auto& broker_entry : broker_data_map) {
-            rmq::Broker broker;
-            broker.set_name(broker_entry.second.broker_name_);
-
-            const auto& addresses = broker_entry.second.broker_addresses_;
-            if (addresses.empty()) {
-              continue;
-            }
-
-            broker.mutable_endpoints()->set_scheme(rmq::AddressScheme::IPv4);
-
-            std::int32_t broker_id = addresses.begin()->first;
-            for (const auto& address_entry : addresses) {
-              std::vector<std::string> segments = absl::StrSplit(address_entry.second, ":");
-              if (2 == segments.size()) {
-                auto address = new rmq::Address;
-                address->set_host(segments[0]);
-                address->set_port(std::stoi(segments[1]));
-                broker.mutable_endpoints()->mutable_addresses()->AddAllocated(address);
-              }
-
-              if (address_entry.first < broker_id) {
-                broker_id = address_entry.first;
-              }
-            }
-            broker.set_id(broker_id);
-
-            if (!queue_data_map.contains(broker_entry.first)) {
-              continue;
-            }
-
-            const auto& queue_data = queue_data_map.at(broker_entry.first);
-
-            // The following rule always holds: write_queue_num <= read_queue_num
-            for (std::int32_t i = 0; i < queue_data.write_queue_number_; i++) {
-              auto partition = new rmq::Partition();
-              partition->set_permission(rmq::Permission::READ_WRITE);
-              partition->mutable_broker()->CopyFrom(broker);
-              partition->set_id(i);
-              partition->mutable_topic()->CopyFrom(request->topic());
-              context->response.mutable_partitions()->AddAllocated(partition);
-            }
-
-            for (std::int32_t i = queue_data.write_queue_number_; i < queue_data.read_queue_number_; i++) {
-              auto partition = new rmq::Partition();
-              partition->set_permission(rmq::Permission::READ);
-              partition->mutable_broker()->CopyFrom(broker);
-              partition->set_id(i);
-              partition->mutable_topic()->CopyFrom(request->topic());
-              context->response.mutable_partitions()->AddAllocated(partition);
-            }
-          }
-          context->onCompletion(true);
-          return;
-        }
-        case ResponseCode::InternalSystemError: {
-          auto status = context->response.mutable_common()->mutable_status();
-          status->set_code(static_cast<std::int32_t>(grpc::StatusCode::INTERNAL));
-          status->set_message(command.remark());
-          context->onCompletion(false);
-          return;
-        }
-        case ResponseCode::TooManyRequests: {
-          auto status = context->response.mutable_common()->mutable_status();
-          status->set_code(static_cast<std::int32_t>(grpc::StatusCode::RESOURCE_EXHAUSTED));
-          status->set_message(command.remark());
-          context->onCompletion(false);
-          return;
-        }
-        case ResponseCode::TopicNotFound: {
-          auto status = context->response.mutable_common()->mutable_status();
-          status->set_code(static_cast<std::int32_t>(grpc::StatusCode::NOT_FOUND));
-          status->set_message(command.remark());
-          context->onCompletion(true);
-          return;
-        }
-        default: {
-          auto status = context->response.mutable_common()->mutable_status();
-          status->set_code(static_cast<std::int32_t>(grpc::StatusCode::UNIMPLEMENTED));
-          status->set_message(command.remark());
-          context->onCompletion(true);
-          return;
-        }
-      }
+      handleQueryRoute(command, invocation_context);
       break;
     }
 
     case RequestCode::SendMessage: {
-      SPDLOG_DEBUG("Process send message response command. Code: {}, Remark: {}", command.code(), command.remark());
-      auto context = dynamic_cast<InvocationContext<SendMessageResponse>*>(invocation_context);
-      auto response_code = static_cast<ResponseCode>(command.code());
-      auto status = context->response.mutable_common()->mutable_status();
-      status->set_message(command.remark());
-      switch (response_code) {
-        case ResponseCode::Success: {
-          auto header = dynamic_cast<const SendMessageResponseHeader*>(command.extHeader());
-          context->response.set_message_id(header->messageId());
-          context->response.set_transaction_id(header->transactionId());
-          context->onCompletion(true);
-          return;
-        }
-
-        case ResponseCode::InternalSystemError: {
-          SPDLOG_ERROR("Internal error. Remark: {}", command.remark());
-          status->set_code(static_cast<std::int32_t>(grpc::StatusCode::INTERNAL));
-          break;
-        }
-
-        case ResponseCode::TooManyRequests: {
-          SPDLOG_ERROR("Too many requests. Remark: {}", command.remark());
-          status->set_code(static_cast<std::int32_t>(grpc::StatusCode::RESOURCE_EXHAUSTED));
-          break;
-        }
-        case ResponseCode::MessageIllegal: {
-          SPDLOG_ERROR("Message being sent is illegal. Remark: {}", command.remark());
-          status->set_code(static_cast<std::int32_t>(grpc::StatusCode::INVALID_ARGUMENT));
-          break;
-        }
-        default: {
-          // TODO: error-handling
-          SPDLOG_WARN("Unsupported code: {}. Remark: {}", command.code(), command.remark());
-          status->set_code(static_cast<std::int32_t>(grpc::StatusCode::UNKNOWN));
-          break;
-        }
-      }
-      context->onCompletion(true);
+      handleSendMessage(command, invocation_context);
       break;
     }
 
     case RequestCode::PopMessage: {
+      handlePopMessage(command, invocation_context);
       break;
     }
 
@@ -320,6 +155,186 @@ void RpcClientRemoting::processCommand(const RemotingCommand& command) {
       break;
     }
   }
+}
+
+void RpcClientRemoting::handleQueryRoute(const RemotingCommand& command, BaseInvocationContext* invocation_context) {
+  auto context = dynamic_cast<InvocationContext<QueryRouteResponse>*>(invocation_context);
+  assert(nullptr != context);
+  ResponseCode code = static_cast<ResponseCode>(command.code());
+  switch (code) {
+    case ResponseCode::Success: {
+      google::protobuf::Struct root;
+      auto data_ptr = reinterpret_cast<const char*>(command.body().data());
+      google::protobuf::StringPiece json(data_ptr, command.body().size());
+
+      /*
+       * Sample JSON:
+       * {
+       *    "brokerDatas":[{"brokerName":"broker-a","brokerAddrs":{"0":"11.163.70.118:10911"},"cluster":"DefaultCluster","enableActingMaster":false}],
+       *    "filterServerTable":{},
+       *    "queueDatas":[{"brokerName":"broker-a","perm":6,"writeQueueNums":8,"readQueueNums":8,"topicSynFlag":0}]
+       * }
+       */
+      auto status = google::protobuf::util::JsonStringToMessage(json, &root);
+      if (!status.ok()) {
+        SPDLOG_WARN("Failed to parse JSON: {}. Cause: {}", json.as_string(), status.message().as_string());
+        return;
+      }
+
+      auto request = dynamic_cast<rmq::QueryRouteRequest*>(invocation_context->request.get());
+      auto topic = new rmq::Resource();
+      topic->CopyFrom(request->topic());
+
+      // broker_name --> BrokerData
+      absl::flat_hash_map<std::string, BrokerData> broker_data_map;
+      // broker_name --> QueueData
+      absl::flat_hash_map<std::string, QueueData> queue_data_map;
+
+      const auto& fields = root.fields();
+      if (fields.contains("brokerDatas")) {
+        for (const auto& item : fields.at("brokerDatas").list_value().values()) {
+          const auto& broker_data_struct = item.struct_value();
+          auto&& broker_data = BrokerData::decode(broker_data_struct);
+          broker_data_map.insert({broker_data.broker_name_, broker_data});
+        }
+      }
+
+      if (fields.contains("queueDatas")) {
+        for (const auto& item : fields.at("queueDatas").list_value().values()) {
+          const auto& queue_data_struct = item.struct_value();
+          auto&& queue_data = QueueData::decode(queue_data_struct);
+          queue_data_map.insert({queue_data.broker_name_, queue_data});
+        }
+      }
+
+      for (const auto& broker_entry : broker_data_map) {
+        rmq::Broker broker;
+        broker.set_name(broker_entry.second.broker_name_);
+
+        const auto& addresses = broker_entry.second.broker_addresses_;
+        if (addresses.empty()) {
+          continue;
+        }
+
+        broker.mutable_endpoints()->set_scheme(rmq::AddressScheme::IPv4);
+
+        std::int32_t broker_id = addresses.begin()->first;
+        for (const auto& address_entry : addresses) {
+          std::vector<std::string> segments = absl::StrSplit(address_entry.second, ":");
+          if (2 == segments.size()) {
+            auto address = new rmq::Address;
+            address->set_host(segments[0]);
+            address->set_port(std::stoi(segments[1]));
+            broker.mutable_endpoints()->mutable_addresses()->AddAllocated(address);
+          }
+
+          if (address_entry.first < broker_id) {
+            broker_id = address_entry.first;
+          }
+        }
+        broker.set_id(broker_id);
+
+        if (!queue_data_map.contains(broker_entry.first)) {
+          continue;
+        }
+
+        const auto& queue_data = queue_data_map.at(broker_entry.first);
+
+        // The following rule always holds: write_queue_num <= read_queue_num
+        for (std::int32_t i = 0; i < queue_data.write_queue_number_; i++) {
+          auto partition = new rmq::Partition();
+          partition->set_permission(rmq::Permission::READ_WRITE);
+          partition->mutable_broker()->CopyFrom(broker);
+          partition->set_id(i);
+          partition->mutable_topic()->CopyFrom(request->topic());
+          context->response.mutable_partitions()->AddAllocated(partition);
+        }
+
+        for (std::int32_t i = queue_data.write_queue_number_; i < queue_data.read_queue_number_; i++) {
+          auto partition = new rmq::Partition();
+          partition->set_permission(rmq::Permission::READ);
+          partition->mutable_broker()->CopyFrom(broker);
+          partition->set_id(i);
+          partition->mutable_topic()->CopyFrom(request->topic());
+          context->response.mutable_partitions()->AddAllocated(partition);
+        }
+      }
+      context->onCompletion(true);
+      return;
+    }
+    case ResponseCode::InternalSystemError: {
+      auto status = context->response.mutable_common()->mutable_status();
+      status->set_code(static_cast<std::int32_t>(grpc::StatusCode::INTERNAL));
+      status->set_message(command.remark());
+      context->onCompletion(false);
+      return;
+    }
+    case ResponseCode::TooManyRequests: {
+      auto status = context->response.mutable_common()->mutable_status();
+      status->set_code(static_cast<std::int32_t>(grpc::StatusCode::RESOURCE_EXHAUSTED));
+      status->set_message(command.remark());
+      context->onCompletion(false);
+      return;
+    }
+    case ResponseCode::TopicNotFound: {
+      auto status = context->response.mutable_common()->mutable_status();
+      status->set_code(static_cast<std::int32_t>(grpc::StatusCode::NOT_FOUND));
+      status->set_message(command.remark());
+      context->onCompletion(true);
+      return;
+    }
+    default: {
+      auto status = context->response.mutable_common()->mutable_status();
+      status->set_code(static_cast<std::int32_t>(grpc::StatusCode::UNIMPLEMENTED));
+      status->set_message(command.remark());
+      context->onCompletion(true);
+      return;
+    }
+  }
+}
+
+void RpcClientRemoting::handleSendMessage(const RemotingCommand& command, BaseInvocationContext* invocation_context) {
+  SPDLOG_DEBUG("Process send message response command. Code: {}, Remark: {}", command.code(), command.remark());
+  auto context = dynamic_cast<InvocationContext<SendMessageResponse>*>(invocation_context);
+  auto response_code = static_cast<ResponseCode>(command.code());
+  auto status = context->response.mutable_common()->mutable_status();
+  status->set_message(command.remark());
+  switch (response_code) {
+    case ResponseCode::Success: {
+      auto header = dynamic_cast<const SendMessageResponseHeader*>(command.extHeader());
+      context->response.set_message_id(header->messageId());
+      context->response.set_transaction_id(header->transactionId());
+      context->onCompletion(true);
+      return;
+    }
+
+    case ResponseCode::InternalSystemError: {
+      SPDLOG_ERROR("Internal error. Remark: {}", command.remark());
+      status->set_code(static_cast<std::int32_t>(grpc::StatusCode::INTERNAL));
+      break;
+    }
+
+    case ResponseCode::TooManyRequests: {
+      SPDLOG_ERROR("Too many requests. Remark: {}", command.remark());
+      status->set_code(static_cast<std::int32_t>(grpc::StatusCode::RESOURCE_EXHAUSTED));
+      break;
+    }
+    case ResponseCode::MessageIllegal: {
+      SPDLOG_ERROR("Message being sent is illegal. Remark: {}", command.remark());
+      status->set_code(static_cast<std::int32_t>(grpc::StatusCode::INVALID_ARGUMENT));
+      break;
+    }
+    default: {
+      // TODO: error-handling
+      SPDLOG_WARN("Unsupported code: {}. Remark: {}", command.code(), command.remark());
+      status->set_code(static_cast<std::int32_t>(grpc::StatusCode::UNKNOWN));
+      break;
+    }
+  }
+  context->onCompletion(true);
+}
+
+void RpcClientRemoting::handlePopMessage(const RemotingCommand& command, BaseInvocationContext* context) {
 }
 
 void RpcClientRemoting::asyncSend(const SendMessageRequest& request,
@@ -435,6 +450,58 @@ void RpcClientRemoting::asyncQueryAssignment(const QueryAssignmentRequest& reque
 
 void RpcClientRemoting::asyncReceive(const ReceiveMessageRequest& request,
                                      InvocationContext<ReceiveMessageResponse>* invocation_context) {
+  assert(invocation_context);
+
+  // Assign RequestCode
+  invocation_context->request_code = RequestCode::PopMessage;
+  invocation_context->request = absl::make_unique<ReceiveMessageRequest>();
+  invocation_context->request->CopyFrom(request);
+
+  auto header = new PopMessageRequestHeader();
+  const auto& group = request.group();
+  if (group.resource_namespace().empty()) {
+    header->consumerGroup(group.name());
+  } else {
+    header->consumerGroup(absl::StrJoin({group.resource_namespace(), group.name()}, "%"));
+  }
+
+  const auto& topic = request.partition().topic();
+  if (topic.resource_namespace().empty()) {
+    header->topic(topic.name());
+  } else {
+    header->topic(absl::StrJoin({topic.resource_namespace(), topic.name()}, "%"));
+  }
+
+  header->queueId(request.partition().id());
+
+  header->batchSize(request.batch_size());
+
+  timeval tv;
+  tv.tv_sec = request.invisible_duration().seconds();
+  tv.tv_usec = request.invisible_duration().nanos() / 1000;
+  header->invisibleTime(absl::ToInt64Milliseconds(absl::DurationFromTimeval(tv)));
+
+  if (request.has_filter_expression()) {
+    switch (request.filter_expression().type()) {
+      case rmq::FilterType::TAG: {
+        header->expressionType(RemotingConstants::FilterTypeTag);
+        break;
+      }
+      case rmq::FilterType::SQL: {
+        header->expressionType(RemotingConstants::FilterTypeSQL);
+        break;
+      }
+      default: {
+        SPDLOG_WARN("Unsupported filter-type");
+        break;
+      }
+    }
+    header->expression(request.filter_expression().expression());
+  }
+
+  RemotingCommand command = RemotingCommand::createRequest(RequestCode::PopMessage, header);
+
+  write(std::move(command), invocation_context);
 }
 
 void RpcClientRemoting::asyncAck(const AckMessageRequest& request,

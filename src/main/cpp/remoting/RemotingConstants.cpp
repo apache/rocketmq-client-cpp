@@ -18,4 +18,7 @@ const std::uint32_t RemotingConstants::FlagTransactionPrepare = 0x1 << 2;
 const std::uint32_t RemotingConstants::FlagTransactionCommit = 0x2 << 2;
 const std::uint32_t RemotingConstants::FlagTransactionRollback = 0x3 << 2;
 
+const char* RemotingConstants::FilterTypeTag = "TAG";
+const char* RemotingConstants::FilterTypeSQL = "SQL92";
+
 ROCKETMQ_NAMESPACE_END
