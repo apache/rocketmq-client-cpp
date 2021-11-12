@@ -98,6 +98,7 @@ void RpcClientRemoting::onCallback(std::weak_ptr<RpcClientRemoting> rpc_client,
     return;
   }
 
+  SPDLOG_DEBUG("Received {} remoting commands from {}", commands.size(), remoting_client->endpoint_);
   for (const auto& command : commands) {
     remoting_client->processCommand(command);
   }
@@ -111,6 +112,7 @@ void RpcClientRemoting::processCommand(const RemotingCommand& command) {
     if (in_flight_requests_.contains(opaque)) {
       invocation_context = in_flight_requests_[opaque];
       in_flight_requests_.erase(opaque);
+      SPDLOG_DEBUG("Erased invocation-context[opaque={}]", opaque);
     }
   }
 
@@ -258,6 +260,7 @@ void RpcClientRemoting::processCommand(const RemotingCommand& command) {
     }
 
     case RequestCode::SendMessage: {
+      SPDLOG_DEBUG("Process send message response command. Code: {}, Remark: {}", command.code(), command.remark());
       auto context = dynamic_cast<InvocationContext<SendMessageResponse>*>(invocation_context);
       auto response_code = static_cast<ResponseCode>(command.code());
       auto status = context->response.mutable_common()->mutable_status();
@@ -272,20 +275,24 @@ void RpcClientRemoting::processCommand(const RemotingCommand& command) {
         }
 
         case ResponseCode::InternalSystemError: {
+          SPDLOG_ERROR("Internal error. Remark: {}", command.remark());
           status->set_code(static_cast<std::int32_t>(grpc::StatusCode::INTERNAL));
           break;
         }
 
         case ResponseCode::TooManyRequests: {
+          SPDLOG_ERROR("Too many requests. Remark: {}", command.remark());
           status->set_code(static_cast<std::int32_t>(grpc::StatusCode::RESOURCE_EXHAUSTED));
           break;
         }
         case ResponseCode::MessageIllegal: {
+          SPDLOG_ERROR("Message being sent is illegal. Remark: {}", command.remark());
           status->set_code(static_cast<std::int32_t>(grpc::StatusCode::INVALID_ARGUMENT));
           break;
         }
         default: {
           // TODO: error-handling
+          SPDLOG_WARN("Unsupported code: {}. Remark: {}", command.code(), command.remark());
           status->set_code(static_cast<std::int32_t>(grpc::StatusCode::UNKNOWN));
           break;
         }
@@ -314,6 +321,13 @@ void RpcClientRemoting::processCommand(const RemotingCommand& command) {
 
 void RpcClientRemoting::asyncSend(const SendMessageRequest& request,
                                   InvocationContext<SendMessageResponse>* invocation_context) {
+  assert(invocation_context);
+
+  // Assign RequestCode
+  invocation_context->request_code = RequestCode::SendMessage;
+  invocation_context->request = absl::make_unique<SendMessageRequest>();
+  invocation_context->request->CopyFrom(request);
+  
   auto header = new SendMessageRequestHeader();
 
   // Assign topic

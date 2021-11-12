@@ -73,12 +73,14 @@ public:
       : callback_invoked_(callback_invoked), callback_mtx_(callback_mtx), callback_cv_(callback_cv) {
   }
   void onSuccess(SendResult& send_result) noexcept override {
+    SPDLOG_INFO("Message sent, message-id={}", send_result.getMsgId());
     absl::MutexLock lk(&callback_mtx_);
     callback_invoked_ = true;
     callback_cv_.SignalAll();
   }
 
   void onFailure(const std::error_code& ec) noexcept override {
+    SPDLOG_WARN("Send message failed. Reason: {}", ec.message());
     absl::MutexLock lk(&callback_mtx_);
     callback_invoked_ = true;
     callback_cv_.SignalAll();
