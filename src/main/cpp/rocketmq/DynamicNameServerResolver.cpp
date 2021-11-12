@@ -22,8 +22,9 @@
 #include <functional>
 #include <memory>
 
+#include "LoggerImpl.h"
+
 #include "absl/strings/str_join.h"
-#include "spdlog/spdlog.h"
 
 #include "SchedulerImpl.h"
 

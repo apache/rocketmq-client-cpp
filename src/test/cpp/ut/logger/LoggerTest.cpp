@@ -14,11 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "rocketmq/Logger.h"
 #include "LoggerImpl.h"
-#include "rocketmq/RocketMQ.h"
-#include "spdlog/spdlog.h"
+
 #include "gtest/gtest.h"
+
 ROCKETMQ_NAMESPACE_BEGIN
 
 class LoggerTest : public testing::Test {

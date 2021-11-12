@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 #include "CountdownLatch.h"
-#include "rocketmq/RocketMQ.h"
-#include "spdlog/spdlog.h"
-#include "gtest/gtest.h"
+
 #include <thread>
+
+#include "gtest/gtest.h"
+
+#include "LoggerImpl.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

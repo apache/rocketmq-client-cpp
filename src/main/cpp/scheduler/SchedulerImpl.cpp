@@ -31,7 +31,8 @@
 #include "asio/executor_work_guard.hpp"
 #include "asio/io_context.hpp"
 #include "asio/steady_timer.hpp"
-#include "spdlog/spdlog.h"
+
+#include "LoggerImpl.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

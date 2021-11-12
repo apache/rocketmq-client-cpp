@@ -15,12 +15,14 @@
  * limitations under the License.
  */
 #include "UniqueIdGenerator.h"
-#include "absl/container/flat_hash_set.h"
-#include "rocketmq/RocketMQ.h"
-#include "spdlog/spdlog.h"
-#include "gtest/gtest.h"
 
 #include <iostream>
+
+#include "absl/container/flat_hash_set.h"
+#include "gtest/gtest.h"
+
+#include "LoggerImpl.h"
+
 ROCKETMQ_NAMESPACE_BEGIN
 
 TEST(UniqueIdGeneratorTest, testOutputSampleId) {

@@ -16,8 +16,9 @@
  */
 #include "TopicAssignmentInfo.h"
 #include "google/rpc/code.pb.h"
+
 #include "rocketmq/RocketMQ.h"
-#include "spdlog/spdlog.h"
+#include "LoggerImpl.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

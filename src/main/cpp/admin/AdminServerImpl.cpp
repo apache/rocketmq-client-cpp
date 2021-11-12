@@ -16,10 +16,11 @@
  */
 #include "AdminServerImpl.h"
 
-#include "AdminServiceImpl.h"
-#include "ServerCall.h"
-#include "spdlog/spdlog.h"
 #include <memory>
+
+#include "AdminServiceImpl.h"
+#include "LoggerImpl.h"
+#include "ServerCall.h"
 
 using grpc::ServerBuilder;
 

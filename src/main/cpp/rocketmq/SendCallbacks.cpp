@@ -22,7 +22,7 @@
 #include "opencensus/trace/span.h"
 #include "rocketmq/Logger.h"
 #include "rocketmq/MQMessageQueue.h"
-#include "spdlog/spdlog.h"
+#include "LoggerImpl.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

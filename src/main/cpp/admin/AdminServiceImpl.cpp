@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 #include "AdminServiceImpl.h"
-#include "spdlog/spdlog.h"
+#include "LoggerImpl.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

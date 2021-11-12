@@ -25,6 +25,7 @@ public:
                   std::function<void(const std::vector<RemotingCommand>&)> callback)
       : context_(context), endpoint_(endpoint.data(), endpoint.length()), state_(SessionState::Created),
         deadline_(*context), callback_(callback) {
+    
   }
 
   void connect(std::chrono::milliseconds timeout, bool await = false);

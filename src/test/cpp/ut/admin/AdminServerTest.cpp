@@ -14,16 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <gtest/gtest.h>
+#include <thread>
+
+#include "apache/rocketmq/v1/admin.grpc.pb.h"
+#include "gtest/gtest.h"
 
 #include "AdminServerImpl.h"
-#include "apache/rocketmq/v1/admin.grpc.pb.h"
+#include "LoggerImpl.h"
 
-#include "rocketmq/RocketMQ.h"
 #include "spdlog/sinks/basic_file_sink.h"
-#include "spdlog/spdlog.h"
-
-#include <thread>
 
 namespace rmq = apache::rocketmq::v1;
 
@@ -54,9 +53,12 @@ TEST(AdminServerTest, testSetUp) {
 
   auto status = stub->ChangeLogLevel(&context, request, &response);
 
+  if (!status.ok()) {
+    SPDLOG_ERROR("RPC failed. Reason: {}", status.error_message());
+  }
+
   EXPECT_TRUE(status.ok());
   EXPECT_STREQ("OK", response.remark().c_str());
-  EXPECT_EQ(spdlog::level::info, logger->level());
 
   admin_server->stop();
 

@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 #include "UtilAll.h"
-#include "MixAll.h"
-#include "absl/strings/str_split.h"
-#include "asio.hpp"
-#include "rocketmq/RocketMQ.h"
-#include "spdlog/spdlog.h"
-#include "gtest/gtest.h"
+
 #include <chrono>
 #include <cstdint>
+
+#include "absl/strings/str_split.h"
+#include "asio.hpp"
+#include "gtest/gtest.h"
+
+#include "LoggerImpl.h"
+#include "MixAll.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

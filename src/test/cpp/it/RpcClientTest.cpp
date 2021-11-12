@@ -21,7 +21,6 @@
 #include "absl/container/flat_hash_set.h"
 #include "apache/rocketmq/v1/service.pb.h"
 #include "google/rpc/code.pb.h"
-#include "spdlog/spdlog.h"
 #include "gtest/gtest.h"
 
 #include "ClientConfigImpl.h"
@@ -34,7 +33,7 @@
 #include "UniqueIdGenerator.h"
 #include "UtilAll.h"
 #include "rocketmq/CredentialsProvider.h"
-#include "rocketmq/Logger.h"
+#include "LoggerImpl.h"
 
 using namespace testing;
 

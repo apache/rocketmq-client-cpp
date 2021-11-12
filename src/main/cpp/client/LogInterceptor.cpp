@@ -14,14 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "LogInterceptor.h"
-#include "InterceptorContinuation.h"
+#include <cstddef>
+
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_join.h"
 #include "google/protobuf/message.h"
-#include "rocketmq/Logger.h"
-#include "spdlog/spdlog.h"
-#include <cstddef>
+
+#include "InterceptorContinuation.h"
+#include "LogInterceptor.h"
+#include "LoggerImpl.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

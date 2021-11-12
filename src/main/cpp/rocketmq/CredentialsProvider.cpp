@@ -25,11 +25,10 @@
 #include "ghc/filesystem.hpp"
 #include "google/protobuf/struct.pb.h"
 #include "google/protobuf/util/json_util.h"
-#include "spdlog/spdlog.h"
 
+#include "LoggerImpl.h"
 #include "MixAll.h"
 #include "StsCredentialsProviderImpl.h"
-#include "rocketmq/Logger.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

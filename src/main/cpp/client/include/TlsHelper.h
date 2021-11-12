@@ -16,7 +16,6 @@
  */
 #pragma once
 
-#include "rocketmq/RocketMQ.h"
 #include <string>
 #include <utility>
 
@@ -25,7 +24,8 @@
 #include <grpcpp/create_channel.h>
 #include <openssl/x509.h>
 
-#include "spdlog/spdlog.h"
+#include "LoggerImpl.h"
+#include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

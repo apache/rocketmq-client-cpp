@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "TracingUtility.h"
-#include "MixAll.h"
-#include "absl/strings/str_join.h"
-#include "rocketmq/CredentialsProvider.h"
-#include "spdlog/spdlog.h"
 
+#include "absl/strings/str_join.h"
+
+#include "LoggerImpl.h"
+#include "MixAll.h"
+#include "TracingUtility.h"
+#include "rocketmq/CredentialsProvider.h"
 ROCKETMQ_NAMESPACE_BEGIN
 
 void TracingUtility::addUniversalSpanAttributes(const MQMessage& message, ClientConfig& client_config,

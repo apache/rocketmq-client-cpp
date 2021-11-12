@@ -20,8 +20,8 @@
 #include <string>
 
 #include "fmt/format.h"
-#include "spdlog/spdlog.h"
 
+#include "LoggerImpl.h"
 #include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN

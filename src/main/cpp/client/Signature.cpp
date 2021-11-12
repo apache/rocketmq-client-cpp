@@ -16,10 +16,10 @@
  */
 #include "Signature.h"
 #include "ClientConfigImpl.h"
+#include "LoggerImpl.h"
 #include "MetadataConstants.h"
 #include "Protocol.h"
 #include "TlsHelper.h"
-#include "spdlog/spdlog.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

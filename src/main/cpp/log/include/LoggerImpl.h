@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 #pragma once
+
 #include "rocketmq/Logger.h"
+
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
@@ -81,8 +83,8 @@ private:
 
   static const char* LOG_FILE;
 
-  Level level_{Level::Info};
-  Level console_level_{Level::Warn};
+  Level level_{Level::Debug};
+  Level console_level_{Level::Debug};
   std::string log_home_;
   std::size_t file_size_{DEFAULT_FILE_SIZE};
   std::size_t file_count_{DEFAULT_MAX_LOG_FILE_QUANTITY};

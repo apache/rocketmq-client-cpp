@@ -31,7 +31,7 @@ cc_library(
     deps = [
         "//api:rocketmq_interface",
         "//proto:rocketmq_grpc_library",
-        "@com_github_gabime_spdlog//:spdlog",
+        "//src/main/cpp/log:log_library",
     ],
     visibility = ["//visibility:public"],
 )

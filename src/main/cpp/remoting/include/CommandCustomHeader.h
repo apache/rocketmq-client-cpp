@@ -23,9 +23,8 @@
 #include "absl/strings/string_view.h"
 #include "google/protobuf/struct.pb.h"
 #include "google/protobuf/util/json_util.h"
-#include "spdlog/spdlog.h"
 
-#include "rocketmq/RocketMQ.h"
+#include "LoggerImpl.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 

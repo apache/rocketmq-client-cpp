@@ -13,11 +13,12 @@
 #include <system_error>
 #include <vector>
 
-#include "RemotingCommand.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
-#include "spdlog/spdlog.h"
+
+#include "LoggerImpl.h"
+#include "RemotingCommand.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -60,6 +61,7 @@ void RemotingSession::connect(std::chrono::milliseconds timeout, bool await) {
     deadline_.expires_from_now(timeout);
     deadline_.async_wait(std::bind(&RemotingSession::onDeadline, session, std::placeholders::_1));
 
+    SPDLOG_INFO("Estabishing connection to {}", endpoint_);
     socket_->async_connect(endpoint, std::bind(&RemotingSession::onConnection, session, std::placeholders::_1));
 
     if (await) {

@@ -21,9 +21,9 @@
 
 #include "absl/synchronization/mutex.h"
 #include "grpc/grpc.h"
-#include "spdlog/spdlog.h"
 #include "gtest/gtest.h"
 
+#include "LoggerImpl.h"
 #include "RateLimiter.h"
 #include "TopAddressing.h"
 

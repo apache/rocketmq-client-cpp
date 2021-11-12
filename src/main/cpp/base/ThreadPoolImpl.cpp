@@ -15,17 +15,21 @@
  * limitations under the License.
  */
 #include "ThreadPoolImpl.h"
-#include "absl/memory/memory.h"
-#include "asio/executor_work_guard.hpp"
-#include "asio/io_context.hpp"
-#include "asio/post.hpp"
-#include "rocketmq/RocketMQ.h"
-#include "rocketmq/State.h"
-#include "spdlog/spdlog.h"
+
 #include <atomic>
 #include <cstdint>
 #include <exception>
 #include <system_error>
+
+#include "absl/memory/memory.h"
+#include "asio/executor_work_guard.hpp"
+#include "asio/io_context.hpp"
+#include "asio/post.hpp"
+
+#include "rocketmq/RocketMQ.h"
+#include "rocketmq/State.h"
+#include "LoggerImpl.h"
+
 
 ROCKETMQ_NAMESPACE_BEGIN
 

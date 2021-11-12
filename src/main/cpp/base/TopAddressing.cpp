@@ -16,12 +16,14 @@
  */
 #include "TopAddressing.h"
 
-#include "HttpClientImpl.h"
+#include <utility>
+
 #include "absl/memory/memory.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
-#include "spdlog/spdlog.h"
-#include <utility>
+
+#include "HttpClientImpl.h"
+#include "LoggerImpl.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
