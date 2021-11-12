@@ -657,6 +657,13 @@ void ClientManagerImpl::resolveRoute(const std::string& target_host, const Metad
     return;
   }
 
+  if (client_config_.transportType() == TransportType::Remoting) {
+    absl::MutexLock lk(&name_server_cache_mtx_);
+    if (!name_server_cache_.contains(target_host)) {
+      name_server_cache_.insert(target_host);
+    }
+  }
+
   auto invocation_context = new InvocationContext<QueryRouteResponse>();
   invocation_context->task_name = fmt::format("Query route of topic={} from {}", request.topic().name(), target_host);
   invocation_context->remote_address = target_host;
@@ -768,8 +775,25 @@ void ClientManagerImpl::queryAssignment(
     const std::string& target, const Metadata& metadata, const QueryAssignmentRequest& request,
     std::chrono::milliseconds timeout,
     const std::function<void(const std::error_code&, const QueryAssignmentResponse&)>& cb) {
-  SPDLOG_DEBUG("Prepare to send query assignment request to broker[address={}]", target);
-  std::shared_ptr<RpcClient> client = getRpcClient(target);
+
+  std::string target_host = target;
+
+  if (TransportType::Remoting == client_config_.transportType()) {
+    absl::MutexLock lk(&name_server_cache_mtx_);
+    if (name_server_cache_.empty()) {
+      // Should NEVER reach here.
+      SPDLOG_WARN("[Bug]There is known prior name server when querying assignment under protocol of remoting");
+      QueryAssignmentResponse response;
+      std::error_code ec = ErrorCode::BadConfiguration;
+      cb(ec, response);
+      return;
+    }
+    target_host = *name_server_cache_.begin();
+    SPDLOG_DEBUG("[Remoting] Query {} instead of {} for load assignment", target_host, target);
+  }
+
+  SPDLOG_DEBUG("Prepare to send query assignment request to broker[address={}]", target_host);
+  std::shared_ptr<RpcClient> client = getRpcClient(target_host);
 
   auto callback = [&, cb](const InvocationContext<QueryAssignmentResponse>* invocation_context) {
     if (!invocation_context->status.ok()) {
@@ -811,8 +835,8 @@ void ClientManagerImpl::queryAssignment(
   };
 
   auto invocation_context = new InvocationContext<QueryAssignmentResponse>();
-  invocation_context->task_name = fmt::format("QueryAssignment from {}", target);
-  invocation_context->remote_address = target;
+  invocation_context->task_name = fmt::format("QueryAssignment from {}", target_host);
+  invocation_context->remote_address = target_host;
   for (const auto& item : metadata) {
     invocation_context->context.AddMetadata(item.first, item.second);
   }

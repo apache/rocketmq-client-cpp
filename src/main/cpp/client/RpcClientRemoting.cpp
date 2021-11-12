@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <functional>
+#include <google/rpc/code.pb.h>
+#include <google/rpc/status.pb.h>
 #include <limits>
 #include <memory>
 #include <string>
@@ -26,6 +28,7 @@
 #include "ResponseCode.h"
 #include "SendMessageRequestHeader.h"
 #include "SendMessageResponseHeader.h"
+#include "include/RpcClient.h"
 #include "rocketmq/MessageType.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -327,7 +330,7 @@ void RpcClientRemoting::asyncSend(const SendMessageRequest& request,
   invocation_context->request_code = RequestCode::SendMessage;
   invocation_context->request = absl::make_unique<SendMessageRequest>();
   invocation_context->request->CopyFrom(request);
-  
+
   auto header = new SendMessageRequestHeader();
 
   // Assign topic
@@ -410,6 +413,24 @@ void RpcClientRemoting::asyncSend(const SendMessageRequest& request,
 
 void RpcClientRemoting::asyncQueryAssignment(const QueryAssignmentRequest& request,
                                              InvocationContext<QueryAssignmentResponse>* invocation_context) {
+  QueryRouteRequest query_route_request;
+  query_route_request.mutable_topic()->CopyFrom(request.topic());
+  auto context = new InvocationContext<QueryRouteResponse>();
+  context->callback = [invocation_context, request](const InvocationContext<QueryRouteResponse>* ctx) {
+    invocation_context->status = ctx->status;
+    invocation_context->response.mutable_common()->CopyFrom(ctx->response.common());
+    if (ctx->status.ok() && google::rpc::Code::OK == ctx->response.common().status().code()) {
+      for (const auto& partition : ctx->response.partitions()) {
+        auto assignment = new rmq::Assignment();
+        assignment->mutable_partition()->CopyFrom(partition);
+        invocation_context->response.mutable_assignments()->AddAllocated(assignment);
+      }
+    } else {
+      SPDLOG_WARN("Failed to query route for topic: {}", request.topic().name());
+    }
+    invocation_context->onCompletion(true);
+  };
+  asyncQueryRoute(query_route_request, context);
 }
 
 void RpcClientRemoting::asyncReceive(const ReceiveMessageRequest& request,
@@ -422,14 +443,17 @@ void RpcClientRemoting::asyncAck(const AckMessageRequest& request,
 
 void RpcClientRemoting::asyncNack(const NackMessageRequest& request,
                                   InvocationContext<NackMessageResponse>* invocation_context) {
+  invocation_context->onCompletion(true);
 }
 
 void RpcClientRemoting::asyncHeartbeat(const HeartbeatRequest& request,
                                        InvocationContext<HeartbeatResponse>* invocation_context) {
+  invocation_context->onCompletion(true);
 }
 
 void RpcClientRemoting::asyncHealthCheck(const HealthCheckRequest& request,
                                          InvocationContext<HealthCheckResponse>* invocation_context) {
+  invocation_context->onCompletion(true);
 }
 
 void RpcClientRemoting::asyncEndTransaction(const EndTransactionRequest& request,
@@ -442,11 +466,13 @@ void RpcClientRemoting::asyncPollCommand(const PollCommandRequest& request,
 
 void RpcClientRemoting::asyncQueryOffset(const QueryOffsetRequest& request,
                                          InvocationContext<QueryOffsetResponse>* invocation_context) {
+  invocation_context->onCompletion(true);
 }
 
 void RpcClientRemoting::asyncForwardMessageToDeadLetterQueue(
     const ForwardMessageToDeadLetterQueueRequest& request,
     InvocationContext<ForwardMessageToDeadLetterQueueResponse>* invocation_context) {
+  invocation_context->onCompletion(true);
 }
 
 grpc::Status RpcClientRemoting::reportThreadStackTrace(grpc::ClientContext* context,

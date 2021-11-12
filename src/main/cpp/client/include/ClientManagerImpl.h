@@ -90,7 +90,7 @@ public:
   void resolveRoute(const std::string& target_host, const Metadata& metadata, const QueryRouteRequest& request,
                     std::chrono::milliseconds timeout,
                     const std::function<void(const std::error_code&, const TopicRouteDataPtr&)>& cb) override
-      LOCKS_EXCLUDED(rpc_clients_mtx_);
+      LOCKS_EXCLUDED(rpc_clients_mtx_, name_server_cache_mtx_);
 
   void doHealthCheck() LOCKS_EXCLUDED(clients_mtx_);
 
@@ -137,7 +137,8 @@ public:
 
   void queryAssignment(const std::string& target, const Metadata& metadata, const QueryAssignmentRequest& request,
                        std::chrono::milliseconds timeout,
-                       const std::function<void(const std::error_code&, const QueryAssignmentResponse&)>& cb) override;
+                       const std::function<void(const std::error_code&, const QueryAssignmentResponse&)>& cb) override
+      LOCKS_EXCLUDED(rpc_clients_mtx_, name_server_cache_mtx_);
 
   void receiveMessage(const std::string& target, const Metadata& metadata, const ReceiveMessageRequest& request,
                       std::chrono::milliseconds timeout, const std::shared_ptr<ReceiveMessageCallback>& cb) override
@@ -224,6 +225,13 @@ public:
 
   void submit(std::function<void()> task) override;
 
+  void addNameServer(std::string name_server) LOCKS_EXCLUDED(name_server_cache_mtx_) {
+    absl::MutexLock lk(&name_server_cache_mtx_);
+    if (!name_server_cache_.contains(name_server)) {
+      name_server_cache_.emplace(std::move(name_server));
+    }
+  }
+
 private:
   void doHeartbeat();
 
@@ -285,6 +293,13 @@ private:
   grpc::ChannelArguments channel_arguments_;
 
   bool trace_{false};
+
+  /**
+   * @brief When remoting protocol is used, query-assignment is interpreted as query-topic-route; Thus, RPC remote
+   * target is changed from broker to name-server.
+   */
+  absl::flat_hash_set<std::string> name_server_cache_ GUARDED_BY(name_server_cache_mtx_);
+  absl::Mutex name_server_cache_mtx_;
 };
 
 ROCKETMQ_NAMESPACE_END

@@ -32,6 +32,9 @@ public:
 protected:
   std::string group_{"TestGroup"};
   std::string topic_{"zhanhui-test"};
+  std::string client_id_{"Test-0"};
+  std::string name_server_host_{"11.163.70.118:9876"};
+  std::string broker_host_{"11.163.70.118:10911"};
   ClientConfigImpl client_config_{group_};
   std::shared_ptr<ClientManagerImpl> client_manager_;
 };
@@ -115,6 +118,35 @@ TEST_F(ClientManagerRemotingTest, testAsyncSend) {
   {
     absl::MutexLock lk(&callback_mtx);
     callback_cv.WaitWithTimeout(&callback_mtx, absl::Seconds(3));
+  }
+  EXPECT_TRUE(callback_invoked);
+}
+
+TEST_F(ClientManagerRemotingTest, testAssignment) {
+  Metadata metadata;
+  QueryAssignmentRequest request;
+  request.mutable_topic()->set_name(topic_);
+  request.mutable_group()->set_name(group_);
+
+  absl::Mutex callback_mtx;
+  absl::CondVar callback_cv;
+  bool callback_invoked = false;
+  auto callback = [&](const std::error_code& ec, const QueryAssignmentResponse& response) {
+    SPDLOG_DEBUG("QueryAssignmentResponse: {}", response.DebugString());
+    callback_invoked = true;
+    {
+      absl::MutexLock lk(&callback_mtx);
+      callback_cv.SignalAll();
+    }
+  };
+  client_manager_->addNameServer(name_server_host_);
+  client_manager_->queryAssignment(broker_host_, metadata, request, std::chrono::seconds(3), callback);
+
+  {
+    absl::MutexLock lk(&callback_mtx);
+    if (!callback_invoked) {
+      callback_cv.WaitWithTimeout(&callback_mtx, absl::Seconds(3));
+    }
   }
   EXPECT_TRUE(callback_invoked);
 }
