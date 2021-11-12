@@ -35,6 +35,8 @@ enum class ResponseCode : std::uint16_t {
   VersionNotSupported = 15,
   NoPermission = 16,
   TopicNotFound = 17,
+  TooManyReceiveRequests = 209,
+  ReceiveMessageTimeout = 210,
 };
 
 ROCKETMQ_NAMESPACE_END

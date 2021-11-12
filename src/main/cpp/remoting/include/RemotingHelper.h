@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 #include "RemotingConstants.h"
@@ -23,6 +24,19 @@ public:
     }
     return result;
   }
+
+  /**
+   * @brief Craps to adapt to existing Remoting#pop API
+   *
+   * @param start_offset_info
+   * @return absl::flat_hash_map<std::string, std::int64_t>
+   */
+  static absl::flat_hash_map<std::string, std::int64_t> parseStartOffsetInfo(const std::string& start_offset_info);
+
+  static absl::flat_hash_map<std::string, std::vector<std::int64_t>>
+  parseMsgOffsetInfo(const std::string& message_offset_info);
+
+  static absl::flat_hash_map<std::string, std::int32_t> parseOrderCountInfo(const std::string& order_count_info);
 };
 
 ROCKETMQ_NAMESPACE_END

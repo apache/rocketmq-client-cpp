@@ -334,7 +334,39 @@ void RpcClientRemoting::handleSendMessage(const RemotingCommand& command, BaseIn
   context->onCompletion(true);
 }
 
-void RpcClientRemoting::handlePopMessage(const RemotingCommand& command, BaseInvocationContext* context) {
+void RpcClientRemoting::handlePopMessage(const RemotingCommand& command, BaseInvocationContext* invocation_context) {
+  SPDLOG_DEBUG("Handle pop-message response. Code: {}, Remark: {}", command.code(), command.remark());
+  auto context = dynamic_cast<InvocationContext<ReceiveMessageResponse>*>(invocation_context);
+  auto response_code = static_cast<ResponseCode>(command.code());
+  auto status = context->response.mutable_common()->mutable_status();
+  status->set_message(command.remark());
+
+  switch (response_code) {
+    case ResponseCode::Success: {
+      const auto header = dynamic_cast<const PopMessageResponseHeader*>(command.extHeader());
+      
+
+      break;
+    }
+    case ResponseCode::InternalSystemError: {
+      status->set_code(static_cast<std::int32_t>(grpc::StatusCode::INTERNAL));
+      break;
+    }
+    case ResponseCode::TooManyReceiveRequests: {
+      status->set_code(static_cast<std::int32_t>(grpc::StatusCode::RESOURCE_EXHAUSTED));
+      break;
+    }
+    case ResponseCode::ReceiveMessageTimeout: {
+      status->set_code(static_cast<std::int32_t>(grpc::StatusCode::DEADLINE_EXCEEDED));
+      break;
+    }
+    default: {
+      SPDLOG_WARN("Unsupported code: {}, Remark: {}", command.code(), command.remark());
+      status->set_code(static_cast<std::int32_t>(grpc::StatusCode::UNIMPLEMENTED));
+      break;
+    }
+  }
+  context->onCompletion(true);
 }
 
 void RpcClientRemoting::asyncSend(const SendMessageRequest& request,
