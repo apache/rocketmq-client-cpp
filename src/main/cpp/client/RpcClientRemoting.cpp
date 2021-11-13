@@ -22,16 +22,19 @@
 #include "BrokerData.h"
 #include "InvocationContext.h"
 #include "LoggerImpl.h"
+#include "MessageVersion.h"
+#include "MixAll.h"
 #include "PopMessageRequestHeader.h"
 #include "PopMessageResponseHeader.h"
 #include "QueryRouteRequestHeader.h"
 #include "QueueData.h"
 #include "RemotingCommand.h"
 #include "RemotingConstants.h"
+#include "RemotingHelper.h"
 #include "ResponseCode.h"
+#include "RpcClient.h"
 #include "SendMessageRequestHeader.h"
 #include "SendMessageResponseHeader.h"
-#include "include/RpcClient.h"
 #include "rocketmq/MessageType.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -344,7 +347,188 @@ void RpcClientRemoting::handlePopMessage(const RemotingCommand& command, BaseInv
   switch (response_code) {
     case ResponseCode::Success: {
       const auto header = dynamic_cast<const PopMessageResponseHeader*>(command.extHeader());
-      
+
+      absl::flat_hash_map<std::string, std::int64_t>&& start_offset_info =
+          RemotingHelper::parseStartOffsetInfo(header->startOffsetInfo());
+
+      absl::flat_hash_map<std::string, std::vector<std::int64_t>>&& message_offset_info =
+          RemotingHelper::parseMsgOffsetInfo(header->messageOffsetInfo());
+
+      absl::flat_hash_map<std::string, std::int32_t>&& order_count_info =
+          RemotingHelper::parseOrderCountInfo(header->orderCountInfo());
+
+      auto invisible_duration = context->response.mutable_invisible_duration();
+      invisible_duration->set_seconds(header->invisibleTimeInMillis() / 1000);
+      invisible_duration->set_nanos((header->invisibleTimeInMillis() % 1000) * 1e6);
+
+      auto pop_time = context->response.mutable_delivery_timestamp();
+      pop_time->set_seconds(header->popTime() / 1000);
+      pop_time->set_nanos(header->popTime() % 1000 * 1e6);
+
+      auto messages = context->response.mutable_messages();
+
+      const std::uint8_t* base = command.body().data();
+      std::int32_t offset = 0;
+      while (offset < command.body().size() - 1) {
+        auto message = new rmq::Message();
+
+        std::error_code ec;
+
+        // Store size
+        std::int32_t store_size = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+        offset += sizeof(std::int32_t);
+        (void)store_size;
+
+        // Magic code
+        std::int32_t magic_code = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+        offset += sizeof(std::int32_t);
+
+        MessageVersion message_version = messageVersionOf(magic_code);
+
+        // Body CRC
+        std::int32_t body_crc = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+        offset += sizeof(std::int32_t);
+        if (body_crc) {
+          message->mutable_system_attribute()->mutable_body_digest()->set_type(rmq::DigestType::CRC32);
+          std::string crc = MixAll::hex(&body_crc, sizeof(body_crc));
+          message->mutable_system_attribute()->mutable_body_digest()->set_checksum(crc);
+        }
+
+        // Queue ID
+        std::int32_t queue_id = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+        offset += sizeof(std::int32_t);
+        message->mutable_system_attribute()->set_partition_id(queue_id);
+
+        std::int32_t flag = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+        offset += sizeof(std::int32_t);
+        (void)flag;
+
+        std::int64_t queue_offset = RemotingHelper::readBigEndian<std::int64_t>(base + offset, ec);
+        offset += sizeof(std::int64_t);
+        message->mutable_system_attribute()->set_partition_offset(queue_offset);
+
+        std::int64_t commit_log_offset = RemotingHelper::readBigEndian<std::int64_t>(base + offset, ec);
+        offset += sizeof(std::int64_t);
+        (void)commit_log_offset;
+
+        std::int32_t system_flag = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+        offset += sizeof(std::int32_t);
+        {
+          if ((RemotingConstants::FlagCompression & system_flag) == RemotingConstants::FlagCompression) {
+            message->mutable_system_attribute()->set_body_encoding(rmq::Encoding::GZIP);
+          }
+        }
+
+        std::int64_t born_timestamp = RemotingHelper::readBigEndian<std::int64_t>(base + offset, ec);
+        offset += sizeof(std::int64_t);
+        message->mutable_system_attribute()->mutable_born_timestamp()->set_seconds(born_timestamp / 1000);
+        message->mutable_system_attribute()->mutable_born_timestamp()->set_nanos((born_timestamp % 1000) * 1e6);
+
+        std::int32_t born_host_ip = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+        offset += sizeof(std::int32_t);
+        (void)born_host_ip;
+
+        std::int32_t born_host_port = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+        offset += sizeof(std::int32_t);
+        (void)born_host_port;
+
+        std::int64_t store_timestamp = RemotingHelper::readBigEndian<std::int64_t>(base + offset, ec);
+        offset += sizeof(std::int64_t);
+        message->mutable_system_attribute()->mutable_store_timestamp()->set_seconds(store_timestamp / 1000);
+        message->mutable_system_attribute()->mutable_store_timestamp()->set_nanos((store_timestamp % 1000) * 1e6);
+
+        std::int32_t store_host_ip = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+        offset += sizeof(std::int32_t);
+        (void)store_host_ip;
+
+        std::int32_t store_host_port = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+        offset += sizeof(std::int32_t);
+        (void)store_host_port;
+
+        std::int32_t reconsume_times = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+        offset += sizeof(std::int32_t);
+        (void)reconsume_times;
+
+        std::int64_t prepare_transaction_offset = RemotingHelper::readBigEndian<std::int64_t>(base + offset, ec);
+        offset += sizeof(std::int64_t);
+        (void)prepare_transaction_offset;
+
+        std::int32_t body_length = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+        offset += sizeof(std::int32_t);
+
+        if (body_length > 0) {
+          std::string body;
+          body.resize(body_length);
+          memcpy(const_cast<char*>(body.data()), base + offset, body_length);
+          offset += body_length;
+          message->set_body(body);
+        }
+
+        std::size_t topic_length = 0;
+        switch (message_version) {
+          case MessageVersion::V1: {
+            // The following byte represents length of the topic
+            topic_length = *(base + offset);
+            offset += 1;
+            break;
+          }
+          case MessageVersion::V2: {
+            // The following two bytes represents length of the topic
+            topic_length = RemotingHelper::readBigEndian<std::int16_t>(base + offset, ec);
+            offset += sizeof(std::int16_t);
+            break;
+          }
+          default: {
+            SPDLOG_WARN(
+                "Fatal error while decode body of pop response into messages. Cause: unsupported magic code version");
+            break;
+          }
+        }
+
+        std::string topic;
+        topic.resize(topic_length);
+        memcpy(const_cast<char*>(topic.data()), base + offset, topic_length);
+        offset += topic_length;
+        if (absl::StrContains(topic, "%")) {
+          std::vector<std::string> segments = absl::StrSplit(topic, '%');
+          if (segments.size() == 2) {
+            message->mutable_topic()->set_resource_namespace(segments[0]);
+            message->mutable_topic()->set_name(segments[1]);
+          } else {
+            SPDLOG_WARN("[BUG] more cases to handle in terms of topic");
+          }
+        } else {
+          message->mutable_topic()->set_name(topic);
+        }
+
+        std::int16_t properties_length = RemotingHelper::readBigEndian<std::int16_t>(base + offset, ec);
+        offset += sizeof(std::int16_t);
+
+        std::string properties;
+        properties.resize(properties_length);
+        memcpy(const_cast<char*>(properties.data()), base + offset, properties_length);
+        offset += properties_length;
+
+        absl::flat_hash_map<std::string, std::string> properties_map =
+            RemotingHelper::stringToMessageProperties(properties);
+        for (const auto& entry : properties_map) {
+          if (RemotingConstants::Keys == entry.first) {
+            std::vector<std::string> keys = absl::StrSplit(entry.second, RemotingConstants::KeySeparator);
+            message->mutable_system_attribute()->mutable_keys()->Add(keys.begin(), keys.end());
+            continue;
+          }
+
+          if (RemotingConstants::Tags == entry.first) {
+            message->mutable_system_attribute()->set_tag(entry.second);
+            continue;
+          }
+
+          // TODO: check all other system properties.
+          message->mutable_user_attribute()->insert({entry.first, entry.second});
+        }
+
+        messages->AddAllocated(message);
+      }
 
       break;
     }

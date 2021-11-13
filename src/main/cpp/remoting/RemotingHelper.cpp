@@ -1,6 +1,7 @@
 #include "RemotingHelper.h"
 
 #include <cstdint>
+#include <string>
 
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_join.h"
@@ -120,6 +121,18 @@ RemotingHelper::parseOrderCountInfo(const std::string& order_count_info) {
     std::int32_t offset = 0;
     if (absl::SimpleAtoi(segments[2], &offset)) {
       result.insert({key, offset});
+    }
+  }
+  return result;
+}
+
+absl::flat_hash_map<std::string, std::string> RemotingHelper::stringToMessageProperties(absl::string_view properties) {
+  absl::flat_hash_map<std::string, std::string> result;
+  std::vector<absl::string_view> entries = absl::StrSplit(properties, RemotingConstants::PropertySeparator);
+  for (const auto& entry : entries) {
+    std::vector<std::string> kv = absl::StrSplit(entry, RemotingConstants::NameValueSeparator);
+    if (kv.size() == 2) {
+      result.emplace(kv[0], kv[1]);
     }
   }
   return result;

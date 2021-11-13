@@ -2,8 +2,10 @@
 
 #include <cstdint>
 #include <string>
+#include <system_error>
 
 #include "RemotingConstants.h"
+#include "absl/base/internal/endian.h"
 #include "absl/container/flat_hash_map.h"
 #include "rocketmq/RocketMQ.h"
 
@@ -37,6 +39,23 @@ public:
   parseMsgOffsetInfo(const std::string& message_offset_info);
 
   static absl::flat_hash_map<std::string, std::int32_t> parseOrderCountInfo(const std::string& order_count_info);
+
+  template <typename T>
+  static T readBigEndian(const std::uint8_t* ptr, std::error_code& ec) {
+    const T* p = reinterpret_cast<const T*>(ptr);
+    if (sizeof(T) == 2) {
+      return absl::gntohs(*p);
+    } else if (sizeof(T) == 4) {
+      return absl::gntohl(*p);
+    } else if (sizeof(T) == 8) {
+      return absl::gntohll(*p);
+    } else {
+      ec = std::make_error_code(std::errc::invalid_argument);
+      return *p;
+    }
+  }
+
+  static absl::flat_hash_map<std::string, std::string> stringToMessageProperties(absl::string_view properties);
 };
 
 ROCKETMQ_NAMESPACE_END

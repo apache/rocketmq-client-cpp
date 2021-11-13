@@ -10,10 +10,19 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class PopMessageResponseHeader : public CommandCustomHeader {
 public:
-  void encode(google::protobuf::Value& root) const override {
-  }
+  void encode(google::protobuf::Value &root) const override {}
 
-  static PopMessageResponseHeader* decode(const google::protobuf::Value& root);
+  static PopMessageResponseHeader *decode(const google::protobuf::Value &root);
+
+  std::int64_t invisibleTimeInMillis() const { return invisible_time_; }
+
+  std::int64_t popTime() const { return pop_time_; }
+
+  const std::string &startOffsetInfo() const { return start_offset_info_; }
+
+  const std::string &messageOffsetInfo() const { return message_offset_info_; }
+
+  const std::string &orderCountInfo() const { return order_count_info_; }
 
 private:
   std::int64_t pop_time_{0};

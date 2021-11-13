@@ -25,6 +25,9 @@ public:
 
   static const char* FilterTypeTag;
   static const char* FilterTypeSQL;
+
+  static const std::int32_t MessageMagicCodeV1;
+  static const std::int32_t MessageMagicCodeV2;
 };
 
 ROCKETMQ_NAMESPACE_END
