@@ -16,6 +16,7 @@
 #include <system_error>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "apache/rocketmq/v1/definition.pb.h"
@@ -70,7 +71,7 @@ void RpcClientRemoting::write(RemotingCommand command, BaseInvocationContext* in
     in_flight_requests_.insert({command.opaque(), invocation_context});
   }
 
-  SPDLOG_INFO("Writing RemotingCommand to {}", invocation_context->remote_address);
+  SPDLOG_DEBUG("Writing RemotingCommand to {}", invocation_context->remote_address);
   std::error_code ec;
   session_->write(std::move(command), ec);
 
@@ -362,27 +363,35 @@ void RpcClientRemoting::handlePopMessage(const RemotingCommand& command, BaseInv
       const std::uint8_t* base = command.body().data();
       std::uint32_t offset = 0;
       while (offset < command.body().size() - 1) {
+        SPDLOG_DEBUG("Decode message out of pop-response. offset: {}, command.body.size: {}", offset,
+                     command.body().size());
         auto message = new rmq::Message();
         std::error_code ec;
         // Store size
         std::int32_t store_size = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
         offset += sizeof(std::int32_t);
+        if (ec) {
+          SPDLOG_WARN("Failed to decode store_size out of pop message response. Cause: {}", ec.message());
+        }
         (void)store_size;
 
         // Magic code
         std::int32_t magic_code = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
         offset += sizeof(std::int32_t);
+        if (ec) {
+          SPDLOG_WARN("Failed to decode magic code out of pop response. Cause: {}", ec.message());
+        }
+        SPDLOG_DEBUG("MagicCode: {}", magic_code);
 
         MessageVersion message_version = messageVersionOf(magic_code);
+        if (MessageVersion::Unset == message_version) {
+          SPDLOG_WARN("Yuck, got an illegal magic code: {}", magic_code);
+          break;
+        }
 
         // Body CRC
         std::int32_t body_crc = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
         offset += sizeof(std::int32_t);
-        if (body_crc) {
-          message->mutable_system_attribute()->mutable_body_digest()->set_type(rmq::DigestType::CRC32);
-          std::string crc = MixAll::hex(&body_crc, sizeof(body_crc));
-          message->mutable_system_attribute()->mutable_body_digest()->set_checksum(crc);
-        }
 
         // Queue ID
         std::int32_t queue_id = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
@@ -452,6 +461,19 @@ void RpcClientRemoting::handlePopMessage(const RemotingCommand& command, BaseInv
           memcpy(const_cast<char*>(body.data()), base + offset, body_length);
           offset += body_length;
           message->set_body(body);
+
+          std::string calculated_crc;
+          MixAll::crc32(body, calculated_crc);
+          message->mutable_system_attribute()->mutable_body_digest()->set_type(rmq::DigestType::CRC32);
+          message->mutable_system_attribute()->mutable_body_digest()->set_checksum(calculated_crc);
+
+          if (body_crc) {
+            std::string crc = absl::StrFormat("%X", body_crc);
+            if (crc != calculated_crc) {
+              SPDLOG_WARN("Calculated CRC: {}, CRC from broker in big endian: {}, its hex: {}, body: {}, len(body): {}",
+                          calculated_crc, body_crc, crc, body, body.length());
+            }
+          }
         }
 
         std::size_t topic_length = 0;
@@ -470,7 +492,8 @@ void RpcClientRemoting::handlePopMessage(const RemotingCommand& command, BaseInv
           }
           default: {
             SPDLOG_WARN(
-                "Fatal error while decode body of pop response into messages. Cause: unsupported magic code version");
+                "Fatal error while decode body of pop response into messages. Caused by unsupported magic code: {}",
+                magic_code);
             break;
           }
         }
@@ -479,6 +502,7 @@ void RpcClientRemoting::handlePopMessage(const RemotingCommand& command, BaseInv
         topic.resize(topic_length);
         memcpy(const_cast<char*>(topic.data()), base + offset, topic_length);
         offset += topic_length;
+        SPDLOG_DEBUG("Topic: {}", topic);
         if (absl::StrContains(topic, "%")) {
           std::vector<std::string> segments = absl::StrSplit(topic, '%');
           if (segments.size() == 2) {
@@ -510,12 +534,15 @@ void RpcClientRemoting::handlePopMessage(const RemotingCommand& command, BaseInv
           }
 
           if (RemotingConstants::Tags == entry.first) {
-            message->mutable_system_attribute()->set_tag(entry.second);
+            if (!entry.second.empty()) {
+              message->mutable_system_attribute()->set_tag(entry.second);
+            }
             continue;
           }
 
           if (RemotingConstants::PopCk == entry.first) {
             message->mutable_system_attribute()->set_receipt_handle(entry.second);
+            SPDLOG_DEBUG("Receipt-Handle: {}", entry.second);
             continue;
           }
 
@@ -697,18 +724,28 @@ void RpcClientRemoting::asyncReceive(const ReceiveMessageRequest& request,
     switch (request.filter_expression().type()) {
       case rmq::FilterType::TAG: {
         header->expressionType(RemotingConstants::FilterTypeTag);
+        if (!request.filter_expression().expression().empty()) {
+          header->expression(request.filter_expression().expression());
+        } else {
+          header->expression("*");
+        }
         break;
       }
       case rmq::FilterType::SQL: {
         header->expressionType(RemotingConstants::FilterTypeSQL);
+        header->expression(request.filter_expression().expression());
         break;
       }
       default: {
-        SPDLOG_WARN("Unsupported filter-type");
+        SPDLOG_WARN("Unsupported filter-type. Use defaults that accept all");
+        header->expressionType(RemotingConstants::FilterTypeTag);
+        header->expression("*");
         break;
       }
     }
-    header->expression(request.filter_expression().expression());
+  } else {
+    header->expressionType(RemotingConstants::FilterTypeTag);
+    header->expression("*");
   }
 
   RemotingCommand command = RemotingCommand::createRequest(RequestCode::PopMessage, header);

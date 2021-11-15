@@ -122,6 +122,8 @@ void RemotingSession::fireRead() {
   }
 
   std::weak_ptr<RemotingSession> session(shared_from_this());
+  SPDLOG_DEBUG("Async read network data into buffer read_buffer[capacity: {}, offset: {}, limit: {}]",
+               read_buffer_.capacity(), write_index_, read_buffer_.capacity() - write_index_);
   socket_->async_read_some(
       asio::mutable_buffer(read_buffer_.data() + write_index_, read_buffer_.capacity() - write_index_),
       std::bind(&RemotingSession::onData, session, std::placeholders::_1, std::placeholders::_2));
@@ -187,9 +189,11 @@ std::vector<RemotingCommand> RemotingSession::fireDecode() {
       }
 
       std::size_t expanded = std::min(2 * frame_length + 8, MaxFrameLength);
-      SPDLOG_DEBUG("Expand read_buffer from {} to {} bytes", read_buffer_.capacity(), expanded);
+      SPDLOG_DEBUG("Expand read_buffer from {} to {} bytes. read_index={}, write_index={}", read_buffer_.capacity(),
+                   expanded, read_index_, write_index_);
       // We need to expand read_buffer_ to hold the whole frame.
       read_buffer_.resize(expanded);
+      break;
     }
   }
 
@@ -222,9 +226,12 @@ void RemotingSession::onData(std::weak_ptr<RemotingSession> session, const asio:
 
   auto&& commands = remoting_session->fireDecode();
   if (!commands.empty()) {
+    SPDLOG_DEBUG("Got {} remoting commands to process", commands.size());
     if (remoting_session->callback_) {
       remoting_session->callback_(commands);
     }
+  } else {
+    SPDLOG_DEBUG("{} bytes are only partial of a command. Read again", bytes_transferred);
   }
 
   remoting_session->fireRead();

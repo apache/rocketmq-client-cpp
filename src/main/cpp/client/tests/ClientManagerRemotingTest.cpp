@@ -30,7 +30,7 @@ public:
   }
 
 protected:
-  std::string group_{"TestGroup"};
+  std::string group_{"CG_TestGroup"};
   std::string topic_{"zhanhui-test"};
   std::string client_id_{"Test-0"};
   std::string name_server_host_{"11.163.70.118:9876"};
@@ -95,7 +95,7 @@ private:
   absl::CondVar& callback_cv_;
 };
 
-TEST_F(ClientManagerRemotingTest, testAsyncSend) {
+TEST_F(ClientManagerRemotingTest, testSend) {
   std::string target_host = "11.163.70.118:10911";
   Metadata metadata;
   SendMessageRequest request;
@@ -147,6 +147,50 @@ TEST_F(ClientManagerRemotingTest, testAssignment) {
     if (!callback_invoked) {
       callback_cv.WaitWithTimeout(&callback_mtx, absl::Seconds(3));
     }
+  }
+  EXPECT_TRUE(callback_invoked);
+}
+
+class TestReceiveMessageCallback : public ReceiveMessageCallback {
+public:
+  TestReceiveMessageCallback(bool& callback_invoked, absl::Mutex& callback_mtx, absl::CondVar& callback_cv)
+      : callback_invoked_(callback_invoked), callback_mtx_(callback_mtx), callback_cv_(callback_cv) {
+  }
+
+  void onCompletion(const std::error_code& ec, const ReceiveMessageResult& result) override {
+    absl::MutexLock lk(&callback_mtx_);
+    callback_invoked_ = true;
+    callback_cv_.SignalAll();
+  }
+
+private:
+  bool& callback_invoked_;
+  absl::Mutex& callback_mtx_;
+  absl::CondVar& callback_cv_;
+};
+
+TEST_F(ClientManagerRemotingTest, testPop) {
+  std::string target_host = "11.163.70.118:10911";
+  Metadata metadata;
+  ReceiveMessageRequest request;
+  request.mutable_partition()->set_id(-1);
+  request.mutable_group()->set_name(group_);
+  request.mutable_partition()->mutable_topic()->set_name(topic_);
+  request.set_client_id(client_id_);
+  request.mutable_invisible_duration()->set_seconds(10);
+  request.set_batch_size(32);
+
+  bool callback_invoked = false;
+  absl::Mutex callback_mtx;
+  absl::CondVar callback_cv;
+
+  auto receive_callback = std::make_shared<TestReceiveMessageCallback>(callback_invoked, callback_mtx, callback_cv);
+
+  client_manager_->receiveMessage(target_host, metadata, request, std::chrono::seconds(3), receive_callback);
+
+  {
+    absl::MutexLock lk(&callback_mtx);
+    callback_cv.WaitWithTimeout(&callback_mtx, absl::Seconds(10));
   }
   EXPECT_TRUE(callback_invoked);
 }
