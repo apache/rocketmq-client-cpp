@@ -22,6 +22,7 @@
 #include "apache/rocketmq/v1/definition.pb.h"
 #include "apache/rocketmq/v1/service.pb.h"
 
+#include "AckMessageRequestHeader.h"
 #include "BrokerData.h"
 #include "InvocationContext.h"
 #include "LoggerImpl.h"
@@ -755,6 +756,27 @@ void RpcClientRemoting::asyncReceive(const ReceiveMessageRequest& request,
 
 void RpcClientRemoting::asyncAck(const AckMessageRequest& request,
                                  InvocationContext<AckMessageResponse>* invocation_context) {
+  // Assign RequestCode
+  invocation_context->request_code = RequestCode::AckMessage;
+  invocation_context->request = absl::make_unique<AckMessageRequest>();
+  invocation_context->request->CopyFrom(request);
+
+  auto header = new AckMessageRequestHeader();
+  if (request.group().resource_namespace().empty()) {
+    header->consumerGroup(request.group().name());
+  } else {
+    header->consumerGroup(absl::StrJoin({request.group().resource_namespace(), request.group().name()}, "%"));
+  }
+
+  if (request.topic().resource_namespace().empty()) {
+    header->topic(request.topic().name());
+  } else {
+    header->topic(absl::StrJoin({request.topic().resource_namespace(), request.topic().name()}, "%"));
+  }
+
+  header->receiptHandle(request.receipt_handle());
+  auto&& command = RemotingCommand::createRequest(RequestCode::AckMessage, header);
+  write(std::move(command), invocation_context);
 }
 
 void RpcClientRemoting::asyncNack(const NackMessageRequest& request,
