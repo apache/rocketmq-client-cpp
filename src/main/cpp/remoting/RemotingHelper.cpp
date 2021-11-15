@@ -138,4 +138,44 @@ absl::flat_hash_map<std::string, std::string> RemotingHelper::stringToMessagePro
   return result;
 }
 
+std::string RemotingHelper::getStartOffsetInfoMapKey(absl::string_view topic, std::int32_t queue_id) {
+  std::string key;
+  if (absl::StartsWith(topic, RemotingConstants::RetryTopicPrefix)) {
+    key.push_back('1');
+  } else {
+    key.push_back('0');
+  }
+  key.push_back('@');
+  key.append(std::to_string(queue_id));
+  return key;
+}
+
+std::string RemotingHelper::buildExtraInfo(std::int64_t ck_queue_offset, std::int64_t pop_time,
+                                           std::int64_t invisible_time, std::int32_t revive_queue_id,
+                                           const std::string& topic, const std::string& broker_name,
+                                           std::int32_t queue_id) {
+  std::string t("0");
+  if (absl::StartsWith(topic, RemotingConstants::RetryTopicPrefix)) {
+    t.assign("1");
+  }
+
+  return absl::StrJoin({std::to_string(ck_queue_offset), std::to_string(pop_time), std::to_string(invisible_time),
+                        std::to_string(revive_queue_id), t, broker_name, std::to_string(queue_id)},
+                       RemotingConstants::KeySeparator);
+}
+
+std::string RemotingHelper::buildExtraInfo(std::int64_t ck_queue_offset, std::int64_t pop_time,
+                                           std::int64_t invisible_time, std::int32_t revive_queue_id,
+                                           const std::string& topic, const std::string& broker_name,
+                                           std::int32_t queue_id, std::int64_t message_queue_offset) {
+  std::string t("0");
+  if (absl::StartsWith(topic, RemotingConstants::RetryTopicPrefix)) {
+    t.assign("1");
+  }
+
+  return absl::StrJoin({std::to_string(ck_queue_offset), std::to_string(pop_time), std::to_string(invisible_time),
+                        std::to_string(revive_queue_id), t, broker_name, std::to_string(queue_id),
+                        std::to_string(message_queue_offset)},
+                       RemotingConstants::KeySeparator);
+}
 ROCKETMQ_NAMESPACE_END

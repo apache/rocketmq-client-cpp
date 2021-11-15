@@ -17,6 +17,7 @@ public:
   static const char* MessageId;
   static const char* DelayLevel;
   static const char* MessageGroup;
+  static const char* PopCk;
 
   static const std::uint32_t FlagCompression;
   static const std::uint32_t FlagTransactionPrepare;
@@ -28,6 +29,11 @@ public:
 
   static const std::int32_t MessageMagicCodeV1;
   static const std::int32_t MessageMagicCodeV2;
+
+  static const char* RetryTopicPrefix;
+  static const char* DlqTopicPrefix;
+
+
 };
 
 ROCKETMQ_NAMESPACE_END

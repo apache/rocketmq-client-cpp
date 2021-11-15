@@ -24,6 +24,8 @@ public:
 
   const std::string &orderCountInfo() const { return order_count_info_; }
 
+  std::int64_t reviveQueueId() const { return revive_queue_id_;};
+
 private:
   std::int64_t pop_time_{0};
   std::int64_t invisible_time_{0};

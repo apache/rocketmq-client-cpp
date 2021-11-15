@@ -56,6 +56,16 @@ public:
   }
 
   static absl::flat_hash_map<std::string, std::string> stringToMessageProperties(absl::string_view properties);
+
+  static std::string getStartOffsetInfoMapKey(absl::string_view topic, std::int32_t queue_id);
+
+  static std::string buildExtraInfo(std::int64_t ck_queue_offset, std::int64_t pop_time, std::int64_t invisible_time,
+                                    std::int32_t revive_queue_id, const std::string& topic,
+                                    const std::string& broker_name, std::int32_t queue_id);
+
+    static std::string buildExtraInfo(std::int64_t ck_queue_offset, std::int64_t pop_time, std::int64_t invisible_time,
+                                    std::int32_t revive_queue_id, const std::string& topic,
+                                    const std::string& broker_name, std::int32_t queue_id, std::int64_t message_queue_offset);
 };
 
 ROCKETMQ_NAMESPACE_END

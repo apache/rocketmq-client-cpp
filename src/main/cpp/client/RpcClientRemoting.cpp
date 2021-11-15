@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <bits/types/struct_timeval.h>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -13,6 +14,7 @@
 #include <memory>
 #include <string>
 #include <system_error>
+#include <vector>
 
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
@@ -347,16 +349,6 @@ void RpcClientRemoting::handlePopMessage(const RemotingCommand& command, BaseInv
   switch (response_code) {
     case ResponseCode::Success: {
       const auto header = dynamic_cast<const PopMessageResponseHeader*>(command.extHeader());
-
-      absl::flat_hash_map<std::string, std::int64_t>&& start_offset_info =
-          RemotingHelper::parseStartOffsetInfo(header->startOffsetInfo());
-
-      absl::flat_hash_map<std::string, std::vector<std::int64_t>>&& message_offset_info =
-          RemotingHelper::parseMsgOffsetInfo(header->messageOffsetInfo());
-
-      absl::flat_hash_map<std::string, std::int32_t>&& order_count_info =
-          RemotingHelper::parseOrderCountInfo(header->orderCountInfo());
-
       auto invisible_duration = context->response.mutable_invisible_duration();
       invisible_duration->set_seconds(header->invisibleTimeInMillis() / 1000);
       invisible_duration->set_nanos((header->invisibleTimeInMillis() % 1000) * 1e6);
@@ -368,12 +360,10 @@ void RpcClientRemoting::handlePopMessage(const RemotingCommand& command, BaseInv
       auto messages = context->response.mutable_messages();
 
       const std::uint8_t* base = command.body().data();
-      std::int32_t offset = 0;
+      std::uint32_t offset = 0;
       while (offset < command.body().size() - 1) {
         auto message = new rmq::Message();
-
         std::error_code ec;
-
         // Store size
         std::int32_t store_size = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
         offset += sizeof(std::int32_t);
@@ -511,6 +501,7 @@ void RpcClientRemoting::handlePopMessage(const RemotingCommand& command, BaseInv
 
         absl::flat_hash_map<std::string, std::string> properties_map =
             RemotingHelper::stringToMessageProperties(properties);
+        SPDLOG_DEBUG("Message properties: {}", absl::StrJoin(properties_map, ",", absl::PairFormatter("=")));
         for (const auto& entry : properties_map) {
           if (RemotingConstants::Keys == entry.first) {
             std::vector<std::string> keys = absl::StrSplit(entry.second, RemotingConstants::KeySeparator);
@@ -523,12 +514,17 @@ void RpcClientRemoting::handlePopMessage(const RemotingCommand& command, BaseInv
             continue;
           }
 
+          if (RemotingConstants::PopCk == entry.first) {
+            message->mutable_system_attribute()->set_receipt_handle(entry.second);
+            continue;
+          }
+
           // TODO: check all other system properties.
           message->mutable_user_attribute()->insert({entry.first, entry.second});
         }
-
         messages->AddAllocated(message);
       }
+      SPDLOG_DEBUG("Received {} messages from servers", messages->size());
 
       break;
     }
