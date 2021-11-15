@@ -1,4 +1,5 @@
 #include "PopMessageRequestHeader.h"
+#include "CommandCustomHeader.h"
 #include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -17,6 +18,7 @@ void PopMessageRequestHeader::encode(google::protobuf::Value& root) const {
   addEntry(fields, "expType", expression_type_);
   addEntry(fields, "exp", expression_);
   addEntry(fields, "order", order_);
+  addEntry(fields, "generateMessageHandle", generate_message_handle_);
 }
 
 ROCKETMQ_NAMESPACE_END
