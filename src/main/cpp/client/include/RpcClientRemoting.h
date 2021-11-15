@@ -120,6 +120,9 @@ private:
   void handleSendMessage(const RemotingCommand& command, BaseInvocationContext* context);
 
   void handlePopMessage(const RemotingCommand& command, BaseInvocationContext* context);
+
+  void handleAckMessage(const RemotingCommand& command, BaseInvocationContext* context);
+
 };
 
 ROCKETMQ_NAMESPACE_END

@@ -1,5 +1,6 @@
 #include <chrono>
 #include <memory>
+#include <system_error>
 
 #include "RpcClient.h"
 #include "absl/synchronization/mutex.h"
@@ -187,6 +188,37 @@ TEST_F(ClientManagerRemotingTest, testPop) {
   auto receive_callback = std::make_shared<TestReceiveMessageCallback>(callback_invoked, callback_mtx, callback_cv);
 
   client_manager_->receiveMessage(target_host, metadata, request, std::chrono::seconds(3), receive_callback);
+  {
+    absl::MutexLock lk(&callback_mtx);
+    callback_cv.WaitWithTimeout(&callback_mtx, absl::Seconds(10));
+  }
+  EXPECT_TRUE(callback_invoked);
+}
+
+TEST_F(ClientManagerRemotingTest, testAck) {
+  std::string target_host = "11.163.70.118:10911";
+  Metadata metadata;
+  AckMessageRequest request;
+  request.mutable_group()->set_name(group_);
+  request.mutable_topic()->set_name(topic_);
+  request.set_client_id(client_id_);
+  request.set_receipt_handle("1592 1636987395338 10000 1 1 broker-a 0 1618");
+
+  bool callback_invoked = false;
+  absl::Mutex callback_mtx;
+  absl::CondVar callback_cv;
+
+  auto callback = [&](const std::error_code& ec) {
+    if (ec) {
+      SPDLOG_WARN("Failed to ack message");
+    }
+
+    absl::MutexLock lk(&callback_mtx);
+    callback_invoked = true;
+    callback_cv.SignalAll();
+  };
+
+  client_manager_->ack(target_host, metadata, request, std::chrono::seconds(3), callback);
 
   {
     absl::MutexLock lk(&callback_mtx);

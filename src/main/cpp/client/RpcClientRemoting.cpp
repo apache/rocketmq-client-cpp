@@ -151,6 +151,7 @@ void RpcClientRemoting::processCommand(const RemotingCommand& command) {
     }
 
     case RequestCode::AckMessage: {
+      handleAckMessage(command, invocation_context);
       break;
     }
 
@@ -575,6 +576,39 @@ void RpcClientRemoting::handlePopMessage(const RemotingCommand& command, BaseInv
     }
   }
   context->onCompletion(true);
+}
+
+void RpcClientRemoting::handleAckMessage(const RemotingCommand& command, BaseInvocationContext* invocation_context) {
+  SPDLOG_DEBUG("Handle ack message response. Code: {}, remark: {}", command.code(), command.remark());
+  auto context = dynamic_cast<InvocationContext<AckMessageResponse>*>(invocation_context);
+  auto response_code = static_cast<ResponseCode>(command.code());
+  auto status = context->response.mutable_common()->mutable_status();
+  status->set_message(command.remark());
+
+  switch (response_code) {
+    case ResponseCode::Success: {
+      SPDLOG_DEBUG("Acked message, receipt-handle: {}", context->request->ShortDebugString());
+      break;
+    }
+
+    case ResponseCode::InternalSystemError: {
+      SPDLOG_WARN("Failed to ack message, cause: {}", command.remark());
+      status->set_code(static_cast<std::int32_t>(google::rpc::Code::INTERNAL));
+      break;
+    }
+
+    case ResponseCode::TooManyRequests: {
+      SPDLOG_WARN("Failed to ack message, cause: {}", command.remark());
+      status->set_code(static_cast<std::int32_t>(google::rpc::Code::RESOURCE_EXHAUSTED));
+      break;
+    }
+    default: {
+      SPDLOG_WARN("Failed to ack message, cause: {}", command.remark());
+      status->set_code(static_cast<std::int32_t>(google::rpc::Code::UNIMPLEMENTED));
+      break;
+    }
+  }
+  invocation_context->onCompletion(true);
 }
 
 void RpcClientRemoting::asyncSend(const SendMessageRequest& request,
