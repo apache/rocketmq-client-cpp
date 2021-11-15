@@ -154,13 +154,18 @@ TEST_F(ClientManagerRemotingTest, testAssignment) {
 
 class TestReceiveMessageCallback : public ReceiveMessageCallback {
 public:
-  TestReceiveMessageCallback(bool& callback_invoked, absl::Mutex& callback_mtx, absl::CondVar& callback_cv)
-      : callback_invoked_(callback_invoked), callback_mtx_(callback_mtx), callback_cv_(callback_cv) {
+  TestReceiveMessageCallback(bool& callback_invoked, absl::Mutex& callback_mtx, absl::CondVar& callback_cv,
+                             std::vector<std::string>& receipt_handles)
+      : callback_invoked_(callback_invoked), callback_mtx_(callback_mtx), callback_cv_(callback_cv),
+        receipt_handles_(receipt_handles) {
   }
 
   void onCompletion(const std::error_code& ec, const ReceiveMessageResult& result) override {
     absl::MutexLock lk(&callback_mtx_);
     callback_invoked_ = true;
+    for (const auto& message : result.messages) {
+      receipt_handles_.push_back(message.receiptHandle());
+    }
     callback_cv_.SignalAll();
   }
 
@@ -168,6 +173,7 @@ private:
   bool& callback_invoked_;
   absl::Mutex& callback_mtx_;
   absl::CondVar& callback_cv_;
+  std::vector<std::string>& receipt_handles_;
 };
 
 TEST_F(ClientManagerRemotingTest, testPop) {
@@ -185,7 +191,10 @@ TEST_F(ClientManagerRemotingTest, testPop) {
   absl::Mutex callback_mtx;
   absl::CondVar callback_cv;
 
-  auto receive_callback = std::make_shared<TestReceiveMessageCallback>(callback_invoked, callback_mtx, callback_cv);
+  std::vector<std::string> receipt_handles;
+
+  auto receive_callback =
+      std::make_shared<TestReceiveMessageCallback>(callback_invoked, callback_mtx, callback_cv, receipt_handles);
 
   client_manager_->receiveMessage(target_host, metadata, request, std::chrono::seconds(3), receive_callback);
   {
@@ -193,9 +202,39 @@ TEST_F(ClientManagerRemotingTest, testPop) {
     callback_cv.WaitWithTimeout(&callback_mtx, absl::Seconds(10));
   }
   EXPECT_TRUE(callback_invoked);
+
+  for (const auto& handle : receipt_handles) {
+    AckMessageRequest request;
+    request.mutable_group()->set_name(group_);
+    request.mutable_topic()->set_name(topic_);
+    request.set_client_id(client_id_);
+    request.set_receipt_handle(handle);
+
+    bool callback_invoked = false;
+    absl::Mutex callback_mtx;
+    absl::CondVar callback_cv;
+
+    auto callback = [&](const std::error_code& ec) {
+      if (ec) {
+        SPDLOG_WARN("Failed to ack message");
+      }
+
+      absl::MutexLock lk(&callback_mtx);
+      callback_invoked = true;
+      callback_cv.SignalAll();
+    };
+
+    client_manager_->ack(target_host, metadata, request, std::chrono::seconds(3), callback);
+
+    {
+      absl::MutexLock lk(&callback_mtx);
+      callback_cv.WaitWithTimeout(&callback_mtx, absl::Seconds(10));
+    }
+    EXPECT_TRUE(callback_invoked);
+  }
 }
 
-TEST_F(ClientManagerRemotingTest, testAck) {
+TEST_F(ClientManagerRemotingTest, DISABLED_testAck) {
   std::string target_host = "11.163.70.118:10911";
   Metadata metadata;
   AckMessageRequest request;

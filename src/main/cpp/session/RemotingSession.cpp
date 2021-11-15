@@ -226,7 +226,6 @@ void RemotingSession::onData(std::weak_ptr<RemotingSession> session, const asio:
 
   auto&& commands = remoting_session->fireDecode();
   if (!commands.empty()) {
-    SPDLOG_DEBUG("Got {} remoting commands to process", commands.size());
     if (remoting_session->callback_) {
       remoting_session->callback_(commands);
     }

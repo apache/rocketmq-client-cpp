@@ -587,7 +587,7 @@ void RpcClientRemoting::handleAckMessage(const RemotingCommand& command, BaseInv
 
   switch (response_code) {
     case ResponseCode::Success: {
-      SPDLOG_DEBUG("Acked message, receipt-handle: {}", context->request->ShortDebugString());
+      SPDLOG_DEBUG("Acked message. Associated Ack Request: {}", context->request->ShortDebugString());
       break;
     }
 
