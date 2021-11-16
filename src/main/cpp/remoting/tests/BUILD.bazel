@@ -99,3 +99,14 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "pull_message_request_header_test",
+    srcs = [
+        "PullMessageRequestHeaderTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/remoting",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

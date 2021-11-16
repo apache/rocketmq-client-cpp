@@ -1,30 +1,27 @@
-#include "RpcClientRemoting.h"
-
 #include <algorithm>
-#include <bits/types/struct_timeval.h>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <functional>
-#include <google/rpc/code.pb.h>
-#include <google/rpc/status.pb.h>
 #include <limits>
 #include <memory>
 #include <string>
 #include <system_error>
 #include <vector>
 
-#include "ConsumeFromWhere.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "apache/rocketmq/v1/definition.pb.h"
 #include "apache/rocketmq/v1/service.pb.h"
+#include "google/rpc/code.pb.h"
+#include "google/rpc/status.pb.h"
 
 #include "AckMessageRequestHeader.h"
 #include "BrokerData.h"
+#include "ConsumeFromWhere.h"
 #include "HeartbeatData.h"
 #include "InvocationContext.h"
 #include "LoggerImpl.h"
@@ -39,6 +36,7 @@
 #include "RemotingHelper.h"
 #include "ResponseCode.h"
 #include "RpcClient.h"
+#include "RpcClientRemoting.h"
 #include "SendMessageRequestHeader.h"
 #include "SendMessageResponseHeader.h"
 #include "rocketmq/MessageModel.h"
@@ -236,7 +234,7 @@ void RpcClientRemoting::handleQueryRoute(const RemotingCommand& command, BaseInv
 
         std::int32_t broker_id = addresses.begin()->first;
         for (const auto& address_entry : addresses) {
-          std::vector<std::string> segments = absl::StrSplit(address_entry.second, ":");
+          std::vector<std::string> segments = absl::StrSplit(address_entry.second, ':');
           if (2 == segments.size()) {
             auto address = new rmq::Address;
             address->set_host(segments[0]);
@@ -845,7 +843,7 @@ void RpcClientRemoting::asyncHeartbeat(const HeartbeatRequest& request,
         consumer_data.group_name_ = absl::StrJoin({group.resource_namespace(), group.name()}, "%");
       }
 
-      auto c_data = request.consumer_data();
+      const auto& c_data = request.consumer_data();
 
       switch (c_data.consume_model()) {
         case rmq::ConsumeModel::BROADCASTING: {
@@ -854,6 +852,9 @@ void RpcClientRemoting::asyncHeartbeat(const HeartbeatRequest& request,
         }
         case rmq::ConsumeModel::CLUSTERING: {
           consumer_data.message_model_ = MessageModel::CLUSTERING;
+          break;
+        }
+        default: {
           break;
         }
       }
@@ -885,6 +886,9 @@ void RpcClientRemoting::asyncHeartbeat(const HeartbeatRequest& request,
           consumer_data.consume_type_ = ConsumeType::ConsumeActively;
           break;
         }
+        default: {
+          break;
+        }
       }
 
       for (const auto& sub : c_data.subscriptions()) {
@@ -906,6 +910,9 @@ void RpcClientRemoting::asyncHeartbeat(const HeartbeatRequest& request,
               break;
             }
             case rmq::FilterType::SQL: {
+              break;
+            }
+            default: {
               break;
             }
           }
