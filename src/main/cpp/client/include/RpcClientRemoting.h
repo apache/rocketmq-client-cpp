@@ -123,6 +123,7 @@ private:
 
   void handleAckMessage(const RemotingCommand& command, BaseInvocationContext* context);
 
+  void handleHeartbeat(const RemotingCommand& command, BaseInvocationContext* context);
 };
 
 ROCKETMQ_NAMESPACE_END

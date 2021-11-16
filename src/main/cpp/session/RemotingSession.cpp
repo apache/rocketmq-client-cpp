@@ -215,7 +215,7 @@ void RemotingSession::onData(std::weak_ptr<RemotingSession> session, const asio:
   }
 
   if (ec) {
-    SPDLOG_WARN("Failed to read data from socket. Message: {}", ec.message());
+    SPDLOG_WARN("Failed to read data from socket. Cause: {}", ec.message());
     remoting_session->state_.store(SessionState::Closing, std::memory_order_relaxed);
     return;
   }

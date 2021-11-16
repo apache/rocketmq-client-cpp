@@ -22,10 +22,12 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-enum class RequestCode : std::int32_t {
+enum class RequestCode : std::int32_t
+{
   Absent = 0,
   SendMessage = 10,
   PullMessage = 11,
+  Heartbeat = 34,
   PopMessage = 50,
   AckMessage = 51,
   QueryRoute = 105,

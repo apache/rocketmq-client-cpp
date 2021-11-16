@@ -16,6 +16,7 @@
 #include <system_error>
 #include <vector>
 
+#include "ConsumeFromWhere.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
@@ -24,6 +25,7 @@
 
 #include "AckMessageRequestHeader.h"
 #include "BrokerData.h"
+#include "HeartbeatData.h"
 #include "InvocationContext.h"
 #include "LoggerImpl.h"
 #include "MessageVersion.h"
@@ -39,6 +41,7 @@
 #include "RpcClient.h"
 #include "SendMessageRequestHeader.h"
 #include "SendMessageResponseHeader.h"
+#include "rocketmq/MessageModel.h"
 #include "rocketmq/MessageType.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -156,6 +159,11 @@ void RpcClientRemoting::processCommand(const RemotingCommand& command) {
     }
 
     case RequestCode::PullMessage: {
+      break;
+    }
+
+    case RequestCode::Heartbeat: {
+      handleHeartbeat(command, invocation_context);
       break;
     }
 
@@ -820,8 +828,115 @@ void RpcClientRemoting::asyncNack(const NackMessageRequest& request,
 
 void RpcClientRemoting::asyncHeartbeat(const HeartbeatRequest& request,
                                        InvocationContext<HeartbeatResponse>* invocation_context) {
-  
-  invocation_context->onCompletion(true);
+  // Assign RequestCode
+  invocation_context->request_code = RequestCode::Heartbeat;
+  invocation_context->request = absl::make_unique<HeartbeatRequest>();
+  invocation_context->request->CopyFrom(request);
+
+  HeartbeatData heartbeat_data;
+  heartbeat_data.client_id_ = request.client_id();
+  switch (request.client_data_case()) {
+    case rmq::HeartbeatRequest::ClientDataCase::kConsumerData: {
+      ConsumerData consumer_data;
+      auto group = request.consumer_data().group();
+      if (group.resource_namespace().empty()) {
+        consumer_data.group_name_ = group.name();
+      } else {
+        consumer_data.group_name_ = absl::StrJoin({group.resource_namespace(), group.name()}, "%");
+      }
+
+      auto c_data = request.consumer_data();
+
+      switch (c_data.consume_model()) {
+        case rmq::ConsumeModel::BROADCASTING: {
+          consumer_data.message_model_ = MessageModel::BROADCASTING;
+          break;
+        }
+        case rmq::ConsumeModel::CLUSTERING: {
+          consumer_data.message_model_ = MessageModel::CLUSTERING;
+          break;
+        }
+      }
+
+      switch (c_data.consume_policy()) {
+        case rmq::ConsumePolicy::RESUME: {
+          consumer_data.consume_from_where_ = ConsumeFromWhere::ConsumeFromLastOffset;
+          break;
+        }
+        case rmq::ConsumePolicy::PLAYBACK: {
+          consumer_data.consume_from_where_ = ConsumeFromWhere::ConsumeFromFirstOffset;
+          break;
+        }
+        case rmq::ConsumePolicy::TARGET_TIMESTAMP: {
+          consumer_data.consume_from_where_ = ConsumeFromWhere::ConsumeFromTimestamp;
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+
+      switch (c_data.consume_type()) {
+        case rmq::ConsumeMessageType::PASSIVE: {
+          consumer_data.consume_type_ = ConsumeType::ConsumePassively;
+          break;
+        }
+        case rmq::ConsumeMessageType::ACTIVE: {
+          consumer_data.consume_type_ = ConsumeType::ConsumeActively;
+          break;
+        }
+      }
+
+      for (const auto& sub : c_data.subscriptions()) {
+        SubscriptionData sub_data;
+        if (sub.topic().resource_namespace().empty()) {
+          sub_data.topic_ = sub.topic().name();
+        } else {
+          sub_data.topic_ = absl::StrJoin({sub.topic().resource_namespace(), sub.topic().name()}, "%");
+        }
+
+        if (sub.has_expression()) {
+          switch (sub.expression().type()) {
+            case rmq::FilterType::TAG: {
+              if (!sub.expression().expression().empty()) {
+                sub_data.sub_string_ = sub.expression().expression();
+              } else {
+                sub_data.sub_string_ = "*";
+              }
+              break;
+            }
+            case rmq::FilterType::SQL: {
+              break;
+            }
+          }
+        } else {
+          sub_data.sub_string_ = "*";
+        }
+        consumer_data.subscription_data_set_.emplace(sub_data);
+      }
+
+      heartbeat_data.consumer_data_set_.emplace(consumer_data);
+      break;
+    }
+
+    case rmq::HeartbeatRequest::ClientDataCase::kProducerData: {
+      break;
+    }
+    default: {
+      break;
+    }
+  }
+
+  auto command = RemotingCommand::createRequest(RequestCode::Heartbeat, nullptr);
+
+  google::protobuf::Struct root;
+  heartbeat_data.encode(root);
+  std::string json;
+  google::protobuf::util::MessageToJsonString(root, &json);
+  command.mutableBody().resize(json.length());
+  memcpy(command.mutableBody().data(), json.data(), json.length());
+
+  write(std::move(command), invocation_context);
 }
 
 void RpcClientRemoting::asyncHealthCheck(const HealthCheckRequest& request,
@@ -864,6 +979,39 @@ grpc::Status RpcClientRemoting::notifyClientTermination(grpc::ClientContext* con
                                                         const NotifyClientTerminationRequest& request,
                                                         NotifyClientTerminationResponse* response) {
   return grpc::Status::OK;
+}
+
+void RpcClientRemoting::handleHeartbeat(const RemotingCommand& command, BaseInvocationContext* invocation_context) {
+  SPDLOG_DEBUG("Handle heartbeat response. Code: {}, remark: {}", command.code(), command.remark());
+  auto context = dynamic_cast<InvocationContext<HeartbeatResponse>*>(invocation_context);
+  auto response_code = static_cast<ResponseCode>(command.code());
+  auto status = context->response.mutable_common()->mutable_status();
+  status->set_message(command.remark());
+
+  switch (response_code) {
+    case ResponseCode::Success: {
+      SPDLOG_DEBUG("Heartbeat OK.");
+      break;
+    }
+
+    case ResponseCode::InternalSystemError: {
+      SPDLOG_WARN("Heartbeat failed. cause: {}", command.remark());
+      status->set_code(static_cast<std::int32_t>(google::rpc::Code::INTERNAL));
+      break;
+    }
+
+    case ResponseCode::TooManyRequests: {
+      SPDLOG_WARN("Heartbeat failed, cause: {}", command.remark());
+      status->set_code(static_cast<std::int32_t>(google::rpc::Code::RESOURCE_EXHAUSTED));
+      break;
+    }
+    default: {
+      SPDLOG_WARN("Heartbeat failed, cause: {}", command.remark());
+      status->set_code(static_cast<std::int32_t>(google::rpc::Code::UNIMPLEMENTED));
+      break;
+    }
+  }
+  invocation_context->onCompletion(true);
 }
 
 ROCKETMQ_NAMESPACE_END

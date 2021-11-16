@@ -1,3 +1,4 @@
+#include <apache/rocketmq/v1/definition.pb.h>
 #include <chrono>
 #include <memory>
 #include <system_error>
@@ -258,6 +259,43 @@ TEST_F(ClientManagerRemotingTest, DISABLED_testAck) {
   };
 
   client_manager_->ack(target_host, metadata, request, std::chrono::seconds(3), callback);
+
+  {
+    absl::MutexLock lk(&callback_mtx);
+    callback_cv.WaitWithTimeout(&callback_mtx, absl::Seconds(10));
+  }
+  EXPECT_TRUE(callback_invoked);
+}
+
+TEST_F(ClientManagerRemotingTest, testHeartbeat) {
+  std::string target_host = "11.163.70.118:10911";
+  Metadata metadata;
+  HeartbeatRequest request;
+  auto consumer_data = request.mutable_consumer_data();
+  consumer_data->mutable_group()->set_name(group_);
+  auto sub = consumer_data->mutable_subscriptions();
+
+  auto entry = new rmq::SubscriptionEntry;
+  entry->mutable_topic()->set_name(topic_);
+  entry->mutable_expression()->set_expression("*");
+  sub->AddAllocated(entry);
+  request.set_client_id(client_id_);
+
+  bool callback_invoked = false;
+  absl::Mutex callback_mtx;
+  absl::CondVar callback_cv;
+
+  auto callback = [&](const std::error_code& ec, const HeartbeatResponse& response) {
+    if (ec) {
+      SPDLOG_WARN("Heartbeat failed: {}", ec.message());
+    }
+
+    absl::MutexLock lk(&callback_mtx);
+    callback_invoked = true;
+    callback_cv.SignalAll();
+  };
+
+  client_manager_->heartbeat(target_host, metadata, request, std::chrono::seconds(3), callback);
 
   {
     absl::MutexLock lk(&callback_mtx);
