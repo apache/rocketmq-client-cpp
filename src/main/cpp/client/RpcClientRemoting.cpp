@@ -631,9 +631,11 @@ void RpcClientRemoting::handlePullMessage(const RemotingCommand& command, BaseIn
   status->set_message(command.remark());
 
   auto response_header = dynamic_cast<const PullMessageResponseHeader*>(command.extHeader());
-  context->response.set_next_offset(response_header->next_begin_offset_);
-  context->response.set_min_offset(response_header->min_offset_);
-  context->response.set_max_offset(response_header->max_offset_);
+  if (response_header) {
+    context->response.set_next_offset(response_header->next_begin_offset_);
+    context->response.set_min_offset(response_header->min_offset_);
+    context->response.set_max_offset(response_header->max_offset_);
+  }
 
   switch (response_code) {
     case ResponseCode::Success: {
@@ -659,6 +661,27 @@ void RpcClientRemoting::handlePullMessage(const RemotingCommand& command, BaseIn
     case ResponseCode::PullOffsetMoved: {
       status->set_code(static_cast<std::int32_t>(google::rpc::Code::OUT_OF_RANGE));
       SPDLOG_WARN("Offset-Moved. Server={}", context->remote_address);
+      break;
+    }
+
+    case ResponseCode::SubscriptionFormatError: {
+      status->set_code(static_cast<std::int32_t>(google::rpc::Code::INVALID_ARGUMENT));
+      SPDLOG_WARN("Server failed to parse subscription. Server={}, Remark={}", context->remote_address,
+                  command.remark());
+      break;
+    }
+
+    case ResponseCode::SubscriptionAbsent: {
+      status->set_code(static_cast<std::int32_t>(google::rpc::Code::FAILED_PRECONDITION));
+      SPDLOG_WARN("Server does not have subscription. Need prior heartbeat. Server={}, Remark={}",
+                  context->remote_address, command.remark());
+      break;
+    }
+
+    case ResponseCode::SubscriptionNotLatest: {
+      status->set_code(static_cast<std::int32_t>(google::rpc::Code::FAILED_PRECONDITION));
+      SPDLOG_WARN("Subscription version is not the latest. Server={}, Remark={}", context->remote_address,
+                  command.remark());
       break;
     }
 

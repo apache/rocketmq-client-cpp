@@ -38,6 +38,9 @@ enum class ResponseCode : std::uint16_t {
   PullNotFound = 19,
   PullRetryImmediately = 20,
   PullOffsetMoved = 21,
+  SubscriptionFormatError = 23,
+  SubscriptionAbsent = 24,
+  SubscriptionNotLatest = 25,
   TooManyReceiveRequests = 209,
   ReceiveMessageTimeout = 210,
 };
