@@ -64,3 +64,38 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "subscription_data_test",
+    srcs = [
+        "SubscriptionDataTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/remoting",
+        "@com_google_absl//absl/hash:hash_testing",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "consumer_data_test",
+    srcs = [
+        "ConsumerDataTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/remoting",
+        "@com_google_absl//absl/hash:hash_testing",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "heartbeat_data_test",
+    srcs = [
+        "HeartbeatDataTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/remoting",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

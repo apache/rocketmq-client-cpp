@@ -820,6 +820,7 @@ void RpcClientRemoting::asyncNack(const NackMessageRequest& request,
 
 void RpcClientRemoting::asyncHeartbeat(const HeartbeatRequest& request,
                                        InvocationContext<HeartbeatResponse>* invocation_context) {
+  
   invocation_context->onCompletion(true);
 }
 
