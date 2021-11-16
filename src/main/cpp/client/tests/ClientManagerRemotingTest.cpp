@@ -350,7 +350,7 @@ TEST_F(ClientManagerRemotingTest, testPull) {
   request.mutable_group()->set_name(group_);
   request.mutable_partition()->mutable_topic()->set_name(topic_);
   request.mutable_partition()->set_id(1);
-  request.set_offset(0);
+  request.set_offset(80);
   request.set_batch_size(32);
   request.mutable_filter_expression()->set_expression("*");
   request.mutable_filter_expression()->set_type(rmq::FilterType::TAG);

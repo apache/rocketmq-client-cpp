@@ -595,7 +595,6 @@ void RpcClientRemoting::decodeMessages(google::protobuf::RepeatedPtrField<rmq::M
 
     absl::flat_hash_map<std::string, std::string> properties_map =
         RemotingHelper::stringToMessageProperties(properties);
-    SPDLOG_DEBUG("Message properties: {}", absl::StrJoin(properties_map, ",", absl::PairFormatter("=")));
     for (const auto& entry : properties_map) {
       if (RemotingConstants::Keys == entry.first) {
         std::vector<std::string> keys = absl::StrSplit(entry.second, RemotingConstants::KeySeparator);
