@@ -87,6 +87,10 @@ bool DefaultMQProducer::isTracingEnabled() {
   return impl_->isTracingEnabled();
 }
 
+void DefaultMQProducer::setProtocolType(ProtocolType type) {
+  impl_->protocolType(type);
+}
+
 SendResult DefaultMQProducer::send(const MQMessage& message, bool filter_active_broker) {
   std::error_code ec;
   auto&& send_result = impl_->send(message, ec);

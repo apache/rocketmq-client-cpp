@@ -198,7 +198,8 @@ std::vector<RemotingCommand> RemotingSession::fireDecode() {
   }
 
   if (read_index_) {
-    read_buffer_.erase(read_buffer_.begin(), read_buffer_.begin() + read_index_);
+    char* base = read_buffer_.data();
+    memmove(base, base + read_index_, write_index_ - read_index_);
     write_index_ -= read_index_;
     read_index_ = 0;
   }

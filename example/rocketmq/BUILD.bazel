@@ -27,6 +27,16 @@ cc_binary(
 )
 
 cc_binary(
+    name = "example_producer_remoting",
+    srcs = [
+        "ExampleProducerRemoting.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/rocketmq:rocketmq_library",
+    ],
+)
+
+cc_binary(
     name = "example_fifo_producer",
     srcs = [
         "ExampleFifoProducer.cpp",

@@ -29,6 +29,7 @@
 #include "MQMessage.h"
 #include "MQSelector.h"
 #include "SendResult.h"
+#include "rocketmq/ProtocolType.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -144,6 +145,8 @@ public:
   void setCredentialsProvider(CredentialsProviderPtr credentials_provider);
 
   void setRegion(const std::string& region);
+
+  void setProtocolType(ProtocolType type);
 
   TransactionPtr prepare(MQMessage& message);
 
