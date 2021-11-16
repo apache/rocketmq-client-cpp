@@ -308,10 +308,48 @@ TEST_F(ClientManagerRemotingTest, testHeartbeat) {
 TEST_F(ClientManagerRemotingTest, testPull) {
   std::string target_host = "11.163.70.118:10911";
   Metadata metadata;
+
+  // Send prior heartbeat
+  {
+    HeartbeatRequest request;
+    auto consumer_data = request.mutable_consumer_data();
+    consumer_data->mutable_group()->set_name(group_);
+    auto sub = consumer_data->mutable_subscriptions();
+
+    auto entry = new rmq::SubscriptionEntry;
+    entry->mutable_topic()->set_name(topic_);
+    entry->mutable_expression()->set_expression("*");
+    sub->AddAllocated(entry);
+    request.set_client_id(client_id_);
+
+    bool callback_invoked = false;
+    absl::Mutex callback_mtx;
+    absl::CondVar callback_cv;
+
+    auto callback = [&](const std::error_code& ec, const HeartbeatResponse& response) {
+      if (ec) {
+        SPDLOG_WARN("Heartbeat failed: {}", ec.message());
+      }
+
+      absl::MutexLock lk(&callback_mtx);
+      callback_invoked = true;
+      callback_cv.SignalAll();
+    };
+
+    client_manager_->heartbeat(target_host, metadata, request, std::chrono::seconds(3), callback);
+
+    {
+      absl::MutexLock lk(&callback_mtx);
+      callback_cv.WaitWithTimeout(&callback_mtx, absl::Seconds(10));
+    }
+    EXPECT_TRUE(callback_invoked);
+  }
+
   PullMessageRequest request;
   request.set_client_id(client_id_);
   request.mutable_group()->set_name(group_);
   request.mutable_partition()->mutable_topic()->set_name(topic_);
+  request.mutable_partition()->set_id(1);
   request.set_offset(0);
   request.set_batch_size(32);
   request.mutable_filter_expression()->set_expression("*");
@@ -324,6 +362,10 @@ TEST_F(ClientManagerRemotingTest, testPull) {
   auto callback = [&](const std::error_code& ec, const ReceiveMessageResult& result) {
     if (ec) {
       SPDLOG_WARN("pullMessage failed: {}", ec.message());
+    }
+
+    for (const auto& item : result.messages) {
+      SPDLOG_DEBUG("Topic: {}, Tag: {}, Body: [{}]", item.getTopic(), item.getTags(), item.getBody());
     }
 
     absl::MutexLock lk(&callback_mtx);

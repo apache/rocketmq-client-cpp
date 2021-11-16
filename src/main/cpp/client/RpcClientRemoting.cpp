@@ -772,6 +772,8 @@ void RpcClientRemoting::asyncSend(const SendMessageRequest& request,
   }
 
   header->systemFlag(static_cast<std::int32_t>(system_flag));
+  SPDLOG_DEBUG("Combined message properties: {}", absl::StrJoin(properties, ",", absl::PairFormatter("=")));
+  header->properties(RemotingHelper::messagePropertiesToString(properties));
 
   RemotingCommand command = RemotingCommand::createRequest(RequestCode::SendMessage, header);
 
