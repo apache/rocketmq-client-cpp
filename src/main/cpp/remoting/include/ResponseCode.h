@@ -35,6 +35,9 @@ enum class ResponseCode : std::uint16_t {
   VersionNotSupported = 15,
   NoPermission = 16,
   TopicNotFound = 17,
+  PullNotFound = 19,
+  PullRetryImmediately = 20,
+  PullOffsetMoved = 21,
   TooManyReceiveRequests = 209,
   ReceiveMessageTimeout = 210,
 };

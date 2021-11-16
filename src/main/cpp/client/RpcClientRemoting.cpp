@@ -29,6 +29,8 @@
 #include "MixAll.h"
 #include "PopMessageRequestHeader.h"
 #include "PopMessageResponseHeader.h"
+#include "PullMessageRequestHeader.h"
+#include "PullMessageResponseHeader.h"
 #include "QueryRouteRequestHeader.h"
 #include "QueueData.h"
 #include "RemotingCommand.h"
@@ -157,6 +159,7 @@ void RpcClientRemoting::processCommand(const RemotingCommand& command) {
     }
 
     case RequestCode::PullMessage: {
+      handlePullMessage(command, invocation_context);
       break;
     }
 
@@ -369,198 +372,9 @@ void RpcClientRemoting::handlePopMessage(const RemotingCommand& command, BaseInv
       auto messages = context->response.mutable_messages();
 
       const std::uint8_t* base = command.body().data();
-      std::uint32_t offset = 0;
-      while (offset < command.body().size() - 1) {
-        SPDLOG_DEBUG("Decode message out of pop-response. offset: {}, command.body.size: {}", offset,
-                     command.body().size());
-        auto message = new rmq::Message();
-        std::error_code ec;
-        // Store size
-        std::int32_t store_size = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
-        offset += sizeof(std::int32_t);
-        if (ec) {
-          SPDLOG_WARN("Failed to decode store_size out of pop message response. Cause: {}", ec.message());
-        }
-        (void)store_size;
-
-        // Magic code
-        std::int32_t magic_code = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
-        offset += sizeof(std::int32_t);
-        if (ec) {
-          SPDLOG_WARN("Failed to decode magic code out of pop response. Cause: {}", ec.message());
-        }
-        SPDLOG_DEBUG("MagicCode: {}", magic_code);
-
-        MessageVersion message_version = messageVersionOf(magic_code);
-        if (MessageVersion::Unset == message_version) {
-          SPDLOG_WARN("Yuck, got an illegal magic code: {}", magic_code);
-          break;
-        }
-
-        // Body CRC
-        std::int32_t body_crc = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
-        offset += sizeof(std::int32_t);
-
-        // Queue ID
-        std::int32_t queue_id = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
-        offset += sizeof(std::int32_t);
-        message->mutable_system_attribute()->set_partition_id(queue_id);
-
-        std::int32_t flag = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
-        offset += sizeof(std::int32_t);
-        (void)flag;
-
-        std::int64_t queue_offset = RemotingHelper::readBigEndian<std::int64_t>(base + offset, ec);
-        offset += sizeof(std::int64_t);
-        message->mutable_system_attribute()->set_partition_offset(queue_offset);
-
-        std::int64_t commit_log_offset = RemotingHelper::readBigEndian<std::int64_t>(base + offset, ec);
-        offset += sizeof(std::int64_t);
-        (void)commit_log_offset;
-
-        std::int32_t system_flag = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
-        offset += sizeof(std::int32_t);
-        {
-          if ((RemotingConstants::FlagCompression & system_flag) == RemotingConstants::FlagCompression) {
-            message->mutable_system_attribute()->set_body_encoding(rmq::Encoding::GZIP);
-          }
-        }
-
-        std::int64_t born_timestamp = RemotingHelper::readBigEndian<std::int64_t>(base + offset, ec);
-        offset += sizeof(std::int64_t);
-        message->mutable_system_attribute()->mutable_born_timestamp()->set_seconds(born_timestamp / 1000);
-        message->mutable_system_attribute()->mutable_born_timestamp()->set_nanos((born_timestamp % 1000) * 1e6);
-
-        std::int32_t born_host_ip = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
-        offset += sizeof(std::int32_t);
-        (void)born_host_ip;
-
-        std::int32_t born_host_port = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
-        offset += sizeof(std::int32_t);
-        (void)born_host_port;
-
-        std::int64_t store_timestamp = RemotingHelper::readBigEndian<std::int64_t>(base + offset, ec);
-        offset += sizeof(std::int64_t);
-        message->mutable_system_attribute()->mutable_store_timestamp()->set_seconds(store_timestamp / 1000);
-        message->mutable_system_attribute()->mutable_store_timestamp()->set_nanos((store_timestamp % 1000) * 1e6);
-
-        std::int32_t store_host_ip = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
-        offset += sizeof(std::int32_t);
-        (void)store_host_ip;
-
-        std::int32_t store_host_port = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
-        offset += sizeof(std::int32_t);
-        (void)store_host_port;
-
-        std::int32_t reconsume_times = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
-        offset += sizeof(std::int32_t);
-        (void)reconsume_times;
-
-        std::int64_t prepare_transaction_offset = RemotingHelper::readBigEndian<std::int64_t>(base + offset, ec);
-        offset += sizeof(std::int64_t);
-        (void)prepare_transaction_offset;
-
-        std::int32_t body_length = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
-        offset += sizeof(std::int32_t);
-
-        if (body_length > 0) {
-          std::string body;
-          body.resize(body_length);
-          memcpy(const_cast<char*>(body.data()), base + offset, body_length);
-          offset += body_length;
-          message->set_body(body);
-
-          std::string calculated_crc;
-          MixAll::crc32(body, calculated_crc);
-          message->mutable_system_attribute()->mutable_body_digest()->set_type(rmq::DigestType::CRC32);
-          message->mutable_system_attribute()->mutable_body_digest()->set_checksum(calculated_crc);
-
-          if (body_crc) {
-            std::string crc = absl::StrFormat("%X", body_crc);
-            if (crc != calculated_crc) {
-              SPDLOG_WARN("Calculated CRC: {}, CRC from broker in big endian: {}, its hex: {}, body: {}, len(body): {}",
-                          calculated_crc, body_crc, crc, body, body.length());
-            }
-          }
-        }
-
-        std::size_t topic_length = 0;
-        switch (message_version) {
-          case MessageVersion::V1: {
-            // The following byte represents length of the topic
-            topic_length = *(base + offset);
-            offset += 1;
-            break;
-          }
-          case MessageVersion::V2: {
-            // The following two bytes represents length of the topic
-            topic_length = RemotingHelper::readBigEndian<std::int16_t>(base + offset, ec);
-            offset += sizeof(std::int16_t);
-            break;
-          }
-          default: {
-            SPDLOG_WARN(
-                "Fatal error while decode body of pop response into messages. Caused by unsupported magic code: {}",
-                magic_code);
-            break;
-          }
-        }
-
-        std::string topic;
-        topic.resize(topic_length);
-        memcpy(const_cast<char*>(topic.data()), base + offset, topic_length);
-        offset += topic_length;
-        SPDLOG_DEBUG("Topic: {}", topic);
-        if (absl::StrContains(topic, "%")) {
-          std::vector<std::string> segments = absl::StrSplit(topic, '%');
-          if (segments.size() == 2) {
-            message->mutable_topic()->set_resource_namespace(segments[0]);
-            message->mutable_topic()->set_name(segments[1]);
-          } else {
-            SPDLOG_WARN("[BUG] more cases to handle in terms of topic");
-          }
-        } else {
-          message->mutable_topic()->set_name(topic);
-        }
-
-        std::int16_t properties_length = RemotingHelper::readBigEndian<std::int16_t>(base + offset, ec);
-        offset += sizeof(std::int16_t);
-
-        std::string properties;
-        properties.resize(properties_length);
-        memcpy(const_cast<char*>(properties.data()), base + offset, properties_length);
-        offset += properties_length;
-
-        absl::flat_hash_map<std::string, std::string> properties_map =
-            RemotingHelper::stringToMessageProperties(properties);
-        SPDLOG_DEBUG("Message properties: {}", absl::StrJoin(properties_map, ",", absl::PairFormatter("=")));
-        for (const auto& entry : properties_map) {
-          if (RemotingConstants::Keys == entry.first) {
-            std::vector<std::string> keys = absl::StrSplit(entry.second, RemotingConstants::KeySeparator);
-            message->mutable_system_attribute()->mutable_keys()->Add(keys.begin(), keys.end());
-            continue;
-          }
-
-          if (RemotingConstants::Tags == entry.first) {
-            if (!entry.second.empty()) {
-              message->mutable_system_attribute()->set_tag(entry.second);
-            }
-            continue;
-          }
-
-          if (RemotingConstants::PopCk == entry.first) {
-            message->mutable_system_attribute()->set_receipt_handle(entry.second);
-            SPDLOG_DEBUG("Receipt-Handle: {}", entry.second);
-            continue;
-          }
-
-          // TODO: check all other system properties.
-          message->mutable_user_attribute()->insert({entry.first, entry.second});
-        }
-        messages->AddAllocated(message);
-      }
-      SPDLOG_DEBUG("Received {} messages from servers", messages->size());
-
+      std::size_t body_length = command.body().size();
+      decodeMessages(messages, base, body_length);
+      SPDLOG_DEBUG("Received {} messages from server {} by pop", messages->size(), context->remote_address);
       break;
     }
     case ResponseCode::InternalSystemError: {
@@ -615,6 +429,247 @@ void RpcClientRemoting::handleAckMessage(const RemotingCommand& command, BaseInv
     }
   }
   invocation_context->onCompletion(true);
+}
+
+void RpcClientRemoting::decodeMessages(google::protobuf::RepeatedPtrField<rmq::Message>* messages,
+                                       const std::uint8_t* base, std::size_t body_length) {
+  std::uint32_t offset = 0;
+  while (offset < body_length - 1) {
+    SPDLOG_DEBUG("Decode message out of pop-response. offset: {}, command.body.size: {}", offset, body_length);
+    auto message = new rmq::Message();
+    std::error_code ec;
+    // Store size
+    std::int32_t store_size = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+    offset += sizeof(std::int32_t);
+    if (ec) {
+      SPDLOG_WARN("Failed to decode store_size out of pop message response. Cause: {}", ec.message());
+    }
+    (void)store_size;
+
+    // Magic code
+    std::int32_t magic_code = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+    offset += sizeof(std::int32_t);
+    if (ec) {
+      SPDLOG_WARN("Failed to decode magic code out of pop response. Cause: {}", ec.message());
+    }
+    SPDLOG_DEBUG("MagicCode: {}", magic_code);
+
+    MessageVersion message_version = messageVersionOf(magic_code);
+    if (MessageVersion::Unset == message_version) {
+      SPDLOG_WARN("Yuck, got an illegal magic code: {}", magic_code);
+      break;
+    }
+
+    // Body CRC
+    std::int32_t body_crc = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+    offset += sizeof(std::int32_t);
+
+    // Queue ID
+    std::int32_t queue_id = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+    offset += sizeof(std::int32_t);
+    message->mutable_system_attribute()->set_partition_id(queue_id);
+
+    std::int32_t flag = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+    offset += sizeof(std::int32_t);
+    (void)flag;
+
+    std::int64_t queue_offset = RemotingHelper::readBigEndian<std::int64_t>(base + offset, ec);
+    offset += sizeof(std::int64_t);
+    message->mutable_system_attribute()->set_partition_offset(queue_offset);
+
+    std::int64_t commit_log_offset = RemotingHelper::readBigEndian<std::int64_t>(base + offset, ec);
+    offset += sizeof(std::int64_t);
+    (void)commit_log_offset;
+
+    std::int32_t system_flag = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+    offset += sizeof(std::int32_t);
+    {
+      if ((RemotingConstants::FlagCompression & system_flag) == RemotingConstants::FlagCompression) {
+        message->mutable_system_attribute()->set_body_encoding(rmq::Encoding::GZIP);
+      }
+    }
+
+    std::int64_t born_timestamp = RemotingHelper::readBigEndian<std::int64_t>(base + offset, ec);
+    offset += sizeof(std::int64_t);
+    message->mutable_system_attribute()->mutable_born_timestamp()->set_seconds(born_timestamp / 1000);
+    message->mutable_system_attribute()->mutable_born_timestamp()->set_nanos((born_timestamp % 1000) * 1e6);
+
+    std::int32_t born_host_ip = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+    offset += sizeof(std::int32_t);
+    (void)born_host_ip;
+
+    std::int32_t born_host_port = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+    offset += sizeof(std::int32_t);
+    (void)born_host_port;
+
+    std::int64_t store_timestamp = RemotingHelper::readBigEndian<std::int64_t>(base + offset, ec);
+    offset += sizeof(std::int64_t);
+    message->mutable_system_attribute()->mutable_store_timestamp()->set_seconds(store_timestamp / 1000);
+    message->mutable_system_attribute()->mutable_store_timestamp()->set_nanos((store_timestamp % 1000) * 1e6);
+
+    std::int32_t store_host_ip = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+    offset += sizeof(std::int32_t);
+    (void)store_host_ip;
+
+    std::int32_t store_host_port = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+    offset += sizeof(std::int32_t);
+    (void)store_host_port;
+
+    std::int32_t reconsume_times = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+    offset += sizeof(std::int32_t);
+    (void)reconsume_times;
+
+    std::int64_t prepare_transaction_offset = RemotingHelper::readBigEndian<std::int64_t>(base + offset, ec);
+    offset += sizeof(std::int64_t);
+    (void)prepare_transaction_offset;
+
+    std::int32_t body_length = RemotingHelper::readBigEndian<std::int32_t>(base + offset, ec);
+    offset += sizeof(std::int32_t);
+
+    if (body_length > 0) {
+      std::string body;
+      body.resize(body_length);
+      memcpy(const_cast<char*>(body.data()), base + offset, body_length);
+      offset += body_length;
+      message->set_body(body);
+
+      std::string calculated_crc;
+      MixAll::crc32(body, calculated_crc);
+      message->mutable_system_attribute()->mutable_body_digest()->set_type(rmq::DigestType::CRC32);
+      message->mutable_system_attribute()->mutable_body_digest()->set_checksum(calculated_crc);
+
+      if (body_crc) {
+        std::string crc = absl::StrFormat("%X", body_crc);
+        if (crc != calculated_crc) {
+          SPDLOG_WARN("Calculated CRC: {}, CRC from broker in big endian: {}, its hex: {}, body: {}, len(body): {}",
+                      calculated_crc, body_crc, crc, body, body.length());
+        }
+      }
+    }
+
+    std::size_t topic_length = 0;
+    switch (message_version) {
+      case MessageVersion::V1: {
+        // The following byte represents length of the topic
+        topic_length = *(base + offset);
+        offset += 1;
+        break;
+      }
+      case MessageVersion::V2: {
+        // The following two bytes represents length of the topic
+        topic_length = RemotingHelper::readBigEndian<std::int16_t>(base + offset, ec);
+        offset += sizeof(std::int16_t);
+        break;
+      }
+      default: {
+        SPDLOG_WARN("Fatal error while decode body of pop response into messages. Caused by unsupported magic code: {}",
+                    magic_code);
+        break;
+      }
+    }
+
+    std::string topic;
+    topic.resize(topic_length);
+    memcpy(const_cast<char*>(topic.data()), base + offset, topic_length);
+    offset += topic_length;
+    SPDLOG_DEBUG("Topic: {}", topic);
+    if (absl::StrContains(topic, "%")) {
+      std::vector<std::string> segments = absl::StrSplit(topic, '%');
+      if (segments.size() == 2) {
+        message->mutable_topic()->set_resource_namespace(segments[0]);
+        message->mutable_topic()->set_name(segments[1]);
+      } else {
+        SPDLOG_WARN("[BUG] more cases to handle in terms of topic");
+      }
+    } else {
+      message->mutable_topic()->set_name(topic);
+    }
+
+    std::int16_t properties_length = RemotingHelper::readBigEndian<std::int16_t>(base + offset, ec);
+    offset += sizeof(std::int16_t);
+
+    std::string properties;
+    properties.resize(properties_length);
+    memcpy(const_cast<char*>(properties.data()), base + offset, properties_length);
+    offset += properties_length;
+
+    absl::flat_hash_map<std::string, std::string> properties_map =
+        RemotingHelper::stringToMessageProperties(properties);
+    SPDLOG_DEBUG("Message properties: {}", absl::StrJoin(properties_map, ",", absl::PairFormatter("=")));
+    for (const auto& entry : properties_map) {
+      if (RemotingConstants::Keys == entry.first) {
+        std::vector<std::string> keys = absl::StrSplit(entry.second, RemotingConstants::KeySeparator);
+        message->mutable_system_attribute()->mutable_keys()->Add(keys.begin(), keys.end());
+        continue;
+      }
+
+      if (RemotingConstants::Tags == entry.first) {
+        if (!entry.second.empty()) {
+          message->mutable_system_attribute()->set_tag(entry.second);
+        }
+        continue;
+      }
+
+      if (RemotingConstants::PopCk == entry.first) {
+        message->mutable_system_attribute()->set_receipt_handle(entry.second);
+        SPDLOG_DEBUG("Receipt-Handle: {}", entry.second);
+        continue;
+      }
+
+      // TODO: check all other system properties.
+      message->mutable_user_attribute()->insert({entry.first, entry.second});
+    }
+    messages->AddAllocated(message);
+  }
+}
+
+void RpcClientRemoting::handlePullMessage(const RemotingCommand& command, BaseInvocationContext* invocation_context) {
+  SPDLOG_DEBUG("Handle pull message response. Code: {}, remark: {}", command.code(), command.remark());
+  auto context = dynamic_cast<InvocationContext<PullMessageResponse>*>(invocation_context);
+  auto response_code = static_cast<ResponseCode>(command.code());
+  auto status = context->response.mutable_common()->mutable_status();
+  status->set_message(command.remark());
+
+  auto response_header = dynamic_cast<const PullMessageResponseHeader*>(command.extHeader());
+  context->response.set_next_offset(response_header->next_begin_offset_);
+  context->response.set_min_offset(response_header->min_offset_);
+  context->response.set_max_offset(response_header->max_offset_);
+
+  switch (response_code) {
+    case ResponseCode::Success: {
+      auto messages = context->response.mutable_messages();
+      const std::uint8_t* base = command.body().data();
+      std::size_t body_length = command.body().size();
+      decodeMessages(messages, base, body_length);
+      SPDLOG_DEBUG("Received {} messages from server: {} by pull", messages->size(), context->remote_address);
+      break;
+    }
+    case ResponseCode::PullNotFound: {
+      status->set_code(static_cast<std::int32_t>(google::rpc::Code::DEADLINE_EXCEEDED));
+      SPDLOG_DEBUG("No new messages from {}", context->remote_address);
+      break;
+    }
+
+    case ResponseCode::PullRetryImmediately: {
+      status->set_code(static_cast<std::int32_t>(google::rpc::Code::DEADLINE_EXCEEDED));
+      SPDLOG_DEBUG("Server asks to retry immediately. Server={}", context->remote_address);
+      break;
+    }
+
+    case ResponseCode::PullOffsetMoved: {
+      status->set_code(static_cast<std::int32_t>(google::rpc::Code::OUT_OF_RANGE));
+      SPDLOG_WARN("Offset-Moved. Server={}", context->remote_address);
+      break;
+    }
+
+    default: {
+      status->set_code(static_cast<std::int32_t>(google::rpc::Code::UNKNOWN));
+      SPDLOG_WARN("Unknown response code from {}, code={}, remark={}", context->remote_address, command.code(),
+                  command.remark());
+      break;
+    }
+  }
+  context->onCompletion(true);
 }
 
 void RpcClientRemoting::asyncSend(const SendMessageRequest& request,
@@ -957,6 +1012,49 @@ void RpcClientRemoting::asyncEndTransaction(const EndTransactionRequest& request
 
 void RpcClientRemoting::asyncPollCommand(const PollCommandRequest& request,
                                          InvocationContext<PollCommandResponse>* invocation_context) {
+}
+
+void RpcClientRemoting::asyncPull(const PullMessageRequest& request,
+                                  InvocationContext<PullMessageResponse>* invocation_context) {
+  // Assign RequestCode
+  invocation_context->request_code = RequestCode::PullMessage;
+  invocation_context->request = absl::make_unique<PullMessageRequest>();
+  invocation_context->request->CopyFrom(request);
+
+  auto header = new PullMessageRequestHeader();
+  const auto& group = request.group();
+  if (group.resource_namespace().empty()) {
+    header->consumer_group_ = group.name();
+  } else {
+    header->consumer_group_ = absl::StrJoin({group.resource_namespace(), group.name()}, "%");
+  }
+
+  const auto& topic = request.partition().topic();
+  if (topic.resource_namespace().empty()) {
+    header->topic_ = topic.name();
+  } else {
+    header->topic_ = absl::StrJoin({topic.resource_namespace(), topic.name()}, "%");
+  }
+
+  header->queue_id_ = request.partition().id();
+
+  header->queue_offset_ = request.offset();
+
+  header->max_msg_number_ = request.batch_size();
+
+  if (request.has_filter_expression()) {
+    if (!request.filter_expression().expression().empty()) {
+      header->subscription_ = request.filter_expression().expression();
+    } else {
+      header->subscription_ = "*";
+    }
+  } else {
+    header->subscription_ = "*";
+  }
+  // TODO: sub-version
+
+  auto command = RemotingCommand::createRequest(RequestCode::PullMessage, header);
+  write(std::move(command), invocation_context);
 }
 
 void RpcClientRemoting::asyncQueryOffset(const QueryOffsetRequest& request,

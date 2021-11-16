@@ -1,5 +1,6 @@
 #pragma once
 
+#include <apache/rocketmq/v1/definition.pb.h>
 #include <cstdint>
 #include <memory>
 
@@ -63,8 +64,7 @@ public:
                         InvocationContext<QueryOffsetResponse>* invocation_context) override;
 
   void asyncPull(const PullMessageRequest& request,
-                 InvocationContext<PullMessageResponse>* invocation_context) override {
-  }
+                 InvocationContext<PullMessageResponse>* invocation_context) override;
 
   void asyncForwardMessageToDeadLetterQueue(
       const ForwardMessageToDeadLetterQueueRequest& request,
@@ -124,6 +124,11 @@ private:
   void handleAckMessage(const RemotingCommand& command, BaseInvocationContext* context);
 
   void handleHeartbeat(const RemotingCommand& command, BaseInvocationContext* context);
+
+  void handlePullMessage(const RemotingCommand& command, BaseInvocationContext* context);
+
+  void decodeMessages(google::protobuf::RepeatedPtrField<rmq::Message>* messages, const std::uint8_t* base,
+                      std::size_t limit);
 };
 
 ROCKETMQ_NAMESPACE_END
