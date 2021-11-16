@@ -1,7 +1,6 @@
 #include "ClientConfigImpl.h"
 
 #include "absl/hash/hash_testing.h"
-#include "rocketmq/TransportType.h"
 #include "gtest/gtest.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -9,19 +8,19 @@ ROCKETMQ_NAMESPACE_BEGIN
 TEST(ClientConfigImplTest, testHashable) {
   ClientConfigImpl config10("abc");
   config10.resourceNamespace("ns://test");
-  config10.transportType(TransportType::Grpc);
+  config10.protocolType(ProtocolType::Grpc);
 
   ClientConfigImpl config11("abc");
   config11.resourceNamespace("ns://test");
-  config11.transportType(TransportType::Remoting);
+  config11.protocolType(ProtocolType::Remoting);
 
   ClientConfigImpl config20("def");
   config20.resourceNamespace("ns://test-2");
-  config20.transportType(TransportType::Grpc);
+  config20.protocolType(ProtocolType::Grpc);
 
   ClientConfigImpl config21("def");
   config21.resourceNamespace("ns://test-2");
-  config21.transportType(TransportType::Remoting);
+  config21.protocolType(ProtocolType::Remoting);
 
   EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly({
       config10,

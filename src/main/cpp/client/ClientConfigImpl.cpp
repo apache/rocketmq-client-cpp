@@ -95,7 +95,7 @@ absl::Duration ClientConfigImpl::getIoTimeout() const {
 }
 
 bool operator==(const ClientConfigImpl& lhs, const ClientConfigImpl& rhs) {
-  return lhs.resource_namespace_ == rhs.resource_namespace_ && lhs.transport_type_ == rhs.transport_type_;
+  return lhs.resource_namespace_ == rhs.resource_namespace_ && lhs.protocol_type_ == rhs.protocol_type_;
 }
 
 ROCKETMQ_NAMESPACE_END

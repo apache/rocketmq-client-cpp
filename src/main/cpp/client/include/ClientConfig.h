@@ -21,7 +21,7 @@
 #include "absl/time/time.h"
 
 #include "rocketmq/CredentialsProvider.h"
-#include "rocketmq/TransportType.h"
+#include "rocketmq/ProtocolType.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -49,7 +49,7 @@ public:
 
   virtual bool isTracingEnabled() const = 0;
 
-  virtual TransportType transportType() const = 0;
+  virtual ProtocolType protocolType() const = 0;
 };
 
 ROCKETMQ_NAMESPACE_END

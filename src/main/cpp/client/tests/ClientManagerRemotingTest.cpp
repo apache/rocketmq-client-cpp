@@ -1,17 +1,17 @@
-#include <apache/rocketmq/v1/definition.pb.h>
+
 #include <chrono>
 #include <memory>
 #include <system_error>
 
-#include "ReceiveMessageResult.h"
 #include "RpcClient.h"
 #include "absl/synchronization/mutex.h"
+#include "apache/rocketmq/v1/definition.pb.h"
 #include "gtest/gtest.h"
 
 #include "ClientManagerImpl.h"
+#include "ReceiveMessageResult.h"
 #include "rocketmq/Logger.h"
 #include "rocketmq/RocketMQ.h"
-#include "rocketmq/TransportType.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -23,7 +23,7 @@ public:
     logger.setConsoleLevel(Level::Debug);
     logger.init();
 
-    client_config_.transportType(TransportType::Remoting);
+    client_config_.protocolType(ProtocolType::Remoting);
     client_manager_ = std::make_shared<ClientManagerImpl>(client_config_);
     client_manager_->start();
   }

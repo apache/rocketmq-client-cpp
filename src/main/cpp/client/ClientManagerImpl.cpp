@@ -44,7 +44,6 @@
 #include "UtilAll.h"
 #include "rocketmq/ErrorCode.h"
 #include "rocketmq/MQMessageExt.h"
-#include "rocketmq/TransportType.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -54,12 +53,12 @@ ClientManagerImpl::ClientManagerImpl(ClientConfigImpl client_config)
       callback_thread_pool_(absl::make_unique<ThreadPoolImpl>(std::thread::hardware_concurrency())),
       latency_histogram_("Message-Latency", 11) {
 
-  switch (client_config_.transportType()) {
-    case TransportType::Grpc: {
+  switch (client_config_.protocolType()) {
+    case ProtocolType::Grpc: {
       completion_queue_ = std::make_shared<CompletionQueue>();
       break;
     }
-    case TransportType::Remoting: {
+    case ProtocolType::Remoting: {
       io_context_ = std::make_shared<asio::io_context>();
       executor_work_guard_ =
           absl::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_->get_executor());
@@ -174,12 +173,12 @@ void ClientManagerImpl::shutdown() {
   state_.store(STOPPING, std::memory_order_relaxed);
 
   // Stop the loop-thread
-  switch (client_config_.transportType()) {
-    case TransportType::Grpc: {
+  switch (client_config_.protocolType()) {
+    case ProtocolType::Grpc: {
       completion_queue_->Shutdown();
       break;
     }
-    case TransportType::Remoting: {
+    case ProtocolType::Remoting: {
       io_context_->stop();
       break;
     }
@@ -440,8 +439,8 @@ void ClientManagerImpl::doHeartbeat() {
 void ClientManagerImpl::loop() {
   State current = state_.load(std::memory_order_relaxed);
   while (State::STARTED == current || State::STARTING == current) {
-    switch (client_config_.transportType()) {
-      case TransportType::Grpc: {
+    switch (client_config_.protocolType()) {
+      case ProtocolType::Grpc: {
         bool ok = false;
         void* opaque_invocation_context;
         while (completion_queue_->Next(&opaque_invocation_context, &ok)) {
@@ -456,7 +455,7 @@ void ClientManagerImpl::loop() {
         SPDLOG_INFO("CompletionQueue is fully drained and shut down");
         break;
       }
-      case TransportType::Remoting: {
+      case ProtocolType::Remoting: {
         SPDLOG_DEBUG("asio::io_context starts to run");
         io_context_->run();
         SPDLOG_DEBUG("asio::io_context run completed");
@@ -582,8 +581,8 @@ RpcClientSharedPtr ClientManagerImpl::getRpcClient(const std::string& target_hos
       } else if (!search->second->ok()) {
         SPDLOG_INFO("Existing session to {} is not OK. Re-create one", target_host);
       }
-      switch (client_config_.transportType()) {
-        case TransportType::Grpc: {
+      switch (client_config_.protocolType()) {
+        case ProtocolType::Grpc: {
           SPDLOG_INFO("Creating gRPC session to {}", target_host);
           std::vector<std::unique_ptr<grpc::experimental::ClientInterceptorFactoryInterface>> interceptor_factories;
           interceptor_factories.emplace_back(absl::make_unique<LogInterceptorFactory>());
@@ -592,7 +591,7 @@ RpcClientSharedPtr ClientManagerImpl::getRpcClient(const std::string& target_hos
           client = std::make_shared<RpcClientImpl>(completion_queue_, channel, need_heartbeat);
           break;
         }
-        case TransportType::Remoting: {
+        case ProtocolType::Remoting: {
           SPDLOG_INFO("Creating remoting connection to {}", target_host);
           client = std::make_shared<RpcClientRemoting>(io_context_, target_host);
           client->needHeartbeat(need_heartbeat);
@@ -657,7 +656,7 @@ void ClientManagerImpl::resolveRoute(const std::string& target_host, const Metad
     return;
   }
 
-  if (client_config_.transportType() == TransportType::Remoting) {
+  if (client_config_.protocolType() == ProtocolType::Remoting) {
     absl::MutexLock lk(&name_server_cache_mtx_);
     if (!name_server_cache_.contains(target_host)) {
       name_server_cache_.insert(target_host);
@@ -778,7 +777,7 @@ void ClientManagerImpl::queryAssignment(
 
   std::string target_host = target;
 
-  if (TransportType::Remoting == client_config_.transportType()) {
+  if (ProtocolType::Remoting == client_config_.protocolType()) {
     absl::MutexLock lk(&name_server_cache_mtx_);
     if (name_server_cache_.empty()) {
       // Should NEVER reach here.

@@ -26,7 +26,6 @@
 
 #include "ClientConfig.h"
 #include "rocketmq/MQMessageQueue.h"
-#include "rocketmq/TransportType.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -86,9 +85,9 @@ public:
   void tenantId(std::string tenant_id) { tenant_id_ = std::move(tenant_id); }
   const std::string &tenantId() const override { return tenant_id_; }
 
-  TransportType transportType() const override { return transport_type_; }
+  ProtocolType protocolType() const override { return protocol_type_; }
 
-  void transportType(TransportType type) { transport_type_ = type; }
+  void protocolType(ProtocolType type) { protocol_type_ = type; }
 
   static const char *CLIENT_VERSION;
 
@@ -137,7 +136,7 @@ protected:
 
   bool enable_tracing_{true};
 
-  TransportType transport_type_{TransportType::Grpc};
+  ProtocolType protocol_type_{ProtocolType::Grpc};
 
   static std::string steadyName();
 };
@@ -147,7 +146,7 @@ bool operator==(const ClientConfigImpl &lhs, const ClientConfigImpl &rhs);
 template <typename H>
 H AbslHashValue(H h, const ClientConfigImpl &client_config) {
   return H::combine(std::move(h), client_config.resource_namespace_,
-                    client_config.transport_type_);
+                    client_config.protocol_type_);
 }
 
 ROCKETMQ_NAMESPACE_END

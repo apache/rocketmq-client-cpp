@@ -6,7 +6,7 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-enum class TransportType : std::uint8_t
+enum class ProtocolType : std::uint8_t
 {
   Grpc = 0,
   Remoting = 1,
