@@ -14,15 +14,20 @@ ROCKETMQ_NAMESPACE_BEGIN
 class RemotingHelper {
 public:
   template <typename Map>
-  static std::string messagePropertiesToString(const Map& properties) {
+  static std::string messagePropertiesToString(const Map &properties) {
     std::string result;
-    for (const auto& entry : properties) {
-      if (!result.empty()) {
-        result.append(1, RemotingConstants::PropertySeparator);
+    for (const auto &entry : properties) {
+      if (result.empty()) {
         result.insert(result.end(), entry.first.begin(), entry.first.end());
         result.append(1, RemotingConstants::NameValueSeparator);
         result.insert(result.end(), entry.second.begin(), entry.second.end());
+        continue;
       }
+
+      result.append(1, RemotingConstants::PropertySeparator);
+      result.insert(result.end(), entry.first.begin(), entry.first.end());
+      result.append(1, RemotingConstants::NameValueSeparator);
+      result.insert(result.end(), entry.second.begin(), entry.second.end());
     }
     return result;
   }
@@ -33,16 +38,18 @@ public:
    * @param start_offset_info
    * @return absl::flat_hash_map<std::string, std::int64_t>
    */
-  static absl::flat_hash_map<std::string, std::int64_t> parseStartOffsetInfo(const std::string& start_offset_info);
+  static absl::flat_hash_map<std::string, std::int64_t>
+  parseStartOffsetInfo(const std::string &start_offset_info);
 
   static absl::flat_hash_map<std::string, std::vector<std::int64_t>>
-  parseMsgOffsetInfo(const std::string& message_offset_info);
+  parseMsgOffsetInfo(const std::string &message_offset_info);
 
-  static absl::flat_hash_map<std::string, std::int32_t> parseOrderCountInfo(const std::string& order_count_info);
+  static absl::flat_hash_map<std::string, std::int32_t>
+  parseOrderCountInfo(const std::string &order_count_info);
 
   template <typename T>
-  static T readBigEndian(const std::uint8_t* ptr, std::error_code& ec) {
-    const T* p = reinterpret_cast<const T*>(ptr);
+  static T readBigEndian(const std::uint8_t *ptr, std::error_code &ec) {
+    const T *p = reinterpret_cast<const T *>(ptr);
     if (sizeof(T) == 2) {
       return absl::gntohs(*p);
     } else if (sizeof(T) == 4) {
@@ -55,17 +62,23 @@ public:
     }
   }
 
-  static absl::flat_hash_map<std::string, std::string> stringToMessageProperties(absl::string_view properties);
+  static absl::flat_hash_map<std::string, std::string>
+  stringToMessageProperties(absl::string_view properties);
 
-  static std::string getStartOffsetInfoMapKey(absl::string_view topic, std::int32_t queue_id);
+  static std::string getStartOffsetInfoMapKey(absl::string_view topic,
+                                              std::int32_t queue_id);
 
-  static std::string buildExtraInfo(std::int64_t ck_queue_offset, std::int64_t pop_time, std::int64_t invisible_time,
-                                    std::int32_t revive_queue_id, const std::string& topic,
-                                    const std::string& broker_name, std::int32_t queue_id);
+  static std::string
+  buildExtraInfo(std::int64_t ck_queue_offset, std::int64_t pop_time,
+                 std::int64_t invisible_time, std::int32_t revive_queue_id,
+                 const std::string &topic, const std::string &broker_name,
+                 std::int32_t queue_id);
 
-    static std::string buildExtraInfo(std::int64_t ck_queue_offset, std::int64_t pop_time, std::int64_t invisible_time,
-                                    std::int32_t revive_queue_id, const std::string& topic,
-                                    const std::string& broker_name, std::int32_t queue_id, std::int64_t message_queue_offset);
+  static std::string
+  buildExtraInfo(std::int64_t ck_queue_offset, std::int64_t pop_time,
+                 std::int64_t invisible_time, std::int32_t revive_queue_id,
+                 const std::string &topic, const std::string &broker_name,
+                 std::int32_t queue_id, std::int64_t message_queue_offset);
 };
 
 ROCKETMQ_NAMESPACE_END
