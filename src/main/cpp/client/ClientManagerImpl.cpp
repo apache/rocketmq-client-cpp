@@ -1421,6 +1421,124 @@ void ClientManagerImpl::queryOffset(const std::string& target_host, const Metada
   client->asyncQueryOffset(request, invocation_context);
 }
 
+void ClientManagerImpl::queryConsumerOffset(
+    const std::string& target_host, const Metadata& metadata, const QueryConsumerOffsetRequest& request,
+    std::chrono::milliseconds timeout,
+    const std::function<void(const std::error_code&, const QueryConsumerOffsetResponse&)>& cb) {
+
+  auto client = getRpcClient(target_host, true);
+
+  auto invocation_context = new InvocationContext<QueryConsumerOffsetResponse>();
+  invocation_context->remote_address = target_host;
+  invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
+
+  for (const auto& entry : metadata) {
+    invocation_context->context.AddMetadata(entry.first, entry.second);
+  }
+
+  auto callback = [cb](const InvocationContext<QueryConsumerOffsetResponse>* context) {
+    std::error_code ec;
+    if (!context->status.ok()) {
+      SPDLOG_WARN("Failed to write QueryConsumerOffset request to wire. gRPC-code: {}, gRPC-message: {}, host={}",
+                  context->status.error_code(), context->status.error_message(), context->remote_address);
+      ec = ErrorCode::RequestTimeout;
+      cb(ec, context->response);
+      return;
+    }
+
+    const auto& common = context->response.common();
+    switch (common.status().code()) {
+      case google::rpc::Code::OK: {
+        SPDLOG_DEBUG("Received QueryConsumerOffset response. host: {}", context->remote_address);
+        cb(ec, context->response);
+        break;
+      }
+      case google::rpc::Code::UNAUTHENTICATED: {
+        SPDLOG_WARN("Unauthenticated: {}, host={}", common.status().message(), context->remote_address);
+        ec = ErrorCode::Unauthorized;
+        cb(ec, context->response);
+      } break;
+      case google::rpc::Code::PERMISSION_DENIED: {
+        SPDLOG_WARN("PermissionDenied: {}, host={}", common.status().message(), context->remote_address);
+        ec = ErrorCode::Forbidden;
+        cb(ec, context->response);
+      } break;
+      case google::rpc::Code::INTERNAL: {
+        SPDLOG_WARN("InternalServerError: {}, host={}", common.status().message(), context->remote_address);
+        ec = ErrorCode::InternalServerError;
+        cb(ec, context->response);
+      } break;
+      default: {
+        SPDLOG_WARN("NotImplemented: please upgrade SDK to the latest release. host={}", context->remote_address);
+        ec = ErrorCode::NotImplemented;
+        cb(ec, context->response);
+      }
+    }
+  };
+  invocation_context->callback = callback;
+
+  client->asyncQueryConsumerOffset(request, invocation_context);
+}
+
+void ClientManagerImpl::updateConsumerOffset(
+    const std::string& target_host, const Metadata& metadata, const UpdateConsumerOffsetRequest& request,
+    std::chrono::milliseconds timeout,
+    const std::function<void(const std::error_code&, const UpdateConsumerOffsetResponse&)>& cb) {
+
+  auto client = getRpcClient(target_host, true);
+
+  auto invocation_context = new InvocationContext<UpdateConsumerOffsetResponse>();
+  invocation_context->remote_address = target_host;
+  invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
+
+  for (const auto& entry : metadata) {
+    invocation_context->context.AddMetadata(entry.first, entry.second);
+  }
+
+  auto callback = [cb](const InvocationContext<UpdateConsumerOffsetResponse>* context) {
+    std::error_code ec;
+    if (!context->status.ok()) {
+      SPDLOG_WARN("Failed to write UpdateConsumerOffset request to wire. gRPC-code: {}, gRPC-message: {}, host={}",
+                  context->status.error_code(), context->status.error_message(), context->remote_address);
+      ec = ErrorCode::RequestTimeout;
+      cb(ec, context->response);
+      return;
+    }
+
+    const auto& common = context->response.common();
+    switch (common.status().code()) {
+      case google::rpc::Code::OK: {
+        SPDLOG_DEBUG("Received UpdateConsumerOffset response. host: {}", context->remote_address);
+        cb(ec, context->response);
+        break;
+      }
+      case google::rpc::Code::UNAUTHENTICATED: {
+        SPDLOG_WARN("Unauthenticated: {}, host={}", common.status().message(), context->remote_address);
+        ec = ErrorCode::Unauthorized;
+        cb(ec, context->response);
+      } break;
+      case google::rpc::Code::PERMISSION_DENIED: {
+        SPDLOG_WARN("PermissionDenied: {}, host={}", common.status().message(), context->remote_address);
+        ec = ErrorCode::Forbidden;
+        cb(ec, context->response);
+      } break;
+      case google::rpc::Code::INTERNAL: {
+        SPDLOG_WARN("InternalServerError: {}, host={}", common.status().message(), context->remote_address);
+        ec = ErrorCode::InternalServerError;
+        cb(ec, context->response);
+      } break;
+      default: {
+        SPDLOG_WARN("NotImplemented: please upgrade SDK to the latest release. host={}", context->remote_address);
+        ec = ErrorCode::NotImplemented;
+        cb(ec, context->response);
+      }
+    }
+  };
+
+  invocation_context->callback = callback;
+  client->asyncUpdateConsumerOffset(request, invocation_context);
+}
+
 void ClientManagerImpl::pullMessage(
     const std::string& target_host, const Metadata& metadata, const PullMessageRequest& request,
     std::chrono::milliseconds timeout,

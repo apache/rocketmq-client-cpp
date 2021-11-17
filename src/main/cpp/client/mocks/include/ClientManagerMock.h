@@ -76,6 +76,16 @@ public:
                (const std::function<void(const std::error_code&, const QueryOffsetResponse&)>&)),
               (override));
 
+  MOCK_METHOD(void, queryConsumerOffset,
+              (const std::string&, const Metadata&, const QueryConsumerOffsetRequest&, std::chrono::milliseconds,
+               (const std::function<void(const std::error_code&, const QueryConsumerOffsetResponse&)>&)),
+              (override));
+
+  MOCK_METHOD(void, updateConsumerOffset,
+              (const std::string&, const Metadata&, const UpdateConsumerOffsetRequest&, std::chrono::milliseconds,
+               (const std::function<void(const std::error_code&, const UpdateConsumerOffsetResponse&)>&)),
+              (override));
+
   MOCK_METHOD(void, healthCheck,
               (const std::string&, const Metadata&, const HealthCheckRequest&, std::chrono::milliseconds,
                (const std::function<void(const std::error_code&, const InvocationContext<HealthCheckResponse>*)>&)),

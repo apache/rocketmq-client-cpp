@@ -80,6 +80,16 @@ public:
                            const std::function<void(const std::error_code&, const QueryOffsetResponse&)>& cb) = 0;
 
   virtual void
+  queryConsumerOffset(const std::string& target_host, const Metadata& metadata,
+                      const QueryConsumerOffsetRequest& request, std::chrono::milliseconds timeout,
+                      const std::function<void(const std::error_code&, const QueryConsumerOffsetResponse&)>& cb) = 0;
+
+  virtual void
+  updateConsumerOffset(const std::string& target_host, const Metadata& metadata,
+                       const UpdateConsumerOffsetRequest& request, std::chrono::milliseconds timeout,
+                       const std::function<void(const std::error_code&, const UpdateConsumerOffsetResponse&)>& cb) = 0;
+
+  virtual void
   healthCheck(const std::string& target_host, const Metadata& metadata, const HealthCheckRequest& request,
               std::chrono::milliseconds timeout,
               const std::function<void(const std::error_code&, const InvocationContext<HealthCheckResponse>*)>& cb) = 0;

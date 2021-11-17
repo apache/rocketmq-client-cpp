@@ -197,6 +197,16 @@ public:
                    std::chrono::milliseconds timeout,
                    const std::function<void(const std::error_code&, const QueryOffsetResponse&)>& cb) override;
 
+  void queryConsumerOffset(
+      const std::string& target_host, const Metadata& metadata, const QueryConsumerOffsetRequest& request,
+      std::chrono::milliseconds timeout,
+      const std::function<void(const std::error_code&, const QueryConsumerOffsetResponse&)>& cb) override;
+
+  void updateConsumerOffset(
+      const std::string& target_host, const Metadata& metadata, const UpdateConsumerOffsetRequest& request,
+      std::chrono::milliseconds timeout,
+      const std::function<void(const std::error_code&, const UpdateConsumerOffsetResponse&)>& cb) override;
+
   void pullMessage(const std::string& target_host, const Metadata& metadata, const PullMessageRequest& request,
                    std::chrono::milliseconds timeout,
                    const std::function<void(const std::error_code&, const ReceiveMessageResult&)>& cb) override;

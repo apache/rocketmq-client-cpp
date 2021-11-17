@@ -382,4 +382,69 @@ TEST_F(ClientManagerRemotingTest, testPull) {
   EXPECT_TRUE(callback_invoked);
 }
 
+TEST_F(ClientManagerRemotingTest, testQueryConsumerOffset) {
+  std::string target_host = "11.163.70.118:10911";
+  Metadata metadata;
+  QueryConsumerOffsetRequest request;
+  request.mutable_consumer_group()->set_name(group_);
+  request.mutable_partition()->set_id(1);
+  request.mutable_partition()->mutable_topic()->set_name(topic_);
+
+  bool callback_invoked = false;
+  absl::Mutex callback_mtx;
+  absl::CondVar callback_cv;
+
+  auto callback = [&](const std::error_code& ec, const QueryConsumerOffsetResponse& response) {
+    if (ec) {
+      SPDLOG_WARN("QueryConsumerOffset failed: {}", ec.message());
+    }
+
+    SPDLOG_DEBUG("Offset: {}", response.offset());
+
+    absl::MutexLock lk(&callback_mtx);
+    callback_invoked = true;
+    callback_cv.SignalAll();
+  };
+
+  client_manager_->queryConsumerOffset(target_host, metadata, request, std::chrono::seconds(3), callback);
+
+  {
+    absl::MutexLock lk(&callback_mtx);
+    callback_cv.WaitWithTimeout(&callback_mtx, absl::Seconds(10));
+  }
+  EXPECT_TRUE(callback_invoked);
+}
+
+TEST_F(ClientManagerRemotingTest, testUpdateConsumerOffset) {
+  std::string target_host = "11.163.70.118:10911";
+  Metadata metadata;
+  UpdateConsumerOffsetRequest request;
+  request.mutable_consumer_group()->set_name(group_);
+  request.mutable_partition()->set_id(1);
+  request.mutable_partition()->mutable_topic()->set_name(topic_);
+  request.set_offset(10);
+
+  bool callback_invoked = false;
+  absl::Mutex callback_mtx;
+  absl::CondVar callback_cv;
+
+  auto callback = [&](const std::error_code& ec, const UpdateConsumerOffsetResponse& response) {
+    if (ec) {
+      SPDLOG_WARN("UpdateConsumerOffset failed: {}", ec.message());
+    }
+
+    absl::MutexLock lk(&callback_mtx);
+    callback_invoked = true;
+    callback_cv.SignalAll();
+  };
+
+  client_manager_->updateConsumerOffset(target_host, metadata, request, std::chrono::seconds(3), callback);
+
+  {
+    absl::MutexLock lk(&callback_mtx);
+    callback_cv.WaitWithTimeout(&callback_mtx, absl::Seconds(10));
+  }
+  EXPECT_TRUE(callback_invoked);
+}
+
 ROCKETMQ_NAMESPACE_END
