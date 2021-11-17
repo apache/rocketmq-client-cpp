@@ -370,6 +370,34 @@ message NotifyClientTerminationResponse {
   reserved 2 to 64;
 }
 
+message QueryConsumerOffsetRequest {
+  Resource consumer_group = 1;
+  Partition partition = 2;
+
+  reserved 3 to 64;
+}
+
+message QueryConsumerOffsetResponse {
+  ResponseCommon common = 1;
+  int64 offset = 2;
+
+  reserved 3 to 64;
+}
+
+message UpdateConsumerOffsetRequest {
+  Resource consumer_group = 1;
+  Partition partition = 2;
+  int64 offset = 3;
+
+  reserved 4 to 64;
+}
+
+message UpdateConsumerOffsetResponse {
+  ResponseCommon common = 1;
+
+  reserved 2 to 64;
+}
+
 // For all the RPCs in MessagingService, the following error handling policies
 // apply:
 //
@@ -527,5 +555,11 @@ service MessagingService {
 
   // Notify the server that the client is terminated.
   rpc NotifyClientTermination(NotifyClientTerminationRequest) returns (NotifyClientTerminationResponse) {
+  }
+
+  rpc QueryConsumerOffset(QueryConsumerOffsetRequest) returns (QueryConsumerOffsetResponse) {
+  }
+
+  rpc UpdateConsumerOffset(UpdateConsumerOffsetRequest) returns (UpdateConsumerOffsetResponse) {
   }
 }

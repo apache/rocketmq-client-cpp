@@ -70,6 +70,10 @@ using ForwardMessageToDeadLetterQueueRequest = rmq::ForwardMessageToDeadLetterQu
 using ForwardMessageToDeadLetterQueueResponse = rmq::ForwardMessageToDeadLetterQueueResponse;
 using NotifyClientTerminationRequest = rmq::NotifyClientTerminationRequest;
 using NotifyClientTerminationResponse = rmq::NotifyClientTerminationResponse;
+using QueryConsumerOffsetRequest = rmq::QueryConsumerOffsetRequest;
+using QueryConsumerOffsetResponse = rmq::QueryConsumerOffsetResponse;
+using UpdateConsumerOffsetRequest = rmq::UpdateConsumerOffsetRequest;
+using UpdateConsumerOffsetResponse = rmq::UpdateConsumerOffsetResponse;
 
 /**
  * @brief A RpcClient represents a session between client and a remote broker.
@@ -122,6 +126,12 @@ public:
   virtual void asyncForwardMessageToDeadLetterQueue(
       const ForwardMessageToDeadLetterQueueRequest& request,
       InvocationContext<ForwardMessageToDeadLetterQueueResponse>* invocation_context) = 0;
+
+  virtual void asyncQueryConsumerOffset(const QueryConsumerOffsetRequest& request,
+                                        InvocationContext<QueryConsumerOffsetResponse>* invocation_context) = 0;
+
+  virtual void asyncUpdateConsumerOffset(const UpdateConsumerOffsetRequest& request,
+                                         InvocationContext<UpdateConsumerOffsetResponse>* invocation_context) = 0;
 
   virtual grpc::Status reportThreadStackTrace(grpc::ClientContext* context,
                                               const ReportThreadStackTraceRequest& request,

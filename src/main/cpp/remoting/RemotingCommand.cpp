@@ -22,6 +22,7 @@
 
 #include "LanguageCode.h"
 #include "PopMessageResponseHeader.h"
+#include "QueryConsumerOffsetResponseHeader.h"
 #include "SendMessageResponseHeader.h"
 #include "absl/base/internal/endian.h"
 #include "absl/memory/memory.h"
@@ -157,6 +158,22 @@ void RemotingCommand::decodeHeader(RequestCode code, const google::protobuf::Val
       break;
     }
     case RequestCode::PullMessage: {
+      break;
+    }
+    case RequestCode::QueryConsumerOffset: {
+      this->ext_fields_ = QueryConsumerOffsetResponseHeader::decode(ext);
+      break;
+    }
+    case RequestCode::UpdateConsumerOffset: {
+      break;
+    }
+    case RequestCode::Heartbeat: {
+      break;
+    }
+    case RequestCode::Absent: {
+      break;
+    }
+    case RequestCode::GetConsumerListByGroup: {
       break;
     }
   }

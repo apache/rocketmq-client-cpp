@@ -30,6 +30,7 @@ enum class RequestCode : std::int32_t
   QueryConsumerOffset = 14,
   UpdateConsumerOffset = 15,
   Heartbeat = 34,
+  GetConsumerListByGroup = 38,
   PopMessage = 50,
   AckMessage = 51,
   QueryRoute = 105,

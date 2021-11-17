@@ -70,6 +70,12 @@ public:
       const ForwardMessageToDeadLetterQueueRequest& request,
       InvocationContext<ForwardMessageToDeadLetterQueueResponse>* invocation_context) override;
 
+  void asyncQueryConsumerOffset(const QueryConsumerOffsetRequest& request,
+                                InvocationContext<QueryConsumerOffsetResponse>* invocation_context) override;
+
+  void asyncUpdateConsumerOffset(const UpdateConsumerOffsetRequest& request,
+                                 InvocationContext<UpdateConsumerOffsetResponse>* invocation_context) override;
+
   grpc::Status reportThreadStackTrace(grpc::ClientContext* context, const ReportThreadStackTraceRequest& request,
                                       ReportThreadStackTraceResponse* response) override;
 
@@ -126,6 +132,10 @@ private:
   void handleHeartbeat(const RemotingCommand& command, BaseInvocationContext* context);
 
   void handlePullMessage(const RemotingCommand& command, BaseInvocationContext* context);
+
+  void handleQueryConsumerOffset(const RemotingCommand& command, BaseInvocationContext* context);
+
+  void handleUpdateConsumerOffset(const RemotingCommand& command, BaseInvocationContext* context);
 
   void decodeMessages(google::protobuf::RepeatedPtrField<rmq::Message>* messages, const std::uint8_t* base,
                       std::size_t limit);

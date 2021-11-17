@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 #include <system_error>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_format.h"
@@ -22,6 +23,7 @@
 #include "AckMessageRequestHeader.h"
 #include "BrokerData.h"
 #include "ConsumeFromWhere.h"
+#include "GetConsumerListByGroupRequestHeader.h"
 #include "HeartbeatData.h"
 #include "InvocationContext.h"
 #include "LoggerImpl.h"
@@ -31,6 +33,8 @@
 #include "PopMessageResponseHeader.h"
 #include "PullMessageRequestHeader.h"
 #include "PullMessageResponseHeader.h"
+#include "QueryConsumerOffsetRequestHeader.h"
+#include "QueryConsumerOffsetResponseHeader.h"
 #include "QueryRouteRequestHeader.h"
 #include "QueueData.h"
 #include "RemotingCommand.h"
@@ -41,6 +45,7 @@
 #include "RpcClientRemoting.h"
 #include "SendMessageRequestHeader.h"
 #include "SendMessageResponseHeader.h"
+#include "UpdateConsumerOffsetRequestHeader.h"
 #include "rocketmq/MessageModel.h"
 #include "rocketmq/MessageType.h"
 
@@ -165,6 +170,16 @@ void RpcClientRemoting::processCommand(const RemotingCommand& command) {
 
     case RequestCode::Heartbeat: {
       handleHeartbeat(command, invocation_context);
+      break;
+    }
+
+    case RequestCode::QueryConsumerOffset: {
+      handleQueryConsumerOffset(command, invocation_context);
+      break;
+    }
+
+    case RequestCode::UpdateConsumerOffset: {
+      handleUpdateConsumerOffset(command, invocation_context);
       break;
     }
 
@@ -1092,6 +1107,65 @@ void RpcClientRemoting::asyncForwardMessageToDeadLetterQueue(
   invocation_context->onCompletion(true);
 }
 
+void RpcClientRemoting::asyncQueryConsumerOffset(const QueryConsumerOffsetRequest& request,
+                                                 InvocationContext<QueryConsumerOffsetResponse>* invocation_context) {
+  // Assign RequestCode
+  invocation_context->request_code = RequestCode::QueryConsumerOffset;
+  invocation_context->request = absl::make_unique<QueryConsumerOffsetRequest>();
+  invocation_context->request->CopyFrom(request);
+
+  auto header = new QueryConsumerOffsetRequestHeader();
+
+  const auto& group = request.consumer_group();
+  if (group.resource_namespace().empty()) {
+    header->consumer_group_ = group.name();
+  } else {
+    header->consumer_group_ = absl::StrJoin({group.resource_namespace(), group.name()}, "%");
+  }
+
+  const auto& topic = request.partition().topic();
+  if (topic.resource_namespace().empty()) {
+    header->topic_ = topic.name();
+  } else {
+    header->topic_ = absl::StrJoin({topic.resource_namespace(), topic.name()}, "%");
+  }
+
+  header->queue_id_ = request.partition().id();
+
+  auto&& command = RemotingCommand::createRequest(RequestCode::QueryConsumerOffset, header);
+  write(std::move(command), invocation_context);
+}
+
+void RpcClientRemoting::asyncUpdateConsumerOffset(const UpdateConsumerOffsetRequest& request,
+                                                  InvocationContext<UpdateConsumerOffsetResponse>* invocation_context) {
+  // Assign RequestCode
+  invocation_context->request_code = RequestCode::UpdateConsumerOffset;
+  invocation_context->request = absl::make_unique<UpdateConsumerOffsetRequest>();
+  invocation_context->request->CopyFrom(request);
+
+  auto header = new UpdateConsumerOffsetRequestHeader();
+
+  const auto& group = request.consumer_group();
+  if (group.resource_namespace().empty()) {
+    header->consumer_group_ = group.name();
+  } else {
+    header->consumer_group_ = absl::StrJoin({group.resource_namespace(), group.name()}, "%");
+  }
+
+  const auto& topic = request.partition().topic();
+  if (topic.resource_namespace().empty()) {
+    header->topic_ = topic.name();
+  } else {
+    header->topic_ = absl::StrJoin({topic.resource_namespace(), topic.name()}, "%");
+  }
+
+  header->queue_id_ = request.partition().id();
+  header->commit_offset_ = request.offset();
+
+  auto&& command = RemotingCommand::createRequest(RequestCode::UpdateConsumerOffset, header);
+  write(std::move(command), invocation_context);
+}
+
 grpc::Status RpcClientRemoting::reportThreadStackTrace(grpc::ClientContext* context,
                                                        const ReportThreadStackTraceRequest& request,
                                                        ReportThreadStackTraceResponse* response) {
@@ -1141,6 +1215,64 @@ void RpcClientRemoting::handleHeartbeat(const RemotingCommand& command, BaseInvo
     }
   }
   invocation_context->onCompletion(true);
+}
+
+void RpcClientRemoting::handleQueryConsumerOffset(const RemotingCommand& command,
+                                                  BaseInvocationContext* invocation_context) {
+  SPDLOG_DEBUG("Handle heartbeat response. Code: {}, remark: {}", command.code(), command.remark());
+  auto context = dynamic_cast<InvocationContext<QueryConsumerOffsetResponse>*>(invocation_context);
+  auto response_code = static_cast<ResponseCode>(command.code());
+  auto status = context->response.mutable_common()->mutable_status();
+  status->set_message(command.remark());
+
+  switch (response_code) {
+    case ResponseCode::Success: {
+      const auto* header = dynamic_cast<const QueryConsumerOffsetResponseHeader*>(command.extHeader());
+      context->response.set_offset(header->offset_);
+      break;
+    }
+
+    case ResponseCode::InternalSystemError: {
+      SPDLOG_WARN("Internal: {}, server: {}", command.remark(), context->remote_address);
+      status->set_code(static_cast<std::int32_t>(google::rpc::Code::INTERNAL));
+      break;
+    }
+
+    default: {
+      SPDLOG_WARN("Unkown Error: {}, server: {}", command.remark(), context->remote_address);
+      status->set_code(static_cast<std::int32_t>(google::rpc::Code::UNIMPLEMENTED));
+      break;
+    }
+  }
+  context->onCompletion(true);
+}
+
+void RpcClientRemoting::handleUpdateConsumerOffset(const RemotingCommand& command,
+                                                   BaseInvocationContext* invocation_context) {
+  SPDLOG_DEBUG("Handle heartbeat response. Code: {}, remark: {}", command.code(), command.remark());
+  auto context = dynamic_cast<InvocationContext<UpdateConsumerOffsetResponse>*>(invocation_context);
+  auto response_code = static_cast<ResponseCode>(command.code());
+  auto status = context->response.mutable_common()->mutable_status();
+  status->set_message(command.remark());
+
+  switch (response_code) {
+    case ResponseCode::Success: {
+      break;
+    }
+    case ResponseCode::InternalSystemError: {
+      SPDLOG_WARN("Failed to updateConsumerOffset. Server={}, Remark: {}", context->remote_address, command.remark());
+      status->set_code(static_cast<std::int32_t>(google::rpc::Code::INTERNAL));
+      break;
+    }
+    default: {
+      SPDLOG_WARN("Unexpected code: {}, remark: {}, server: {}", command.code(), command.remark(),
+                  context->remote_address);
+      status->set_code(static_cast<std::int32_t>(google::rpc::Code::UNIMPLEMENTED));
+      break;
+    }
+  }
+
+  context->onCompletion(true);
 }
 
 ROCKETMQ_NAMESPACE_END

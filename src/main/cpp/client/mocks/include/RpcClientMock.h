@@ -63,6 +63,12 @@ public:
 
   MOCK_METHOD(void, asyncPollCommand, (const PollCommandRequest&, InvocationContext<PollCommandResponse>*), (override));
 
+  MOCK_METHOD(void, asyncQueryConsumerOffset,
+              (const QueryConsumerOffsetRequest&, InvocationContext<QueryConsumerOffsetResponse>*), (override));
+
+  MOCK_METHOD(void, asyncUpdateConsumerOffset,
+              (const UpdateConsumerOffsetRequest&, InvocationContext<UpdateConsumerOffsetResponse>*), (override));
+
   MOCK_METHOD(grpc::Status, reportThreadStackTrace,
               (grpc::ClientContext*, const ReportThreadStackTraceRequest&, ReportThreadStackTraceResponse*),
               (override));

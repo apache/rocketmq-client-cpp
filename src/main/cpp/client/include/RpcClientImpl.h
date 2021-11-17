@@ -18,6 +18,7 @@
 
 #include <memory>
 
+#include "InvocationContext.h"
 #include "absl/container/flat_hash_map.h"
 
 #include "RpcClient.h"
@@ -78,6 +79,14 @@ public:
   void asyncForwardMessageToDeadLetterQueue(
       const ForwardMessageToDeadLetterQueueRequest& request,
       InvocationContext<ForwardMessageToDeadLetterQueueResponse>* invocation_context) override;
+
+  void asyncQueryConsumerOffset(const QueryConsumerOffsetRequest& request,
+                                InvocationContext<QueryConsumerOffsetResponse>* invocation_context) override {
+  }
+
+  void asyncUpdateConsumerOffset(const UpdateConsumerOffsetRequest& request,
+                                 InvocationContext<UpdateConsumerOffsetResponse>* invocation_context) override {
+  }
 
   grpc::Status reportThreadStackTrace(grpc::ClientContext* context, const ReportThreadStackTraceRequest& request,
                                       ReportThreadStackTraceResponse* response) override;
