@@ -110,3 +110,36 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "query_consumer_offset_request_header_test",
+    srcs = [
+        "QueryConsumerOffsetRequestHeaderTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/remoting",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "query_consumer_offset_response_header_test",
+    srcs = [
+        "QueryConsumerOffsetResponseHeaderTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/remoting",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "update_consumer_offset_request_header_test",
+    srcs = [
+        "UpdateConsumerOffsetRequestHeaderTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/remoting",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

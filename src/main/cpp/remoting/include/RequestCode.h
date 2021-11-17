@@ -27,6 +27,8 @@ enum class RequestCode : std::int32_t
   Absent = 0,
   SendMessage = 10,
   PullMessage = 11,
+  QueryConsumerOffset = 14,
+  UpdateConsumerOffset = 15,
   Heartbeat = 34,
   PopMessage = 50,
   AckMessage = 51,
