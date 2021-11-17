@@ -481,7 +481,7 @@ bool ClientManagerImpl::send(const std::string& target_host, const Metadata& met
   // Invocation context will be deleted in its onComplete() method.
   auto invocation_context = new InvocationContext<SendMessageResponse>();
   invocation_context->task_name =
-      fmt::format("Send message[] to {}", request.message().system_attribute().message_id(), target_host);
+      fmt::format("Send message[{}] to {}", request.message().system_attribute().message_id(), target_host);
   invocation_context->remote_address = target_host;
   for (const auto& entry : metadata) {
     invocation_context->context.AddMetadata(entry.first, entry.second);
