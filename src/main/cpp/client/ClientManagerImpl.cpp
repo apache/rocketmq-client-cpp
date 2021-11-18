@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "RequestCode.h"
 #include "google/rpc/code.pb.h"
 #include "grpcpp/create_channel.h"
 
@@ -1800,6 +1801,28 @@ std::error_code ClientManagerImpl::notifyClientTermination(const std::string& ta
     }
   }
   return ec;
+}
+
+void ClientManagerImpl::describeConsumerGroup(
+    const std::string& target_host, const Metadata& metadata, const DescribeConsumerGroupRequest& request,
+    std::chrono::milliseconds timeout,
+    const std::function<void(const std::error_code&, const InvocationContext<DescribeConsumerGroupResponse>*)>& cb) {
+  auto client = getRpcClient(target_host, true);
+
+  auto invocation_context = new InvocationContext<DescribeConsumerGroupResponse>();
+  invocation_context->remote_address = target_host;
+  invocation_context->task_name = "DescribeConsumerGroup";
+  invocation_context->request_code = RequestCode::GetConsumerListByGroup;
+
+  invocation_context->callback = [cb](const InvocationContext<DescribeConsumerGroupResponse>* context) {
+    std::error_code ec;
+    if (!context->response.ok_) {
+      ec = ErrorCode::InternalServerError;
+    }
+    cb(ec, context);
+  };
+
+  client->asyncDescribeConsumerGroup(request, invocation_context);
 }
 
 void ClientManagerImpl::logStats() {

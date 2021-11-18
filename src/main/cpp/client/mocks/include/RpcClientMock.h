@@ -69,6 +69,9 @@ public:
   MOCK_METHOD(void, asyncUpdateConsumerOffset,
               (const UpdateConsumerOffsetRequest&, InvocationContext<UpdateConsumerOffsetResponse>*), (override));
 
+  MOCK_METHOD(void, asyncDescribeConsumerGroup,
+              (const DescribeConsumerGroupRequest&, InvocationContext<DescribeConsumerGroupResponse>*), (override));
+
   MOCK_METHOD(grpc::Status, reportThreadStackTrace,
               (grpc::ClientContext*, const ReportThreadStackTraceRequest&, ReportThreadStackTraceResponse*),
               (override));

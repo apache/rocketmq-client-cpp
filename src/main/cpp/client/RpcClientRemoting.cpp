@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "DescribeConsumerGroupResponse.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
@@ -23,7 +24,7 @@
 #include "AckMessageRequestHeader.h"
 #include "BrokerData.h"
 #include "ConsumeFromWhere.h"
-#include "GetConsumerListByGroupRequestHeader.h"
+#include "DescribeConsumerGroupRequestHeader.h"
 #include "HeartbeatData.h"
 #include "InvocationContext.h"
 #include "LoggerImpl.h"
@@ -184,6 +185,11 @@ void RpcClientRemoting::processCommand(const RemotingCommand& command) {
     }
 
     case RequestCode::Absent: {
+      break;
+    }
+
+    case RequestCode::GetConsumerListByGroup: {
+      handleDescribeConsumerGroup(command, invocation_context);
       break;
     }
   }
@@ -1166,6 +1172,18 @@ void RpcClientRemoting::asyncUpdateConsumerOffset(const UpdateConsumerOffsetRequ
   write(std::move(command), invocation_context);
 }
 
+void RpcClientRemoting::asyncDescribeConsumerGroup(
+    const DescribeConsumerGroupRequest& request, InvocationContext<DescribeConsumerGroupResponse>* invocation_context) {
+  // Assign RequestCode
+  invocation_context->request_code = RequestCode::GetConsumerListByGroup;
+
+  auto header = new DescribeConsumerGroupRequestHeader();
+  header->group_ = request.group_;
+
+  auto&& command = RemotingCommand::createRequest(RequestCode::GetConsumerListByGroup, header);
+  write(std::move(command), invocation_context);
+}
+
 grpc::Status RpcClientRemoting::reportThreadStackTrace(grpc::ClientContext* context,
                                                        const ReportThreadStackTraceRequest& request,
                                                        ReportThreadStackTraceResponse* response) {
@@ -1272,6 +1290,43 @@ void RpcClientRemoting::handleUpdateConsumerOffset(const RemotingCommand& comman
     }
   }
 
+  context->onCompletion(true);
+}
+
+void RpcClientRemoting::handleDescribeConsumerGroup(const RemotingCommand& command,
+                                                    BaseInvocationContext* invocation_context) {
+  SPDLOG_DEBUG("Handle describe consumer group response. Code: {}, remark: {}", command.code(), command.remark());
+  auto context = dynamic_cast<InvocationContext<DescribeConsumerGroupResponse>*>(invocation_context);
+  auto response_code = static_cast<ResponseCode>(command.code());
+
+  switch (response_code) {
+    case ResponseCode::Success: {
+      context->response.ok_ = true;
+      const auto& body = command.body();
+      std::string json;
+      json.resize(body.size());
+      memcpy(const_cast<char*>(json.data()), body.data(), body.size());
+      google::protobuf::Value root;
+      auto status = google::protobuf::util::JsonStringToMessage(json, &root);
+      if (!status.ok()) {
+        SPDLOG_WARN("Failed to deserialize JSON. Cause: {}, JSON: {}", status.message().as_string(), json);
+        context->onCompletion(true);
+        return;
+      }
+      auto fields = root.struct_value().fields();
+      if (fields.contains("consumerIdList")) {
+        auto list = fields.at("consumerIdList").list_value();
+        for (const auto& item : list.values()) {
+          context->response.members_.push_back(item.string_value());
+        }
+      }
+      break;
+    }
+    default: {
+      SPDLOG_WARN("Failed to describe consumer group. Code: {}, Remark: {}", command.code(), command.remark());
+      break;
+    }
+  }
   context->onCompletion(true);
 }
 

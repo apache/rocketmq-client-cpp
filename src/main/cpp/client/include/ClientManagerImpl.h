@@ -223,6 +223,12 @@ public:
                                                  const ReportMessageConsumptionResultRequest& request,
                                                  std::chrono::milliseconds timeout) override;
 
+  void describeConsumerGroup(
+      const std::string& target_host, const Metadata& metadata, const DescribeConsumerGroupRequest& request,
+      std::chrono::milliseconds timeout,
+      const std::function<void(const std::error_code&, const InvocationContext<DescribeConsumerGroupResponse>*)>& cb)
+      override;
+
   void trace(bool trace) {
     trace_ = trace;
   }

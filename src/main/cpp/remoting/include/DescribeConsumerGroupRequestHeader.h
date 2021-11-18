@@ -3,11 +3,11 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class GetConsumerListByGroupRequestHeader : public CommandCustomHeader {
+class DescribeConsumerGroupRequestHeader : public CommandCustomHeader {
 public:
   void encode(google::protobuf::Value& root) const override {
     auto fields = root.mutable_struct_value()->mutable_fields();
-    addEntry(fields, "group", group_);
+    addEntry(fields, "consumerGroup", group_);
   }
 
   std::string group_;

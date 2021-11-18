@@ -3,6 +3,8 @@
 #include <memory>
 #include <system_error>
 
+#include "DescribeConsumerGroupRequest.h"
+#include "InvocationContext.h"
 #include "RpcClient.h"
 #include "absl/synchronization/mutex.h"
 #include "apache/rocketmq/v1/definition.pb.h"
@@ -439,6 +441,35 @@ TEST_F(ClientManagerRemotingTest, testUpdateConsumerOffset) {
   };
 
   client_manager_->updateConsumerOffset(target_host, metadata, request, std::chrono::seconds(3), callback);
+
+  {
+    absl::MutexLock lk(&callback_mtx);
+    callback_cv.WaitWithTimeout(&callback_mtx, absl::Seconds(10));
+  }
+  EXPECT_TRUE(callback_invoked);
+}
+
+TEST_F(ClientManagerRemotingTest, testDescribeConsumerGroup) {
+  std::string target_host = "11.163.70.118:10911";
+  Metadata metadata;
+  DescribeConsumerGroupRequest request;
+  request.group_ = group_;
+
+  bool callback_invoked = false;
+  absl::Mutex callback_mtx;
+  absl::CondVar callback_cv;
+
+  auto callback = [&](const std::error_code& ec, const InvocationContext<DescribeConsumerGroupResponse>* context) {
+    if (ec) {
+      SPDLOG_WARN("UpdateConsumerOffset failed: {}", ec.message());
+    }
+
+    absl::MutexLock lk(&callback_mtx);
+    callback_invoked = true;
+    callback_cv.SignalAll();
+  };
+
+  client_manager_->describeConsumerGroup(target_host, metadata, request, std::chrono::seconds(3), callback);
 
   {
     absl::MutexLock lk(&callback_mtx);

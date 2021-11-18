@@ -22,6 +22,8 @@
 #include <system_error>
 
 #include "Client.h"
+#include "DescribeConsumerGroupRequest.h"
+#include "InvocationContext.h"
 #include "ReceiveMessageCallback.h"
 #include "RpcClient.h"
 #include "Scheduler.h"
@@ -93,6 +95,12 @@ public:
   healthCheck(const std::string& target_host, const Metadata& metadata, const HealthCheckRequest& request,
               std::chrono::milliseconds timeout,
               const std::function<void(const std::error_code&, const InvocationContext<HealthCheckResponse>*)>& cb) = 0;
+
+  virtual void describeConsumerGroup(
+      const std::string& target_host, const Metadata& metadata, const DescribeConsumerGroupRequest& request,
+      std::chrono::milliseconds timeout,
+      const std::function<void(const std::error_code&, const InvocationContext<DescribeConsumerGroupResponse>*)>&
+          cb) = 0;
 
   virtual void addClientObserver(std::weak_ptr<Client> client) = 0;
 

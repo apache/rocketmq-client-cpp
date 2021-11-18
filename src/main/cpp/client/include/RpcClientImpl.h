@@ -18,6 +18,7 @@
 
 #include <memory>
 
+#include "DescribeConsumerGroupRequest.h"
 #include "InvocationContext.h"
 #include "absl/container/flat_hash_map.h"
 
@@ -86,6 +87,10 @@ public:
 
   void asyncUpdateConsumerOffset(const UpdateConsumerOffsetRequest& request,
                                  InvocationContext<UpdateConsumerOffsetResponse>* invocation_context) override {
+  }
+
+  void asyncDescribeConsumerGroup(const DescribeConsumerGroupRequest& request,
+                                  InvocationContext<DescribeConsumerGroupResponse>* invocation_context) override {
   }
 
   grpc::Status reportThreadStackTrace(grpc::ClientContext* context, const ReportThreadStackTraceRequest& request,

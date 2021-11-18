@@ -28,6 +28,8 @@
 #include "apache/rocketmq/v1/service.pb.h"
 #include "grpcpp/grpcpp.h"
 
+#include "DescribeConsumerGroupRequest.h"
+#include "DescribeConsumerGroupResponse.h"
 #include "InvocationContext.h"
 #include "OrphanTransactionCallback.h"
 
@@ -132,6 +134,9 @@ public:
 
   virtual void asyncUpdateConsumerOffset(const UpdateConsumerOffsetRequest& request,
                                          InvocationContext<UpdateConsumerOffsetResponse>* invocation_context) = 0;
+
+  virtual void asyncDescribeConsumerGroup(const DescribeConsumerGroupRequest& request,
+                                          InvocationContext<DescribeConsumerGroupResponse>* invocation_context) = 0;
 
   virtual grpc::Status reportThreadStackTrace(grpc::ClientContext* context,
                                               const ReportThreadStackTraceRequest& request,

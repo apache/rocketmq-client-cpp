@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <memory>
 
+#include "DescribeConsumerGroupRequest.h"
 #include "InvocationContext.h"
 #include "RemotingCommand.h"
 #include "absl/base/thread_annotations.h"
@@ -76,6 +77,9 @@ public:
   void asyncUpdateConsumerOffset(const UpdateConsumerOffsetRequest& request,
                                  InvocationContext<UpdateConsumerOffsetResponse>* invocation_context) override;
 
+  void asyncDescribeConsumerGroup(const DescribeConsumerGroupRequest& request,
+                                  InvocationContext<DescribeConsumerGroupResponse>* invocation_context) override;
+
   grpc::Status reportThreadStackTrace(grpc::ClientContext* context, const ReportThreadStackTraceRequest& request,
                                       ReportThreadStackTraceResponse* response) override;
 
@@ -136,6 +140,8 @@ private:
   void handleQueryConsumerOffset(const RemotingCommand& command, BaseInvocationContext* context);
 
   void handleUpdateConsumerOffset(const RemotingCommand& command, BaseInvocationContext* context);
+
+  void handleDescribeConsumerGroup(const RemotingCommand& command, BaseInvocationContext* context);
 
   void decodeMessages(google::protobuf::RepeatedPtrField<rmq::Message>* messages, const std::uint8_t* base,
                       std::size_t limit);

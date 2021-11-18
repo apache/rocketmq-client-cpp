@@ -123,6 +123,12 @@ public:
                std::chrono::milliseconds),
               (override));
 
+  MOCK_METHOD(
+      void, describeConsumerGroup,
+      (const std::string&, const Metadata&, const DescribeConsumerGroupRequest&, std::chrono::milliseconds,
+       (const std::function<void(const std::error_code&, const InvocationContext<DescribeConsumerGroupResponse>*)>&)),
+      (override));
+
   MOCK_METHOD(State, state, (), (const override));
 
   MOCK_METHOD(void, submit, (std::function<void()>), (override));
