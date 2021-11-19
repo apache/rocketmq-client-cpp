@@ -1,0 +1,12 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+
+cc_test(
+    name = "push_consumer_remoting_impl_test",
+    srcs = [
+        "PushConsumerRemotingImplTest.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/rocketmq:rocketmq_library",
+        "@com_google_googletest//:gtest_main", 
+    ]
+)
