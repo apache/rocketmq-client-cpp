@@ -73,10 +73,11 @@ def rocketmq_deps():
     if "com_google_absl" not in native.existing_rules():
         http_archive(
             name = "com_google_absl",
-            sha256 = "59b862f50e710277f8ede96f083a5bb8d7c9595376146838b9580be90374ee1f",
-            strip_prefix = "abseil-cpp-20210324.2",
+            sha256 = "dcf71b9cba8dc0ca9940c4b316a0c796be8fab42b070bb6b7cab62b48f0e66c4",
+            strip_prefix = "abseil-cpp-20211102.0",
             urls = [
-                "https://github.com/abseil/abseil-cpp/archive/refs/tags/20210324.2.tar.gz",
+                "https://bazel-cdn.oss-cn-hangzhou.aliyuncs.com/absl/abseil-cpp-20211102.0.tar.gz",
+                "https://github.com/abseil/abseil-cpp/archive/refs/tags/20211102.0.tar.gz",
             ],
         )
 
@@ -132,9 +133,10 @@ def rocketmq_deps():
     maybe(
         http_archive,
         name = "com_google_googleapis",
-        sha256 = "e89f15d54b0ddab0cd41d18cb2299e5447db704e2b05ff141cb1769170671466",
+        sha256 = "d46fb0d91c9a6fefdf3357baee4f54e4ce39e0697dcf1b386f19c93d367cede1",
         urls = [
-            "https://github.com/googleapis/googleapis/archive/af7fb72df59a814221b123a4d1acb3f6c3e6cc95.zip"
+            "https://bazel-cdn.oss-cn-hangzhou.aliyuncs.com/googleapis/googleapis-1.0.tar.gz",
+            "https://github.com/lizhanhui/googleapis/archive/refs/tags/v1.0.tar.gz",
         ],
-        strip_prefix = "googleapis-af7fb72df59a814221b123a4d1acb3f6c3e6cc95",
+        strip_prefix = "googleapis-1.0",
     )
