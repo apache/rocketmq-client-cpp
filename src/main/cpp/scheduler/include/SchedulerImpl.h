@@ -48,7 +48,7 @@ public:
 
   explicit SchedulerImpl(std::uint32_t worker_num);
 
-  ~SchedulerImpl() override;
+  ~SchedulerImpl() override = default;
 
   void start() override;
 

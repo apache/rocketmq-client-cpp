@@ -43,6 +43,8 @@ enum class ResponseCode : std::uint16_t {
   SubscriptionNotLatest = 25,
   TooManyReceiveRequests = 209,
   ReceiveMessageTimeout = 210,
+
+  ConnectionClosing = 500,
 };
 
 ROCKETMQ_NAMESPACE_END

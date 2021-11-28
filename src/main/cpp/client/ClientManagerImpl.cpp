@@ -180,13 +180,17 @@ void ClientManagerImpl::shutdown() {
       break;
     }
     case ProtocolType::Remoting: {
+      executor_work_guard_->reset();
+      SPDLOG_INFO("Reset work_guard for io_context");
       io_context_->stop();
+      SPDLOG_INFO("io_context stopped");
       break;
     }
   }
   if (loop_thread_.joinable()) {
+    SPDLOG_INFO("Joining loop thread. state: {}", state_.load());
     loop_thread_.join();
-    SPDLOG_DEBUG("event-loop-thread stopped");
+    SPDLOG_INFO("event-loop-thread joined");
   }
 
   callback_thread_pool_->shutdown();
@@ -457,9 +461,9 @@ void ClientManagerImpl::loop() {
         break;
       }
       case ProtocolType::Remoting: {
-        SPDLOG_DEBUG("asio::io_context starts to run");
+        SPDLOG_INFO("asio::io_context starts to run");
         io_context_->run();
-        SPDLOG_DEBUG("asio::io_context run completed");
+        SPDLOG_INFO("asio::io_context run completed");
         break;
       }
       default: {

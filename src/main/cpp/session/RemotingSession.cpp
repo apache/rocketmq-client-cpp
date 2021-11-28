@@ -83,6 +83,7 @@ void RemotingSession::onDeadline(std::weak_ptr<RemotingSession> session, const a
   }
 
   SPDLOG_WARN("Deadline triggered");
+  remoting_session->state_.store(SessionState::Closing);
   remoting_session->socket_->close();
 }
 
@@ -215,9 +216,15 @@ void RemotingSession::onData(std::weak_ptr<RemotingSession> session, const asio:
     return;
   }
 
+  if (SessionState::Closing == remoting_session->state()) {
+    remoting_session->onDisconnect(ec);
+    return;
+  }
+
   if (ec) {
     SPDLOG_WARN("Failed to read data from socket. Cause: {}", ec.message());
     remoting_session->state_.store(SessionState::Closing, std::memory_order_relaxed);
+    remoting_session->onDisconnect(ec);
     return;
   }
 
@@ -306,6 +313,27 @@ void RemotingSession::onWrite(std::weak_ptr<RemotingSession> session, const asio
     remoting_session->socket_->async_write_some(
         asio::const_buffer(in_flight_buffer.data(), in_flight_buffer.size()),
         std::bind(&RemotingSession::onWrite, session, std::placeholders::_1, std::placeholders::_2));
+  }
+}
+
+void RemotingSession::onDisconnect(const std::error_code& ec) {
+  SPDLOG_INFO("RemotingSession disconnected from {}", endpoint_);
+  std::vector<RemotingCommand> commands;
+  {
+    absl::MutexLock lk(&opaque_code_mapping_mtx_);
+    if (!opaque_code_mapping_.empty()) {
+      SPDLOG_WARN("Notify in-flight remoting-command with errors");
+
+      for (const auto& entry : opaque_code_mapping_) {
+        RemotingCommand response = RemotingCommand::createResponse(ResponseCode::ConnectionClosing, nullptr);
+        response.opaque_ = entry.first;
+        commands.emplace_back(std::move(response));
+      }
+    }
+  }
+
+  if (!commands.empty()) {
+    callback_(commands);
   }
 }
 

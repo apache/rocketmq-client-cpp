@@ -36,6 +36,8 @@ public:
     return state_.load(std::memory_order_relaxed);
   }
 
+  void onDisconnect(const std::error_code& ec) LOCKS_EXCLUDED(opaque_code_mapping_mtx_);
+
 private:
   std::weak_ptr<asio::io_context> context_;
   std::string endpoint_;

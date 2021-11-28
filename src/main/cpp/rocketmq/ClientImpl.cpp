@@ -26,7 +26,6 @@
 #include <system_error>
 #include <utility>
 
-#include "RpcClient.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "apache/rocketmq/v1/definition.pb.h"
@@ -38,6 +37,7 @@
 #include "InvocationContext.h"
 #include "LoggerImpl.h"
 #include "MessageAccessor.h"
+#include "RpcClient.h"
 #include "Signature.h"
 #include "rocketmq/MQMessageExt.h"
 #include "rocketmq/MessageListener.h"
@@ -54,6 +54,8 @@ void ClientImpl::start() {
                  state_.load(std::memory_order_relaxed));
     return;
   }
+
+  SPDLOG_INFO("Starting ClientImpl");
 
   if (!name_server_resolver_) {
     SPDLOG_ERROR("No name server resolver is configured.");
@@ -78,16 +80,19 @@ void ClientImpl::start() {
 
   route_update_handle_ = client_manager_->getScheduler()->schedule(route_update_functor, UPDATE_ROUTE_TASK_NAME,
                                                                    std::chrono::seconds(10), std::chrono::seconds(30));
+  SPDLOG_INFO("ClientImpl started");
 }
 
 void ClientImpl::shutdown() {
   State expected = State::STOPPING;
   if (state_.compare_exchange_strong(expected, State::STOPPED)) {
+    SPDLOG_INFO("Shutting down ClientImpl");
     name_server_resolver_->shutdown();
     if (route_update_handle_) {
       client_manager_->getScheduler()->cancel(route_update_handle_);
     }
     client_manager_.reset();
+    SPDLOG_INFO("ClientImpl shut down");
   } else {
     SPDLOG_ERROR("Try to shutdown ClientImpl, but its state is not as expected. Expecting: {}, Actual: {}",
                  State::STOPPING, state_.load(std::memory_order_relaxed));

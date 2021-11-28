@@ -1,12 +1,17 @@
 #include "PushConsumerRemotingImpl.h"
+
+#include <atomic>
+
+#include "ClientManager.h"
+#include "RpcClient.h"
 #include "rocketmq/ExpressionType.h"
 #include "rocketmq/RocketMQ.h"
 #include "rocketmq/State.h"
-#include <atomic>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 void PushConsumerRemotingImpl::start() {
+  SPDLOG_INFO("Starting PushConsumerRemoting");
   ClientImpl::start();
 
   State expected = State::STARTING;
@@ -15,6 +20,29 @@ void PushConsumerRemotingImpl::start() {
     SPDLOG_WARN("Failed to start, caused by unexpected state: {}", expected);
     return;
   }
+
+  std::vector<std::string> name_server_list;
+  if (name_server_resolver_) {
+    name_server_list = name_server_resolver_->resolve();
+  }
+
+  if (name_server_list.empty()) {
+    SPDLOG_WARN("Failed to resolve name server list");
+  } else {
+    absl::MutexLock lk(&topic_filter_expression_map_mtx_);
+    for (const auto& item : topic_filter_expression_map_) {
+      std::string topic = item.first;
+      auto callback = [topic](const std::error_code& ec, const TopicRouteDataPtr& ptr) {
+        if (ec) {
+          SPDLOG_WARN("Failed to resolve route for topic: {}. Cause: {}", topic, ec.message());
+          return;
+        }
+        SPDLOG_INFO("Route for {} is resolved", topic);
+      };
+      getRouteFor(item.first, callback);
+    }
+  }
+  SPDLOG_INFO("PushConsumerRemoting started");
 }
 
 void PushConsumerRemotingImpl::shutdown() {
@@ -24,7 +52,9 @@ void PushConsumerRemotingImpl::shutdown() {
     return;
   }
 
+  SPDLOG_INFO("Shutting down PushConsumerRemoting");
   ClientImpl::shutdown();
+  SPDLOG_INFO("PushConsumerRemoting shut down");
 }
 
 absl::optional<FilterExpression> PushConsumerRemotingImpl::getFilterExpression(const std::string& topic) const {

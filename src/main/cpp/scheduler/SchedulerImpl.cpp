@@ -45,10 +45,6 @@ SchedulerImpl::SchedulerImpl(std::uint32_t worker_num)
 SchedulerImpl::SchedulerImpl() : SchedulerImpl(std::thread::hardware_concurrency()) {
 }
 
-SchedulerImpl::~SchedulerImpl() {
-  shutdown0();
-}
-
 void SchedulerImpl::start() {
   State expected = State::CREATED;
   if (state_.compare_exchange_strong(expected, State::STARTING, std::memory_order_relaxed)) {
@@ -97,18 +93,23 @@ void SchedulerImpl::start() {
 }
 
 void SchedulerImpl::shutdown() {
+  SPDLOG_INFO("Scheduler starts to shut down");
   shutdown0();
+  SPDLOG_INFO("Scheduler shut down");
 }
 
 void SchedulerImpl::shutdown0() {
   State expected = State::STARTED;
   if (state_.compare_exchange_strong(expected, State::STOPPING, std::memory_order_relaxed)) {
+    SPDLOG_INFO("Change state of scheduler to stopping");
     work_guard_->reset();
+    SPDLOG_DEBUG("Reset work-guard");
     {
       absl::MutexLock lk(&tasks_mtx_);
       tasks_.clear();
     }
     context_.stop();
+    SPDLOG_DEBUG("io_context stopped");
 
     for (auto& worker : threads_) {
       if (worker.joinable()) {
@@ -116,8 +117,12 @@ void SchedulerImpl::shutdown0() {
       }
     }
     threads_.clear();
+    SPDLOG_DEBUG("All worker theads joined");
 
     state_.store(State::STOPPED);
+    SPDLOG_INFO("Change state of scheduler to stopped");
+  } else {
+    SPDLOG_WARN("State of scheduler is unexpected. Expecting: {}, actual: {}", State::STARTED, expected);
   }
 }
 

@@ -1,9 +1,10 @@
 #pragma once
 
-#include <apache/rocketmq/v1/definition.pb.h>
 #include <cstdint>
 #include <memory>
 #include <string>
+
+#include "apache/rocketmq/v1/definition.pb.h"
 
 #include "ClientImpl.h"
 #include "MixAll.h"
@@ -25,7 +26,7 @@ public:
     protocolType(ProtocolType::Remoting);
   }
 
-  void start() override;
+  void start() override LOCKS_EXCLUDED(topic_filter_expression_map_mtx_);
 
   void shutdown() override;
 
