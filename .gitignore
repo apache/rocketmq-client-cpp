@@ -8,3 +8,7 @@ Testing
 .vscode
 .cache
 compile_commands.json
+bazel-bin
+bazel-out
+bazel-testlogs
+bazel-rocketmq-client-cpp

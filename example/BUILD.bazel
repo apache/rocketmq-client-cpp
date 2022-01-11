@@ -1,0 +1,52 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+
+cc_library(
+    name = "common",
+    hdrs = glob(["*.h"]),
+    strip_include_prefix = "//example",
+)
+
+example_deps = [
+    ":common",
+    "//:rocketmq_cpp_sdk",    
+]
+
+cc_binary(
+    name = "producer",
+    srcs = [
+        "Producer.c",
+    ],
+    deps = example_deps,
+)
+
+cc_binary(
+    name = "async_producer",
+    srcs = [
+        "AsyncProducer.cpp",
+    ],
+    deps = example_deps,
+)
+
+cc_binary(
+    name = "async_push_consumer",
+    srcs = [
+        "AsyncPushConsumer.cpp",
+    ],
+    deps = example_deps,
+)
+
+cc_binary(
+    name = "batch_producer",
+    srcs = [
+        "BatchProducer.cpp",
+    ],
+    deps = example_deps,
+)
+
+cc_binary(
+    name = "sync_producer",
+    srcs = [
+        "SyncProducer.cpp",
+    ],
+    deps = example_deps,
+)

@@ -18,6 +18,20 @@ RocketMQ-Client-CPP is the C/C++ client of Apache RocketMQ, a distributed messag
 
 ## Build and Install
 
+### Building with bazel
+If you are confortable with using bazel, it would be highly recommeded to build this project with bazel, which gives you the best developer experience as well as faster and cleaner builds.
+
+You will need bazel version 1.0.0 or higher to build rocketmq-cpp-sdk. See [Installing Bazel](https://docs.bazel.build/versions/master/install.html) for instructions how to install bazel on your system. We support building with bazel on Linux, MacOS and Windows in a consistent manner.
+
+From the repository root
+
+```shell
+bazel build //...
+```
+
+#### Generate compile_commands.json
+Users of [clangd](https://clangd.llvm.org/) expect compile_commands.json file. It is convenient to generate one using [bazel-compilation-database](https://github.com/grailbio/bazel-compilation-database).
+
 ### Linux and Mac OS
 
 **note**: make sure the following compile tools or libraries have been installed before running the build script **build.sh**.
