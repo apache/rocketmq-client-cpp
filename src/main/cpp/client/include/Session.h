@@ -41,7 +41,21 @@ public:
   virtual ~Session() = default;
 
   virtual void queryRoute(absl::flat_hash_map<std::string, std::string> metadata, const rmq::QueryRouteRequest* request,
-                          std::function<void(const grpc::Status&, const rmq::QueryRouteResponse&)> callback) PURE;
+                          std::function<void(const grpc::Status&, const rmq::QueryRouteResponse&)> cb) PURE;
+
+  virtual void send(absl::flat_hash_map<std::string, std::string> metadata, const rmq::SendMessageRequest* request,
+                    std::function<void(const grpc::Status&, const rmq::SendMessageResponse&)> cb) PURE;
+
+  virtual void queryAssignment(absl::flat_hash_map<std::string, std::string> metadata,
+                               const rmq::QueryAssignmentRequest* request,
+                               std::function<void(const grpc::Status&, const rmq::QueryAssignmentResponse&)> cb) PURE;
+
+  virtual void receive(absl::flat_hash_map<std::string, std::string> metadata,
+                       const rmq::ReceiveMessageRequest* request,
+                       std::function<void(const grpc::Status&, const rmq::ReceiveMessageResponse&)> cb) PURE;
+
+  virtual void ack(absl::flat_hash_map<std::string, std::string> metadata, const rmq::AckMessageRequest* request,
+                   std::function<void(const grpc::Status&, const rmq::AckMessageResponse&)> cb) PURE;
 };
 
 ROCKETMQ_NAMESPACE_END
