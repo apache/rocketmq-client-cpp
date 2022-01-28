@@ -83,9 +83,12 @@ def rocketmq_deps():
     if "com_github_grpc_grpc" not in native.existing_rules():
         http_archive(
             name = "com_github_grpc_grpc",
-            strip_prefix = "grpc-1.39.0",
-            sha256 = "b16992aa1c949c10d5d5ce2a62f9d99fa7de77da2943e643fb66dcaf075826d6",
-            urls = ["https://github.com/grpc/grpc/archive/v1.39.0.tar.gz"],
+            strip_prefix = "grpc-1.44.0-pre2-oss",
+            sha256 = "c12a560ad6cd55afcd6f6d8da533267fa7132704d27d0857b01c0d2e2b634fea",
+            urls = [
+                "https://shutian.oss-cn-hangzhou.aliyuncs.com/cdn/grpc/grpc-1.44.0-pre2-oss.tar.gz",
+                "https://github.com/lizhanhui/grpc/archive/refs/tags/v1.44.0-pre2-oss.tar.gz",
+            ],
         )
 
     if "io_opentelemetry_cpp" not in native.existing_rules():

@@ -44,8 +44,6 @@ class RpcClientTest : public ::testing::Test {
 protected:
   RpcClientTest() : completion_queue_(std::make_shared<grpc::CompletionQueue>()) {
 
-    server_authorization_check_config_ = std::make_shared<grpc::experimental::TlsServerAuthorizationCheckConfig>(
-        std::make_shared<TlsServerAuthorizationChecker>());
     std::vector<grpc::experimental::IdentityKeyCertPair> pem_list;
     grpc::experimental::IdentityKeyCertPair pair{};
     pair.private_key = TlsHelper::client_private_key;
@@ -54,8 +52,7 @@ protected:
     certificate_provider_ =
         std::make_shared<grpc::experimental::StaticDataCertificateProvider>(TlsHelper::CA, pem_list);
     tls_channel_credential_options_.set_certificate_provider(certificate_provider_);
-    tls_channel_credential_options_.set_server_verification_option(GRPC_TLS_SKIP_ALL_SERVER_VERIFICATION);
-    tls_channel_credential_options_.set_server_authorization_check_config(server_authorization_check_config_);
+    tls_channel_credential_options_.set_verify_server_certs(false);
     tls_channel_credential_options_.watch_root_certs();
     tls_channel_credential_options_.watch_identity_key_cert_pairs();
     channel_credential_ = grpc::experimental::TlsCredentials(tls_channel_credential_options_);
@@ -200,7 +197,6 @@ protected:
   CredentialsProviderPtr credentials_provider_;
   std::shared_ptr<grpc::experimental::StaticDataCertificateProvider> certificate_provider_;
   grpc::experimental::TlsChannelCredentialsOptions tls_channel_credential_options_;
-  std::shared_ptr<grpc::experimental::TlsServerAuthorizationCheckConfig> server_authorization_check_config_;
   std::shared_ptr<grpc::ChannelCredentials> channel_credential_;
   grpc::ChannelArguments channel_arguments_;
   std::string message_id_{UniqueIdGenerator::instance().next()};
