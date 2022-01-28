@@ -35,6 +35,26 @@ public:
   void ack(absl::flat_hash_map<std::string, std::string> metadata, const rmq::AckMessageRequest* request,
            std::function<void(const grpc::Status&, const rmq::AckMessageResponse&)> cb) override;
 
+  void heartbeat(absl::flat_hash_map<std::string, std::string> metadata, const rmq::HeartbeatRequest* request,
+                 std::function<void(const grpc::Status&, const rmq::HeartbeatResponse&)> cb) override;
+
+  void healthCheck(absl::flat_hash_map<std::string, std::string> metadata, const rmq::HealthCheckRequest* request,
+                   std::function<void(const grpc::Status&, const rmq::HealthCheckResponse&)> cb) override;
+
+  void endTransaction(absl::flat_hash_map<std::string, std::string> metadata, const rmq::EndTransactionRequest* request,
+                      std::function<void(const grpc::Status&, const rmq::EndTransactionResponse&)> cb) override;
+
+  void queryOffset(absl::flat_hash_map<std::string, std::string> metadata, const rmq::QueryOffsetRequest* request,
+                   std::function<void(const grpc::Status&, const rmq::QueryOffsetResponse&)> cb) override;
+
+  void pull(absl::flat_hash_map<std::string, std::string> metadata, const rmq::PullMessageRequest* request,
+            std::function<void(const grpc::Status&, const rmq::PullMessageResponse&)> cb) override;
+
+  void forwardMessageToDeadLetterQueue(
+      absl::flat_hash_map<std::string, std::string> metadata,
+      const rmq::ForwardMessageToDeadLetterQueueRequest* request,
+      std::function<void(const grpc::Status&, const rmq::ForwardMessageToDeadLetterQueueResponse&)> cb) override;
+
 private:
   std::shared_ptr<grpc::Channel> channel_;
   std::unique_ptr<rmq::MessagingService::Stub> stub_;

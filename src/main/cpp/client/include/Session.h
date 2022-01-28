@@ -56,6 +56,29 @@ public:
 
   virtual void ack(absl::flat_hash_map<std::string, std::string> metadata, const rmq::AckMessageRequest* request,
                    std::function<void(const grpc::Status&, const rmq::AckMessageResponse&)> cb) PURE;
+
+  virtual void heartbeat(absl::flat_hash_map<std::string, std::string> metadata, const rmq::HeartbeatRequest* request,
+                         std::function<void(const grpc::Status&, const rmq::HeartbeatResponse&)> cb) PURE;
+
+  virtual void healthCheck(absl::flat_hash_map<std::string, std::string> metadata,
+                           const rmq::HealthCheckRequest* request,
+                           std::function<void(const grpc::Status&, const rmq::HealthCheckResponse&)> cb) PURE;
+
+  virtual void endTransaction(absl::flat_hash_map<std::string, std::string> metadata,
+                              const rmq::EndTransactionRequest* request,
+                              std::function<void(const grpc::Status&, const rmq::EndTransactionResponse&)> cb) PURE;
+
+  virtual void queryOffset(absl::flat_hash_map<std::string, std::string> metadata,
+                           const rmq::QueryOffsetRequest* request,
+                           std::function<void(const grpc::Status&, const rmq::QueryOffsetResponse&)> cb) PURE;
+
+  virtual void pull(absl::flat_hash_map<std::string, std::string> metadata, const rmq::PullMessageRequest* request,
+                    std::function<void(const grpc::Status&, const rmq::PullMessageResponse&)> cb) PURE;
+
+  virtual void forwardMessageToDeadLetterQueue(
+      absl::flat_hash_map<std::string, std::string> metadata,
+      const rmq::ForwardMessageToDeadLetterQueueRequest* request,
+      std::function<void(const grpc::Status&, const rmq::ForwardMessageToDeadLetterQueueResponse&)> cb) PURE;
 };
 
 ROCKETMQ_NAMESPACE_END

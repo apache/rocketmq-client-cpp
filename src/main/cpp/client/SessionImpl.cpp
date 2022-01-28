@@ -89,6 +89,95 @@ void SessionImpl::ack(absl::flat_hash_map<std::string, std::string> metadata, co
   stub_->async()->AckMessage(client_context, request, response, callback);
 }
 
+void SessionImpl::heartbeat(absl::flat_hash_map<std::string, std::string> metadata,
+                            const rmq::HeartbeatRequest* request,
+                            std::function<void(const grpc::Status&, const rmq::HeartbeatResponse&)> cb) {
+  auto response = new rmq::HeartbeatResponse;
+  auto client_context = new grpc::ClientContext;
+  addMetadata(metadata, client_context);
+  setDeadline(io_timeout_, client_context);
+  auto callback = [=](grpc::Status status) {
+    auto reply = absl::WrapUnique(response);
+    auto ctx = absl::WrapUnique(client_context);
+    cb(status, *reply);
+  };
+  stub_->async()->Heartbeat(client_context, request, response, callback);
+}
+
+void SessionImpl::healthCheck(absl::flat_hash_map<std::string, std::string> metadata,
+                              const rmq::HealthCheckRequest* request,
+                              std::function<void(const grpc::Status&, const rmq::HealthCheckResponse&)> cb) {
+  auto response = new rmq::HealthCheckResponse;
+  auto client_context = new grpc::ClientContext;
+  addMetadata(metadata, client_context);
+  setDeadline(io_timeout_, client_context);
+  auto callback = [=](grpc::Status status) {
+    auto reply = absl::WrapUnique(response);
+    auto ctx = absl::WrapUnique(client_context);
+    cb(status, *reply);
+  };
+  stub_->async()->HealthCheck(client_context, request, response, callback);
+}
+
+void SessionImpl::endTransaction(absl::flat_hash_map<std::string, std::string> metadata,
+                                 const rmq::EndTransactionRequest* request,
+                                 std::function<void(const grpc::Status&, const rmq::EndTransactionResponse&)> cb) {
+  auto response = new rmq::EndTransactionResponse;
+  auto client_context = new grpc::ClientContext;
+  addMetadata(metadata, client_context);
+  setDeadline(io_timeout_, client_context);
+  auto callback = [=](grpc::Status status) {
+    auto reply = absl::WrapUnique(response);
+    auto ctx = absl::WrapUnique(client_context);
+    cb(status, *reply);
+  };
+  stub_->async()->EndTransaction(client_context, request, response, callback);
+}
+
+void SessionImpl::queryOffset(absl::flat_hash_map<std::string, std::string> metadata,
+                              const rmq::QueryOffsetRequest* request,
+                              std::function<void(const grpc::Status&, const rmq::QueryOffsetResponse&)> cb) {
+  auto response = new rmq::QueryOffsetResponse;
+  auto client_context = new grpc::ClientContext;
+  addMetadata(metadata, client_context);
+  setDeadline(io_timeout_, client_context);
+  auto callback = [=](grpc::Status status) {
+    auto reply = absl::WrapUnique(response);
+    auto ctx = absl::WrapUnique(client_context);
+    cb(status, *reply);
+  };
+  stub_->async()->QueryOffset(client_context, request, response, callback);
+}
+
+void SessionImpl::pull(absl::flat_hash_map<std::string, std::string> metadata, const rmq::PullMessageRequest* request,
+                       std::function<void(const grpc::Status&, const rmq::PullMessageResponse&)> cb) {
+  auto response = new rmq::PullMessageResponse;
+  auto client_context = new grpc::ClientContext;
+  addMetadata(metadata, client_context);
+  setDeadline(io_timeout_, client_context);
+  auto callback = [=](grpc::Status status) {
+    auto reply = absl::WrapUnique(response);
+    auto ctx = absl::WrapUnique(client_context);
+    cb(status, *reply);
+  };
+  stub_->async()->PullMessage(client_context, request, response, callback);
+}
+
+void SessionImpl::forwardMessageToDeadLetterQueue(
+    absl::flat_hash_map<std::string, std::string> metadata, const rmq::ForwardMessageToDeadLetterQueueRequest* request,
+    std::function<void(const grpc::Status&, const rmq::ForwardMessageToDeadLetterQueueResponse&)> cb) {
+  auto response = new rmq::ForwardMessageToDeadLetterQueueResponse;
+  auto client_context = new grpc::ClientContext;
+  addMetadata(metadata, client_context);
+  setDeadline(io_timeout_, client_context);
+  auto callback = [=](grpc::Status status) {
+    auto reply = absl::WrapUnique(response);
+    auto ctx = absl::WrapUnique(client_context);
+    cb(status, *reply);
+  };
+  stub_->async()->ForwardMessageToDeadLetterQueue(client_context, request, response, callback);
+}
+
 void SessionImpl::addMetadata(const absl::flat_hash_map<std::string, std::string>& metadata,
                               grpc::ClientContext* client_context) {
   for (const auto& entry : metadata) {
