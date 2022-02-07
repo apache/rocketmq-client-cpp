@@ -20,7 +20,7 @@
 
 namespace rocketmq {
 std::string TraceContant::GROUP_NAME = "_INNER_TRACE_PRODUCER";
-std::string TraceContant::TRACE_TOPIC = "rmq_sys_TRACE_DATA_";
+std::string TraceContant::TRACE_TOPIC = "RMQ_SYS_TRACE_TOPIC";
 std::string TraceContant::DEFAULT_REDION = "DEFAULT_REGION";
 char TraceContant::CONTENT_SPLITOR = 1;
 char TraceContant::FIELD_SPLITOR = 2;

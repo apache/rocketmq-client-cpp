@@ -112,4 +112,12 @@ std::string SendMessageContext::getNameSpace() {
 void SendMessageContext::setNameSpace(const std::string& mNameSpace) {
   m_nameSpace = mNameSpace;
 }
+
+std::string SendMessageContext::getClientId() {
+  return m_clientId;
+}
+
+void SendMessageContext::setClientId(const std::string& clientId) {
+  m_clientId = clientId;
+}
 }  // namespace rocketmq

@@ -78,6 +78,10 @@ class SendMessageContext {
 
   void setNameSpace(const std::string& mNameSpace);
 
+  std::string getClientId();
+
+  void setClientId(const std::string& clientId);
+
  private:
   std::string m_producerGroup;
   MQMessage m_message;
@@ -90,6 +94,7 @@ class SendMessageContext {
   SendResult m_sendResult;
   TraceContext* m_traceContext;
   std::string m_nameSpace;
+  std::string m_clientId;
 };
 
 }  // namespace rocketmq

@@ -470,6 +470,7 @@ SendResult DefaultMQProducerImpl::sendKernelImpl(MQMessage& msg,
         pSendMesgContext->setMessageQueue(mq);
         pSendMesgContext->setMsgType(TRACE_NORMAL_MSG);
         pSendMesgContext->setNameSpace(getNameSpace());
+        pSendMesgContext->setClientId(getMQClientId());
         string tranMsg = msg.getProperty(MQMessage::PROPERTY_TRANSACTION_PREPARED);
         if (!tranMsg.empty() && tranMsg == "true") {
           pSendMesgContext->setMsgType(TRACE_TRANS_HALF_MSG);

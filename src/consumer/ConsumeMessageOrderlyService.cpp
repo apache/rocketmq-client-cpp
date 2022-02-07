@@ -197,6 +197,7 @@ void ConsumeMessageOrderlyService::ConsumeRequest(boost::weak_ptr<PullRequest> p
               consumeMessageContext.setMsgList(msgs);
               consumeMessageContext.setSuccess(false);
               consumeMessageContext.setNameSpace(pConsumer->getNameSpace());
+              consumeMessageContext.setClientId(pConsumer->getMQClientId());
               pConsumer->executeConsumeMessageHookBefore(&consumeMessageContext);
             }
           }
@@ -214,6 +215,9 @@ void ConsumeMessageOrderlyService::ConsumeRequest(boost::weak_ptr<PullRequest> p
               consumeMessageContext.setMsgIndex(0);
               consumeMessageContext.setStatus("RECONSUME_LATER");
               consumeMessageContext.setSuccess(false);
+              std::map<std::string, std::string> props;
+              props.insert(std::make_pair("ConsumeContextType", "FAILED"));
+              consumeMessageContext.setProps(props);
               pConsumer->executeConsumeMessageHookAfter(&consumeMessageContext);
             }
             if (msgs[0].getReconsumeTimes() <= 15) {
@@ -237,6 +241,7 @@ void ConsumeMessageOrderlyService::ConsumeRequest(boost::weak_ptr<PullRequest> p
               consumeMessageContext.setMsgIndex(0);
               consumeMessageContext.setStatus("CONSUME_SUCCESS");
               consumeMessageContext.setSuccess(true);
+              consumeMessageContext.getProps().insert(std::map<string, string>::value_type("ConsumeContextType", "SUCCESS"));
               pConsumer->executeConsumeMessageHookAfter(&consumeMessageContext);
             }
             m_pConsumer->updateConsumeOffset(request->m_messageQueue, request->commit());

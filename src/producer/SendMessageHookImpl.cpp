@@ -93,10 +93,11 @@ void SendMessageHookImpl::executeHookAfter(SendMessageContext* context) {
   traceBean.setMsgId(context->getMessage()->getProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX));
   traceBean.setOffsetMsgId(context->getSendResult()->getOffsetMsgId());
   traceBean.setStoreTime(traceContext->getTimeStamp() + (costTime / 2));
+  traceBean.setClientHost(context->getClientId());
 
   traceContext->setTraceBean(traceBean);
 
-  topic = TraceContant::TRACE_TOPIC + traceContext->getRegionId();
+  topic = TraceContant::TRACE_TOPIC;
   TraceTransferBean ben = TraceUtil::CovertTraceContextToTransferBean(traceContext.get());
   // encode data
   MQMessage message(topic, ben.getTransData());

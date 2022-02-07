@@ -103,6 +103,14 @@ void TraceContext::setTraceBeanIndex(int traceBeanIndex) {
   m_traceBeanIndex = traceBeanIndex;
 }
 
+int TraceContext::getContextCode() const {
+  return m_contextCode;
+}
+
+void TraceContext::setContextCode(int contextCode) {
+  m_contextCode = contextCode;
+}
+
 const vector<TraceBean>& TraceContext::getTraceBeans() const {
   return m_traceBeans;
 }

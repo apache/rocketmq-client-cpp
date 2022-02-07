@@ -92,6 +92,22 @@ void ConsumeMessageContext::setTraceContext(TraceContext* mTraceContext) {
   m_traceContext.reset(mTraceContext);
 }
 
+std::map<std::string, std::string> ConsumeMessageContext::getProps() {
+  return m_props;
+}
+
+void ConsumeMessageContext::setProps(std::map<std::string, std::string>& props) {
+  m_props = props;
+}
+
+std::string ConsumeMessageContext::getClientId() {
+  return m_clientId;
+}
+
+void ConsumeMessageContext::setClientId(const std::string& clientId) {
+  m_clientId = clientId;
+}
+
 std::string ConsumeMessageContext::getNameSpace() {
   return m_nameSpace;
 }

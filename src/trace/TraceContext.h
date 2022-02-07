@@ -68,6 +68,10 @@ class TraceContext {
 
   void setTraceBeanIndex(int traceBeanIndex);
 
+  int getContextCode() const;
+
+  void setContextCode(int contextCode);
+
   const std::vector<TraceBean>& getTraceBeans() const;
 
   void setTraceBean(const TraceBean& traceBean);
@@ -82,6 +86,7 @@ class TraceContext {
   bool m_status;
   std::string m_requestId;
   int m_traceBeanIndex;
+  int m_contextCode = 0;
   std::vector<TraceBean> m_traceBeans;
 };
 }  // namespace rocketmq

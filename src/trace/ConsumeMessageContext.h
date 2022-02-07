@@ -66,6 +66,14 @@ class ConsumeMessageContext {
 
   void setTraceContext(TraceContext* mTraceContext);
 
+  std::map<std::string, std::string> getProps();
+
+  void setProps(std::map<std::string, std::string>& props);
+
+  std::string getClientId();
+
+  void setClientId(const std::string& clientId);
+
   std::string getNameSpace();
 
   void setNameSpace(const std::string& mNameSpace);
@@ -80,6 +88,8 @@ class ConsumeMessageContext {
   DefaultMQPushConsumerImpl* m_defaultMQPushConsumer;
   // TraceContext* m_traceContext;
   std::shared_ptr<TraceContext> m_traceContext;
+  std::map<std::string, std::string> m_props;
+  std::string m_clientId;
   std::string m_nameSpace;
 };
 }  // namespace rocketmq
