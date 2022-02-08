@@ -38,16 +38,19 @@ logAdapter* logAdapter::getLogInstance() {
 }
 
 logAdapter::logAdapter() : m_logLevel(eLOG_LEVEL_INFO) {
+  setLogDir();
   string homeDir(UtilAll::getHomeDirectory());
-  homeDir.append("/logs/rocketmq-cpp/");
+  homeDir.append(m_log_dir);
   m_logFile += homeDir;
-  std::string fileName = UtilAll::to_string(getpid()) + "_" + "rocketmq-cpp.log.%N";
+  std::string fileName = "rocketmq_client.log";
   m_logFile += fileName;
 
   // boost::log::expressions::attr<
   // boost::log::attributes::current_thread_id::value_type>("ThreadID");
   boost::log::register_simple_formatter_factory<boost::log::trivial::severity_level, char>("Severity");
-  m_logSink = logging::add_file_log(keywords::file_name = m_logFile, keywords::rotation_size = 100 * 1024 * 1024,
+  m_logSink = logging::add_file_log(keywords::file_name = m_logFile,
+                                    keywords::target_file_name = "rocketmq_client_%Y%m%d-%N.log",
+                                    keywords::rotation_size = 100 * 1024 * 1024,
                                     keywords::time_based_rotation = sinks::file::rotation_at_time_point(0, 0, 0),
                                     keywords::format = "[%TimeStamp%](%Severity%):%Message%",
                                     keywords::min_free_space = 300 * 1024 * 1024, keywords::target = homeDir,
@@ -99,9 +102,23 @@ elogLevel logAdapter::getLogLevel() {
   return m_logLevel;
 }
 
+void logAdapter::setLogDir() {
+  char* p = nullptr;
+  if ((p = getenv(ROCKETMQ_CLIENT_LOG_DIR.c_str()))) {
+    m_log_dir = p;
+  }
+  if (!m_log_dir.empty()) {
+    if (m_log_dir[m_log_dir.length() - 1] != '/') {
+      m_log_dir += '/';
+    }
+  } else {
+    m_log_dir = "/logs/rocketmq-client/";
+  }
+}
+
 void logAdapter::setLogFileNumAndSize(int logNum, int sizeOfPerFile) {
   string homeDir(UtilAll::getHomeDirectory());
-  homeDir.append("/logs/rocketmq-cpp/");
+  homeDir.append(m_log_dir);
   m_logSink->locked_backend()->set_file_collector(sinks::file::make_collector(
       keywords::target = homeDir, keywords::max_size = logNum * sizeOfPerFile * 1024 * 1024));
 }

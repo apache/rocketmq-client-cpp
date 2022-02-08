@@ -20,7 +20,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <algorithm>
-#include <boost/detail/endian.hpp>
+#include <boost/endian/arithmetic.hpp>
 #include "RocketMQClient.h"
 #include "UtilAll.h"
 //==============================================================================

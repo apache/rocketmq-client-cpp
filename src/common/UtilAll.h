@@ -67,6 +67,7 @@ const string DEFAULT_CLIENT_KEY_PASSWD = null;
 const string DEFAULT_CLIENT_KEY_FILE = "/etc/rocketmq/client.key";
 const string DEFAULT_CLIENT_CERT_FILE = "/etc/rocketmq/client.pem";
 const string DEFAULT_CA_CERT_FILE = "/etc/rocketmq/ca.pem";
+const string ROCKETMQ_CLIENT_LOG_DIR = "ROCKETMQ_CLIENT_LOG_DIR";
 const string WS_ADDR =
     "please set nameserver domain by setDomainName, there is no default "
     "nameserver domain";
