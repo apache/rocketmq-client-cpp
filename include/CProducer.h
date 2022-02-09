@@ -103,6 +103,9 @@ ROCKETMQCLIENT_API int SendMessageTransaction(CProducer* producer,
                                               CLocalTransactionExecutorCallback callback,
                                               void* userData,
                                               CSendResult* result);
+
+ROCKETMQCLIENT_API int SetProducerLanguage(CProducer* producer,
+                                           const char* language);
 #ifdef __cplusplus
 }
 #endif

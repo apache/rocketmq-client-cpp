@@ -31,5 +31,9 @@ const char* MQVersion::GetVersionDesc(int value) {
   }
   return RocketMQCPPClientVersion[currentVersion];
 }
+
+const void MQVersion::SetCurrentLanguage(const char* language) {
+  MQVersion::s_CurrentLanguage = language;
+}
 //<!***************************************************************************
 }  // namespace rocketmq

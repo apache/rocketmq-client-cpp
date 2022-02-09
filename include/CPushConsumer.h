@@ -60,6 +60,7 @@ ROCKETMQCLIENT_API int SetPushConsumerMessageModel(CPushConsumer* consumer, CMes
 ROCKETMQCLIENT_API int SetPushConsumerMaxCacheMessageSize(CPushConsumer* consumer, int maxCacheSize);
 ROCKETMQCLIENT_API int SetPushConsumerMaxCacheMessageSizeInMb(CPushConsumer* consumer, int maxCacheSizeInMb);
 ROCKETMQCLIENT_API int SetPushConsumerMessageTrace(CPushConsumer* consumer, CTraceModel openTrace);
+ROCKETMQCLIENT_API int SetPushConsumerLanguage(CPushConsumer* consumer, const char* language);
 
 #ifdef __cplusplus
 }
