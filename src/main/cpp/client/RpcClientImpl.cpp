@@ -116,6 +116,17 @@ void RpcClientImpl::asyncEndTransaction(const EndTransactionRequest& request,
                                               invocation_context);
 }
 
+void RpcClientImpl::asyncChangeInvisibleDuration(
+    const ChangeInvisibleDurationRequest& request,
+    InvocationContext<ChangeInvisibleDurationResponse>* invocation_context) {
+  assert(invocation_context);
+  invocation_context->response_reader =
+      stub_->PrepareAsyncChangeInvisibleDuration(&invocation_context->context, request, completion_queue_.get());
+  invocation_context->response_reader->StartCall();
+  invocation_context->response_reader->Finish(&invocation_context->response, &invocation_context->status,
+                                              invocation_context);
+}
+
 bool RpcClientImpl::ok() const {
   return channel_ && grpc_connectivity_state::GRPC_CHANNEL_SHUTDOWN != channel_->GetState(false);
 }

@@ -206,6 +206,10 @@ public:
                                                  const ReportMessageConsumptionResultRequest& request,
                                                  std::chrono::milliseconds timeout) override;
 
+  void changeInvisibleDuration(const std::string& target, const Metadata& metadata,
+                               const ChangeInvisibleDurationRequest& request, std::chrono::milliseconds timeout,
+                               const std::function<void(const std::error_code&)>& callback) override;
+
   void trace(bool trace) {
     trace_ = trace;
   }

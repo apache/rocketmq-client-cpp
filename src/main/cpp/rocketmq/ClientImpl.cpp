@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
@@ -26,7 +27,6 @@
 #include <system_error>
 #include <utility>
 
-#include "RpcClient.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "apache/rocketmq/v1/definition.pb.h"
@@ -39,7 +39,9 @@
 #include "LoggerImpl.h"
 #include "MessageAccessor.h"
 #include "NamingScheme.h"
+#include "RpcClient.h"
 #include "Signature.h"
+#include "TopicAssignmentInfo.h"
 #include "rocketmq/MQMessageExt.h"
 #include "rocketmq/MessageListener.h"
 
@@ -258,6 +260,10 @@ void ClientImpl::updateRouteInfo() {
 }
 
 void ClientImpl::heartbeat() {
+  heartbeat0(false);
+}
+
+void ClientImpl::heartbeat0(bool await) {
   absl::flat_hash_set<std::string> hosts;
   endpointsInUse(hosts);
   if (hosts.empty()) {
@@ -271,15 +277,18 @@ void ClientImpl::heartbeat() {
   absl::flat_hash_map<std::string, std::string> metadata;
   Signature::sign(this, metadata);
 
+  std::size_t countdown = hosts.size();
+  absl::Mutex mtx;
+  absl::CondVar cv;
   for (const auto& target : hosts) {
-    auto callback = [target](const std::error_code& ec, const HeartbeatResponse& response) {
-      if (ec) {
-        SPDLOG_WARN("Failed to heartbeat against {}. Cause: {}", target, ec.message());
-        return;
-      }
-      SPDLOG_DEBUG("Heartbeat to {} OK", target);
-    };
-    client_manager_->heartbeat(target, metadata, request, absl::ToChronoMilliseconds(io_timeout_), callback);
+    auto callback = std::bind(&ClientImpl::onHeartbeat, target, std::placeholders::_1, std::placeholders::_2, await,
+                              std::ref(countdown), std::ref(mtx), std::ref(cv));
+    client_manager_->heartbeat(target, metadata, request, absl::ToChronoMilliseconds(io_timeout_), std::move(callback));
+  }
+
+  if (await) {
+    absl::MutexLock lk(&mtx);
+    cv.Wait(&mtx);
   }
 }
 
@@ -558,6 +567,39 @@ void ClientImpl::healthCheck() {
 void ClientImpl::schedule(const std::string& task_name, const std::function<void()>& task,
                           std::chrono::milliseconds delay) {
   client_manager_->getScheduler()->schedule(task, task_name, delay, std::chrono::milliseconds(0));
+}
+
+void ClientImpl::scheduleAtFixDelay(const std::string& task_name, const std::function<void()>& task,
+                                    std::chrono::milliseconds delay, std::chrono::milliseconds interval) {
+  client_manager_->getScheduler()->schedule(task, task_name, delay, interval);
+}
+
+void ClientImpl::wrapQueryAssignmentRequest(const std::string& topic, const std::string& consumer_group,
+                                            const std::string& client_id, const std::string& strategy_name,
+                                            QueryAssignmentRequest& request) {
+  request.mutable_topic()->set_name(topic);
+  request.mutable_topic()->set_resource_namespace(resourceNamespace());
+  request.mutable_group()->set_name(consumer_group);
+  request.mutable_group()->set_resource_namespace(resourceNamespace());
+  request.set_client_id(client_id);
+}
+
+bool ClientImpl::selectBroker(const TopicRouteDataPtr& topic_route_data, std::string& broker_host) {
+  if (topic_route_data && !topic_route_data->partitions().empty()) {
+    uint32_t index = TopicAssignment::getAndIncreaseQueryWhichBroker();
+    for (uint32_t i = index; i < index + topic_route_data->partitions().size(); i++) {
+      auto partition = topic_route_data->partitions().at(i % topic_route_data->partitions().size());
+      if (MixAll::MASTER_BROKER_ID != partition.broker().id() || Permission::NONE == partition.permission()) {
+        continue;
+      }
+
+      if (partition.broker()) {
+        broker_host = partition.broker().serviceAddress();
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 void ClientImpl::onHealthCheckResponse(const std::error_code& ec, const InvocationContext<HealthCheckResponse>* ctx) {

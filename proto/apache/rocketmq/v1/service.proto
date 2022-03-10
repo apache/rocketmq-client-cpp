@@ -370,6 +370,27 @@ message NotifyClientTerminationResponse {
   reserved 2 to 64;
 }
 
+message ChangeInvisibleDurationRequest {
+  Resource group = 1;
+  Resource topic = 2;
+
+  // Unique receipt handle to identify message to change
+  string receipt_handle = 3;
+
+  // New invisible duration
+  google.protobuf.Duration invisible_duration = 4;
+  reserved 5 to 64;
+}
+
+message ChangeInvisibleDurationResponse {
+  ResponseCommon common = 1;
+
+  // Server may generate a new receipt handle for the message.
+  string receipt_handle = 2;
+
+  reserved 3 to 64;
+}
+
 // For all the RPCs in MessagingService, the following error handling policies
 // apply:
 //
@@ -527,5 +548,14 @@ service MessagingService {
 
   // Notify the server that the client is terminated.
   rpc NotifyClientTermination(NotifyClientTerminationRequest) returns (NotifyClientTerminationResponse) {
+  }
+
+  // Once a message is retrieved from consume queue on behalf of the group, it
+  // will be kept invisible to other clients of the same group for a period of
+  // time. The message is supposed to be processed within the invisible
+  // duration. If the client, which is in charge of the invisible message, is
+  // not capable of processing the message timely, it may use
+  // ChangeInvisibleDuration to lengthen invisible duration.
+  rpc ChangeInvisibleDuration(ChangeInvisibleDurationRequest) returns (ChangeInvisibleDurationResponse) {
   }
 }

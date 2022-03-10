@@ -14,6 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+
+#include "Assignment.h"
 #include "TopicAssignmentInfo.h"
 #include "google/rpc/code.pb.h"
 #include "rocketmq/RocketMQ.h"
@@ -22,6 +27,8 @@
 ROCKETMQ_NAMESPACE_BEGIN
 
 thread_local uint32_t TopicAssignment::query_which_broker_ = 0;
+
+thread_local std::uint32_t TopicAssignment::assignment_idx_ = 0;
 
 TopicAssignment::TopicAssignment(const QueryAssignmentResponse& response) : debug_string_(response.DebugString()) {
   if (response.common().status().code() != google::rpc::Code::OK) {
@@ -75,6 +82,13 @@ TopicAssignment::TopicAssignment(const QueryAssignmentResponse& response) : debu
     assignment_list_.emplace_back(Assignment(message_queue));
   }
   std::sort(assignment_list_.begin(), assignment_list_.end());
+}
+
+const Assignment& TopicAssignment::nextAssignment() {
+  assert(!assignment_list_.empty());
+  std::size_t idx = assignment_idx_++;
+  idx = idx % assignment_list_.size();
+  return assignment_list_[idx];
 }
 
 ROCKETMQ_NAMESPACE_END

@@ -1604,6 +1604,48 @@ std::error_code ClientManagerImpl::notifyClientTermination(const std::string& ta
   return ec;
 }
 
+void ClientManagerImpl::changeInvisibleDuration(const std::string& target, const Metadata& metadata,
+                                                const ChangeInvisibleDurationRequest& request,
+                                                std::chrono::milliseconds timeout,
+                                                const std::function<void(const std::error_code&)>& callback) {
+  SPDLOG_DEBUG("PullMessage Request: {}, target_host={}", request.DebugString(), target);
+  auto client = getRpcClient(target);
+  auto invocation_context = new InvocationContext<ChangeInvisibleDurationResponse>();
+  invocation_context->task_name = fmt::format("ChangeInvisibleDuration against {}", target);
+  invocation_context->remote_address = target;
+  invocation_context->context.set_deadline(std::chrono::system_clock::now() + timeout);
+  for (const auto& item : metadata) {
+    invocation_context->context.AddMetadata(item.first, item.second);
+  }
+
+  invocation_context->callback =
+      [&callback, target](const InvocationContext<ChangeInvisibleDurationResponse>* invocation_context) {
+        std::error_code ec;
+        if (!invocation_context->status.ok()) {
+          ec = std::make_error_code(std::errc::broken_pipe);
+          callback(ec);
+          return;
+        }
+
+        if (google::rpc::Code::OK != invocation_context->response.common().status().code()) {
+          SPDLOG_WARN("Failed to changeInvisibleDuration. target={}, cause: {}", target,
+                      invocation_context->response.common().status().message());
+          ec = ErrorCode::GatewayTimeout;
+          callback(ec);
+          return;
+        }
+
+        // TODO: Server should maintain receipt-handle unchanged when resetting invisible duration.
+        // New receipt handle
+        auto&& receipt_handle = invocation_context->response.receipt_handle();
+        SPDLOG_DEBUG("New receipt-handle: {}", receipt_handle);
+
+        callback(ec);
+      };
+
+  client->asyncChangeInvisibleDuration(request, invocation_context);
+}
+
 void ClientManagerImpl::logStats() {
   std::string stats;
   latency_histogram_.reportAndReset(stats);

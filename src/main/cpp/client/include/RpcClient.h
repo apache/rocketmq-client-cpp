@@ -70,6 +70,8 @@ using ForwardMessageToDeadLetterQueueRequest = rmq::ForwardMessageToDeadLetterQu
 using ForwardMessageToDeadLetterQueueResponse = rmq::ForwardMessageToDeadLetterQueueResponse;
 using NotifyClientTerminationRequest = rmq::NotifyClientTerminationRequest;
 using NotifyClientTerminationResponse = rmq::NotifyClientTerminationResponse;
+using ChangeInvisibleDurationRequest = rmq::ChangeInvisibleDurationRequest;
+using ChangeInvisibleDurationResponse = rmq::ChangeInvisibleDurationResponse;
 
 /**
  * @brief A RpcClient represents a session between client and a remote broker.
@@ -134,6 +136,9 @@ public:
   virtual grpc::Status notifyClientTermination(grpc::ClientContext* context,
                                                const NotifyClientTerminationRequest& request,
                                                NotifyClientTerminationResponse* response) = 0;
+
+  virtual void asyncChangeInvisibleDuration(const ChangeInvisibleDurationRequest&,
+                                            InvocationContext<ChangeInvisibleDurationResponse>*) = 0;
 
   /**
    * Indicate if heartbeat is required.

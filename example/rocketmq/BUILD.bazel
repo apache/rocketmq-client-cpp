@@ -145,3 +145,13 @@ cc_binary(
         "//src/main/cpp/rocketmq:rocketmq_library",
     ],
 )
+
+cc_binary(
+    name = "example_simple_consumer",
+    srcs = [
+        "ExampleSimpleConsumer.cpp",
+    ],
+    deps = [
+        "//src/main/cpp/rocketmq:rocketmq_library",        
+    ],
+)

@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <system_error>
@@ -62,6 +63,8 @@ public:
 
   void heartbeat() override;
 
+  void heartbeat0(bool await);
+
   bool active() override {
     State state = state_.load(std::memory_order_relaxed);
     return State::STARTING == state || State::STARTED == state;
@@ -73,6 +76,9 @@ public:
 
   void schedule(const std::string& task_name, const std::function<void(void)>& task,
                 std::chrono::milliseconds delay) override;
+
+  void scheduleAtFixDelay(const std::string& task_name, const std::function<void()>& task,
+                          std::chrono::milliseconds delay, std::chrono::milliseconds interval) override;
 
   void withNameServerResolver(std::shared_ptr<NameServerResolver> name_server_resolver) {
     name_server_resolver_ = std::move(name_server_resolver);
@@ -158,6 +164,12 @@ protected:
     return nullptr;
   }
 
+  void wrapQueryAssignmentRequest(const std::string& topic, const std::string& consumer_group,
+                                  const std::string& client_id, const std::string& strategy_name,
+                                  QueryAssignmentRequest& request);
+
+  static bool selectBroker(const TopicRouteDataPtr& route, std::string& broker_host);
+
 private:
   /**
    * This is a low-level API that fetches route data from name server through
@@ -168,6 +180,22 @@ private:
    */
   void fetchRouteFor(const std::string& topic,
                      const std::function<void(const std::error_code&, const TopicRouteDataPtr&)>& cb);
+
+  static void onHeartbeat(std::string target, const std::error_code& ec, const HeartbeatResponse& response, bool await,
+                          std::size_t& countdown, absl::Mutex& mtx, absl::CondVar& cv) {
+    if (ec) {
+      SPDLOG_WARN("Failed to heartbeat against {}. Cause: {}", target, ec.message());
+    } else {
+      SPDLOG_DEBUG("Heartbeat to {} OK", target);
+    }
+
+    if (await) {
+      absl::MutexLock lk(&mtx);
+      if (!--countdown) {
+        cv.SignalAll();
+      }
+    }
+  }
 
   /**
    * Callback to execute once route data is fetched from name server.

@@ -187,34 +187,6 @@ void PushConsumerImpl::scanAssignments() {
   SPDLOG_DEBUG("End of assignment scanning.");
 }
 
-bool PushConsumerImpl::selectBroker(const TopicRouteDataPtr& topic_route_data, std::string& broker_host) {
-  if (topic_route_data && !topic_route_data->partitions().empty()) {
-    uint32_t index = TopicAssignment::getAndIncreaseQueryWhichBroker();
-    for (uint32_t i = index; i < index + topic_route_data->partitions().size(); i++) {
-      auto partition = topic_route_data->partitions().at(i % topic_route_data->partitions().size());
-      if (MixAll::MASTER_BROKER_ID != partition.broker().id() || Permission::NONE == partition.permission()) {
-        continue;
-      }
-
-      if (partition.broker()) {
-        broker_host = partition.broker().serviceAddress();
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-void PushConsumerImpl::wrapQueryAssignmentRequest(const std::string& topic, const std::string& consumer_group,
-                                                  const std::string& client_id, const std::string& strategy_name,
-                                                  QueryAssignmentRequest& request) {
-  request.mutable_topic()->set_name(topic);
-  request.mutable_topic()->set_resource_namespace(resourceNamespace());
-  request.mutable_group()->set_name(consumer_group);
-  request.mutable_group()->set_resource_namespace(resourceNamespace());
-  request.set_client_id(client_id);
-}
-
 void PushConsumerImpl::queryAssignment(
     const std::string& topic, const std::function<void(const std::error_code&, const TopicAssignmentPtr&)>& cb) {
 

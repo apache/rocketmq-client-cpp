@@ -17,6 +17,7 @@
 #pragma once
 
 #include <atomic>
+#include <cstdint>
 #include <vector>
 
 #include "Assignment.h"
@@ -54,6 +55,8 @@ public:
     return ++query_which_broker_;
   }
 
+  const Assignment& nextAssignment();
+
 private:
   /**
    * Once it is set, it will be immutable.
@@ -63,6 +66,8 @@ private:
   std::string debug_string_;
 
   thread_local static uint32_t query_which_broker_;
+
+  thread_local static std::uint32_t assignment_idx_;
 };
 
 using TopicAssignmentPtr = std::shared_ptr<TopicAssignment>;

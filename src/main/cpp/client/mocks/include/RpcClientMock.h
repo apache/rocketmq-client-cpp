@@ -78,6 +78,9 @@ public:
               (grpc::ClientContext*, const NotifyClientTerminationRequest&, NotifyClientTerminationResponse* response),
               (override));
 
+  MOCK_METHOD(void, asyncChangeInvisibleDuration,
+              (const ChangeInvisibleDurationRequest&, InvocationContext<ChangeInvisibleDurationResponse>*), (override));
+
   MOCK_METHOD(bool, needHeartbeat, (), (override));
 
   MOCK_METHOD(void, needHeartbeat, (bool), (override));

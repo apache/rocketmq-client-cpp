@@ -113,6 +113,11 @@ public:
                std::chrono::milliseconds),
               (override));
 
+  MOCK_METHOD(void, changeInvisibleDuration,
+              (const std::string&, const Metadata&, const ChangeInvisibleDurationRequest&, std::chrono::milliseconds,
+               (const std::function<void(const std::error_code&)>&)),
+              (override));
+
   MOCK_METHOD(State, state, (), (const override));
 
   MOCK_METHOD(void, submit, (std::function<void()>), (override));

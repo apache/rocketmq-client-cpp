@@ -113,6 +113,10 @@ public:
                                                          const ReportMessageConsumptionResultRequest& request,
                                                          std::chrono::milliseconds timeout) = 0;
 
+  virtual void changeInvisibleDuration(const std::string& target, const Metadata& metadata,
+                                       const ChangeInvisibleDurationRequest& request, std::chrono::milliseconds timeout,
+                                       const std::function<void(const std::error_code&)>& callback) = 0;
+
   virtual State state() const = 0;
 
   virtual void submit(std::function<void()> task) = 0;

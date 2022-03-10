@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 #include <memory>
-
-#include "gtest/gtest.h"
 #include <system_error>
+
+#include "grpc/grpc.h"
+#include "gtest/gtest.h"
 
 #include "ClientManagerFactory.h"
 #include "ClientManagerMock.h"
@@ -26,7 +27,6 @@
 #include "PushConsumerImpl.h"
 #include "Scheduler.h"
 #include "StaticNameServerResolver.h"
-#include "grpc/grpc.h"
 #include "rocketmq/MQMessageExt.h"
 #include "rocketmq/MessageListener.h"
 

@@ -74,12 +74,6 @@ public:
 
   void scanAssignments() LOCKS_EXCLUDED(topic_filter_expression_table_mtx_);
 
-  static bool selectBroker(const TopicRouteDataPtr& route, std::string& broker_host);
-
-  void wrapQueryAssignmentRequest(const std::string& topic, const std::string& consumer_group,
-                                  const std::string& client_id, const std::string& strategy_name,
-                                  QueryAssignmentRequest& request);
-
   /**
    * Query assignment of the specified topic from load balancer directly if
    * message consuming mode is clustering. In case current client is operating

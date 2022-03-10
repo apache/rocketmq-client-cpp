@@ -16,6 +16,7 @@
  */
 #pragma once
 
+#include <chrono>
 #include <functional>
 
 #include "absl/container/flat_hash_set.h"
@@ -44,8 +45,29 @@ public:
    */
   virtual void healthCheck() = 0;
 
-  virtual void schedule(const std::string& task_name, const std::function<void(void)>& task,
+  /**
+   * @brief Run task once after `delay` milliseconds.
+   * 
+   * @param task_name Name of the task
+   * @param task 
+   * @param delay 
+   */
+  virtual void schedule(const std::string &task_name,
+                        const std::function<void(void)> &task,
                         std::chrono::milliseconds delay) = 0;
+
+  /**
+   * @brief Periodically run task after delay every interval milliseconds.
+   * 
+   * @param task_name 
+   * @param task 
+   * @param delay 
+   * @param interval 
+   */
+  virtual void scheduleAtFixDelay(const std::string &task_name,
+                                  const std::function<void()> &task,
+                                  std::chrono::milliseconds delay,
+                                  std::chrono::milliseconds interval) = 0;
 
   virtual void notifyClientTermination() = 0;
 };

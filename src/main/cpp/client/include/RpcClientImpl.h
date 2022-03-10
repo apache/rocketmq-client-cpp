@@ -89,6 +89,9 @@ public:
   grpc::Status notifyClientTermination(grpc::ClientContext* context, const NotifyClientTerminationRequest& request,
                                        NotifyClientTerminationResponse* response) override;
 
+  void asyncChangeInvisibleDuration(const ChangeInvisibleDurationRequest&,
+                                    InvocationContext<ChangeInvisibleDurationResponse>*) override;
+
   bool needHeartbeat() override;
 
   void needHeartbeat(bool need_heartbeat) override;
