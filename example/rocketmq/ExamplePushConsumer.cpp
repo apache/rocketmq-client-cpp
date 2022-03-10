@@ -49,11 +49,12 @@ int main(int argc, char* argv[]) {
   const char* group_id = "GID_cpp_sdk_standard";
   const char* topic = "cpp_sdk_standard";
   const char* resource_namespace = "MQ_INST_1080056302921134_BXuIbML7";
+  const char* name_server = "mq-inst-1080056302921134-bxuibml7.mq.cn-hangzhou.aliyuncs.com:80";
 
   DefaultMQPushConsumer push_consumer(group_id);
   push_consumer.setResourceNamespace(resource_namespace);
   push_consumer.setCredentialsProvider(std::make_shared<ConfigFileCredentialsProvider>());
-  push_consumer.setNamesrvAddr("121.43.42.193:80");
+  push_consumer.setNamesrvAddr(name_server);
   MessageListener* listener = new SampleMQMessageListener;
   push_consumer.setInstanceName("instance_0");
   push_consumer.subscribe(topic, "*");

@@ -19,19 +19,28 @@
 #include <string>
 #include <vector>
 
+#include "re2/re2.h"
+
 #include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class NameServerResolver {
+class NamingScheme {
 public:
-  virtual ~NameServerResolver() = default;
+  NamingScheme();
 
-  virtual void start() = 0;
+  std::string buildAddress(const std::vector<std::string>& list);
 
-  virtual void shutdown() = 0;
+  static const char* DnsPrefix;
+  static const char* IPv4Prefix;
+  static const char* IPv6Prefix;
 
-  virtual std::string resolve() = 0;
+private:
+  static const char* IPv4Regex;
+  static const char* IPv6Regex;
+
+  re2::RE2 ipv4_pattern_;
+  re2::RE2 ipv6_pattern_;
 };
 
 ROCKETMQ_NAMESPACE_END

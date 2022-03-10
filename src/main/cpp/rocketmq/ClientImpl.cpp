@@ -38,6 +38,7 @@
 #include "InvocationContext.h"
 #include "LoggerImpl.h"
 #include "MessageAccessor.h"
+#include "NamingScheme.h"
 #include "Signature.h"
 #include "rocketmq/MQMessageExt.h"
 #include "rocketmq/MessageListener.h"
@@ -160,7 +161,24 @@ void ClientImpl::getRouteFor(const std::string& topic,
 void ClientImpl::setAccessPoint(rmq::Endpoints* endpoints) {
   std::vector<std::pair<std::string, std::uint16_t>> pairs;
   {
-    std::vector<std::string> name_server_list = name_server_resolver_->resolve();
+    std::string naming_address = name_server_resolver_->resolve();
+    absl::string_view host_port_csv;
+
+    if (absl::StartsWith(naming_address, NamingScheme::DnsPrefix)) {
+      endpoints->set_scheme(rmq::AddressScheme::DOMAIN_NAME);
+      host_port_csv = absl::StripPrefix(naming_address, NamingScheme::DnsPrefix);
+    } else if (absl::StartsWith(naming_address, NamingScheme::IPv4Prefix)) {
+      endpoints->set_scheme(rmq::AddressScheme::IPv4);
+      host_port_csv = absl::StripPrefix(naming_address, NamingScheme::IPv4Prefix);
+    } else if (absl::StartsWith(naming_address, NamingScheme::IPv6Prefix)) {
+      endpoints->set_scheme(rmq::AddressScheme::IPv6);
+      host_port_csv = absl::StripPrefix(naming_address, NamingScheme::IPv6Prefix);
+    } else {
+      SPDLOG_WARN("Unsupported naming scheme");
+    }
+
+    std::vector<std::string> name_server_list = absl::StrSplit(host_port_csv, ',');
+
     for (const auto& name_server_item : name_server_list) {
       std::string::size_type pos = name_server_item.rfind(':');
       if (std::string::npos == pos) {
@@ -179,20 +197,12 @@ void ClientImpl::setAccessPoint(rmq::Endpoints* endpoints) {
       address->set_host(host_port.first);
       endpoints->mutable_addresses()->AddAllocated(address);
     }
-
-    if (MixAll::isIPv4(pairs.begin()->first)) {
-      endpoints->set_scheme(rmq::AddressScheme::IPv4);
-    } else if (absl::StrContains(pairs.begin()->first, ':')) {
-      endpoints->set_scheme(rmq::AddressScheme::IPv6);
-    } else {
-      endpoints->set_scheme(rmq::AddressScheme::DOMAIN_NAME);
-    }
   }
 }
 
 void ClientImpl::fetchRouteFor(const std::string& topic,
                                const std::function<void(const std::error_code&, const TopicRouteDataPtr&)>& cb) {
-  std::string name_server = name_server_resolver_->current();
+  std::string name_server = name_server_resolver_->resolve();
   if (name_server.empty()) {
     SPDLOG_WARN("No name server available");
     return;
@@ -201,7 +211,7 @@ void ClientImpl::fetchRouteFor(const std::string& topic,
   auto callback = [this, topic, name_server, cb](const std::error_code& ec, const TopicRouteDataPtr& route) {
     if (ec) {
       SPDLOG_WARN("Failed to resolve route for topic={} from {}", topic, name_server);
-      std::string name_server_changed = name_server_resolver_->next();
+      std::string name_server_changed = name_server_resolver_->resolve();
       if (!name_server_changed.empty()) {
         SPDLOG_INFO("Change current name server from {} to {}", name_server, name_server_changed);
       }

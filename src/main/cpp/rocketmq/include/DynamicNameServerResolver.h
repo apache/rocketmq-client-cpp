@@ -30,6 +30,7 @@
 #include "absl/synchronization/mutex.h"
 
 #include "NameServerResolver.h"
+#include "NamingScheme.h"
 #include "Scheduler.h"
 #include "TopAddressing.h"
 
@@ -44,11 +45,7 @@ public:
 
   void shutdown() override;
 
-  std::string current() override LOCKS_EXCLUDED(name_server_list_mtx_);
-
-  std::string next() override LOCKS_EXCLUDED(name_server_list_mtx_);
-
-  std::vector<std::string> resolve() override LOCKS_EXCLUDED(name_server_list_mtx_);
+  std::string resolve() override LOCKS_EXCLUDED(name_server_list_mtx_);
 
   void injectHttpClient(std::unique_ptr<HttpClient> http_client);
 
@@ -69,6 +66,8 @@ private:
 
   bool ssl_{false};
   std::unique_ptr<TopAddressing> top_addressing_;
+
+  NamingScheme naming_scheme_;
 };
 
 ROCKETMQ_NAMESPACE_END

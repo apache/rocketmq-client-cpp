@@ -16,6 +16,7 @@
  */
 #include "StaticNameServerResolver.h"
 
+#include "absl/strings/str_replace.h"
 #include "absl/strings/str_split.h"
 
 #include "gtest/gtest.h"
@@ -42,18 +43,9 @@ protected:
 };
 
 TEST_F(StaticNameServerResolverTest, testResolve) {
-  std::vector<std::string> segments = absl::StrSplit(name_server_list_, ';');
-  ASSERT_EQ(segments, resolver_.resolve());
-}
-
-TEST_F(StaticNameServerResolverTest, testCurrentNext) {
-  std::string&& name_server_1 = resolver_.current();
-  std::string expected = "10.0.0.1:9876";
-  EXPECT_EQ(expected, name_server_1);
-
-  expected = "10.0.0.2:9876";
-  std::string&& name_server_2 = resolver_.next();
-  EXPECT_EQ(expected, name_server_2);
+  std::string result =
+      "ipv4:" + absl::StrReplaceAll(name_server_list_, {std::pair<std::string, std::string>(";", ",")});
+  ASSERT_EQ(result, resolver_.resolve());
 }
 
 ROCKETMQ_NAMESPACE_END

@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
   DefaultMQProducer producer("TestGroup");
 
   const char* topic = "cpp_sdk_standard";
-  const char* name_server = "121.43.42.193:80";
+  const char* name_server = "mq-inst-1080056302921134-bxuibml7.mq.cn-hangzhou.aliyuncs.com:80";
 
   producer.setNamesrvAddr(name_server);
   producer.compressBodyThreshold(256);
