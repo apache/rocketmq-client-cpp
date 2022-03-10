@@ -23,8 +23,8 @@
 #include <memory>
 
 #include "absl/strings/str_join.h"
-#include "spdlog/spdlog.h"
 
+#include "LoggerImpl.h"
 #include "SchedulerImpl.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -69,7 +69,7 @@ DynamicNameServerResolver::DynamicNameServerResolver(absl::string_view endpoint,
                                                      std::string(remains.data(), remains.length()));
 }
 
-std::vector<std::string> DynamicNameServerResolver::resolve() {
+std::string DynamicNameServerResolver::resolve() {
   bool fetch_immediately = false;
   {
     absl::MutexLock lk(&name_server_list_mtx_);
@@ -84,7 +84,7 @@ std::vector<std::string> DynamicNameServerResolver::resolve() {
 
   {
     absl::MutexLock lk(&name_server_list_mtx_);
-    return name_server_list_;
+    return naming_scheme_.buildAddress(name_server_list_);
   }
 }
 
@@ -124,21 +124,6 @@ void DynamicNameServerResolver::start() {
 
 void DynamicNameServerResolver::shutdown() {
   scheduler_->shutdown();
-}
-
-std::string DynamicNameServerResolver::current() {
-  absl::MutexLock lk(&name_server_list_mtx_);
-  if (name_server_list_.empty()) {
-    return std::string();
-  }
-
-  std::uint32_t index = index_.load(std::memory_order_relaxed) % name_server_list_.size();
-  return name_server_list_[index];
-}
-
-std::string DynamicNameServerResolver::next() {
-  index_.fetch_add(1, std::memory_order_relaxed);
-  return current();
 }
 
 ROCKETMQ_NAMESPACE_END

@@ -19,12 +19,14 @@
 #include <chrono>
 #include <map>
 #include <memory>
+#include <string>
 
 #include "absl/memory/memory.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/str_replace.h"
+#include "absl/strings/str_split.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include <string>
 
 #include "HttpClientMock.h"
 
@@ -66,15 +68,8 @@ protected:
 
 TEST_F(DynamicNameServerResolverTest, testResolve) {
   auto name_server_list = resolver_->resolve();
-  ASSERT_FALSE(name_server_list.empty());
-  std::string resolved = absl::StrJoin(name_server_list, ";");
-  ASSERT_EQ(name_server_list_, resolved);
-
-  std::string first{"10.0.0.0:9876"};
-  EXPECT_EQ(first, resolver_->current());
-
-  std::string second{"10.0.0.1:9876"};
-  EXPECT_EQ(second, resolver_->next());
+  std::string result = absl::StrReplaceAll(name_server_list_, {std::pair<std::string, std::string>(";", ",")});
+  ASSERT_EQ(name_server_list, "ipv4:" + result);
 }
 
 ROCKETMQ_NAMESPACE_END

@@ -16,14 +16,10 @@
  */
 #pragma once
 
-#include <atomic>
-#include <cstdint>
-#include <vector>
-
 #include "absl/strings/string_view.h"
 
 #include "NameServerResolver.h"
-#include "rocketmq/RocketMQ.h"
+#include "NamingScheme.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -37,15 +33,21 @@ public:
   void shutdown() override {
   }
 
-  std::string current() override;
-
-  std::string next() override;
-
-  std::vector<std::string> resolve() override;
+  std::string resolve() override;
 
 private:
-  std::vector<std::string> name_server_list_;
-  std::atomic<std::uint32_t> index_{0};
+  /**
+   * @brief Name server addresses, following gRPC URI schemes described in
+   * https://github.com/grpc/grpc/blob/master/doc/naming.md
+   *
+   * Sample values are:
+   * dns:[//authority/]host[:port]
+   * ipv4:address[:port][,address[:port],...]
+   * ipv6:address[:port][,address[:port],...]
+   */
+  std::string name_server_address_;
+
+  NamingScheme naming_scheme_;
 };
 
 ROCKETMQ_NAMESPACE_END

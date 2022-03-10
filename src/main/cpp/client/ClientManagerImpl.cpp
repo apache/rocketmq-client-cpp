@@ -590,7 +590,8 @@ void ClientManagerImpl::addClientObserver(std::weak_ptr<Client> client) {
 void ClientManagerImpl::resolveRoute(const std::string& target_host, const Metadata& metadata,
                                      const QueryRouteRequest& request, std::chrono::milliseconds timeout,
                                      const std::function<void(const std::error_code&, const TopicRouteDataPtr&)>& cb) {
-
+  SPDLOG_DEBUG("Name server connection URL: {}", target_host);
+  SPDLOG_DEBUG("Query route request: {}", request.DebugString());
   RpcClientSharedPtr client = getRpcClient(target_host, false);
   if (!client) {
     SPDLOG_WARN("Failed to create RPC client for name server[host={}]", target_host);

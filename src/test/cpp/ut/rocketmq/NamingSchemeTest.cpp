@@ -14,24 +14,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
 
-#include <string>
-#include <vector>
-
+#include "NamingScheme.h"
 #include "rocketmq/RocketMQ.h"
+
+#include "gtest/gtest.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class NameServerResolver {
+class NamingSchemeTest : public testing::Test {
 public:
-  virtual ~NameServerResolver() = default;
+  void SetUp() override {
+  }
 
-  virtual void start() = 0;
+  void TearDown() override {
+  }
 
-  virtual void shutdown() = 0;
-
-  virtual std::string resolve() = 0;
+protected:
+  NamingScheme naming_scheme_;
 };
+
+TEST_F(NamingSchemeTest, testBuildAddress) {
+  std::string address = "www.baidu.com:80";
+  std::string result = naming_scheme_.buildAddress({address});
+  ASSERT_EQ("dns:www.baidu.com:80", result);
+
+  address = "8.8.8.8:1234";
+  result = naming_scheme_.buildAddress({address});
+  ASSERT_EQ("ipv4:8.8.8.8:1234", result);
+
+  result = naming_scheme_.buildAddress({address, "4.4.4.4:1234"});
+  ASSERT_EQ("ipv4:8.8.8.8:1234,4.4.4.4:1234", result);
+}
 
 ROCKETMQ_NAMESPACE_END
