@@ -23,50 +23,17 @@
 #include "ClientManager.h"
 #include "ClientManagerFactory.h"
 #include "ClientManagerMock.h"
+#include "MQClientTest.h"
 #include "SimpleConsumerImpl.h"
 #include "StaticNameServerResolver.h"
+#include "src/test/cpp/ut/rocketmq/_virtual_includes/client_interface/MQClientTest.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class SimpleConsumerTest : public testing::Test {
-public:
-  void SetUp() override {
-    name_server_resolver_ = std::make_shared<StaticNameServerResolver>(name_server_list_);
+class SimpleConsumerTest : public MQClientTest {};
 
-    client_manager_ = std::make_shared<testing::NiceMock<ClientManagerMock>>();
-
-    auto callback = [](const std::string& target_host, const Metadata& metadata, const QueryRouteRequest& request,
-                       std::chrono::milliseconds timeout,
-                       const std::function<void(const std::error_code&, const TopicRouteDataPtr& ptr)>& cb) {
-      std::error_code ec;
-      cb(ec, nullptr);
-    };
-
-    EXPECT_CALL(*client_manager_, resolveRoute).Times(testing::AtLeast(1)).WillRepeatedly(testing::Invoke(callback));
-
-    ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_manager_);
-  }
-
-  void TearDown() override {
-  }
-
-protected:
-  std::string resource_namespace_{"xds://"};
-  std::string group_name_{"TestGroup"};
-  std::string topic_{"TopicTest"};
-  std::string name_server_list_{"10.0.0.1:9876"};
-  std::shared_ptr<NameServerResolver> name_server_resolver_;
-  std::shared_ptr<testing::NiceMock<ClientManagerMock>> client_manager_;
-};
-
-TEST_F(SimpleConsumerTest, testLifecycle) {
+TEST_F(SimpleConsumerTest, DISABLED_testLifecycle) {
   auto consumer = std::make_shared<SimpleConsumerImpl>(group_name_);
-  consumer->resourceNamespace(resource_namespace_);
-  consumer->withNameServerResolver(name_server_resolver_);
-  consumer->subscribe(topic_, "*", ExpressionType::TAG);
-
-  consumer->start();
-  consumer->shutdown();
 }
 
 ROCKETMQ_NAMESPACE_END

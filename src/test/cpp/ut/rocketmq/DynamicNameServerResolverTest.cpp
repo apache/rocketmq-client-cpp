@@ -67,9 +67,11 @@ protected:
 };
 
 TEST_F(DynamicNameServerResolverTest, testResolve) {
-  auto name_server_list = resolver_->resolve();
-  std::string result = absl::StrReplaceAll(name_server_list_, {std::pair<std::string, std::string>(";", ",")});
-  ASSERT_EQ(name_server_list, "ipv4:" + result);
+  auto result = resolver_->resolve();
+  ASSERT_TRUE(absl::StartsWith(result, "ipv4:"));
+  for (const auto& item : absl::StrSplit(name_server_list_, ';')) {
+    ASSERT_TRUE(absl::StrContains(result, item));
+  }
 }
 
 ROCKETMQ_NAMESPACE_END

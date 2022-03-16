@@ -537,7 +537,10 @@ RpcClientSharedPtr ClientManagerImpl::getRpcClient(const std::string& target_hos
         SPDLOG_INFO("Create a RPC client to {}", target_host.data());
       } else if (!search->second->ok()) {
         SPDLOG_INFO("Prior RPC client to {} is not OK. Re-create one", target_host);
+      } else {
+        SPDLOG_DEBUG("Re-use existing RpcClient for {}", target_host);
       }
+
       std::vector<std::unique_ptr<grpc::experimental::ClientInterceptorFactoryInterface>> interceptor_factories;
       interceptor_factories.emplace_back(absl::make_unique<LogInterceptorFactory>());
       auto channel = grpc::experimental::CreateCustomChannelWithInterceptors(
@@ -557,6 +560,7 @@ RpcClientSharedPtr ClientManagerImpl::getRpcClient(const std::string& target_hos
 }
 
 void ClientManagerImpl::addRpcClient(const std::string& target_host, const RpcClientSharedPtr& client) {
+  SPDLOG_INFO("Add RpcClient for {}", target_host);
   {
     absl::MutexLock lock(&rpc_clients_mtx_);
     rpc_clients_.insert_or_assign(target_host, client);

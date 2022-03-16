@@ -18,6 +18,7 @@
 #include "NamingScheme.h"
 #include "rocketmq/RocketMQ.h"
 
+#include "absl/strings/str_split.h"
 #include "gtest/gtest.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -42,9 +43,12 @@ TEST_F(NamingSchemeTest, testBuildAddress) {
   address = "8.8.8.8:1234";
   result = naming_scheme_.buildAddress({address});
   ASSERT_EQ("ipv4:8.8.8.8:1234", result);
+  const char* address2 = "4.4.4.4:1234";
 
-  result = naming_scheme_.buildAddress({address, "4.4.4.4:1234"});
-  ASSERT_EQ("ipv4:8.8.8.8:1234,4.4.4.4:1234", result);
+  result = naming_scheme_.buildAddress({address, address2});
+  ASSERT_TRUE(absl::StartsWith(result, "ipv4:"));
+  ASSERT_TRUE(absl::StrContains(result, address));
+  ASSERT_TRUE(absl::StrContains(result, address2));
 }
 
 ROCKETMQ_NAMESPACE_END

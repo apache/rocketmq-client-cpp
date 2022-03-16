@@ -172,6 +172,7 @@ TEST_F(DefaultMQProducerUnitTest, testAsyncSendMessage) {
     absl::MutexLock lk(&mtx);
     cv.WaitWithTimeout(&mtx, absl::Seconds(10));
   }
+  ASSERT_TRUE(completed);
   ASSERT_EQ(msg_id, message_id_);
   producer->shutdown();
   delete send_callback;

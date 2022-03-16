@@ -45,10 +45,9 @@ public:
     ON_CALL(*rpc_client_ns_, asyncQueryRoute(testing::_, testing::_))
         .WillByDefault(testing::Invoke(
             std::bind(&MQClientTest::mockQueryRoute, this, std::placeholders::_1, std::placeholders::_2)));
-    client_instance_->addRpcClient(name_server_address_, rpc_client_ns_);
-    ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_instance_);
-
     name_server_resolver_ = std::make_shared<StaticNameServerResolver>(name_server_address_);
+    client_instance_->addRpcClient(name_server_resolver_->resolve(), rpc_client_ns_);
+    ClientManagerFactory::getInstance().addClientManager(resource_namespace_, client_instance_);
   }
 
   void TearDown() override {
@@ -64,7 +63,7 @@ protected:
   const int16_t port_{10911};
   const int32_t partition_num_{24};
   const int32_t avg_partition_per_host_{8};
-  std::string name_server_address_{"ipv4:127.0.0.1:9876"};
+  std::string name_server_address_{"127.0.0.1:9876"};
   std::shared_ptr<NameServerResolver> name_server_resolver_;
   std::string group_name_{"CID_Test"};
   std::string topic_{"Topic_Test"};
@@ -73,7 +72,6 @@ protected:
   bool client_ok_{true};
   std::vector<std::string> name_server_list_;
 
-private:
   void mockQueryRoute(const QueryRouteRequest& request,
                       InvocationContext<QueryRouteResponse>* invocation_context) const {
     invocation_context->response.mutable_common()->mutable_status()->set_code(google::rpc::Code::OK);

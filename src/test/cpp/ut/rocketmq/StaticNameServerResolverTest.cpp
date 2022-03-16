@@ -43,9 +43,11 @@ protected:
 };
 
 TEST_F(StaticNameServerResolverTest, testResolve) {
-  std::string result =
-      "ipv4:" + absl::StrReplaceAll(name_server_list_, {std::pair<std::string, std::string>(";", ",")});
-  ASSERT_EQ(result, resolver_.resolve());
+  auto result = resolver_.resolve();
+  ASSERT_TRUE(absl::StartsWith(result, "ipv4:"));
+  for (const auto& segment : absl::StrSplit(name_server_list_, ';')) {
+    ASSERT_TRUE(absl::StrContains(result, segment));
+  }
 }
 
 ROCKETMQ_NAMESPACE_END
