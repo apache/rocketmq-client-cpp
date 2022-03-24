@@ -5,7 +5,6 @@ bazel-testlogs
 cmake-build-debug
 .clwb
 compile_commands.json
-.vscode
 logs
 _build
 cmake-build-debug-coverage
@@ -15,3 +14,7 @@ cmake-build-debug-coverage
 external
 bazel-apache_rocketmq_client_cpp
 bazel-rocketmq-client-cpp
+/external
+/bazel-*
+/compile_commands.json
+/.cache/

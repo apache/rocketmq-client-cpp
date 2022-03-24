@@ -16,65 +16,77 @@
  */
 #pragma once
 
-#include <chrono>
-#include <string>
-#include <vector>
+#include "absl/hash/hash.h"
+#include "fmt/format.h"
 
-#include "absl/time/clock.h"
-#include "absl/time/time.h"
+#include "apache/rocketmq/v2/definition.grpc.pb.h"
+#include "apache/rocketmq/v2/definition.pb.h"
+#include "apache/rocketmq/v2/service.grpc.pb.h"
+#include "apache/rocketmq/v2/service.pb.h"
 
-#include "DigestType.h"
-#include "Encoding.h"
-#include "rocketmq/MessageType.h"
+#include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class Protocol {
-public:
-  static const char* PROTOCOL_VERSION;
-};
+namespace rmq = apache::rocketmq::v2;
 
-struct Digest {
-  DigestType digest_type{DigestType::MD5};
-  std::string checksum;
-  Digest() = default;
-};
+using ChangeInvisibleDurationRequest = rmq::ChangeInvisibleDurationRequest;
+using ChangeInvisibleDurationResponse = rmq::ChangeInvisibleDurationResponse;
+using QueryRouteRequest = rmq::QueryRouteRequest;
+using QueryRouteResponse = rmq::QueryRouteResponse;
+using SendMessageRequest = rmq::SendMessageRequest;
+using SendMessageResponse = rmq::SendMessageResponse;
+using QueryAssignmentRequest = rmq::QueryAssignmentRequest;
+using QueryAssignmentResponse = rmq::QueryAssignmentResponse;
+using ReceiveMessageRequest = rmq::ReceiveMessageRequest;
+using ReceiveMessageResponse = rmq::ReceiveMessageResponse;
+using AckMessageRequest = rmq::AckMessageRequest;
+using AckMessageResponse = rmq::AckMessageResponse;
+using HeartbeatRequest = rmq::HeartbeatRequest;
+using HeartbeatResponse = rmq::HeartbeatResponse;
+using EndTransactionRequest = rmq::EndTransactionRequest;
+using EndTransactionResponse = rmq::EndTransactionResponse;
+using RecoverOrphanedTransactionCommand = rmq::RecoverOrphanedTransactionCommand;
+using PrintThreadStackTraceCommand = rmq::PrintThreadStackTraceCommand;
+using ThreadStackTrace = rmq::ThreadStackTrace;
+using VerifyMessageCommand = rmq::VerifyMessageCommand;
+using VerifyMessageResult = rmq::VerifyMessageResult;
+using TelemetryCommand = rmq::TelemetryCommand;
+using ForwardMessageToDeadLetterQueueRequest = rmq::ForwardMessageToDeadLetterQueueRequest;
+using ForwardMessageToDeadLetterQueueResponse = rmq::ForwardMessageToDeadLetterQueueResponse;
+using NotifyClientTerminationRequest = rmq::NotifyClientTerminationRequest;
+using NotifyClientTerminationResponse = rmq::NotifyClientTerminationResponse;
 
-struct Resource {
-  /**
-   * Abstract resource namespace
-   */
-  std::string resource_namespace;
+const char* protocolVersion();
 
-  /**
-   * Resource name, which remains unique within given abstract resource namespace.
-   */
-  std::string name;
-};
+bool writable(rmq::Permission p);
 
-struct SystemAttribute {
-  std::string tag;
-  std::vector<std::string> keys;
-  std::string message_id;
-  Digest digest;
-  Encoding body_encoding;
-  MessageType message_type;
-  absl::Time born_timestamp{absl::Now()};
-  std::string born_host;
-  absl::Time store_timestamp{absl::UnixEpoch()};
-  std::string store_host;
-  absl::Time delivery_timestamp{absl::UnixEpoch()};
-  absl::Time decode_timestamp{absl::Now()};
-  int32_t delay_level{0};
-  std::string receipt_handle;
-  int32_t partition_id{0};
-  int64_t partition_offset{0};
-  absl::Duration invisible_period;
-  int32_t attempt_times{0};
-  Resource publisher_group;
-  std::string trace_context;
-  std::string target_endpoint;
-  std::string message_group;
-};
+bool readable(rmq::Permission p);
+
+bool operator<(const rmq::Resource& lhs, const rmq::Resource& rhs);
+
+bool operator==(const rmq::Resource& lhs, const rmq::Resource& rhs);
+
+bool operator<(const rmq::Broker& lhs, const rmq::Broker& rhs);
+
+bool operator==(const rmq::Broker& lhs, const rmq::Broker& rhs);
+
+bool operator<(const rmq::MessageQueue& lhs, const rmq::MessageQueue& rhs);
+
+bool operator==(const rmq::MessageQueue& lhs, const rmq::MessageQueue& rhs);
+
+std::string simpleNameOf(const rmq::MessageQueue& m);
+
+bool operator==(const std::vector<rmq::MessageQueue>& lhs, const std::vector<rmq::MessageQueue>& rhs);
+
+bool operator!=(const std::vector<rmq::MessageQueue>& lhs, const std::vector<rmq::MessageQueue>& rhs);
+
+std::string urlOf(const rmq::MessageQueue& message_queue);
+
+bool operator<(const rmq::Assignment& lhs, const rmq::Assignment& rhs);
+
+bool operator==(const rmq::Assignment& lhs, const rmq::Assignment& rhs);
+
+bool operator==(const std::vector<rmq::Assignment>& lhs, const std::vector<rmq::Assignment>& rhs);
 
 ROCKETMQ_NAMESPACE_END

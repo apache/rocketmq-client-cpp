@@ -16,20 +16,26 @@
  */
 #pragma once
 
+#include <iostream>
+#include <memory>
+
+#include "gmock/gmock.h"
+
+#include "Client.h"
 #include "InvocationContext.h"
 #include "RpcClient.h"
-#include "gmock/gmock.h"
-#include <iostream>
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 class RpcClientMock : public RpcClient {
 public:
-  RpcClientMock();
+  RpcClientMock() = default;
 
   ~RpcClientMock() override {
     std::cout << "~RpcClientMock()" << std::endl;
   }
+
+  MOCK_METHOD(const std::string&, remoteAddress, (), (const override));
 
   MOCK_METHOD(void, asyncQueryRoute, (const QueryRouteRequest&, InvocationContext<QueryRouteResponse>*), (override));
 
@@ -38,54 +44,36 @@ public:
   MOCK_METHOD(void, asyncQueryAssignment, (const QueryAssignmentRequest&, InvocationContext<QueryAssignmentResponse>*),
               (override));
 
-  MOCK_METHOD(std::shared_ptr<CompletionQueue>&, completionQueue, (), (override));
-
-  MOCK_METHOD(void, asyncReceive, (const ReceiveMessageRequest&, InvocationContext<ReceiveMessageResponse>*),
-              (override));
+  MOCK_METHOD(void, asyncReceive, (const ReceiveMessageRequest&, (std::unique_ptr<ReceiveMessageContext>)), (override));
 
   MOCK_METHOD(void, asyncAck, (const AckMessageRequest&, InvocationContext<AckMessageResponse>*), (override));
 
-  MOCK_METHOD(void, asyncNack, (const NackMessageRequest&, InvocationContext<NackMessageResponse>*), (override));
+  MOCK_METHOD(void, asyncChangeInvisibleDuration,
+              (const ChangeInvisibleDurationRequest&, InvocationContext<ChangeInvisibleDurationResponse>*), (override));
 
   MOCK_METHOD(void, asyncHeartbeat, (const HeartbeatRequest&, InvocationContext<HeartbeatResponse>*), (override));
 
-  MOCK_METHOD(void, asyncHealthCheck, (const HealthCheckRequest&, InvocationContext<HealthCheckResponse>*), (override));
-
   MOCK_METHOD(void, asyncEndTransaction, (const EndTransactionRequest&, InvocationContext<EndTransactionResponse>*),
               (override));
-
-  MOCK_METHOD(void, asyncQueryOffset, (const QueryOffsetRequest&, InvocationContext<QueryOffsetResponse>*), (override));
-
-  MOCK_METHOD(void, asyncPull, (const PullMessageRequest&, InvocationContext<PullMessageResponse>*), (override));
 
   MOCK_METHOD(void, asyncForwardMessageToDeadLetterQueue,
               (const ForwardMessageToDeadLetterQueueRequest&,
                InvocationContext<ForwardMessageToDeadLetterQueueResponse>*),
               (override));
 
-  MOCK_METHOD(void, asyncPollCommand, (const PollCommandRequest&, InvocationContext<PollCommandResponse>*), (override));
-
-  MOCK_METHOD(grpc::Status, reportThreadStackTrace,
-              (grpc::ClientContext*, const ReportThreadStackTraceRequest&, ReportThreadStackTraceResponse*),
-              (override));
-
-  MOCK_METHOD(grpc::Status, reportMessageConsumptionResult,
-              (grpc::ClientContext*, const ReportMessageConsumptionResultRequest&,
-               ReportMessageConsumptionResultResponse*),
-              (override));
+  MOCK_METHOD(std::shared_ptr<TelemetryBidiReactor>, asyncTelemetry, (std::weak_ptr<Client>), (override));
 
   MOCK_METHOD(grpc::Status, notifyClientTermination,
               (grpc::ClientContext*, const NotifyClientTerminationRequest&, NotifyClientTerminationResponse* response),
               (override));
+
+  MOCK_METHOD(std::weak_ptr<ClientManager>, clientManager, (), (override));
 
   MOCK_METHOD(bool, needHeartbeat, (), (override));
 
   MOCK_METHOD(void, needHeartbeat, (bool), (override));
 
   MOCK_METHOD(bool, ok, (), (const override));
-
-protected:
-  std::shared_ptr<grpc::CompletionQueue> completion_queue_;
 };
 
 ROCKETMQ_NAMESPACE_END

@@ -23,5 +23,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "@com_google_absl//absl/strings",
+        "@io_opencensus_cpp//opencensus/trace",
     ],
 )

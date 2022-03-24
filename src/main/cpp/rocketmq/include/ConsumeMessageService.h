@@ -38,9 +38,7 @@ public:
    */
   virtual void shutdown() = 0;
 
-  virtual void submitConsumeTask(const ProcessQueueWeakPtr& process_queue_ptr) = 0;
-
-  virtual MessageListenerType messageListenerType() = 0;
+  virtual void submitConsumeTask(const std::weak_ptr<ProcessQueue>& process_queue) = 0;
 
   virtual void signalDispatcher() = 0;
 

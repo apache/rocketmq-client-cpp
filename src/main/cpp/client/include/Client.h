@@ -18,15 +18,20 @@
 
 #include <functional>
 
-#include "absl/container/flat_hash_set.h"
-
 #include "ClientConfig.h"
+#include "RpcClient.h"
+#include "absl/container/flat_hash_set.h"
+#include "rocketmq/CredentialsProvider.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class Client : virtual public ClientConfig {
+class Client {
 public:
-  ~Client() override = default;
+  virtual ~Client() = default;
+
+  virtual rmq::Settings clientSettings() = 0;
+
+  virtual ClientConfig& config() = 0;
 
   virtual void endpointsInUse(absl::flat_hash_set<std::string>& endpoints) = 0;
 
@@ -36,18 +41,26 @@ public:
 
   virtual void onRemoteEndpointRemoval(const std::vector<std::string>&) = 0;
 
-  /**
-   * For endpoints that are marked as inactive due to one or multiple business
-   * operation failure, this function is to initiate health-check RPCs; Once the
-   * health-check passes, they are conceptually add back to serve further
-   * business workload.
-   */
-  virtual void healthCheck() = 0;
-
   virtual void schedule(const std::string& task_name, const std::function<void(void)>& task,
                         std::chrono::milliseconds delay) = 0;
 
+  /**
+   * @brief Create a Session object
+   *
+   * @param target Remote endpoint address in form of gRPC naming convention.
+   * @param verify Verify presence of target in route table before creating session.
+   */
+  virtual void createSession(const std::string& target, bool verify) = 0;
+
+  virtual void verify(MessageConstSharedPtr message, std::function<void(TelemetryCommand)>) = 0;
+
+  virtual void recoverOrphanedTransaction(MessageConstSharedPtr message) = 0;
+
   virtual void notifyClientTermination() = 0;
+
+  virtual void withCredentialsProvider(std::shared_ptr<CredentialsProvider> credentials_provider) = 0;
+
+  virtual std::shared_ptr<ClientManager> manager() const = 0;
 };
 
 ROCKETMQ_NAMESPACE_END

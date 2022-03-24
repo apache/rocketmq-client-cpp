@@ -1,11 +1,14 @@
 ---
+BasedOnStyle: Google
+IndentWidth: 2
+---
 Language: Cpp
 AccessModifierOffset: -2
+BinPackParameters: false
 ColumnLimit: 120
 DerivePointerAlignment: false
 PointerAlignment: Left
 SortIncludes: true
-IndentWidth: 2
 NamespaceIndentation: Inner
 AlwaysBreakTemplateDeclarations: true
 AllowShortCaseLabelsOnASingleLine: false
@@ -13,6 +16,7 @@ AllowShortEnumsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: false
 IndentCaseBlocks: false
 IndentCaseLabels: true
+ReflowComments: true
 ...
 
 ---

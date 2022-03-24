@@ -16,55 +16,26 @@
  */
 #pragma once
 
-#include <apache/rocketmq/v1/definition.pb.h>
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
 #include <memory>
 #include <set>
 
-#include "Assignment.h"
 #include "ClientManager.h"
-#include "FilterExpression.h"
+#include "MessageExt.h"
 #include "MixAll.h"
 #include "ProcessQueue.h"
 #include "ReceiveMessageCallback.h"
 #include "TopicAssignmentInfo.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "apache/rocketmq/v1/service.pb.h"
-#include "rocketmq/ConsumeType.h"
-#include "rocketmq/MQMessageExt.h"
-#include "rocketmq/MQMessageQueue.h"
 #include "gtest/gtest_prod.h"
+#include "rocketmq/FilterExpression.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-struct OffsetRecord {
-  explicit OffsetRecord(int64_t offset) : offset_(offset), released_(false) {
-  }
-  OffsetRecord(int64_t offset, bool released) : offset_(offset), released_(released) {
-  }
-  int64_t offset_;
-  bool released_;
-};
-
-ROCKETMQ_NAMESPACE_END
-
-namespace std {
-
-template <>
-struct less<ROCKETMQ_NAMESPACE::OffsetRecord> {
-  bool operator()(const ROCKETMQ_NAMESPACE::OffsetRecord& lhs, const ROCKETMQ_NAMESPACE::OffsetRecord& rhs) const {
-    return lhs.offset_ < rhs.offset_;
-  }
-};
-
-} // namespace std
-
-ROCKETMQ_NAMESPACE_BEGIN
-
-class PushConsumer;
+class PushConsumerImpl;
 
 /**
  * @brief Once messages are fetched(either pulled or popped) from remote server, they are firstly put into cache.
@@ -74,14 +45,14 @@ class PushConsumer;
  */
 class ProcessQueueImpl : virtual public ProcessQueue {
 public:
-  ProcessQueueImpl(MQMessageQueue message_queue, FilterExpression filter_expression,
-                   std::weak_ptr<PushConsumer> consumer, std::shared_ptr<ClientManager> client_instance);
+  ProcessQueueImpl(rmq::MessageQueue message_queue,
+                   FilterExpression filter_expression,
+                   std::weak_ptr<PushConsumerImpl> consumer,
+                   std::shared_ptr<ClientManager> client_instance);
 
   ~ProcessQueueImpl() override;
 
-  void callback(std::shared_ptr<ReceiveMessageCallback> callback) override;
-
-  MQMessageQueue getMQMessageQueue() override;
+  void callback(std::shared_ptr<AsyncReceiveMessageCallback> callback) override;
 
   bool expired() const override;
 
@@ -89,7 +60,7 @@ public:
 
   const FilterExpression& getFilterExpression() const override;
 
-  std::weak_ptr<PushConsumer> getConsumer() override;
+  std::weak_ptr<PushConsumerImpl> getConsumer() override;
 
   std::shared_ptr<ClientManager> getClientManager() override;
 
@@ -100,7 +71,7 @@ public:
   }
 
   std::string topic() const override {
-    return message_queue_.getTopic();
+    return message_queue_.topic().name();
   }
 
   bool hasPendingMessages() const override LOCKS_EXCLUDED(messages_mtx_);
@@ -110,7 +81,7 @@ public:
    *
    * @param messages
    */
-  void cacheMessages(const std::vector<MQMessageExt>& messages) override LOCKS_EXCLUDED(messages_mtx_, offsets_mtx_);
+  void cacheMessages(const std::vector<MessageConstSharedPtr>& messages) override LOCKS_EXCLUDED(messages_mtx_);
 
   /**
    * @return Number of messages that is not yet dispatched to thread pool, likely, due to topic-rate-limiting.
@@ -126,24 +97,13 @@ public:
    * @param messages
    * @return true if there are more messages to consume in cache
    */
-  bool take(uint32_t batch_size, std::vector<MQMessageExt>& messages) override LOCKS_EXCLUDED(messages_mtx_);
+  bool take(uint32_t batch_size, std::vector<MessageConstSharedPtr>& messages) override LOCKS_EXCLUDED(messages_mtx_);
 
   void syncIdleState() override {
     idle_since_ = std::chrono::steady_clock::now();
   }
 
-  void nextOffset(int64_t next_offset) override {
-    assert(next_offset >= 0);
-    next_offset_ = next_offset;
-  }
-
-  int64_t nextOffset() const {
-    return next_offset_;
-  }
-
-  bool committedOffset(int64_t& offset) override LOCKS_EXCLUDED(offsets_mtx_);
-
-  void release(uint64_t body_size, int64_t offset) override LOCKS_EXCLUDED(messages_mtx_, offsets_mtx_);
+  void release(uint64_t body_size) override LOCKS_EXCLUDED(messages_mtx_);
 
   bool unbindFifoConsumeTask() override {
     bool expected = true;
@@ -155,8 +115,12 @@ public:
     return has_fifo_task_bound_.compare_exchange_strong(expected, true, std::memory_order_relaxed);
   }
 
+  const rmq::MessageQueue& messageQueue() const override {
+    return message_queue_;
+  }
+
 private:
-  MQMessageQueue message_queue_;
+  rmq::MessageQueue message_queue_;
 
   /**
    * Expression used to filter message in the server side.
@@ -171,15 +135,15 @@ private:
 
   std::string simple_name_;
 
-  std::weak_ptr<PushConsumer> consumer_;
+  std::weak_ptr<PushConsumerImpl> consumer_;
   std::shared_ptr<ClientManager> client_manager_;
 
-  std::shared_ptr<ReceiveMessageCallback> receive_callback_;
+  std::shared_ptr<AsyncReceiveMessageCallback> receive_callback_;
 
   /**
    * Messages that are pending to be submitted to thread pool.
    */
-  mutable std::vector<MQMessageExt> cached_messages_ GUARDED_BY(messages_mtx_);
+  mutable std::vector<MessageConstSharedPtr> cached_messages_ GUARDED_BY(messages_mtx_);
 
   mutable absl::Mutex messages_mtx_;
 
@@ -195,22 +159,14 @@ private:
    */
   std::atomic<uint64_t> cached_message_memory_;
 
-  int64_t next_offset_{0};
-
   /**
    * If this process queue is used in FIFO scenario, this field marks if there is an task in thread pool.
    */
   std::atomic_bool has_fifo_task_bound_{false};
 
-  std::set<OffsetRecord> offsets_ GUARDED_BY(offsets_mtx_);
-  absl::Mutex offsets_mtx_;
-
   void popMessage();
   void wrapPopMessageRequest(absl::flat_hash_map<std::string, std::string>& metadata,
                              rmq::ReceiveMessageRequest& request);
-
-  void pullMessage();
-  void wrapPullMessageRequest(rmq::PullMessageRequest& request);
 
   void wrapFilterExpression(rmq::FilterExpression* filter_expression);
 

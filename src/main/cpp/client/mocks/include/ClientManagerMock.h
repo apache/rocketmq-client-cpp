@@ -16,10 +16,14 @@
  */
 #pragma once
 
-#include "ClientManager.h"
-#include "gmock/gmock.h"
 #include <chrono>
+#include <memory>
 #include <system_error>
+
+#include "gmock/gmock.h"
+
+#include "ClientManager.h"
+#include "RpcClient.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -43,20 +47,18 @@ public:
                (const std::function<void(const std::error_code&, const HeartbeatResponse&)>&)),
               (override));
 
-  MOCK_METHOD(void, pollCommand,
-              (const std::string&, const Metadata&, const PollCommandRequest&, std::chrono::milliseconds,
-               const std::function<void(const InvocationContext<PollCommandResponse>*)>&),
+  MOCK_METHOD(std::shared_ptr<TelemetryBidiReactor>, telemetry, (const std::string&, std::weak_ptr<Client>),
               (override));
 
-  MOCK_METHOD(bool, wrapMessage, (const rmq::Message&, MQMessageExt&), (override));
+  MOCK_METHOD(bool, wrapMessage, (const rmq::Message&, MessageExt&), (override));
 
   MOCK_METHOD(void, ack,
               (const std::string&, const Metadata&, const AckMessageRequest&, std::chrono::milliseconds,
                (const std::function<void(const std::error_code&)>&)),
               (override));
 
-  MOCK_METHOD(void, nack,
-              (const std::string&, const Metadata&, const NackMessageRequest&, std::chrono::milliseconds,
+  MOCK_METHOD(void, changeInvisibleDuration,
+              (const std::string&, const Metadata&, const ChangeInvisibleDurationRequest&, std::chrono::milliseconds,
                (const std::function<void(const std::error_code&)>&)),
               (override));
 
@@ -71,16 +73,6 @@ public:
                (const std::function<void(const std::error_code&, const EndTransactionResponse&)>&)),
               (override));
 
-  MOCK_METHOD(void, queryOffset,
-              (const std::string&, const Metadata&, const QueryOffsetRequest&, std::chrono::milliseconds,
-               (const std::function<void(const std::error_code&, const QueryOffsetResponse&)>&)),
-              (override));
-
-  MOCK_METHOD(void, healthCheck,
-              (const std::string&, const Metadata&, const HealthCheckRequest&, std::chrono::milliseconds,
-               (const std::function<void(const std::error_code&, const InvocationContext<HealthCheckResponse>*)>&)),
-              (override));
-
   MOCK_METHOD(void, addClientObserver, (std::weak_ptr<Client>), (override));
 
   MOCK_METHOD(void, queryAssignment,
@@ -90,27 +82,13 @@ public:
 
   MOCK_METHOD(void, receiveMessage,
               (const std::string&, const Metadata&, const ReceiveMessageRequest&, std::chrono::milliseconds,
-               (const std::shared_ptr<ReceiveMessageCallback>&)),
+               ReceiveMessageCallback),
               (override));
 
-  MOCK_METHOD(bool, send, (const std::string&, const Metadata&, SendMessageRequest&, SendCallback*), (override));
-
-  MOCK_METHOD(void, pullMessage,
-              (const std::string&, const Metadata&, const PullMessageRequest&, std::chrono::milliseconds,
-               (const std::function<void(const std::error_code&, const ReceiveMessageResult&)>&)),
-              (override));
+  MOCK_METHOD(bool, send, (const std::string&, const Metadata&, SendMessageRequest&, SendCallback), (override));
 
   MOCK_METHOD(std::error_code, notifyClientTermination,
               (const std::string&, const Metadata&, const NotifyClientTerminationRequest&, std::chrono::milliseconds),
-              (override));
-
-  MOCK_METHOD(std::error_code, reportThreadStackTrace,
-              (const std::string&, const Metadata&, const ReportThreadStackTraceRequest&, std::chrono::milliseconds),
-              (override));
-
-  MOCK_METHOD(std::error_code, reportMessageConsumptionResult,
-              (const std::string&, const Metadata&, const ReportMessageConsumptionResultRequest&,
-               std::chrono::milliseconds),
               (override));
 
   MOCK_METHOD(State, state, (), (const override));

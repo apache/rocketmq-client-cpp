@@ -16,13 +16,13 @@
  */
 #include "ConsumeMessageServiceBase.h"
 #include "LoggerImpl.h"
-#include "PushConsumer.h"
+#include "PushConsumerImpl.h"
 #include "ThreadPoolImpl.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-ConsumeMessageServiceBase::ConsumeMessageServiceBase(std::weak_ptr<PushConsumer> consumer, int thread_count,
-                                                     MessageListener* message_listener)
+ConsumeMessageServiceBase::ConsumeMessageServiceBase(std::weak_ptr<PushConsumerImpl> consumer, int thread_count,
+                                                     MessageListener message_listener)
     : state_(State::CREATED), thread_count_(thread_count), pool_(absl::make_unique<ThreadPoolImpl>(thread_count_)),
       consumer_(std::move(consumer)), message_listener_(message_listener) {
 }
@@ -91,13 +91,13 @@ std::shared_ptr<RateLimiter<10>> ConsumeMessageServiceBase::rateLimiter(const st
 }
 
 void ConsumeMessageServiceBase::dispatch() {
-  std::shared_ptr<PushConsumer> consumer = consumer_.lock();
+  std::shared_ptr<PushConsumerImpl> consumer = consumer_.lock();
   if (!consumer) {
     SPDLOG_WARN("The consumer has already destructed");
     return;
   }
 
-  auto callback = [this](const ProcessQueueSharedPtr& process_queue) { submitConsumeTask(process_queue); };
+  auto callback = [this](const std::shared_ptr<ProcessQueue>& process_queue) { submitConsumeTask(process_queue); };
   consumer->iterateProcessQueue(callback);
 }
 

@@ -23,7 +23,7 @@
 #include "absl/strings/string_view.h"
 #include "re2/re2.h"
 
-#include "rocketmq/MQMessage.h"
+#include "rocketmq/Message.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -49,7 +49,9 @@ public:
 
   static const std::chrono::duration<long long> PROCESS_QUEUE_EXPIRATION_THRESHOLD_;
 
-  static const int32_t MAX_SEND_MESSAGE_ATTEMPT_TIMES_;
+  static const std::chrono::milliseconds DefaultReceiveMessageTimeout;
+
+  static const std::size_t MAX_SEND_MESSAGE_ATTEMPT_TIMES_;
 
   static const std::string PROPERTY_TRANSACTION_PREPARED_;
 
@@ -142,7 +144,7 @@ public:
    * @param message
    * @return
    */
-  static bool validate(const MQMessage& message);
+  static bool validate(const Message& message);
 
   static uint32_t random(uint32_t left, uint32_t right);
 
@@ -161,6 +163,8 @@ public:
   static bool homeDirectory(std::string& home);
 
   static bool isIPv4(absl::string_view host);
+
+  static const char* osName();
 
 private:
   static bool hexCharValue(char c, uint8_t& value);

@@ -24,8 +24,7 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-enum class ErrorCode : int
-{
+enum class ErrorCode : int {
   Success = 0,
 
   /**
@@ -33,6 +32,11 @@ enum class ErrorCode : int
    *
    */
   IllegalState = 1,
+
+  /**
+   * @brief Broker has processed the request but is not going to return any content.
+   */
+  NoContent = 204,
 
   /**
    * @brief Bad configuration. For example, negative max-attempt-times.
@@ -47,6 +51,11 @@ enum class ErrorCode : int
    *
    */
   BadRequest = 400,
+
+  /**
+   * @brief To publish FIFO messages, only synchronous API is supported.
+   */
+  BadRequestAsyncPubFifoMessage = 40001,
 
   /**
    * @brief Authentication failed. Possibly caused by invalid credentials.
@@ -67,6 +76,10 @@ enum class ErrorCode : int
    *
    */
   NotFound = 404,
+
+  TopicNotFound = 404001,
+
+  GroupNotFound = 404002,
 
   /**
    * @brief Timeout when connecting, reading from or writing to brokers.

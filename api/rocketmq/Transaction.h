@@ -34,17 +34,18 @@ public:
 
   virtual bool rollback() = 0;
 
-  virtual std::string messageId() const = 0;
+  virtual const std::string& topic() const = 0;
 
-  virtual std::string transactionId() const = 0;
+  virtual const std::string& messageId() const = 0;
+
+  virtual const std::string& transactionId() const = 0;
+
+  virtual const std::string& traceContext() const = 0;
+
+  virtual const std::string& endpoint() const = 0;
 };
 
 using TransactionPtr = std::unique_ptr<Transaction>;
-
-enum class TransactionState : int8_t
-{
-  COMMIT = 0,
-  ROLLBACK = 1,
-};
+using TransactionConstPtr = std::unique_ptr<const Transaction>;
 
 ROCKETMQ_NAMESPACE_END

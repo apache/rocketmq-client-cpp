@@ -18,14 +18,14 @@
 
 #include <memory>
 
+#include "AsyncReceiveMessageCallback.h"
 #include "ConsumeMessageType.h"
-#include "FilterExpression.h"
-#include "ReceiveMessageCallback.h"
-#include "rocketmq/MQMessageExt.h"
+#include "MessageExt.h"
+#include "rocketmq/FilterExpression.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class PushConsumer;
+class PushConsumerImpl;
 
 class ClientManager;
 
@@ -35,29 +35,23 @@ public:
 
   virtual bool expired() const = 0;
 
-  virtual void callback(std::shared_ptr<ReceiveMessageCallback> callback) = 0;
+  virtual void callback(std::shared_ptr<AsyncReceiveMessageCallback> callback) = 0;
 
   virtual void receiveMessage() = 0;
-
-  virtual void nextOffset(int64_t next_offset) = 0;
 
   virtual bool hasPendingMessages() const = 0;
 
   virtual std::string topic() const = 0;
 
-  virtual bool take(uint32_t batch_size, std::vector<MQMessageExt>& messages) = 0;
+  virtual bool take(uint32_t batch_size, std::vector<MessageConstSharedPtr>& messages) = 0;
 
-  virtual std::weak_ptr<PushConsumer> getConsumer() = 0;
+  virtual std::weak_ptr<PushConsumerImpl> getConsumer() = 0;
 
   virtual const std::string& simpleName() const = 0;
 
-  virtual MQMessageQueue getMQMessageQueue() = 0;
+  virtual void release(uint64_t body_size) = 0;
 
-  virtual bool committedOffset(int64_t& offset) = 0;
-
-  virtual void release(uint64_t body_size, int64_t offset) = 0;
-
-  virtual void cacheMessages(const std::vector<MQMessageExt>& messages) = 0;
+  virtual void cacheMessages(const std::vector<MessageConstSharedPtr>& messages) = 0;
 
   virtual bool shouldThrottle() const = 0;
 
@@ -70,9 +64,8 @@ public:
   virtual bool bindFifoConsumeTask() = 0;
 
   virtual bool unbindFifoConsumeTask() = 0;
-};
 
-using ProcessQueueSharedPtr = std::shared_ptr<ProcessQueue>;
-using ProcessQueueWeakPtr = std::weak_ptr<ProcessQueue>;
+  virtual const rmq::MessageQueue& messageQueue() const = 0;
+};
 
 ROCKETMQ_NAMESPACE_END

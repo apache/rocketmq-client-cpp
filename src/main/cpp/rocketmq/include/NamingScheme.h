@@ -19,8 +19,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "re2/re2.h"
-
 #include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -38,6 +38,10 @@ public:
 private:
   static const char* IPv4Regex;
   static const char* IPv6Regex;
+
+  bool isIPv4(const std::string& host);
+
+  bool isIPv6(const std::string& host);
 
   re2::RE2 ipv4_pattern_;
   re2::RE2 ipv6_pattern_;

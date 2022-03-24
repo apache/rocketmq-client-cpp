@@ -18,8 +18,8 @@
 
 #include <string>
 
-#include "rocketmq/MQMessage.h"
-#include "rocketmq/MQMessageQueue.h"
+#include "Protocol.h"
+#include "rocketmq/Message.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 class SendMessageContext {
@@ -30,16 +30,16 @@ public:
   void setProducerGroup(const std::string& producer_group) {
     this->producer_group_ = producer_group;
   };
-  const MQMessage& getMessage() const {
+  const Message& getMessage() const {
     return message_;
   }
-  void setMessage(const MQMessage& message) {
+  void setMessage(const Message& message) {
     this->message_ = message;
   }
-  const MQMessageQueue& getMessageQueue() const {
+  const rmq::MessageQueue& getMessageQueue() const {
     return message_queue_;
   }
-  void setMessageQueue(const MQMessageQueue& message_queue) {
+  void setMessageQueue(const rmq::MessageQueue& message_queue) {
     this->message_queue_ = message_queue;
   }
   const std::string& getBornHost() const {
@@ -63,8 +63,8 @@ public:
 
 private:
   std::string producer_group_;
-  MQMessage message_;
-  MQMessageQueue message_queue_;
+  Message message_;
+  rmq::MessageQueue message_queue_;
   std::string born_host_;
   std::string message_id_;
   long long queue_offset_{-1};

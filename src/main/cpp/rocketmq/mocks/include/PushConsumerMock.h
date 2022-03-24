@@ -25,7 +25,7 @@ ROCKETMQ_NAMESPACE_BEGIN
 
 class PushConsumerMock : virtual public PushConsumer, virtual public ConsumerMock {
 public:
-  MOCK_METHOD(void, iterateProcessQueue, (const std::function<void(ProcessQueueSharedPtr)>&), (override));
+  MOCK_METHOD(void, iterateProcessQueue, (const std::function<void(std::shared_ptr<ProcessQueue>)>&), (override));
 
   MOCK_METHOD(MessageModel, messageModel, (), (const override));
 
@@ -40,8 +40,6 @@ public:
   MOCK_METHOD(int32_t, maxDeliveryAttempts, (), (const override));
 
   MOCK_METHOD(void, updateOffset, (const MQMessageQueue&, int64_t), (override));
-
-  MOCK_METHOD(void, nack, (const MQMessageExt&, const std::function<void(const std::error_code&)>&), (override));
 
   MOCK_METHOD(bool, receiveMessage, (const MQMessageQueue&, const FilterExpression&), (override));
 

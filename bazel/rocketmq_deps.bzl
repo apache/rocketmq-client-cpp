@@ -9,6 +9,17 @@ def rocketmq_deps():
         actual = "@com_github_opentelemetry//api:api",
     )
 
+    if "rules_python" not in native.existing_rules():
+        http_archive(
+            name = "rules_python",
+            sha256 = "cdf6b84084aad8f10bf20b46b77cb48d83c319ebe6458a18e9d2cebf57807cdd",
+            strip_prefix = "rules_python-0.8.1",
+            urls = [
+                "https://shutian.oss-cn-hangzhou.aliyuncs.com/cdn/rules-python/rules_python-0.8.1.tar.gz",
+                "https://github.com/bazelbuild/rules_python/archive/refs/tags/0.8.1.tar.gz",
+            ],
+        )
+
     if "com_google_googletest" not in native.existing_rules():
          http_archive(
              name = "com_google_googletest",
@@ -55,59 +66,46 @@ def rocketmq_deps():
     if "com_google_protobuf" not in native.existing_rules():
         http_archive(
             name = "com_google_protobuf",
-            sha256 = "36f81e03a0702f8f935fffd5a486dac1c0fc6d4bae1cd02c7a32448ad6e63bcb",
-            strip_prefix = "protobuf-3.17.2",
+            sha256 = "8b28fdd45bab62d15db232ec404248901842e5340299a57765e48abe8a80d930",
+            strip_prefix = "protobuf-3.20.1",
             urls = [
-                "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v3.17.2.tar.gz",
+                "https://shutian.oss-cn-hangzhou.aliyuncs.com/cdn/protobuf/protobuf-3.20.1.tar.gz",
+                "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v3.20.1.tar.gz",
             ],
         )
 
     if "rules_proto_grpc" not in native.existing_rules():
         http_archive(
             name = "rules_proto_grpc",
-            sha256 = "7954abbb6898830cd10ac9714fbcacf092299fda00ed2baf781172f545120419",
-            strip_prefix = "rules_proto_grpc-3.1.1",
-            urls = ["https://github.com/rules-proto-grpc/rules_proto_grpc/archive/3.1.1.tar.gz"],
+            sha256 = "507e38c8d95c7efa4f3b1c0595a8e8f139c885cb41a76cab7e20e4e67ae87731",
+            strip_prefix = "rules_proto_grpc-4.1.1",
+            urls = [
+                "https://shutian.oss-cn-hangzhou.aliyuncs.com/cdn/rules_proto_grpc/rules_proto_grpc-4.1.1.tar.gz",
+                "https://github.com/rules-proto-grpc/rules_proto_grpc/archive/refs/tags/4.1.1.tar.gz"
+            ],
         )
 
     if "com_google_absl" not in native.existing_rules():
         http_archive(
             name = "com_google_absl",
-            sha256 = "59b862f50e710277f8ede96f083a5bb8d7c9595376146838b9580be90374ee1f",
-            strip_prefix = "abseil-cpp-20210324.2",
+            sha256 = "dcf71b9cba8dc0ca9940c4b316a0c796be8fab42b070bb6b7cab62b48f0e66c4",
+            strip_prefix = "abseil-cpp-20211102.0",
             urls = [
-                "https://github.com/abseil/abseil-cpp/archive/refs/tags/20210324.2.tar.gz",
+                "https://shutian.oss-cn-hangzhou.aliyuncs.com/cdn/abseil/abseil-cpp-20211102.0.tar.gz",
+                "https://github.com/abseil/abseil-cpp/archive/refs/tags/20211102.0.tar.gz",
             ],
         )
 
     if "com_github_grpc_grpc" not in native.existing_rules():
         http_archive(
             name = "com_github_grpc_grpc",
-            strip_prefix = "grpc-1.39.0",
-            sha256 = "b16992aa1c949c10d5d5ce2a62f9d99fa7de77da2943e643fb66dcaf075826d6",
-            urls = ["https://github.com/grpc/grpc/archive/v1.39.0.tar.gz"],
-        )
-
-    if "io_opentelemetry_cpp" not in native.existing_rules():
-        http_archive(
-            name = "io_opentelemetry_cpp",
-            sha256 = "24ba9b83f6cb8ba717ae30ebc570f5e8d0569008aee3c8b9a7ce6e4e1a5115b7",
-            strip_prefix = "opentelemetry-cpp-1.0.0-rc4",
+            strip_prefix = "grpc-1.46.0",
+            sha256 = "67423a4cd706ce16a88d1549297023f0f9f0d695a96dd684adc21e67b021f9bc",
             urls = [
-                "https://github.com/open-telemetry/opentelemetry-cpp/archive/refs/tags/v1.0.0-rc4.tar.gz",
+                "https://shutian.oss-cn-hangzhou.aliyuncs.com/cdn/grpc/grpc-1.46.0.tar.gz",
+                "https://github.com/grpc/grpc/archive/refs/tags/v1.46.0.tar.gz",
             ],
         )
-
-    maybe(
-        http_archive,
-        name = "com_github_opentelemetry_proto",
-        build_file = "@io_opentelemetry_cpp//bazel:opentelemetry_proto.BUILD",
-        sha256 = "08f090570e0a112bfae276ba37e9c45bf724b64d902a7a001db33123b840ebd6",
-        strip_prefix = "opentelemetry-proto-0.6.0",
-        urls = [
-            "https://github.com/open-telemetry/opentelemetry-proto/archive/v0.6.0.tar.gz",
-        ],
-    )
 
     maybe(
         http_archive,
@@ -137,4 +135,25 @@ def rocketmq_deps():
             "https://github.com/googleapis/googleapis/archive/af7fb72df59a814221b123a4d1acb3f6c3e6cc95.zip"
         ],
         strip_prefix = "googleapis-af7fb72df59a814221b123a4d1acb3f6c3e6cc95",
+    )
+
+    maybe(
+        http_archive,
+        name = "hedron_compile_commands",
+        sha256 = "4f69ccafa253825d93191977dcbcecee74e576aadbd21f1cfb25a19111ecdf21",
+        urls = [
+            "https://shutian.oss-cn-hangzhou.aliyuncs.com/cdn/bazel-compile-commands-extractor/bazel-compile-commands-extractor-1.0.tar.gz",
+            "https://github.com/lizhanhui/bazel-compile-commands-extractor/archive/refs/tags/v1.0.tar.gz",
+        ],
+        strip_prefix = "bazel-compile-commands-extractor-1.0",
+    )
+
+    maybe(
+        http_archive,
+        name = "rules_swift",
+        urls = [
+            "https://shutian.oss-cn-hangzhou.aliyuncs.com/cdn/rules_swift/rules_swift-0.27.0.tar.gz",
+            "https://github.com/bazelbuild/rules_swift/archive/refs/tags/0.27.0.tar.gz",
+        ],
+        strip_prefix = "rules_swift-0.27.0",
     )

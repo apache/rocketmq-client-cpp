@@ -14,14 +14,140 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "Protocol.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-#ifndef CLIENT_PROTOCOL_VERSION
-#define CLIENT_PROTOCOL_VERSION "v1"
-#endif
+const char* protocolVersion() {
+  static const char* protocol_version = "v2";
+  return protocol_version;
+}
 
-const char* Protocol::PROTOCOL_VERSION = CLIENT_PROTOCOL_VERSION;
+bool writable(rmq::Permission p) {
+  switch (p) {
+    case rmq::Permission::WRITE:
+    case rmq::Permission::READ_WRITE:
+      return true;
+    default: {
+      return false;
+    }
+  }
+}
+
+bool readable(rmq::Permission p) {
+  switch (p) {
+    case rmq::Permission::READ:
+    case rmq::Permission::READ_WRITE:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool operator<(const rmq::Resource& lhs, const rmq::Resource& rhs) {
+  return lhs.resource_namespace() < rhs.resource_namespace() || lhs.name() < rhs.name();
+}
+
+bool operator==(const rmq::Resource& lhs, const rmq::Resource& rhs) {
+  return lhs.resource_namespace() == rhs.resource_namespace() && lhs.name() == rhs.name();
+}
+
+bool operator<(const rmq::Broker& lhs, const rmq::Broker& rhs) {
+  return lhs.name() < rhs.name() || lhs.id() < rhs.id();
+}
+
+bool operator==(const rmq::Broker& lhs, const rmq::Broker& rhs) {
+  return lhs.name() == rhs.name() && lhs.id() == rhs.id();
+}
+
+bool operator<(const rmq::MessageQueue& lhs, const rmq::MessageQueue& rhs) {
+  return lhs.topic() < rhs.topic() || lhs.id() < rhs.id() || lhs.broker() < rhs.broker() ||
+         lhs.permission() < rhs.permission();
+}
+
+bool operator==(const rmq::MessageQueue& lhs, const rmq::MessageQueue& rhs) {
+  return lhs.topic() == rhs.topic() && lhs.id() == rhs.id() && lhs.broker() == rhs.broker() &&
+         lhs.permission() == rhs.permission();
+}
+
+std::string simpleNameOf(const rmq::MessageQueue& m) {
+  return fmt::format("{}{}-{}-{}", m.topic().resource_namespace(), m.topic().name(), m.id(), m.broker().name());
+}
+
+bool operator==(const std::vector<rmq::MessageQueue>& lhs, const std::vector<rmq::MessageQueue>& rhs) {
+  if (lhs.size() != rhs.size()) {
+    return false;
+  }
+
+  for (std::size_t i = 0; i < lhs.size(); i++) {
+    if (lhs[i] == rhs[i]) {
+      continue;
+    }
+    return false;
+  }
+
+  return true;
+}
+
+bool operator!=(const std::vector<rmq::MessageQueue>& lhs, const std::vector<rmq::MessageQueue>& rhs) {
+  return !(lhs == rhs);
+}
+
+std::string urlOf(const rmq::MessageQueue& message_queue) {
+  const auto& endpoints = message_queue.broker().endpoints();
+  const auto& addresses = endpoints.addresses();
+  switch (endpoints.scheme()) {
+    case rmq::AddressScheme::DOMAIN_NAME: {
+      assert(addresses.size() == 1);
+      auto first = addresses.begin();
+      return fmt::format("dns:{}:{}", first->host(), first->port());
+    }
+    case rmq::AddressScheme::IPv4: {
+      assert(!addresses.empty());
+      auto it = addresses.cbegin();
+      std::string result = fmt::format("ipv4:{}:{}", it->host(), it->port());
+      for (++it; it != addresses.cend(); ++it) {
+        result.append(fmt::format(",{}:{}", it->host(), it->port()));
+      }
+      return result;
+    }
+    case rmq::AddressScheme::IPv6: {
+      assert(!addresses.empty());
+      auto it = addresses.cbegin();
+      std::string result = fmt::format("ipv6:{}:{}", it->host(), it->port());
+      for (++it; it != addresses.cend(); ++it) {
+        result.append(fmt::format(",{}:{}", it->host(), it->port()));
+      }
+      return result;
+    }
+    default: {
+      break;
+    }
+  }
+  return {};
+}
+
+bool operator<(const rmq::Assignment& lhs, const rmq::Assignment& rhs) {
+  return lhs.message_queue() < rhs.message_queue();
+}
+
+bool operator==(const rmq::Assignment& lhs, const rmq::Assignment& rhs) {
+  return lhs.message_queue() == rhs.message_queue();
+}
+
+bool operator==(const std::vector<rmq::Assignment>& lhs, const std::vector<rmq::Assignment>& rhs) {
+  if (lhs.size() != rhs.size()) {
+    return false;
+  }
+
+  for (std::size_t i = 0; i < lhs.size(); i++) {
+    if (lhs[i] == rhs[i]) {
+      continue;
+    }
+    return false;
+  }
+  return true;
+}
 
 ROCKETMQ_NAMESPACE_END

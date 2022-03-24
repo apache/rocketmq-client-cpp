@@ -22,27 +22,27 @@
 #include <string>
 #include <system_error>
 
-#include "absl/strings/string_view.h"
-
 #include "ClientImpl.h"
 #include "ClientManagerImpl.h"
 #include "MixAll.h"
-#include "SendCallbacks.h"
+#include "PublishInfoCallback.h"
+#include "SendContext.h"
 #include "TopicPublishInfo.h"
 #include "TransactionImpl.h"
-#include "rocketmq/AsyncCallback.h"
-#include "rocketmq/LocalTransactionStateChecker.h"
-#include "rocketmq/MQMessage.h"
-#include "rocketmq/MQMessageQueue.h"
-#include "rocketmq/MQSelector.h"
-#include "rocketmq/SendResult.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/strings/string_view.h"
+#include "rocketmq/Message.h"
+#include "rocketmq/SendCallback.h"
+#include "rocketmq/SendReceipt.h"
 #include "rocketmq/State.h"
+#include "rocketmq/TransactionChecker.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 class ProducerImpl : virtual public ClientImpl, public std::enable_shared_from_this<ProducerImpl> {
 public:
-  explicit ProducerImpl(absl::string_view group_name);
+  explicit ProducerImpl();
 
   ~ProducerImpl() override;
 
@@ -52,19 +52,17 @@ public:
 
   void shutdown() override;
 
-  SendResult send(const MQMessage& message, std::error_code& ec) noexcept;
+  SendReceipt send(MessageConstPtr message, std::error_code& ec) noexcept;
 
-  void send(const MQMessage& message, SendCallback* callback);
+  void send(MessageConstPtr message, SendCallback callback);
 
-  void sendOneway(const MQMessage& message, std::error_code& ec);
+  void setTransactionChecker(TransactionChecker checker);
 
-  void setLocalTransactionStateChecker(LocalTransactionStateCheckerPtr checker);
+  std::unique_ptr<TransactionImpl> prepare(MessageConstPtr message, std::error_code& ec);
 
-  std::unique_ptr<TransactionImpl> prepare(MQMessage& message, std::error_code& ec);
+  bool commit(const Transaction& transaction);
 
-  bool commit(const MQMessage& message, const std::string& transaction_id, const std::string& target);
-
-  bool rollback(const MQMessage& message, const std::string& transaction_id, const std::string& target);
+  bool rollback(const Transaction& transaction);
 
   /**
    * Check if the RPC client for the target host is isolated or not
@@ -79,11 +77,11 @@ public:
    */
   void isolateEndpoint(const std::string& target) LOCKS_EXCLUDED(isolated_endpoints_mtx_);
 
-  int maxAttemptTimes() const {
+  std::size_t maxAttemptTimes() const {
     return max_attempt_times_;
   }
 
-  void maxAttemptTimes(int times) {
+  void maxAttemptTimes(std::size_t times) {
     max_attempt_times_ = times;
   }
 
@@ -95,8 +93,6 @@ public:
     failed_times_ = times;
   }
 
-  std::vector<MQMessageQueue> listMessageQueue(const std::string& topic, std::error_code& ec);
-
   uint32_t compressBodyThreshold() const {
     return compress_body_threshold_;
   }
@@ -105,61 +101,60 @@ public:
     compress_body_threshold_ = threshold;
   }
 
-  /**
-   * @brief Send message with tracing.
-   *
-   * @param message
-   * @param callback
-   * @param message_queue
-   * @param attempt_time current attempt times, which starts from 0.
-   */
-  void sendImpl(RetrySendCallback* callback);
+  void sendImpl(std::shared_ptr<SendContext> callback);
+
+  void buildClientSettings(rmq::Settings& settings) override;
+
+  void topicsOfInterest(std::vector<std::string> topics) LOCKS_EXCLUDED(topics_mtx_);
 
 protected:
   std::shared_ptr<ClientImpl> self() override {
     return shared_from_this();
   }
 
-  void resolveOrphanedTransactionalMessage(const std::string& transaction_id, const MQMessageExt& message) override;
+  void onOrphanedTransactionalMessage(MessageConstSharedPtr message) override;
 
   void notifyClientTermination() override;
 
 private:
   absl::flat_hash_map<std::string, TopicPublishInfoPtr> topic_publish_info_table_ GUARDED_BY(topic_publish_info_mtx_);
-  absl::Mutex topic_publish_info_mtx_; // protects topic_publish_info_
-
-  int32_t max_attempt_times_{MixAll::MAX_SEND_MESSAGE_ATTEMPT_TIMES_};
-  int32_t failed_times_{0}; // only for test
+  absl::Mutex topic_publish_info_mtx_;  // protects topic_publish_info_
+  std::size_t max_attempt_times_{MixAll::MAX_SEND_MESSAGE_ATTEMPT_TIMES_};
+  int32_t failed_times_{0};  // only for test
   uint32_t compress_body_threshold_;
+  TransactionChecker transaction_checker_;
+  std::vector<std::string> topics_ GUARDED_BY(topics_mtx_);
+  absl::Mutex topics_mtx_;
 
-  LocalTransactionStateCheckerPtr transaction_state_checker_;
-
-  void asyncPublishInfo(const std::string& topic,
-                        const std::function<void(const std::error_code&, const TopicPublishInfoPtr&)>& cb)
+  /**
+   * @brief Acquire PublishInfo for the given topic.
+   * Generally speaking, it first checks presence of the desired info in local cache, aka, topic_publish_table_;
+   * If not found, query name servers.
+   */
+  void getPublishInfoAsync(const std::string& topic, const PublishInfoCallback& cb)
       LOCKS_EXCLUDED(topic_publish_info_mtx_);
+
+  void cachePublishInfo(const std::string&, TopicPublishInfoPtr info) LOCKS_EXCLUDED(topic_publish_info_mtx_);
 
   TopicPublishInfoPtr getPublishInfo(const std::string& topic);
 
-  void takeMessageQueuesRoundRobin(const TopicPublishInfoPtr& publish_info, std::vector<MQMessageQueue>& message_queues,
-                                   int number);
-
-  void wrapSendMessageRequest(const MQMessage& message, SendMessageRequest& request,
-                              const MQMessageQueue& message_queue);
+  void wrapSendMessageRequest(const Message& message,
+                              SendMessageRequest& request,
+                              const rmq::MessageQueue& message_queue);
 
   bool isRunning() const;
 
   void ensureRunning(std::error_code& ec) const noexcept;
 
-  bool validate(const MQMessage& message);
+  bool validate(const Message& message);
 
-  void send0(const MQMessage& message, SendCallback* callback, std::vector<MQMessageQueue> list, int max_attempt_times);
+  void send0(MessageConstPtr message, SendCallback callback, std::vector<rmq::MessageQueue> list);
 
-  bool endTransaction0(const std::string& target, const MQMessage& message, const std::string& transaction_id,
-                       TransactionState resolution);
+  bool endTransaction0(const Transaction& transaction, TransactionState resolution);
 
   void isolatedEndpoints(absl::flat_hash_set<std::string>& endpoints) LOCKS_EXCLUDED(isolated_endpoints_mtx_);
 
-  MQMessageQueue withServiceAddress(const MQMessageQueue& message_queue, std::error_code& ec);
+  friend class ProducerBuilder;
 };
 
 ROCKETMQ_NAMESPACE_END

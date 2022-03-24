@@ -17,103 +17,115 @@
 #include "RpcClientImpl.h"
 
 #include <chrono>
+#include <functional>
+#include <sstream>
+#include <thread>
 
-#include "ClientConfigImpl.h"
-#include "TlsHelper.h"
 #include "absl/time/time.h"
 
-using ClientContext = grpc::ClientContext;
+#include "ClientManager.h"
+#include "ReceiveMessageStreamReader.h"
+#include "RpcClient.h"
+#include "TelemetryBidiReactor.h"
+#include "TlsHelper.h"
+#include "include/ReceiveMessageContext.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
+using ClientContext = grpc::ClientContext;
+
+void RpcClientImpl::asyncCallback(std::weak_ptr<RpcClient> client, BaseInvocationContext* invocation_context,
+                                  grpc::Status status) {
+
+  invocation_context->status = std::move(status);
+  std::shared_ptr<RpcClient> stub = client.lock();
+  if (!stub) {
+    SPDLOG_WARN("RpcClient has destructed. Response Ignored");
+    // TODO: execute orphan callback in event-loop thread?
+    // invocation_context->onCompletion(false);
+    // or
+    delete invocation_context;
+    return;
+  }
+
+  std::weak_ptr<ClientManager> client_manager = stub->clientManager();
+  std::shared_ptr<ClientManager> manager = client_manager.lock();
+  if (!manager) {
+    SPDLOG_WARN("ClientManager has destructed. Response ignored");
+    // TODO: execute orphan callback in event-loop thread?
+    // invocation_context->onCompletion(false);
+    // or
+    delete invocation_context;
+  }
+
+  auto task = [invocation_context, client] {
+    auto ptr = client.lock();
+    if (!ptr) {
+      // RPC client should have destructed.
+      return;
+    }
+    invocation_context->onCompletion(invocation_context->status.ok());
+  };
+
+  // Execute business post-processing in callback thread pool.
+  manager->submit(task);
+}
+
 void RpcClientImpl::asyncQueryRoute(const QueryRouteRequest& request,
                                     InvocationContext<QueryRouteResponse>* invocation_context) {
-  invocation_context->response_reader =
-      stub_->PrepareAsyncQueryRoute(&invocation_context->context, request, completion_queue_.get());
-  invocation_context->response_reader->StartCall();
-  invocation_context->response_reader->Finish(&invocation_context->response, &invocation_context->status,
-                                              invocation_context);
+  std::weak_ptr<RpcClient> rpc_client(shared_from_this());
+  auto callback = std::bind(&RpcClientImpl::asyncCallback, rpc_client, invocation_context, std::placeholders::_1);
+  stub_->async()->QueryRoute(&invocation_context->context, &request, &invocation_context->response, callback);
 }
 
 void RpcClientImpl::asyncSend(const SendMessageRequest& request,
                               InvocationContext<SendMessageResponse>* invocation_context) {
-  invocation_context->response_reader =
-      stub_->PrepareAsyncSendMessage(&invocation_context->context, request, completion_queue_.get());
-  invocation_context->response_reader->StartCall();
-  invocation_context->response_reader->Finish(&invocation_context->response, &invocation_context->status,
-                                              invocation_context);
+  std::weak_ptr<RpcClient> rpc_client(shared_from_this());
+  auto callback = std::bind(&RpcClientImpl::asyncCallback, rpc_client, invocation_context, std::placeholders::_1);
+  stub_->async()->SendMessage(&invocation_context->context, &request, &invocation_context->response, callback);
 }
 
 void RpcClientImpl::asyncQueryAssignment(const QueryAssignmentRequest& request,
                                          InvocationContext<QueryAssignmentResponse>* invocation_context) {
-  invocation_context->response_reader =
-      stub_->PrepareAsyncQueryAssignment(&invocation_context->context, request, completion_queue_.get());
-  invocation_context->response_reader->StartCall();
-  invocation_context->response_reader->Finish(&invocation_context->response, &invocation_context->status,
-                                              invocation_context);
+  std::weak_ptr<RpcClient> rpc_client(shared_from_this());
+  auto callback = std::bind(&RpcClientImpl::asyncCallback, rpc_client, invocation_context, std::placeholders::_1);
+  stub_->async()->QueryAssignment(&invocation_context->context, &request, &invocation_context->response, callback);
 }
 
-std::shared_ptr<grpc::CompletionQueue>& rocketmq::RpcClientImpl::completionQueue() {
-  return completion_queue_;
-}
-
-void RpcClientImpl::asyncReceive(const ReceiveMessageRequest& request,
-                                 InvocationContext<ReceiveMessageResponse>* invocation_context) {
-  invocation_context->response_reader =
-      stub_->PrepareAsyncReceiveMessage(&invocation_context->context, request, completion_queue_.get());
-  invocation_context->response_reader->StartCall();
-  invocation_context->response_reader->Finish(&invocation_context->response, &invocation_context->status,
-                                              invocation_context);
+void RpcClientImpl::asyncReceive(const ReceiveMessageRequest& request, std::unique_ptr<ReceiveMessageContext> context) {
+  new ReceiveMessageStreamReader(client_manager_, stub_.get(), peer_address_, request, std::move(context));
 }
 
 void RpcClientImpl::asyncAck(const AckMessageRequest& request,
                              InvocationContext<AckMessageResponse>* invocation_context) {
-  assert(invocation_context);
-  invocation_context->response_reader =
-      stub_->PrepareAsyncAckMessage(&invocation_context->context, request, completion_queue_.get());
-  invocation_context->response_reader->StartCall();
-  invocation_context->response_reader->Finish(&invocation_context->response, &invocation_context->status,
-                                              invocation_context);
+  std::weak_ptr<RpcClient> rpc_client(shared_from_this());
+  auto callback = std::bind(&RpcClientImpl::asyncCallback, rpc_client, invocation_context, std::placeholders::_1);
+  stub_->async()->AckMessage(&invocation_context->context, &request, &invocation_context->response, callback);
 }
 
-void RpcClientImpl::asyncNack(const NackMessageRequest& request,
-                              InvocationContext<NackMessageResponse>* invocation_context) {
-  assert(invocation_context);
-  invocation_context->response_reader =
-      stub_->PrepareAsyncNackMessage(&invocation_context->context, request, completion_queue_.get());
-  invocation_context->response_reader->StartCall();
-  invocation_context->response_reader->Finish(&invocation_context->response, &invocation_context->status,
-                                              invocation_context);
+void RpcClientImpl::asyncChangeInvisibleDuration(
+    const ChangeInvisibleDurationRequest& request,
+    InvocationContext<ChangeInvisibleDurationResponse>* invocation_context) {
+
+  std::weak_ptr<RpcClient> rpc_client(shared_from_this());
+  auto callback = std::bind(&RpcClientImpl::asyncCallback, rpc_client, invocation_context, std::placeholders::_1);
+
+  stub_->async()->ChangeInvisibleDuration(&invocation_context->context, &request, &invocation_context->response,
+                                          callback);
 }
 
 void RpcClientImpl::asyncHeartbeat(const HeartbeatRequest& request,
                                    InvocationContext<HeartbeatResponse>* invocation_context) {
-  assert(invocation_context);
-  invocation_context->response_reader =
-      stub_->PrepareAsyncHeartbeat(&invocation_context->context, request, completion_queue_.get());
-  invocation_context->response_reader->StartCall();
-  invocation_context->response_reader->Finish(&invocation_context->response, &invocation_context->status,
-                                              invocation_context);
-}
-
-void RpcClientImpl::asyncHealthCheck(const HealthCheckRequest& request,
-                                     InvocationContext<HealthCheckResponse>* invocation_context) {
-  assert(invocation_context);
-  invocation_context->response_reader =
-      stub_->PrepareAsyncHealthCheck(&invocation_context->context, request, completion_queue_.get());
-  invocation_context->response_reader->StartCall();
-  invocation_context->response_reader->Finish(&invocation_context->response, &invocation_context->status,
-                                              invocation_context);
+  std::weak_ptr<RpcClient> rpc_client(shared_from_this());
+  auto callback = std::bind(&RpcClientImpl::asyncCallback, rpc_client, invocation_context, std::placeholders::_1);
+  stub_->async()->Heartbeat(&invocation_context->context, &request, &invocation_context->response, callback);
 }
 
 void RpcClientImpl::asyncEndTransaction(const EndTransactionRequest& request,
                                         InvocationContext<EndTransactionResponse>* invocation_context) {
-  assert(invocation_context);
-  invocation_context->response_reader =
-      stub_->PrepareAsyncEndTransaction(&invocation_context->context, request, completion_queue_.get());
-  invocation_context->response_reader->StartCall();
-  invocation_context->response_reader->Finish(&invocation_context->response, &invocation_context->status,
-                                              invocation_context);
+  std::weak_ptr<RpcClient> rpc_client(shared_from_this());
+  auto callback = std::bind(&RpcClientImpl::asyncCallback, rpc_client, invocation_context, std::placeholders::_1);
+  stub_->async()->EndTransaction(&invocation_context->context, &request, &invocation_context->response, callback);
 }
 
 bool RpcClientImpl::ok() const {
@@ -135,25 +147,8 @@ void RpcClientImpl::needHeartbeat(bool need_heartbeat) {
   need_heartbeat_ = need_heartbeat;
 }
 
-void RpcClientImpl::asyncPollCommand(const PollCommandRequest& request,
-                                     InvocationContext<PollCommandResponse>* invocation_context) {
-  invocation_context->response_reader =
-      stub_->PrepareAsyncPollCommand(&invocation_context->context, request, completion_queue_.get());
-  invocation_context->response_reader->StartCall();
-  invocation_context->response_reader->Finish(&invocation_context->response, &invocation_context->status,
-                                              invocation_context);
-}
-
-grpc::Status RpcClientImpl::reportThreadStackTrace(grpc::ClientContext* context,
-                                                   const ReportThreadStackTraceRequest& request,
-                                                   ReportThreadStackTraceResponse* response) {
-  return stub_->ReportThreadStackTrace(context, request, response);
-}
-
-grpc::Status RpcClientImpl::reportMessageConsumptionResult(grpc::ClientContext* context,
-                                                           const ReportMessageConsumptionResultRequest& request,
-                                                           ReportMessageConsumptionResultResponse* response) {
-  return stub_->ReportMessageConsumptionResult(context, request, response);
+std::shared_ptr<TelemetryBidiReactor> RpcClientImpl::asyncTelemetry(std::weak_ptr<Client> client) {
+  return std::make_shared<TelemetryBidiReactor>(client, stub_.get(), peer_address_);
 }
 
 grpc::Status RpcClientImpl::notifyClientTermination(grpc::ClientContext* context,
@@ -162,33 +157,17 @@ grpc::Status RpcClientImpl::notifyClientTermination(grpc::ClientContext* context
   return stub_->NotifyClientTermination(context, request, response);
 }
 
-void RpcClientImpl::asyncQueryOffset(const QueryOffsetRequest& request,
-                                     InvocationContext<QueryOffsetResponse>* invocation_context) {
-  assert(invocation_context);
-  invocation_context->response_reader =
-      stub_->PrepareAsyncQueryOffset(&invocation_context->context, request, completion_queue_.get());
-  invocation_context->response_reader->StartCall();
-  invocation_context->response_reader->Finish(&invocation_context->response, &invocation_context->status,
-                                              invocation_context);
-}
-
-void RpcClientImpl::asyncPull(const PullMessageRequest& request,
-                              InvocationContext<PullMessageResponse>* invocation_context) {
-  invocation_context->response_reader =
-      stub_->PrepareAsyncPullMessage(&invocation_context->context, request, completion_queue_.get());
-  invocation_context->response_reader->StartCall();
-  invocation_context->response_reader->Finish(&invocation_context->response, &invocation_context->status,
-                                              invocation_context);
-}
-
 void RpcClientImpl::asyncForwardMessageToDeadLetterQueue(
     const ForwardMessageToDeadLetterQueueRequest& request,
     InvocationContext<ForwardMessageToDeadLetterQueueResponse>* invocation_context) {
-  invocation_context->response_reader = stub_->PrepareAsyncForwardMessageToDeadLetterQueue(
-      &invocation_context->context, request, completion_queue_.get());
-  invocation_context->response_reader->StartCall();
-  invocation_context->response_reader->Finish(&invocation_context->response, &invocation_context->status,
-                                              invocation_context);
+  std::weak_ptr<RpcClient> rpc_client(shared_from_this());
+  auto callback = std::bind(&RpcClientImpl::asyncCallback, rpc_client, invocation_context, std::placeholders::_1);
+  stub_->async()->ForwardMessageToDeadLetterQueue(&invocation_context->context, &request, &invocation_context->response,
+                                                  callback);
+}
+
+std::weak_ptr<ClientManager> RpcClientImpl::clientManager() {
+  return client_manager_;
 }
 
 ROCKETMQ_NAMESPACE_END

@@ -24,6 +24,7 @@ class MetadataConstants {
 public:
   static const char* REQUEST_ID_KEY;
   static const char* TENANT_ID_KEY;
+  static const char* CLIENT_ID_KEY;
   static const char* NAMESPACE_KEY;
   static const char* AUTHORIZATION;
   static const char* STS_SESSION_TOKEN;
@@ -36,6 +37,8 @@ public:
   static const char* LANGUAGE_KEY;
   static const char* CLIENT_VERSION_KEY;
   static const char* PROTOCOL_VERSION_KEY;
+  static const char* CLIENT_VERSION;
+  static const char* SERVICE_NAME;
 };
 
 ROCKETMQ_NAMESPACE_END

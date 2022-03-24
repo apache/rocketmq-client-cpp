@@ -21,9 +21,9 @@
 #include <sstream>
 #include <utility>
 
+#include "MessageExt.h"
 #include "MixAll.h"
 #include "absl/time/time.h"
-#include "rocketmq/MQMessageExt.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -31,7 +31,7 @@ struct ReceiveMessageResult {
   absl::Time pop_time;
   absl::Duration invisible_time;
 
-  std::vector<MQMessageExt> messages;
+  std::vector<MessageConstSharedPtr> messages;
 
   std::string source_host;
 

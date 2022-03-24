@@ -38,6 +38,8 @@ public:
   virtual int32_t receiveBatchSize() const = 0;
 
   virtual std::shared_ptr<ConsumeMessageService> getConsumeMessageService() = 0;
+
+  virtual bool fifo() const = 0;
 };
 
 ROCKETMQ_NAMESPACE_END

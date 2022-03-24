@@ -16,15 +16,18 @@
  */
 #pragma once
 
-#include "rocketmq/MQSelector.h"
+#include <string>
+#include <vector>
+
+#include "Protocol.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class MessageGroupQueueSelector : public MessageQueueSelector {
+class MessageGroupQueueSelector {
 public:
   explicit MessageGroupQueueSelector(std::string message_group);
 
-  MQMessageQueue select(const std::vector<MQMessageQueue>& mqs, const MQMessage& msg, void* arg) override;
+  rmq::MessageQueue select(const std::vector<rmq::MessageQueue>& mqs);
 
 private:
   std::string message_group_;
