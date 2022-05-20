@@ -30,11 +30,12 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class PushConsumer;
+class PushConsumerImpl;
 
 class ConsumeMessageServiceBase : public ConsumeMessageService {
 public:
-  ConsumeMessageServiceBase(std::weak_ptr<PushConsumer> consumer, int thread_count, MessageListener* message_listener);
+  ConsumeMessageServiceBase(std::weak_ptr<PushConsumerImpl> consumer, int thread_count,
+                            MessageListener message_listener);
 
   ~ConsumeMessageServiceBase() override = default;
 
@@ -83,13 +84,13 @@ protected:
 
   int thread_count_;
   std::unique_ptr<ThreadPool> pool_;
-  std::weak_ptr<PushConsumer> consumer_;
+  std::weak_ptr<PushConsumerImpl> consumer_;
 
   absl::Mutex dispatch_mtx_;
   std::thread dispatch_thread_;
   absl::CondVar dispatch_cv_;
 
-  MessageListener* message_listener_;
+  MessageListener message_listener_;
 
   /**
    * Dispatch messages to thread pool. Implementation of this function should be sub-class specific.

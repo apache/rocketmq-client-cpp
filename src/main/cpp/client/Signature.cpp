@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 #include "Signature.h"
-#include "ClientConfigImpl.h"
+#include "ClientConfig.h"
 #include "MetadataConstants.h"
 #include "Protocol.h"
 #include "TlsHelper.h"
@@ -23,29 +23,21 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-void Signature::sign(ClientConfig* client, absl::flat_hash_map<std::string, std::string>& metadata) {
-  assert(client);
+void Signature::sign(const ClientConfig& client, absl::flat_hash_map<std::string, std::string>& metadata) {
 
   metadata.insert({MetadataConstants::LANGUAGE_KEY, "CPP"});
   // Add common headers
-  metadata.insert({MetadataConstants::CLIENT_VERSION_KEY, ClientConfigImpl::CLIENT_VERSION});
-  metadata.insert({MetadataConstants::PROTOCOL_VERSION_KEY, Protocol::PROTOCOL_VERSION});
-
-  if (!client->tenantId().empty()) {
-    metadata.insert({MetadataConstants::TENANT_ID_KEY, client->tenantId()});
-  }
-
-  if (!client->resourceNamespace().empty()) {
-    metadata.insert({MetadataConstants::NAMESPACE_KEY, client->resourceNamespace()});
-  }
+  metadata.insert({MetadataConstants::CLIENT_ID_KEY, client.client_id});
+  metadata.insert({MetadataConstants::CLIENT_VERSION_KEY, MetadataConstants::CLIENT_VERSION});
+  metadata.insert({MetadataConstants::PROTOCOL_VERSION_KEY, protocolVersion()});
 
   absl::Time now = absl::Now();
   absl::TimeZone utc_time_zone = absl::UTCTimeZone();
   const std::string request_date_time = absl::FormatTime(MetadataConstants::DATE_TIME_FORMAT, now, utc_time_zone);
   metadata.insert({MetadataConstants::DATE_TIME_KEY, request_date_time});
 
-  if (client->credentialsProvider()) {
-    Credentials&& credentials = client->credentialsProvider()->getCredentials();
+  if (client.credentials_provider) {
+    Credentials&& credentials = client.credentials_provider->getCredentials();
     if (credentials.accessKey().empty() || credentials.accessSecret().empty()) {
       SPDLOG_WARN("Access credential is incomplete. Check your access key/secret.");
       return;
@@ -58,9 +50,9 @@ void Signature::sign(ClientConfig* client, absl::flat_hash_map<std::string, std:
         .append("=")
         .append(credentials.accessKey())
         .append("/")
-        .append(client->region())
+        .append(client.region)
         .append("/")
-        .append(client->serviceName())
+        .append(MetadataConstants::SERVICE_NAME)
         .append(", ")
         .append(MetadataConstants::SIGNED_HEADERS_KEY)
         .append("=")

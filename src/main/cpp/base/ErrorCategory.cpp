@@ -24,6 +24,9 @@ std::string ErrorCategory::message(int code) const {
     case ErrorCode::Success:
       return "Success";
 
+    case ErrorCode::NoContent:
+      return "Broker has processed the request but is not going to return any content.";
+
     case ErrorCode::IllegalState:
       return "Client state illegal. Forgot to call start()?";
 
@@ -34,6 +37,9 @@ std::string ErrorCategory::message(int code) const {
       return "Message is ill-formed. Check validity of your topic, tag, "
              "etc";
 
+    case ErrorCode::BadRequestAsyncPubFifoMessage:
+      return "Publishing of FIFO messages is only allowed synchronously";
+
     case ErrorCode::Unauthorized:
       return "Authentication failed. Possibly caused by invalid credentials.";
 
@@ -42,8 +48,13 @@ std::string ErrorCategory::message(int code) const {
              "requested action";
 
     case ErrorCode::NotFound:
-      return "Topic not found, which should be created through console or "
+      return "Request resource not found, which should be created through console or "
              "administration API before hand.";
+    case ErrorCode::TopicNotFound:
+      return "Topic is not found. Verify the request topic has already been created through console or management API";
+
+    case ErrorCode::GroupNotFound:
+      return "Group is not found. Verify the request group has already been created through console or management API";
 
     case ErrorCode::RequestTimeout:
       return "Timeout when connecting, reading from or writing to brokers.";

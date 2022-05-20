@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 #pragma once
-#include "apache/rocketmq/v1/admin.grpc.pb.h"
+#include "apache/rocketmq/v2/admin.grpc.pb.h"
+#include "grpcpp/grpcpp.h"
 #include "rocketmq/RocketMQ.h"
-#include <grpcpp/grpcpp.h>
 
 using grpc::ServerContext;
 using grpc::Status;
-namespace rmq = apache::rocketmq::v1;
+
+namespace rmq = apache::rocketmq::v2;
 
 ROCKETMQ_NAMESPACE_BEGIN
 

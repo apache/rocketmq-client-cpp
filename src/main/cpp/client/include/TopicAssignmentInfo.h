@@ -16,38 +16,27 @@
  */
 #pragma once
 
+#include <apache/rocketmq/v2/definition.pb.h>
 #include <atomic>
 #include <vector>
 
-#include "Assignment.h"
-#include "RpcClient.h"
+#include "Protocol.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 class TopicAssignment {
 public:
-  explicit TopicAssignment(std::vector<Assignment>&& assignments) : assignment_list_(std::move(assignments)) {
-    std::sort(assignment_list_.begin(), assignment_list_.end());
+  explicit TopicAssignment(std::vector<rmq::Assignment>&& assignments) : assignment_list_(std::move(assignments)) {
+    std::sort(assignment_list_.begin(), assignment_list_.end(),
+              [](const rmq::Assignment& lhs, const rmq::Assignment& rhs) { return lhs < rhs; });
   }
 
   explicit TopicAssignment(const QueryAssignmentResponse& response);
 
   ~TopicAssignment() = default;
 
-  const std::vector<Assignment>& assignmentList() const {
+  const std::vector<rmq::Assignment>& assignmentList() const {
     return assignment_list_;
-  }
-
-  bool operator==(const TopicAssignment& rhs) const {
-    return assignment_list_ == rhs.assignment_list_;
-  }
-
-  bool operator!=(const TopicAssignment& rhs) const {
-    return assignment_list_ != rhs.assignment_list_;
-  }
-
-  const std::string& debugString() const {
-    return debug_string_;
   }
 
   static unsigned int getAndIncreaseQueryWhichBroker() {
@@ -58,12 +47,12 @@ private:
   /**
    * Once it is set, it will be immutable.
    */
-  std::vector<Assignment> assignment_list_;
-
-  std::string debug_string_;
+  std::vector<rmq::Assignment> assignment_list_;
 
   thread_local static uint32_t query_which_broker_;
 };
+
+bool operator==(const TopicAssignment& lhs, const TopicAssignment& rhs);
 
 using TopicAssignmentPtr = std::shared_ptr<TopicAssignment>;
 

@@ -17,13 +17,15 @@
 #pragma once
 
 #include "ConsumeMessageServiceBase.h"
+#include "ProcessQueue.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class ConsumeStandardMessageService : public ConsumeMessageServiceBase {
+class ConsumeStandardMessageService : public ConsumeMessageServiceBase,
+                                      public std::enable_shared_from_this<ConsumeStandardMessageService> {
 public:
-  ConsumeStandardMessageService(std::weak_ptr<PushConsumer> consumer, int thread_count,
-                                MessageListener* message_listener_ptr);
+  ConsumeStandardMessageService(std::weak_ptr<PushConsumerImpl> consumer, int thread_count,
+                                MessageListener message_listener);
 
   ~ConsumeStandardMessageService() override = default;
 
@@ -31,12 +33,14 @@ public:
 
   void shutdown() override;
 
-  void submitConsumeTask(const ProcessQueueWeakPtr& process_queue) override;
-
-  MessageListenerType messageListenerType() override;
+  void submitConsumeTask(const std::weak_ptr<ProcessQueue>& process_queue) override;
 
 private:
-  void consumeTask(const ProcessQueueWeakPtr& process_queue, const std::vector<MQMessageExt>& msgs);
+  static void consumeTask(std::weak_ptr<ConsumeStandardMessageService> service,
+                          const std::weak_ptr<ProcessQueue>& process_queue,
+                          const std::vector<MessageConstSharedPtr>& msgs);
+
+  void consume(const std::shared_ptr<ProcessQueue>& process_queue, const std::vector<MessageConstSharedPtr>& msgs);
 };
 
 ROCKETMQ_NAMESPACE_END

@@ -17,6 +17,7 @@
 #include "MixAll.h"
 
 #include <chrono>
+#include <cstdint>
 #include <cstdlib>
 
 #include "absl/random/random.h"
@@ -55,13 +56,15 @@ const std::chrono::duration<long long> MixAll::DEFAULT_INVISIBLE_TIME_ = std::ch
 
 const std::chrono::duration<long long> MixAll::PROCESS_QUEUE_EXPIRATION_THRESHOLD_ = std::chrono::seconds(120);
 
-const int32_t MixAll::MAX_SEND_MESSAGE_ATTEMPT_TIMES_ = 3;
+const std::size_t MixAll::MAX_SEND_MESSAGE_ATTEMPT_TIMES_ = 3;
 
 const std::string MixAll::PROPERTY_TRANSACTION_PREPARED_ = "TRAN_MSG";
 
 const std::string MixAll::DEFAULT_LOAD_BALANCER_STRATEGY_NAME_ = "AVG";
 
 const uint32_t MixAll::DEFAULT_COMPRESS_BODY_THRESHOLD_ = 1024 * 1024 * 4;
+
+const std::chrono::milliseconds MixAll::DefaultReceiveMessageTimeout = std::chrono::seconds(30);
 
 const char* MixAll::HOME_PROFILE_ENV_ = "HOME";
 const char* MixAll::MESSAGE_KEY_SEPARATOR = " ";
@@ -135,11 +138,11 @@ const char* MixAll::SPAN_ANNOTATION_AWAIT_CONSUMPTION = "__await_consumption";
 const char* MixAll::SPAN_ANNOTATION_MESSAGE_KEYS = "__message_keys";
 const char* MixAll::SPAN_ANNOTATION_ATTR_START_TIME = "__start_time";
 
-bool MixAll::validate(const MQMessage& message) {
-  if (message.getTopic().empty()) {
+bool MixAll::validate(const Message& message) {
+  if (message.topic().empty()) {
     return false;
   }
-  const std::string& topic = message.getTopic();
+  const std::string& topic = message.topic();
   // Topic should not start with "CID" or "GID" which are reserved prefix
   if (absl::StartsWith(topic, "CID") || absl::StartsWith(topic, "GID")) {
     return false;
@@ -150,7 +153,7 @@ bool MixAll::validate(const MQMessage& message) {
     return false;
   }
 
-  uint32_t body_length = message.bodyLength();
+  uint32_t body_length = message.body().length();
   if (!body_length || body_length > MAX_MESSAGE_BODY_SIZE) {
     return false;
   }
@@ -293,6 +296,30 @@ bool MixAll::homeDirectory(std::string& home_dir) {
 
 bool MixAll::isIPv4(absl::string_view host) {
   return RE2::FullMatch(re2::StringPiece(host.data(), host.length()), IP_REGEX);
+}
+
+const char* MixAll::osName() {
+#if INTPTR_MAX == INT32_MAX
+#define BITS " 32-bit"
+#elif INTPTR_MAX == INT64_MAX
+#define BITS " 64-bit"
+#else
+#define BITS ""
+#endif
+
+#if defined(_WIN32) || defined(_WIN64)
+  return "Windows" BITS;
+#elif __APPLE__ || __MACH__
+  return "Mac OSX" BITS;
+#elif __linux__
+  return "Linux" BITS;
+#elif __FreeBSD__
+  return "FreeBSD" BITS;
+#elif __unix || __unix__
+  return "Unix" BITS;
+#else
+  return "Other" BITS;
+#endif
 }
 
 ROCKETMQ_NAMESPACE_END

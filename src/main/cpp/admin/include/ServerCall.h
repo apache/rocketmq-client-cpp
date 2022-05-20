@@ -18,11 +18,11 @@
 
 #include <cassert>
 
-#include "apache/rocketmq/v1/admin.grpc.pb.h"
+#include "apache/rocketmq/v2/admin.grpc.pb.h"
 
 #include "rocketmq/RocketMQ.h"
 
-namespace rmq = apache::rocketmq::v1;
+namespace rmq = apache::rocketmq::v2;
 
 ROCKETMQ_NAMESPACE_BEGIN
 

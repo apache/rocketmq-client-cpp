@@ -21,7 +21,8 @@ ROCKETMQ_NAMESPACE_BEGIN
 class ConsumeFifoMessageService : public ConsumeMessageServiceBase,
                                   public std::enable_shared_from_this<ConsumeFifoMessageService> {
 public:
-  ConsumeFifoMessageService(std::weak_ptr<PushConsumer> consumer, int thread_count, MessageListener* message_listener);
+  ConsumeFifoMessageService(std::weak_ptr<PushConsumerImpl> consumer, int thread_count,
+                            MessageListener message_listener);
   void start() override;
 
   void shutdown() override;
@@ -31,25 +32,24 @@ public:
    *
    * @param process_queue
    */
-  void submitConsumeTask(const ProcessQueueWeakPtr& process_queue) override;
-
-  MessageListenerType messageListenerType() override;
+  void submitConsumeTask(const std::weak_ptr<ProcessQueue>& process_queue) override;
 
 private:
-  void consumeTask(const ProcessQueueWeakPtr& process_queue, MQMessageExt& message);
+  void consumeTask(const std::weak_ptr<ProcessQueue>& process_queue, MessageConstSharedPtr message);
 
-  void submitConsumeTask0(const std::shared_ptr<PushConsumer>& consumer, const ProcessQueueWeakPtr& process_queue,
-                          const MQMessageExt& message);
+  void submitConsumeTask0(const std::shared_ptr<PushConsumerImpl>& consumer,
+                          const std::weak_ptr<ProcessQueue>& process_queue,
+                          MessageConstSharedPtr message);
 
-  void scheduleAckTask(const ProcessQueueWeakPtr& process_queue, const MQMessageExt& message);
+  void scheduleAckTask(const std::weak_ptr<ProcessQueue>& process_queue, MessageConstSharedPtr message);
 
-  void onAck(const ProcessQueueWeakPtr& process_queue, const MQMessageExt& message, const std::error_code& ec);
+  void onAck(const std::weak_ptr<ProcessQueue>& process_queue, MessageConstSharedPtr message, const std::error_code& ec);
 
-  void scheduleConsumeTask(const ProcessQueueWeakPtr& process_queue, const MQMessageExt& message);
+  void scheduleConsumeTask(const std::weak_ptr<ProcessQueue>& process_queue, MessageConstSharedPtr message);
 
-  void onForwardToDeadLetterQueue(const ProcessQueueWeakPtr& process_queue, const MQMessageExt& message, bool ok);
+  void onForwardToDeadLetterQueue(const std::weak_ptr<ProcessQueue>& process_queue, MessageConstSharedPtr message, bool ok);
 
-  void scheduleForwardDeadLetterQueueTask(const ProcessQueueWeakPtr& process_queue, const MQMessageExt& message);
+  void scheduleForwardDeadLetterQueueTask(const std::weak_ptr<ProcessQueue>& process_queue, MessageConstSharedPtr message);
 };
 
 ROCKETMQ_NAMESPACE_END

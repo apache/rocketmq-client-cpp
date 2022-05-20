@@ -20,30 +20,28 @@
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
+#include <memory>
 #include <system_error>
 
-#include "RpcClient.h"
-#include "absl/strings/string_view.h"
-#include "apache/rocketmq/v1/definition.pb.h"
-
 #include "Client.h"
-#include "ClientConfigImpl.h"
+#include "ClientConfig.h"
 #include "ClientManager.h"
 #include "ClientResourceBundle.h"
 #include "InvocationContext.h"
+#include "MessageExt.h"
 #include "NameServerResolver.h"
-#include "OtlpExporter.h"
-#include "rocketmq/MQMessageExt.h"
+#include "RpcClient.h"
+#include "Session.h"
+#include "TelemetryBidiReactor.h"
+#include "absl/strings/string_view.h"
 #include "rocketmq/MessageListener.h"
 #include "rocketmq/State.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class ClientImpl : public ClientConfigImpl, virtual public Client {
+class ClientImpl : virtual public Client {
 public:
   explicit ClientImpl(absl::string_view group_name);
-
-  ~ClientImpl() override = default;
 
   virtual void start();
 
@@ -69,13 +67,21 @@ public:
 
   void onRemoteEndpointRemoval(const std::vector<std::string>& hosts) override LOCKS_EXCLUDED(isolated_endpoints_mtx_);
 
-  void healthCheck() override LOCKS_EXCLUDED(isolated_endpoints_mtx_);
-
   void schedule(const std::string& task_name, const std::function<void(void)>& task,
                 std::chrono::milliseconds delay) override;
 
+  void createSession(const std::string& target, bool verify) override;
+
   void withNameServerResolver(std::shared_ptr<NameServerResolver> name_server_resolver) {
     name_server_resolver_ = std::move(name_server_resolver);
+  }
+
+  void withCredentialsProvider(std::shared_ptr<CredentialsProvider> credentials_provider) override {
+    client_config_.credentials_provider = std::move(credentials_provider);
+  }
+
+  void withRequestTimeout(std::chrono::milliseconds request_timeout) {
+    client_config_.request_timeout = absl::FromChrono(request_timeout);
   }
 
   /**
@@ -85,9 +91,30 @@ public:
     state_.store(state, std::memory_order_relaxed);
   }
 
+  void verify(MessageConstSharedPtr message, std::function<void(TelemetryCommand)> cb) override;
+
+  void recoverOrphanedTransaction(MessageConstSharedPtr message) override;
+
+  virtual void doRecoverOrphanedTransaction(MessageConstSharedPtr message);
+
+  ClientConfig& config() override {
+    return client_config_;
+  }
+
+  std::shared_ptr<ClientManager> manager() const override {
+    return client_manager_;
+  }
+
+  rmq::Settings clientSettings() override;
+
+  virtual void buildClientSettings(rmq::Settings& settings) {
+  }
+
 protected:
+  ClientConfig client_config_;
+
   ClientManagerPtr client_manager_;
-  std::shared_ptr<OtlpExporter> exporter_;
+
   std::atomic<State> state_;
 
   absl::flat_hash_map<std::string, TopicRouteDataPtr> topic_route_table_ GUARDED_BY(topic_route_table_mtx_);
@@ -108,6 +135,12 @@ protected:
   absl::flat_hash_set<std::string> isolated_endpoints_ GUARDED_BY(isolated_endpoints_mtx_);
   absl::Mutex isolated_endpoints_mtx_;
 
+  absl::flat_hash_map<std::string, std::unique_ptr<Session>> session_map_ GUARDED_BY(session_map_mtx_);
+  absl::Mutex session_map_mtx_;
+
+  virtual void topicsOfInterest(std::vector<std::string>& topics) {
+  }
+
   void updateRouteInfo() LOCKS_EXCLUDED(topic_route_table_mtx_);
 
   /**
@@ -117,46 +150,31 @@ protected:
 
   virtual void prepareHeartbeatData(HeartbeatRequest& request) = 0;
 
-  virtual void verifyMessageConsumption(std::string remote_address, std::string command_id, MQMessageExt message);
-
   /**
    * @brief Execute transaction-state-checker to commit or roll-back the orphan transactional message.
    *
    * It is no-op by default and Producer-subclass is supposed to override it.
    *
-   * @param transaction_id
    * @param message
    */
-  virtual void resolveOrphanedTransactionalMessage(const std::string& transaction_id, const MQMessageExt& message) {
+  virtual void onOrphanedTransactionalMessage(MessageConstSharedPtr message) {
   }
 
-  /**
-   * Concrete publisher/subscriber client is expected to fill other
-   * type-specific resources.
-   */
-  virtual ClientResourceBundle resourceBundle() {
-    ClientResourceBundle resource_bundle;
-    resource_bundle.client_id = clientId();
-    resource_bundle.resource_namespace = resource_namespace_;
-    return resource_bundle;
-  }
-
-  void setAccessPoint(rmq::Endpoints* endpoints);
+  virtual void onVerifyMessage(MessageConstSharedPtr message, std::function<void(TelemetryCommand)> cb);
 
   void notifyClientTermination() override;
 
   void notifyClientTermination(const NotifyClientTerminationRequest& request);
 
-  /**
-   * @brief Return application developer provided message listener if this client is of PushConsumer type.
-   *
-   * By default, it returns nullptr such that error messages are generated and directed to server immediately.
-   *
-   * @return nullptr by default.
-   */
-  virtual MessageListener* messageListener() {
-    return nullptr;
+  const std::string& resourceNamespace() const {
+    return client_config_.resource_namespace;
   }
+
+  absl::Duration requestTimeout() const {
+    return client_config_.request_timeout;
+  }
+
+  rmq::Endpoints accessPoint();
 
 private:
   /**
@@ -178,11 +196,6 @@ private:
       LOCKS_EXCLUDED(inflight_route_requests_mtx_);
 
   /**
-   * Update Trace candidate hosts.
-   */
-  void updateTraceHosts() LOCKS_EXCLUDED(topic_route_table_mtx_);
-
-  /**
    * Update local cache for the topic. Note, route differences are logged in
    * INFO level since route bears fundamental importance.
    *
@@ -192,14 +205,9 @@ private:
   void updateRouteCache(const std::string& topic, const std::error_code& ec, const TopicRouteDataPtr& route)
       LOCKS_EXCLUDED(topic_route_table_mtx_);
 
-  void pollCommand(const std::string& target);
+  void doVerify(std::string target, std::string command_id, MessageConstPtr message);
 
-  void onPollCommandResponse(const InvocationContext<PollCommandResponse>* ctx);
-
-  void onHealthCheckResponse(const std::error_code& endpoint, const InvocationContext<HealthCheckResponse>* ctx)
-      LOCKS_EXCLUDED(isolated_endpoints_mtx_);
-
-  void doVerify(std::string target, std::string command_id, MQMessageExt message);
+  static std::string clientId();
 };
 
 ROCKETMQ_NAMESPACE_END

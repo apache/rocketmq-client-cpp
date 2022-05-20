@@ -17,45 +17,50 @@
 #pragma once
 
 #include <algorithm>
+#include <apache/rocketmq/v2/definition.pb.h>
+#include <string>
 #include <vector>
 
-#include "Partition.h"
-#include "RpcClient.h"
+#include "absl/strings/str_join.h"
+
+#include "Protocol.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
-
-namespace rmq = apache::rocketmq::v1;
 
 /**
  * Thread Safety: This class is immutable and thus effectively thread safe.
  */
 class TopicRouteData {
 public:
-  TopicRouteData(std::vector<Partition> partitions, std::string debug_string)
-      : partitions_(std::move(partitions)), debug_string_(std::move(debug_string)) {
-    std::sort(partitions_.begin(), partitions_.end());
+  TopicRouteData(std::vector<rmq::MessageQueue> message_queues) : message_queues_(message_queues) {
+    std::sort(message_queues_.begin(), message_queues_.end(),
+              [](const rmq::MessageQueue& lhs, const rmq::MessageQueue& rhs) { return lhs < rhs; });
   }
 
-  const std::vector<Partition>& partitions() const {
-    return partitions_;
+  const std::vector<rmq::MessageQueue>& messageQueues() const {
+    return message_queues_;
   }
 
-  const std::string& debugString() const {
-    return debug_string_;
-  }
-
-  bool operator==(const TopicRouteData& other) const {
-    return partitions_ == other.partitions_;
-  }
-
-  bool operator!=(const TopicRouteData& other) const {
-    return !this->operator==(other);
-  }
+  std::string debugString() const {
+    return absl::StrJoin(message_queues_.begin(), message_queues_.end(), ",",
+                         [](std::string* out, const rmq::MessageQueue& m) { out->append(m.DebugString()); });
+  };
 
 private:
-  std::vector<Partition> partitions_;
-  std::string debug_string_;
+  std::vector<rmq::MessageQueue> message_queues_;
+
+  friend bool operator==(const TopicRouteData&, const TopicRouteData&);
+
+  friend bool operator!=(const TopicRouteData&, const TopicRouteData&);
 };
+
+inline bool operator==(const TopicRouteData& lhs, const TopicRouteData& rhs) {
+  return lhs.message_queues_ == rhs.message_queues_;
+}
+
+inline bool operator!=(const TopicRouteData& lhs, const TopicRouteData& rhs) {
+  return lhs.message_queues_ != rhs.message_queues_;
+}
 
 using TopicRouteDataPtr = std::shared_ptr<TopicRouteData>;
 

@@ -21,33 +21,33 @@
 #include <cstdint>
 #include <functional>
 #include <future>
+#include <memory>
 #include <string>
 #include <system_error>
 #include <vector>
-
-#include "Scheduler.h"
-#include "absl/base/thread_annotations.h"
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
-#include "absl/strings/string_view.h"
-#include "absl/synchronization/mutex.h"
 
 #include "Client.h"
 #include "ClientManager.h"
 #include "HeartbeatDataCallback.h"
 #include "Histogram.h"
+#include "InsecureCertificateVerifier.h"
 #include "InvocationContext.h"
-#include "OrphanTransactionCallback.h"
 #include "ReceiveMessageCallback.h"
 #include "RpcClient.h"
 #include "RpcClientImpl.h"
+#include "Scheduler.h"
 #include "SchedulerImpl.h"
 #include "SendMessageContext.h"
+#include "TelemetryBidiReactor.h"
 #include "ThreadPoolImpl.h"
 #include "TopAddressing.h"
 #include "TopicRouteChangeCallback.h"
 #include "TopicRouteData.h"
-#include "rocketmq/AsyncCallback.h"
+#include "absl/base/thread_annotations.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/strings/string_view.h"
+#include "absl/synchronization/mutex.h"
 #include "rocketmq/State.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -86,24 +86,14 @@ public:
                     const std::function<void(const std::error_code&, const TopicRouteDataPtr&)>& cb) override
       LOCKS_EXCLUDED(rpc_clients_mtx_);
 
-  void doHealthCheck() LOCKS_EXCLUDED(clients_mtx_);
-
   /**
    * If inactive RPC clients refer to remote hosts that are absent from topic_route_table_, we need to purge them
    * immediately.
    */
   std::vector<std::string> cleanOfflineRpcClients() LOCKS_EXCLUDED(clients_mtx_, rpc_clients_mtx_);
 
-  /**
-   * Execute health-check on behalf of the client.
-   */
-  void healthCheck(const std::string& target_host, const Metadata& metadata, const HealthCheckRequest& request,
-                   std::chrono::milliseconds timeout,
-                   const std::function<void(const std::error_code&, const InvocationContext<HealthCheckResponse>*)>& cb)
-      override LOCKS_EXCLUDED(rpc_clients_mtx_);
-
   bool send(const std::string& target_host, const Metadata& metadata, SendMessageRequest& request,
-            SendCallback* cb) override LOCKS_EXCLUDED(rpc_clients_mtx_);
+            SendCallback cb) override LOCKS_EXCLUDED(rpc_clients_mtx_);
 
   /**
    * Get a RpcClient according to the given target hosts, which follows scheme specified
@@ -116,10 +106,11 @@ public:
    * @param need_heartbeat
    * @return
    */
-  RpcClientSharedPtr getRpcClient(const std::string& target_host, bool need_heartbeat = true)
+  RpcClientSharedPtr getRpcClient(const std::string& target_host, bool need_heartbeat = true) override
       LOCKS_EXCLUDED(rpc_clients_mtx_);
 
-  static SendResult processSendResponse(const MQMessageQueue& message_queue, const SendMessageResponse& response);
+  static SendReceipt processSendResponse(const rmq::MessageQueue& message_queue, const SendMessageResponse& response,
+                                         std::error_code& ec);
 
   // only for test
   void addRpcClient(const std::string& target_host, const RpcClientSharedPtr& client) LOCKS_EXCLUDED(rpc_clients_mtx_);
@@ -134,17 +125,16 @@ public:
                        const std::function<void(const std::error_code&, const QueryAssignmentResponse&)>& cb) override;
 
   void receiveMessage(const std::string& target, const Metadata& metadata, const ReceiveMessageRequest& request,
-                      std::chrono::milliseconds timeout, const std::shared_ptr<ReceiveMessageCallback>& cb) override
+                      std::chrono::milliseconds timeout, ReceiveMessageCallback cb) override
       LOCKS_EXCLUDED(rpc_clients_mtx_);
 
   /**
    * Translate protobuf message struct to domain model.
    *
    * @param item
-   * @param message_ext
    * @return true if the translation succeeded; false if something wrong happens, including checksum verification, etc.
    */
-  bool wrapMessage(const rmq::Message& item, MQMessageExt& message_ext) override;
+  MessageConstSharedPtr wrapMessage(const rmq::Message& item) override;
 
   SchedulerSharedPtr getScheduler() override;
 
@@ -156,8 +146,9 @@ public:
   void ack(const std::string& target_host, const Metadata& metadata, const AckMessageRequest& request,
            std::chrono::milliseconds timeout, const std::function<void(const std::error_code&)>& cb) override;
 
-  void nack(const std::string& target_host, const Metadata& metadata, const NackMessageRequest& request,
-            std::chrono::milliseconds timeout, const std::function<void(const std::error_code&)>& callback) override;
+  void changeInvisibleDuration(const std::string& target_host, const Metadata& metadata,
+                               const ChangeInvisibleDurationRequest&, std::chrono::milliseconds timeout,
+                               const std::function<void(const std::error_code&)>&) override;
 
   void forwardMessageToDeadLetterQueue(
       const std::string& target_host, const Metadata& metadata, const ForwardMessageToDeadLetterQueueRequest& request,
@@ -182,29 +173,9 @@ public:
                       std::chrono::milliseconds timeout,
                       const std::function<void(const std::error_code&, const EndTransactionResponse&)>& cb) override;
 
-  void pollCommand(const std::string& target, const Metadata& metadata, const PollCommandRequest& request,
-                   std::chrono::milliseconds timeout,
-                   const std::function<void(const InvocationContext<PollCommandResponse>*)>& cb) override;
-
-  void queryOffset(const std::string& target_host, const Metadata& metadata, const QueryOffsetRequest& request,
-                   std::chrono::milliseconds timeout,
-                   const std::function<void(const std::error_code&, const QueryOffsetResponse&)>& cb) override;
-
-  void pullMessage(const std::string& target_host, const Metadata& metadata, const PullMessageRequest& request,
-                   std::chrono::milliseconds timeout,
-                   const std::function<void(const std::error_code&, const ReceiveMessageResult&)>& cb) override;
-
   std::error_code notifyClientTermination(const std::string& target_host, const Metadata& metadata,
                                           const NotifyClientTerminationRequest& request,
                                           std::chrono::milliseconds timeout) override;
-
-  std::error_code reportThreadStackTrace(const std::string& target_host, const Metadata& metadata,
-                                         const ReportThreadStackTraceRequest& request,
-                                         std::chrono::milliseconds timeout) override;
-
-  std::error_code reportMessageConsumptionResult(const std::string& target_host, const Metadata& metadata,
-                                                 const ReportMessageConsumptionResultRequest& request,
-                                                 std::chrono::milliseconds timeout) override;
 
   void trace(bool trace) {
     trace_ = trace;
@@ -221,15 +192,12 @@ public:
 private:
   void doHeartbeat();
 
-  void pollCompletionQueue();
-
   void logStats();
 
   SchedulerSharedPtr scheduler_;
 
   static const char* HEARTBEAT_TASK_NAME;
   static const char* STATS_TASK_NAME;
-  static const char* HEALTH_CHECK_TASK_NAME;
 
   std::string resource_namespace_;
 
@@ -242,13 +210,9 @@ private:
   absl::Mutex rpc_clients_mtx_; // protects rpc_clients_
 
   std::uint32_t heartbeat_task_id_{0};
-  std::uint32_t health_check_task_id_{0};
   std::uint32_t stats_task_id_{0};
 
-  std::shared_ptr<CompletionQueue> completion_queue_;
   std::unique_ptr<ThreadPoolImpl> callback_thread_pool_;
-
-  std::thread completion_queue_thread_;
 
   Histogram latency_histogram_;
 
@@ -260,13 +224,12 @@ private:
    */
   std::string tenant_id_;
 
-  std::string service_name_{"MQ"};
+  std::string service_name_{"RocketMQ"};
 
   /**
    * TLS configuration
    */
-  std::shared_ptr<grpc::experimental::TlsServerAuthorizationCheckConfig> server_authorization_check_config_;
-  std::shared_ptr<grpc::experimental::CertificateProviderInterface> certificate_provider_;
+  std::shared_ptr<grpc::experimental::CertificateVerifier> certificate_verifier_;
   grpc::experimental::TlsChannelCredentialsOptions tls_channel_credential_options_;
   std::shared_ptr<grpc::ChannelCredentials> channel_credential_;
   grpc::ChannelArguments channel_arguments_;

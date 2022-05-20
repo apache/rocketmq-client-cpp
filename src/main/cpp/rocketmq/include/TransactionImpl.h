@@ -19,7 +19,7 @@
 #include <memory>
 #include <string>
 
-#include "rocketmq/MQMessage.h"
+#include "rocketmq/Message.h"
 #include "rocketmq/Transaction.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -28,10 +28,8 @@ class ProducerImpl;
 
 class TransactionImpl : public Transaction {
 public:
-  TransactionImpl(MQMessage message, std::string transaction_id, std::string endpoint, std::string trace_context,
-                  const std::shared_ptr<ProducerImpl>& producer)
-      : message_(std::move(message)), transaction_id_(std::move(transaction_id)), endpoint_(std::move(endpoint)),
-        trace_context_(std::move(trace_context)), producer_(producer) {
+  TransactionImpl(std::string topic, std::string message_id, std::string trace_context, const std::weak_ptr<ProducerImpl>& producer)
+      : topic_(std::move(topic)), message_id_(std::move(message_id)), trace_context_(std::move(trace_context)), producer_(producer) {
   }
 
   ~TransactionImpl() override = default;
@@ -40,12 +38,35 @@ public:
 
   bool rollback() override;
 
-  std::string messageId() const override;
+  const std::string& messageId() const override;
 
-  std::string transactionId() const override;
+  const std::string& transactionId() const override;
+
+  void transactionId(std::string transaction_id) {
+    transaction_id_ = std::move(transaction_id);
+  }
+
+  const std::string& traceContext() const override {
+    return trace_context_;
+  }
+
+  void traceContext(std::string trace_context) {
+    trace_context_ = std::move(trace_context);
+  }
+
+  const std::string& endpoint() const override {
+    return endpoint_;
+  }
+
+  void endpoint(std::string endpoint) { endpoint_ = std::move(endpoint); }
+
+  const std::string& topic() const override {
+    return topic_;
+  }
 
 private:
-  MQMessage message_;
+  std::string topic_;
+  std::string message_id_;
   std::string transaction_id_;
   std::string endpoint_;
   std::string trace_context_;

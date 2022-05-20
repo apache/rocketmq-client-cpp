@@ -26,15 +26,16 @@
 #include "opencensus/trace/span.h"
 
 #include "ConsumeFifoMessageService.h"
-#include "MessageAccessor.h"
+#include "MixAll.h"
 #include "ProcessQueue.h"
 #include "PushConsumerImpl.h"
 #include "rocketmq/MessageListener.h"
+#include "rocketmq/Tracing.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-ConsumeFifoMessageService ::ConsumeFifoMessageService(std::weak_ptr<PushConsumer> consumer, int thread_count,
-                                                      MessageListener* message_listener)
+ConsumeFifoMessageService::ConsumeFifoMessageService(std::weak_ptr<PushConsumerImpl> consumer, int thread_count,
+                                                     MessageListener message_listener)
     : ConsumeMessageServiceBase(std::move(consumer), thread_count, message_listener) {
 }
 
@@ -60,11 +61,11 @@ void ConsumeFifoMessageService::shutdown() {
   }
 }
 
-void ConsumeFifoMessageService::submitConsumeTask0(const std::shared_ptr<PushConsumer>& consumer,
-                                                   const ProcessQueueWeakPtr& process_queue,
-                                                   const MQMessageExt& message) {
+void ConsumeFifoMessageService::submitConsumeTask0(const std::shared_ptr<PushConsumerImpl>& consumer,
+                                                   const std::weak_ptr<ProcessQueue>& process_queue,
+                                                   MessageConstSharedPtr message) {
   // In case custom executor is used.
-  const Executor& custom_executor = consumer->customExecutor();
+  const auto& custom_executor = consumer->customExecutor();
   if (custom_executor) {
     std::function<void(void)> consume_task =
         std::bind(&ConsumeFifoMessageService::consumeTask, this, process_queue, message);
@@ -80,8 +81,8 @@ void ConsumeFifoMessageService::submitConsumeTask0(const std::shared_ptr<PushCon
   pool_->submit(consume_task);
 }
 
-void ConsumeFifoMessageService::submitConsumeTask(const ProcessQueueWeakPtr& process_queue) {
-  ProcessQueueSharedPtr process_queue_ptr = process_queue.lock();
+void ConsumeFifoMessageService::submitConsumeTask(const std::weak_ptr<ProcessQueue>& process_queue) {
+  auto process_queue_ptr = process_queue.lock();
   if (!process_queue_ptr) {
     SPDLOG_INFO("Process queue has destructed");
     return;
@@ -93,30 +94,25 @@ void ConsumeFifoMessageService::submitConsumeTask(const ProcessQueueWeakPtr& pro
     return;
   }
 
-  assert(1 == consumer->consumeBatchSize());
-
   if (process_queue_ptr->bindFifoConsumeTask()) {
-    std::vector<MQMessageExt> messages;
-    process_queue_ptr->take(consumer->consumeBatchSize(), messages);
+    std::vector<MessageConstSharedPtr> messages;
+    process_queue_ptr->take(1, messages);
     if (!messages.empty()) {
       assert(1 == messages.size());
-      submitConsumeTask0(consumer, process_queue, *messages.begin());
+      submitConsumeTask0(consumer, process_queue, std::move(*messages.begin()));
     }
   }
 }
 
-MessageListenerType ConsumeFifoMessageService::messageListenerType() {
-  return MessageListenerType::FIFO;
-}
-
-void ConsumeFifoMessageService::consumeTask(const ProcessQueueWeakPtr& process_queue, MQMessageExt& message) {
-  ProcessQueueSharedPtr process_queue_ptr = process_queue.lock();
+void ConsumeFifoMessageService::consumeTask(const std::weak_ptr<ProcessQueue>& process_queue,
+                                            MessageConstSharedPtr message) {
+  auto process_queue_ptr = process_queue.lock();
   if (!process_queue_ptr) {
     return;
   }
-  const std::string& topic = message.getTopic();
-  ConsumeMessageResult result;
-  std::shared_ptr<PushConsumer> consumer = consumer_.lock();
+  const std::string& topic = message->topic();
+  ConsumeResult result;
+  std::shared_ptr<PushConsumerImpl> consumer = consumer_.lock();
   // consumer might have been destructed.
   if (!consumer) {
     return;
@@ -129,36 +125,37 @@ void ConsumeFifoMessageService::consumeTask(const ProcessQueueWeakPtr& process_q
   }
 
   // Record await-consumption-span
-  {
-    auto span_context = opencensus::trace::propagation::FromTraceParentHeader(message.traceContext());
+  if (message->traceContext().has_value()) {
+    auto span_context = opencensus::trace::propagation::FromTraceParentHeader(message->traceContext().value());
 
     auto span = opencensus::trace::Span::BlankSpan();
-    std::string span_name = consumer->resourceNamespace() + "/" + message.getTopic() + " " +
-                            MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_AWAIT_OPERATION;
+    std::string span_name =
+        consumer->resourceNamespace() + "/" + topic + " " + MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_AWAIT_OPERATION;
     if (span_context.IsValid()) {
-      span = opencensus::trace::Span::StartSpanWithRemoteParent(span_name, span_context, &Samplers::always());
+      span = opencensus::trace::Span::StartSpanWithRemoteParent(span_name, span_context, traceSampler());
     } else {
-      span = opencensus::trace::Span::StartSpan(span_name, nullptr, {&Samplers::always()});
+      span = opencensus::trace::Span::StartSpan(span_name, nullptr, {traceSampler()});
     }
     span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_OPERATION,
                       MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_AWAIT_OPERATION);
     span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_OPERATION,
                       MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_AWAIT_OPERATION);
-    TracingUtility::addUniversalSpanAttributes(message, *consumer, span);
-    span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_AVAILABLE_TIMESTAMP, message.getStoreTimestamp());
-    absl::Time decoded_timestamp = MessageAccessor::decodedTimestamp(message);
+    TracingUtility::addUniversalSpanAttributes(*message, consumer->config(), span);
+    // span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_AVAILABLE_TIMESTAMP, message.extension.store_time);
+    absl::Time decoded_timestamp = absl::FromChrono(message->extension().decode_time);
     span.AddAnnotation(
         MixAll::SPAN_ANNOTATION_AWAIT_CONSUMPTION,
         {{MixAll::SPAN_ANNOTATION_ATTR_START_TIME,
           opencensus::trace::AttributeValueRef(absl::ToInt64Milliseconds(decoded_timestamp - absl::UnixEpoch()))}});
     span.End();
-    MessageAccessor::setTraceContext(const_cast<MQMessageExt&>(message),
-                                     opencensus::trace::propagation::ToTraceParentHeader(span.context()));
+    // message.message.traceContext()
+    // MessageAccessor::setTraceContext(const_cast<MessageExt&>(message),
+    //                                  opencensus::trace::propagation::ToTraceParentHeader(span.context()));
   }
 
-  auto span_context = opencensus::trace::propagation::FromTraceParentHeader(message.traceContext());
+  auto span_context = opencensus::trace::propagation::FromTraceParentHeader(message->traceContext().value());
   auto span = opencensus::trace::Span::BlankSpan();
-  std::string span_name = consumer->resourceNamespace() + "/" + message.getTopic() + " " +
+  std::string span_name = consumer->resourceNamespace() + "/" + message->topic() + " " +
                           MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_PROCESS_OPERATION;
   if (span_context.IsValid()) {
     span = opencensus::trace::Span::StartSpanWithRemoteParent(span_name, span_context);
@@ -169,29 +166,27 @@ void ConsumeFifoMessageService::consumeTask(const ProcessQueueWeakPtr& process_q
                     MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_PROCESS_OPERATION);
   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_OPERATION,
                     MixAll::SPAN_ATTRIBUTE_VALUE_MESSAGING_PROCESS_OPERATION);
-  TracingUtility::addUniversalSpanAttributes(message, *consumer, span);
-  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ATTEMPT, message.getDeliveryAttempt());
-  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_AVAILABLE_TIMESTAMP, message.getStoreTimestamp());
-  MessageAccessor::setTraceContext(const_cast<MQMessageExt&>(message),
-                                   opencensus::trace::propagation::ToTraceParentHeader(span.context()));
+  TracingUtility::addUniversalSpanAttributes(*message, consumer->config(), span);
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ATTEMPT, std::to_string(message->extension().delivery_attempt));
+  span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_AVAILABLE_TIMESTAMP,
+                    MixAll::format(message->extension().store_time));
 
+  // MessageAccessor::setTraceContext(const_cast<MessageExt&>(message),
+  //                                  opencensus::trace::propagation::ToTraceParentHeader(span.context()));
   auto steady_start = std::chrono::steady_clock::now();
 
   try {
-    assert(message_listener_);
-    auto message_listener = dynamic_cast<FifoMessageListener*>(message_listener_);
-    assert(message_listener);
-    result = message_listener->consumeMessage(message);
+    result = message_listener_(*message);
   } catch (...) {
-    result = ConsumeMessageResult::FAILURE;
+    result = ConsumeResult::FAILURE;
     SPDLOG_ERROR("Business FIFO callback raised an exception when consumeMessage");
   }
 
   switch (result) {
-    case ConsumeMessageResult::SUCCESS:
+    case ConsumeResult::SUCCESS:
       span.SetStatus(opencensus::trace::StatusCode::OK);
       break;
-    case ConsumeMessageResult::FAILURE:
+    case ConsumeResult::FAILURE:
       span.SetStatus(opencensus::trace::StatusCode::UNKNOWN);
       break;
   }
@@ -201,37 +196,33 @@ void ConsumeFifoMessageService::consumeTask(const ProcessQueueWeakPtr& process_q
 
   // Log client consume-time costs
   SPDLOG_DEBUG("Business callback spent {}ms processing message[Topic={}, MessageId={}].",
-               MixAll::millisecondsOf(duration), message.getTopic(), message.getMsgId());
+               MixAll::millisecondsOf(duration), message->topic(), message->id());
 
-  if (MessageModel::CLUSTERING == consumer->messageModel()) {
-    if (result == ConsumeMessageResult::SUCCESS) {
-      // Release message number and memory quota
-      process_queue_ptr->release(message.getBody().size(), message.getQueueOffset());
+  if (result == ConsumeResult::SUCCESS) {
+    // Release message number and memory quota
+    process_queue_ptr->release(message->body().size());
 
-      // Ensure current message is acked before moving to the next message.
-      auto callback = std::bind(&ConsumeFifoMessageService::onAck, this, process_queue, message, std::placeholders::_1);
-      consumer->ack(message, callback);
+    // Ensure current message is acked before moving to the next message.
+    auto callback = std::bind(&ConsumeFifoMessageService::onAck, this, process_queue, message, std::placeholders::_1);
+    consumer->ack(*message, callback);
+  } else {
+    const Message* ptr = message.get();
+    Message* raw = const_cast<Message*>(ptr);
+    raw->mutableExtension().delivery_attempt++;
+
+    if (message->extension().delivery_attempt < consumer->maxDeliveryAttempts()) {
+      auto task = std::bind(&ConsumeFifoMessageService::scheduleConsumeTask, this, process_queue, message);
+      consumer->schedule("Scheduled-Consume-FIFO-Message-Task", task, std::chrono::seconds(1));
     } else {
-      MessageAccessor::setDeliveryAttempt(message, message.getDeliveryAttempt() + 1);
-      if (message.getDeliveryAttempt() < consumer->maxDeliveryAttempts()) {
-        auto task = std::bind(&ConsumeFifoMessageService::scheduleConsumeTask, this, process_queue, message);
-        consumer->schedule("Scheduled-Consume-FIFO-Message-Task", task, std::chrono::seconds(1));
-      } else {
-        auto callback = std::bind(&ConsumeFifoMessageService::onForwardToDeadLetterQueue, this, process_queue, message,
-                                  std::placeholders::_1);
-        consumer->forwardToDeadLetterQueue(message, callback);
-      }
-    }
-  } else if (MessageModel::BROADCASTING == consumer->messageModel()) {
-    process_queue_ptr->release(message.getBody().size(), message.getQueueOffset());
-    int64_t committed_offset;
-    if (process_queue_ptr->committedOffset(committed_offset)) {
-      consumer->updateOffset(process_queue_ptr->getMQMessageQueue(), committed_offset);
+      auto callback = std::bind(&ConsumeFifoMessageService::onForwardToDeadLetterQueue, this, process_queue, message,
+                                std::placeholders::_1);
+      consumer->forwardToDeadLetterQueue(*message, callback);
     }
   }
 }
 
-void ConsumeFifoMessageService::onAck(const ProcessQueueWeakPtr& process_queue, const MQMessageExt& message,
+void ConsumeFifoMessageService::onAck(const std::weak_ptr<ProcessQueue>& process_queue,
+                                      MessageConstSharedPtr message,
                                       const std::error_code& ec) {
   auto process_queue_ptr = process_queue.lock();
   if (!process_queue_ptr) {
@@ -241,7 +232,7 @@ void ConsumeFifoMessageService::onAck(const ProcessQueueWeakPtr& process_queue, 
 
   if (ec) {
     SPDLOG_WARN("Failed to acknowledge FIFO message[MessageQueue={}, MsgId={}]. Cause: {}",
-                process_queue_ptr->simpleName(), message.getMsgId(), ec.message());
+                process_queue_ptr->simpleName(), message->id(), ec.message());
     auto consumer = consumer_.lock();
     if (!consumer) {
       SPDLOG_WARN("Consumer instance has destructed");
@@ -250,20 +241,20 @@ void ConsumeFifoMessageService::onAck(const ProcessQueueWeakPtr& process_queue, 
     auto task = std::bind(&ConsumeFifoMessageService::scheduleAckTask, this, process_queue, message);
     int32_t duration = 100;
     consumer->schedule("Ack-FIFO-Message-On-Failure", task, std::chrono::milliseconds(duration));
-    SPDLOG_INFO("Scheduled to ack message[Topic={}, MessageId={}] in {}ms", message.getTopic(), message.getMsgId(),
-                duration);
+    SPDLOG_INFO("Scheduled to ack message[Topic={}, MessageId={}] in {}ms", message->topic(), message->id(), duration);
   } else {
     SPDLOG_DEBUG("Acknowledge FIFO message[MessageQueue={}, MsgId={}] OK", process_queue_ptr->simpleName(),
-                 message.getMsgId());
+                 message->id());
     process_queue_ptr->unbindFifoConsumeTask();
     submitConsumeTask(process_queue);
   }
 }
 
-void ConsumeFifoMessageService::onForwardToDeadLetterQueue(const ProcessQueueWeakPtr& process_queue,
-                                                           const MQMessageExt& message, bool ok) {
+void ConsumeFifoMessageService::onForwardToDeadLetterQueue(const std::weak_ptr<ProcessQueue>& process_queue,
+                                                           MessageConstSharedPtr message,
+                                                           bool ok) {
   if (ok) {
-    SPDLOG_DEBUG("Forward message[Topic={}, MessagId={}] to DLQ OK", message.getTopic(), message.getMsgId());
+    SPDLOG_DEBUG("Forward message[Topic={}, MessagId={}] to DLQ OK", message->topic(), message->id());
     auto process_queue_ptr = process_queue.lock();
     if (process_queue_ptr) {
       process_queue_ptr->unbindFifoConsumeTask();
@@ -271,7 +262,7 @@ void ConsumeFifoMessageService::onForwardToDeadLetterQueue(const ProcessQueueWea
     return;
   }
 
-  SPDLOG_INFO("Failed to forward message[topic={}, MessageId={}] to DLQ", message.getTopic(), message.getMsgId());
+  SPDLOG_INFO("Failed to forward message[topic={}, MessageId={}] to DLQ", message->topic(), message->id());
   auto process_queue_ptr = process_queue.lock();
   if (!process_queue_ptr) {
     SPDLOG_INFO("Abort further attempts considering its process queue has destructed");
@@ -285,8 +276,8 @@ void ConsumeFifoMessageService::onForwardToDeadLetterQueue(const ProcessQueueWea
   consumer->schedule("Scheduled-Forward-DLQ-Task", task, std::chrono::milliseconds(100));
 }
 
-void ConsumeFifoMessageService::scheduleForwardDeadLetterQueueTask(const ProcessQueueWeakPtr& process_queue,
-                                                                   const MQMessageExt& message) {
+void ConsumeFifoMessageService::scheduleForwardDeadLetterQueueTask(const std::weak_ptr<ProcessQueue>& process_queue,
+                                                                   MessageConstSharedPtr message) {
   auto process_queue_ptr = process_queue.lock();
   if (!process_queue_ptr) {
     return;
@@ -295,10 +286,11 @@ void ConsumeFifoMessageService::scheduleForwardDeadLetterQueueTask(const Process
   assert(consumer);
   auto callback = std::bind(&ConsumeFifoMessageService::onForwardToDeadLetterQueue, this, process_queue, message,
                             std::placeholders::_1);
-  consumer->forwardToDeadLetterQueue(message, callback);
+  consumer->forwardToDeadLetterQueue(*message, callback);
 }
 
-void ConsumeFifoMessageService::scheduleAckTask(const ProcessQueueWeakPtr& process_queue, const MQMessageExt& message) {
+void ConsumeFifoMessageService::scheduleAckTask(const std::weak_ptr<ProcessQueue>& process_queue,
+                                                MessageConstSharedPtr message) {
   auto process_queue_ptr = process_queue.lock();
   if (!process_queue_ptr) {
     return;
@@ -307,12 +299,12 @@ void ConsumeFifoMessageService::scheduleAckTask(const ProcessQueueWeakPtr& proce
   auto callback = std::bind(&ConsumeFifoMessageService::onAck, this, process_queue, message, std::placeholders::_1);
   auto consumer = consumer_.lock();
   if (consumer) {
-    consumer->ack(message, callback);
+    consumer->ack(*message, callback);
   }
 }
 
-void ConsumeFifoMessageService::scheduleConsumeTask(const ProcessQueueWeakPtr& process_queue,
-                                                    const MQMessageExt& message) {
+void ConsumeFifoMessageService::scheduleConsumeTask(const std::weak_ptr<ProcessQueue>& process_queue,
+                                                    MessageConstSharedPtr message) {
   auto consumer_ptr = consumer_.lock();
   if (!consumer_ptr) {
     return;

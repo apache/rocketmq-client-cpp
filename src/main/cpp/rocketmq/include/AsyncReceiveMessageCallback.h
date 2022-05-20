@@ -19,19 +19,17 @@
 #include <functional>
 #include <system_error>
 
-#include "ProcessQueue.h"
-#include "ReceiveMessageCallback.h"
+#include "ReceiveMessageResult.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class AsyncReceiveMessageCallback : public ReceiveMessageCallback,
-                                    public std::enable_shared_from_this<AsyncReceiveMessageCallback> {
+class ProcessQueue;
+
+class AsyncReceiveMessageCallback : public std::enable_shared_from_this<AsyncReceiveMessageCallback> {
 public:
-  explicit AsyncReceiveMessageCallback(ProcessQueueWeakPtr process_queue);
+  explicit AsyncReceiveMessageCallback(std::weak_ptr<ProcessQueue> process_queue);
 
-  ~AsyncReceiveMessageCallback() override = default;
-
-  void onCompletion(const std::error_code& ec, const ReceiveMessageResult& result) override;
+  void onCompletion(const std::error_code& ec, const ReceiveMessageResult& result);
 
   void receiveMessageLater();
 
@@ -42,7 +40,7 @@ private:
    * Hold a weak_ptr to ProcessQueue. Once ProcessQueue was released, stop the
    * pop-cycle immediately.
    */
-  ProcessQueueWeakPtr process_queue_;
+  std::weak_ptr<ProcessQueue> process_queue_;
 
   std::function<void(void)> receive_message_later_;
 

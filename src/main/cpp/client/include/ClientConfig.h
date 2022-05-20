@@ -16,37 +16,45 @@
  */
 #pragma once
 
+#include <cstdint>
+#include <memory>
 #include <string>
+#include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/time/time.h"
 
+#include "Protocol.h"
+#include "RetryPolicy.h"
 #include "rocketmq/CredentialsProvider.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class ClientConfig {
-public:
-  virtual ~ClientConfig() = default;
+struct PublisherConfig {
+  std::vector<rmq::Resource> topics;
+  std::uint32_t compress_body_threshold{4096};
+  std::uint32_t max_body_size{4194304};
+};
 
-  virtual const std::string& region() const = 0;
+struct SubscriberConfig {
+  rmq::Resource group;
+  absl::flat_hash_map<std::string, rmq::SubscriptionEntry> subscriptions;
+  bool fifo{false};
+  std::uint32_t receive_batch_size{32};
+  absl::Duration polling_timeout{absl::Seconds(30)};
+};
 
-  virtual const std::string& serviceName() const = 0;
-
-  virtual const std::string& resourceNamespace() const = 0;
-
-  virtual CredentialsProviderPtr credentialsProvider() = 0;
-
-  virtual const std::string& tenantId() const = 0;
-
-  virtual absl::Duration getIoTimeout() const = 0;
-
-  virtual absl::Duration getLongPollingTimeout() const = 0;
-
-  virtual const std::string& getGroupName() const = 0;
-
-  virtual std::string clientId() const = 0;
-
-  virtual bool isTracingEnabled() const = 0;
+struct ClientConfig {
+  std::string client_id;
+  rmq::ClientType client_type{rmq::ClientType::CLIENT_TYPE_UNSPECIFIED};
+  RetryPolicy backoff_policy;
+  // TODO: use std::chrono::milliseconds
+  absl::Duration request_timeout;
+  std::string region{"cn-hangzhou"};
+  std::string resource_namespace;
+  std::shared_ptr<CredentialsProvider> credentials_provider;
+  PublisherConfig publisher;
+  SubscriberConfig subscriber;
 };
 
 ROCKETMQ_NAMESPACE_END

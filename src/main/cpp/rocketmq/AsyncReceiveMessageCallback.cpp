@@ -21,25 +21,20 @@
 #include "ClientManagerImpl.h"
 #include "ConsumeMessageType.h"
 #include "LoggerImpl.h"
-#include "PushConsumer.h"
+#include "ProcessQueue.h"
+#include "PushConsumerImpl.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-AsyncReceiveMessageCallback::AsyncReceiveMessageCallback(ProcessQueueWeakPtr process_queue)
+AsyncReceiveMessageCallback::AsyncReceiveMessageCallback(std::weak_ptr<ProcessQueue> process_queue)
     : process_queue_(std::move(process_queue)) {
   receive_message_later_ = std::bind(&AsyncReceiveMessageCallback::checkThrottleThenReceive, this);
 }
 
 void AsyncReceiveMessageCallback::onCompletion(const std::error_code& ec, const ReceiveMessageResult& result) {
-  ProcessQueueSharedPtr process_queue = process_queue_.lock();
+  std::shared_ptr<ProcessQueue> process_queue = process_queue_.lock();
   if (!process_queue) {
     SPDLOG_INFO("Process queue has been destructed.");
-    return;
-  }
-
-  std::shared_ptr<PushConsumer> impl = process_queue->getConsumer().lock();
-  if (!impl->active()) {
-    SPDLOG_INFO("Consumer is not active any more. It should be quitting");
     return;
   }
 
@@ -57,7 +52,7 @@ void AsyncReceiveMessageCallback::onCompletion(const std::error_code& ec, const 
   SPDLOG_DEBUG("Receive messages from broker[host={}] returns with status=FOUND, msgListSize={}, queue={}",
                result.source_host, result.messages.size(), process_queue->simpleName());
   process_queue->cacheMessages(result.messages);
-  impl->getConsumeMessageService()->signalDispatcher();
+  consumer->getConsumeMessageService()->signalDispatcher();
   checkThrottleThenReceive();
 }
 
@@ -102,19 +97,19 @@ void AsyncReceiveMessageCallback::receiveMessageLater() {
 }
 
 void AsyncReceiveMessageCallback::receiveMessageImmediately() {
-  ProcessQueueSharedPtr process_queue_shared_ptr = process_queue_.lock();
+  auto process_queue_shared_ptr = process_queue_.lock();
   if (!process_queue_shared_ptr) {
     SPDLOG_INFO("ProcessQueue has been released. Ignore further receive message request-response cycles");
     return;
   }
 
-  std::shared_ptr<PushConsumer> impl = process_queue_shared_ptr->getConsumer().lock();
+  std::shared_ptr<PushConsumerImpl> impl = process_queue_shared_ptr->getConsumer().lock();
   if (!impl) {
     SPDLOG_INFO("Owner of ProcessQueue[{}] has been released. Ignore further receive message request-response cycles",
                 process_queue_shared_ptr->simpleName());
     return;
   }
-  impl->receiveMessage(process_queue_shared_ptr->getMQMessageQueue(), process_queue_shared_ptr->getFilterExpression());
+  impl->receiveMessage(process_queue_shared_ptr->messageQueue(), process_queue_shared_ptr->getFilterExpression());
 }
 
 ROCKETMQ_NAMESPACE_END

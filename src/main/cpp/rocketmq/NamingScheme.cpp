@@ -37,6 +37,14 @@ const char* NamingScheme::IPv6Regex = "((([0-9a-fA-F]){1,4})\\:){7}([0-9a-fA-F])
 NamingScheme::NamingScheme() : ipv4_pattern_(IPv4Regex), ipv6_pattern_(IPv6Regex) {
 }
 
+bool NamingScheme::isIPv4(const std::string& host) {
+  return re2::RE2::FullMatch(host, ipv4_pattern_);
+}
+
+bool NamingScheme::isIPv6(const std::string& host) {
+  return re2::RE2::FullMatch(host, ipv6_pattern_);
+}
+
 std::string NamingScheme::buildAddress(const std::vector<std::string>& list) {
   absl::flat_hash_map<std::string, std::uint32_t> ipv4;
   absl::flat_hash_map<std::string, std::uint32_t> ipv6;
@@ -47,7 +55,7 @@ std::string NamingScheme::buildAddress(const std::vector<std::string>& list) {
       continue;
     }
 
-    if (re2::RE2::FullMatch(host_port[0], ipv4_pattern_)) {
+    if (isIPv4(host_port[0])) {
       std::uint32_t port;
       if (absl::SimpleAtoi(host_port[1], &port)) {
         ipv4.insert_or_assign(host_port[0], port);
@@ -55,7 +63,7 @@ std::string NamingScheme::buildAddress(const std::vector<std::string>& list) {
       continue;
     }
 
-    if (re2::RE2::FullMatch(host_port[0], ipv6_pattern_)) {
+    if (isIPv6(host_port[0])) {
       std::uint32_t port;
       if (absl::SimpleAtoi(host_port[1], &port)) {
         ipv6.insert_or_assign(host_port[0], port);

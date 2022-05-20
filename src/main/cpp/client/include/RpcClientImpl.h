@@ -18,17 +18,22 @@
 
 #include <memory>
 
+#include "InvocationContext.h"
+#include "ReceiveMessageCallback.h"
+#include "ReceiveMessageContext.h"
 #include "absl/container/flat_hash_map.h"
 
+#include "Client.h"
+#include "ClientManager.h"
 #include "RpcClient.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
 class RpcClientImpl : public RpcClient, public std::enable_shared_from_this<RpcClientImpl> {
 public:
-  RpcClientImpl(std::shared_ptr<CompletionQueue> completion_queue, std::shared_ptr<Channel> channel,
+  RpcClientImpl(std::weak_ptr<ClientManager> client_manager, std::shared_ptr<Channel> channel, std::string peer_address,
                 bool need_heartbeat = true)
-      : completion_queue_(std::move(completion_queue)), channel_(std::move(channel)),
+      : client_manager_(client_manager), channel_(std::move(channel)), peer_address_(std::move(peer_address)),
         stub_(rmq::MessagingService::NewStub(channel_)), need_heartbeat_(need_heartbeat) {
   }
 
@@ -37,6 +42,10 @@ public:
   RpcClientImpl& operator=(const RpcClientImpl&) = delete;
 
   ~RpcClientImpl() override = default;
+
+  const std::string& remoteAddress() const override {
+    return peer_address_;
+  }
 
   void asyncQueryRoute(const QueryRouteRequest& request,
                        InvocationContext<QueryRouteResponse>* invocation_context) override;
@@ -47,47 +56,29 @@ public:
   void asyncQueryAssignment(const QueryAssignmentRequest& request,
                             InvocationContext<QueryAssignmentResponse>* invocation_context) override;
 
-  std::shared_ptr<CompletionQueue>& completionQueue() override;
-
-  void asyncReceive(const ReceiveMessageRequest& request,
-                    InvocationContext<ReceiveMessageResponse>* invocation_context) override;
+  void asyncReceive(const ReceiveMessageRequest& request, std::unique_ptr<ReceiveMessageContext> context) override;
 
   void asyncAck(const AckMessageRequest& request, InvocationContext<AckMessageResponse>* invocation_context) override;
 
-  void asyncNack(const NackMessageRequest& request,
-                 InvocationContext<NackMessageResponse>* invocation_context) override;
+  void asyncChangeInvisibleDuration(const ChangeInvisibleDurationRequest& request,
+                                    InvocationContext<ChangeInvisibleDurationResponse>*) override;
 
   void asyncHeartbeat(const HeartbeatRequest& request,
                       InvocationContext<HeartbeatResponse>* invocation_context) override;
 
-  void asyncHealthCheck(const HealthCheckRequest& request,
-                        InvocationContext<HealthCheckResponse>* invocation_context) override;
-
   void asyncEndTransaction(const EndTransactionRequest& request,
                            InvocationContext<EndTransactionResponse>* invocation_context) override;
 
-  void asyncPollCommand(const PollCommandRequest& request,
-                        InvocationContext<PollCommandResponse>* invocation_context) override;
-
-  void asyncQueryOffset(const QueryOffsetRequest& request,
-                        InvocationContext<QueryOffsetResponse>* invocation_context) override;
-
-  void asyncPull(const PullMessageRequest& request,
-                 InvocationContext<PullMessageResponse>* invocation_context) override;
+  std::shared_ptr<TelemetryBidiReactor> asyncTelemetry(std::weak_ptr<Client> client) override;
 
   void asyncForwardMessageToDeadLetterQueue(
       const ForwardMessageToDeadLetterQueueRequest& request,
       InvocationContext<ForwardMessageToDeadLetterQueueResponse>* invocation_context) override;
 
-  grpc::Status reportThreadStackTrace(grpc::ClientContext* context, const ReportThreadStackTraceRequest& request,
-                                      ReportThreadStackTraceResponse* response) override;
-
-  grpc::Status reportMessageConsumptionResult(grpc::ClientContext* context,
-                                              const ReportMessageConsumptionResultRequest& request,
-                                              ReportMessageConsumptionResultResponse* response) override;
-
   grpc::Status notifyClientTermination(grpc::ClientContext* context, const NotifyClientTerminationRequest& request,
                                        NotifyClientTerminationResponse* response) override;
+
+  std::weak_ptr<ClientManager> clientManager() override;
 
   bool needHeartbeat() override;
 
@@ -98,8 +89,12 @@ public:
 private:
   static void addMetadata(grpc::ClientContext& context, const absl::flat_hash_map<std::string, std::string>& metadata);
 
-  std::shared_ptr<CompletionQueue> completion_queue_;
+  static void asyncCallback(std::weak_ptr<RpcClient> client, BaseInvocationContext* invocation_context,
+                            grpc::Status status);
+
+  std::weak_ptr<ClientManager> client_manager_;
   std::shared_ptr<Channel> channel_;
+  std::string peer_address_;
   std::unique_ptr<rmq::MessagingService::Stub> stub_;
   std::chrono::milliseconds connect_timeout_{3000};
   bool need_heartbeat_{true};

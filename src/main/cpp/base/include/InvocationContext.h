@@ -30,7 +30,6 @@
 #include "LoggerImpl.h"
 #include "MetadataConstants.h"
 #include "UniqueIdGenerator.h"
-#include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -86,6 +85,7 @@ struct InvocationContext : public BaseInvocationContext {
       SPDLOG_WARN("Asynchronous RPC[{}.{}] timed out, elapsing {}ms, deadline-over-due: {}ms",
                   absl::FormatTime(created_time, absl::UTCTimeZone()), elapsed, diff);
     }
+
     try {
       if (callback) {
         callback(this);
