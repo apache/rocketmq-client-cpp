@@ -119,7 +119,7 @@ public:
 
   void nack(const Message& message, const std::function<void(const std::error_code&)>& callback);
 
-  void forwardToDeadLetterQueue(const Message& message, const std::function<void(bool)>& cb);
+  void forwardToDeadLetterQueue(const Message& message, const std::function<void(const std::error_code&)>& cb);
 
   void wrapAckMessageRequest(const Message& msg, AckMessageRequest& request);
 
@@ -153,8 +153,6 @@ public:
   uint64_t maxCachedMessageMemory() const {
     return MixAll::DEFAULT_CACHED_MESSAGE_MEMORY;
   }
-
-  void iterateProcessQueue(const std::function<void(std::shared_ptr<ProcessQueue>)>& callback);
 
   MessageListener& messageListener() {
     return message_listener_;

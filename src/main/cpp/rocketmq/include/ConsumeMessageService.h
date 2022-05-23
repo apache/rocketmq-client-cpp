@@ -17,11 +17,15 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
+#include <system_error>
 
 #include "ProcessQueue.h"
 #include "rocketmq/MessageListener.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
+
+class ConsumeTask;
 
 class ConsumeMessageService {
 public:
@@ -38,11 +42,28 @@ public:
    */
   virtual void shutdown() = 0;
 
-  virtual void submitConsumeTask(const std::weak_ptr<ProcessQueue>& process_queue) = 0;
+  virtual void dispatch(std::shared_ptr<ProcessQueue> process_queue, std::vector<MessageConstSharedPtr> messages) = 0;
 
-  virtual void signalDispatcher() = 0;
+  virtual void submit(std::shared_ptr<ConsumeTask> task) = 0;
 
-  virtual void throttle(const std::string& topic, std::uint32_t threshold) = 0;
+  virtual MessageListener& listener() = 0;
+
+  virtual bool preHandle(const Message& message) = 0;
+
+  virtual bool postHandle(const Message& message, ConsumeResult result) = 0;
+
+  virtual void ack(const Message& message, std::function<void(const std::error_code& ec)> cb) = 0;
+
+  virtual void nack(const Message& message, std::function<void(const std::error_code& ec)> cb) = 0;
+
+  virtual void forward(const Message& message, std::function<void(const std::error_code& ec)> cb) = 0;
+
+  virtual void schedule(std::shared_ptr<ConsumeTask> task, std::chrono::milliseconds delay) = 0;
+
+  virtual std::size_t maxDeliveryAttempt() = 0;
 };
+
+using ConsumeMessageServiceWeakPtr = std::weak_ptr<ConsumeMessageService>;
+using ConsumeMessageServiceSharedPtr = std::shared_ptr<ConsumeMessageService>;
 
 ROCKETMQ_NAMESPACE_END

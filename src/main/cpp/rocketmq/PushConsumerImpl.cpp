@@ -24,8 +24,7 @@
 
 #include "AsyncReceiveMessageCallback.h"
 #include "ClientManagerFactory.h"
-#include "ConsumeFifoMessageService.h"
-#include "ConsumeStandardMessageService.h"
+#include "ConsumeMessageServiceImpl.h"
 #include "MixAll.h"
 #include "ProcessQueueImpl.h"
 #include "Protocol.h"
@@ -72,26 +71,10 @@ void PushConsumerImpl::start() {
 
   fetchRoutes();
 
-  if (client_config_.subscriber.fifo) {
-    SPDLOG_INFO("start orderly consume service: {}", client_config_.subscriber.group.name());
-    consume_message_service_ =
-        std::make_shared<ConsumeFifoMessageService>(shared_from_this(), consume_thread_pool_size_, message_listener_);
-    consume_batch_size_ = 1;
-  } else {
-    // For backward compatibility, by default, ConsumeMessageConcurrentlyService is assumed.
-    SPDLOG_INFO("start concurrently consume service: {}", client_config_.subscriber.group.name());
-    consume_message_service_ = std::make_shared<ConsumeStandardMessageService>(
-        shared_from_this(), consume_thread_pool_size_, message_listener_);
-  }
+  SPDLOG_INFO("start concurrently consume service: {}", client_config_.subscriber.group.name());
+  consume_message_service_ =
+      std::make_shared<ConsumeMessageServiceImpl>(shared_from_this(), consume_thread_pool_size_, message_listener_);
   consume_message_service_->start();
-
-  {
-    // Set consumer throttling
-    absl::MutexLock lock(&throttle_table_mtx_);
-    for (const auto& item : throttle_table_) {
-      consume_message_service_->throttle(item.first, item.second);
-    }
-  }
 
   // Heartbeat depends on initialization of consume-message-service
   heartbeat();
@@ -394,7 +377,8 @@ void PushConsumerImpl::nack(const Message& message, const std::function<void(con
                                            absl::ToChronoMilliseconds(client_config_.request_timeout), callback);
 }
 
-void PushConsumerImpl::forwardToDeadLetterQueue(const Message& message, const std::function<void(bool)>& cb) {
+void PushConsumerImpl::forwardToDeadLetterQueue(const Message& message,
+                                                const std::function<void(const std::error_code&)>& cb) {
   std::string target_host = message.extension().target_endpoint;
 
   absl::flat_hash_map<std::string, std::string> metadata;
@@ -449,19 +433,6 @@ std::size_t PushConsumerImpl::getProcessQueueTableSize() {
 void PushConsumerImpl::setThrottle(const std::string& topic, uint32_t threshold) {
   absl::MutexLock lock(&throttle_table_mtx_);
   throttle_table_.emplace(topic, threshold);
-  // If consumer has started, update it dynamically.
-  if (getConsumeMessageService()) {
-    getConsumeMessageService()->throttle(topic, threshold);
-  }
-}
-
-void PushConsumerImpl::iterateProcessQueue(const std::function<void(std::shared_ptr<ProcessQueue>)>& callback) {
-  absl::MutexLock lock(&process_queue_table_mtx_);
-  for (const auto& item : process_queue_table_) {
-    if (item.second->hasPendingMessages()) {
-      callback(item.second);
-    }
-  }
 }
 
 void PushConsumerImpl::fetchRoutes() {

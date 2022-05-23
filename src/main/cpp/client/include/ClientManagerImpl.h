@@ -150,10 +150,11 @@ public:
                                const ChangeInvisibleDurationRequest&, std::chrono::milliseconds timeout,
                                const std::function<void(const std::error_code&)>&) override;
 
-  void forwardMessageToDeadLetterQueue(
-      const std::string& target_host, const Metadata& metadata, const ForwardMessageToDeadLetterQueueRequest& request,
-      std::chrono::milliseconds timeout,
-      const std::function<void(const InvocationContext<ForwardMessageToDeadLetterQueueResponse>*)>& cb) override;
+  void forwardMessageToDeadLetterQueue(const std::string& target_host,
+                                       const Metadata& metadata,
+                                       const ForwardMessageToDeadLetterQueueRequest& request,
+                                       std::chrono::milliseconds timeout,
+                                       const std::function<void(const std::error_code&)>& cb) override;
 
   /**
    * End a transaction asynchronously.

@@ -72,7 +72,7 @@ public:
   virtual void forwardMessageToDeadLetterQueue(
       const std::string& target_host, const Metadata& metadata, const ForwardMessageToDeadLetterQueueRequest& request,
       std::chrono::milliseconds timeout,
-      const std::function<void(const InvocationContext<ForwardMessageToDeadLetterQueueResponse>*)>& cb) = 0;
+      const std::function<void(const std::error_code&)>& cb) = 0;
 
   virtual void endTransaction(const std::string& target_host, const Metadata& metadata,
                               const EndTransactionRequest& request, std::chrono::milliseconds timeout,

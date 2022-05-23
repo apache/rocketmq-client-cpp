@@ -957,10 +957,11 @@ void ClientManagerImpl::endTransaction(
   client->asyncEndTransaction(request, invocation_context);
 }
 
-void ClientManagerImpl::forwardMessageToDeadLetterQueue(
-    const std::string& target_host, const Metadata& metadata, const ForwardMessageToDeadLetterQueueRequest& request,
-    std::chrono::milliseconds timeout,
-    const std::function<void(const InvocationContext<ForwardMessageToDeadLetterQueueResponse>*)>& cb) {
+void ClientManagerImpl::forwardMessageToDeadLetterQueue(const std::string& target_host,
+                                                        const Metadata& metadata,
+                                                        const ForwardMessageToDeadLetterQueueRequest& request,
+                                                        std::chrono::milliseconds timeout,
+                                                        const std::function<void(const std::error_code&)>& cb) {
   SPDLOG_DEBUG("ForwardMessageToDeadLetterQueue Request: {}", request.DebugString());
   auto client = getRpcClient(target_host);
   auto invocation_context = new InvocationContext<ForwardMessageToDeadLetterQueueResponse>();
@@ -977,12 +978,28 @@ void ClientManagerImpl::forwardMessageToDeadLetterQueue(
     if (!invocation_context->status.ok()) {
       SPDLOG_WARN("Failed to transmit SendMessageToDeadLetterQueueRequest to host={}",
                   invocation_context->remote_address);
-      cb(invocation_context);
+      std::error_code ec = ErrorCode::BadRequest;
+      cb(ec);
       return;
     }
 
     SPDLOG_DEBUG("Received forwardToDeadLetterQueue response from server[host={}]", invocation_context->remote_address);
-    cb(invocation_context);
+    std::error_code ec;
+    switch (invocation_context->response.status().code()) {
+      case rmq::Code::OK: {
+        break;
+      }
+      case rmq::Code::INTERNAL_SERVER_ERROR: {
+        ec = ErrorCode::ServiceUnavailable;
+      }
+      case rmq::Code::TOO_MANY_REQUESTS: {
+        ec = ErrorCode::TooManyRequest;
+      }
+      default: {
+        ec = ErrorCode::NotImplemented;
+      }
+    }
+    cb(ec);
   };
   invocation_context->callback = callback;
   client->asyncForwardMessageToDeadLetterQueue(request, invocation_context);
