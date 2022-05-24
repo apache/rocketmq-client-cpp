@@ -37,6 +37,7 @@
 #include "rocketmq/SendReceipt.h"
 #include "rocketmq/State.h"
 #include "rocketmq/TransactionChecker.h"
+#include "PublishStats.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -105,7 +106,10 @@ public:
 
   void buildClientSettings(rmq::Settings& settings) override;
 
-  void topicsOfInterest(std::vector<std::string> topics) LOCKS_EXCLUDED(topics_mtx_);
+  void topicsOfInterest(std::vector<std::string> topics)
+      LOCKS_EXCLUDED(topics_mtx_);
+
+  const PublishStats& stats() const { return stats_; }
 
 protected:
   std::shared_ptr<ClientImpl> self() override {
@@ -125,6 +129,8 @@ private:
   TransactionChecker transaction_checker_;
   std::vector<std::string> topics_ GUARDED_BY(topics_mtx_);
   absl::Mutex topics_mtx_;
+
+  PublishStats stats_;
 
   /**
    * @brief Acquire PublishInfo for the given topic.

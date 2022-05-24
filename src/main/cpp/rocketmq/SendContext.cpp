@@ -18,14 +18,14 @@
 
 #include <system_error>
 
+#include "ProducerImpl.h"
+#include "PublishStats.h"
+#include "TransactionImpl.h"
 #include "opencensus/trace/propagation/trace_context.h"
 #include "opencensus/trace/span.h"
-#include "spdlog/spdlog.h"
-
-#include "ProducerImpl.h"
-#include "TransactionImpl.h"
 #include "rocketmq/Logger.h"
 #include "rocketmq/SendReceipt.h"
+#include "spdlog/spdlog.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -35,6 +35,28 @@ void SendContext::onSuccess(const SendReceipt& send_receipt) noexcept {
     span_.SetStatus(opencensus::trace::StatusCode::OK);
     span_.End();
   }
+
+  auto publisher = producer_.lock();
+  if (!publisher) {
+    return;
+  }
+
+  // Collect metrics
+  {
+    auto duration = std::chrono::steady_clock::now() - request_time_;
+    opencensus::stats::Record({{publisher->stats().latency(), MixAll::millisecondsOf(duration)}},
+                              {
+                                  {publisher->stats().topicTag(), message_->topic()},
+                                  {publisher->stats().clientIdTag(), publisher->config().client_id},
+                              });
+
+    opencensus::stats::Record({{publisher->stats().success(), 1}},
+                              {
+                                  {publisher->stats().topicTag(), message_->topic()},
+                                  {publisher->stats().clientIdTag(), publisher->config().client_id},
+                              });
+  }
+
   // send_receipt.traceContext(opencensus::trace::propagation::ToTraceParentHeader(span_.context()));
   std::error_code ec;
   callback_(ec, send_receipt);
@@ -50,6 +72,22 @@ void SendContext::onFailure(const std::error_code& ec) noexcept {
   auto publisher = producer_.lock();
   if (!publisher) {
     return;
+  }
+
+  // Collect metrics
+  {
+    auto duration = std::chrono::steady_clock::now() - request_time_;
+    opencensus::stats::Record({{publisher->stats().latency(), MixAll::millisecondsOf(duration)}},
+                              {
+                                  {publisher->stats().topicTag(), message_->topic()},
+                                  {publisher->stats().clientIdTag(), publisher->config().client_id},
+                              });
+
+    opencensus::stats::Record({{publisher->stats().failure(), 1}},
+                              {
+                                  {publisher->stats().topicTag(), message_->topic()},
+                                  {publisher->stats().clientIdTag(), publisher->config().client_id},
+                              });
   }
 
   if (++attempt_times_ >= publisher->maxAttemptTimes()) {
@@ -72,6 +110,7 @@ void SendContext::onFailure(const std::error_code& ec) noexcept {
   }
 
   auto message_queue = candidates_[attempt_times_ % candidates_.size()];
+  request_time_ = std::chrono::steady_clock::now();
   producer->sendImpl(shared_from_this());
 }
 

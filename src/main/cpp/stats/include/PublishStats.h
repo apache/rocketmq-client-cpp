@@ -27,15 +27,15 @@ class PublishStats {
 public:
   PublishStats();
 
-  opencensus::stats::MeasureInt64& success() {
+  const opencensus::stats::MeasureInt64& success() const {
     return success_;
   }
 
-  opencensus::stats::MeasureInt64& failure() {
+  const opencensus::stats::MeasureInt64& failure() const {
     return failure_;
   }
 
-  opencensus::stats::MeasureInt64& latency() {
+  const opencensus::stats::MeasureInt64& latency() const {
     return latency_;
   }
 

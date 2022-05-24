@@ -72,6 +72,8 @@ public:
    * @brief The on-going span. Should be terminated in the callback functions.
    */
   opencensus::trace::Span span_;
+
+  std::chrono::steady_clock::time_point request_time_{std::chrono::steady_clock::now()};
 };
 
 ROCKETMQ_NAMESPACE_END

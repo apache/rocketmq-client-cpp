@@ -43,7 +43,7 @@ PublishStats::PublishStats()
       .set_description("Publish latency")
       .set_measure("publish_latency")
       .set_aggregation(opencensus::stats::Aggregation::Distribution(
-          opencensus::stats::BucketBoundaries::Explicit({1, 10, 100, 1000})))
+          opencensus::stats::BucketBoundaries::Explicit({5, 10, 20, 50, 500})))
       .add_column(topicTag())
       .RegisterForExport();
 }
