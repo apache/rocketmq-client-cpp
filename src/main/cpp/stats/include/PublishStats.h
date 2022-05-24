@@ -39,6 +39,22 @@ public:
     return latency_;
   }
 
+  const opencensus::stats::MeasureInt64& txCommitSuccess() const {
+    return tx_commit_success_;
+  }
+
+  const opencensus::stats::MeasureInt64& txCommitFailure() const {
+    return tx_commit_failure_;
+  }
+
+  const opencensus::stats::MeasureInt64& txRollbackSuccess() const {
+    return tx_rollback_success_;
+  }
+
+  const opencensus::stats::MeasureInt64& txRollbackFailure() const {
+    return tx_rollback_failure_;
+  }
+
   static opencensus::tags::TagKey& topicTag();
 
   static opencensus::tags::TagKey& clientIdTag();
@@ -51,6 +67,10 @@ private:
   opencensus::stats::MeasureInt64 success_;
   opencensus::stats::MeasureInt64 failure_;
   opencensus::stats::MeasureInt64 latency_;
+  opencensus::stats::MeasureInt64 tx_commit_success_;
+  opencensus::stats::MeasureInt64 tx_commit_failure_;
+  opencensus::stats::MeasureInt64 tx_rollback_success_;
+  opencensus::stats::MeasureInt64 tx_rollback_failure_;
 };
 
 ROCKETMQ_NAMESPACE_END

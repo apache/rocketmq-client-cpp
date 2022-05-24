@@ -354,7 +354,8 @@ void ProducerImpl::send0(MessageConstPtr message, SendCallback callback, std::ve
 
 bool ProducerImpl::endTransaction0(const Transaction& transaction, TransactionState resolution) {
   EndTransactionRequest request;
-  request.mutable_topic()->set_name(transaction.topic());
+  const std::string& topic = transaction.topic();
+  request.mutable_topic()->set_name(topic);
   request.mutable_topic()->set_resource_namespace(resourceNamespace());
   request.set_message_id(transaction.messageId());
   request.set_transaction_id(transaction.messageId());
@@ -396,12 +397,38 @@ bool ProducerImpl::endTransaction0(const Transaction& transaction, TransactionSt
   auto mtx = std::make_shared<absl::Mutex>();
   auto cv = std::make_shared<absl::CondVar>();
   const auto& endpoint = transaction.endpoint();
-  auto cb = [&, span, endpoint, mtx, cv](const std::error_code& ec, const EndTransactionResponse& response) {
+  std::weak_ptr<ProducerImpl> publisher(shared_from_this());
+
+  auto cb = [&, span, endpoint, mtx, cv, resolution, topic, publisher](const std::error_code& ec,
+                                                                       const EndTransactionResponse& response) {
+    auto pub = publisher.lock();
+    if (!pub) {
+      return;
+    }
+
     if (ec) {
       {
         span.SetStatus(opencensus::trace::StatusCode::ABORTED);
         span.AddAnnotation(ec.message());
         span.End();
+      }
+
+      {
+        // Collect statistics for failure of committing or rolling-back transactions.
+        switch (resolution) {
+          case TransactionState::COMMIT: {
+            opencensus::stats::Record(
+                {{pub->stats().txCommitFailure(), 1}},
+                {{pub->stats().topicTag(), topic}, {pub->stats().clientIdTag(), pub->config().client_id}});
+            break;
+          }
+          case TransactionState::ROLLBACK: {
+            opencensus::stats::Record(
+                {{pub->stats().txRollbackFailure(), 1}},
+                {{pub->stats().topicTag(), topic}, {pub->stats().clientIdTag(), pub->config().client_id}});
+            break;
+          }
+        }
       }
       SPDLOG_WARN("Failed to send {} transaction request to {}. Cause: ", action, endpoint, ec.message());
       success = false;
@@ -410,6 +437,25 @@ bool ProducerImpl::endTransaction0(const Transaction& transaction, TransactionSt
         span.SetStatus(opencensus::trace::StatusCode::OK);
         span.End();
       }
+
+      {
+        // Collect statistics for success of committing or rolling-back transactions.
+        switch (resolution) {
+          case TransactionState::COMMIT: {
+            opencensus::stats::Record(
+                {{pub->stats().txCommitSuccess(), 1}},
+                {{pub->stats().topicTag(), topic}, {pub->stats().clientIdTag(), pub->config().client_id}});
+            break;
+          }
+          case TransactionState::ROLLBACK: {
+            opencensus::stats::Record(
+                {{pub->stats().txRollbackSuccess(), 1}},
+                {{pub->stats().topicTag(), topic}, {pub->stats().clientIdTag(), pub->config().client_id}});
+            break;
+          }
+        }
+      }
+
       success = true;
     }
 
