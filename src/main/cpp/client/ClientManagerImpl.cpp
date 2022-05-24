@@ -316,7 +316,7 @@ bool ClientManagerImpl::send(const std::string& target_host, const Metadata& met
     auto&& status = invocation_context->response.status();
     switch (invocation_context->response.status().code()) {
       case rmq::Code::OK: {
-        send_receipt.message_id = invocation_context->response.receipts().begin()->message_id();
+        send_receipt.message_id = invocation_context->response.entries().begin()->message_id();
         break;
       }
       case rmq::Code::TOPIC_NOT_FOUND: {
@@ -416,9 +416,9 @@ SendReceipt ClientManagerImpl::processSendResponse(const rmq::MessageQueue& mess
 
   switch (response.status().code()) {
     case rmq::Code::OK: {
-      assert(response.receipts_size() > 0);
-      send_receipt.message_id = response.receipts().begin()->message_id();
-      send_receipt.transaction_id = response.receipts().begin()->transaction_id();
+      assert(response.entries_size() > 0);
+      send_receipt.message_id = response.entries().begin()->message_id();
+      send_receipt.transaction_id = response.entries().begin()->transaction_id();
       return send_receipt;
     }
     case rmq::Code::ILLEGAL_TOPIC: {

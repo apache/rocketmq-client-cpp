@@ -60,9 +60,19 @@ message SendMessageRequest {
   repeated Message messages = 1;
 }
 
+message SendResultEntry {
+  Status status = 1;
+  string message_id = 2;
+  string transaction_id = 3;
+  int64 offset = 4;
+}
+
 message SendMessageResponse {
   Status status = 1;
-  repeated SendReceipt receipts = 2;
+
+  // Some implementation may have partial failure issues. Client SDK developers are expected to inspect
+  // each entry for best certainty.
+  repeated SendResultEntry entries = 2;
 }
 
 message QueryAssignmentRequest {
@@ -169,7 +179,8 @@ message ThreadStackTrace {
 
 message VerifyMessageCommand {
   string nonce = 1;
-  Message message = 2;
+  MessageQueue message_queue = 2;
+  Message message = 3;
 }
 
 message VerifyMessageResult {
