@@ -41,6 +41,12 @@ public:
 
   static opencensus::tags::TagKey& topicTag();
 
+  static opencensus::tags::TagKey& clientIdTag();
+
+  static opencensus::tags::TagKey& userIdTag();
+
+  static opencensus::tags::TagKey& deploymentTag();
+
 private:
   opencensus::stats::MeasureInt64 success_;
   opencensus::stats::MeasureInt64 failure_;

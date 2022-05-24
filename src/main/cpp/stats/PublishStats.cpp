@@ -53,4 +53,19 @@ opencensus::tags::TagKey& PublishStats::topicTag() {
   return topic_tag;
 }
 
+opencensus::tags::TagKey& PublishStats::clientIdTag() {
+  static opencensus::tags::TagKey client_id_tag = opencensus::tags::TagKey::Register("client_id");
+  return client_id_tag;
+}
+
+opencensus::tags::TagKey& PublishStats::userIdTag() {
+  static opencensus::tags::TagKey uid_tag = opencensus::tags::TagKey::Register("uid");
+  return uid_tag;
+}
+
+opencensus::tags::TagKey& PublishStats::deploymentTag() {
+  static opencensus::tags::TagKey deployment_tag = opencensus::tags::TagKey::Register("deployment");
+  return deployment_tag;
+}
+
 ROCKETMQ_NAMESPACE_END
