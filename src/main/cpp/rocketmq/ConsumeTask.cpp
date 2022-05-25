@@ -17,7 +17,10 @@
 
 #include "ConsumeTask.h"
 
+#include "ConsumeStats.h"
 #include "LoggerImpl.h"
+#include "PushConsumerImpl.h"
+#include "Tag.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -115,6 +118,8 @@ void ConsumeTask::process() {
     return;
   }
 
+  std::shared_ptr<PushConsumerImpl> consumer = svc->consumer().lock();
+
   auto self = shared_from_this();
 
   switch (next_step_) {
@@ -123,7 +128,17 @@ void ConsumeTask::process() {
       auto it = messages_.begin();
       SPDLOG_DEBUG("Start to process message[message-id={}]", (*it)->id());
       svc->preHandle(**it);
+      auto await_time = std::chrono::system_clock::now() - (*it)->extension().decode_time;
+      opencensus::stats::Record(
+          {{consumer->stats().awaitTime(), MixAll::millisecondsOf(await_time)}},
+          {{Tag::topicTag(), (*it)->topic()}, {Tag::clientIdTag(), consumer->config().client_id}});
+
+      std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
       auto result = listener(**it);
+      auto duration = std::chrono::steady_clock::now() - start;
+      opencensus::stats::Record(
+          {{consumer->stats().processTime(), MixAll::millisecondsOf(duration)}},
+          {{Tag::topicTag(), (*it)->topic()}, {Tag::clientIdTag(), consumer->config().client_id}});
       svc->postHandle(**it, result);
       switch (result) {
         case ConsumeResult::SUCCESS: {

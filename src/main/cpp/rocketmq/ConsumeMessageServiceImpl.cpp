@@ -135,6 +135,10 @@ std::size_t ConsumeMessageServiceImpl::maxDeliveryAttempt() {
   return consumer->maxDeliveryAttempts();
 }
 
+std::weak_ptr<PushConsumerImpl> ConsumeMessageServiceImpl::consumer() {
+  return consumer_;
+}
+
 bool ConsumeMessageServiceImpl::preHandle(const Message& message) {
   return true;
 }

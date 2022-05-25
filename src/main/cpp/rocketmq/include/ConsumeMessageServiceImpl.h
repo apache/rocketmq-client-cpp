@@ -72,6 +72,8 @@ public:
 
   std::size_t maxDeliveryAttempt() override;
 
+  std::weak_ptr<PushConsumerImpl> consumer() override;
+
 protected:
   std::atomic<State> state_;
 
