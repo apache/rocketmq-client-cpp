@@ -25,6 +25,50 @@ class ConsumeStats {
 public:
   ConsumeStats();
 
+  const opencensus::stats::MeasureInt64& processSuccess() const {
+    return process_success_;
+  }
+
+  const opencensus::stats::MeasureInt64& processFailure() const {
+    return process_failure_;
+  }
+
+  const opencensus::stats::MeasureInt64& ackSuccess() const {
+    return ack_success_;
+  }
+
+  const opencensus::stats::MeasureInt64& ackFailure() const {
+    return ack_failure_;
+  }
+
+  const opencensus::stats::MeasureInt64& changeInvisibleTimeSuccess() const {
+    return change_invisible_time_success_;
+  }
+
+  const opencensus::stats::MeasureInt64& changeInvisibleTimeFailure() const {
+    return change_invisible_time_failure_;
+  }
+
+  const opencensus::stats::MeasureInt64& cachedMessageQuantity() const {
+    return cached_message_quantity_;
+  }
+
+  const opencensus::stats::MeasureInt64& cachedMessageBytes() const {
+    return cached_message_bytes_;
+  }
+
+  const opencensus::stats::MeasureInt64& deliveryLatency() const {
+    return delivery_latency_;
+  }
+
+  const opencensus::stats::MeasureInt64& awaitTime() const {
+    return await_time_;
+  }
+
+  const opencensus::stats::MeasureInt64& processTime() const {
+    return process_time_;
+  }
+
 private:
   opencensus::stats::MeasureInt64 process_success_;
   opencensus::stats::MeasureInt64 process_failure_;

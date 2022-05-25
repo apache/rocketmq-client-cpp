@@ -16,9 +16,11 @@
  */
 #include "ConsumeMessageServiceImpl.h"
 
+#include "ConsumeStats.h"
 #include "ConsumeTask.h"
 #include "LoggerImpl.h"
 #include "PushConsumerImpl.h"
+#include "Tag.h"
 #include "ThreadPoolImpl.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
@@ -81,7 +83,24 @@ void ConsumeMessageServiceImpl::ack(const Message& message, std::function<void(c
     return;
   }
 
-  consumer->ack(message, cb);
+  std::weak_ptr<PushConsumerImpl> client(consumer_);
+  const auto& topic = message.topic();
+  // Collect metrics
+  opencensus::stats::Record({{consumer->stats().processSuccess(), 1}},
+                            {{Tag::topicTag(), topic}, {Tag::clientIdTag(), consumer->config().client_id}});
+  auto callback = [cb, client, topic](const std::error_code& ec) {
+    auto consumer = client.lock();
+    if (ec) {
+      opencensus::stats::Record({{consumer->stats().ackFailure(), 1}},
+                                {{Tag::topicTag(), topic}, {Tag::clientIdTag(), consumer->config().client_id}});
+    } else {
+      opencensus::stats::Record({{consumer->stats().ackSuccess(), 1}},
+                                {{Tag::topicTag(), topic}, {Tag::clientIdTag(), consumer->config().client_id}});
+    }
+    cb(ec);
+  };
+
+  consumer->ack(message, callback);
 }
 
 void ConsumeMessageServiceImpl::nack(const Message& message, std::function<void(const std::error_code&)> cb) {
@@ -89,7 +108,9 @@ void ConsumeMessageServiceImpl::nack(const Message& message, std::function<void(
   if (!consumer) {
     return;
   }
-
+  // Collect metrics
+  opencensus::stats::Record({{consumer->stats().processFailure(), 1}},
+                            {{Tag::topicTag(), message.topic()}, {Tag::clientIdTag(), consumer->config().client_id}});
   consumer->nack(message, cb);
 }
 
