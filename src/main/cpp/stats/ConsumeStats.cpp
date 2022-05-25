@@ -17,6 +17,8 @@
 
 #include "ConsumeStats.h"
 
+#include "Tag.h"
+
 ROCKETMQ_NAMESPACE_BEGIN
 
 ConsumeStats::ConsumeStats()
@@ -40,6 +42,107 @@ ConsumeStats::ConsumeStats()
       await_time_(opencensus::stats::MeasureInt64::Register(
           "await_time", "Client side queuing time of messages before getting processed", "1")),
       process_time_(opencensus::stats::MeasureInt64::Register("process_time", "Process message time", "1")) {
+  opencensus::stats::ViewDescriptor()
+      .set_name("rocketmq_process_success_total")
+      .set_description("Number of messages processed")
+      .set_measure("process_success")
+      .set_aggregation(opencensus::stats::Aggregation::Sum())
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
+      .RegisterForExport();
+
+  opencensus::stats::ViewDescriptor()
+      .set_name("rocketmq_process_failure_total")
+      .set_description("Number of failures on processing messages")
+      .set_measure("process_failure")
+      .set_aggregation(opencensus::stats::Aggregation::Sum())
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
+      .RegisterForExport();
+
+  opencensus::stats::ViewDescriptor()
+      .set_name("rocketmq_ack_success_total")
+      .set_description("Number of messages acknowledged")
+      .set_measure("ack_success")
+      .set_aggregation(opencensus::stats::Aggregation::Sum())
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
+      .RegisterForExport();
+
+  opencensus::stats::ViewDescriptor()
+      .set_name("rocketmq_ack_failure_total")
+      .set_description("Number of failures on acknowledging messages")
+      .set_measure("ack_failure")
+      .set_aggregation(opencensus::stats::Aggregation::Sum())
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
+      .RegisterForExport();
+
+  opencensus::stats::ViewDescriptor()
+      .set_name("rocketmq_change_invisible_time_success_total")
+      .set_description("Number of change-invisible-time operations")
+      .set_measure("change_invisible_time_success")
+      .set_aggregation(opencensus::stats::Aggregation::Sum())
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
+      .RegisterForExport();
+
+  opencensus::stats::ViewDescriptor()
+      .set_name("rocketmq_change_invisible_time_failure_total")
+      .set_description("Number of failed change-invisible-time operations")
+      .set_measure("change_invisible_time_failure")
+      .set_aggregation(opencensus::stats::Aggregation::Sum())
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
+      .RegisterForExport();
+
+  opencensus::stats::ViewDescriptor()
+      .set_name("rocketmq_consumer_cached_messages")
+      .set_description("Number of messages locally cached")
+      .set_measure("cached_message_quantity")
+      .set_aggregation(opencensus::stats::Aggregation::LastValue())
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
+      .RegisterForExport();
+
+  opencensus::stats::ViewDescriptor()
+      .set_name("rocketmq_consumer_cached_bytes")
+      .set_description("Number of locally cached messages in bytes")
+      .set_measure("cached_message_bytes")
+      .set_aggregation(opencensus::stats::Aggregation::LastValue())
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
+      .RegisterForExport();
+
+  opencensus::stats::ViewDescriptor()
+      .set_name("rocketmq_delivery_latency")
+      .set_description("Message delivery latency")
+      .set_measure("delivery_latency")
+      .set_aggregation(opencensus::stats::Aggregation::Distribution(
+          opencensus::stats::BucketBoundaries::Explicit({5, 10, 20, 50, 500})))
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
+      .RegisterForExport();
+
+  opencensus::stats::ViewDescriptor()
+      .set_name("rocketmq_await_time")
+      .set_description("Message await time")
+      .set_measure("await_time")
+      .set_aggregation(opencensus::stats::Aggregation::Distribution(
+          opencensus::stats::BucketBoundaries::Explicit({1, 1000, 60000, 900000})))
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
+      .RegisterForExport();
+
+  opencensus::stats::ViewDescriptor()
+      .set_name("rocketmq_process_time")
+      .set_description("Process time")
+      .set_measure("process_time")
+      .set_aggregation(opencensus::stats::Aggregation::Distribution(
+          opencensus::stats::BucketBoundaries::Explicit({100, 1000, 60000, 900000})))
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
+      .RegisterForExport();
 }
 
 ROCKETMQ_NAMESPACE_END
