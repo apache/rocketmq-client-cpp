@@ -88,9 +88,9 @@ TEST(StatsTest, testBasics) {
   std::string t2("T2");
   PublishStats metrics;
   opencensus::stats::StatsExporter::RegisterPushHandler(absl::make_unique<Handler>());
-  opencensus::stats::Record({{metrics.success(), 1}}, {{PublishStats::topicTag(), t1}});
-  opencensus::stats::Record({{metrics.success(), 100}}, {{PublishStats::topicTag(), t2}});
-  opencensus::stats::Record({{metrics.latency(), 100}}, {{PublishStats::topicTag(), t1}});
+  opencensus::stats::Record({{metrics.success(), 1}}, {{Tag::topicTag(), t1}});
+  opencensus::stats::Record({{metrics.success(), 100}}, {{Tag::topicTag(), t2}});
+  opencensus::stats::Record({{metrics.latency(), 100}}, {{Tag::topicTag(), t1}});
 
   std::this_thread::sleep_for(std::chrono::seconds(10));
 }

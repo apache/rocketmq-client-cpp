@@ -16,6 +16,8 @@
  */
 #include "PublishStats.h"
 
+#include "Tag.h"
+
 ROCKETMQ_NAMESPACE_BEGIN
 
 PublishStats::PublishStats()
@@ -35,8 +37,8 @@ PublishStats::PublishStats()
       .set_description("Number of messages published")
       .set_measure("publish_success")
       .set_aggregation(opencensus::stats::Aggregation::Sum())
-      .add_column(topicTag())
-      .add_column(clientIdTag())
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
       .RegisterForExport();
 
   opencensus::stats::ViewDescriptor()
@@ -44,8 +46,8 @@ PublishStats::PublishStats()
       .set_description("Number of publish failures")
       .set_measure("pubish_failure")
       .set_aggregation(opencensus::stats::Aggregation::Sum())
-      .add_column(topicTag())
-      .add_column(clientIdTag())
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
       .RegisterForExport();
 
   opencensus::stats::ViewDescriptor()
@@ -54,8 +56,8 @@ PublishStats::PublishStats()
       .set_measure("publish_latency")
       .set_aggregation(opencensus::stats::Aggregation::Distribution(
           opencensus::stats::BucketBoundaries::Explicit({5, 10, 20, 50, 500})))
-      .add_column(topicTag())
-      .add_column(clientIdTag())
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
       .RegisterForExport();
 
   opencensus::stats::ViewDescriptor()
@@ -63,8 +65,8 @@ PublishStats::PublishStats()
       .set_description("Number of transactions committed")
       .set_measure("tx_commit_success")
       .set_aggregation(opencensus::stats::Aggregation::Sum())
-      .add_column(topicTag())
-      .add_column(clientIdTag())
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
       .RegisterForExport();
 
   opencensus::stats::ViewDescriptor()
@@ -72,8 +74,8 @@ PublishStats::PublishStats()
       .set_description("Number of failures when committing transactions")
       .set_measure("tx_commit_failure")
       .set_aggregation(opencensus::stats::Aggregation::Sum())
-      .add_column(topicTag())
-      .add_column(clientIdTag())
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
       .RegisterForExport();
 
   opencensus::stats::ViewDescriptor()
@@ -81,8 +83,8 @@ PublishStats::PublishStats()
       .set_description("Number of transactions rolled back")
       .set_measure("tx_rollback_success")
       .set_aggregation(opencensus::stats::Aggregation::Sum())
-      .add_column(topicTag())
-      .add_column(clientIdTag())
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
       .RegisterForExport();
 
   opencensus::stats::ViewDescriptor()
@@ -90,29 +92,9 @@ PublishStats::PublishStats()
       .set_description("Number of failures when rolling back transactions")
       .set_measure("tx_rollback_failure")
       .set_aggregation(opencensus::stats::Aggregation::Sum())
-      .add_column(topicTag())
-      .add_column(clientIdTag())
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
       .RegisterForExport();
-}
-
-opencensus::tags::TagKey& PublishStats::topicTag() {
-  static opencensus::tags::TagKey topic_tag = opencensus::tags::TagKey::Register("topic");
-  return topic_tag;
-}
-
-opencensus::tags::TagKey& PublishStats::clientIdTag() {
-  static opencensus::tags::TagKey client_id_tag = opencensus::tags::TagKey::Register("client_id");
-  return client_id_tag;
-}
-
-opencensus::tags::TagKey& PublishStats::userIdTag() {
-  static opencensus::tags::TagKey uid_tag = opencensus::tags::TagKey::Register("uid");
-  return uid_tag;
-}
-
-opencensus::tags::TagKey& PublishStats::deploymentTag() {
-  static opencensus::tags::TagKey deployment_tag = opencensus::tags::TagKey::Register("deployment");
-  return deployment_tag;
 }
 
 ROCKETMQ_NAMESPACE_END

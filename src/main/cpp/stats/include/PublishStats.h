@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include "Tag.h"
 #include "opencensus/stats/stats.h"
 #include "rocketmq/RocketMQ.h"
 
@@ -54,14 +55,6 @@ public:
   const opencensus::stats::MeasureInt64& txRollbackFailure() const {
     return tx_rollback_failure_;
   }
-
-  static opencensus::tags::TagKey& topicTag();
-
-  static opencensus::tags::TagKey& clientIdTag();
-
-  static opencensus::tags::TagKey& userIdTag();
-
-  static opencensus::tags::TagKey& deploymentTag();
 
 private:
   opencensus::stats::MeasureInt64 success_;

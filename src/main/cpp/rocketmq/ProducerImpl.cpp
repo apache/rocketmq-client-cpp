@@ -34,6 +34,7 @@
 #include "SendContext.h"
 #include "SendMessageContext.h"
 #include "Signature.h"
+#include "Tag.h"
 #include "TracingUtility.h"
 #include "TransactionImpl.h"
 #include "UniqueIdGenerator.h"
@@ -417,15 +418,13 @@ bool ProducerImpl::endTransaction0(const Transaction& transaction, TransactionSt
         // Collect statistics for failure of committing or rolling-back transactions.
         switch (resolution) {
           case TransactionState::COMMIT: {
-            opencensus::stats::Record(
-                {{pub->stats().txCommitFailure(), 1}},
-                {{pub->stats().topicTag(), topic}, {pub->stats().clientIdTag(), pub->config().client_id}});
+            opencensus::stats::Record({{pub->stats().txCommitFailure(), 1}},
+                                      {{Tag::topicTag(), topic}, {Tag::clientIdTag(), pub->config().client_id}});
             break;
           }
           case TransactionState::ROLLBACK: {
-            opencensus::stats::Record(
-                {{pub->stats().txRollbackFailure(), 1}},
-                {{pub->stats().topicTag(), topic}, {pub->stats().clientIdTag(), pub->config().client_id}});
+            opencensus::stats::Record({{pub->stats().txRollbackFailure(), 1}},
+                                      {{Tag::topicTag(), topic}, {Tag::clientIdTag(), pub->config().client_id}});
             break;
           }
         }
@@ -442,15 +441,13 @@ bool ProducerImpl::endTransaction0(const Transaction& transaction, TransactionSt
         // Collect statistics for success of committing or rolling-back transactions.
         switch (resolution) {
           case TransactionState::COMMIT: {
-            opencensus::stats::Record(
-                {{pub->stats().txCommitSuccess(), 1}},
-                {{pub->stats().topicTag(), topic}, {pub->stats().clientIdTag(), pub->config().client_id}});
+            opencensus::stats::Record({{pub->stats().txCommitSuccess(), 1}},
+                                      {{Tag::topicTag(), topic}, {Tag::clientIdTag(), pub->config().client_id}});
             break;
           }
           case TransactionState::ROLLBACK: {
-            opencensus::stats::Record(
-                {{pub->stats().txRollbackSuccess(), 1}},
-                {{pub->stats().topicTag(), topic}, {pub->stats().clientIdTag(), pub->config().client_id}});
+            opencensus::stats::Record({{pub->stats().txRollbackSuccess(), 1}},
+                                      {{Tag::topicTag(), topic}, {Tag::clientIdTag(), pub->config().client_id}});
             break;
           }
         }

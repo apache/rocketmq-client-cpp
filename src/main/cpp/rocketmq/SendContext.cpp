@@ -20,6 +20,7 @@
 
 #include "ProducerImpl.h"
 #include "PublishStats.h"
+#include "Tag.h"
 #include "TransactionImpl.h"
 #include "opencensus/trace/propagation/trace_context.h"
 #include "opencensus/trace/span.h"
@@ -46,14 +47,14 @@ void SendContext::onSuccess(const SendReceipt& send_receipt) noexcept {
     auto duration = std::chrono::steady_clock::now() - request_time_;
     opencensus::stats::Record({{publisher->stats().latency(), MixAll::millisecondsOf(duration)}},
                               {
-                                  {publisher->stats().topicTag(), message_->topic()},
-                                  {publisher->stats().clientIdTag(), publisher->config().client_id},
+                                  {Tag::topicTag(), message_->topic()},
+                                  {Tag::clientIdTag(), publisher->config().client_id},
                               });
 
     opencensus::stats::Record({{publisher->stats().success(), 1}},
                               {
-                                  {publisher->stats().topicTag(), message_->topic()},
-                                  {publisher->stats().clientIdTag(), publisher->config().client_id},
+                                  {Tag::topicTag(), message_->topic()},
+                                  {Tag::clientIdTag(), publisher->config().client_id},
                               });
   }
 
@@ -79,14 +80,14 @@ void SendContext::onFailure(const std::error_code& ec) noexcept {
     auto duration = std::chrono::steady_clock::now() - request_time_;
     opencensus::stats::Record({{publisher->stats().latency(), MixAll::millisecondsOf(duration)}},
                               {
-                                  {publisher->stats().topicTag(), message_->topic()},
-                                  {publisher->stats().clientIdTag(), publisher->config().client_id},
+                                  {Tag::topicTag(), message_->topic()},
+                                  {Tag::clientIdTag(), publisher->config().client_id},
                               });
 
     opencensus::stats::Record({{publisher->stats().failure(), 1}},
                               {
-                                  {publisher->stats().topicTag(), message_->topic()},
-                                  {publisher->stats().clientIdTag(), publisher->config().client_id},
+                                  {Tag::topicTag(), message_->topic()},
+                                  {Tag::clientIdTag(), publisher->config().client_id},
                               });
   }
 
