@@ -87,6 +87,7 @@ TEST(StatsTest, testBasics) {
   std::string t1("T1");
   std::string t2("T2");
   PublishStats metrics;
+  opencensus::stats::StatsExporter::SetInterval(absl::Seconds(1));
   opencensus::stats::StatsExporter::RegisterPushHandler(absl::make_unique<Handler>());
   opencensus::stats::Record({{metrics.success(), 1}}, {{Tag::topicTag(), t1}});
   opencensus::stats::Record({{metrics.success(), 100}}, {{Tag::topicTag(), t2}});

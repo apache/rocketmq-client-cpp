@@ -85,6 +85,17 @@ def rocketmq_deps():
             ],
         )
 
+    maybe(
+        http_archive,
+        name = "io_opencensus_cpp",
+        sha256 = "317f2bfdaba469561c7e64b1a55282b87e677c109c9d8877097940e6d5cbca08",
+        urls = [
+            "https://shutian.oss-cn-hangzhou.aliyuncs.com/cdn/opencensus-cpp/opencensus-cpp-0.4.1.tar.gz",
+            "https://github.com/lizhanhui/opencensus-cpp/archive/refs/tags/v0.4.1.tar.gz",
+        ],
+        strip_prefix = "opencensus-cpp-0.4.1",
+    )
+
     if "com_google_absl" not in native.existing_rules():
         http_archive(
             name = "com_google_absl",
