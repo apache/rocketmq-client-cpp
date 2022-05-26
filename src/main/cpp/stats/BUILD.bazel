@@ -22,7 +22,9 @@ cc_library(
     strip_include_prefix = "//src/main/cpp/stats/include",
     deps = [
         "//api:rocketmq_interface",
+        "//src/main/cpp/client:client_library",
         "@io_opencensus_cpp//opencensus/stats",
+        "@opencensus_proto//opencensus/proto/agent/metrics/v1:metrics_service_grpc_cc",
     ],
     visibility = ["//visibility:public"],
 )
