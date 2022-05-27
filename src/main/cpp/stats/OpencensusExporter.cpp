@@ -21,13 +21,28 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-OpencensusExporter::OpencensusExporter(std::shared_ptr<grpc::Channel> channel, std::weak_ptr<Client> client)
-    : client_(client), stub_(opencensus::proto::agent::metrics::v1::MetricsService::NewStub(channel)) {
+OpencensusExporter::OpencensusExporter(std::string endpoints, std::weak_ptr<Client> client) : client_(client) {
+}
+
+void OpencensusExporter::wrap(
+    const std::vector<std::pair<opencensus::stats::ViewDescriptor, opencensus::stats::ViewData>>& data,
+    ExportMetricsServiceRequest& request) {
 }
 
 void OpencensusExporter::exportMetrics(
     const std::vector<std::pair<opencensus::stats::ViewDescriptor, opencensus::stats::ViewData>>& data) {
-  new MetricBidiReactor(client_, stub_.get());
+  opencensus::proto::agent::metrics::v1::ExportMetricsServiceRequest request;
+  wrap(data, request);
+  std::weak_ptr<OpencensusExporter> exporter{shared_from_this()};
+  if (!bidi_reactor_) {
+    bidi_reactor_ = absl::make_unique<MetricBidiReactor>(client_, exporter);
+  }
+  bidi_reactor_->write(request);
+}
+
+void OpencensusExporter::resetStream() {
+  std::weak_ptr<OpencensusExporter> exporter{shared_from_this()};
+  bidi_reactor_.reset(new MetricBidiReactor(client_, exporter));
 }
 
 ROCKETMQ_NAMESPACE_END

@@ -23,17 +23,56 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class MetricBidiReactor
-    : public grpc::ClientBidiReactor<opencensus::proto::agent::metrics::v1::ExportMetricsServiceRequest,
-                                     opencensus::proto::agent::metrics::v1::ExportMetricsServiceResponse> {
+class OpencensusExporter;
+
+using ExportMetricsServiceRequest = opencensus::proto::agent::metrics::v1::ExportMetricsServiceRequest;
+using ExportMetricsServiceResponse = opencensus::proto::agent::metrics::v1::ExportMetricsServiceResponse;
+
+class MetricBidiReactor : public grpc::ClientBidiReactor<ExportMetricsServiceRequest, ExportMetricsServiceResponse> {
 public:
-  MetricBidiReactor(std::weak_ptr<Client> client, opencensus::proto::agent::metrics::v1::MetricsService::Stub* stub);
+  MetricBidiReactor(std::weak_ptr<Client> client, std::weak_ptr<OpencensusExporter> exporter);
+
+  /// Notifies the application that a StartRead operation completed.
+  ///
+  /// \param[in] ok Was it successful? If false, no new read/write operation
+  ///               will succeed, and any further Start* should not be called.
+  void OnReadDone(bool /*ok*/) override;
+
+  /// Notifies the application that a StartWrite or StartWriteLast operation
+  /// completed.
+  ///
+  /// \param[in] ok Was it successful? If false, no new read/write operation
+  ///               will succeed, and any further Start* should not be called.
+  void OnWriteDone(bool /*ok*/) override;
+
+  /// Notifies the application that all operations associated with this RPC
+  /// have completed and all Holds have been removed. OnDone provides the RPC
+  /// status outcome for both successful and failed RPCs and will be called in
+  /// all cases. If it is not called, it indicates an application-level problem
+  /// (like failure to remove a hold).
+  ///
+  /// \param[in] s The status outcome of this RPC
+  void OnDone(const grpc::Status& /*s*/) override;
+
+  void write(ExportMetricsServiceRequest request) LOCKS_EXCLUDED(requests_mtx_);
 
 private:
   std::weak_ptr<Client> client_;
-  opencensus::proto::agent::metrics::v1::MetricsService::Stub* stub_;
-  opencensus::proto::agent::metrics::v1::ExportMetricsServiceRequest request_;
-  opencensus::proto::agent::metrics::v1::ExportMetricsServiceResponse response_;
+  std::weak_ptr<OpencensusExporter> exporter_;
+
+  ExportMetricsServiceRequest request_;
+
+  std::vector<ExportMetricsServiceRequest> requests_ GUARDED_BY(requests_mtx_);
+  absl::Mutex requests_mtx_;
+
+  std::atomic_bool inflight_{false};
+  std::atomic_bool read_{false};
+
+  ExportMetricsServiceResponse response_;
+
+  void fireWrite();
+
+  void fireRead();
 };
 
 ROCKETMQ_NAMESPACE_END

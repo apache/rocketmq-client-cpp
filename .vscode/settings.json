@@ -11,6 +11,7 @@
         "--query-driver=/**/*",
     ],
     "cSpell.words": [
-        "Opencensus"
+        "Opencensus",
+        "SPDLOG"
     ]
 }

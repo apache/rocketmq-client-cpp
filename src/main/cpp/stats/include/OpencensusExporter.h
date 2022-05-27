@@ -23,16 +23,31 @@
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class OpencensusExporter : public Exporter {
-public:
-  OpencensusExporter(std::shared_ptr<grpc::Channel> channel, std::weak_ptr<Client> client);
+class MetricBidiReactor;
 
-  void exportMetrics(
-      const std::vector<std::pair<opencensus::stats::ViewDescriptor, opencensus::stats::ViewData>>& data) override;
+using Stub = opencensus::proto::agent::metrics::v1::MetricsService::Stub;
+using StubPtr = std::unique_ptr<Stub>;
+using MetricData = std::vector<std::pair<opencensus::stats::ViewDescriptor, opencensus::stats::ViewData>>;
+using ExportMetricsServiceRequest = opencensus::proto::agent::metrics::v1::ExportMetricsServiceRequest;
+
+class OpencensusExporter : public Exporter, public std::enable_shared_from_this<OpencensusExporter> {
+public:
+  OpencensusExporter(std::string endpoints, std::weak_ptr<Client> client);
+
+  void exportMetrics(const MetricData& data) override;
+
+  static void wrap(const MetricData& data, ExportMetricsServiceRequest& request);
+
+  void resetStream();
+
+  Stub* stub() {
+    return stub_.get();
+  }
 
 private:
   std::weak_ptr<Client> client_;
-  std::unique_ptr<opencensus::proto::agent::metrics::v1::MetricsService::Stub> stub_;
+  StubPtr stub_;
+  std::unique_ptr<MetricBidiReactor> bidi_reactor_;
 };
 
 ROCKETMQ_NAMESPACE_END
