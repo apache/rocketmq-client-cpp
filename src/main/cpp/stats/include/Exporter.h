@@ -16,34 +16,15 @@
  */
 #pragma once
 
-#include <string>
-
-#include "Tag.h"
 #include "opencensus/stats/stats.h"
 #include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class PublishStats {
+class Exporter {
 public:
-  PublishStats();
-
-  const opencensus::stats::MeasureInt64& success() const {
-    return success_;
-  }
-
-  const opencensus::stats::MeasureInt64& failure() const {
-    return failure_;
-  }
-
-  const opencensus::stats::MeasureInt64& latency() const {
-    return latency_;
-  }
-
-private:
-  opencensus::stats::MeasureInt64 success_;
-  opencensus::stats::MeasureInt64 failure_;
-  opencensus::stats::MeasureInt64 latency_;
+  virtual void exportMetrics(
+      const std::vector<std::pair<opencensus::stats::ViewDescriptor, opencensus::stats::ViewData>>& data) = 0;
 };
 
 ROCKETMQ_NAMESPACE_END

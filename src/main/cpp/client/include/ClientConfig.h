@@ -44,6 +44,11 @@ struct SubscriberConfig {
   absl::Duration polling_timeout{absl::Seconds(30)};
 };
 
+struct Metric {
+  bool on{false};
+  rmq::Endpoints endpoints;
+};
+
 struct ClientConfig {
   std::string client_id;
   rmq::ClientType client_type{rmq::ClientType::CLIENT_TYPE_UNSPECIFIED};
@@ -55,6 +60,7 @@ struct ClientConfig {
   std::shared_ptr<CredentialsProvider> credentials_provider;
   PublisherConfig publisher;
   SubscriberConfig subscriber;
+  Metric metric;
 };
 
 ROCKETMQ_NAMESPACE_END

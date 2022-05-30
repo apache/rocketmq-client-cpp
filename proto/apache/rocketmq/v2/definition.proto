@@ -291,12 +291,6 @@ message Assignment {
   MessageQueue message_queue = 1;
 }
 
-message SendReceipt {
-  string message_id = 1;
-  string transaction_id = 2;
-  int64 offset = 3;
-}
-
 enum Code {
   // Success.
   OK = 0;
@@ -394,6 +388,9 @@ enum Code {
 
   // Client type could not be recognized.
   UNRECOGNIZED_CLIENT_TYPE = 32;
+
+  // Return different results for entries in composite request.
+  MULTIPLE_RESULTS = 33;
 
   // Code indicates that the server encountered an unexpected condition
   // that prevented it from fulfilling the request.

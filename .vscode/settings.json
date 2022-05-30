@@ -9,5 +9,9 @@
         "--header-insertion=never", 
         "--compile-commands-dir=${workspaceFolder}/",
         "--query-driver=/**/*",
+    ],
+    "cSpell.words": [
+        "Opencensus",
+        "SPDLOG"
     ]
 }

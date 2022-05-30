@@ -194,6 +194,14 @@ void TelemetryBidiReactor::applySettings(const rmq::Settings& settings) {
 
   applyBackoffPolicy(settings, ptr);
 
+  // Sync metrics collector configuration
+  if (settings.has_metric()) {
+    const auto& metric = settings.metric();
+    ptr->config().metric.on = metric.on();
+    ptr->config().metric.endpoints.set_scheme(metric.endpoints().scheme());
+    ptr->config().metric.endpoints.mutable_addresses()->CopyFrom(metric.endpoints().addresses());
+  }
+
   switch (settings.pub_sub_case()) {
     case rmq::Settings::PubSubCase::kPublishing: {
       applyPublishingConfig(settings, ptr);

@@ -34,6 +34,7 @@
 #include "SendContext.h"
 #include "SendMessageContext.h"
 #include "Signature.h"
+#include "Tag.h"
 #include "TracingUtility.h"
 #include "TransactionImpl.h"
 #include "UniqueIdGenerator.h"
@@ -287,32 +288,35 @@ void ProducerImpl::sendImpl(std::shared_ptr<SendContext> context) {
     return;
   }
 
-  // {
-  // Trace Send RPC
-  // auto span_context =
-  // opencensus::trace::propagation::FromTraceParentHeader(context->message_.traceContext().value()); auto span =
-  // opencensus::trace::Span::BlankSpan(); std::string span_name = resourceNamespace() + "/" + context->message_.topic()
-  // + " " +
-  //                         MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_SEND_OPERATION;
-  // if (span_context.IsValid()) {
-  //   span = opencensus::trace::Span::StartSpanWithRemoteParent(span_name, span_context, {&Samplers::always()});
-  // } else {
-  //   span = opencensus::trace::Span::StartSpan(span_name, nullptr, {&Samplers::always()});
-  // }
-  // span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_OPERATION,
-  //                   MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_SEND_OPERATION);
-  // span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_OPERATION,
-  //                   MixAll::SPAN_ATTRIBUTE_VALUE_MESSAGING_SEND_OPERATION);
-  // TracingUtility::addUniversalSpanAttributes(context->message_, *this, span);
-  // Note: attempt-time is 0-based
-  // span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ATTEMPT, 1 + callback->attemptTime());
-  // if (message.deliveryTimestamp() != absl::ToChronoTime(absl::UnixEpoch())) {
-  //   span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_DELIVERY_TIMESTAMP,
-  //                     absl::FormatTime(absl::FromChrono(message.deliveryTimestamp())));
-  // }
-  // callback->message().traceContext(opencensus::trace::propagation::ToTraceParentHeader(span.context()));
-  // callback->span() = span;
-  // }
+  {
+    // Trace Send RPC
+    if (context->message_->traceContext().has_value()) {
+      auto span_context =
+          opencensus::trace::propagation::FromTraceParentHeader(context->message_->traceContext().value());
+      auto span = opencensus::trace::Span::BlankSpan();
+      std::string span_name = resourceNamespace() + "/" + context->message_->topic() + " " +
+                              MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_SEND_OPERATION;
+      if (span_context.IsValid()) {
+        span = opencensus::trace::Span::StartSpanWithRemoteParent(span_name, span_context, {traceSampler()});
+      } else {
+        span = opencensus::trace::Span::StartSpan(span_name, nullptr, {traceSampler()});
+      }
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_MESSAGING_OPERATION,
+                        MixAll::SPAN_ATTRIBUTE_VALUE_ROCKETMQ_SEND_OPERATION);
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_OPERATION,
+                        MixAll::SPAN_ATTRIBUTE_VALUE_MESSAGING_SEND_OPERATION);
+      TracingUtility::addUniversalSpanAttributes(*context->message_, config(), span);
+      // Note: attempt-time is 0-based
+      span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_ATTEMPT, 1 + context->attempt_times_);
+      if (context->message_->deliveryTimestamp().has_value()) {
+        span.AddAttribute(MixAll::SPAN_ATTRIBUTE_KEY_ROCKETMQ_DELIVERY_TIMESTAMP,
+                          absl::FormatTime(absl::FromChrono(context->message_->deliveryTimestamp().value())));
+      }
+      auto ptr = const_cast<Message*>(context->message_.get());
+      ptr->traceContext(opencensus::trace::propagation::ToTraceParentHeader(span.context()));
+      context->span_ = span;
+    }
+  }
 
   SendMessageRequest request;
   wrapSendMessageRequest(*context->message_, request, context->messageQueue());
@@ -354,7 +358,8 @@ void ProducerImpl::send0(MessageConstPtr message, SendCallback callback, std::ve
 
 bool ProducerImpl::endTransaction0(const Transaction& transaction, TransactionState resolution) {
   EndTransactionRequest request;
-  request.mutable_topic()->set_name(transaction.topic());
+  const std::string& topic = transaction.topic();
+  request.mutable_topic()->set_name(topic);
   request.mutable_topic()->set_resource_namespace(resourceNamespace());
   request.set_message_id(transaction.messageId());
   request.set_transaction_id(transaction.messageId());
@@ -396,7 +401,9 @@ bool ProducerImpl::endTransaction0(const Transaction& transaction, TransactionSt
   auto mtx = std::make_shared<absl::Mutex>();
   auto cv = std::make_shared<absl::CondVar>();
   const auto& endpoint = transaction.endpoint();
-  auto cb = [&, span, endpoint, mtx, cv](const std::error_code& ec, const EndTransactionResponse& response) {
+  std::weak_ptr<ProducerImpl> publisher(shared_from_this());
+
+  auto cb = [&, span, endpoint, mtx, cv, topic](const std::error_code& ec, const EndTransactionResponse& response) {
     if (ec) {
       {
         span.SetStatus(opencensus::trace::StatusCode::ABORTED);

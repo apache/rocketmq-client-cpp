@@ -14,36 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
-
-#include <string>
-
 #include "Tag.h"
-#include "opencensus/stats/stats.h"
-#include "rocketmq/RocketMQ.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
-class PublishStats {
-public:
-  PublishStats();
+opencensus::tags::TagKey& Tag::topicTag() {
+  static opencensus::tags::TagKey topic_tag = opencensus::tags::TagKey::Register("topic");
+  return topic_tag;
+}
 
-  const opencensus::stats::MeasureInt64& success() const {
-    return success_;
-  }
+opencensus::tags::TagKey& Tag::clientIdTag() {
+  static opencensus::tags::TagKey client_id_tag = opencensus::tags::TagKey::Register("client_id");
+  return client_id_tag;
+}
 
-  const opencensus::stats::MeasureInt64& failure() const {
-    return failure_;
-  }
+opencensus::tags::TagKey& Tag::userIdTag() {
+  static opencensus::tags::TagKey uid_tag = opencensus::tags::TagKey::Register("uid");
+  return uid_tag;
+}
 
-  const opencensus::stats::MeasureInt64& latency() const {
-    return latency_;
-  }
-
-private:
-  opencensus::stats::MeasureInt64 success_;
-  opencensus::stats::MeasureInt64 failure_;
-  opencensus::stats::MeasureInt64 latency_;
-};
+opencensus::tags::TagKey& Tag::deploymentTag() {
+  static opencensus::tags::TagKey deployment_tag = opencensus::tags::TagKey::Register("deployment");
+  return deployment_tag;
+}
 
 ROCKETMQ_NAMESPACE_END

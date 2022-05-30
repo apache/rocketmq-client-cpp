@@ -16,6 +16,8 @@
  */
 #include "PublishStats.h"
 
+#include "Tag.h"
+
 ROCKETMQ_NAMESPACE_BEGIN
 
 PublishStats::PublishStats()
@@ -27,15 +29,17 @@ PublishStats::PublishStats()
       .set_description("Number of messages published")
       .set_measure("publish_success")
       .set_aggregation(opencensus::stats::Aggregation::Sum())
-      .add_column(topicTag())
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
       .RegisterForExport();
 
   opencensus::stats::ViewDescriptor()
       .set_name("rocketmq_send_failure_total")
       .set_description("Number of publish failures")
-      .set_measure("pubish_failure")
+      .set_measure("publish_failure")
       .set_aggregation(opencensus::stats::Aggregation::Sum())
-      .add_column(topicTag())
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
       .RegisterForExport();
 
   opencensus::stats::ViewDescriptor()
@@ -43,14 +47,10 @@ PublishStats::PublishStats()
       .set_description("Publish latency")
       .set_measure("publish_latency")
       .set_aggregation(opencensus::stats::Aggregation::Distribution(
-          opencensus::stats::BucketBoundaries::Explicit({1, 10, 100, 1000})))
-      .add_column(topicTag())
+          opencensus::stats::BucketBoundaries::Explicit({5, 10, 20, 50, 500})))
+      .add_column(Tag::topicTag())
+      .add_column(Tag::clientIdTag())
       .RegisterForExport();
-}
-
-opencensus::tags::TagKey& PublishStats::topicTag() {
-  static opencensus::tags::TagKey topic_tag = opencensus::tags::TagKey::Register("topic");
-  return topic_tag;
 }
 
 ROCKETMQ_NAMESPACE_END

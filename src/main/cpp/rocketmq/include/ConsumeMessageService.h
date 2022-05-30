@@ -61,6 +61,8 @@ public:
   virtual void schedule(std::shared_ptr<ConsumeTask> task, std::chrono::milliseconds delay) = 0;
 
   virtual std::size_t maxDeliveryAttempt() = 0;
+
+  virtual std::weak_ptr<PushConsumerImpl> consumer() = 0;
 };
 
 using ConsumeMessageServiceWeakPtr = std::weak_ptr<ConsumeMessageService>;

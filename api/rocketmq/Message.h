@@ -78,6 +78,10 @@ public:
     return absl::make_optional(trace_context_);
   }
 
+  void traceContext(std::string &&trace_context) {
+    trace_context_ = std::move(trace_context);
+  }
+
   const std::string& bornHost() const {
     return born_host_;
   }

@@ -25,6 +25,7 @@
 #include "ClientImpl.h"
 #include "ClientManagerImpl.h"
 #include "ConsumeMessageService.h"
+#include "ConsumeStats.h"
 #include "ProcessQueue.h"
 #include "Scheduler.h"
 #include "TopicAssignmentInfo.h"
@@ -162,6 +163,10 @@ public:
     return client_config_.subscriber.group.name();
   }
 
+  const ConsumeStats& stats() const {
+    return stats_;
+  }
+
 protected:
   std::shared_ptr<ClientImpl> self() override {
     return shared_from_this();
@@ -205,6 +210,8 @@ private:
   absl::Mutex throttle_table_mtx_;
 
   int32_t max_delivery_attempts_{MixAll::DEFAULT_MAX_DELIVERY_ATTEMPTS};
+
+  ConsumeStats stats_;
 
   void fetchRoutes() LOCKS_EXCLUDED(topic_filter_expression_table_mtx_);
 
