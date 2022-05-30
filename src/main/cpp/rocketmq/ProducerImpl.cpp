@@ -400,34 +400,12 @@ bool ProducerImpl::endTransaction0(const Transaction& transaction, TransactionSt
   const auto& endpoint = transaction.endpoint();
   std::weak_ptr<ProducerImpl> publisher(shared_from_this());
 
-  auto cb = [&, span, endpoint, mtx, cv, resolution, topic, publisher](const std::error_code& ec,
-                                                                       const EndTransactionResponse& response) {
-    auto pub = publisher.lock();
-    if (!pub) {
-      return;
-    }
-
+  auto cb = [&, span, endpoint, mtx, cv, topic](const std::error_code& ec, const EndTransactionResponse& response) {
     if (ec) {
       {
         span.SetStatus(opencensus::trace::StatusCode::ABORTED);
         span.AddAnnotation(ec.message());
         span.End();
-      }
-
-      {
-        // Collect statistics for failure of committing or rolling-back transactions.
-        switch (resolution) {
-          case TransactionState::COMMIT: {
-            opencensus::stats::Record({{pub->stats().txCommitFailure(), 1}},
-                                      {{Tag::topicTag(), topic}, {Tag::clientIdTag(), pub->config().client_id}});
-            break;
-          }
-          case TransactionState::ROLLBACK: {
-            opencensus::stats::Record({{pub->stats().txRollbackFailure(), 1}},
-                                      {{Tag::topicTag(), topic}, {Tag::clientIdTag(), pub->config().client_id}});
-            break;
-          }
-        }
       }
       SPDLOG_WARN("Failed to send {} transaction request to {}. Cause: ", action, endpoint, ec.message());
       success = false;
@@ -436,23 +414,6 @@ bool ProducerImpl::endTransaction0(const Transaction& transaction, TransactionSt
         span.SetStatus(opencensus::trace::StatusCode::OK);
         span.End();
       }
-
-      {
-        // Collect statistics for success of committing or rolling-back transactions.
-        switch (resolution) {
-          case TransactionState::COMMIT: {
-            opencensus::stats::Record({{pub->stats().txCommitSuccess(), 1}},
-                                      {{Tag::topicTag(), topic}, {Tag::clientIdTag(), pub->config().client_id}});
-            break;
-          }
-          case TransactionState::ROLLBACK: {
-            opencensus::stats::Record({{pub->stats().txRollbackSuccess(), 1}},
-                                      {{Tag::topicTag(), topic}, {Tag::clientIdTag(), pub->config().client_id}});
-            break;
-          }
-        }
-      }
-
       success = true;
     }
 

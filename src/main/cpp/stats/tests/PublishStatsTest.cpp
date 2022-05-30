@@ -17,6 +17,7 @@
 
 #include <chrono>
 #include <iostream>
+#include <mutex>
 #include <thread>
 
 #include "PublishStats.h"
@@ -28,11 +29,33 @@ class Handler : public opencensus::stats::StatsExporter::Handler {
 public:
   void ExportViewData(
       const std::vector<std::pair<opencensus::stats::ViewDescriptor, opencensus::stats::ViewData>>& data) override {
+    std::cout << "================================================================================" << std::endl;
     for (const auto& datum : data) {
       const auto& view_data = datum.second;
+      const auto& descriptor = datum.first;
+      auto start_times = view_data.start_times();
+      auto columns = descriptor.columns();
+
       switch (view_data.type()) {
         case opencensus::stats::ViewData::Type::kInt64: {
-          exportDatum(datum.first, view_data.start_time(), view_data.end_time(), view_data.int_data());
+          auto data_map = view_data.int_data();
+          for (const auto& entry : data_map) {
+            absl::Time time = start_times[entry.first];
+            std::string line;
+            line.append(absl::FormatTime(time)).append(" ");
+            line.append(descriptor.name());
+            line.append("{");
+            for (std::size_t i = 0; i < columns.size(); i++) {
+              line.append(columns[i].name()).append("=").append(entry.first[i]);
+              if (i < columns.size() - 1) {
+                line.append(", ");
+              } else {
+                line.append("} ==> ");
+              }
+            }
+            line.append(std::to_string(entry.second));
+            println(line);
+          }
           break;
         }
         case opencensus::stats::ViewData::Type::kDouble: {
@@ -40,7 +63,22 @@ public:
           break;
         }
         case opencensus::stats::ViewData::Type::kDistribution: {
-          exportDatum(datum.first, view_data.start_time(), view_data.end_time(), view_data.distribution_data());
+          for (const auto& entry : view_data.distribution_data()) {
+            std::string line(descriptor.name());
+            line.append("{");
+            for (std::size_t i = 0; i < columns.size(); i++) {
+              line.append(columns[i].name()).append("=").append(entry.first[i]);
+              if (i < columns.size() - 1) {
+                line.append(", ");
+              } else {
+                line.append("} ==> ");
+              }
+            }
+            line.append(entry.second.DebugString());
+            println(line);
+
+            println(absl::StrJoin(entry.second.bucket_boundaries().lower_boundaries(), ","));
+          }
           break;
         }
       }
@@ -53,7 +91,7 @@ public:
                    absl::Time end_time,
                    const opencensus::stats::ViewData::DataMap<T>& data) {
     if (data.empty()) {
-      std::cout << "No data for " << descriptor.name() << std::endl;
+      // std::cout << "No data for " << descriptor.name() << std::endl;
       return;
     }
 
@@ -63,6 +101,12 @@ public:
                   << DataToString(row.second) << std::endl;
       }
     }
+  }
+
+  std::mutex console_mtx;
+  void println(const std::string& line) {
+    std::lock_guard<std::mutex> lk(console_mtx);
+    std::cout << line << std::endl;
   }
 
   // Functions to format data for different aggregation types.
@@ -87,13 +131,27 @@ TEST(StatsTest, testBasics) {
   std::string t1("T1");
   std::string t2("T2");
   PublishStats metrics;
-  opencensus::stats::StatsExporter::SetInterval(absl::Seconds(1));
+  opencensus::stats::StatsExporter::SetInterval(absl::Seconds(5));
   opencensus::stats::StatsExporter::RegisterPushHandler(absl::make_unique<Handler>());
-  opencensus::stats::Record({{metrics.success(), 1}}, {{Tag::topicTag(), t1}});
-  opencensus::stats::Record({{metrics.success(), 100}}, {{Tag::topicTag(), t2}});
-  opencensus::stats::Record({{metrics.latency(), 100}}, {{Tag::topicTag(), t1}});
+  std::atomic_bool stopped{false};
+  auto generator = [&]() {
+    while (!stopped) {
+      opencensus::stats::Record({{metrics.success(), 1}}, {{Tag::topicTag(), t1}, {Tag::clientIdTag(), "client-0"}});
+      opencensus::stats::Record({{metrics.success(), 100}}, {{Tag::topicTag(), t2}, {Tag::clientIdTag(), "client-0"}});
+      for (std::size_t i = 0; i < 10; i++) {
+        opencensus::stats::Record({{metrics.latency(), i * 10}},
+                                  {{Tag::topicTag(), t1}, {Tag::clientIdTag(), "client-0"}});
+      }
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+  };
+  std::thread feeder(generator);
 
   std::this_thread::sleep_for(std::chrono::seconds(10));
+  stopped.store(true);
+  if (feeder.joinable()) {
+    feeder.join();
+  }
 }
 
 ROCKETMQ_NAMESPACE_END
