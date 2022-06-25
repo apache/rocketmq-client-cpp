@@ -18,8 +18,11 @@
 #define __MESSAGEEXT_H__
 
 #ifdef WIN32
-#include <Windows.h>
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <Winsock2.h>
+#include <Windows.h>
 #else
 #include <sys/socket.h>
 #endif
