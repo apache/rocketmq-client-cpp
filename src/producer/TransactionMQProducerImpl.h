@@ -22,7 +22,7 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/weak_ptr.hpp>
+#include <boost/smart_ptr.hpp>
 #include <memory>
 #include <string>
 #include "DefaultMQProducerImpl.h"
