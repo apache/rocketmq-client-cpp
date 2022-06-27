@@ -72,7 +72,7 @@ std::map<MQMessageQueue, int64> ResetOffsetBody::getOffsetTable() {
   return m_offsetTable;
 }
 
-void ResetOffsetBody::setOffsetTable(MQMessageQueue mq, int64 offset) {
+void ResetOffsetBody::setOffsetTable(const MQMessageQueue& mq, int64 offset) {
   m_offsetTable[mq] = offset;
 }
 
