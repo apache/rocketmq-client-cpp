@@ -43,7 +43,7 @@ class ResetOffsetBody {
  public:
   ResetOffsetBody() {}
   virtual ~ResetOffsetBody() { m_offsetTable.clear(); }
-  void setOffsetTable(MQMessageQueue mq, int64 offset);
+  void setOffsetTable(const MQMessageQueue& mq, int64 offset);
   std::map<MQMessageQueue, int64> getOffsetTable();
   static ResetOffsetBody* Decode(const MemoryBlock* mem);
 
