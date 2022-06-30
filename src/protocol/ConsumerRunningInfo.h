@@ -47,9 +47,9 @@ class ConsumerRunningInfo {
   void setProperties(const map<string, string>& input_properties);
   void setProperty(const string& key, const string& value);
   const map<MessageQueue, ProcessQueueInfo> getMqTable() const;
-  void setMqTable(MessageQueue queue, ProcessQueueInfo queueInfo);
+  void setMqTable(const MessageQueue& queue, const ProcessQueueInfo& queueInfo);
   const map<string, ConsumeStats> getStatusTable() const;
-  void setStatusTable(string topic, ConsumeStats consumeStats);
+  void setStatusTable(const string& topic, const ConsumeStats& consumeStats);
   const vector<SubscriptionData> getSubscriptionSet() const;
   void setSubscriptionSet(const vector<SubscriptionData>& input_subscriptionSet);
   const string getJstack() const;
