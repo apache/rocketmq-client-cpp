@@ -122,11 +122,13 @@ class TopicRouteData {
   std::string selectBrokerAddr() {
     int bdSize = m_brokerDatas.size();
     if (bdSize > 0) {
+      std::srand(std::time(0) + bdSize);
       int bdIndex = std::rand() % bdSize;
       auto bd = m_brokerDatas[bdIndex];
       auto iter = bd.brokerAddrs.find(MASTER_ID);
       if (iter == bd.brokerAddrs.end()) {
         int baSize = bd.brokerAddrs.size();
+        std::srand(std::time(0) + baSize);
         int baIndex = std::rand() % baSize;
         iter = bd.brokerAddrs.begin();
         for (; baIndex > 0; baIndex--) {
