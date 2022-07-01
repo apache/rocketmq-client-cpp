@@ -262,6 +262,10 @@ void TcpTransport::readNextMessageIntCallback(BufferEvent* event, TcpTransport* 
       LOG_DEBUG("had received all data. msgLen:%d, from:%d, recvLen:%d", msgLen, event->getfd(), recvLen);
     } else {
       LOG_DEBUG("didn't received whole. msgLen:%d, from:%d, recvLen:%d", msgLen, event->getfd(), recvLen);
+      /**
+       * set read water mark to msgLen + 4,wait for receiving whole data
+       */
+      event->setWatermark(EV_READ, msgLen + 4, 0);
       return;  // consider large data which was not received completely by now
     }
 
@@ -273,6 +277,10 @@ void TcpTransport::readNextMessageIntCallback(BufferEvent* event, TcpTransport* 
 
       transport->messageReceived(msg, event->getPeerAddrPort());
     }
+    /**
+     * reset read water mark to 4
+     */
+    event->setWatermark(EV_READ, 4, 0);
   }
 }
 
