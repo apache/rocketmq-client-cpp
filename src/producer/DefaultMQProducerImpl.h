@@ -110,7 +110,7 @@ class DefaultMQProducerImpl : public MQProducer {
   bool dealWithNameSpace();
   void logConfigs();
   bool dealWithMessageTrace();
-  bool isMessageTraceTopic(std::string topic);
+  bool isMessageTraceTopic(const std::string& topic);
   bool hasSendMessageHook();
   void registerSendMessageHook(std::shared_ptr<SendMessageHook>& hook);
   void executeSendMessageHookBefore(SendMessageContext* context);
