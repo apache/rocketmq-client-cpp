@@ -32,11 +32,11 @@ class LockBatchRequestBody {
  public:
   virtual ~LockBatchRequestBody() { mqSet.clear(); }
   string getConsumerGroup();
-  void setConsumerGroup(string consumerGroup);
+  void setConsumerGroup(const string& consumerGroup);
   string getClientId();
-  void setClientId(string clientId);
+  void setClientId(const string& clientId);
   vector<MQMessageQueue> getMqSet();
-  void setMqSet(vector<MQMessageQueue> mqSet);
+  void setMqSet(const vector<MQMessageQueue>& mqSet);
   void Encode(string& outData);
   Json::Value toJson(const MQMessageQueue& mq) const;
 
@@ -61,11 +61,11 @@ class UnlockBatchRequestBody {
  public:
   virtual ~UnlockBatchRequestBody() { mqSet.clear(); }
   string getConsumerGroup();
-  void setConsumerGroup(string consumerGroup);
+  void setConsumerGroup(const string& consumerGroup);
   string getClientId();
-  void setClientId(string clientId);
+  void setClientId(const string& clientId);
   vector<MQMessageQueue> getMqSet();
-  void setMqSet(vector<MQMessageQueue> mqSet);
+  void setMqSet(const vector<MQMessageQueue>& mqSet);
   void Encode(string& outData);
   Json::Value toJson(const MQMessageQueue& mq) const;
 

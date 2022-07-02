@@ -161,7 +161,7 @@ class DefaultMQClient {
   void setTcpTransportTryLockTimeout(uint64_t timeout);  // ms
   uint64_t getTcpTransportTryLockTimeout() const;
 
-  void setUnitName(std::string unitName);
+  void setUnitName(const std::string& unitName);
   const std::string& getUnitName() const;
 
   void setSessionCredentials(const std::string& input_accessKey,

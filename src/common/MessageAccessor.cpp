@@ -23,7 +23,7 @@
 using namespace std;
 namespace rocketmq {
 
-void MessageAccessor::withNameSpace(MQMessage& msg, const string nameSpace) {
+void MessageAccessor::withNameSpace(MQMessage& msg, const string& nameSpace) {
   if (!nameSpace.empty()) {
     string originTopic = msg.getTopic();
     string newTopic = nameSpace + NAMESPACE_SPLIT_FLAG + originTopic;
@@ -31,7 +31,7 @@ void MessageAccessor::withNameSpace(MQMessage& msg, const string nameSpace) {
   }
 }
 
-void MessageAccessor::withoutNameSpaceSingle(MQMessageExt& msg, const string nameSpace) {
+void MessageAccessor::withoutNameSpaceSingle(MQMessageExt& msg, const string& nameSpace) {
   if (!nameSpace.empty()) {
     string originTopic = msg.getTopic();
     auto index = originTopic.find(nameSpace);
@@ -44,7 +44,7 @@ void MessageAccessor::withoutNameSpaceSingle(MQMessageExt& msg, const string nam
     }
   }
 }
-void MessageAccessor::withoutNameSpace(vector<MQMessageExt>& msgs, const string nameSpace) {
+void MessageAccessor::withoutNameSpace(vector<MQMessageExt>& msgs, const string& nameSpace) {
   if (!nameSpace.empty()) {
     // for_each(msgs.cbegin(), msgs.cend(), bind2nd(&MessageAccessor::withoutNameSpaceSingle, nameSpace));
     for (auto iter = msgs.begin(); iter != msgs.end(); iter++) {

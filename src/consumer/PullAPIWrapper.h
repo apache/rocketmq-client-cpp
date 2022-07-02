@@ -35,7 +35,7 @@ class PullAPIWrapper {
   PullResult processPullResult(const MQMessageQueue& mq, PullResult* pullResult, SubscriptionData* subscriptionData);
 
   PullResult* pullKernelImpl(const MQMessageQueue& mq,        // 1
-                             string subExpression,            // 2
+                             const string& subExpression,            // 2
                              int64 subVersion,                // 3
                              int64 offset,                    // 4
                              int maxNums,                     // 5

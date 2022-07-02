@@ -21,7 +21,7 @@
 #include "url.h"
 
 namespace rocketmq {
-TopAddressing::TopAddressing(string unitName) : m_unitName(unitName) {}
+TopAddressing::TopAddressing(const std::string& unitName) : m_unitName(unitName) {}
 
 TopAddressing::~TopAddressing() {}
 

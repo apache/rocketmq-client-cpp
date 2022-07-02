@@ -40,7 +40,7 @@ class ROCKETMQCLIENT_API MQMessageExt : public MQMessage {
                sockaddr bornHost,
                int64 storeTimestamp,
                sockaddr storeHost,
-               std::string msgId);
+               const std::string& msgId);
 
   virtual ~MQMessageExt();
 

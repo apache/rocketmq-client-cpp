@@ -280,7 +280,7 @@ CommandHeader* RemotingCommand::getCommandHeader() const {
   return m_pExtHeader.get();
 }
 
-void RemotingCommand::setParsedJson(Json::Value json) {
+void RemotingCommand::setParsedJson(const Json::Value& json) {
   m_parsedJson = json;
 }
 

@@ -38,7 +38,7 @@ MQMessageExt::MQMessageExt(int queueId,
                            sockaddr bornHost,
                            int64 storeTimestamp,
                            sockaddr storeHost,
-                           string msgId)
+                           const std::string& msgId)
     : m_queueOffset(0),
       m_commitLogOffset(0),
       m_bornTimestamp(bornTimestamp),
