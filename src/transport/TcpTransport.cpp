@@ -256,6 +256,10 @@ void TcpTransport::readNextMessageIntCallback(BufferEvent* event, TcpTransport* 
 
     if (needed > 0) {
       LOG_DEBUG("too little data received with sum = %d", 4 - needed);
+      /**
+       * reset read water mark to 4
+       */
+      event->setWatermark(EV_READ, 4, 0);
       return;
     }
 
@@ -281,10 +285,6 @@ void TcpTransport::readNextMessageIntCallback(BufferEvent* event, TcpTransport* 
 
       transport->messageReceived(msg, event->getPeerAddrPort());
     }
-    /**
-     * reset read water mark to 4
-     */
-    event->setWatermark(EV_READ, 4, 0);
   }
 }
 
