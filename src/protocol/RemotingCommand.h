@@ -57,7 +57,7 @@ class RemotingCommand {
   bool isResponseType();
   void markOnewayRPC();
   bool isOnewayRPC();
-  void setParsedJson(Json::Value json);
+  void setParsedJson(const Json::Value& json);
   CommandHeader* getCommandHeader() const;
   const int getFlag() const;
   const int getVersion() const;

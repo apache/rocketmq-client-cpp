@@ -211,7 +211,7 @@ uint64_t DefaultMQClient::getTcpTransportTryLockTimeout() const {
   return m_tcpTransportTryLockTimeout;
 }
 
-void DefaultMQClient::setUnitName(string unitName) {
+void DefaultMQClient::setUnitName(const std::string& unitName) {
   m_unitName = unitName;
 }
 const string& DefaultMQClient::getUnitName() const {

@@ -25,9 +25,9 @@ namespace rocketmq {
 //<!***************************************************************************
 class MessageAccessor {
  public:
-  static void withNameSpace(MQMessage& msg, const std::string nameSpace);
-  static void withoutNameSpaceSingle(MQMessageExt& msg, const std::string nameSpace);
-  static void withoutNameSpace(std::vector<MQMessageExt>& msgs, const std::string nameSpace);
+  static void withNameSpace(MQMessage& msg, const std::string& nameSpace);
+  static void withoutNameSpaceSingle(MQMessageExt& msg, const std::string& nameSpace);
+  static void withoutNameSpace(std::vector<MQMessageExt>& msgs, const std::string& nameSpace);
 };
 
 //<!***************************************************************************
