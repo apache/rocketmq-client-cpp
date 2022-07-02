@@ -706,7 +706,7 @@ bool DefaultMQProducerImpl::dealWithMessageTrace() {
   registerSendMessageHook(hook);
   return true;
 }
-bool DefaultMQProducerImpl::isMessageTraceTopic(string source) {
+bool DefaultMQProducerImpl::isMessageTraceTopic(const string& source) {
   return source.find(TraceContant::TRACE_TOPIC) != string::npos;
 }
 bool DefaultMQProducerImpl::hasSendMessageHook() {
