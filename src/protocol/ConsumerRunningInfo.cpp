@@ -42,7 +42,7 @@ const map<MessageQueue, ProcessQueueInfo> ConsumerRunningInfo::getMqTable() cons
   return mqTable;
 }
 
-void ConsumerRunningInfo::setMqTable(MessageQueue queue, ProcessQueueInfo queueInfo) {
+void ConsumerRunningInfo::setMqTable(const MessageQueue& queue, const ProcessQueueInfo& queueInfo) {
   mqTable[queue] = queueInfo;
 }
 
@@ -50,7 +50,7 @@ const map<string, ConsumeStats> ConsumerRunningInfo::getStatusTable() const {
   return statusTable;
 }
 
-void ConsumerRunningInfo::setStatusTable(string topic, ConsumeStats consumeStats) {
+void ConsumerRunningInfo::setStatusTable(const string& topic, const ConsumeStats& consumeStats) {
   statusTable[topic] = consumeStats;
 }
 

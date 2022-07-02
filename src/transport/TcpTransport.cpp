@@ -207,7 +207,11 @@ void TcpTransport::eventCallback(BufferEvent* event, short what, TcpTransport* t
 
     // disable Nagle
     int val = 1;
-    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void*)&val, sizeof(val));
+#ifdef WIN32
+    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&val), sizeof(val));
+#else
+    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const void*>(&val), sizeof(val));
+#endif
     transport->setTcpConnectEvent(TCP_CONNECT_STATUS_SUCCESS);
   } else if (what & (BEV_EVENT_ERROR | BEV_EVENT_EOF | BEV_EVENT_READING | BEV_EVENT_WRITING)) {
     LOG_INFO("eventcb: received error event cb:%x on fd:%d", what, fd);
