@@ -19,7 +19,9 @@
 
 namespace rocketmq {
 //<!************************************************************************
-MQClientManager::MQClientManager() {}
+MQClientManager::MQClientManager() {
+  std::srand(std::time(0));
+}
 
 MQClientManager::~MQClientManager() {
   m_factoryTable.clear();
