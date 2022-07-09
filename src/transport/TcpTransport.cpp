@@ -126,6 +126,7 @@ u_long TcpTransport::getInetAddr(string& hostname) {
         }
       }
     }
+    evutil_freeaddrinfo(answer);
   }
 
   return addr;
