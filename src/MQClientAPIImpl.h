@@ -72,7 +72,7 @@ class MQClientAPIImpl {
   virtual SendResult sendMessage(const string& addr,
                                  const string& brokerName,
                                  const MQMessage& msg,
-                                 SendMessageRequestHeader* pRequestHeader,
+                                 const SendMessageRequestHeader& requestHeader,
                                  int timeoutMillis,
                                  int maxRetrySendTimes,
                                  int communicationMode,
