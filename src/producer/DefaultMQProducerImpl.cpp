@@ -481,18 +481,18 @@ SendResult DefaultMQProducerImpl::sendKernelImpl(MQMessage& msg,
         }
         executeSendMessageHookBefore(pSendMesgContext.get());
       }
-      SendMessageRequestHeader* requestHeader = new SendMessageRequestHeader();
-      requestHeader->producerGroup = getGroupName();
-      requestHeader->topic = (msg.getTopic());
-      requestHeader->defaultTopic = DEFAULT_TOPIC;
-      requestHeader->defaultTopicQueueNums = 4;
-      requestHeader->queueId = (mq.getQueueId());
-      requestHeader->sysFlag = (msg.getSysFlag());
-      requestHeader->bornTimestamp = UtilAll::currentTimeMillis();
-      requestHeader->flag = (msg.getFlag());
-      requestHeader->consumeRetryTimes = 16;
-      requestHeader->batch = isBatchMsg;
-      requestHeader->properties = (MQDecoder::messageProperties2String(msg.getProperties()));
+      SendMessageRequestHeader requestHeader;
+      requestHeader.producerGroup = getGroupName();
+      requestHeader.topic = (msg.getTopic());
+      requestHeader.defaultTopic = DEFAULT_TOPIC;
+      requestHeader.defaultTopicQueueNums = 4;
+      requestHeader.queueId = (mq.getQueueId());
+      requestHeader.sysFlag = (msg.getSysFlag());
+      requestHeader.bornTimestamp = UtilAll::currentTimeMillis();
+      requestHeader.flag = (msg.getFlag());
+      requestHeader.consumeRetryTimes = 16;
+      requestHeader.batch = isBatchMsg;
+      requestHeader.properties = (MQDecoder::messageProperties2String(msg.getProperties()));
 
       SendResult sendResult = getFactory()->getMQClientAPIImpl()->sendMessage(
           brokerAddr, mq.getBrokerName(), msg, requestHeader, getSendMsgTimeout(), getRetryTimes4Async(),

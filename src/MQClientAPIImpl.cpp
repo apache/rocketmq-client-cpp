@@ -229,7 +229,7 @@ void MQClientAPIImpl::endTransactionOneway(std::string addr,
 SendResult MQClientAPIImpl::sendMessage(const string& addr,
                                         const string& brokerName,
                                         const MQMessage& msg,
-                                        SendMessageRequestHeader* pRequestHeader,
+                                        const SendMessageRequestHeader& requestHeader,
                                         int timeoutMillis,
                                         int maxRetrySendTimes,
                                         int communicationMode,
@@ -237,9 +237,8 @@ SendResult MQClientAPIImpl::sendMessage(const string& addr,
                                         const SessionCredentials& sessionCredentials) {
   // RemotingCommand request(SEND_MESSAGE, pRequestHeader);
   // Using MQ V2 Protocol to end messages.
-  SendMessageRequestHeaderV2* pRequestHeaderV2 = new SendMessageRequestHeaderV2(*pRequestHeader);
+  SendMessageRequestHeaderV2* pRequestHeaderV2 = new SendMessageRequestHeaderV2(requestHeader);
   RemotingCommand request(SEND_MESSAGE_V2, pRequestHeaderV2);
-  delete pRequestHeader;  // delete to avoid memory leak.
   string body = msg.getBody();
   request.SetBody(body.c_str(), body.length());
   request.setMsgBody(body);

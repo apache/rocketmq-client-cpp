@@ -175,7 +175,7 @@ class SendMessageRequestHeader : public CommandHeader {
 //<!************************************************************************
 class SendMessageRequestHeaderV2 : public CommandHeader {
  public:
-  SendMessageRequestHeaderV2(SendMessageRequestHeader v1) {
+  explicit SendMessageRequestHeaderV2(const SendMessageRequestHeader& v1) {
     a = v1.producerGroup;
     b = v1.topic;
     c = v1.defaultTopic;
