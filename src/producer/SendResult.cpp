@@ -39,13 +39,15 @@ SendResult::SendResult(const SendStatus& sendStatus,
                        const std::string& offsetMsgId,
                        const MQMessageQueue& messageQueue,
                        int64 queueOffset,
-                       const string& regionId)
+                       const string& regionId,
+                       const bool traceOn)
     : m_sendStatus(sendStatus),
       m_msgId(msgId),
       m_offsetMsgId(offsetMsgId),
       m_messageQueue(messageQueue),
       m_queueOffset(queueOffset),
-      m_regionId(regionId) {}
+      m_regionId(regionId),
+      m_traceOn(traceOn) {}
 
 SendResult::SendResult(const SendResult& other) {
   m_sendStatus = other.m_sendStatus;
@@ -54,6 +56,7 @@ SendResult::SendResult(const SendResult& other) {
   m_messageQueue = other.m_messageQueue;
   m_queueOffset = other.m_queueOffset;
   m_regionId = other.m_regionId;
+  m_traceOn = other.m_traceOn;
 }
 
 SendResult& SendResult::operator=(const SendResult& other) {
@@ -64,6 +67,7 @@ SendResult& SendResult::operator=(const SendResult& other) {
     m_messageQueue = other.m_messageQueue;
     m_queueOffset = other.m_queueOffset;
     m_regionId = other.m_regionId;
+    m_traceOn = other.m_traceOn;
   }
   return *this;
 }
@@ -94,6 +98,10 @@ MQMessageQueue SendResult::getMessageQueue() const {
 
 int64 SendResult::getQueueOffset() const {
   return m_queueOffset;
+}
+
+bool SendResult::getTraceOn() const {
+  return m_traceOn;
 }
 
 std::string SendResult::toString() const {
