@@ -57,6 +57,8 @@ ROCKETMQCLIENT_API CPullResult
 Pull(CPullConsumer* consumer, const CMessageQueue* mq, const char* subExpression, long long offset, int maxNums);
 ROCKETMQCLIENT_API int ReleasePullResult(CPullResult pullResult);
 
+ROCKETMQCLIENT_API int SetPullConsumerLanguage(CPullConsumer* pullConsumer, const char* language);
+
 #ifdef __cplusplus
 }
 #endif

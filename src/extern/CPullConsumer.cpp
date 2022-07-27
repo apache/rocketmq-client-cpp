@@ -20,6 +20,7 @@
 #include "CMessageExt.h"
 #include "DefaultMQPullConsumer.h"
 #include "MQClientErrorContainer.h"
+#include "MQVersion.h"
 
 using namespace rocketmq;
 using namespace std;
@@ -251,6 +252,11 @@ int ReleasePullResult(CPullResult pullResult) {
   }
   free((void*)pullResult.msgFoundList);
   pullResult.msgFoundList = NULL;
+  return OK;
+}
+
+int SetPullConsumerLanguage(CPullConsumer * consumer, const char* language) {
+  MQVersion::SetCurrentLanguage(language);
   return OK;
 }
 

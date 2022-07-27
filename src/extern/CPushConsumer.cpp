@@ -21,6 +21,7 @@
 #include "CMessageExt.h"
 #include "DefaultMQPushConsumer.h"
 #include "MQClientErrorContainer.h"
+#include "MQVersion.h"
 
 using namespace rocketmq;
 using namespace std;
@@ -302,6 +303,11 @@ int SetPushConsumerMessageTrace(CPushConsumer* consumer, CTraceModel openTrace) 
   }
   bool messageTrace = openTrace == OPEN ? true : false;
   ((DefaultMQPushConsumer*)consumer)->setMessageTrace(messageTrace);
+  return OK;
+}
+
+int SetPushConsumerLanguage(CPushConsumer * consumer, const char* language) {
+  MQVersion::SetCurrentLanguage(language);
   return OK;
 }
 #ifdef __cplusplus

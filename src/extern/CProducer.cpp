@@ -33,6 +33,7 @@
 #include "TransactionMQProducer.h"
 #include "TransactionSendResult.h"
 #include "UtilAll.h"
+#include "MQVersion.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -813,6 +814,11 @@ int SetProducerMessageTrace(CProducer* producer, CTraceModel openTrace) {
     MQClientErrorContainer::setErr(string(e.what()));
     return PRODUCER_START_FAILED;
   }
+  return OK;
+}
+
+int SetProducerLanguage(CProducer* producer, const char* language) {
+  MQVersion::SetCurrentLanguage(language);
   return OK;
 }
 #ifdef __cplusplus

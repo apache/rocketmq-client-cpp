@@ -19,6 +19,7 @@
 #include "ConsumerRunningInfo.h"
 #include "MQClientFactory.h"
 #include "UtilAll.h"
+#include "MQVersion.h"
 
 namespace rocketmq {
 
@@ -113,7 +114,7 @@ RemotingCommand* ClientRemotingProcessor::getConsumerRunningInfo(const string& a
   LOG_INFO("getConsumerRunningInfo:%s", requestHeader->getConsumerGroup().c_str());
 
   RemotingCommand* pResponse =
-      new RemotingCommand(request->getCode(), "CPP", request->getVersion(), request->getOpaque(), request->getFlag(),
+      new RemotingCommand(request->getCode(), MQVersion::s_CurrentLanguage, request->getVersion(), request->getOpaque(), request->getFlag(),
                           request->getRemark(), NULL);
 
   unique_ptr<ConsumerRunningInfo> runningInfo(
