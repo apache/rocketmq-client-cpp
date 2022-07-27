@@ -304,6 +304,10 @@ void RemotingCommand::addExtField(const string& key, const string& value) {
   m_extFields[key] = value;
 }
 
+string RemotingCommand::getExtField(const string& key) {
+  return m_extFields[key];
+}
+
 std::string RemotingCommand::ToString() const {
   std::stringstream ss;
   ss << "code:" << m_code << ",opaque:" << m_opaque << ",flag:" << m_flag << ",body.size:" << m_body.getSize()
