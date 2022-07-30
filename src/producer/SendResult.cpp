@@ -113,6 +113,8 @@ std::string SendResult::toString() const {
   ss << ",queueOffset:" << m_queueOffset;
   ss << ",transactionId:" << m_transactionId;
   ss << ",messageQueue:" << m_messageQueue.toString();
+  ss << ",regionId:" << m_regionId;
+  ss << ",traceOn:" << m_traceOn;
   return ss.str();
 }
 

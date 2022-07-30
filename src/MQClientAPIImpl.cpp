@@ -542,10 +542,12 @@ SendResult MQClientAPIImpl::processSendResponse(const string& brokerName,
   }
   if (res == 0) {
     SendMessageResponseHeader* responseHeader = (SendMessageResponseHeader*)pResponse->getCommandHeader();
+    auto extFields = pResponse->getExtFields();
+    bool traceOn = (extFields->count("TRACE_ON") && extFields->at("TRACE_ON") == "true");
     MQMessageQueue messageQueue(msg.getTopic(), brokerName, responseHeader->queueId);
     string unique_msgId = msg.getProperty(MQMessage::PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);
     return SendResult(sendStatus, unique_msgId, responseHeader->msgId, messageQueue, responseHeader->queueOffset,
-                      responseHeader->regionId);
+                      responseHeader->regionId, traceOn);
   }
   LOG_ERROR("processSendResponse error remark:%s, error code:%d", (pResponse->getRemark()).c_str(),
             pResponse->getCode());
