@@ -356,7 +356,7 @@ BuildBoost() {
   if [ -e ${fname_boost} ]; then
     echo "${fname_boost} exists"
   else
-    wget http://sourceforge.net/projects/boost/files/boost/${fname_boost_down}
+    wget http://sourceforge.net/projects/boost/files/boost/${fname_boost_down} --no-check-certificate
   fi
   tar -zxvf ${fname_boost} &> unzipboost.txt
   boost_dir=$(ls | grep ^boost | grep .*[^gz]$)
