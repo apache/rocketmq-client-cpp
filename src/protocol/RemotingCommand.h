@@ -63,7 +63,7 @@ class RemotingCommand {
   const int getFlag() const;
   const int getVersion() const;
   void addExtField(const string& key, const string& value);
-  string getExtField(const string& key);
+  const unordered_map<string, string>* getExtFields() const;
   string getMsgBody() const;
   void setMsgBody(const string& body);
 
