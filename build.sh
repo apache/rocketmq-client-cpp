@@ -212,7 +212,7 @@ BuildOpenSSL() {
   if [ -e ${fname_openssl} ]; then
     echo "${fname_openssl} exists"
   else
-    wget https://www.openssl.org/source/old/1.1.1/${fname_openssl_down} -O ${fname_openssl_down}
+    wget https://www.openssl.org/source/old/1.1.1/${fname_openssl_down} -O ${fname_openssl_down} --no-check-certificate
   fi
   tar -zxvf ${fname_openssl} &> unzipopenssl.txt
   if [ $? -ne 0 ]; then
@@ -356,7 +356,7 @@ BuildBoost() {
   if [ -e ${fname_boost} ]; then
     echo "${fname_boost} exists"
   else
-    wget http://sourceforge.net/projects/boost/files/boost/${fname_boost_down}
+    wget http://sourceforge.net/projects/boost/files/boost/${fname_boost_down} --no-check-certificate
   fi
   tar -zxvf ${fname_boost} &> unzipboost.txt
   boost_dir=$(ls | grep ^boost | grep .*[^gz]$)
