@@ -36,7 +36,6 @@
 #include "rocketmq/ConsumeType.h"
 #include "rocketmq/MQMessageExt.h"
 #include "rocketmq/MQMessageQueue.h"
-#include "gtest/gtest_prod.h"
 
 ROCKETMQ_NAMESPACE_BEGIN
 
@@ -213,8 +212,6 @@ private:
   void wrapPullMessageRequest(rmq::PullMessageRequest& request);
 
   void wrapFilterExpression(rmq::FilterExpression* filter_expression);
-
-  FRIEND_TEST(ProcessQueueTest, testExpired);
 };
 
 ROCKETMQ_NAMESPACE_END
