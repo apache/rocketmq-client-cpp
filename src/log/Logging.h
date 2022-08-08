@@ -45,6 +45,7 @@ class logAdapter {
  public:
   ~logAdapter();
   static logAdapter* getLogInstance();
+  void setLogDir();
   void setLogLevel(elogLevel logLevel);
   elogLevel getLogLevel();
   void setLogFileNumAndSize(int logNum, int sizeOfPerFile);
@@ -60,6 +61,7 @@ class logAdapter {
   boost::shared_ptr<logSink_t> m_logSink;
   static logAdapter* alogInstance;
   static boost::mutex m_imtx;
+  std::string m_log_dir;
 };
 
 #define ALOG_ADAPTER logAdapter::getLogInstance()
