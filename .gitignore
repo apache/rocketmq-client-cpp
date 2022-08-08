@@ -8,6 +8,7 @@ compile_commands.json
 .vscode
 logs
 _build
+build
 cmake-build-debug-coverage
 .idea
 .cache

@@ -44,8 +44,10 @@ if "com_google_googletest" not in native.existing_rules():
 ```
 
 ### How To Build
-[Google Bazel](https://bazel.build/) is the primary build tool we supported, Please follow [bazel installation guide](https://docs.bazel.build/versions/main/install.html).
 
+#### Build with Bazel
+
+[Google Bazel](https://bazel.build/) is the primary build tool we supported, Please follow [bazel installation guide](https://docs.bazel.build/versions/main/install.html).
 
 1. Build
    From the repository root, 
@@ -57,6 +59,70 @@ if "com_google_googletest" not in native.existing_rules():
    ```
    bazel test //src/test/cpp/ut/...
    ```
+
+#### Build with CMake
+
+   1. Make sure you have installed a modern CMake 3.13+ and C++ compilation toolchain that at least supports C++11;
+
+   2. Following [gRPC installation instructions](https://grpc.io/docs/languages/cpp/quickstart/) to install grpc. 
+      gRPC [v1.48.0](https://shutian.oss-cn-hangzhou.aliyuncs.com/cdn/grpc/grpc_v1.48.0.tar.gz) with its third-party dependencies may be downloaded.
+
+      Note: 
+         * Remember to `export MY_INSTALL_DIR=$HOME/grpc` as our primary CMakeLists.txt hints 
+
+            ```cmake
+            list(APPEND CMAKE_PREFIX_PATH $ENV{HOME}/grpc)
+            ```
+            If your grpc is installed somewhere else yet non-standard, please adjust accordingly.
+
+         * When configure grpc, use your pre-installed system package if possible; 
+            ```shell
+            cmake -DCMAKE_INSTALL_PREFIX=$HOME/grpc -DgRPC_SSL_PROVIDER=package -DgRPC_ZLIB_PROVIDER=package
+            ```
+            A few more options are involved. Check CMakeLists.txt of grpc
+            ```cmake
+            # Providers for third-party dependencies (gRPC_*_PROVIDER properties):
+            # "module": build the dependency using sources from git submodule (under third_party)
+            # "package": use cmake's find_package functionality to locate a pre-installed dependency
+
+            set(gRPC_ZLIB_PROVIDER "module" CACHE STRING "Provider of zlib library")
+            set_property(CACHE gRPC_ZLIB_PROVIDER PROPERTY STRINGS "module" "package")
+
+            set(gRPC_CARES_PROVIDER "module" CACHE STRING "Provider of c-ares library")
+            set_property(CACHE gRPC_CARES_PROVIDER PROPERTY STRINGS "module" "package")
+
+            set(gRPC_RE2_PROVIDER "module" CACHE STRING "Provider of re2 library")
+            set_property(CACHE gRPC_RE2_PROVIDER PROPERTY STRINGS "module" "package")
+
+            set(gRPC_SSL_PROVIDER "module" CACHE STRING "Provider of ssl library")
+            set_property(CACHE gRPC_SSL_PROVIDER PROPERTY STRINGS "module" "package")
+
+            set(gRPC_PROTOBUF_PROVIDER "module" CACHE STRING "Provider of protobuf library")
+            set_property(CACHE gRPC_PROTOBUF_PROVIDER PROPERTY STRINGS "module" "package")
+
+            set(gRPC_PROTOBUF_PACKAGE_TYPE "" CACHE STRING "Algorithm for searching protobuf package")
+            set_property(CACHE gRPC_PROTOBUF_PACKAGE_TYPE PROPERTY STRINGS "CONFIG" "MODULE")
+
+            if(gRPC_BUILD_TESTS)
+            set(gRPC_BENCHMARK_PROVIDER "module" CACHE STRING "Provider of benchmark library")
+            set_property(CACHE gRPC_BENCHMARK_PROVIDER PROPERTY STRINGS "module" "package")
+            else()
+            set(gRPC_BENCHMARK_PROVIDER "none")
+            endif()
+
+            set(gRPC_ABSL_PROVIDER "module" CACHE STRING "Provider of absl library")
+            set_property(CACHE gRPC_ABSL_PROVIDER PROPERTY STRINGS "module" "package")
+            ```
+      
+   3. OpenSSL development package is also required. 
+
+   4. Run the following commands to build from ${YOUR_GIT_REPOSITORY}/cpp directory
+      ```shell
+      mkdir build && cd build
+      cmake -DOPENSSL_ROOT_DIR=/usr/local/Cellar/openssl@1.1/1.1.1q ..
+      make -j $(nproc)
+      ```
+   5. Static archive and dynamic linked libraries are found in the build directory.
 
 ### IDE
 [Visual Studio Code](https://code.visualstudio.com/) + [Clangd](https://clangd.llvm.org/) is the recommended development toolset. 
