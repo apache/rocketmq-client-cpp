@@ -7,7 +7,9 @@ ONS_NAMESPACE_BEGIN
 
 // TODO: set AccessKey and SecretKey here.
 ONSClientAbstract::ONSClientAbstract(const ONSFactoryProperty& factory_property)
-    : factory_property_(factory_property), access_point_(factory_property.getNameSrvAddr()) {}
+    : factory_property_(factory_property), access_point_(factory_property.getNameSrvAddr()) {
+  SPDLOG_INFO("AbstractResourceNamespace={}", access_point_.resourceNamespace());
+}
 
 void ONSClientAbstract::start() {}
 

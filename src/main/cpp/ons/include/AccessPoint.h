@@ -19,7 +19,7 @@ public:
     SPDLOG_INFO("Resource namespace={}, name-server-address={}", resourceNamespace(), nameServerAddress());
   }
 
-  operator bool() const;
+  explicit operator bool() const;
 
   std::string resourceNamespace() const;
 
