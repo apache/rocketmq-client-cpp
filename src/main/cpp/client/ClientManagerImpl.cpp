@@ -53,24 +53,9 @@ ClientManagerImpl::ClientManagerImpl(std::string resource_namespace)
       latency_histogram_("Message-Latency", 11) {
   spdlog::set_level(spdlog::level::trace);
   assignLabels(latency_histogram_);
-//  server_authorization_check_config_ = std::make_shared<grpc::experimental::TlsServerAuthorizationCheckConfig>(
-//      std::make_shared<TlsServerAuthorizationChecker>());
 
-  // Make use of encryption only at the moment.
-  std::vector<grpc::experimental::IdentityKeyCertPair> identity_key_cert_list;
-  grpc::experimental::IdentityKeyCertPair pair{};
-  pair.private_key = TlsHelper::client_private_key;
-  pair.certificate_chain = TlsHelper::client_certificate_chain;
-
-  identity_key_cert_list.emplace_back(pair);
-  certificate_provider_ =
-      std::make_shared<grpc::experimental::StaticDataCertificateProvider>(TlsHelper::CA, identity_key_cert_list);
-//  tls_channel_credential_options_.set_server_verification_option(GRPC_TLS_SKIP_ALL_SERVER_VERIFICATION);
-  tls_channel_credential_options_.set_certificate_provider(certificate_provider_);
-//  tls_channel_credential_options_.set_server_authorization_check_config(server_authorization_check_config_);
-  tls_channel_credential_options_.watch_root_certs();
-  tls_channel_credential_options_.watch_identity_key_cert_pairs();
-  channel_credential_ = grpc::experimental::TlsCredentials(tls_channel_credential_options_);
+  grpc::SslCredentialsOptions options = {};
+  channel_credential_ = grpc::SslCredentials(options);
 
   // Use unlimited receive message size.
   channel_arguments_.SetMaxReceiveMessageSize(-1);
@@ -522,9 +507,7 @@ bool ClientManagerImpl::send(const std::string& target_host, const Metadata& met
 std::shared_ptr<grpc::Channel> ClientManagerImpl::createChannel(const std::string& target_host) {
   std::vector<std::unique_ptr<grpc::experimental::ClientInterceptorFactoryInterface>> interceptor_factories;
   interceptor_factories.emplace_back(absl::make_unique<LogInterceptorFactory>());
-  auto channel = grpc::experimental::CreateCustomChannelWithInterceptors(
-      target_host, channel_credential_, channel_arguments_, std::move(interceptor_factories));
-  return channel;
+  return grpc::CreateCustomChannel(target_host, channel_credential_, channel_arguments_);
 }
 
 RpcClientSharedPtr ClientManagerImpl::getRpcClient(const std::string& target_host, bool need_heartbeat) {
@@ -540,8 +523,7 @@ RpcClientSharedPtr ClientManagerImpl::getRpcClient(const std::string& target_hos
       }
       std::vector<std::unique_ptr<grpc::experimental::ClientInterceptorFactoryInterface>> interceptor_factories;
       interceptor_factories.emplace_back(absl::make_unique<LogInterceptorFactory>());
-      auto channel = grpc::experimental::CreateCustomChannelWithInterceptors(
-          target_host, channel_credential_, channel_arguments_, std::move(interceptor_factories));
+      auto channel = createChannel(target_host);
       client = std::make_shared<RpcClientImpl>(completion_queue_, channel, need_heartbeat);
       rpc_clients_.insert_or_assign(target_host, client);
     } else {

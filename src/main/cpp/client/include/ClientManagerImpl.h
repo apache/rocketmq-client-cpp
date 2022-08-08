@@ -265,9 +265,6 @@ private:
   /**
    * TLS configuration
    */
-//  std::shared_ptr<grpc::experimental::TlsServerAuthorizationCheckConfig> server_authorization_check_config_;
-  std::shared_ptr<grpc::experimental::CertificateProviderInterface> certificate_provider_;
-  grpc::experimental::TlsChannelCredentialsOptions tls_channel_credential_options_;
   std::shared_ptr<grpc::ChannelCredentials> channel_credential_;
   grpc::ChannelArguments channel_arguments_;
 
