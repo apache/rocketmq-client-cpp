@@ -61,6 +61,8 @@ RemotingCommand* ClientRemotingProcessor::resetOffset(RemotingCommand* request) 
     ResetOffsetRequestHeader* offsetHeader = (ResetOffsetRequestHeader*)request->getCommandHeader();
     if (offsetBody) {
       m_mqClientFactory->resetOffset(offsetHeader->getGroup(), offsetHeader->getTopic(), offsetBody->getOffsetTable());
+      delete offsetBody;
+      offsetBody = nullptr;
     } else {
       LOG_ERROR("resetOffset failed as received data could not be unserialized");
     }
@@ -72,7 +74,7 @@ std::map<MQMessageQueue, int64> ResetOffsetBody::getOffsetTable() {
   return m_offsetTable;
 }
 
-void ResetOffsetBody::setOffsetTable(MQMessageQueue mq, int64 offset) {
+void ResetOffsetBody::setOffsetTable(const MQMessageQueue& mq, int64 offset) {
   m_offsetTable[mq] = offset;
 }
 

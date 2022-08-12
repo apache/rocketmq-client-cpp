@@ -31,21 +31,21 @@ static const string NAMESPACE_SPLIT_FLAG = "%";
 namespace rocketmq {
 class NameSpaceUtil {
  public:
-  static bool isEndPointURL(string nameServerAddr);
+  static bool isEndPointURL(const string& nameServerAddr);
 
-  static string formatNameServerURL(string nameServerAddr);
+  static string formatNameServerURL(const string& nameServerAddr);
 
-  static string getNameSpaceFromNsURL(string nameServerAddr);
+  static string getNameSpaceFromNsURL(const string& nameServerAddr);
 
-  static bool checkNameSpaceExistInNsURL(string nameServerAddr);
+  static bool checkNameSpaceExistInNsURL(const string& nameServerAddr);
 
-  static bool checkNameSpaceExistInNameServer(string nameServerAddr);
+  static bool checkNameSpaceExistInNameServer(const string& nameServerAddr);
 
-  static string withNameSpace(string source, string ns);
+  static string withNameSpace(const string& source, const string& ns);
 
-  static string withoutNameSpace(string source, string ns);
+  static string withoutNameSpace(const string& source, const string& ns);
 
-  static bool hasNameSpace(string source, string ns);
+  static bool hasNameSpace(const string& source, const string& ns);
 };
 
 }  // namespace rocketmq

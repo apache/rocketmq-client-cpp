@@ -16,10 +16,14 @@
  */
 #include "MQClientManager.h"
 #include "Logging.h"
+#include <cstdlib>
+#include <ctime>
 
 namespace rocketmq {
 //<!************************************************************************
-MQClientManager::MQClientManager() {}
+MQClientManager::MQClientManager() {
+  std::srand(std::time(0));
+}
 
 MQClientManager::~MQClientManager() {
   m_factoryTable.clear();

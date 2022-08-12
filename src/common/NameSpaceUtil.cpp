@@ -21,14 +21,14 @@
 
 namespace rocketmq {
 
-bool NameSpaceUtil::isEndPointURL(string nameServerAddr) {
+bool NameSpaceUtil::isEndPointURL(const string& nameServerAddr) {
   if (nameServerAddr.length() >= ENDPOINT_PREFIX_LENGTH && nameServerAddr.find(ENDPOINT_PREFIX) != string::npos) {
     return true;
   }
   return false;
 }
 
-string NameSpaceUtil::formatNameServerURL(string nameServerAddr) {
+string NameSpaceUtil::formatNameServerURL(const string& nameServerAddr) {
   auto index = nameServerAddr.find(ENDPOINT_PREFIX);
   if (index != string::npos) {
     LOG_DEBUG("Get Name Server from endpoint [%s]",
@@ -38,7 +38,7 @@ string NameSpaceUtil::formatNameServerURL(string nameServerAddr) {
   return nameServerAddr;
 }
 
-string NameSpaceUtil::getNameSpaceFromNsURL(string nameServerAddr) {
+string NameSpaceUtil::getNameSpaceFromNsURL(const string& nameServerAddr) {
   LOG_DEBUG("Try to get Name Space from nameServerAddr [%s]", nameServerAddr.c_str());
   string nsAddr = formatNameServerURL(nameServerAddr);
   string nameSpace;
@@ -54,7 +54,7 @@ string NameSpaceUtil::getNameSpaceFromNsURL(string nameServerAddr) {
   return "";
 }
 
-bool NameSpaceUtil::checkNameSpaceExistInNsURL(string nameServerAddr) {
+bool NameSpaceUtil::checkNameSpaceExistInNsURL(const string& nameServerAddr) {
   if (!isEndPointURL(nameServerAddr)) {
     LOG_DEBUG("This nameServerAddr [%s] is not a endpoint. should not get Name Space.", nameServerAddr.c_str());
     return false;
@@ -67,7 +67,7 @@ bool NameSpaceUtil::checkNameSpaceExistInNsURL(string nameServerAddr) {
   return false;
 }
 
-bool NameSpaceUtil::checkNameSpaceExistInNameServer(string nameServerAddr) {
+bool NameSpaceUtil::checkNameSpaceExistInNameServer(const string& nameServerAddr) {
   auto index = nameServerAddr.find(NAMESPACE_PREFIX);
   if (index != string::npos) {
     LOG_INFO("Find Name Space Prefix in nameServerAddr [%s]", nameServerAddr.c_str());
@@ -76,7 +76,7 @@ bool NameSpaceUtil::checkNameSpaceExistInNameServer(string nameServerAddr) {
   return false;
 }
 
-string NameSpaceUtil::withoutNameSpace(string source, string nameSpace) {
+string NameSpaceUtil::withoutNameSpace(const string& source, const string& nameSpace) {
   if (!nameSpace.empty()) {
     auto index = source.find(nameSpace);
     if (index != string::npos) {
@@ -85,14 +85,14 @@ string NameSpaceUtil::withoutNameSpace(string source, string nameSpace) {
   }
   return source;
 }
-string NameSpaceUtil::withNameSpace(string source, string ns) {
+string NameSpaceUtil::withNameSpace(const string& source, const string& ns) {
   if (!ns.empty()) {
     return ns + NAMESPACE_SPLIT_FLAG + source;
   }
   return source;
 }
 
-bool NameSpaceUtil::hasNameSpace(string source, string ns) {
+bool NameSpaceUtil::hasNameSpace(const string& source, const string& ns) {
   if (source.find(TraceContant::TRACE_TOPIC) != string::npos) {
     LOG_DEBUG("Find Trace Topic [%s]", source.c_str());
     return true;

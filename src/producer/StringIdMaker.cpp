@@ -125,11 +125,11 @@ std::string StringIdMaker::createUniqID() {
   return std::string(kFixString, 20) + std::string(hex_buf, 12);
 }
 
-void StringIdMaker::hexdump(unsigned char* in, char* out, std::size_t len) {
-  for (std::size_t i = 0; i < len; i++) {
-    unsigned char v = in[i];
-    out[i * 2] = sHexAlphabet[v >> 4];
-    out[i * 2 + 1] = sHexAlphabet[v & 0x0FU];
+void StringIdMaker::hexdump(unsigned char* buffer, char* out_buff, std::size_t index) {
+  for (std::size_t i = 0; i < index; i++) {
+    unsigned char v = buffer[i];
+    out_buff[i * 2] = sHexAlphabet[v >> 4];
+    out_buff[i * 2 + 1] = sHexAlphabet[v & 0x0FU];
   }
 }
 

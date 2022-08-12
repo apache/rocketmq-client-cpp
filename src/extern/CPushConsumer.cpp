@@ -21,6 +21,7 @@
 #include "CMessageExt.h"
 #include "DefaultMQPushConsumer.h"
 #include "MQClientErrorContainer.h"
+#include "Logging.h"
 
 using namespace rocketmq;
 using namespace std;
@@ -278,6 +279,7 @@ int SetPushConsumerLogPath(CPushConsumer* consumer, const char* logPath) {
   }
   // Todo, This api should be implemented by core api.
   //((DefaultMQPushConsumer *) consumer)->setInstanceName(instanceName);
+  setenv(ROCKETMQ_CLIENT_LOG_DIR.c_str(), logPath, 1);
   return OK;
 }
 

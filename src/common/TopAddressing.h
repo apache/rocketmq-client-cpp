@@ -27,7 +27,7 @@
 namespace rocketmq {
 class TopAddressing {
  public:
-  TopAddressing(string unitName);
+  TopAddressing(const std::string& unitName);
   virtual ~TopAddressing();
 
  public:

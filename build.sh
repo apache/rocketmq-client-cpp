@@ -32,7 +32,7 @@ declare fname_boost="boost*.tar.gz"
 declare fname_openssl_down="openssl-1.1.1d.tar.gz"
 declare fname_libevent_down="release-2.1.11-stable.zip"
 declare fname_jsoncpp_down="0.10.7.zip"
-declare fname_boost_down="1.58.0/boost_1_58_0.tar.gz"
+declare fname_boost_down="1.78.0/boost_1_78_0.tar.gz"
 
 PrintParams() {
   echo "=========================================one key build help============================================"
@@ -212,7 +212,7 @@ BuildOpenSSL() {
   if [ -e ${fname_openssl} ]; then
     echo "${fname_openssl} exists"
   else
-    wget https://www.openssl.org/source/old/1.1.1/${fname_openssl_down} -O ${fname_openssl_down}
+    wget https://www.openssl.org/source/old/1.1.1/${fname_openssl_down} -O ${fname_openssl_down} --no-check-certificate
   fi
   tar -zxvf ${fname_openssl} &> unzipopenssl.txt
   if [ $? -ne 0 ]; then
@@ -356,7 +356,7 @@ BuildBoost() {
   if [ -e ${fname_boost} ]; then
     echo "${fname_boost} exists"
   else
-    wget http://sourceforge.net/projects/boost/files/boost/${fname_boost_down}
+    wget http://sourceforge.net/projects/boost/files/boost/${fname_boost_down} --no-check-certificate
   fi
   tar -zxvf ${fname_boost} &> unzipboost.txt
   boost_dir=$(ls | grep ^boost | grep .*[^gz]$)

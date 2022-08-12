@@ -37,7 +37,8 @@ class ROCKETMQCLIENT_API SendResult {
              const std::string& offsetMsgId,
              const MQMessageQueue& messageQueue,
              int64 queueOffset,
-             const std::string& regionId);
+             const std::string& regionId,
+             const bool traceOn);
 
   virtual ~SendResult();
   SendResult(const SendResult& other);
@@ -55,6 +56,8 @@ class ROCKETMQCLIENT_API SendResult {
   SendStatus getSendStatus() const;
   MQMessageQueue getMessageQueue() const;
   int64 getQueueOffset() const;
+  bool getTraceOn() const;
+
   std::string toString() const;
 
  private:
@@ -65,6 +68,7 @@ class ROCKETMQCLIENT_API SendResult {
   int64 m_queueOffset;
   std::string m_transactionId;
   std::string m_regionId;
+  bool m_traceOn;
 };
 
 }  // namespace rocketmq

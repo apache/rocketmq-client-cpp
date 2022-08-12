@@ -126,6 +126,7 @@ u_long TcpTransport::getInetAddr(string& hostname) {
         }
       }
     }
+    evutil_freeaddrinfo(answer);
   }
 
   return addr;
@@ -207,7 +208,11 @@ void TcpTransport::eventCallback(BufferEvent* event, short what, TcpTransport* t
 
     // disable Nagle
     int val = 1;
-    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void*)&val, sizeof(val));
+#ifdef WIN32
+    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&val), sizeof(val));
+#else
+    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const void*>(&val), sizeof(val));
+#endif
     transport->setTcpConnectEvent(TCP_CONNECT_STATUS_SUCCESS);
   } else if (what & (BEV_EVENT_ERROR | BEV_EVENT_EOF | BEV_EVENT_READING | BEV_EVENT_WRITING)) {
     LOG_INFO("eventcb: received error event cb:%x on fd:%d", what, fd);
@@ -252,6 +257,10 @@ void TcpTransport::readNextMessageIntCallback(BufferEvent* event, TcpTransport* 
 
     if (needed > 0) {
       LOG_DEBUG("too little data received with sum = %d", 4 - needed);
+      /**
+       * reset read water mark to 4
+       */
+      event->setWatermark(EV_READ, 4, 0);
       return;
     }
 
@@ -262,6 +271,10 @@ void TcpTransport::readNextMessageIntCallback(BufferEvent* event, TcpTransport* 
       LOG_DEBUG("had received all data. msgLen:%d, from:%d, recvLen:%d", msgLen, event->getfd(), recvLen);
     } else {
       LOG_DEBUG("didn't received whole. msgLen:%d, from:%d, recvLen:%d", msgLen, event->getfd(), recvLen);
+      /**
+       * set read water mark to msgLen + 4,wait for receiving whole data
+       */
+      event->setWatermark(EV_READ, msgLen + 4, 0);
       return;  // consider large data which was not received completely by now
     }
 
