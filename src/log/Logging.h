@@ -30,7 +30,7 @@
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/utility/setup/file.hpp>
 #include <boost/scoped_array.hpp>
-#include <boost/shared_ptr.hpp>
+#include <boost/smart_ptr.hpp>
 #include "include/DefaultMQClient.h"
 
 namespace logging = boost::log;
