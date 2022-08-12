@@ -168,6 +168,7 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
       consumeMessageContext.setMsgList(msgs);
       consumeMessageContext.setSuccess(false);
       consumeMessageContext.setNameSpace(pConsumer->getNameSpace());
+      consumeMessageContext.setClientId(pConsumer->getMQClientId());
       pConsumer->executeConsumeMessageHookBefore(&consumeMessageContext);
     }
   }
@@ -195,6 +196,9 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
           consumeMessageContext.setMsgIndex(i);
           consumeMessageContext.setStatus("RECONSUME_LATER");
           consumeMessageContext.setSuccess(false);
+          std::map<std::string, std::string> props;
+          props.insert(std::make_pair("ConsumeContextType", "FAILED"));
+          consumeMessageContext.setProps(props);
           pConsumer->executeConsumeMessageHookAfter(&consumeMessageContext);
           continue;
         }
@@ -212,6 +216,9 @@ void ConsumeMessageConcurrentlyService::ConsumeRequest(boost::weak_ptr<PullReque
         if (status == CONSUME_SUCCESS) {
           consumeMessageContext.setStatus("CONSUME_SUCCESS");
           consumeMessageContext.setSuccess(true);
+          std::map<std::string, std::string> props;
+          props.insert(std::make_pair("ConsumeContextType", "SUCCESS"));
+          consumeMessageContext.setProps(props);
         } else {
           status = RECONSUME_LATER;
           consumeMessageContext.setStatus("RECONSUME_LATER");

@@ -53,7 +53,8 @@ TraceTransferBean TraceUtil::CovertTraceContextToTransferBean(TraceContext* ctx)
       ss << ctx->getCostTime() << TraceContant::CONTENT_SPLITOR;
       ss << it->getMsgType() << TraceContant::CONTENT_SPLITOR;
       ss << it->getOffsetMsgId() << TraceContant::CONTENT_SPLITOR;
-      ss << (ctx->getStatus() ? "true" : "false") << TraceContant::FIELD_SPLITOR;
+      ss << (ctx->getStatus() ? "true" : "false") << TraceContant::CONTENT_SPLITOR;
+      ss << it->getClientHost() << TraceContant::FIELD_SPLITOR;
     } break;
 
     case SubBefore: {
@@ -71,7 +72,8 @@ TraceTransferBean TraceUtil::CovertTraceContextToTransferBean(TraceContext* ctx)
         if (!it->getKeys().empty()) {
           defaultKey = it->getKeys();
         }
-        ss << defaultKey << TraceContant::FIELD_SPLITOR;
+        ss << defaultKey << TraceContant::CONTENT_SPLITOR;
+        ss << it->getClientHost() << TraceContant::FIELD_SPLITOR;
       }
     } break;
 
@@ -87,7 +89,10 @@ TraceTransferBean TraceUtil::CovertTraceContextToTransferBean(TraceContext* ctx)
       if (!it->getKeys().empty()) {
         defaultKey = it->getKeys();
       }
-      ss << defaultKey << TraceContant::FIELD_SPLITOR;
+      ss << defaultKey << TraceContant::CONTENT_SPLITOR;
+      ss << ctx->getContextCode() << TraceContant::CONTENT_SPLITOR;
+      ss << ctx->getTimeStamp() << TraceContant::CONTENT_SPLITOR;
+      ss << ctx->getGroupName() << TraceContant::FIELD_SPLITOR;
     } break;
 
     default:

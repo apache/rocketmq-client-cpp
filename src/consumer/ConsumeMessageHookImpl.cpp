@@ -64,6 +64,7 @@ void ConsumeMessageHookImpl::executeHookBefore(ConsumeMessageContext* context) {
     bean.setStoreTime((*it).getStoreTimestamp());
     bean.setBodyLength((*it).getStoreSize());
     bean.setRetryTimes((*it).getReconsumeTimes());
+    bean.setClientHost(context->getClientId());
     std::string regionId = (*it).getProperty(MQMessage::PROPERTY_MSG_REGION);
     if (regionId.empty()) {
       regionId = TraceContant::DEFAULT_REDION;
@@ -73,7 +74,7 @@ void ConsumeMessageHookImpl::executeHookBefore(ConsumeMessageContext* context) {
   }
   traceContext->setTimeStamp(UtilAll::currentTimeMillis());
 
-  std::string topic = TraceContant::TRACE_TOPIC + traceContext->getRegionId();
+  std::string topic = TraceContant::TRACE_TOPIC;
 
   TraceTransferBean ben = TraceUtil::CovertTraceContextToTransferBean(traceContext);
   MQMessage message(topic, ben.getTransData());
@@ -101,8 +102,17 @@ void ConsumeMessageHookImpl::executeHookAfter(ConsumeMessageContext* context) {
   subAfterContext.setTraceBeanIndex(context->getMsgIndex());
   TraceBean bean = subBeforeContext->getTraceBeans()[subAfterContext.getTraceBeanIndex()];
   subAfterContext.setTraceBean(bean);
+  auto contextTypeIter = context->getProps().find("ConsumeContextType");
+  if(contextTypeIter != context->getProps().end()) {
+    string contextType = contextTypeIter->second;
+    if (contextType.find("SUCCESS") != string::npos) {
+      subAfterContext.setContextCode(0);
+    } else {
+      subAfterContext.setContextCode(3);
+    };
+  }
 
-  std::string topic = TraceContant::TRACE_TOPIC + subAfterContext.getRegionId();
+  std::string topic = TraceContant::TRACE_TOPIC;
   TraceTransferBean ben = TraceUtil::CovertTraceContextToTransferBean(&subAfterContext);
   MQMessage message(topic, ben.getTransData());
   message.setKeys(ben.getTransKey());
