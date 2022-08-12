@@ -21,6 +21,7 @@
 #include <boost/thread/thread.hpp>
 #include <memory>
 #include <sstream>
+#include <unordered_map>
 #include "CommandHeader.h"
 #include "dataBlock.h"
 
@@ -62,6 +63,7 @@ class RemotingCommand {
   const int getFlag() const;
   const int getVersion() const;
   void addExtField(const string& key, const string& value);
+  const unordered_map<string, string>* getExtFields() const;
   string getMsgBody() const;
   void setMsgBody(const string& body);
 
@@ -81,7 +83,7 @@ class RemotingCommand {
   int m_flag;
   string m_remark;
   string m_msgBody;
-  map<string, string> m_extFields;
+  unordered_map<string, string> m_extFields;
 
   MemoryBlock m_head;
   MemoryBlock m_body;

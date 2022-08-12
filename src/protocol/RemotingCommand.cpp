@@ -180,6 +180,12 @@ RemotingCommand* RemotingCommand::Decode(const MemoryBlock& mem) {
   if (bodyLen > 0) {
     cmd->SetBody(pData + 4 + headLen, bodyLen);
   }
+  if (object.isMember("extFields")) {
+    Json::Value& extFields = object["extFields"];
+    for (auto& it : extFields.getMemberNames()) {
+      cmd->m_extFields[it] = extFields[it].asString();
+    }
+  }
   return cmd;
 }
 
@@ -302,6 +308,10 @@ string RemotingCommand::getMsgBody() const {
 
 void RemotingCommand::addExtField(const string& key, const string& value) {
   m_extFields[key] = value;
+}
+
+const unordered_map<string, string>* RemotingCommand::getExtFields() const{
+  return &m_extFields;
 }
 
 std::string RemotingCommand::ToString() const {
