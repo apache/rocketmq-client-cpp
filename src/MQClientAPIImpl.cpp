@@ -268,7 +268,7 @@ void MQClientAPIImpl::sendHeartbeat(const string& addr,
   string body;
   pHeartbeatData->Encode(body);
   request.SetBody(body.data(), body.length());
-  request.setMsgBody(body);
+  request.moveMsgBody(std::move(body));
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
 
@@ -888,7 +888,7 @@ void MQClientAPIImpl::lockBatchMQ(const string& addr,
   string body;
   requestBody->Encode(body);
   request.SetBody(body.data(), body.length());
-  request.setMsgBody(body);
+  request.moveMsgBody(std::move(body));
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
 
@@ -921,7 +921,7 @@ void MQClientAPIImpl::unlockBatchMQ(const string& addr,
   string body;
   requestBody->Encode(body);
   request.SetBody(body.data(), body.length());
-  request.setMsgBody(body);
+  request.moveMsgBody(std::move(body));
   callSignatureBeforeRequest(addr, request, sessionCredentials);
   request.Encode();
 

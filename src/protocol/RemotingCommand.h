@@ -66,6 +66,7 @@ class RemotingCommand {
   const unordered_map<string, string>* getExtFields() const;
   string getMsgBody() const;
   void setMsgBody(const string& body);
+  void moveMsgBody(std::string&& body);
 
  public:
   void Encode();

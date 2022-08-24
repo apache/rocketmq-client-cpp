@@ -126,7 +126,7 @@ RemotingCommand* ClientRemotingProcessor::getConsumerRunningInfo(const string& a
     pResponse->setCode(SUCCESS_VALUE);
     string body = runningInfo->encode();
     pResponse->SetBody(body.c_str(), body.length());
-    pResponse->setMsgBody(body);
+    pResponse->moveMsgBody(std::move(body));
   } else {
     pResponse->setCode(SYSTEM_ERROR);
     pResponse->setRemark("The Consumer Group not exist in this consumer");

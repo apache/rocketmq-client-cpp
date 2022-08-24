@@ -302,6 +302,10 @@ void RemotingCommand::setMsgBody(const string& body) {
   m_msgBody = body;
 }
 
+void RemotingCommand::moveMsgBody(std::string&& body) {
+  m_msgBody = std::forward<std::string>(body);
+}
+
 string RemotingCommand::getMsgBody() const {
   return m_msgBody;
 }
