@@ -15,16 +15,33 @@
  * limitations under the License.
  */
 
-#include "TraceContant.h"
+#ifndef __ROCKETMQ_TRACE_CONTANT_H_
+#define __ROCKETMQ_TRACE_CONTANT_H_
+
 #include <string>
 
 namespace rocketmq {
-std::string TraceContant::GROUP_NAME = "_INNER_TRACE_PRODUCER";
-std::string TraceContant::TRACE_TOPIC = "rmq_sys_TRACE_DATA_";
-std::string TraceContant::DEFAULT_REDION = "DEFAULT_REGION";
-char TraceContant::CONTENT_SPLITOR = 1;
-char TraceContant::FIELD_SPLITOR = 2;
-std::string TraceContant::TRACE_TYPE_PUB = "Pub";
-std::string TraceContant::TRACE_TYPE_BEFORE = "SubBefore";
-std::string TraceContant::TRACE_TYPE_AFTER = "SubAfter";
+class TraceConstant {
+ public:
+  static std::string GROUP_NAME;
+  static std::string TRACE_TOPIC;
+  static std::string DEFAULT_REDION;
+  static char CONTENT_SPLITOR;
+  static char FIELD_SPLITOR;
+  static std::string TRACE_TYPE_PUB;
+  static std::string TRACE_TYPE_BEFORE;
+  static std::string TRACE_TYPE_AFTER;
+};
+enum TraceMessageType {
+  TRACE_NORMAL_MSG = 0,
+  TRACE_TRANS_HALF_MSG,
+  TRACE_TRANS_COMMIT_MSG,
+  TRACE_DELAY_MSG,
+};
+enum TraceType {
+  Pub,        // for send message
+  SubBefore,  // for consume message before
+  SubAfter,   // for consum message after
+};
 }  // namespace rocketmq
+#endif  //

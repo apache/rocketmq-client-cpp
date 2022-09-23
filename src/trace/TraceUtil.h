@@ -19,7 +19,7 @@
 #define __ROCKETMQ_TRACE_UTIL_H_
 
 #include <string>
-#include "TraceContant.h"
+#include "TraceConstant.h"
 #include "TraceContext.h"
 #include "TraceTransferBean.h"
 

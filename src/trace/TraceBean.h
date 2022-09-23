@@ -20,7 +20,7 @@
 
 #include <string>
 #include <vector>
-#include "TraceContant.h"
+#include "TraceConstant.h"
 
 namespace rocketmq {
 class TraceBean {
