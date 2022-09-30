@@ -57,12 +57,13 @@ void SendMessageHookImpl::executeHookBefore(SendMessageContext* context) {
 }
 
 void SendMessageHookImpl::executeHookAfter(SendMessageContext* context) {
-  if (context == NULL) {
+  if (context == NULL || context->getSendResult() == NULL) {
     return;
   }
   string topic = context->getMessage()->getTopic();
   // Check if contains TraceConstants::TRACE_TOPIC
-  if (topic.find(TraceContant::TRACE_TOPIC) != string::npos) {
+  if (topic.find(TraceContant::TRACE_TOPIC) == string::npos
+    || context->getSendResult()->getTraceOn() == false) {
     // trace message itself
     return;
   }

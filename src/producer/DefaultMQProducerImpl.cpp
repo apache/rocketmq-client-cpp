@@ -502,7 +502,6 @@ SendResult DefaultMQProducerImpl::sendKernelImpl(MQMessage& msg,
         pSendMesgContext->setSendResult(sendResult);
         executeSendMessageHookAfter(pSendMesgContext.get());
       }
-      setMessageTrace(sendResult.getTraceOn());
       return sendResult;
     } catch (MQException& e) {
       throw e;
