@@ -55,6 +55,10 @@ void ConsumeMessageHookImpl::executeHookBefore(ConsumeMessageContext* context) {
   std::vector<MQMessageExt> msgs = context->getMsgList();
   std::vector<MQMessageExt>::iterator it = msgs.begin();
   for (; it != msgs.end(); ++it) {
+    std::string traceOn = it->getProperty(MQMessage::PROPERTY_TRACE_SWITCH);
+    if (traceOn != "" && traceOn == "false") {
+      continue;
+    }
     TraceBean bean;
     bean.setTopic((*it).getTopic());
     bean.setMsgId((*it).getMsgId());
