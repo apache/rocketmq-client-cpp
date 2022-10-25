@@ -23,7 +23,7 @@
 #include "Logging.h"
 #include "MQClientException.h"
 #include "NameSpaceUtil.h"
-#include "TraceContant.h"
+#include "TraceConstant.h"
 #include "TraceContext.h"
 #include "TraceTransferBean.h"
 #include "TraceUtil.h"
@@ -70,14 +70,14 @@ void ConsumeMessageHookImpl::executeHookBefore(ConsumeMessageContext* context) {
     bean.setRetryTimes((*it).getReconsumeTimes());
     std::string regionId = (*it).getProperty(MQMessage::PROPERTY_MSG_REGION);
     if (regionId.empty()) {
-      regionId = TraceContant::DEFAULT_REDION;
+      regionId = TraceConstant::DEFAULT_REDION;
     }
     traceContext->setRegionId(regionId);
     traceContext->setTraceBean(bean);
   }
   traceContext->setTimeStamp(UtilAll::currentTimeMillis());
 
-  std::string topic = TraceContant::TRACE_TOPIC + traceContext->getRegionId();
+  std::string topic = TraceConstant::TRACE_TOPIC + traceContext->getRegionId();
 
   TraceTransferBean ben = TraceUtil::CovertTraceContextToTransferBean(traceContext);
   MQMessage message(topic, ben.getTransData());
@@ -106,7 +106,7 @@ void ConsumeMessageHookImpl::executeHookAfter(ConsumeMessageContext* context) {
   TraceBean bean = subBeforeContext->getTraceBeans()[subAfterContext.getTraceBeanIndex()];
   subAfterContext.setTraceBean(bean);
 
-  std::string topic = TraceContant::TRACE_TOPIC + subAfterContext.getRegionId();
+  std::string topic = TraceConstant::TRACE_TOPIC + subAfterContext.getRegionId();
   TraceTransferBean ben = TraceUtil::CovertTraceContextToTransferBean(&subAfterContext);
   MQMessage message(topic, ben.getTransData());
   message.setKeys(ben.getTransKey());
