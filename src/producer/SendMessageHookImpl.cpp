@@ -22,7 +22,7 @@
 #include "Logging.h"
 #include "MQClientException.h"
 #include "SendMessageContext.h"
-#include "TraceContant.h"
+#include "TraceConstant.h"
 #include "TraceTransferBean.h"
 #include "TraceUtil.h"
 #include "UtilAll.h"
@@ -46,7 +46,7 @@ void SendMessageHookImpl::executeHookBefore(SendMessageContext* context) {
   if (context != NULL) {
     string topic = context->getMessage()->getTopic();
     // Check if contains TraceConstants::TRACE_TOPIC
-    if (topic.find(TraceContant::TRACE_TOPIC) != string::npos) {
+    if (topic.find(TraceConstant::TRACE_TOPIC) != string::npos) {
       // trace message itself
       return;
     }
@@ -62,7 +62,7 @@ void SendMessageHookImpl::executeHookAfter(SendMessageContext* context) {
   }
   string topic = context->getMessage()->getTopic();
   // Check if contains TraceConstants::TRACE_TOPIC
-  if (topic.find(TraceContant::TRACE_TOPIC) != string::npos) {
+  if (topic.find(TraceConstant::TRACE_TOPIC) != string::npos) {
     // trace message itself
     return;
   }
@@ -96,7 +96,7 @@ void SendMessageHookImpl::executeHookAfter(SendMessageContext* context) {
 
   traceContext->setTraceBean(traceBean);
 
-  topic = TraceContant::TRACE_TOPIC + traceContext->getRegionId();
+  topic = TraceConstant::TRACE_TOPIC + traceContext->getRegionId();
   TraceTransferBean ben = TraceUtil::CovertTraceContextToTransferBean(traceContext.get());
   // encode data
   MQMessage message(topic, ben.getTransData());

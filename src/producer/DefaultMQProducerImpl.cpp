@@ -32,7 +32,7 @@
 #include "SendMessageHookImpl.h"
 #include "StringIdMaker.h"
 #include "TopicPublishInfo.h"
-#include "TraceContant.h"
+#include "TraceConstant.h"
 #include "Validators.h"
 
 namespace rocketmq {
@@ -707,7 +707,7 @@ bool DefaultMQProducerImpl::dealWithMessageTrace() {
   return true;
 }
 bool DefaultMQProducerImpl::isMessageTraceTopic(const string& source) {
-  return source.find(TraceContant::TRACE_TOPIC) != string::npos;
+  return source.find(TraceConstant::TRACE_TOPIC) != string::npos;
 }
 bool DefaultMQProducerImpl::hasSendMessageHook() {
   return !m_sendMessageHookList.empty();
