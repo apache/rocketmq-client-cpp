@@ -333,18 +333,18 @@ std::shared_ptr<TcpTransport> TcpRemotingClient::CreateTransport(const string& a
 
     //<!callback;
     TcpTransportReadCallback callback = needResponse ? &TcpRemotingClient::static_messageReceived : nullptr;
-    if(!tts) {
+    if (!tts) {
       tts = TcpTransport::CreateTransport(this, m_enableSsl, m_sslPropertyFile, callback);
-    }
-    TcpConnectStatus connectStatus = tts->connect(addr, 0);  // use non-block
-    if (connectStatus != TCP_CONNECT_STATUS_WAIT) {
-      LOG_WARN("can not connect to:%s", addr.c_str());
-      tts->disconnect(addr);
-      std::shared_ptr<TcpTransport> pTcp;
-      return pTcp;
-    } else {
-      // even if connecting failed finally, this server transport will be erased by next CreateTransport
-      m_tcpTable[addr] = tts;
+      TcpConnectStatus connectStatus = tts->connect(addr, 0);  // use non-block
+      if (connectStatus != TCP_CONNECT_STATUS_WAIT) {
+        LOG_WARN("can not connect to:%s", addr.c_str());
+        tts->disconnect(addr);
+        std::shared_ptr<TcpTransport> pTcp;
+        return pTcp;
+      } else {
+        // even if connecting failed finally, this server transport will be erased by next CreateTransport
+        m_tcpTable[addr] = tts;
+      }
     }
   }
 
