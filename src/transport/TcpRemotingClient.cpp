@@ -16,6 +16,8 @@
  */
 #include "TcpRemotingClient.h"
 #include <stddef.h>
+
+#include <memory>
 #if !defined(WIN32) && !defined(__APPLE__)
 #include <sys/prctl.h>
 #endif
@@ -30,23 +32,19 @@ namespace rocketmq {
 //<!************************************************************************
 TcpRemotingClient::TcpRemotingClient(bool enableSsl, const std::string& sslPropertyFile)
     : m_enableSsl(enableSsl),
-      m_sslPropertyFile(sslPropertyFile),
-      m_dispatchServiceWork(m_dispatchService),
-      m_handleServiceWork(m_handleService) {}
+      m_sslPropertyFile(sslPropertyFile){}
 TcpRemotingClient::TcpRemotingClient(int pullThreadNum,
                                      uint64_t tcpConnectTimeout,
                                      uint64_t tcpTransportTryLockTimeout,
                                      bool enableSsl,
-                                     const std::string& sslPropertyFile)
+                                     std::string  sslPropertyFile)
     : m_dispatchThreadNum(1),
       m_pullThreadNum(pullThreadNum),
       m_tcpConnectTimeout(tcpConnectTimeout),
       m_tcpTransportTryLockTimeout(tcpTransportTryLockTimeout),
       m_enableSsl(enableSsl),
-      m_sslPropertyFile(sslPropertyFile),
-      m_namesrvIndex(0),
-      m_dispatchServiceWork(m_dispatchService),
-      m_handleServiceWork(m_handleService) {
+      m_sslPropertyFile(std::move(sslPropertyFile)),
+      m_namesrvIndex(0) {
 #if !defined(WIN32) && !defined(__APPLE__)
   string taskName = UtilAll::getProcessName();
   prctl(PR_SET_NAME, "DispatchTP", 0, 0, 0);
@@ -71,7 +69,7 @@ TcpRemotingClient::TcpRemotingClient(int pullThreadNum,
   LOG_INFO("m_tcpConnectTimeout:%ju, m_tcpTransportTryLockTimeout:%ju, m_pullThreadNum:%d", m_tcpConnectTimeout,
            m_tcpTransportTryLockTimeout, m_pullThreadNum);
 
-  m_timerServiceThread.reset(new boost::thread(boost::bind(&TcpRemotingClient::boost_asio_work, this)));
+  m_timerServiceThread = std::make_unique<boost::thread>(boost::bind(&TcpRemotingClient::boost_asio_work, this));
 }
 
 void TcpRemotingClient::boost_asio_work() {
@@ -85,6 +83,7 @@ void TcpRemotingClient::boost_asio_work() {
   boost::asio::io_service::work work(m_timerService);
 
   m_timerService.run();
+
 }
 
 TcpRemotingClient::~TcpRemotingClient() {
@@ -595,42 +594,47 @@ void TcpRemotingClient::registerProcessor(MQRequestCode requestCode, ClientRemot
 
 void TcpRemotingClient::addTimerCallback(boost::asio::deadline_timer* t, int opaque) {
   std::lock_guard<std::mutex> lock(m_asyncTimerTableLock);
-  if (m_asyncTimerTable.find(opaque) != m_asyncTimerTable.end()) {
+  auto iterOneTimer = m_asyncTimerTable.find(opaque);
+  if (iterOneTimer != m_asyncTimerTable.end()) {
     LOG_DEBUG("addTimerCallback:erase timerCallback opaque:%lld", opaque);
-    boost::asio::deadline_timer* old_t = m_asyncTimerTable[opaque];
-    m_asyncTimerTable.erase(opaque);
+    boost::asio::deadline_timer* old_t = iterOneTimer->second;
     try {
       old_t->cancel();
     } catch (const std::exception& ec) {
       LOG_WARN("encounter exception when cancel old timer: %s", ec.what());
     }
-    delete old_t;
+    deleteAndZero(old_t);
+    //add new timer
+    iterOneTimer->second = t;
+  }else{
+    m_asyncTimerTable[opaque] = t;
   }
-  m_asyncTimerTable[opaque] = t;
 }
 
 void TcpRemotingClient::eraseTimerCallback(int opaque) {
   std::lock_guard<std::mutex> lock(m_asyncTimerTableLock);
-  if (m_asyncTimerTable.find(opaque) != m_asyncTimerTable.end()) {
+  auto iterOneTimer = m_asyncTimerTable.find(opaque);
+  if (iterOneTimer != m_asyncTimerTable.end()) {
     LOG_DEBUG("eraseTimerCallback: opaque:%lld", opaque);
-    boost::asio::deadline_timer* t = m_asyncTimerTable[opaque];
-    m_asyncTimerTable.erase(opaque);
-    delete t;
+    boost::asio::deadline_timer* t = iterOneTimer->second;
+    m_asyncTimerTable.erase(iterOneTimer);
+    deleteAndZero(t);
   }
 }
 
 void TcpRemotingClient::cancelTimerCallback(int opaque) {
   std::lock_guard<std::mutex> lock(m_asyncTimerTableLock);
-  if (m_asyncTimerTable.find(opaque) != m_asyncTimerTable.end()) {
+  auto iterOneTimer = m_asyncTimerTable.find(opaque);
+  if (iterOneTimer != m_asyncTimerTable.end()) {
     LOG_DEBUG("cancelTimerCallback: opaque:%lld", opaque);
-    boost::asio::deadline_timer* t = m_asyncTimerTable[opaque];
-    m_asyncTimerTable.erase(opaque);
+    boost::asio::deadline_timer* t = iterOneTimer->second;
+    m_asyncTimerTable.erase(iterOneTimer);
     try {
       t->cancel();
     } catch (const std::exception& ec) {
       LOG_WARN("encounter exception when cancel timer: %s", ec.what());
     }
-    delete t;
+    deleteAndZero(t);
   }
 }
 

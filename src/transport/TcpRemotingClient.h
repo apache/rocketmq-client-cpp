@@ -41,7 +41,7 @@ class TcpRemotingClient {
                     uint64_t tcpConnectTimeout,
                     uint64_t tcpTransportTryLockTimeout,
                     bool enableSsl,
-                    const string& sslPropertyFile);
+                    string  sslPropertyFile);
   virtual ~TcpRemotingClient();
 
   virtual void stopAllTcpTransportThread();
@@ -123,11 +123,9 @@ class TcpRemotingClient {
   unsigned int m_namesrvIndex;
 
   boost::asio::io_service m_dispatchService;
-  boost::asio::io_service::work m_dispatchServiceWork;
   boost::thread_group m_dispatchThreadPool;
 
   boost::asio::io_service m_handleService;
-  boost::asio::io_service::work m_handleServiceWork;
   boost::thread_group m_handleThreadPool;
 
   boost::asio::io_service m_timerService;
