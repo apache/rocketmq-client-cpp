@@ -18,19 +18,19 @@
 #include "TraceUtil.h"
 #include <sstream>
 #include <string>
-#include "TraceContant.h"
+#include "TraceConstant.h"
 
 namespace rocketmq {
 std::string TraceUtil::CovertTraceTypeToString(TraceType type) {
   switch (type) {
     case Pub:
-      return TraceContant::TRACE_TYPE_PUB;
+      return TraceConstant::TRACE_TYPE_PUB;
     case SubBefore:
-      return TraceContant::TRACE_TYPE_BEFORE;
+      return TraceConstant::TRACE_TYPE_BEFORE;
     case SubAfter:
-      return TraceContant::TRACE_TYPE_AFTER;
+      return TraceConstant::TRACE_TYPE_AFTER;
     default:
-      return TraceContant::TRACE_TYPE_PUB;
+      return TraceConstant::TRACE_TYPE_PUB;
   }
 }
 
@@ -40,54 +40,54 @@ TraceTransferBean TraceUtil::CovertTraceContextToTransferBean(TraceContext* ctx)
   switch (ctx->getTraceType()) {
     case Pub: {
       std::vector<TraceBean>::iterator it = beans.begin();
-      ss << TraceUtil::CovertTraceTypeToString(ctx->getTraceType()) << TraceContant::CONTENT_SPLITOR;
-      ss << ctx->getTimeStamp() << TraceContant::CONTENT_SPLITOR;
-      ss << ctx->getRegionId() << TraceContant::CONTENT_SPLITOR;
-      ss << ctx->getGroupName() << TraceContant::CONTENT_SPLITOR;
-      ss << it->getTopic() << TraceContant::CONTENT_SPLITOR;
-      ss << it->getMsgId() << TraceContant::CONTENT_SPLITOR;
-      ss << it->getTags() << TraceContant::CONTENT_SPLITOR;
-      ss << it->getKeys() << TraceContant::CONTENT_SPLITOR;
-      ss << it->getStoreHost() << TraceContant::CONTENT_SPLITOR;
-      ss << it->getBodyLength() << TraceContant::CONTENT_SPLITOR;
-      ss << ctx->getCostTime() << TraceContant::CONTENT_SPLITOR;
-      ss << it->getMsgType() << TraceContant::CONTENT_SPLITOR;
-      ss << it->getOffsetMsgId() << TraceContant::CONTENT_SPLITOR;
-      ss << (ctx->getStatus() ? "true" : "false") << TraceContant::FIELD_SPLITOR;
+      ss << TraceUtil::CovertTraceTypeToString(ctx->getTraceType()) << TraceConstant::CONTENT_SPLITOR;
+      ss << ctx->getTimeStamp() << TraceConstant::CONTENT_SPLITOR;
+      ss << ctx->getRegionId() << TraceConstant::CONTENT_SPLITOR;
+      ss << ctx->getGroupName() << TraceConstant::CONTENT_SPLITOR;
+      ss << it->getTopic() << TraceConstant::CONTENT_SPLITOR;
+      ss << it->getMsgId() << TraceConstant::CONTENT_SPLITOR;
+      ss << it->getTags() << TraceConstant::CONTENT_SPLITOR;
+      ss << it->getKeys() << TraceConstant::CONTENT_SPLITOR;
+      ss << it->getStoreHost() << TraceConstant::CONTENT_SPLITOR;
+      ss << it->getBodyLength() << TraceConstant::CONTENT_SPLITOR;
+      ss << ctx->getCostTime() << TraceConstant::CONTENT_SPLITOR;
+      ss << it->getMsgType() << TraceConstant::CONTENT_SPLITOR;
+      ss << it->getOffsetMsgId() << TraceConstant::CONTENT_SPLITOR;
+      ss << (ctx->getStatus() ? "true" : "false") << TraceConstant::FIELD_SPLITOR;
     } break;
 
     case SubBefore: {
       std::vector<TraceBean>::iterator it = beans.begin();
       for (; it != beans.end(); ++it) {
-        ss << TraceUtil::CovertTraceTypeToString(ctx->getTraceType()) << TraceContant::CONTENT_SPLITOR;
-        ss << ctx->getTimeStamp() << TraceContant::CONTENT_SPLITOR;
-        ss << ctx->getRegionId() << TraceContant::CONTENT_SPLITOR;
-        ss << ctx->getGroupName() << TraceContant::CONTENT_SPLITOR;
-        ss << ctx->getRequestId() << TraceContant::CONTENT_SPLITOR;
-        ss << it->getMsgId() << TraceContant::CONTENT_SPLITOR;
-        ss << it->getRetryTimes() << TraceContant::CONTENT_SPLITOR;
+        ss << TraceUtil::CovertTraceTypeToString(ctx->getTraceType()) << TraceConstant::CONTENT_SPLITOR;
+        ss << ctx->getTimeStamp() << TraceConstant::CONTENT_SPLITOR;
+        ss << ctx->getRegionId() << TraceConstant::CONTENT_SPLITOR;
+        ss << ctx->getGroupName() << TraceConstant::CONTENT_SPLITOR;
+        ss << ctx->getRequestId() << TraceConstant::CONTENT_SPLITOR;
+        ss << it->getMsgId() << TraceConstant::CONTENT_SPLITOR;
+        ss << it->getRetryTimes() << TraceConstant::CONTENT_SPLITOR;
         // this is a bug caused by broker.
         std::string defaultKey = "dKey";
         if (!it->getKeys().empty()) {
           defaultKey = it->getKeys();
         }
-        ss << defaultKey << TraceContant::FIELD_SPLITOR;
+        ss << defaultKey << TraceConstant::FIELD_SPLITOR;
       }
     } break;
 
     case SubAfter: {
       std::vector<TraceBean>::iterator it = beans.begin();
-      ss << TraceUtil::CovertTraceTypeToString(ctx->getTraceType()) << TraceContant::CONTENT_SPLITOR;
-      ss << ctx->getRequestId() << TraceContant::CONTENT_SPLITOR;
-      ss << it->getMsgId() << TraceContant::CONTENT_SPLITOR;
-      ss << ctx->getCostTime() << TraceContant::CONTENT_SPLITOR;
-      ss << (ctx->getStatus() ? "true" : "false") << TraceContant::CONTENT_SPLITOR;
+      ss << TraceUtil::CovertTraceTypeToString(ctx->getTraceType()) << TraceConstant::CONTENT_SPLITOR;
+      ss << ctx->getRequestId() << TraceConstant::CONTENT_SPLITOR;
+      ss << it->getMsgId() << TraceConstant::CONTENT_SPLITOR;
+      ss << ctx->getCostTime() << TraceConstant::CONTENT_SPLITOR;
+      ss << (ctx->getStatus() ? "true" : "false") << TraceConstant::CONTENT_SPLITOR;
       // this is a bug caused by broker.
       std::string defaultKey = "dKey";
       if (!it->getKeys().empty()) {
         defaultKey = it->getKeys();
       }
-      ss << defaultKey << TraceContant::FIELD_SPLITOR;
+      ss << defaultKey << TraceConstant::FIELD_SPLITOR;
     } break;
 
     default:

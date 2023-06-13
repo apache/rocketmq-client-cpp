@@ -20,7 +20,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
-#include "TraceContant.h"
+#include "TraceConstant.h"
 #include "TraceUtil.h"
 
 using std::string;
@@ -30,7 +30,7 @@ using ::testing::InitGoogleTest;
 using testing::Return;
 
 using rocketmq::TraceBean;
-using rocketmq::TraceContant;
+using rocketmq::TraceConstant;
 using rocketmq::TraceContext;
 using rocketmq::TraceMessageType;
 using rocketmq::TraceTransferBean;
@@ -38,10 +38,10 @@ using rocketmq::TraceType;
 using rocketmq::TraceUtil;
 
 TEST(TraceUtil, CovertTraceTypeToString) {
-  EXPECT_EQ(TraceUtil::CovertTraceTypeToString(TraceType::Pub), TraceContant::TRACE_TYPE_PUB);
-  EXPECT_EQ(TraceUtil::CovertTraceTypeToString(TraceType::SubBefore), TraceContant::TRACE_TYPE_BEFORE);
-  EXPECT_EQ(TraceUtil::CovertTraceTypeToString(TraceType::SubAfter), TraceContant::TRACE_TYPE_AFTER);
-  EXPECT_EQ(TraceUtil::CovertTraceTypeToString((TraceType)5), TraceContant::TRACE_TYPE_PUB);
+  EXPECT_EQ(TraceUtil::CovertTraceTypeToString(TraceType::Pub), TraceConstant::TRACE_TYPE_PUB);
+  EXPECT_EQ(TraceUtil::CovertTraceTypeToString(TraceType::SubBefore), TraceConstant::TRACE_TYPE_BEFORE);
+  EXPECT_EQ(TraceUtil::CovertTraceTypeToString(TraceType::SubAfter), TraceConstant::TRACE_TYPE_AFTER);
+  EXPECT_EQ(TraceUtil::CovertTraceTypeToString((TraceType)5), TraceConstant::TRACE_TYPE_PUB);
 }
 TEST(TraceUtil, CovertTraceContextToTransferBean) {
   TraceContext context;

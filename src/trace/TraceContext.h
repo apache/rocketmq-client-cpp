@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 #include "TraceBean.h"
-#include "TraceContant.h"
+#include "TraceConstant.h"
 
 namespace rocketmq {
 class TraceContext {

@@ -17,7 +17,7 @@
 
 #include "NameSpaceUtil.h"
 #include "Logging.h"
-#include "TraceContant.h"
+#include "TraceConstant.h"
 
 namespace rocketmq {
 
@@ -93,7 +93,7 @@ string NameSpaceUtil::withNameSpace(const string& source, const string& ns) {
 }
 
 bool NameSpaceUtil::hasNameSpace(const string& source, const string& ns) {
-  if (source.find(TraceContant::TRACE_TOPIC) != string::npos) {
+  if (source.find(TraceConstant::TRACE_TOPIC) != string::npos) {
     LOG_DEBUG("Find Trace Topic [%s]", source.c_str());
     return true;
   }

@@ -23,7 +23,7 @@
 #include "MQMessageQueue.h"
 #include "SendResult.h"
 #include "TraceBean.h"
-#include "TraceContant.h"
+#include "TraceConstant.h"
 #include "TraceContext.h"
 
 namespace rocketmq {
