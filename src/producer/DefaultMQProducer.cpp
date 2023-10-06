@@ -135,6 +135,14 @@ int DefaultMQProducer::getMaxMessageSize() const {
   return impl->getMaxMessageSize();
 }
 
+bool DefaultMQProducer::getRetryAnotherBrokerWhenNotStoreOK() const {
+  return impl->getRetryAnotherBrokerWhenNotStoreOK();
+}
+
+void DefaultMQProducer::setRetryAnotherBrokerWhenNotStoreOK(bool retry) {
+  impl->setRetryAnotherBrokerWhenNotStoreOK(retry);
+}
+
 void DefaultMQProducer::setRetryTimes4Async(int times) {
   impl->setRetryTimes4Async(times);
 }
