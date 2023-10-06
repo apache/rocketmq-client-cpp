@@ -319,8 +319,7 @@ std::shared_ptr<TcpTransport> TcpRemotingClient::CreateTransport(const string& a
         if (connectStatus == TCP_CONNECT_STATUS_SUCCESS) {
           return tcp;
         } else if (connectStatus == TCP_CONNECT_STATUS_WAIT) {
-          std::shared_ptr<TcpTransport> pTcp;
-          return pTcp;
+          tts = tcp;
         } else if (connectStatus == TCP_CONNECT_STATUS_FAILED) {
           LOG_ERROR("tcpTransport with server disconnected, erase server:%s", addr.c_str());
           tcp->disconnect(addr);  // avoid coredump when connection with broker was broken
@@ -334,17 +333,18 @@ std::shared_ptr<TcpTransport> TcpRemotingClient::CreateTransport(const string& a
 
     //<!callback;
     TcpTransportReadCallback callback = needResponse ? &TcpRemotingClient::static_messageReceived : nullptr;
-
-    tts = TcpTransport::CreateTransport(this, m_enableSsl, m_sslPropertyFile, callback);
-    TcpConnectStatus connectStatus = tts->connect(addr, 0);  // use non-block
-    if (connectStatus != TCP_CONNECT_STATUS_WAIT) {
-      LOG_WARN("can not connect to:%s", addr.c_str());
-      tts->disconnect(addr);
-      std::shared_ptr<TcpTransport> pTcp;
-      return pTcp;
-    } else {
-      // even if connecting failed finally, this server transport will be erased by next CreateTransport
-      m_tcpTable[addr] = tts;
+    if (!tts) {
+      tts = TcpTransport::CreateTransport(this, m_enableSsl, m_sslPropertyFile, callback);
+      TcpConnectStatus connectStatus = tts->connect(addr, 0);  // use non-block
+      if (connectStatus != TCP_CONNECT_STATUS_WAIT) {
+        LOG_WARN("can not connect to:%s", addr.c_str());
+        tts->disconnect(addr);
+        std::shared_ptr<TcpTransport> pTcp;
+        return pTcp;
+      } else {
+        // even if connecting failed finally, this server transport will be erased by next CreateTransport
+        m_tcpTable[addr] = tts;
+      }
     }
   }
 
