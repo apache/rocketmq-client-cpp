@@ -84,6 +84,9 @@ class DefaultMQProducerImpl : public MQProducer {
   void setRetryTimes4Async(int times);
   void submitSendTraceRequest(const MQMessage& msg, SendCallback* pSendCallback);
 
+  bool getRetryAnotherBrokerWhenNotStoreOK() const;
+  void setRetryAnotherBrokerWhenNotStoreOK(bool retry);
+
  protected:
   SendResult sendAutoRetrySelectImpl(MQMessage& msg,
                                      MessageQueueSelector* pSelector,
@@ -122,7 +125,7 @@ class DefaultMQProducerImpl : public MQProducer {
   int m_sendMsgTimeout;
   int m_compressMsgBodyOverHowmuch;
   int m_maxMessageSize;  //<! default:128K;
-  // bool m_retryAnotherBrokerWhenNotStoreOK;
+  bool m_retryAnotherBrokerWhenNotStoreOK;
   int m_compressLevel;
   int m_retryTimes;
   int m_retryTimes4Async;
