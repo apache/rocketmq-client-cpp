@@ -24,7 +24,10 @@ logAdapter* logAdapter::alogInstance;
 boost::mutex logAdapter::m_imtx;
 
 logAdapter::~logAdapter() {
-  logging::core::get()->remove_all_sinks();
+  //only remove current sink
+  logging::core::get()->remove_sik(m_logSink);
+  m_logSink->stop();
+  m_logSink->flush();
 }
 
 logAdapter* logAdapter::getLogInstance() {
@@ -39,7 +42,8 @@ logAdapter* logAdapter::getLogInstance() {
 
 logAdapter::logAdapter() : m_logLevel(eLOG_LEVEL_INFO) {
   setLogDir();
-  string homeDir(UtilAll::getHomeDirectory());
+  //use current dir
+  string homeDir;
   homeDir.append(m_log_dir);
   m_logFile += homeDir;
   std::string fileName = "rocketmq_client.log";
@@ -65,31 +69,32 @@ logAdapter::logAdapter() : m_logLevel(eLOG_LEVEL_INFO) {
 void logAdapter::setLogLevelInner(elogLevel logLevel) {
   switch (logLevel) {
     case eLOG_LEVEL_FATAL:
-      logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::fatal);
+      //use current sink
+      m_logSink->set_filter(logging::trivial::severity >= logging::trivial::fatal);
       break;
     case eLOG_LEVEL_ERROR:
-      logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::error);
-
+      //use current sink
+      m_logSink->set_filter(logging::trivial::severity >= logging::trivial::error);
       break;
     case eLOG_LEVEL_WARN:
-      logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::warning);
-
+      //use current sink
+      m_logSink->set_filter(logging::trivial::severity >= logging::trivial::warning);
       break;
     case eLOG_LEVEL_INFO:
-      logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::info);
-
+      //use current sink
+      m_logSink->set_filter(logging::trivial::severity >= logging::trivial::info);
       break;
     case eLOG_LEVEL_DEBUG:
-      logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::debug);
-
+      //use current sink
+      m_logSink->set_filter(logging::trivial::severity >= logging::trivial::debug);
       break;
     case eLOG_LEVEL_TRACE:
-      logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::trace);
-
+      //use current sink
+      m_logSink->set_filter(logging::trivial::severity >= logging::trivial::trace);
       break;
     default:
-      logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::info);
-
+      //use current sink
+      m_logSink->set_filter(logging::trivial::severity >= logging::trivial::info);
       break;
   }
 }
@@ -117,7 +122,8 @@ void logAdapter::setLogDir() {
 }
 
 void logAdapter::setLogFileNumAndSize(int logNum, int sizeOfPerFile) {
-  string homeDir(UtilAll::getHomeDirectory());
+  //use current dir
+  string homeDir;
   homeDir.append(m_log_dir);
   m_logSink->locked_backend()->set_file_collector(sinks::file::make_collector(
       keywords::target = homeDir, keywords::max_size = logNum * sizeOfPerFile * 1024 * 1024));
