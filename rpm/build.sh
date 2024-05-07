@@ -21,12 +21,13 @@ if [[ ! -d /root/rpmbuild/SOURCES/rocketmq/include ]]; then
     mkdir -p /root/rpmbuild/SOURCES/rocketmq
     mkdir -p /root/rpmbuild/SOURCES/rocketmq/include
     mkdir -p /root/rpmbuild/SOURCES/rocketmq/bin
+    mkdir -p /root/rpmbuild/SPECS/
 fi
 cp -R ${BASEDIR}/../include/*              /root/rpmbuild/SOURCES/rocketmq/include
 cp ${BASEDIR}/../bin/librocketmq.so      /root/rpmbuild/SOURCES/rocketmq/bin
 cp ${BASEDIR}/../bin/librocketmq.a      /root/rpmbuild/SOURCES/rocketmq/bin
-cp ${BASEDIR}/rocketmq_x64/CENTOS/rocketmq-client-cpp.spec      /root/rpmbuild/SPECS
 
+cp ${BASEDIR}/rocketmq_x64/CENTOS/rocketmq-client-cpp.spec      /root/rpmbuild/SPECS/
 rpmbuild -bb /root/rpmbuild/SPECS/rocketmq-client-cpp.spec
 
 cp /root/rpmbuild/RPMS/x86_64/*.rpm ${BASEDIR}/rocketmq_x64
