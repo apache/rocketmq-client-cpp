@@ -167,15 +167,19 @@ void PullCallbackWrap::operationComplete(ResponseFuture* pResponseFuture, bool b
     }
     MQException exception(err, -1, __FILE__, __LINE__);
     LOG_ERROR("Async pull exception of opaque:%d", pResponseFuture->getOpaque());
-    if (pCallback && bProducePullRequest)
+    if (pCallback && bProducePullRequest) {
       pCallback->onException(exception);
+      deleteAndZero(pCallback);
+    }
   } else {
     try {
       if (m_pArg.pPullWrapper) {
         unique_ptr<PullResult> pullResult(m_pClientAPI->processPullResponse(pResponse.get()));
         PullResult result = m_pArg.pPullWrapper->processPullResult(m_pArg.mq, pullResult.get(), &m_pArg.subData);
-        if (pCallback)
+        if (pCallback) {
           pCallback->onSuccess(m_pArg.mq, result, bProducePullRequest);
+          deleteAndZero(pCallback);
+        }
       } else {
         LOG_ERROR("pPullWrapper had been destroyed with consumer");
       }
@@ -183,7 +187,10 @@ void PullCallbackWrap::operationComplete(ResponseFuture* pResponseFuture, bool b
       LOG_ERROR("%s", e.what());
       MQException exception("pullResult error", -1, __FILE__, __LINE__);
       if (pCallback && bProducePullRequest)
+      {
         pCallback->onException(exception);
+        deleteAndZero(pCallback);
+      }
     }
   }
 }
