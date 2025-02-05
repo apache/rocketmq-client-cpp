@@ -96,7 +96,7 @@ class AsyncPullCallback : public PullCallback {
         }
         pullRequest->setNextOffset(result.nextBeginOffset);
 
-        if ((pullRequest->getCacheMsgCount() == 0) && (result.nextBeginOffset > 0)) {
+        if ((pullRequest->getCacheMsgCount() == 0) && (result.nextBeginOffset >= 0)) {
           m_callbackOwner->updateConsumeOffset(pullRequest->m_messageQueue, result.nextBeginOffset);
         }
         if (bProducePullRequest) {
@@ -116,7 +116,7 @@ class AsyncPullCallback : public PullCallback {
         }
         pullRequest->setNextOffset(result.nextBeginOffset);
 
-        if ((pullRequest->getCacheMsgCount() == 0) && (result.nextBeginOffset > 0)) {
+        if ((pullRequest->getCacheMsgCount() == 0) && (result.nextBeginOffset >= 0)) {
           m_callbackOwner->updateConsumeOffset(pullRequest->m_messageQueue, result.nextBeginOffset);
         }
         if (bProducePullRequest) {
