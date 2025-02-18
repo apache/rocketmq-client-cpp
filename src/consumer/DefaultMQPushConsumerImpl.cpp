@@ -96,7 +96,7 @@ class AsyncPullCallback : public PullCallback {
         }
         pullRequest->setNextOffset(result.nextBeginOffset);
 
-        if ((pullRequest->getCacheMsgCount() == 0) && (result.nextBeginOffset > 0)) {
+        if ((pullRequest->getCacheMsgCount() == 0) && (result.nextBeginOffset >= 0)) {
           m_callbackOwner->updateConsumeOffset(pullRequest->m_messageQueue, result.nextBeginOffset);
         }
         if (bProducePullRequest) {
@@ -116,7 +116,7 @@ class AsyncPullCallback : public PullCallback {
         }
         pullRequest->setNextOffset(result.nextBeginOffset);
 
-        if ((pullRequest->getCacheMsgCount() == 0) && (result.nextBeginOffset > 0)) {
+        if ((pullRequest->getCacheMsgCount() == 0) && (result.nextBeginOffset >= 0)) {
           m_callbackOwner->updateConsumeOffset(pullRequest->m_messageQueue, result.nextBeginOffset);
         }
         if (bProducePullRequest) {
@@ -736,7 +736,7 @@ void DefaultMQPushConsumerImpl::pullMessage(boost::weak_ptr<PullRequest> pullReq
           break;
         }
         request->setNextOffset(pullResult.nextBeginOffset);
-        if ((request->getCacheMsgCount() == 0) && (pullResult.nextBeginOffset > 0)) {
+        if ((request->getCacheMsgCount() == 0) && (pullResult.nextBeginOffset >= 0)) {
           updateConsumeOffset(messageQueue, pullResult.nextBeginOffset);
         }
         producePullMsgTask(request);
@@ -750,7 +750,7 @@ void DefaultMQPushConsumerImpl::pullMessage(boost::weak_ptr<PullRequest> pullReq
           break;
         }
         request->setNextOffset(pullResult.nextBeginOffset);
-        if ((request->getCacheMsgCount() == 0) && (pullResult.nextBeginOffset > 0)) {
+        if ((request->getCacheMsgCount() == 0) && (pullResult.nextBeginOffset >= 0)) {
           updateConsumeOffset(messageQueue, pullResult.nextBeginOffset);
         }
         producePullMsgTask(request);
