@@ -43,6 +43,8 @@ ROCKETMQCLIENT_API long long GetMessageStoreTimestamp(CMessageExt* msgExt);
 ROCKETMQCLIENT_API long long GetMessageQueueOffset(CMessageExt* msgExt);
 ROCKETMQCLIENT_API long long GetMessageCommitLogOffset(CMessageExt* msgExt);
 ROCKETMQCLIENT_API long long GetMessagePreparedTransactionOffset(CMessageExt* msgExt);
+ROCKETMQCLIENT_API const char* GetMessageStoreHost(CMessageExt* msg);
+ROCKETMQCLIENT_API const char* GetMessageBornHost(CMessageExt* msg);
 
 #ifdef __cplusplus
 }
