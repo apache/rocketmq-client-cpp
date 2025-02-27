@@ -130,6 +130,20 @@ long long GetMessagePreparedTransactionOffset(CMessageExt* msg) {
   }
   return ((MQMessageExt*)msg)->getPreparedTransactionOffset();
 }
+
+const char* GetMessageStoreHost(CMessageExt* msg) {
+  if (msg == NULL) {
+    return NULL;
+  }
+  return ((MQMessageExt*) msg)->getStoreHostString().c_str();
+}
+
+const char* GetMessageBornHost(CMessageExt* msg) {
+  if (msg == NULL) {
+    return NULL;
+  }
+  return ((MQMessageExt*) msg)->getBornHostString().c_str();
+}
 #ifdef __cplusplus
 };
 #endif
