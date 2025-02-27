@@ -376,6 +376,8 @@ SendResult DefaultMQProducerImpl::sendDefaultImpl(MQMessage& msg,
                                                   bool bActiveMQ) {
   MQMessageQueue lastmq;
   int mq_index = 0;
+  bool send_failed = false;
+  string failed_detail;
   for (int times = 1; times <= m_retryTimes; times++) {
     boost::weak_ptr<TopicPublishInfo> weak_topicPublishInfo(
         getFactory()->tryToFindTopicPublishInfo(msg.getTopic(), getSessionCredentials()));
@@ -420,15 +422,22 @@ SendResult DefaultMQProducerImpl::sendDefaultImpl(MQMessage& msg,
           default:
             break;
         }
-      } catch (...) {
-        LOG_ERROR("send failed of times:%d,brokerName:%s", times, mq.getBrokerName().c_str());
+      } catch (std::exception& e) {
+        send_failed = true;
+        failed_detail = e.what();
+        LOG_ERROR("send failed of times:%d,brokerName:%s,details:%s", times, mq.getBrokerName().c_str(), e.what());
         if (bActiveMQ) {
           topicPublishInfo->updateNonServiceMessageQueue(mq, getSendMsgTimeout());
         }
         continue;
+      } catch (...) {
+        LOG_ERROR("Unknown error, send failed of times:%d, brokerName:%s", times, mq.getBrokerName().c_str());
       }
     }  // end of for
     LOG_WARN("Retry many times, still failed");
+  }
+  if (send_failed) {
+    THROW_MQEXCEPTION(MQClientException, failed_detail, -1);
   }
   string info = "No route info of this topic: " + msg.getTopic();
   THROW_MQEXCEPTION(MQClientException, info, -1);
@@ -540,6 +549,8 @@ SendResult DefaultMQProducerImpl::sendAutoRetrySelectImpl(MQMessage& msg,
   MQMessageQueue lastmq;
   MQMessageQueue mq;
   int mq_index = 0;
+  bool send_failed = false;
+  string failed_detail;
   for (int times = 1; times <= autoRetryTimes + 1; times++) {
     boost::weak_ptr<TopicPublishInfo> weak_topicPublishInfo(
         getFactory()->tryToFindTopicPublishInfo(msg.getTopic(), getSessionCredentials()));
@@ -588,15 +599,22 @@ SendResult DefaultMQProducerImpl::sendAutoRetrySelectImpl(MQMessage& msg,
           default:
             break;
         }
-      } catch (...) {
-        LOG_ERROR("send failed of times:%d,mq:%s", times, mq.toString().c_str());
+      } catch (std::exception& e) {
+        send_failed = true;
+        failed_detail = e.what();
+        LOG_ERROR("send failed of times:%d,mq:%s,details:%s", times, mq.toString().c_str(), e.what());
         if (bActiveMQ) {
           topicPublishInfo->updateNonServiceMessageQueue(mq, getSendMsgTimeout());
         }
         continue;
+      } catch (...) {
+        LOG_ERROR("An unknown exception occurred,send failed of times:%d,mq:%s", times, mq.toString().c_str());
       }
     }  // end of for
     LOG_WARN("Retry many times, still failed");
+    if (send_failed) {
+      THROW_MQEXCEPTION(MQClientException, failed_detail, -1);
+    }
   }
   THROW_MQEXCEPTION(MQClientException, "No route info of this topic, ", -1);
 }
