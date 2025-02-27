@@ -67,7 +67,7 @@ class AsyncPullCallback : public PullCallback {
         }
 
         uint64 pullRT = UtilAll::currentTimeMillis() - pullRequest->getLastPullTimestamp();
-        StatsServerManager::getInstance()->getConsumeStatServer()->incConsumeRT(
+        StatsServerManager::getInstance()->getConsumeStatServer()->incPullRT(
             pullRequest->m_messageQueue.getTopic(), m_callbackOwner->getGroupName(), pullRT);
         pullRequest->setNextOffset(result.nextBeginOffset);
         pullRequest->putMessage(result.msgFoundList);
@@ -707,7 +707,7 @@ void DefaultMQPushConsumerImpl::pullMessage(boost::weak_ptr<PullRequest> pullReq
     switch (pullResult.pullStatus) {
       case FOUND: {
         uint64 pullRT = UtilAll::currentTimeMillis() - startTimeStamp;
-        StatsServerManager::getInstance()->getConsumeStatServer()->incConsumeRT(messageQueue.getTopic(), getGroupName(),
+        StatsServerManager::getInstance()->getConsumeStatServer()->incPullRT(messageQueue.getTopic(), getGroupName(),
                                                                                 pullRT);
         if (request->isDropped()) {
           LOG_INFO("Get pull result but the queue has been marked as dropped. Queue: %s",
