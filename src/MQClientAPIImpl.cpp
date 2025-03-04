@@ -405,8 +405,11 @@ SendResult MQClientAPIImpl::sendMessageSync(const string& addr,
       LOG_DEBUG("sendMessageSync success:%s to addr:%s,brokername:%s, send status:%d", msg.toString().c_str(),
                 addr.c_str(), brokerName.c_str(), (int)result.getSendStatus());
       return result;
+    } catch (std::exception& e) {
+      LOG_ERROR("send new error, broker:%s, details:%s", brokerName.c_str(), e.what());
+      throw e;
     } catch (...) {
-      LOG_ERROR("send error");
+      LOG_ERROR("Unknown error, broker:%s", brokerName.c_str());
     }
   }
   THROW_MQEXCEPTION(MQClientException, "response is null", -1);
