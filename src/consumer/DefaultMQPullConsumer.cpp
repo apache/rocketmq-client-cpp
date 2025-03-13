@@ -192,6 +192,7 @@ void DefaultMQPullConsumer::fetchMessageQueuesInBalance(const std::string& topic
 }
 void DefaultMQPullConsumer::persistConsumerOffset4PullConsumer(const MQMessageQueue& mq) {
   // impl->persistConsumerOffsetByResetOffset(mq);
+  impl->persistConsumerOffset4PullConsumer(mq);
 }
 
 //<!************************************************************************
