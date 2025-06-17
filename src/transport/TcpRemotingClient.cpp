@@ -24,6 +24,8 @@
 #include "MemoryOutputStream.h"
 #include "TopAddressing.h"
 #include "UtilAll.h"
+#include <algorithm>
+#include <random>
 
 namespace rocketmq {
 
@@ -150,6 +152,11 @@ void TcpRemotingClient::updateNameServerAddressList(const string& addrs) {
 
   vector<string> out;
   UtilAll::Split(out, addrs, ";");
+
+  std::random_device rd;
+  std::mt19937 g(rd());
+  std::shuffle(out.begin(), out.end(), g);
+  
   for (auto addr : out) {
     UtilAll::Trim(addr);
 
