@@ -218,6 +218,7 @@ typedef struct __DefaultProducer__ {
   int producerType;
   char* version;
 } DefaultProducer;
+
 CProducer* CreateProducer(const char* groupId) {
   if (groupId == NULL) {
     return NULL;
@@ -267,6 +268,7 @@ CProducer* CreateTransactionProducer(const char* groupId, CLocalTransactionCheck
   defaultMQProducer->version[MAX_SDK_VERSION_LENGTH - 1] = 0;
   return (CProducer*)defaultMQProducer;
 }
+
 int DestroyProducer(CProducer* pProducer) {
   if (pProducer == NULL) {
     return NULL_POINTER;
@@ -290,6 +292,7 @@ int DestroyProducer(CProducer* pProducer) {
   delete reinterpret_cast<DefaultProducer*>(pProducer);
   return OK;
 }
+
 int StartProducer(CProducer* producer) {
   if (producer == NULL) {
     return NULL_POINTER;
@@ -307,6 +310,7 @@ int StartProducer(CProducer* producer) {
   }
   return OK;
 }
+
 int ShutdownProducer(CProducer* producer) {
   if (producer == NULL) {
     return NULL_POINTER;
@@ -324,6 +328,7 @@ int ShutdownProducer(CProducer* producer) {
   }
   return OK;
 }
+
 const char* ShowProducerVersion(CProducer* producer) {
   if (producer == NULL) {
     return DEFAULT_SDK_VERSION;
@@ -332,6 +337,7 @@ const char* ShowProducerVersion(CProducer* producer) {
 
   return defaultMQProducer->version;
 }
+
 int SetProducerNameServerAddress(CProducer* producer, const char* namesrv) {
   if (producer == NULL) {
     return NULL_POINTER;
@@ -577,6 +583,7 @@ int SendMessageOrderly(CProducer* producer,
   }
   return OK;
 }
+
 int SendMessageOrderlyByShardingKey(CProducer* producer, CMessage* msg, const char* shardingKey, CSendResult* result) {
   if (producer == NULL || msg == NULL || shardingKey == NULL || result == NULL) {
     return NULL_POINTER;
@@ -629,6 +636,7 @@ int SendMessageTransaction(CProducer* producer,
   }
   return OK;
 }
+
 int SetProducerGroupName(CProducer* producer, const char* groupName) {
   if (producer == NULL) {
     return NULL_POINTER;
@@ -663,6 +671,7 @@ int SetProducerInstanceName(CProducer* producer, const char* instanceName) {
   }
   return OK;
 }
+
 int SetProducerSessionCredentials(CProducer* producer,
                                   const char* accessKey,
                                   const char* secretKey,
@@ -683,6 +692,7 @@ int SetProducerSessionCredentials(CProducer* producer,
   }
   return OK;
 }
+
 int SetProducerLogPath(CProducer* producer, const char* logPath) {
   if (producer == NULL) {
     return NULL_POINTER;
@@ -798,6 +808,7 @@ int SetProducerMaxMessageSize(CProducer* producer, int size) {
   }
   return OK;
 }
+
 int SetProducerMessageTrace(CProducer* producer, CTraceModel openTrace) {
   if (producer == NULL) {
     return NULL_POINTER;
@@ -816,6 +827,25 @@ int SetProducerMessageTrace(CProducer* producer, CTraceModel openTrace) {
   }
   return OK;
 }
+
+int SetProducerRetryAnotherBrokerWhenNotStoreOK(CProducer* producer, int retry) {
+  if (producer == NULL) {
+    return NULL_POINTER;
+  }
+
+  DefaultProducer* defaultMQProducer = (DefaultProducer*)producer;
+
+  try {
+    if (CAPI_C_PRODUCER_TYPE_TRANSACTION != defaultMQProducer->producerType) {
+      defaultMQProducer->innerProducer->setRetryAnotherBrokerWhenNotStoreOK(retry != 0);
+    }
+  } catch (exception& e) {
+    MQClientErrorContainer::setErr(string(e.what()));
+    return PRODUCER_START_FAILED;
+  }
+  return OK;
+}
+
 #ifdef __cplusplus
 };
 #endif
