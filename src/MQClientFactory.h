@@ -23,6 +23,7 @@
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/thread.hpp>
 #include "FindBrokerResult.h"
+#include "MQAdmin.h"
 #include "MQClientAPIImpl.h"
 #include "MQClientException.h"
 #include "MQConsumer.h"
@@ -57,6 +58,8 @@ class MQClientFactory {
   virtual void unregisterProducer(MQProducer* pProducer);
   virtual bool registerConsumer(MQConsumer* pConsumer);
   virtual void unregisterConsumer(MQConsumer* pConsumer);
+  virtual bool registerMQAdmin(MQAdmin* pAdmin);
+  virtual void unregisterMQAdmin(MQAdmin* pAdmin);
 
   void createTopic(const string& key,
                    const string& newTopic,
@@ -157,6 +160,9 @@ class MQClientFactory {
   int getProducerTableSize();
   void insertProducerInfoToHeartBeatData(HeartbeatData* pHeartbeatData);
 
+  // admin related operation
+  void eraseAdminFromTable(const string& adminName);
+
   // topicPublishInfo related operation
   void addTopicInfoToTable(const string& topic, boost::shared_ptr<TopicPublishInfo> pTopicPublishInfo);
   void eraseTopicInfoFromTable(const string& topic);
@@ -173,6 +179,7 @@ class MQClientFactory {
 
   bool addProducerToTable(const string& producerName, MQProducer* pMQProducer);
   bool addConsumerToTable(const string& consumerName, MQConsumer* pMQConsumer);
+  bool addAdminToTable(const string& adminName, MQAdmin* pMQAdmin);
 
  private:
   string m_nameSrvDomain;  // per clientId
@@ -189,6 +196,12 @@ class MQClientFactory {
   // Changed to recursive mutex due to avoid deadlock issue:
   boost::recursive_mutex m_consumerTableMutex;
   MQCMAP m_consumerTable;
+
+  //<! group --> MQAdmin;
+  typedef map<string, MQAdmin*> MQAMAP;
+  // Changed to recursive mutex due to avoid deadlock issue:
+  boost::recursive_mutex m_adminTableMutex;
+  MQAMAP m_adminTable;
 
   //<! Topic---> TopicRouteData
   typedef map<string, TopicRouteData*> TRDMAP;
