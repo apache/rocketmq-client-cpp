@@ -67,7 +67,7 @@ class MockMQClientAPIImpl : public MQClientAPIImpl {
                SendResult(const string&,
                           const string&,
                           const MQMessage&,
-                          SendMessageRequestHeader*,
+                          const SendMessageRequestHeader&,
                           int,
                           int,
                           int,
