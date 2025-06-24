@@ -165,7 +165,7 @@ TEST(cpullConsumer, init) {
   SessionCredentials sessionCredentials = defaultMQPullConsumer->getSessionCredentials();
   EXPECT_EQ(sessionCredentials.getAccessKey(), "accessKey");
 
-  EXPECT_EQ(SetPullConsumerLogPath(pullConsumer, NULL), OK);
+  EXPECT_EQ(SetPullConsumerLogPath(pullConsumer, ""), OK);
 
   // EXPECT_EQ(SetPullConsumerLogFileNumAndSize(pullConsumer,NULL,NULL),NULL_POINTER);
   EXPECT_EQ(SetPullConsumerLogLevel(pullConsumer, E_LOG_LEVEL_DEBUG), OK);
@@ -189,7 +189,7 @@ TEST(cpullConsumer, null) {
   SessionCredentials sessionCredentials = defaultMQPullConsumer->getSessionCredentials();
   EXPECT_EQ(sessionCredentials.getAccessKey(), "accessKey");
 
-  EXPECT_EQ(SetPullConsumerLogPath(pullConsumer, NULL), OK);
+  EXPECT_EQ(SetPullConsumerLogPath(pullConsumer, ""), OK);
   // EXPECT_EQ(SetPullConsumerLogFileNumAndSize(pullConsumer,NULL,NULL),NULL_POINTER);
   EXPECT_EQ(SetPullConsumerLogLevel(pullConsumer, E_LOG_LEVEL_DEBUG), OK);
   EXPECT_EQ(DestroyPullConsumer(pullConsumer), OK);
