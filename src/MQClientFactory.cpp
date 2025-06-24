@@ -393,6 +393,35 @@ void MQClientFactory::unregisterConsumer(MQConsumer* pConsumer) {
   eraseConsumerFromTable(groupName);
 }
 
+bool MQClientFactory::registerMQAdmin(MQAdmin* pAdmin) {
+  string groupName = pAdmin->getGroupName();
+  string namesrvaddr = pAdmin->getNamesrvAddr();
+  if (groupName.empty()) {
+    return false;
+  }
+  if (!addAdminToTable(groupName, pAdmin)) {
+    return false;
+  }
+  LOG_DEBUG("registerAdmin success:%s", groupName.c_str());
+  //<!set nameserver;
+  if (namesrvaddr.empty()) {
+    string nameSrvDomain(pAdmin->getNamesrvDomain());
+    if (!nameSrvDomain.empty())
+      m_nameSrvDomain = nameSrvDomain;
+    pAdmin->setNamesrvAddr(m_pClientAPIImpl->fetchNameServerAddr(m_nameSrvDomain));
+  } else {
+    m_bFetchNSService = false;
+    m_pClientAPIImpl->updateNameServerAddr(namesrvaddr);
+    LOG_INFO("user specfied name server address: %s", namesrvaddr.c_str());
+  }
+  return true;
+}
+
+void MQClientFactory::unregisterMQAdmin(MQAdmin* pAdmin) {
+  string groupName = pAdmin->getGroupName();
+  eraseAdminFromTable(groupName);
+}
+
 MQProducer* MQClientFactory::selectProducer(const string& producerName) {
   boost::lock_guard<boost::mutex> lock(m_producerTableMutex);
   if (m_producerTable.find(producerName) != m_producerTable.end()) {
@@ -491,6 +520,22 @@ void MQClientFactory::eraseConsumerFromTable(const string& consumerName) {
                                           // was allocated by user
   else
     LOG_WARN("could not find consumer:%s from table", consumerName.c_str());
+}
+
+bool MQClientFactory::addAdminToTable(const string& adminName, MQAdmin* pMQAdmin) {
+  boost::lock_guard<boost::recursive_mutex> lock(m_adminTableMutex);
+  if (m_adminTable.find(adminName) != m_adminTable.end())
+    return false;
+  m_adminTable[adminName] = pMQAdmin;
+  return true;
+}
+
+void MQClientFactory::eraseAdminFromTable(const string& adminName) {
+  boost::lock_guard<boost::recursive_mutex> lock(m_adminTableMutex);
+  if (m_adminTable.find(adminName) != m_adminTable.end())
+    m_adminTable.erase(adminName);
+  else
+    LOG_WARN("could not find admin:%s from table", adminName.c_str());
 }
 
 int MQClientFactory::getConsumerTableSize() {
