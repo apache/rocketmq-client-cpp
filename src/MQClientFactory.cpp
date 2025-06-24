@@ -1212,7 +1212,7 @@ void MQClientFactory::resetOffset(const string& group,
     for (it = offsetTable.begin(); it != offsetTable.end(); ++it) {
       MQMessageQueue mq = it->first;
       if (topic == mq.getTopic()) {
-        pConsumer->removeConsumeOffset(mq);
+        pConsumer->getRebalance()->removePullRequest(mq);
       }
     }
 
