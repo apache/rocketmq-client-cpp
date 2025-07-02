@@ -98,6 +98,9 @@ class ROCKETMQCLIENT_API DefaultMQProducer {
   int getMaxMessageSize() const;
   void setMaxMessageSize(int maxMessageSize);
 
+  bool getRetryAnotherBrokerWhenNotStoreOK() const;
+  void setRetryAnotherBrokerWhenNotStoreOK(bool retry);
+
   int getRetryTimes() const;
   void setRetryTimes(int times);
 

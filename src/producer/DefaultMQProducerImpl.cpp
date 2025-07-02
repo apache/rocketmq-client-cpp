@@ -41,7 +41,7 @@ DefaultMQProducerImpl::DefaultMQProducerImpl(const string& groupname)
     : m_sendMsgTimeout(3000),
       m_compressMsgBodyOverHowmuch(4 * 1024),
       m_maxMessageSize(1024 * 128),
-      // m_retryAnotherBrokerWhenNotStoreOK(false),
+      m_retryAnotherBrokerWhenNotStoreOK(false),
       m_compressLevel(5),
       m_retryTimes(5),
       m_retryTimes4Async(1),
@@ -412,7 +412,7 @@ SendResult DefaultMQProducerImpl::sendDefaultImpl(MQMessage& msg,
           case ComMode_ONEWAY:
             return sendResult;
           case ComMode_SYNC:
-            if (sendResult.getSendStatus() != SEND_OK) {
+            if (sendResult.getSendStatus() != SEND_OK && m_retryAnotherBrokerWhenNotStoreOk) {
               if (bActiveMQ) {
                 topicPublishInfo->updateNonServiceMessageQueue(mq, getSendMsgTimeout());
               }
@@ -636,6 +636,14 @@ bool DefaultMQProducerImpl::tryToCompressMessage(MQMessage& msg) {
   }
 
   return false;
+}
+
+bool DefaultMQProducerImpl::getRetryAnotherBrokerWhenNotStoreOK() const {
+  return m_retryAnotherBrokerWhenNotStoreOK;
+}
+
+void DefaultMQProducerImpl::setRetryAnotherBrokerWhenNotStoreOK(bool retry) {
+  m_retryAnotherBrokerWhenNotStoreOK = retry;
 }
 
 int DefaultMQProducerImpl::getRetryTimes() const {
