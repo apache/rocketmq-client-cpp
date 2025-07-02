@@ -67,7 +67,7 @@ class MockMQClientAPIImpl : public MQClientAPIImpl {
                SendResult(const string&,
                           const string&,
                           const MQMessage&,
-                          SendMessageRequestHeader*,
+                          const SendMessageRequestHeader&,
                           int,
                           int,
                           int,
@@ -121,7 +121,7 @@ TEST(DefaultMQProducerImplTest, Sends) {
   topicPublishInfo->updateMessageQueueList(mqA);
   topicPublishInfo->updateMessageQueueList(mqB);
 
-  SendResult okMQAResult(SEND_OK, "MSSAGEID", "OFFSETID", mqA, 1024, "DEFAULT_REGION");
+  SendResult okMQAResult(SEND_OK, "MSSAGEID", "OFFSETID", mqA, 1024, "DEFAULT_REGION", false);
   SendResult okMQBResult(SEND_OK, "MSSAGEID", "OFFSETID", mqB, 2048);
   okMQBResult.setRegionId("DEFAULT_REGION");
   okMQBResult.toString();
@@ -202,7 +202,7 @@ TEST(DefaultMQProducerImplTest, Trace) {
   topicPublishInfo->updateMessageQueueList(mqA);
   topicPublishInfo->updateMessageQueueList(mqB);
 
-  SendResult okMQAResult(SEND_OK, "MSSAGEID", "OFFSETID", mqA, 1024, "DEFAULT_REGION");
+  SendResult okMQAResult(SEND_OK, "MSSAGEID", "OFFSETID", mqA, 1024, "DEFAULT_REGION", false);
 
   EXPECT_CALL(*mockFactory, start()).Times(1).WillOnce(Return());
   EXPECT_CALL(*mockFactory, shutdown()).Times(1).WillOnce(Return());
