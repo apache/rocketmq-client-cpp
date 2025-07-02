@@ -50,9 +50,51 @@ class ConsumerData {
   Json::Value toJson() const {
     Json::Value outJson;
     outJson["groupName"] = groupName;
-    outJson["consumeFromWhere"] = consumeFromWhere;
-    outJson["consumeType"] = consumeType;
-    outJson["messageModel"] = messageModel;
+
+    switch (consumeFromWhere) {
+      case CONSUME_FROM_FIRST_OFFSET:
+        outJson["consumeFromWhere"] = "CONSUME_FROM_FIRST_OFFSET";
+        break;
+      case CONSUME_FROM_TIMESTAMP:
+        outJson["consumeFromWhere"] = "CONSUME_FROM_TIMESTAMP";
+        break;
+      case CONSUME_FROM_LAST_OFFSET:
+        outJson["consumeFromWhere"] = "CONSUME_FROM_LAST_OFFSET";
+        break;
+      case CONSUME_FROM_LAST_OFFSET_AND_FROM_MIN_WHEN_BOOT_FIRST:
+        outJson["consumeFromWhere"] = "CONSUME_FROM_LAST_OFFSET_AND_FROM_MIN_WHEN_BOOT_FIRST";
+        break;
+      case CONSUME_FROM_MAX_OFFSET:
+        outJson["consumeFromWhere"] = "CONSUME_FROM_MAX_OFFSET";
+        break;
+      case CONSUME_FROM_MIN_OFFSET:
+        outJson["consumeFromWhere"] = "CONSUME_FROM_MIN_OFFSET";
+        break;
+      default:
+        break;
+    }
+
+    switch (consumeType) {
+      case CONSUME_ACTIVELY:
+        outJson["consumeType"] = "CONSUME_ACTIVELY";
+        break;
+      case CONSUME_PASSIVELY:
+        outJson["consumeType"] = "CONSUME_PASSIVELY";
+        break;
+      default:
+        break;
+    }
+
+    switch (messageModel) {
+      case CLUSTERING:
+        outJson["messageModel"] = "CLUSTERING";
+        break;
+      case BROADCASTING:
+        outJson["messageModel"] = "BROADCASTING";
+        break;
+      default:
+        break;
+    }
 
     vector<SubscriptionData>::const_iterator it = subscriptionDataSet.begin();
     for (; it != subscriptionDataSet.end(); it++) {
