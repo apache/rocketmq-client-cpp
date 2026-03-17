@@ -119,6 +119,7 @@ void logAdapter::setLogDir() {
 void logAdapter::setLogFileNumAndSize(int logNum, int sizeOfPerFile) {
   string homeDir(UtilAll::getHomeDirectory());
   homeDir.append(m_log_dir);
+  m_logSink->locked_backend()->set_rotation_size(sizeOfPerFile * 1024 * 1024);
   m_logSink->locked_backend()->set_file_collector(sinks::file::make_collector(
       keywords::target = homeDir, keywords::max_size = logNum * sizeOfPerFile * 1024 * 1024));
 }
