@@ -185,8 +185,14 @@ ELSE ()
 
     if (CMAKE_BUILD_BITS EQUAL 32)
         list(APPEND CXX_FLAGS "-m32")
-    else () #not-condition
-        list(APPEND CXX_FLAGS "-m64")
+    else ()
+        if (NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+            list(APPEND CXX_FLAGS "-m64")
+        endif ()
+    endif ()
+
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch32")
+        list(APPEND CXX_FLAGS "-march=armv8-a")
     endif ()
 
     string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
