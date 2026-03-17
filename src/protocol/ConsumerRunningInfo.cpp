@@ -105,14 +105,16 @@ string ConsumerRunningInfo::encode() {
   string finals = fastwrite.write(root);
   string key = "\"mqTable\":";
   key.append("{");
-  for (map<MessageQueue, ProcessQueueInfo>::iterator it = mqTable.begin(); it != mqTable.end(); ++it) {
-    key.append((it->first).toJson().toStyledString());
+  if (!mqTable.empty()) {
+    for (map<MessageQueue, ProcessQueueInfo>::iterator it = mqTable.begin(); it != mqTable.end(); ++it) {
+      key.append((it->first).toJson().toStyledString());
+      key.erase(key.end() - 1);
+      key.append(":");
+      key.append((it->second).toJson().toStyledString());
+      key.append(",");
+    }
     key.erase(key.end() - 1);
-    key.append(":");
-    key.append((it->second).toJson().toStyledString());
-    key.append(",");
   }
-  key.erase(key.end() - 1);
   key.append("}");
 
   // insert mqTable to final string
