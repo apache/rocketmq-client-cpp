@@ -892,7 +892,7 @@ void DefaultMQPushConsumerImpl::pullMessageAsync(boost::weak_ptr<PullRequest> pu
   }
   try {
     request->setLastPullTimestamp(UtilAll::currentTimeMillis());
-    AsyncPullCallback* pullCallback = getAsyncPullCallBack(request, messageQueue);
+    AsyncPullCallback* pullCallback = new AsyncPullCallback(this, request);
     if (pullCallback == NULL) {
       LOG_WARN("Can not get pull callback for:%s, Maybe this pull request has been released.",
                request->m_messageQueue.toString().c_str());
