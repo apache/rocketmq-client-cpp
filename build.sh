@@ -29,10 +29,10 @@ declare fname_openssl="openssl*.tar.gz"
 declare fname_libevent="libevent*.zip"
 declare fname_jsoncpp="jsoncpp*.zip"
 declare fname_boost="boost*.tar.gz"
-declare fname_openssl_down="openssl-1.1.1d.tar.gz"
-declare fname_libevent_down="release-2.1.11-stable.zip"
+declare fname_openssl_down="openssl-3.0.15.tar.gz"
+declare fname_libevent_down="release-2.1.12-stable.zip"
 declare fname_jsoncpp_down="0.10.7.zip"
-declare fname_boost_down="1.78.0/boost_1_78_0.tar.gz"
+declare fname_boost_down="1.84.0/boost_1_84_0.tar.gz"
 
 PrintParams() {
   echo "=========================================one key build help============================================"
@@ -212,7 +212,7 @@ BuildOpenSSL() {
   if [ -e ${fname_openssl} ]; then
     echo "${fname_openssl} exists"
   else
-    wget https://www.openssl.org/source/old/1.1.1/${fname_openssl_down} -O ${fname_openssl_down} --no-check-certificate
+    wget https://www.openssl.org/source/old/3.0/${fname_openssl_down} -O ${fname_openssl_down} --no-check-certificate
   fi
   tar -zxvf ${fname_openssl} &> unzipopenssl.txt
   if [ $? -ne 0 ]; then
@@ -226,9 +226,9 @@ BuildOpenSSL() {
   fi
   echo "build openssl static #####################"
   if [ $verbose -eq 0 ]; then
-    ./config shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir} &> opensslconfig.txt
+    ./config shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir} enable-camellia enable-seed enable-rfc3779 enable-cms enable-md2 enable-rc5 nable-weak-ssl-ciphers enable-ssl3 enable-ssl3-method enable-md2 enable-ktls enable-fips &> opensslconfig.txt
   else
-    ./config shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir}
+    ./config shared CFLAGS=-fPIC CPPFLAGS=-fPIC --prefix=${install_lib_dir} --openssldir=${install_lib_dir} enable-camellia enable-seed enable-rfc3779 enable-cms enable-md2 enable-rc5 enable-weak-ssl-ciphers enable-ssl3 enable-ssl3-method enable-md2 enable-ktls enable-fips
   fi
   if [ $? -ne 0 ]; then
     exit 1
@@ -342,7 +342,7 @@ BuildJsonCPP() {
   echo "build jsoncpp success."
   if [ ! -f ${install_lib_dir}/lib/libjsoncpp.a ]; then
     echo " ./bin/lib directory is not libjsoncpp.a"
-    cp ${install_lib_dir}/lib/x86_64-linux-gnu/libjsoncpp.a ${install_lib_dir}/lib/
+    cp ${install_lib_dir}/lib/$(uname -m)-linux-gnu/libjsoncpp.a ${install_lib_dir}/lib/
   fi
 }
 
