@@ -79,10 +79,18 @@ else ()
     #find_package(Boost 1.56 REQUIRED COMPONENTS atomic thread system chrono date_time log log_setup regex serialization filesystem locale iostreams) 
     set(Boost_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/bin/include)
     set(Boost_LIBRARY_DIRS ${PROJECT_SOURCE_DIR}/bin/lib)
-    set(Boost_LIBRARIES ${Boost_LIBRARY_DIRS}/libboost_atomic.a;${Boost_LIBRARY_DIRS}/libboost_thread.a;${Boost_LIBRARY_DIRS}/libboost_system.a;
-            ${Boost_LIBRARY_DIRS}/libboost_chrono.a;${Boost_LIBRARY_DIRS}/libboost_date_time.a;${Boost_LIBRARY_DIRS}/libboost_log.a;
-            ${Boost_LIBRARY_DIRS}/libboost_log_setup.a;${Boost_LIBRARY_DIRS}/libboost_regex.a;${Boost_LIBRARY_DIRS}/libboost_serialization.a;
-            ${Boost_LIBRARY_DIRS}/libboost_filesystem.a;${Boost_LIBRARY_DIRS}/libboost_locale.a;${Boost_LIBRARY_DIRS}/libboost_iostreams.a)
+    if (Boost_USE_STATIC_LIBS)
+        set(Boost_LIBRARIES ${Boost_LIBRARY_DIRS}/libboost_atomic.a;${Boost_LIBRARY_DIRS}/libboost_thread.a;${Boost_LIBRARY_DIRS}/libboost_system.a;
+                ${Boost_LIBRARY_DIRS}/libboost_chrono.a;${Boost_LIBRARY_DIRS}/libboost_date_time.a;${Boost_LIBRARY_DIRS}/libboost_log.a;
+                ${Boost_LIBRARY_DIRS}/libboost_log_setup.a;${Boost_LIBRARY_DIRS}/libboost_regex.a;${Boost_LIBRARY_DIRS}/libboost_serialization.a;
+                ${Boost_LIBRARY_DIRS}/libboost_filesystem.a;${Boost_LIBRARY_DIRS}/libboost_locale.a;${Boost_LIBRARY_DIRS}/libboost_iostreams.a)
+    else ()
+        set(Boost_LIBRARIES ${Boost_LIBRARY_DIRS}/libboost_atomic.so;${Boost_LIBRARY_DIRS}/libboost_thread.so;${Boost_LIBRARY_DIRS}/libboost_system.so;
+                    ${Boost_LIBRARY_DIRS}/libboost_chrono.so;${Boost_LIBRARY_DIRS}/libboost_date_time.so;${Boost_LIBRARY_DIRS}/libboost_log.so;
+                    ${Boost_LIBRARY_DIRS}/libboost_log_setup.so;${Boost_LIBRARY_DIRS}/libboost_regex.so;${Boost_LIBRARY_DIRS}/libboost_serialization.so;
+                    ${Boost_LIBRARY_DIRS}/libboost_filesystem.so;${Boost_LIBRARY_DIRS}/libboost_locale.so;${Boost_LIBRARY_DIRS}/libboost_iostreams.so)
+        add_definitions(-DBOOST_ALL_DYN_LINK)
+    endif ()
     include_directories(${Boost_INCLUDE_DIR})
 endif ()
 
