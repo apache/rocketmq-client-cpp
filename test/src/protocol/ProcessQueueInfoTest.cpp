@@ -54,7 +54,8 @@ TEST(processQueueInfo, init) {
 
   Json::Value outJson = processQueueInfo.toJson();
 
-  EXPECT_EQ(outJson["commitOffset"], "456");
+  EXPECT_TRUE(outJson["commitOffset"].isInt64());
+  EXPECT_EQ(outJson["commitOffset"].asInt64(), 456);
   EXPECT_EQ(outJson["cachedMsgMinOffset"], "0");
   EXPECT_EQ(outJson["cachedMsgMaxOffset"], "0");
   EXPECT_EQ(outJson["cachedMsgCount"].asInt(), 0);
@@ -67,6 +68,16 @@ TEST(processQueueInfo, init) {
   EXPECT_EQ(outJson["droped"].asBool(), true);
   EXPECT_EQ(outJson["lastPullTimestamp"], "0");
   EXPECT_EQ(outJson["lastConsumeTimestamp"], "0");
+
+  processQueueInfo.setCommitOffset(-1);
+  Json::Value sentinelJson = processQueueInfo.toJson();
+  EXPECT_TRUE(sentinelJson["commitOffset"].isInt64());
+  EXPECT_EQ(sentinelJson["commitOffset"].asInt64(), -1);
+
+  processQueueInfo.setCommitOffset(-2);
+  Json::Value exceptionalJson = processQueueInfo.toJson();
+  EXPECT_TRUE(exceptionalJson["commitOffset"].isInt64());
+  EXPECT_EQ(exceptionalJson["commitOffset"].asInt64(), -2);
 }
 
 int main(int argc, char* argv[]) {

@@ -42,9 +42,9 @@ class ProcessQueueInfo {
   virtual ~ProcessQueueInfo() {}
 
  public:
-  const uint64 getCommitOffset() const { return commitOffset; }
+  const int64 getCommitOffset() const { return commitOffset; }
 
-  void setCommitOffset(uint64 input_commitOffset) { commitOffset = input_commitOffset; }
+  void setCommitOffset(int64 input_commitOffset) { commitOffset = input_commitOffset; }
 
   void setLocked(bool in_locked) { locked = in_locked; }
 
@@ -56,7 +56,7 @@ class ProcessQueueInfo {
 
   Json::Value toJson() const {
     Json::Value outJson;
-    outJson["commitOffset"] = (UtilAll::to_string(commitOffset)).c_str();
+    outJson["commitOffset"] = (Json::Int64)commitOffset;
     outJson["cachedMsgMinOffset"] = (UtilAll::to_string(cachedMsgMinOffset)).c_str();
     outJson["cachedMsgMaxOffset"] = (UtilAll::to_string(cachedMsgMaxOffset)).c_str();
     outJson["cachedMsgCount"] = (int)(cachedMsgCount);
@@ -74,7 +74,7 @@ class ProcessQueueInfo {
   }
 
  public:
-  uint64 commitOffset;
+  int64 commitOffset;
   uint64 cachedMsgMinOffset;
   uint64 cachedMsgMaxOffset;
   int cachedMsgCount;
